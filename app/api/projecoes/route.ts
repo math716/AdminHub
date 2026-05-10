@@ -43,8 +43,16 @@ export async function DELETE(request: NextRequest) {
     const id = new URL(request.url).searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
 
-    const projecao = await prisma.projecaoCampanha.findUnique({ where: { id } });
-    if (!projecao || projecao.userId !== user.id)
+    const projecao = await prisma.projecaoCampanha.findUnique({
+      where: { id },
+      include: { user: { select: { gabineteId: true } } }
+    });
+
+    const pertenceAoGabinete = user.gabineteId
+      ? projecao?.user?.gabineteId === user.gabineteId
+      : projecao?.userId === user.id;
+
+    if (!projecao || !pertenceAoGabinete)
       return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
 
     await prisma.projecaoCampanha.delete({ where: { id } });

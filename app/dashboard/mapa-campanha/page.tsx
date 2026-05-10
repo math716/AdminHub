@@ -606,21 +606,22 @@ export default function MapaCampanhaPage() {
     setCeBairrosVotes(bairroVotes);
   }, [uf, electoralData]);
 
-  // Agrega votos de bairros de municípios MG via zona-bairro-map dinâmico
+  // Agrega votos de bairros de municípios MG via arquivo estático pré-gerado
   useEffect(() => {
-    const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+    const normFull = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
     if (uf !== 'MG' || !electoralData?.zonas?.length || !mgBairrosMunicipio) {
       setMgBairrosVotes({});
       return;
     }
-    const munNorm = norm(mgBairrosMunicipio);
-    fetch(`/api/tse/zona-bairro-map?uf=MG&municipio=${encodeURIComponent(mgBairrosMunicipio)}`)
+    const munNorm = normFull(mgBairrosMunicipio);
+    const fileName = munNorm.replace(/\s+/g, '_') + '.json';
+    fetch(`/data/tse/mg-zona-bairro/${fileName}`)
       .then(r => r.json())
-      .then(({ zonaBairroMap }: { zonaBairroMap: Record<number, Record<string, number>> }) => {
+      .then((zonaBairroMap: Record<number, Record<string, number>>) => {
         if (!zonaBairroMap || Object.keys(zonaBairroMap).length === 0) return;
         const bairroVotes: Record<string, number> = {};
         for (const z of electoralData.zonas!) {
-          if (norm(z.municipio) !== munNorm) continue;
+          if (normFull(z.municipio) !== munNorm) continue;
           const bairroMap = zonaBairroMap[z.zona];
           if (!bairroMap || !z.votos) continue;
           for (const [bairro, frac] of Object.entries(bairroMap)) {

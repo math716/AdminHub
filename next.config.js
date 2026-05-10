@@ -38,11 +38,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: { unoptimized: true },
-  outputFileTracingIncludes: {
-    '/api/tse/zonas':           ['./public/data/tse/**/*'],
-    '/api/tse/candidato':       ['./public/data/tse/**/*'],
-    '/api/tse/zona-bairro-map': ['./public/data/tse/locais/**/*'],
-  },
   async headers() {
     return [
       {
