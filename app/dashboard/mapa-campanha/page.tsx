@@ -942,8 +942,19 @@ export default function MapaCampanhaPage() {
     }
 
     if (isMunicipal && municipioEncontrado) {
-      setMunicipioVereador(municipioEncontrado);
-      setVisualizacaoMapa('bairro');
+      if (uf === 'MG') {
+        const munNormLocal = municipioEncontrado.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+        if (MG_MUNICIPIOS_COM_BAIRROS.has(munNormLocal)) {
+          setMgVisualizacao('bairros');
+          setMgBairrosMunicipio(municipioEncontrado);
+        } else {
+          setMunicipioVereador(municipioEncontrado);
+          setVisualizacaoMapa('bairro');
+        }
+      } else {
+        setMunicipioVereador(municipioEncontrado);
+        setVisualizacaoMapa('bairro');
+      }
     }
 
     // Para candidatos estaduais/federais de CE: carregar votos de Fortaleza por bairro
@@ -1408,11 +1419,22 @@ export default function MapaCampanhaPage() {
         }
 
         if (municipioFound) {
-          setMunicipioVereador(municipioFound);
-          setVisualizacaoMapa('bairro');
+          if (ufState === 'MG') {
+            const munNormLocal = municipioFound.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+            if (MG_MUNICIPIOS_COM_BAIRROS.has(munNormLocal)) {
+              setMgVisualizacao('bairros');
+              setMgBairrosMunicipio(municipioFound);
+            } else {
+              setMunicipioVereador(municipioFound);
+              setVisualizacaoMapa('bairro');
+            }
+          } else {
+            setMunicipioVereador(municipioFound);
+            setVisualizacaoMapa('bairro');
+          }
         }
       }
-      
+
       // Carregar votos por zona também
       const resZona = await fetch(`/api/tse/votos-zona?candidatoId=${candidatoId}`);
       if (resZona.ok) {
@@ -2214,6 +2236,59 @@ export default function MapaCampanhaPage() {
     setShowModal(true);
   };
 
+  // Handler para click em bairro de municípios MG (IBGE CD2022)
+  const handleMgBairroClick = (nome: string) => {
+    const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    const nomeNorm = norm(nome);
+    setSelectedMgBairro(prev => prev === nomeNorm ? null : nomeNorm);
+    if (!projecao) return;
+    const key = mgBairroKey(nomeNorm);
+    const votosBase = mgBairrosVotes[nomeNorm] ?? 0;
+    const munData = projecao.municipios.find(m => m.municipio === key);
+    if (munData) {
+      setSelectedMunicipio({
+        nome: key,
+        votosBase: munData.votosBase,
+        metaConservadora: munData.metaConservadora,
+        metaPossivel: munData.metaPossivel,
+        metaArrojada: munData.metaArrojada,
+        dobradaAtiva: munData.dobradaAtiva,
+        dobradaNome: munData.dobradaNome,
+        dobradaPartido: munData.dobradaPartido,
+        dobradaObservacoes: munData.dobradaObservacoes,
+      });
+      setMetaConservadoraTemp(munData.metaConservadora);
+      setMetaPossivelTemp(munData.metaPossivel);
+      setMetaArrojadaTemp(munData.metaArrojada);
+      setPrioridadeTemp(munData.prioridade || 'MEDIA');
+      setDobradaAtivaTemp(munData.dobradaAtiva || false);
+      setDobradaNomeTemp(munData.dobradaNome || '');
+      setDobradaPartidoTemp(munData.dobradaPartido || '');
+      setDobradaObservacoesTemp(munData.dobradaObservacoes || '');
+    } else {
+      const nova: ProjecaoMunicipio = {
+        municipio: key,
+        votosBase,
+        metaConservadora: votosBase,
+        metaPossivel: votosBase,
+        metaArrojada: votosBase,
+        prioridade: 'MEDIA',
+        dobradaAtiva: false,
+      };
+      setProjecao(prev => prev ? { ...prev, municipios: [...prev.municipios, nova] } : prev);
+      setSelectedMunicipio({ nome: key, votosBase, metaConservadora: votosBase, metaPossivel: votosBase, metaArrojada: votosBase, dobradaAtiva: false });
+      setMetaConservadoraTemp(votosBase);
+      setMetaPossivelTemp(votosBase);
+      setMetaArrojadaTemp(votosBase);
+      setPrioridadeTemp('MEDIA');
+      setDobradaAtivaTemp(false);
+      setDobradaNomeTemp('');
+      setDobradaPartidoTemp('');
+      setDobradaObservacoesTemp('');
+    }
+    setShowModal(true);
+  };
+
   // Zonas do DF com dados de projeção sobrepostos para exibição no mapa
   const dfZonasDisplay = useMemo(() => {
     if (!dfZonas.length || !projecao) return dfZonas;
@@ -2841,7 +2916,7 @@ export default function MapaCampanhaPage() {
                       municipio={mgBairrosMunicipio}
                       votesData={mgBairrosVotesDisplay}
                       selectedBairro={selectedMgBairro}
-                      onBairroClick={(nome) => setSelectedMgBairro(prev => prev === nome ? null : nome)}
+                      onBairroClick={handleMgBairroClick}
                       height="100%"
                     />
                   ) : uf === 'MG' && mgVisualizacao === 'bairros' && !mgBairrosMunicipio ? (
@@ -3323,7 +3398,7 @@ export default function MapaCampanhaPage() {
                               isSelected ? 'bg-violet-900/30 border-l-2 border-violet-400' :
                               mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
                             }`}
-                            onClick={() => setSelectedMgBairro(prev => prev === bairroNome ? null : bairroNome)}
+                            onClick={() => handleMgBairroClick(bairroNome)}
                           >
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -4431,6 +4506,7 @@ export default function MapaCampanhaPage() {
                           const rjBairros = proj.municipios.filter((m: ProjecaoMunicipio) => isRjBairro(m.municipio));
                           const spDistritos = proj.municipios.filter((m: ProjecaoMunicipio) => isSpDistrito(m.municipio));
                           const ceBairros = proj.municipios.filter((m: ProjecaoMunicipio) => isCeBairro(m.municipio));
+                          const mgBairrosEntries = proj.municipios.filter((m: ProjecaoMunicipio) => isMgBairro(m.municipio));
                           if (rjBairros.length > 0) {
                             setMunicipioVereador('RIO DE JANEIRO');
                             setVisualizacaoMapa('bairro');
@@ -4440,6 +4516,8 @@ export default function MapaCampanhaPage() {
                           } else if (ceBairros.length > 0) {
                             setMunicipioVereador('FORTALEZA');
                             setVisualizacaoMapa('bairro');
+                          } else if (mgBairrosEntries.length > 0) {
+                            setMgVisualizacao('bairros');
                           }
                         }
                         // Estreantes não têm histórico no TSE: evitar chamada com ano futuro
