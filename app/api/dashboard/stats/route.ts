@@ -65,7 +65,7 @@ export async function GET() {
     });
 
     const timelineMap: Record<string, number> = {};
-    demands?.forEach?.((d) => {
+    demands?.forEach?.((d: { createdAt: Date }) => {
       const dateStr = d?.createdAt?.toISOString?.()?.split?.('T')?.[0] ?? '';
       if (dateStr) timelineMap[dateStr] = (timelineMap[dateStr] ?? 0) + 1;
     });
@@ -87,10 +87,10 @@ export async function GET() {
       emAndamento: emAndamento ?? 0,
       resolvidas:  resolvidas  ?? 0,
       byCategory: Object.fromEntries(
-        (byCategory ?? [])?.map?.((c) => [c?.category, c?._count?.id ?? 0]) ?? []
+        (byCategory ?? []).map((c: { category: string; _count: { id: number } }) => [c.category, c._count.id ?? 0])
       ),
       byPriority: Object.fromEntries(
-        (byPriority ?? [])?.map?.((p) => [p?.priority, p?._count?.id ?? 0]) ?? []
+        (byPriority ?? []).map((p: { priority: string; _count: { id: number } }) => [p.priority, p._count.id ?? 0])
       ),
       recentDemands: recentDemands ?? [],
       timeline:      timeline      ?? []
