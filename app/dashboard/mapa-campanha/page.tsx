@@ -606,6 +606,59 @@ export default function MapaCampanhaPage() {
     setCeBairrosVotes(bairroVotes);
   }, [uf, electoralData]);
 
+  // Agrega votos de bairros de municípios MG via zona-bairro-map dinâmico
+  useEffect(() => {
+    const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+    if (uf !== 'MG' || !electoralData?.zonas?.length || !mgBairrosMunicipio) {
+      setMgBairrosVotes({});
+      return;
+    }
+    const munNorm = norm(mgBairrosMunicipio);
+    fetch(`/api/tse/zona-bairro-map?uf=MG&municipio=${encodeURIComponent(mgBairrosMunicipio)}`)
+      .then(r => r.json())
+      .then(({ zonaBairroMap }: { zonaBairroMap: Record<number, Record<string, number>> }) => {
+        if (!zonaBairroMap || Object.keys(zonaBairroMap).length === 0) return;
+        const bairroVotes: Record<string, number> = {};
+        for (const z of electoralData.zonas!) {
+          if (norm(z.municipio) !== munNorm) continue;
+          const bairroMap = zonaBairroMap[z.zona];
+          if (!bairroMap || !z.votos) continue;
+          for (const [bairro, frac] of Object.entries(bairroMap)) {
+            bairroVotes[bairro] = (bairroVotes[bairro] ?? 0) + Math.round(z.votos * frac);
+          }
+        }
+        setMgBairrosVotes(bairroVotes);
+      })
+      .catch(() => {});
+  }, [uf, electoralData, mgBairrosMunicipio]);
+
+  // Sincroniza mgBairrosVotes em entradas MG_BAIRRO_ já existentes na projeção
+  useEffect(() => {
+    if (!Object.keys(mgBairrosVotes).length) return;
+    setProjecao(prev => {
+      if (!prev) return prev;
+      const temBairro = prev.municipios.some(m => isMgBairro(m.municipio));
+      if (!temBairro) return prev;
+      return {
+        ...prev,
+        municipios: prev.municipios.map(m => {
+          if (!isMgBairro(m.municipio)) return m;
+          const nome = getMgBairroNome(m.municipio);
+          const votosBase = mgBairrosVotes[nome] ?? m.votosBase;
+          if (m.votosBase === votosBase) return m;
+          return {
+            ...m,
+            votosBase,
+            metaConservadora: m.metaConservadora === m.votosBase ? votosBase : m.metaConservadora,
+            metaPossivel: m.metaPossivel === m.votosBase ? votosBase : m.metaPossivel,
+            metaArrojada: m.metaArrojada === m.votosBase ? votosBase : m.metaArrojada,
+          };
+        }),
+      };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mgBairrosVotes]);
+
   // Sincroniza dfRegioesVotes em entradas DF_REGIAO_ já existentes na projeção
   useEffect(() => {
     if (!Object.keys(dfRegioesVotes).length) return;

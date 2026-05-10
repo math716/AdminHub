@@ -489,6 +489,34 @@ export default function MapaPage() {
     setSelectedMgBairro(prev => prev === nome ? null : nome);
   }, []);
 
+  // Computa votos por bairro de municípios MG via zona-bairro-map dinâmico
+  useEffect(() => {
+    if (!isMgMunicipio || !selectedMunicipio || !electoralData?.zonas?.length) {
+      setMgBairrosVotes({});
+      return;
+    }
+    const norm = (s: string) =>
+      s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+    const munNorm = norm(selectedMunicipio.nome);
+
+    fetch(`/api/tse/zona-bairro-map?uf=MG&municipio=${encodeURIComponent(selectedMunicipio.nome)}`)
+      .then(r => r.json())
+      .then(({ zonaBairroMap }: { zonaBairroMap: Record<number, Record<string, number>> }) => {
+        if (!zonaBairroMap || Object.keys(zonaBairroMap).length === 0) return;
+        const bairroVotes: Record<string, number> = {};
+        for (const z of electoralData.zonas!) {
+          if (norm(z.municipio) !== munNorm) continue;
+          const bairroMap = zonaBairroMap[z.zona];
+          if (!bairroMap || !z.votos) continue;
+          for (const [bairro, frac] of Object.entries(bairroMap)) {
+            bairroVotes[bairro] = (bairroVotes[bairro] ?? 0) + Math.round(z.votos * frac);
+          }
+        }
+        setMgBairrosVotes(bairroVotes);
+      })
+      .catch(() => {});
+  }, [isMgMunicipio, selectedMunicipio, electoralData]);
+
   const selectedCeVotos = useMemo(() => {
     if (!selectedCeBairro) return 0;
     const normCe = (s: string) =>

@@ -39,7 +39,9 @@ const nextConfig = {
   },
   images: { unoptimized: true },
   outputFileTracingIncludes: {
-    '/api/tse/zonas': ['./public/data/tse/**/*'],
+    '/api/tse/zonas':           ['./public/data/tse/**/*'],
+    '/api/tse/candidato':       ['./public/data/tse/**/*'],
+    '/api/tse/zona-bairro-map': ['./public/data/tse/locais/**/*'],
   },
   async headers() {
     return [
