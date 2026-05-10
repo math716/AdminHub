@@ -52,7 +52,8 @@ const DfRegioesMap   = dynamic(() => import('@/components/maps/df-regioes-map'),
 const SpDistritosMap = dynamic(() => import('@/components/maps/sp-distritos-map'), { ssr: false });
 const RjBairrosMap   = dynamic(() => import('@/components/maps/rj-bairros-map'),   { ssr: false });
 const CeBairrosMap   = dynamic(() => import('@/components/maps/ce-bairros-map'),   { ssr: false });
-const MgBairrosMap   = dynamic(() => import('@/components/maps/mg-bairros-map'),   { ssr: false });
+const MgBairrosMap            = dynamic(() => import('@/components/maps/mg-bairros-map'),            { ssr: false });
+const SpMunicipiosBairrosMap  = dynamic(() => import('@/components/maps/sp-municipios-bairros-map'), { ssr: false });
 
 // Helpers para zonas do DF
 const DF_ZONA_PREFIX = 'DF_ZONA_';
@@ -89,6 +90,26 @@ const MG_BAIRRO_PREFIX = 'MG_BAIRRO_';
 const mgBairroKey = (nome: string) => `${MG_BAIRRO_PREFIX}${nome}`;
 const isMgBairro = (municipio: string) => municipio.startsWith(MG_BAIRRO_PREFIX);
 const getMgBairroNome = (municipio: string) => municipio.replace(MG_BAIRRO_PREFIX, '');
+
+// Helpers para bairros de municípios de SP exceto capital (IBGE CD2022)
+const SP_MUN_BAIRRO_PREFIX = 'SP_MUN_BAIRRO_';
+const spMunBairroKey = (nome: string) => `${SP_MUN_BAIRRO_PREFIX}${nome}`;
+const isSpMunBairro = (municipio: string) => municipio.startsWith(SP_MUN_BAIRRO_PREFIX);
+const getSpMunBairroNome = (municipio: string) => municipio.replace(SP_MUN_BAIRRO_PREFIX, '');
+
+const SP_MUNICIPIOS_COM_BAIRROS = new Set([
+  'ANHEMBI','ARTUR NOGUEIRA','ATIBAIA','BARUERI','BAURU','BEBEDOURO','BERTIOGA',
+  'BOITUVA','BOM JESUS DOS PERDOES','BOTUCATU','BRAGANCA PAULISTA','CAIEIRAS',
+  'CATANDUVA','CUBATAO','DIADEMA','EMBU DAS ARTES','GUARATINGUETA','GUARUJA',
+  'GUARULHOS','HORTOLANDIA','ILHABELA','ITANHAEM','ITAPIRA','ITAQUAQUECETUBA',
+  'ITARARE','ITATINGA','JABOTICABAL','JUNDIAI','MAUA','MIRASSOL','MOCOCA',
+  'MONGAGUA','NOVA ODESSA','OSASCO','OURO VERDE','PAULINIA','PIRACICABA',
+  'PRAIA GRANDE','RIBEIRAO PIRES','RIBEIRAO PRETO','RIO CLARO',
+  'SANTA CRUZ DAS PALMEIRAS','SANTA GERTRUDES','SANTO ANDRE','SANTOS','SUMARE',
+  'SAO BERNARDO DO CAMPO','SAO CAETANO DO SUL','SAO JOSE DO RIO PRETO',
+  'SAO JOSE DOS CAMPOS','SAO MANUEL','SAO SEBASTIAO','SAO VICENTE',
+  'TAMBAU','TATUI','TAUBATE','UBATUBA','VINHEDO',
+]);
 
 const MG_MUNICIPIOS_COM_BAIRROS = new Set([
   'ABAETE','ARAXA','AUGUSTO DE LIMA','BARBACENA','BELO HORIZONTE','BETIM','BICAS',
@@ -533,6 +554,12 @@ export default function MapaCampanhaPage() {
   const [selectedCeBairro, setSelectedCeBairro] = useState<string | null>(null);
   const [ceBairrosVotes, setCeBairrosVotes] = useState<Record<string, number>>({});
 
+  // Bairros de municípios de SP exceto capital (IBGE CD2022)
+  const [spMunVisualizacao, setSpMunVisualizacao] = useState<'municipios' | 'bairros'>('municipios');
+  const [spMunBairrosMunicipio, setSpMunBairrosMunicipio] = useState<string>('');
+  const [selectedSpMunBairro, setSelectedSpMunBairro] = useState<string | null>(null);
+  const [spMunBairrosVotes, setSpMunBairrosVotes] = useState<Record<string, number>>({});
+
   // Bairros de municípios de MG (IBGE CD2022)
   const [mgVisualizacao, setMgVisualizacao] = useState<'municipios' | 'bairros'>('municipios');
   const [mgBairrosMunicipio, setMgBairrosMunicipio] = useState<string>('');
@@ -606,6 +633,33 @@ export default function MapaCampanhaPage() {
     setCeBairrosVotes(bairroVotes);
   }, [uf, electoralData]);
 
+  // Agrega votos de bairros de municípios SP (exceto capital) via arquivo estático pré-gerado
+  useEffect(() => {
+    const normFull = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (uf !== 'SP' || !electoralData?.zonas?.length || !spMunBairrosMunicipio) {
+      setSpMunBairrosVotes({});
+      return;
+    }
+    const munNorm = normFull(spMunBairrosMunicipio);
+    const fileName = munNorm.replace(/\s+/g, '_') + '.json';
+    fetch(`/data/tse/sp-zona-bairro/${fileName}`)
+      .then(r => r.json())
+      .then((zonaBairroMap: Record<number, Record<string, number>>) => {
+        if (!zonaBairroMap || Object.keys(zonaBairroMap).length === 0) return;
+        const bairroVotes: Record<string, number> = {};
+        for (const z of electoralData.zonas!) {
+          if (normFull(z.municipio) !== munNorm) continue;
+          const bairroMap = zonaBairroMap[z.zona];
+          if (!bairroMap || !z.votos) continue;
+          for (const [bairro, frac] of Object.entries(bairroMap)) {
+            bairroVotes[bairro] = (bairroVotes[bairro] ?? 0) + Math.round(z.votos * frac);
+          }
+        }
+        setSpMunBairrosVotes(bairroVotes);
+      })
+      .catch(() => {});
+  }, [uf, electoralData, spMunBairrosMunicipio]);
+
   // Agrega votos de bairros de municípios MG via arquivo estático pré-gerado
   useEffect(() => {
     const normFull = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -632,6 +686,33 @@ export default function MapaCampanhaPage() {
       })
       .catch(() => {});
   }, [uf, electoralData, mgBairrosMunicipio]);
+
+  // Sincroniza spMunBairrosVotes em entradas SP_MUN_BAIRRO_ já existentes na projeção
+  useEffect(() => {
+    if (!Object.keys(spMunBairrosVotes).length) return;
+    setProjecao(prev => {
+      if (!prev) return prev;
+      const temBairro = prev.municipios.some(m => isSpMunBairro(m.municipio));
+      if (!temBairro) return prev;
+      return {
+        ...prev,
+        municipios: prev.municipios.map(m => {
+          if (!isSpMunBairro(m.municipio)) return m;
+          const nome = getSpMunBairroNome(m.municipio);
+          const votosBase = spMunBairrosVotes[nome] ?? m.votosBase;
+          if (m.votosBase === votosBase) return m;
+          return {
+            ...m,
+            votosBase,
+            metaConservadora: m.metaConservadora === m.votosBase ? votosBase : m.metaConservadora,
+            metaPossivel: m.metaPossivel === m.votosBase ? votosBase : m.metaPossivel,
+            metaArrojada: m.metaArrojada === m.votosBase ? votosBase : m.metaArrojada,
+          };
+        }),
+      };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spMunBairrosVotes]);
 
   // Sincroniza mgBairrosVotes em entradas MG_BAIRRO_ já existentes na projeção
   useEffect(() => {
@@ -890,6 +971,10 @@ export default function MapaCampanhaPage() {
     setSelectedDfZona(null);
     setCeVisualizacao('municipios');
     setSelectedCeBairro(null);
+    setSpMunVisualizacao('municipios');
+    setSpMunBairrosMunicipio('');
+    setSelectedSpMunBairro(null);
+    setSpMunBairrosVotes({});
     setMgVisualizacao('municipios');
     setMgBairrosMunicipio('');
     setSelectedMgBairro(null);
@@ -943,15 +1028,14 @@ export default function MapaCampanhaPage() {
     }
 
     if (isMunicipal && municipioEncontrado) {
-      if (uf === 'MG') {
-        const munNormLocal = municipioEncontrado.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
-        if (MG_MUNICIPIOS_COM_BAIRROS.has(munNormLocal)) {
-          setMgVisualizacao('bairros');
-          setMgBairrosMunicipio(municipioEncontrado);
-        } else {
-          setMunicipioVereador(municipioEncontrado);
-          setVisualizacaoMapa('bairro');
-        }
+      const normLocal = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+      const munNormLocal = normLocal(municipioEncontrado);
+      if (uf === 'SP' && munNormLocal !== 'SAO PAULO' && SP_MUNICIPIOS_COM_BAIRROS.has(munNormLocal)) {
+        setSpMunVisualizacao('bairros');
+        setSpMunBairrosMunicipio(municipioEncontrado);
+      } else if (uf === 'MG' && MG_MUNICIPIOS_COM_BAIRROS.has(munNormLocal)) {
+        setMgVisualizacao('bairros');
+        setMgBairrosMunicipio(municipioEncontrado);
       } else {
         setMunicipioVereador(municipioEncontrado);
         setVisualizacaoMapa('bairro');
@@ -1090,6 +1174,9 @@ export default function MapaCampanhaPage() {
         setRjVisualizacao('bairros');
       } else if (novoCandidatoUf === 'CE' && munNormalized === 'FORTALEZA') {
         setCeVisualizacao('bairros');
+      } else if (novoCandidatoUf === 'SP' && munNormalized && munNormalized !== 'SAO PAULO' && SP_MUNICIPIOS_COM_BAIRROS.has(munNormalized)) {
+        setSpMunVisualizacao('bairros');
+        setSpMunBairrosMunicipio(novoCandidatoMunicipio);
       } else if (novoCandidatoUf === 'MG' && munNormalized && MG_MUNICIPIOS_COM_BAIRROS.has(munNormalized)) {
         setMgVisualizacao('bairros');
         setMgBairrosMunicipio(novoCandidatoMunicipio);
@@ -1097,6 +1184,8 @@ export default function MapaCampanhaPage() {
         setSpVisualizacao('municipios');
         setRjVisualizacao('municipios');
         setCeVisualizacao('municipios');
+        setSpMunVisualizacao('municipios');
+        setSpMunBairrosMunicipio('');
         setMgVisualizacao('municipios');
         setMgBairrosMunicipio('');
       }
@@ -1420,15 +1509,14 @@ export default function MapaCampanhaPage() {
         }
 
         if (municipioFound) {
-          if (ufState === 'MG') {
-            const munNormLocal = municipioFound.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
-            if (MG_MUNICIPIOS_COM_BAIRROS.has(munNormLocal)) {
-              setMgVisualizacao('bairros');
-              setMgBairrosMunicipio(municipioFound);
-            } else {
-              setMunicipioVereador(municipioFound);
-              setVisualizacaoMapa('bairro');
-            }
+          const normLocal2 = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+          const munNormLocal = normLocal2(municipioFound);
+          if (ufState === 'SP' && munNormLocal !== 'SAO PAULO' && SP_MUNICIPIOS_COM_BAIRROS.has(munNormLocal)) {
+            setSpMunVisualizacao('bairros');
+            setSpMunBairrosMunicipio(municipioFound);
+          } else if (ufState === 'MG' && MG_MUNICIPIOS_COM_BAIRROS.has(munNormLocal)) {
+            setMgVisualizacao('bairros');
+            setMgBairrosMunicipio(municipioFound);
           } else {
             setMunicipioVereador(municipioFound);
             setVisualizacaoMapa('bairro');
@@ -1662,6 +1750,14 @@ export default function MapaCampanhaPage() {
       .sort((a, b) => getCeBairroNome(a.municipio).localeCompare(getCeBairroNome(b.municipio), 'pt-BR'));
   };
 
+  // Bairros SP municípios filtrados para a lista lateral
+  const getFilteredSpMunBairros = () => {
+    if (!projecao || uf !== 'SP' || spMunVisualizacao !== 'bairros') return [];
+    return projecao.municipios
+      .filter(m => isSpMunBairro(m.municipio))
+      .sort((a, b) => getMetaAtiva(b) - getMetaAtiva(a));
+  };
+
   // Bairros MG filtrados para a lista lateral
   const getFilteredMgBairros = () => {
     if (!projecao || uf !== 'MG' || mgVisualizacao !== 'bairros') return [];
@@ -1814,6 +1910,18 @@ export default function MapaCampanhaPage() {
     return result;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ceBairrosVotes, projecao, activeTab, cenarioAtivo, includeParcerias, parcerias]);
+
+  const spMunBairrosVotesDisplay = useMemo(() => {
+    const result = { ...spMunBairrosVotes };
+    if (activeTab === 'historico' || !projecao) return result;
+    projecao.municipios.forEach(m => {
+      if (!isSpMunBairro(m.municipio)) return;
+      const nome = getSpMunBairroNome(m.municipio);
+      result[nome] = getMetaAtiva(m);
+    });
+    return result;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spMunBairrosVotes, projecao, activeTab, cenarioAtivo, includeParcerias, parcerias]);
 
   const mgBairrosVotesDisplay = useMemo(() => {
     const result = { ...mgBairrosVotes };
@@ -2192,6 +2300,59 @@ export default function MapaCampanhaPage() {
     if (!projecao) return;
     const key = ceBairroKey(nomeNorm);
     const votosBase = ceBairrosVotes[nomeNorm] ?? 0;
+    const munData = projecao.municipios.find(m => m.municipio === key);
+    if (munData) {
+      setSelectedMunicipio({
+        nome: key,
+        votosBase: munData.votosBase,
+        metaConservadora: munData.metaConservadora,
+        metaPossivel: munData.metaPossivel,
+        metaArrojada: munData.metaArrojada,
+        dobradaAtiva: munData.dobradaAtiva,
+        dobradaNome: munData.dobradaNome,
+        dobradaPartido: munData.dobradaPartido,
+        dobradaObservacoes: munData.dobradaObservacoes,
+      });
+      setMetaConservadoraTemp(munData.metaConservadora);
+      setMetaPossivelTemp(munData.metaPossivel);
+      setMetaArrojadaTemp(munData.metaArrojada);
+      setPrioridadeTemp(munData.prioridade || 'MEDIA');
+      setDobradaAtivaTemp(munData.dobradaAtiva || false);
+      setDobradaNomeTemp(munData.dobradaNome || '');
+      setDobradaPartidoTemp(munData.dobradaPartido || '');
+      setDobradaObservacoesTemp(munData.dobradaObservacoes || '');
+    } else {
+      const nova: ProjecaoMunicipio = {
+        municipio: key,
+        votosBase,
+        metaConservadora: votosBase,
+        metaPossivel: votosBase,
+        metaArrojada: votosBase,
+        prioridade: 'MEDIA',
+        dobradaAtiva: false,
+      };
+      setProjecao(prev => prev ? { ...prev, municipios: [...prev.municipios, nova] } : prev);
+      setSelectedMunicipio({ nome: key, votosBase, metaConservadora: votosBase, metaPossivel: votosBase, metaArrojada: votosBase, dobradaAtiva: false });
+      setMetaConservadoraTemp(votosBase);
+      setMetaPossivelTemp(votosBase);
+      setMetaArrojadaTemp(votosBase);
+      setPrioridadeTemp('MEDIA');
+      setDobradaAtivaTemp(false);
+      setDobradaNomeTemp('');
+      setDobradaPartidoTemp('');
+      setDobradaObservacoesTemp('');
+    }
+    setShowModal(true);
+  };
+
+  // Handler para click em bairro de municípios SP exceto capital (IBGE CD2022)
+  const handleSpMunBairroClick = (nome: string) => {
+    const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    const nomeNorm = norm(nome);
+    setSelectedSpMunBairro(prev => prev === nomeNorm ? null : nomeNorm);
+    if (!projecao) return;
+    const key = spMunBairroKey(nomeNorm);
+    const votosBase = spMunBairrosVotes[nomeNorm] ?? 0;
     const munData = projecao.municipios.find(m => m.municipio === key);
     if (munData) {
       setSelectedMunicipio({
@@ -2730,6 +2891,27 @@ export default function MapaCampanhaPage() {
                           ← Ceará
                         </button>
                       )}
+                      {uf === 'SP' && spMunVisualizacao === 'bairros' && (
+                        <button
+                          onClick={() => { setSpMunVisualizacao('municipios'); setSelectedSpMunBairro(null); setSpMunBairrosMunicipio(''); }}
+                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md text-slate-300 hover:text-white transition-all"
+                          style={{ background: 'rgba(26,115,232,0.12)', border: '1px solid rgba(26,115,232,0.3)' }}
+                        >
+                          ← São Paulo
+                        </button>
+                      )}
+                      {uf === 'SP' && spMunVisualizacao === 'bairros' && (
+                        <select
+                          value={spMunBairrosMunicipio}
+                          onChange={e => { setSpMunBairrosMunicipio(e.target.value); setSelectedSpMunBairro(null); }}
+                          className="px-2 py-1 text-xs rounded-md text-slate-200 bg-slate-800 border border-slate-600"
+                        >
+                          <option value="">Selecione a cidade</option>
+                          {[...SP_MUNICIPIOS_COM_BAIRROS].sort().map(c => (
+                            <option key={c} value={c}>{c.charAt(0) + c.slice(1).toLowerCase()}</option>
+                          ))}
+                        </select>
+                      )}
                       {uf === 'MG' && mgVisualizacao === 'bairros' && (
                         <button
                           onClick={() => { setMgVisualizacao('municipios'); setSelectedMgBairro(null); setMgBairrosMunicipio(''); }}
@@ -2912,6 +3094,19 @@ export default function MapaCampanhaPage() {
                       onBairroClick={handleCeBairroClick}
                       height="100%"
                     />
+                  ) : uf === 'SP' && spMunVisualizacao === 'bairros' && spMunBairrosMunicipio ? (
+                    <SpMunicipiosBairrosMap
+                      municipio={spMunBairrosMunicipio}
+                      votesData={spMunBairrosVotesDisplay}
+                      selectedBairro={selectedSpMunBairro}
+                      onBairroClick={handleSpMunBairroClick}
+                      height="100%"
+                    />
+                  ) : uf === 'SP' && spMunVisualizacao === 'bairros' && !spMunBairrosMunicipio ? (
+                    <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
+                      <MapPin className="h-8 w-8 text-blue-400 opacity-50" />
+                      <span className="text-sm text-center px-4">Selecione uma cidade para ver os bairros</span>
+                    </div>
                   ) : uf === 'MG' && mgVisualizacao === 'bairros' && mgBairrosMunicipio ? (
                     <MgBairrosMap
                       municipio={mgBairrosMunicipio}
@@ -3372,6 +3567,51 @@ export default function MapaCampanhaPage() {
                             </div>
                             <div className="flex items-center gap-2 text-xs">
                               <span className="text-slate-400">Meta: <span className="text-orange-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
+                              <span className="text-slate-500">→</span>
+                              <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
+                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
+                            </div>
+                            {mun.dobradaAtiva && mun.dobradaNome && (
+                              <div className="mt-1 text-xs text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : uf === 'SP' && spMunVisualizacao === 'bairros' && getFilteredSpMunBairros().length > 0 ? (
+                    // Lista de Bairros de municípios SP (IBGE CD2022)
+                    <div className="divide-y divide-slate-700">
+                      {getFilteredSpMunBairros().map((mun, idx) => {
+                        const bairroNome = getSpMunBairroNome(mun.municipio);
+                        const metaAtiva = getMetaAtiva(mun);
+                        const diff = metaAtiva - mun.votosBase;
+                        const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
+                        const isSelected = selectedSpMunBairro === bairroNome;
+                        return (
+                          <div
+                            key={idx}
+                            className={`p-3 hover:bg-slate-700/50 cursor-pointer transition-colors group ${
+                              isSelected ? 'bg-blue-900/30 border-l-2 border-blue-400' :
+                              mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
+                            }`}
+                            onClick={() => handleSpMunBairroClick(bairroNome)}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <MapPin className="h-3.5 w-3.5 text-blue-400 flex-shrink-0" />
+                                <span className="text-white font-medium text-sm truncate">{bairroNome}</span>
+                              </div>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
+                                {mun.prioridade && mun.prioridade !== 'MEDIA' && (
+                                  <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
+                                    {mun.prioridade === 'ALTA' ? '!' : '○'}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-slate-400">Meta: <span className="text-blue-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
                               <span className="text-slate-500">→</span>
                               <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
                               {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
@@ -4508,6 +4748,7 @@ export default function MapaCampanhaPage() {
                           const spDistritos = proj.municipios.filter((m: ProjecaoMunicipio) => isSpDistrito(m.municipio));
                           const ceBairros = proj.municipios.filter((m: ProjecaoMunicipio) => isCeBairro(m.municipio));
                           const mgBairrosEntries = proj.municipios.filter((m: ProjecaoMunicipio) => isMgBairro(m.municipio));
+                          const spMunBairrosEntries = proj.municipios.filter((m: ProjecaoMunicipio) => isSpMunBairro(m.municipio));
                           if (rjBairros.length > 0) {
                             setMunicipioVereador('RIO DE JANEIRO');
                             setVisualizacaoMapa('bairro');
@@ -4517,6 +4758,8 @@ export default function MapaCampanhaPage() {
                           } else if (ceBairros.length > 0) {
                             setMunicipioVereador('FORTALEZA');
                             setVisualizacaoMapa('bairro');
+                          } else if (spMunBairrosEntries.length > 0) {
+                            setSpMunVisualizacao('bairros');
                           } else if (mgBairrosEntries.length > 0) {
                             setMgVisualizacao('bairros');
                           }

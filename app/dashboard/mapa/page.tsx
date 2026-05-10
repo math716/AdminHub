@@ -130,10 +130,26 @@ const DfRegioesMap = dynamic(() => import('@/components/maps/df-regioes-map'), {
   )
 });
 
-const SpDistritosMap = dynamic(() => import('@/components/maps/sp-distritos-map'), { ssr: false });
-const RjBairrosMap   = dynamic(() => import('@/components/maps/rj-bairros-map'),   { ssr: false });
-const CeBairrosMap   = dynamic(() => import('@/components/maps/ce-bairros-map'),   { ssr: false });
-const MgBairrosMap   = dynamic(() => import('@/components/maps/mg-bairros-map'),   { ssr: false });
+const SpDistritosMap        = dynamic(() => import('@/components/maps/sp-distritos-map'),          { ssr: false });
+const SpMunicipiosBairrosMap = dynamic(() => import('@/components/maps/sp-municipios-bairros-map'), { ssr: false });
+const RjBairrosMap           = dynamic(() => import('@/components/maps/rj-bairros-map'),            { ssr: false });
+const CeBairrosMap           = dynamic(() => import('@/components/maps/ce-bairros-map'),            { ssr: false });
+const MgBairrosMap           = dynamic(() => import('@/components/maps/mg-bairros-map'),            { ssr: false });
+
+// Municípios de SP (exceto capital) com bairros disponíveis no GeoJSON IBGE CD2022
+const SP_MUNICIPIOS_COM_BAIRROS = new Set([
+  'ANHEMBI','ARTUR NOGUEIRA','ATIBAIA','BARUERI','BAURU','BEBEDOURO','BERTIOGA',
+  'BOITUVA','BOM JESUS DOS PERDOES','BOTUCATU','BRAGANCA PAULISTA','CAIEIRAS',
+  'CATANDUVA','CUBATAO','DIADEMA','EMBU DAS ARTES','GUARATINGUETA','GUARUJA',
+  'GUARULHOS','HORTOLANDIA','ILHABELA','ITANHAEM','ITAPIRA','ITAQUAQUECETUBA',
+  'ITARARE','ITATINGA','JABOTICABAL','JUNDIAI','MAUA','MIRASSOL','MOCOCA',
+  'MONGAGUA','NOVA ODESSA','OSASCO','OURO VERDE','PAULINIA','PIRACICABA',
+  'PRAIA GRANDE','RIBEIRAO PIRES','RIBEIRAO PRETO','RIO CLARO',
+  'SANTA CRUZ DAS PALMEIRAS','SANTA GERTRUDES','SANTO ANDRE','SANTOS','SUMARE',
+  'SAO BERNARDO DO CAMPO','SAO CAETANO DO SUL','SAO JOSE DO RIO PRETO',
+  'SAO JOSE DOS CAMPOS','SAO MANUEL','SAO SEBASTIAO','SAO VICENTE',
+  'TAMBAU','TATUI','TAUBATE','UBATUBA','VINHEDO',
+]);
 
 // Municípios de MG com bairros disponíveis no GeoJSON IBGE CD2022
 const MG_MUNICIPIOS_COM_BAIRROS = new Set([
@@ -306,6 +322,11 @@ export default function MapaPage() {
   const [selectedCeBairro, setSelectedCeBairro] = useState<string | null>(null);
   const [ceBairrosVotes, setCeBairrosVotes] = useState<Record<string, number>>({});
 
+  // SP Bairros (municípios de SP exceto capital, com GeoJSON IBGE)
+  const [spMunVisualizacao, setSpMunVisualizacao] = useState<'bairros' | 'zonas'>('bairros');
+  const [selectedSpMunBairro, setSelectedSpMunBairro] = useState<string | null>(null);
+  const [spMunBairrosVotes, setSpMunBairrosVotes] = useState<Record<string, number>>({});
+
   // MG Bairros (municípios de Minas Gerais com GeoJSON IBGE)
   const [mgVisualizacao, setMgVisualizacao] = useState<'bairros' | 'zonas'>('bairros');
   const [selectedMgBairro, setSelectedMgBairro] = useState<string | null>(null);
@@ -476,6 +497,47 @@ export default function MapaPage() {
   const handleCeBairroClick = useCallback((nome: string) => {
     setSelectedCeBairro(prev => prev === nome ? null : nome);
   }, []);
+
+  // Detecta se o município selecionado é de SP (não capital) e tem bairros no GeoJSON IBGE
+  const isSpMunicipioBairros = useMemo(() => {
+    if (selectedUf !== 'SP' || !selectedMunicipio || isSaoPauloCapital) return false;
+    const norm = (s: string) =>
+      s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    return SP_MUNICIPIOS_COM_BAIRROS.has(norm(selectedMunicipio.nome));
+  }, [selectedUf, selectedMunicipio, isSaoPauloCapital]);
+
+  const handleSpMunBairroClick = useCallback((nome: string) => {
+    setSelectedSpMunBairro(prev => prev === nome ? null : nome);
+  }, []);
+
+  // Computa votos por bairro de municípios SP via arquivo estático pré-gerado
+  useEffect(() => {
+    if (!isSpMunicipioBairros || !selectedMunicipio || !electoralData?.zonas?.length) {
+      setSpMunBairrosVotes({});
+      return;
+    }
+    const normFull = (s: string) =>
+      s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    const munNorm = normFull(selectedMunicipio.nome);
+    const fileName = munNorm.replace(/\s+/g, '_') + '.json';
+
+    fetch(`/data/tse/sp-zona-bairro/${fileName}`)
+      .then(r => r.json())
+      .then((zonaBairroMap: Record<number, Record<string, number>>) => {
+        if (!zonaBairroMap || Object.keys(zonaBairroMap).length === 0) return;
+        const bairroVotes: Record<string, number> = {};
+        for (const z of electoralData.zonas!) {
+          if (normFull(z.municipio) !== munNorm) continue;
+          const bairroMap = zonaBairroMap[z.zona];
+          if (!bairroMap || !z.votos) continue;
+          for (const [bairro, frac] of Object.entries(bairroMap)) {
+            bairroVotes[bairro] = (bairroVotes[bairro] ?? 0) + Math.round(z.votos * frac);
+          }
+        }
+        setSpMunBairrosVotes(bairroVotes);
+      })
+      .catch(() => {});
+  }, [isSpMunicipioBairros, selectedMunicipio, electoralData]);
 
   // Detecta se o município selecionado é de MG e tem bairros no GeoJSON IBGE
   const isMgMunicipio = useMemo(() => {
@@ -1683,6 +1745,25 @@ export default function MapaPage() {
                           </button>
                         </div>
                       )}
+                      {/* Toggle bairros/zonas — municípios de SP (exceto capital) com GeoJSON */}
+                      {isSpMunicipioBairros && (
+                        <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
+                          <button
+                            onClick={() => { setSpMunVisualizacao('bairros'); setSelectedBairro(null); }}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${spMunVisualizacao === 'bairros' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                            style={spMunVisualizacao === 'bairros' ? { background: '#1a73e8' } : {}}
+                          >
+                            Bairros
+                          </button>
+                          <button
+                            onClick={() => { setSpMunVisualizacao('zonas'); setSelectedSpMunBairro(null); }}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${spMunVisualizacao === 'zonas' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                            style={spMunVisualizacao === 'zonas' ? { background: '#1a73e8' } : {}}
+                          >
+                            Zonas
+                          </button>
+                        </div>
+                      )}
                       {/* Toggle bairros/zonas — municípios de MG com GeoJSON */}
                       {isMgMunicipio && (
                         <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
@@ -1867,6 +1948,59 @@ export default function MapaPage() {
                       </>
                     )}
 
+                    {/* Mapa de bairros SP municípios — para municípios SP (exceto capital) com GeoJSON IBGE */}
+                    {isSpMunicipioBairros && spMunVisualizacao === 'bairros' && (
+                      <>
+                        <div className="flex-1 min-w-0">
+                          <SpMunicipiosBairrosMap
+                            municipio={selectedMunicipio.nome}
+                            votesData={spMunBairrosVotes}
+                            selectedBairro={selectedSpMunBairro}
+                            onBairroClick={handleSpMunBairroClick}
+                            height="100%"
+                          />
+                        </div>
+                        <div className="w-48 flex flex-col rounded-xl overflow-hidden"
+                          style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.2)' }}>
+                          <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
+                            <MapPin className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
+                            <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#4a9ede' }}>Bairros</span>
+                            {Object.keys(spMunBairrosVotes).length > 0 && (
+                              <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{Object.keys(spMunBairrosVotes).length}</span>
+                            )}
+                          </div>
+                          <div className="flex-1 overflow-y-auto scrollbar-dark">
+                            {Object.keys(spMunBairrosVotes).length === 0 ? (
+                              <p className="text-slate-600 text-xs text-center py-6 px-2">Sem dados de bairros</p>
+                            ) : (
+                              Object.entries(spMunBairrosVotes)
+                                .sort(([, a], [, b]) => b - a)
+                                .map(([bairro, votos]) => (
+                                  <button
+                                    key={bairro}
+                                    onClick={() => handleSpMunBairroClick(bairro)}
+                                    className="w-full text-left px-3 py-2 transition-colors cursor-pointer hover:bg-white/5"
+                                    style={{
+                                      borderBottom: '1px solid rgba(74,158,222,0.1)',
+                                      background: selectedSpMunBairro === bairro ? 'rgba(26,115,232,0.15)' : undefined,
+                                    }}
+                                  >
+                                    <div className="text-[11px] font-semibold truncate"
+                                      style={{ color: selectedSpMunBairro === bairro ? '#7dd3fc' : 'rgba(255,255,255,0.7)' }}>
+                                      {bairro}
+                                    </div>
+                                    <div className="font-bold text-sm leading-tight" style={{ color: '#4a9ede' }}>
+                                      {(votos as number).toLocaleString('pt-BR')}
+                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>votos</span>
+                                    </div>
+                                  </button>
+                                ))
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
                     {/* Mapa de bairros MG — para municípios de MG com GeoJSON IBGE */}
                     {isMgMunicipio && mgVisualizacao === 'bairros' && (
                       <>
@@ -1921,7 +2055,7 @@ export default function MapaPage() {
                     )}
 
                     {/* Mapa de bairros (pins) — para outros municípios ou SP/RJ/CE/MG no modo zonas */}
-                    {(!isSaoPauloCapital || spVisualizacao === 'bairros') && (!isRioDeJaneiro || rjVisualizacao === 'zonas') && (!isFortalezaCe || ceVisualizacao === 'zonas') && (!isMgMunicipio || mgVisualizacao === 'zonas') && (!bairrosLoaded || bairrosData.length > 0) && (
+                    {(!isSaoPauloCapital || spVisualizacao === 'bairros') && (!isSpMunicipioBairros || spMunVisualizacao === 'zonas') && (!isRioDeJaneiro || rjVisualizacao === 'zonas') && (!isFortalezaCe || ceVisualizacao === 'zonas') && (!isMgMunicipio || mgVisualizacao === 'zonas') && (!bairrosLoaded || bairrosData.length > 0) && (
                       <div className="flex-1 min-w-0">
                         <MunicipioMap
                           focusZona={focusZonaReq}
@@ -1942,7 +2076,7 @@ export default function MapaPage() {
                     )}
 
                     {/* Lista de zonas — oculta quando SP/RJ/CE/MG estão no modo bairros/distritos */}
-                    {!(isSaoPauloCapital && spVisualizacao === 'distritos') && !(isRioDeJaneiro && rjVisualizacao === 'bairros') && !(isFortalezaCe && ceVisualizacao === 'bairros') && !(isMgMunicipio && mgVisualizacao === 'bairros') && <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0 && !isSaoPauloCapital && !isRioDeJaneiro) ? 'flex-1' : 'w-48'}`}
+                    {!(isSaoPauloCapital && spVisualizacao === 'distritos') && !(isSpMunicipioBairros && spMunVisualizacao === 'bairros') && !(isRioDeJaneiro && rjVisualizacao === 'bairros') && !(isFortalezaCe && ceVisualizacao === 'bairros') && !(isMgMunicipio && mgVisualizacao === 'bairros') && <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0 && !isSaoPauloCapital && !isRioDeJaneiro) ? 'flex-1' : 'w-48'}`}
                       style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.2)' }}>
                       <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                         <Layers className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
