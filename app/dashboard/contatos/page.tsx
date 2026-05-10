@@ -1,0 +1,1083 @@
+'use client';
+
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import {
+  BookUser, Plus, Trash2, Mail, MapPin, Loader2, X, Search,
+  User, FileUp, Upload, CheckCircle2, AlertCircle,
+  Map, List, Globe, Layers, Building2, ChevronRight,
+  Users, MessageSquare, Send, ExternalLink, Copy, Check,
+  UserCheck, UserX, Phone, ArrowLeft,
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import { ESTADOS_BRASIL } from '@/lib/types';
+import type { ContatoMapItem } from '@/components/maps/contatos-municipio-map';
+
+// ---------------------------------------------------------------------------
+// Dynamic map imports
+// ---------------------------------------------------------------------------
+const BrazilMap = dynamic(() => import('@/components/maps/brazil-map'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'rgba(7,29,54,0.5)' }}>
+      <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+    </div>
+  ),
+});
+
+const StateMap = dynamic(() => import('@/components/maps/state-map'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'rgba(7,29,54,0.5)' }}>
+      <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+    </div>
+  ),
+});
+
+const ContatosMunicipioMap = dynamic(() => import('@/components/maps/contatos-municipio-map'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'rgba(7,29,54,0.5)' }}>
+      <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+    </div>
+  ),
+});
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function pointInPolygon(lng: number, lat: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if ((yi > lat) !== (yj > lat) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function pointInFeature(lng: number, lat: number, geometry: any): boolean {
+  if (!geometry) return false;
+  const rings: number[][][] =
+    geometry.type === 'Polygon' ? [geometry.coordinates[0]] :
+    geometry.type === 'MultiPolygon' ? geometry.coordinates.map((p: number[][][]) => p[0]) : [];
+  return rings.some(r => pointInPolygon(lng, lat, r));
+}
+function normalizeWA(n: string): string {
+  const d = n.replace(/\D/g, '');
+  if (d.startsWith('55') && d.length >= 12) return d;
+  if (d.length >= 10) return `55${d}`;
+  return d;
+}
+function waLink(numero: string, msg: string): string {
+  return `https://wa.me/${normalizeWA(numero)}?text=${encodeURIComponent(msg)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+interface Contato {
+  id: string; nome: string; numero: string;
+  email?: string; endereco?: string;
+  lat?: number; lng?: number;
+  createdAt: string; createdBy?: { name: string };
+}
+
+const EMPTY_FORM = { nome: '', numero: '', email: '', endereco: '' };
+
+// ── CSV helpers ──────────────────────────────────────────────────────────────
+function parseCsv(text: string): { headers: string[]; rows: Record<string, string>[] } {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return { headers: [], rows: [] };
+  const parseRow = (line: string): string[] => {
+    const result: string[] = []; let current = ''; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { if (inQ && line[i+1] === '"') { current += '"'; i++; } else inQ = !inQ; }
+      else if (ch === ',' && !inQ) { result.push(current.trim()); current = ''; }
+      else current += ch;
+    }
+    result.push(current.trim()); return result;
+  };
+  const headers = parseRow(lines[0]);
+  const rows = lines.slice(1).filter(l => l.trim()).map(line => {
+    const values = parseRow(line); const row: Record<string, string> = {};
+    headers.forEach((h, i) => { row[h] = values[i] ?? ''; }); return row;
+  });
+  return { headers, rows };
+}
+function normStr(s: string) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim(); }
+interface DetectedColumns { nome: string; numero: string; email: string; endereco: string; }
+function detectColumns(headers: string[]): DetectedColumns {
+  const result: DetectedColumns = { nome: '', numero: '', email: '', endereco: '' };
+  for (const h of headers) {
+    const n = normStr(h);
+    if (/carimbo|timestamp|data.hora|submitted/.test(n)) continue;
+    if (!result.nome && /nome|name/.test(n)) { result.nome = h; }
+    else if (!result.numero && /telefone|celular|whatsapp|numero|fone|phone/.test(n)) { result.numero = h; }
+    else if (!result.email && /email/.test(n)) { result.email = h; }
+    else if (!result.endereco && /endereco|rua|bairro|logradouro|address/.test(n)) { result.endereco = h; }
+  }
+  return result;
+}
+function buildContatosCsv(rows: Record<string, string>[], cols: DetectedColumns) {
+  return rows.map(row => ({
+    nome: cols.nome ? row[cols.nome]?.trim() ?? '' : '',
+    numero: cols.numero ? row[cols.numero]?.trim() ?? '' : '',
+    email: cols.email ? row[cols.email]?.trim() ?? '' : '',
+    endereco: cols.endereco ? row[cols.endereco]?.trim() ?? '' : '',
+  })).filter(c => c.nome && c.numero);
+}
+
+function WhatsAppIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg className={className} style={style} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+export default function ContatosPage() {
+  const { status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => { if (status === 'unauthenticated') router.push('/login'); }, [status, router]);
+
+  // ── Tab ──
+  const [activeTab, setActiveTab] = useState<'lista' | 'mapa'>('lista');
+
+  // ── Contatos ──
+  const [contatos, setContatos] = useState<Contato[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  // ── Modal Novo Contato ──
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [resolvedCoords, setResolvedCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  // ── Modal CSV ──
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importStep, setImportStep] = useState<1 | 2 | 3>(1);
+  const [detectedCols, setDetectedCols] = useState<DetectedColumns>({ nome: '', numero: '', email: '', endereco: '' });
+  const [csvPreview, setCsvPreview] = useState<Array<{ nome: string; numero: string; email: string; endereco: string }>>([]);
+  const [totalRows, setTotalRows] = useState(0);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; errors: number; geocodificados: number } | null>(null);
+  const [importError, setImportError] = useState('');
+
+  // ── Re-geocoding ──
+  const [reGeocodingId, setReGeocodingId] = useState<string | null>(null);
+
+  // ── Mapa ──
+  const [view, setView] = useState<'brasil' | 'estado' | 'municipio'>('brasil');
+  const [selectedUf, setSelectedUf] = useState('');
+  const [selectedStateName, setSelectedStateName] = useState('');
+  const [selectedMunicipio, setSelectedMunicipio] = useState<{ codigo: string; nome: string } | null>(null);
+  const [contactsByMunCode, setContactsByMunCode] = useState<Record<string, number>>({});
+  const [stateContactIds, setStateContactIds] = useState<Set<string>>(new Set());
+  const [municipioContacts, setMunicipioContacts] = useState<ContatoMapItem[]>([]);
+  const [pipLoading, setPipLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [mapSearch, setMapSearch] = useState('');
+
+  // ── Disparo ──
+  const [showMsg, setShowMsg] = useState(false);
+  const [msgText, setMsgText] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [sendingApi, setSendingApi] = useState(false);
+  const [sendStatus, setSendStatus] = useState<Record<string, 'idle' | 'sending' | 'ok' | 'err'>>({});
+  const [sendErrors, setSendErrors] = useState<Record<string, string>>({});
+
+  // ── Fetch ──
+  const fetchContatos = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/contacts');
+      const data = await res.json();
+      setContatos(Array.isArray(data) ? data : []);
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { if (status === 'authenticated') fetchContatos(); }, [status, fetchContatos]);
+
+  // ── Geocoded subset ──
+  const geocodedContacts = useMemo(
+    () => contatos.filter(c => c.lat != null && c.lng != null) as (Contato & { lat: number; lng: number })[],
+    [contatos]
+  );
+
+  // Cache para GeoJSON dos estados (evita re-fetch)
+  const geojsonCache = useRef<Record<string, any>>({});
+
+  const fetchStateGeojson = useCallback(async (uf: string) => {
+    if (geojsonCache.current[uf]) return geojsonCache.current[uf];
+    const res = await fetch(`/api/ibge/geojson?type=estado&uf=${uf}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    geojsonCache.current[uf] = data;
+    return data;
+  }, []);
+
+  // ── PiP: compute contacts per municipality ──
+  const computePiP = useCallback(async (uf: string) => {
+    if (!uf || uf === 'BR') { setContactsByMunCode({}); setStateContactIds(new Set()); return; }
+    setPipLoading(true);
+    try {
+      const geojson = await fetchStateGeojson(uf);
+      if (!geojson) return;
+      const counts: Record<string, number> = {};
+      const inState = new Set<string>();
+      for (const f of geojson.features ?? []) {
+        const code = String(f.properties?.codarea ?? '');
+        if (!code) continue;
+        for (const c of geocodedContacts) {
+          if (pointInFeature(c.lng, c.lat, f.geometry)) {
+            inState.add(c.id);
+            counts[code] = (counts[code] ?? 0) + 1;
+          }
+        }
+      }
+      setContactsByMunCode(counts);
+      setStateContactIds(inState);
+    } catch { setContactsByMunCode({}); setStateContactIds(new Set()); }
+    finally { setPipLoading(false); }
+  }, [geocodedContacts, fetchStateGeojson]);
+
+  // ── PiP: contacts for selected municipality ──
+  const computeMunicipioContacts = useCallback(async (uf: string, codigo: string) => {
+    if (!uf || !codigo) { setMunicipioContacts([]); return; }
+    try {
+      const geojson = await fetchStateGeojson(uf);
+      if (!geojson) { setMunicipioContacts([]); return; }
+      const feature = (geojson.features ?? []).find((f: any) =>
+        String(f.properties?.codarea ?? '') === String(codigo)
+      );
+      if (!feature) { setMunicipioContacts([]); return; }
+      const inside = geocodedContacts.filter(c => pointInFeature(c.lng, c.lat, feature.geometry));
+      setMunicipioContacts(inside.map(c => ({ id: c.id, nome: c.nome, numero: c.numero, lat: c.lat, lng: c.lng, endereco: c.endereco })));
+    } catch { setMunicipioContacts([]); }
+  }, [geocodedContacts, fetchStateGeojson]);
+
+  const handleStateClick = (uf: string, name: string) => {
+    setSelectedUf(uf); setSelectedStateName(name);
+    setSelectedMunicipio(null); setSelectedIds(new Set()); setMunicipioContacts([]);
+    setView('estado'); computePiP(uf);
+  };
+  const handleMunicipioClick = (codigo: string, nome: string) => {
+    setSelectedMunicipio({ codigo, nome }); setSelectedIds(new Set());
+    setView('municipio'); computeMunicipioContacts(selectedUf, codigo);
+  };
+  const goBack = () => {
+    if (view === 'municipio') { setView('estado'); setSelectedMunicipio(null); setMunicipioContacts([]); setSelectedIds(new Set()); }
+    else { setView('brasil'); setSelectedUf(''); setSelectedMunicipio(null); setContactsByMunCode({}); setStateContactIds(new Set()); setSelectedIds(new Set()); }
+  };
+  const toggleContact = useCallback((id: string) => {
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }, []);
+
+  // ── Sidebar list for map tab ──
+  const mapSidebarContacts = useMemo(() => {
+    const base =
+      view === 'municipio' ? municipioContacts :
+      view === 'estado' ? geocodedContacts.filter(c => stateContactIds.has(c.id)) :
+      geocodedContacts;
+    if (!mapSearch.trim()) return base;
+    const q = mapSearch.toLowerCase();
+    return base.filter(c => c.nome.toLowerCase().includes(q) || c.numero.includes(q));
+  }, [view, municipioContacts, geocodedContacts, stateContactIds, mapSearch]);
+
+  const selectAll = () => setSelectedIds(new Set(mapSidebarContacts.map(c => c.id)));
+  const clearAll  = () => setSelectedIds(new Set());
+
+  // ── Re-geocode existing contact ──
+  const handleReGeocode = useCallback(async (id: string, endereco: string) => {
+    if (!endereco.trim() || reGeocodingId) return;
+    setReGeocodingId(id);
+    try {
+      const geoRes = await fetch(`/api/geocode?address=${encodeURIComponent(endereco)}`);
+      const geoData = await geoRes.json();
+      if (!geoData.results?.[0]) return;
+      const { lat, lng } = geoData.results[0];
+      await fetch(`/api/contacts/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lng }),
+      });
+      setContatos(prev => prev.map(c => c.id === id ? { ...c, lat, lng } : c));
+    } finally { setReGeocodingId(null); }
+  }, [reGeocodingId]);
+
+  const copyNumbers = async () => {
+    const nums = contatos.filter(c => selectedIds.has(c.id)).map(c => normalizeWA(c.numero)).join('\n');
+    await navigator.clipboard.writeText(nums);
+    setCopied(true); setTimeout(() => setCopied(false), 2500);
+  };
+  const selectedContactsList = useMemo(() => contatos.filter(c => selectedIds.has(c.id)), [contatos, selectedIds]);
+
+  // SP capital: ativa polígonos de bairros selecionáveis
+  const isSpCapital = view === 'municipio' && selectedUf === 'SP' && selectedMunicipio?.codigo === '3550308';
+
+  const handleDistritoSelect = useCallback((nome: string, ids: string[]) => {
+    setSelectedIds(new Set(ids));
+    if (ids.length > 0) {
+      toast.success(`${ids.length} contato${ids.length !== 1 ? 's' : ''} selecionado${ids.length !== 1 ? 's' : ''} em ${nome}`);
+    } else {
+      toast.info(`Nenhum contato encontrado em ${nome}`);
+    }
+  }, []);
+
+  const openMsgFor = (id: string) => {
+    setSelectedIds(new Set([id]));
+    setSendStatus({}); setSendErrors({});
+    setMsgText(''); setShowMsg(true);
+  };
+
+  const handleSendApi = async () => {
+    if (!msgText.trim() || sendingApi) return;
+    const list = contatos.filter(c => selectedIds.has(c.id));
+    setSendingApi(true);
+    const statusMap: Record<string, 'idle' | 'sending' | 'ok' | 'err'> = {};
+    const errMap: Record<string, string> = {};
+    list.forEach(c => { statusMap[c.id] = 'idle'; });
+    setSendStatus({ ...statusMap });
+
+    for (const c of list) {
+      setSendStatus(prev => ({ ...prev, [c.id]: 'sending' }));
+      try {
+        const res = await fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ numero: c.numero, message: msgText }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          statusMap[c.id] = 'ok';
+        } else {
+          statusMap[c.id] = 'err';
+          errMap[c.id] = data.error ?? 'Erro desconhecido';
+        }
+      } catch {
+        statusMap[c.id] = 'err';
+        errMap[c.id] = 'Falha de rede';
+      }
+      setSendStatus({ ...statusMap });
+      setSendErrors({ ...errMap });
+      // Small delay to avoid rate limiting
+      if (list.indexOf(c) < list.length - 1) await new Promise(r => setTimeout(r, 500));
+    }
+    setSendingApi(false);
+  };
+
+  // ── Novo contato ──
+  const geocodeEndereco = async (endereco: string) => {
+    if (!endereco.trim()) return;
+    setGeoLoading(true); setResolvedCoords(null);
+    try {
+      const res = await fetch(`/api/geocode?address=${encodeURIComponent(endereco)}`);
+      const data = await res.json();
+      if (data.results?.[0]) setResolvedCoords({ lat: data.results[0].lat, lng: data.results[0].lng });
+    } finally { setGeoLoading(false); }
+  };
+
+  const handleSave = async () => {
+    if (!form.nome.trim() || !form.numero.trim()) { setSaveError('Nome e número são obrigatórios.'); return; }
+    setSaving(true); setSaveError('');
+    try {
+      let lat = resolvedCoords?.lat ?? null;
+      let lng = resolvedCoords?.lng ?? null;
+      if (!lat && form.endereco.trim()) {
+        const res = await fetch(`/api/geocode?address=${encodeURIComponent(form.endereco)}`);
+        const data = await res.json();
+        if (data.results?.[0]) { lat = data.results[0].lat; lng = data.results[0].lng; }
+      }
+      const res = await fetch('/api/contacts', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, lat, lng }),
+      });
+      if (!res.ok) { const err = await res.json(); setSaveError(err.error ?? 'Erro ao salvar.'); return; }
+      setShowModal(false); setForm({ ...EMPTY_FORM }); setResolvedCoords(null); fetchContatos();
+    } finally { setSaving(false); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Remover este contato?')) return;
+    try { await fetch(`/api/contacts/${id}`, { method: 'DELETE' }); setContatos(prev => prev.filter(c => c.id !== id)); }
+    catch { toast.error('Erro ao remover contato.'); }
+  };
+
+  // ── CSV import ──
+  const handleCsvFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const { headers, rows } = parseCsv(text);
+      if (headers.length === 0 || rows.length === 0) { setImportError('Arquivo inválido ou sem dados.'); return; }
+      const cols = detectColumns(headers);
+      if (!cols.nome || !cols.numero) { setImportError(`Colunas obrigatórias não encontradas.\nEncontradas: ${headers.join(', ')}.\nRenomeie para: Nome, Whatsapp, Email, Endereço.`); return; }
+      setCsvPreview(buildContatosCsv(rows, cols)); setDetectedCols(cols); setTotalRows(rows.length); setImportError(''); setImportStep(2);
+    };
+    reader.onerror = () => setImportError('Erro ao ler o arquivo.');
+    reader.readAsText(file, 'UTF-8'); e.target.value = '';
+  };
+
+  const handleImport = async () => {
+    if (!csvPreview.length) return;
+    setImporting(true); setImportError('');
+    try {
+      const res = await fetch('/api/contacts/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contatos: csvPreview }) });
+      const data = await res.json();
+      if (!res.ok) { setImportError(data.error ?? 'Erro ao importar.'); return; }
+      setImportResult({ imported: data.imported, errors: data.errors, geocodificados: data.geocodificados ?? 0 });
+      setImportStep(3); fetchContatos();
+    } finally { setImporting(false); }
+  };
+
+  const resetImport = () => {
+    setShowImportModal(false);
+    setTimeout(() => { setImportStep(1); setDetectedCols({ nome: '', numero: '', email: '', endereco: '' }); setCsvPreview([]); setTotalRows(0); setImportResult(null); setImportError(''); }, 300);
+  };
+
+  // ── Lista filter ──
+  const filtered = contatos.filter(c => {
+    const q = search.toLowerCase();
+    return c.nome.toLowerCase().includes(q) || c.numero.includes(q) || (c.email ?? '').toLowerCase().includes(q) || (c.endereco ?? '').toLowerCase().includes(q);
+  });
+
+  const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none transition-all';
+  const inputStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' };
+
+  if (status === 'loading') return (
+    <div className="flex items-center justify-center h-screen">
+      <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#c9a227' }} />
+    </div>
+  );
+
+  return (
+    <div className="space-y-5">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}>
+            <BookUser className="w-5 h-5" style={{ color: '#c9a227' }} />
+          </div>
+          <div>
+            <h1 className="text-white font-bold text-xl tracking-tight">Contatos</h1>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              {contatos.length} contato{contatos.length !== 1 ? 's' : ''} · {geocodedContacts.length} no mapa
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
+            style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.25)', color: '#4ade80' }}>
+            <FileUp className="w-4 h-4" /> Importar CSV
+          </button>
+          <button onClick={() => { setShowModal(true); setForm({ ...EMPTY_FORM }); setResolvedCoords(null); setSaveError(''); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+            style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}>
+            <Plus className="w-4 h-4" /> Novo Contato
+          </button>
+        </div>
+      </div>
+
+      {/* ── Tabs ── */}
+      <div className="flex gap-1 p-1 rounded-xl w-fit"
+        style={{ background: 'rgba(4,17,31,0.6)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        {([['lista', List, 'Lista'], ['mapa', Map, 'Mapa']] as const).map(([tab, Icon, label]) => (
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+            style={activeTab === tab
+              ? { background: 'rgba(201,162,39,0.15)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.3)' }
+              : { color: 'rgba(255,255,255,0.45)', border: '1px solid transparent' }
+            }>
+            <Icon className="w-4 h-4" />{label}
+          </button>
+        ))}
+      </div>
+
+      {/* ══════════════════════════════ LISTA ══════════════════════════════ */}
+      {activeTab === 'lista' && (
+        <>
+          {/* Search */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'rgba(255,255,255,0.35)' }} />
+            <input type="text" placeholder="Buscar por nome, número, email..."
+              value={search} onChange={e => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-white placeholder-white/20 outline-none transition-all"
+              style={inputStyle} />
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center h-48">
+              <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#4a9ede' }} />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              <BookUser className="w-12 h-12 mb-3 opacity-30" />
+              <p className="text-sm">{search ? 'Nenhum contato encontrado.' : 'Nenhum contato cadastrado ainda.'}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filtered.map(c => (
+                <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  className="rounded-xl p-4 flex flex-col gap-2 relative group"
+                  style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' }}>
+                  <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button onClick={() => openMsgFor(c.id)}
+                      className="p-1.5 rounded-lg hover:bg-green-500/10 transition-all"
+                      style={{ color: 'rgba(37,211,102,0.7)' }} title="Enviar mensagem">
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => handleDelete(c.id)}
+                      className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
+                      style={{ color: 'rgba(255,255,255,0.4)' }}>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 pr-8">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.2)' }}>
+                      <User className="w-4 h-4" style={{ color: '#c9a227' }} />
+                    </div>
+                    <span className="font-semibold text-white text-sm leading-tight">{c.nome}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                    <WhatsAppIcon className="w-3.5 h-3.5 text-green-400 flex-shrink-0" /><span>{c.numero}</span>
+                  </div>
+                  {c.email && (
+                    <div className="flex items-center gap-2 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                      <Mail className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" /><span className="truncate">{c.email}</span>
+                    </div>
+                  )}
+                  {c.endereco && (
+                    <div className="flex items-start gap-2 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                      <MapPin className="w-3.5 h-3.5 text-orange-400 flex-shrink-0 mt-0.5" /><span className="leading-tight">{c.endereco}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 mt-1">
+                    {c.lat && c.lng ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede', border: '1px solid rgba(74,158,222,0.2)' }}>
+                        📍 No mapa
+                      </span>
+                    ) : c.endereco ? (
+                      <button
+                        onClick={() => handleReGeocode(c.id, c.endereco!)}
+                        disabled={reGeocodingId === c.id}
+                        className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full transition-all hover:opacity-80 disabled:opacity-50"
+                        style={{ background: 'rgba(201,162,39,0.1)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.25)' }}>
+                        {reGeocodingId === c.id
+                          ? <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                          : <MapPin className="w-2.5 h-2.5" />}
+                        {reGeocodingId === c.id ? 'Localizando...' : 'Localizar no mapa'}
+                      </button>
+                    ) : null}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ══════════════════════════════ MAPA ══════════════════════════════ */}
+      {activeTab === 'mapa' && (
+        <>
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-1 text-sm rounded-xl px-4 py-2.5 w-fit flex-wrap"
+            style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(201,162,39,0.13)' }}>
+            <button onClick={() => { setView('brasil'); setSelectedUf(''); setSelectedMunicipio(null); setContactsByMunCode({}); setStateContactIds(new Set()); setSelectedIds(new Set()); }}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
+              style={view === 'brasil' ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 } : { color: 'rgba(255,255,255,0.4)' }}>
+              <Globe className="h-3.5 w-3.5" /> Brasil
+            </button>
+            <ChevronRight className="h-3.5 w-3.5" style={{ color: 'rgba(255,255,255,0.2)' }} />
+            {view !== 'brasil' ? (
+              <button onClick={() => { setView('estado'); setSelectedMunicipio(null); setMunicipioContacts([]); setSelectedIds(new Set()); }}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
+                style={view === 'estado' ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 } : { color: 'rgba(255,255,255,0.4)' }}>
+                <Layers className="h-3.5 w-3.5" /> {selectedStateName}
+              </button>
+            ) : (
+              <span className="flex items-center gap-1.5 px-2 py-1" style={{ color: 'rgba(255,255,255,0.2)' }}><Layers className="h-3.5 w-3.5" /> Estado</span>
+            )}
+            <ChevronRight className="h-3.5 w-3.5" style={{ color: 'rgba(255,255,255,0.2)' }} />
+            {selectedMunicipio ? (
+              <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg font-semibold"
+                style={{ background: 'rgba(201,162,39,0.12)', color: '#c9a227' }}>
+                <Building2 className="h-3.5 w-3.5" /> {selectedMunicipio.nome}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 px-2 py-1" style={{ color: 'rgba(255,255,255,0.2)' }}><Building2 className="h-3.5 w-3.5" /> Município</span>
+            )}
+            {view !== 'brasil' && (
+              <button onClick={goBack}
+                className="ml-2 flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all hover:bg-white/10"
+                style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <ArrowLeft className="h-3 w-3" /> Voltar
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            {/* Sidebar */}
+            <div className="space-y-3">
+              {/* Stats */}
+              <div className="rounded-xl p-4" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' }}>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  {view === 'municipio' && selectedMunicipio ? selectedMunicipio.nome : view === 'estado' ? selectedStateName : 'Visão Geral'}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.15)' }}>
+                    <p className="text-lg font-bold" style={{ color: '#c9a227' }}>
+                      {view === 'municipio' ? municipioContacts.length : view === 'estado' ? stateContactIds.size : contatos.length}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                      {view === 'municipio' ? 'neste município' : view === 'estado' ? 'neste estado' : 'total'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(74,158,222,0.08)', border: '1px solid rgba(74,158,222,0.15)' }}>
+                    <p className="text-lg font-bold" style={{ color: '#4a9ede' }}>
+                      {view === 'municipio' ? municipioContacts.length : view === 'estado' ? stateContactIds.size : geocodedContacts.length}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>no mapa</p>
+                  </div>
+                </div>
+                {selectedIds.size > 0 && (
+                  <div className="mt-2 rounded-lg p-2 text-center" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                    <p className="text-sm font-bold" style={{ color: '#4ade80' }}>{selectedIds.size} selecionados</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Search + list */}
+              {view !== 'brasil' && (
+                <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' }}>
+                  <div className="p-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div className="flex items-center gap-2 rounded-lg px-2.5 py-2"
+                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.35)' }} />
+                      <input value={mapSearch} onChange={e => setMapSearch(e.target.value)}
+                        placeholder="Buscar..." className="flex-1 bg-transparent text-white text-xs outline-none placeholder-white/20" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                    <button onClick={selectAll} className="flex items-center gap-1 text-xs transition-all hover:opacity-70" style={{ color: '#4a9ede' }}>
+                      <UserCheck className="h-3.5 w-3.5" /> Todos
+                    </button>
+                    {selectedIds.size > 0 && (
+                      <button onClick={clearAll} className="flex items-center gap-1 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                        <UserX className="h-3.5 w-3.5" /> Limpar
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-56 overflow-y-auto divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                    {mapSidebarContacts.length === 0 ? (
+                      <p className="text-xs text-center py-5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                        {view === 'municipio' ? 'Nenhum contato geolocado aqui' : pipLoading ? 'Calculando...' : 'Nenhum contato neste estado'}
+                      </p>
+                    ) : mapSidebarContacts.map(c => {
+                      const sel = selectedIds.has(c.id);
+                      return (
+                        <button key={c.id} onClick={() => toggleContact(c.id)}
+                          className="w-full text-left px-3 py-2.5 transition-all hover:bg-white/5 flex items-center gap-2.5">
+                          <span className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-all"
+                            style={sel ? { background: '#c9a227' } : { border: '1px solid rgba(255,255,255,0.2)' }}>
+                            {sel && <Check className="h-3 w-3 text-[#04111f]" strokeWidth={3} />}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-xs font-medium truncate">{c.nome}</p>
+                            <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.numero}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {selectedIds.size > 0 && (
+                <button onClick={() => setShowMsg(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                  style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}>
+                  <MessageSquare className="h-4 w-4" /> Disparar mensagem ({selectedIds.size})
+                </button>
+              )}
+            </div>
+
+            {/* Map */}
+            <div className="lg:col-span-3">
+              <div className="rounded-2xl overflow-hidden relative" style={{ height: 560, background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(201,162,39,0.13)' }}>
+                {pipLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center z-10 rounded-2xl" style={{ background: 'rgba(4,17,31,0.6)' }}>
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: '#4a9ede' }} />
+                    <span className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>Calculando zonas...</span>
+                  </div>
+                )}
+                <div className="h-full p-3">
+                  {view === 'brasil' && <BrazilMap onStateClick={handleStateClick} />}
+                  {view === 'estado' && (
+                    <StateMap uf={selectedUf} stateName={selectedStateName}
+                      votesData={contactsByMunCode} onMunicipioClick={handleMunicipioClick}
+                      valueLabel="contatos" disableSubdivisao />
+                  )}
+                  {view === 'municipio' && (
+                    municipioContacts.length === 0 ? (
+                      <div className="h-full flex flex-col items-center justify-center gap-3">
+                        <MapPin className="h-12 w-12" style={{ color: 'rgba(255,255,255,0.15)' }} />
+                        <div className="text-center">
+                          <p className="text-white font-medium">Nenhum contato geolocado</p>
+                          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                            Cadastre endereços nos contatos para que apareçam no mapa.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <ContatosMunicipioMap
+                        contacts={municipioContacts}
+                        selectedIds={selectedIds}
+                        onToggle={toggleContact}
+                        height="100%"
+                        showSpDistritos={isSpCapital}
+                        onDistritoSelect={handleDistritoSelect}
+                      />
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ══════════════════ MODAL Novo Contato ══════════════════ */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md rounded-2xl shadow-2xl"
+              style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(201,162,39,0.25)' }}>
+              <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(201,162,39,0.15)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}>
+                    <Users className="w-4 h-4" style={{ color: '#c9a227' }} />
+                  </div>
+                  <h2 className="text-white font-semibold">Novo Contato</h2>
+                </div>
+                <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(255,255,255,0.4)' }}>Nome Completo *</label>
+                  <input className={inputClass} style={inputStyle} placeholder="Ex: João da Silva" value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    <WhatsAppIcon className="w-3.5 h-3.5 text-green-400" /> WhatsApp *
+                  </label>
+                  <input className={inputClass} style={inputStyle} placeholder="(61) 99999-0000" value={form.numero} onChange={e => setForm(f => ({ ...f, numero: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(255,255,255,0.4)' }}>Email</label>
+                  <input type="email" className={inputClass} style={inputStyle} placeholder="joao@email.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(255,255,255,0.4)' }}>Endereço</label>
+                  <div className="flex gap-2">
+                    <input className="flex-1 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none" style={inputStyle}
+                      placeholder="Rua, número, cidade-UF" value={form.endereco}
+                      onChange={e => { setForm(f => ({ ...f, endereco: e.target.value })); setResolvedCoords(null); }} />
+                    <button onClick={() => geocodeEndereco(form.endereco)} disabled={!form.endereco.trim() || geoLoading}
+                      className="px-3 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80 disabled:opacity-40"
+                      style={{ background: 'rgba(74,158,222,0.15)', border: '1px solid rgba(74,158,222,0.25)', color: '#4a9ede' }}>
+                      {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {resolvedCoords && (
+                    <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: '#4ade80' }}>
+                      <CheckCircle2 className="w-3 h-3" /> Localizado — aparecerá no Mapa de Contatos
+                    </p>
+                  )}
+                </div>
+                {saveError && (
+                  <div className="flex items-center gap-2 text-sm rounded-xl px-3 py-2.5" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}>
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" /> {saveError}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-3 px-6 py-4" style={{ borderTop: '1px solid rgba(201,162,39,0.15)' }}>
+                <button onClick={() => setShowModal(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:text-white"
+                  style={{ border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>Cancelar</button>
+                <button onClick={handleSave} disabled={saving}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}>
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Salvar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════ MODAL Importar CSV ══════════════════ */}
+      <AnimatePresence>
+        {showImportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-lg rounded-2xl shadow-2xl"
+              style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(201,162,39,0.25)' }}>
+              <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(201,162,39,0.15)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}>
+                    <FileUp className="w-4 h-4" style={{ color: '#c9a227' }} />
+                  </div>
+                  <h2 className="text-white font-semibold">Importar via CSV</h2>
+                </div>
+                <button onClick={resetImport} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-6">
+                {importStep === 1 && (
+                  <div className="space-y-4">
+                    <p className="text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>Selecione um arquivo <strong className="text-white">.csv</strong> exportado do Google Forms ou de qualquer planilha.</p>
+                    <label className="flex flex-col items-center justify-center gap-3 rounded-xl p-8 cursor-pointer transition-all hover:opacity-80"
+                      style={{ border: '2px dashed rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.03)' }}>
+                      <Upload className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.3)' }} />
+                      <div className="text-center">
+                        <p className="text-sm text-white">Clique para selecionar</p>
+                        <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>Formato .csv</p>
+                      </div>
+                      <input type="file" accept=".csv,text/csv" onChange={handleCsvFile} className="hidden" />
+                    </label>
+                    {importError && (
+                      <div className="flex items-start gap-2 text-sm rounded-xl px-3 py-2.5 whitespace-pre-line" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}>
+                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /><span>{importError}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {importStep === 2 && (
+                  <div className="space-y-4">
+                    <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                      <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>Colunas detectadas</p>
+                      <div className="flex flex-wrap gap-2">
+                        {[['Nome', detectedCols.nome, '#c9a227'], ['WhatsApp', detectedCols.numero, '#4ade80'], ...(detectedCols.email ? [['Email', detectedCols.email, '#4a9ede']] : []), ...(detectedCols.endereco ? [['Endereço', detectedCols.endereco, '#fb923c']] : [])].map(([label, val, color]) => (
+                          <span key={label as string} className="text-xs px-2.5 py-1 rounded-full" style={{ background: `${color}18`, color: color as string, border: `1px solid ${color}33` }}>
+                            {label as string} → {val as string}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                      <span className="text-white font-semibold">{csvPreview.length}</span> de {totalRows} linhas serão importadas
+                    </p>
+                    <div className="max-h-52 overflow-y-auto space-y-1.5">
+                      {csvPreview.slice(0, 50).map((c, i) => (
+                        <div key={i} className="rounded-lg px-3 py-2 flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,162,39,0.15)' }}>
+                            <User className="w-3.5 h-3.5" style={{ color: '#c9a227' }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-sm font-medium truncate">{c.nome}</p>
+                            <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.numero}{c.endereco ? ` · ${c.endereco}` : ''}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {csvPreview.length > 50 && <p className="text-xs text-center py-2" style={{ color: 'rgba(255,255,255,0.3)' }}>... e mais {csvPreview.length - 50}</p>}
+                    </div>
+                    {detectedCols.endereco && (
+                      <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs" style={{ background: 'rgba(74,158,222,0.07)', border: '1px solid rgba(74,158,222,0.15)', color: '#4a9ede' }}>
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0" /> Endereços serão geocodificados automaticamente.
+                      </div>
+                    )}
+                    {importError && (
+                      <div className="flex items-center gap-2 text-sm rounded-xl px-3 py-2.5" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}>
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />{importError}
+                      </div>
+                    )}
+                    <div className="flex gap-3">
+                      <button onClick={() => setImportStep(1)} disabled={importing}
+                        className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-40"
+                        style={{ border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>Voltar</button>
+                      <button onClick={handleImport} disabled={importing}
+                        className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
+                        style={{ background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}>
+                        {importing ? <><Loader2 className="w-4 h-4 animate-spin" /> Importando...</> : <><Upload className="w-4 h-4" /> Importar {csvPreview.length}</>}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {importStep === 3 && importResult && (
+                  <div className="flex flex-col items-center justify-center py-6 gap-4">
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)' }}>
+                      <CheckCircle2 className="w-8 h-8" style={{ color: '#4ade80' }} />
+                    </div>
+                    <div className="text-center space-y-1">
+                      <p className="text-white font-bold text-lg">{importResult.imported} contato{importResult.imported !== 1 ? 's' : ''} importado{importResult.imported !== 1 ? 's' : ''}!</p>
+                      {importResult.geocodificados > 0 && (
+                        <p className="text-sm flex items-center justify-center gap-1" style={{ color: '#4a9ede' }}>
+                          <MapPin className="w-3.5 h-3.5" /> {importResult.geocodificados} endereço{importResult.geocodificados !== 1 ? 's' : ''} localizado{importResult.geocodificados !== 1 ? 's' : ''} no mapa
+                        </p>
+                      )}
+                      {importResult.errors > 0 && <p className="text-sm" style={{ color: '#fbbf24' }}>{importResult.errors} linha{importResult.errors !== 1 ? 's' : ''} ignorada{importResult.errors !== 1 ? 's' : ''}</p>}
+                    </div>
+                    <button onClick={resetImport}
+                      className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                      style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}>Concluir</button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════ MODAL Disparo ══════════════════ */}
+      {showMsg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
+          <div className="w-full max-w-lg rounded-2xl shadow-2xl max-h-[90vh] flex flex-col"
+            style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(201,162,39,0.25)' }}>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(201,162,39,0.15)' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(37,211,102,0.15)', border: '1px solid rgba(37,211,102,0.3)' }}>
+                  <WhatsAppIcon className="h-4 w-4" style={{ color: '#25d366' }} />
+                </div>
+                <div>
+                  <h2 className="text-white font-semibold">Disparar Mensagem</h2>
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    {selectedIds.size} contato{selectedIds.size !== 1 ? 's' : ''} selecionado{selectedIds.size !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => { setShowMsg(false); setSendStatus({}); setSendErrors({}); }}
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10"
+                style={{ color: 'rgba(255,255,255,0.5)' }}>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              {/* Message textarea */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(255,255,255,0.4)' }}>Mensagem</label>
+                <textarea value={msgText} onChange={e => setMsgText(e.target.value)} rows={4}
+                  placeholder="Digite a mensagem..."
+                  disabled={sendingApi}
+                  className="w-full rounded-xl px-4 py-3 text-white text-sm outline-none resize-none placeholder-white/20 disabled:opacity-50"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                  {msgText.length} caracteres
+                </p>
+              </div>
+
+              {/* Contacts list with status */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  Contatos selecionados
+                </p>
+                <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                  {selectedContactsList.map(c => {
+                    const st = sendStatus[c.id];
+                    return (
+                      <div key={c.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,162,39,0.15)' }}>
+                          <Phone className="h-3.5 w-3.5" style={{ color: '#c9a227' }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-xs font-medium truncate">{c.nome}</p>
+                          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.numero}</p>
+                          {st === 'err' && sendErrors[c.id] && (
+                            <p className="text-[10px] mt-0.5" style={{ color: '#fca5a5' }}>{sendErrors[c.id]}</p>
+                          )}
+                        </div>
+                        {/* Status indicator */}
+                        {!st || st === 'idle' ? (
+                          msgText.trim() ? (
+                            <a href={waLink(c.numero, msgText)} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-all hover:opacity-80 flex-shrink-0"
+                              style={{ background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.2)', color: '#25d366' }}>
+                              <ExternalLink className="h-3 w-3" /> Abrir
+                            </a>
+                          ) : null
+                        ) : st === 'sending' ? (
+                          <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: '#c9a227' }} />
+                        ) : st === 'ok' ? (
+                          <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: '#4ade80' }} />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#fca5a5' }} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Summary after send */}
+              {!sendingApi && Object.keys(sendStatus).length > 0 && (
+                <div className="rounded-xl px-4 py-3 text-xs flex items-center gap-3"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <span style={{ color: '#4ade80' }}>
+                    ✓ {Object.values(sendStatus).filter(s => s === 'ok').length} enviado{Object.values(sendStatus).filter(s => s === 'ok').length !== 1 ? 's' : ''}
+                  </span>
+                  {Object.values(sendStatus).filter(s => s === 'err').length > 0 && (
+                    <span style={{ color: '#fca5a5' }}>
+                      ✗ {Object.values(sendStatus).filter(s => s === 'err').length} com erro
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between px-6 py-4 flex-shrink-0 gap-3" style={{ borderTop: '1px solid rgba(201,162,39,0.15)' }}>
+              <button onClick={copyNumbers}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
+                style={{ background: 'rgba(74,158,222,0.1)', border: '1px solid rgba(74,158,222,0.2)', color: '#4a9ede' }}>
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? 'Copiado!' : 'Copiar números'}
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setShowMsg(false); setSendStatus({}); setSendErrors({}); }}
+                  className="px-4 py-2 text-sm font-medium transition-all hover:text-white rounded-xl"
+                  style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  Fechar
+                </button>
+                <button
+                  onClick={handleSendApi}
+                  disabled={!msgText.trim() || sendingApi}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-40"
+                  style={{ background: 'linear-gradient(135deg,#128c7e,#25d366)', color: '#fff' }}>
+                  {sendingApi
+                    ? <><Loader2 className="h-4 w-4 animate-spin" /> Enviando…</>
+                    : <><Send className="h-4 w-4" /> Disparar via API</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
