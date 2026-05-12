@@ -1,0 +1,494 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+}
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============== ENUMS ==============
+enum UserRole {
+  ADMIN
+  CHEFE
+  ASSESSOR
+  ANALISTA
+  VISUALIZADOR
+}
+
+enum DemandStatus {
+  PENDENTE
+  EM_ANDAMENTO
+  RESOLVIDA
+}
+
+enum DemandPriority {
+  BAIXA
+  MEDIA
+  ALTA
+}
+
+enum DemandCategory {
+  SAUDE
+  EDUCACAO
+  INFRAESTRUTURA
+  ASSISTENCIA_SOCIAL
+  SEGURANCA
+  TRANSPORTE
+  MEIO_AMBIENTE
+  CULTURA
+  ESPORTE
+  OUTROS
+}
+
+// ============== MODELS ==============
+
+/// Gabinete/Secretaria
+model Gabinete {
+  id        String   @id @default(cuid())
+  nome      String   @unique
+  descricao String?
+  ativo     Boolean  @default(true)
+
+  whatsappInstanceId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users         User[]
+  demands       Demand[]
+  agendaEvents  AgendaEvent[]
+  contatos      Contato[]
+
+  @@map("gabinetes")
+}
+
+/// Usuário do Sistema
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role               UserRole @default(VISUALIZADOR)
+  approved           Boolean  @default(false)
+  mustChangePassword Boolean  @default(false)
+
+  gabineteId String?
+  gabinete   Gabinete? @relation(fields: [gabineteId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  demands       Demand[]          @relation("CreatedBy")
+  agendaEvents  AgendaEvent[]     @relation("AgendaCreatedBy")
+  contatos      Contato[]         @relation("ContatoCreatedBy")
+  favorites     Favorite[]
+  projecoes     ProjecaoCampanha[]
+  accounts      Account[]
+  sessions      Session[]
+
+  @@index([email])
+  @@index([gabineteId])
+  @@map("users")
+}
+
+/// NextAuth - Conta Conectada
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+/// NextAuth - Sessão
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// NextAuth - Verification Token
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+/// Demanda/Solicitação
+model Demand {
+  id              String            @id @default(cuid())
+  title           String
+  description     String?
+  solicitante     String
+  contato         String?
+  estado          String
+  municipio       String
+  bairro          String?
+  endereco        String?
+  lat             Float?
+  lng             Float?
+  foto            String?           @db.Text
+  category        DemandCategory
+  status          DemandStatus      @default(PENDENTE)
+  priority        DemandPriority    @default(MEDIA)
+  observations    String?
+  closedAt        DateTime?
+
+  gabineteId      String
+  gabinete        Gabinete          @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+
+  createdById     String
+  createdBy       User              @relation("CreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  electoralLinks  ElectoralDemandLink[]
+
+  @@index([gabineteId])
+  @@index([createdById])
+  @@index([status])
+  @@index([priority])
+  @@index([category])
+  @@index([createdAt])
+  @@map("demands")
+}
+
+enum AgendaEventTipo {
+  REUNIAO
+  VISITA
+  EVENTO
+  COMPROMISSO
+}
+
+/// Evento da Agenda do Gabinete
+model AgendaEvent {
+  id          String          @id @default(cuid())
+  titulo      String
+  descricao   String?
+  data        DateTime
+  dataFim     DateTime?
+  local       String?
+  endereco    String?
+  lat         Float?
+  lng         Float?
+  tipo        AgendaEventTipo @default(REUNIAO)
+  cor         String?
+
+  gabineteId  String
+  gabinete    Gabinete        @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User            @relation("AgendaCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([gabineteId])
+  @@index([data])
+  @@map("agenda_events")
+}
+
+/// Favoritos do Usuário (Candidatos)
+model Favorite {
+  id            String   @id @default(cuid())
+  userId        String
+  candidateName String
+  ano           Int
+  cargo         String?
+  uf            String
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, candidateName, ano, uf])
+  @@index([userId])
+  @@map("favorites")
+}
+
+/// Dados Eleitorais (legado)
+model ElectoralData {
+  id              String   @id @default(cuid())
+  candidatoId     String?
+  candidateName   String
+  nomeUrna        String?
+  numero          Int?
+  ano             Int
+  uf              String
+  cargo           String
+  partido         String
+  situacao        String?
+  totalVotos      Int      @default(0)
+  fonte           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  votes           ElectoralVote[]
+  demandLinks     ElectoralDemandLink[]
+
+  @@index([candidatoId])
+  @@index([ano])
+  @@index([uf])
+  @@index([cargo])
+  @@map("electoral_data")
+}
+
+/// Votos por Município (legado)
+model ElectoralVote {
+  id                  String   @id @default(cuid())
+  electoralDataId     String
+  codigoMunicipio     String
+  nomeMunicipio       String
+  votos               Int
+
+  electoralData       ElectoralData @relation(fields: [electoralDataId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([electoralDataId, codigoMunicipio])
+  @@index([electoralDataId])
+  @@index([nomeMunicipio])
+  @@map("electoral_votes")
+}
+
+/// Relacionamento entre Demanda e Dados Eleitorais
+model ElectoralDemandLink {
+  id                String   @id @default(cuid())
+  demandId          String
+  electoralDataId   String
+
+  demand            Demand        @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  electoralData     ElectoralData @relation(fields: [electoralDataId], references: [id], onDelete: Cascade)
+
+  @@unique([demandId, electoralDataId])
+  @@index([demandId])
+  @@index([electoralDataId])
+  @@map("electoral_demand_links")
+}
+
+/// Candidato (TSE)
+model Candidato {
+  id          String   @id @default(cuid())
+  nome        String
+  nomeUrna    String
+  numero      Int?
+  ano         Int
+  uf          String
+  cargo       String
+  partido     String
+  situacao    String?
+  totalVotos  Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  votos       VotoMunicipio[]
+  votosZona   VotoZona[]
+
+  @@index([ano])
+  @@index([uf])
+  @@index([cargo])
+  @@map("candidatos")
+}
+
+/// Votos por Município (TSE)
+model VotoMunicipio {
+  id          String    @id @default(cuid())
+  candidatoId String
+  municipio   String
+  votos       Int
+
+  candidato   Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+
+  @@unique([candidatoId, municipio])
+  @@index([candidatoId])
+  @@index([municipio])
+  @@map("votos_municipio")
+}
+
+/// Votos por Zona Eleitoral (TSE)
+model VotoZona {
+  id          String    @id @default(cuid())
+  candidatoId String
+  municipio   String
+  zona        Int
+  votos       Int
+
+  candidato   Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+
+  @@index([candidatoId])
+  @@index([municipio])
+  @@map("votos_zona")
+}
+
+/// Locais de Votação (TSE)
+model LocalVotacao {
+  id           String  @id @default(cuid())
+  uf           String?
+  nomeMunicipio String
+  zona         Int
+  codLocal     String?
+  nomeLocal    String
+  endereco     String?
+  bairro       String?
+  latitude     Float?
+  longitude    Float?
+
+  @@index([nomeMunicipio])
+  @@index([zona])
+  @@map("locais_votacao")
+}
+
+/// Cache de Dados Eleitorais
+model ElectoralCache {
+  id            String   @id @default(cuid())
+  candidateName String
+  ano           Int
+  uf            String
+  data          String
+  expiresAt     DateTime
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([candidateName, ano, uf])
+  @@index([expiresAt])
+  @@map("electoral_cache")
+}
+
+/// Projeção de Campanha
+model ProjecaoCampanha {
+  id             String   @id @default(cuid())
+  userId         String
+  candidatoNome  String
+  anoBase        Int
+  anoProjecao    Int
+  uf             String
+  cargo          String?
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  municipios     ProjecaoMunicipio[]
+
+  @@unique([userId, candidatoNome, anoBase, anoProjecao, uf])
+  @@index([userId])
+  @@index([updatedAt])
+  @@map("projecoes_campanha")
+}
+
+/// Municípios de uma Projeção de Campanha
+model ProjecaoMunicipio {
+  id                  String   @id @default(cuid())
+  projecaoId          String
+  municipio           String
+  votosBase           Int      @default(0)
+  metaConservadora    Int      @default(0)
+  metaPossivel        Int      @default(0)
+  metaArrojada        Int      @default(0)
+  observacoes         String?
+  prioridade          String?
+  dobradaAtiva        Boolean  @default(false)
+  dobradaNome         String?
+  dobradaPartido      String?
+  dobradaObservacoes  String?
+
+  projecao            ProjecaoCampanha @relation(fields: [projecaoId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  parcerias           Parceria[]
+
+  @@unique([projecaoId, municipio])
+  @@index([projecaoId])
+  @@map("projecoes_municipio")
+}
+
+/// Contato do Gabinete
+model Contato {
+  id          String   @id @default(cuid())
+  numero      String
+  nome        String
+  email       String?
+  endereco    String?
+  lat         Float?
+  lng         Float?
+
+  gabineteId  String
+  gabinete    Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User     @relation("ContatoCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([gabineteId])
+  @@index([createdAt])
+  @@map("contatos")
+}
+
+/// Parcerias de uma Projeção
+model Parceria {
+  id                   String   @id @default(cuid())
+  projecaoMunicipioId  String
+  bairro               String?
+  nome                 String
+  tipo                 String
+  responsavel          String?
+  contato              String?
+  observacoes          String?
+  impactoEstimado      Int      @default(0)
+  metaConservadora     Int      @default(0)
+  metaPossivel         Int      @default(0)
+  metaArrojada         Int      @default(0)
+  ativa                Boolean  @default(true)
+
+  projecaoMunicipio    ProjecaoMunicipio @relation(fields: [projecaoMunicipioId], references: [id], onDelete: Cascade)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([projecaoMunicipioId])
+  @@map("parcerias")
+}
