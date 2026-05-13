@@ -53,30 +53,65 @@ function readJsonGz(fp: string): unknown | null {
   return null;
 }
 
-function loadGeo(uf: string): any | null {
+// Extrai base URL da requisição para fallback via fetch (funciona no Vercel)
+function getBaseUrl(req: import('next/server').NextRequest): string {
+  const host = req.headers.get('host') || 'localhost:3000';
+  const proto = host.startsWith('localhost') ? 'http' : 'https';
+  return `${proto}://${host}`;
+}
+
+async function loadGeo(uf: string, baseUrl: string): Promise<any | null> {
   if (geoCache.has(uf)) return geoCache.get(uf)!;
+  // Tenta fs primeiro (dev local)
   const fp = path.join(process.cwd(), 'public', 'geojson', `${uf}_bairros_CD2022.json`);
-  if (!fs.existsSync(fp)) return null;
   try {
-    const data = JSON.parse(fs.readFileSync(fp, 'utf8'));
+    if (fs.existsSync(fp)) {
+      const data = JSON.parse(fs.readFileSync(fp, 'utf8'));
+      geoCache.set(uf, data);
+      return data;
+    }
+  } catch { /* fallthrough */ }
+  // Fallback: fetch da URL pública (Vercel CDN)
+  try {
+    const res = await fetch(`${baseUrl}/geojson/${uf}_bairros_CD2022.json`);
+    if (!res.ok) return null;
+    const data = await res.json();
     geoCache.set(uf, data);
     return data;
   } catch { return null; }
 }
 
-function loadLocais(uf: string): LocalJson[] | null {
+async function loadLocais(uf: string, baseUrl: string): Promise<LocalJson[] | null> {
   if (locaisCache.has(uf)) return locaisCache.get(uf)!;
+  // Tenta fs primeiro
   const d = readJsonGz(path.join(process.cwd(), 'public', 'data', 'tse', 'locais', `${uf}.json`)) as LocalJson[] | null;
-  if (d) locaisCache.set(uf, d);
-  return d;
+  if (d) { locaisCache.set(uf, d); return d; }
+  // Fallback: fetch do .json.gz público
+  try {
+    const res = await fetch(`${baseUrl}/data/tse/locais/${uf}.json.gz`);
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    const parsed = JSON.parse(zlib.gunzipSync(Buffer.from(buf)).toString('utf8')) as LocalJson[];
+    locaisCache.set(uf, parsed);
+    return parsed;
+  } catch { return null; }
 }
 
-function loadCandidatos(ano: string, uf: string): CandidatoJson[] | null {
+async function loadCandidatos(ano: string, uf: string, baseUrl: string): Promise<CandidatoJson[] | null> {
   const key = `${ano}-${uf}`;
   if (candCache.has(key)) return candCache.get(key)!;
+  // Tenta fs primeiro
   const d = readJsonGz(path.join(process.cwd(), 'public', 'data', 'tse', ano, `${uf}.json`)) as CandidatoJson[] | null;
-  if (d) candCache.set(key, d);
-  return d;
+  if (d) { candCache.set(key, d); return d; }
+  // Fallback: fetch do .json.gz público
+  try {
+    const res = await fetch(`${baseUrl}/data/tse/${ano}/${uf}.json.gz`);
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    const parsed = JSON.parse(zlib.gunzipSync(Buffer.from(buf)).toString('utf8')) as CandidatoJson[];
+    candCache.set(key, parsed);
+    return parsed;
+  } catch { return null; }
 }
 
 // Point-in-polygon (ray casting). Testa apenas o anel externo do polígono.
@@ -126,8 +161,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Ano inválido' }, { status: 400 });
     }
 
+    const baseUrl = getBaseUrl(request);
+
     // ── Carregar GeoJSON do estado ──────────────────────────────────────────
-    const geo = loadGeo(uf);
+    const geo = await loadGeo(uf, baseUrl);
     if (!geo) {
       return NextResponse.json({ features: [], bairroVotes: {}, totalVotos: 0, message: 'GeoJSON não disponível para esta UF' });
     }
@@ -152,7 +189,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Carregar locais de votação do estado ────────────────────────────────
-    const todosLocais = loadLocais(uf);
+    const todosLocais = await loadLocais(uf, baseUrl);
     if (!todosLocais) {
       return NextResponse.json({ features: [], bairroVotes: {}, totalVotos: 0, message: 'Locais de votação não disponíveis' });
     }
@@ -164,7 +201,7 @@ export async function GET(request: NextRequest) {
     let totalVotos = 0;
 
     if (ano && (candidatoId || nome)) {
-      const candidatos = loadCandidatos(ano, uf);
+      const candidatos = await loadCandidatos(ano, uf, baseUrl);
       if (candidatos) {
         let cand: CandidatoJson | undefined;
         if (candidatoId) {
