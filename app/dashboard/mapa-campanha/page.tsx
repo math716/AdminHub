@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { toast } from 'sonner';
 import { ESTADOS_BRASIL } from '@/lib/types';
+import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 import {
   Map,
   Target,
