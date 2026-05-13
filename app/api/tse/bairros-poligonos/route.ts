@@ -35,7 +35,6 @@ interface CandidatoJson {
 const geoCache = new Map<string, any>();
 const locaisCache = new Map<string, LocalJson[]>();
 const candCache = new Map<string, CandidatoJson[]>();
-const secaoCache = new Map<string, Record<string, Record<string, number>>>();
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -63,7 +62,6 @@ function getBaseUrl(req: import('next/server').NextRequest): string {
 
 async function loadGeo(uf: string, baseUrl: string): Promise<any | null> {
   if (geoCache.has(uf)) return geoCache.get(uf)!;
-  // Tenta fs primeiro (dev local)
   const fp = path.join(process.cwd(), 'public', 'geojson', `${uf}_bairros_CD2022.json`);
   try {
     if (fs.existsSync(fp)) {
@@ -72,7 +70,6 @@ async function loadGeo(uf: string, baseUrl: string): Promise<any | null> {
       return data;
     }
   } catch { /* fallthrough */ }
-  // Fallback: fetch da URL pública (Vercel CDN)
   try {
     const res = await fetch(`${baseUrl}/geojson/${uf}_bairros_CD2022.json`);
     if (!res.ok) return null;
@@ -84,10 +81,8 @@ async function loadGeo(uf: string, baseUrl: string): Promise<any | null> {
 
 async function loadLocais(uf: string, baseUrl: string): Promise<LocalJson[] | null> {
   if (locaisCache.has(uf)) return locaisCache.get(uf)!;
-  // Tenta fs primeiro
   const d = readJsonGz(path.join(process.cwd(), 'public', 'data', 'tse', 'locais', `${uf}.json`)) as LocalJson[] | null;
   if (d) { locaisCache.set(uf, d); return d; }
-  // Fallback: fetch do .json.gz público
   try {
     const res = await fetch(`${baseUrl}/data/tse/locais/${uf}.json.gz`);
     if (!res.ok) return null;
@@ -101,36 +96,14 @@ async function loadLocais(uf: string, baseUrl: string): Promise<LocalJson[] | nu
 async function loadCandidatos(ano: string, uf: string, baseUrl: string): Promise<CandidatoJson[] | null> {
   const key = `${ano}-${uf}`;
   if (candCache.has(key)) return candCache.get(key)!;
-  // Tenta fs primeiro
   const d = readJsonGz(path.join(process.cwd(), 'public', 'data', 'tse', ano, `${uf}.json`)) as CandidatoJson[] | null;
   if (d) { candCache.set(key, d); return d; }
-  // Fallback: fetch do .json.gz público
   try {
     const res = await fetch(`${baseUrl}/data/tse/${ano}/${uf}.json.gz`);
     if (!res.ok) return null;
     const buf = await res.arrayBuffer();
     const parsed = JSON.parse(zlib.gunzipSync(Buffer.from(buf)).toString('utf8')) as CandidatoJson[];
     candCache.set(key, parsed);
-    return parsed;
-  } catch { return null; }
-}
-
-async function loadSecaoVotes(
-  munNorm: string, ano: string, uf: string, baseUrl: string
-): Promise<Record<string, Record<string, number>> | null> {
-  const key = `${ano}-${uf}-${munNorm}`;
-  if (secaoCache.has(key)) return secaoCache.get(key)!;
-  const fp = path.join(process.cwd(), 'public', 'data', 'tse', 'secao', ano, uf, `${munNorm}.json`);
-  try {
-    const d = readJsonGz(fp) as Record<string, Record<string, number>> | null;
-    if (d) { secaoCache.set(key, d); return d; }
-  } catch { /* fallthrough */ }
-  try {
-    const res = await fetch(`${baseUrl}/data/tse/secao/${ano}/${uf}/${encodeURIComponent(munNorm)}.json.gz`);
-    if (!res.ok) return null;
-    const buf = await res.arrayBuffer();
-    const parsed = JSON.parse(zlib.gunzipSync(Buffer.from(buf)).toString('utf8'));
-    secaoCache.set(key, parsed);
     return parsed;
   } catch { return null; }
 }
@@ -220,7 +193,6 @@ export async function GET(request: NextRequest) {
     // ── Encontrar candidato e votos por zona ────────────────────────────────
     const votosPorZona = new Map<number, number>();
     let totalVotos = 0;
-    let candidatoEncontrado: CandidatoJson | undefined;
 
     if (ano && (candidatoId || nome)) {
       const candidatos = await loadCandidatos(ano, uf, baseUrl);
@@ -244,7 +216,6 @@ export async function GET(request: NextRequest) {
           }
         }
         if (cand) {
-          candidatoEncontrado = cand;
           for (const z of cand.zonas) {
             if (normalizar(z.municipio) === munNorm) {
               votosPorZona.set(z.zona, (votosPorZona.get(z.zona) ?? 0) + z.votos);
@@ -255,12 +226,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── Filtrar locais com coordenadas válidas ──────────────────────────────
+    // ── Point-in-Polygon: cada local de votação → bairro; votos distribuídos
+    // proporcionalmente pela quantidade de locais por bairro dentro de cada zona.
     const locaisComCoordenadas = locaisMun.filter(
       l => l.lat && l.lng && l.lat >= -35 && l.lat <= 5 && l.lng >= -74 && l.lng <= -35
     );
 
-    // Mapear cada local (zona+codLocal) → bairro via PiP (usado por ambos os métodos)
+    // Mapear cada local (zona+codLocal) para seu bairro via PiP
     const localBairroMap = new Map<string, string>();
     for (const local of locaisComCoordenadas) {
       for (const feat of features) {
@@ -271,50 +243,26 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Agrupar contagem de locais mapeados por zona+bairro
+    const zonaBairroCount = new Map<number, Record<string, number>>();
+    for (const local of locaisComCoordenadas) {
+      const nmBairro = localBairroMap.get(`${local.zona}-${local.codLocal}`);
+      if (nmBairro === undefined) continue;
+      if (!zonaBairroCount.has(local.zona)) zonaBairroCount.set(local.zona, {});
+      const counts = zonaBairroCount.get(local.zona)!;
+      counts[nmBairro] = (counts[nmBairro] ?? 0) + 1;
+    }
+
     const bairroVotesRaw: Record<string, number> = {};
 
-    // ── Tentar votos exatos por seção (gerado com --secao) ──────────────────
-    // O arquivo de seção é indexado pelo NR_CANDIDATO (número na urna),
-    // que funciona tanto no formato votacao_secao (2018/2022) quanto no
-    // detalhe_votacao_secao (2020/2024) — veja tse-to-json.ts --secao.
-    const secaoData = candidatoEncontrado && ano
-      ? await loadSecaoVotes(munNorm, ano, uf, baseUrl)
-      : null;
-    const localVotesMap = secaoData && candidatoEncontrado?.numero
-      ? secaoData[String(candidatoEncontrado.numero)]
-      : null;
-
-    if (localVotesMap) {
-      // Modo exato: cada local tem seu próprio total de votos por seção somados
-      for (const local of locaisComCoordenadas) {
-        const key = `${local.zona}-${local.codLocal}`;
-        const votosLocal = localVotesMap[key] ?? 0;
-        if (votosLocal === 0) continue;
-        const nmBairro = localBairroMap.get(key);
-        if (nmBairro === undefined) continue;
-        bairroVotesRaw[nmBairro] = (bairroVotesRaw[nmBairro] ?? 0) + votosLocal;
-      }
-    } else {
-      // Modo proporcional (fallback): distribui votos da zona pela quantidade de
-      // locais de votação por bairro dentro da zona
-      const zonaBairroCount = new Map<number, Record<string, number>>();
-      for (const local of locaisComCoordenadas) {
-        const nmBairro = localBairroMap.get(`${local.zona}-${local.codLocal}`);
-        if (nmBairro === undefined) continue;
-        if (!zonaBairroCount.has(local.zona)) zonaBairroCount.set(local.zona, {});
-        const counts = zonaBairroCount.get(local.zona)!;
-        counts[nmBairro] = (counts[nmBairro] ?? 0) + 1;
-      }
-
-      for (const [zona, votos] of votosPorZona) {
-        if (votos === 0) continue;
-        const counts = zonaBairroCount.get(zona);
-        if (!counts) continue;
-        const totalLocais = Object.values(counts).reduce((a, b) => a + b, 0);
-        if (totalLocais === 0) continue;
-        for (const [nmBairro, qtd] of Object.entries(counts)) {
-          bairroVotesRaw[nmBairro] = (bairroVotesRaw[nmBairro] ?? 0) + (votos * qtd) / totalLocais;
-        }
+    for (const [zona, votos] of votosPorZona) {
+      if (votos === 0) continue;
+      const counts = zonaBairroCount.get(zona);
+      if (!counts) continue;
+      const totalLocais = Object.values(counts).reduce((a, b) => a + b, 0);
+      if (totalLocais === 0) continue;
+      for (const [nmBairro, qtd] of Object.entries(counts)) {
+        bairroVotesRaw[nmBairro] = (bairroVotesRaw[nmBairro] ?? 0) + (votos * qtd) / totalLocais;
       }
     }
 
