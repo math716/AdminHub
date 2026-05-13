@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import {
   isConfigured, createInstance, getQrCode,
-  getConnectionState, deleteInstance, makeInstanceName,
+  getConnectionState, logoutInstance, deleteInstance, makeInstanceName,
 } from '@/lib/evolution';
 
 // GET — retorna status e QR code da instância do gabinete
@@ -32,6 +32,13 @@ export async function GET() {
   const state = await getConnectionState(instanceName);
 
   if (state === 'open') {
+    // Sincroniza DB se o instanceName estava ausente (ex: após desconexão inconsistente)
+    if (!gabinete.whatsappInstanceId) {
+      await prisma.gabinete.update({
+        where: { id: gabineteId },
+        data: { whatsappInstanceId: instanceName },
+      }).catch(() => {});
+    }
     return NextResponse.json({ configured: true, connected: true, instanceName, state });
   }
 
@@ -93,9 +100,12 @@ export async function DELETE(request: NextRequest) {
   }
 
   const gabinete = await prisma.gabinete.findUnique({ where: { id: gabineteId } });
-  if (!gabinete?.whatsappInstanceId) return NextResponse.json({ success: true });
+  const instanceName = gabinete?.whatsappInstanceId ?? makeInstanceName(gabineteId);
 
-  await deleteInstance(gabinete.whatsappInstanceId);
+  // Logout da sessão WhatsApp antes de deletar a instância
+  await logoutInstance(instanceName).catch(() => {});
+  await deleteInstance(instanceName).catch(() => {});
+
   await prisma.gabinete.update({
     where: { id: gabineteId },
     data: { whatsappInstanceId: null },

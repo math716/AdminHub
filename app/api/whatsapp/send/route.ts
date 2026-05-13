@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { isConfigured, sendText, makeInstanceName } from '@/lib/evolution';
+import { isConfigured, sendText, getConnectionState, makeInstanceName } from '@/lib/evolution';
 
 function normalizeWA(n: string): string {
   const d = n.replace(/\D/g, '');
@@ -26,8 +26,18 @@ export async function POST(request: NextRequest) {
   const gabinete = await prisma.gabinete.findUnique({ where: { id: gabineteId } });
   const instanceName = gabinete?.whatsappInstanceId ?? makeInstanceName(gabineteId);
 
-  if (!gabinete?.whatsappInstanceId) {
+  // Verifica estado real na Evolution API — não depende apenas do DB
+  const connState = await getConnectionState(instanceName);
+  if (connState !== 'open') {
     return NextResponse.json({ error: 'Nenhum número conectado. Acesse Configurações para escanear o QR Code.' }, { status: 503 });
+  }
+
+  // Sincroniza DB se estava desatualizado (instância conectada mas DB sem o nome)
+  if (!gabinete?.whatsappInstanceId) {
+    await prisma.gabinete.update({
+      where: { id: gabineteId },
+      data: { whatsappInstanceId: instanceName },
+    }).catch(() => {});
   }
 
   const body = await request.json();

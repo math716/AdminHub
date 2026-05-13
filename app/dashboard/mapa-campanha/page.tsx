@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { toast } from 'sonner';
 import { ESTADOS_BRASIL } from '@/lib/types';
+import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 import {
   Map,
   Target,
@@ -52,7 +53,8 @@ const DfRegioesMap   = dynamic(() => import('@/components/maps/df-regioes-map'),
 const SpDistritosMap = dynamic(() => import('@/components/maps/sp-distritos-map'), { ssr: false });
 const RjBairrosMap   = dynamic(() => import('@/components/maps/rj-bairros-map'),   { ssr: false });
 const CeBairrosMap   = dynamic(() => import('@/components/maps/ce-bairros-map'),   { ssr: false });
-const MgBairrosMap   = dynamic(() => import('@/components/maps/mg-bairros-map'),   { ssr: false });
+const MgBairrosMap          = dynamic(() => import('@/components/maps/mg-bairros-map'),          { ssr: false });
+const BairrosPoligonosMap   = dynamic(() => import('@/components/maps/bairros-poligonos-map'),   { ssr: false });
 
 // Helpers para zonas do DF
 const DF_ZONA_PREFIX = 'DF_ZONA_';
@@ -539,6 +541,12 @@ export default function MapaCampanhaPage() {
   const [selectedMgBairro, setSelectedMgBairro] = useState<string | null>(null);
   const [mgBairrosVotes, setMgBairrosVotes] = useState<Record<string, number>>({});
 
+  // Bairros genéricos via polígonos IBGE (todos os estados com GeoJSON exceto MG)
+  const [genPoligonosMunicipio, setGenPoligonosMunicipio] = useState<string>('');
+  const [genPoligonosUf, setGenPoligonosUf] = useState<string>('');
+  const [selectedGenBairro, setSelectedGenBairro] = useState<string | null>(null);
+  const [genBairrosApiVotes, setGenBairrosApiVotes] = useState<Record<string, number>>({});
+
   // Agrega votos por zona do candidato → Regiões Administrativas do DF
   useEffect(() => {
     if (uf !== 'DF' || !electoralData) { setDfRegioesVotes({}); return; }
@@ -605,6 +613,46 @@ export default function MapaCampanhaPage() {
     }
     setCeBairrosVotes(bairroVotes);
   }, [uf, electoralData]);
+
+  // Carrega votos P-I-P para MgBairrosMap (fix: antes não populava mgBairrosVotes)
+  useEffect(() => {
+    if (uf !== 'MG' || !mgBairrosMunicipio) { setMgBairrosVotes({}); return; }
+    const params = new URLSearchParams({ municipio: mgBairrosMunicipio, uf: 'MG' });
+    if (['2018','2020','2022','2024'].includes(ano) && electoralData?.candidatoId) {
+      params.set('candidatoId', electoralData.candidatoId);
+      params.set('ano', ano);
+    }
+    fetch(`/api/tse/bairros-poligonos?${params}`)
+      .then(r => r.json())
+      .then(data => setMgBairrosVotes(data.bairroVotes ?? {}))
+      .catch(() => setMgBairrosVotes({}));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uf, mgBairrosMunicipio, electoralData, ano]);
+
+  // Detecta municípios genéricos com polígonos (todos os estados exceto cidades com mapas específicos)
+  useEffect(() => {
+    const normMun = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+    const isVereadorPrefeito = ['VEREADOR','PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c));
+    if (!isVereadorPrefeito || !municipioVereador) {
+      setGenPoligonosMunicipio('');
+      setGenPoligonosUf('');
+      return;
+    }
+    const munNorm = normMun(municipioVereador);
+    // Excluir cidades com mapas específicos
+    const isEspecial = (uf === 'SP' && munNorm === 'SAO PAULO') ||
+                       (uf === 'RJ' && munNorm === 'RIO DE JANEIRO') ||
+                       (uf === 'CE' && munNorm === 'FORTALEZA');
+    if (isEspecial) { setGenPoligonosMunicipio(''); setGenPoligonosUf(''); return; }
+    if (hasBairrosPoligonos(uf, municipioVereador)) {
+      setGenPoligonosMunicipio(municipioVereador);
+      setGenPoligonosUf(uf);
+    } else {
+      setGenPoligonosMunicipio('');
+      setGenPoligonosUf('');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uf, municipioVereador, electoralData]);
 
   // Sincroniza dfRegioesVotes em entradas DF_REGIAO_ já existentes na projeção
   useEffect(() => {
@@ -840,6 +888,10 @@ export default function MapaCampanhaPage() {
     setMgBairrosMunicipio('');
     setSelectedMgBairro(null);
     setMgBairrosVotes({});
+    setGenPoligonosMunicipio('');
+    setGenPoligonosUf('');
+    setSelectedGenBairro(null);
+    setGenBairrosApiVotes({});
 
     // Para candidatos do DF: sinaliza para o useEffect carregar as zonas
     if (uf === 'DF') {
@@ -1025,9 +1077,6 @@ export default function MapaCampanhaPage() {
         setRjVisualizacao('bairros');
       } else if (novoCandidatoUf === 'CE' && munNormalized === 'FORTALEZA') {
         setCeVisualizacao('bairros');
-      } else if (novoCandidatoUf === 'MG' && munNormalized && MG_MUNICIPIOS_COM_BAIRROS.has(munNormalized)) {
-        setMgVisualizacao('bairros');
-        setMgBairrosMunicipio(novoCandidatoMunicipio);
       } else {
         setSpVisualizacao('municipios');
         setRjVisualizacao('municipios');
@@ -1750,6 +1799,21 @@ export default function MapaCampanhaPage() {
     return result;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mgBairrosVotes, projecao, activeTab, cenarioAtivo, includeParcerias, parcerias]);
+
+  // votesData para BairrosPoligonosMap genérico: API + override de projeção (via MUN_BAIRRO_)
+  const genBairrosVotesDisplay = useMemo(() => {
+    const norm = (s: string) =>
+      s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    const result: Record<string, number> = {};
+    Object.entries(genBairrosApiVotes).forEach(([k, v]) => { result[norm(k)] = v; });
+    if (activeTab === 'historico' || !projecao) return result;
+    projecao.municipios.forEach(m => {
+      if (!isMunBairro(m.municipio)) return;
+      result[getMunBairroNome(m.municipio)] = getMetaAtiva(m);
+    });
+    return result;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [genBairrosApiVotes, projecao, activeTab, cenarioAtivo, includeParcerias, parcerias]);
 
   // votesData para MunicipioMap: em projeção, sobrepõe com meta ativa para bairros municipais
   const munBairrosVotesDisplay = useMemo(() => {
@@ -2796,6 +2860,23 @@ export default function MapaCampanhaPage() {
                       <MapPin className="h-8 w-8 text-violet-400 opacity-50" />
                       <span className="text-sm">Selecione a cidade acima para ver os bairros</span>
                     </div>
+                  ) : visualizacaoMapa === 'bairro' && genPoligonosMunicipio && genPoligonosUf ? (
+                    // Municípios genéricos com polígonos IBGE (exceto SP/RJ/CE/MG)
+                    <BairrosPoligonosMap
+                      municipio={genPoligonosMunicipio}
+                      uf={genPoligonosUf}
+                      candidatoId={['2018','2020','2022','2024'].includes(ano) ? electoralData?.candidatoId : undefined}
+                      nomeCandidato={['2018','2020','2022','2024'].includes(ano) && electoralData?.candidatoId ? (electoralData?.nomeUrna || electoralData?.nome) : undefined}
+                      ano={['2018','2020','2022','2024'].includes(ano) ? ano : undefined}
+                      votosPorBairro={genBairrosVotesDisplay}
+                      selectedBairro={selectedGenBairro}
+                      onBairroClick={(nome, votos) => {
+                        setSelectedGenBairro(prev => prev === nome ? null : nome);
+                        handleBairroClick(nome, votos ?? 0);
+                      }}
+                      onDataLoaded={(votes) => setGenBairrosApiVotes(votes)}
+                      height="100%"
+                    />
                   ) : (
                     // Vista de Municípios (padrão)
                     <StateMap
@@ -3299,6 +3380,64 @@ export default function MapaCampanhaPage() {
                         );
                       })}
                     </div>
+                  ) : visualizacaoMapa === 'bairro' && genPoligonosMunicipio && genPoligonosUf ? (
+                    // Lista de Bairros — polígonos IBGE genéricos (todas UFs exceto SP/RJ/CE/MG especiais)
+                    Object.keys(genBairrosApiVotes).length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
+                        <MapPin className="h-8 w-8 text-sky-400 opacity-50" />
+                        <span className="text-sm text-center px-4">Carregando bairros de {genPoligonosMunicipio}…</span>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-slate-700">
+                        {(() => {
+                          const normFn = (s: string) =>
+                            s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+                          return Object.entries(genBairrosApiVotes)
+                            .map(([nome, votosBase]) => {
+                              const nomeNorm = normFn(nome);
+                              const votosDisplay = genBairrosVotesDisplay[nomeNorm] ?? votosBase;
+                              return { nome, votosBase, votosDisplay };
+                            })
+                            .sort((a, b) => b.votosDisplay - a.votosDisplay)
+                            .map(({ nome, votosBase, votosDisplay }, idx) => {
+                              const isSelected = selectedGenBairro ? normFn(nome) === normFn(selectedGenBairro) : false;
+                              const diff = votosDisplay - votosBase;
+                              const diffPercent = votosBase > 0 ? ((diff / votosBase) * 100).toFixed(0) : 0;
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`p-3 hover:bg-slate-700/50 cursor-pointer transition-colors group ${
+                                    isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' : ''
+                                  }`}
+                                  onClick={() => {
+                                    setSelectedGenBairro(prev =>
+                                      prev && normFn(prev) === normFn(nome) ? null : nome
+                                    );
+                                    handleBairroClick(nome, votosDisplay);
+                                  }}
+                                >
+                                  <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                      <MapPin className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
+                                      <span className="text-white font-medium text-sm truncate">{nome}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <span className="text-slate-400">Votos: <span className="text-sky-400 font-medium">{votosBase.toLocaleString()}</span></span>
+                                    {diff !== 0 && (
+                                      <>
+                                        <span className="text-slate-500">→</span>
+                                        <span className={cenarioConfig[cenarioAtivo].color}>{votosDisplay.toLocaleString()}</span>
+                                        <span className={`ml-auto ${diff > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            });
+                        })()}
+                      </div>
+                    )
                   ) : visualizacaoMapa === 'bairro' && getFilteredMunBairros().length > 0 ? (
                     // Lista de Bairros — municípios genéricos (vereadores/prefeitos)
                     <div className="divide-y divide-slate-700">

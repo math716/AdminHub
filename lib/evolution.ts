@@ -57,6 +57,16 @@ export async function sendText(instanceName: string, number: string, text: strin
   return { ok: res.ok, data: await res.json() };
 }
 
+export async function logoutInstance(instanceName: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE()}/instance/logout/${instanceName}`, {
+      method: 'DELETE',
+      headers: headers(),
+    });
+    return res.ok;
+  } catch { return false; }
+}
+
 export async function deleteInstance(instanceName: string) {
   const res = await fetch(`${BASE()}/instance/delete/${instanceName}`, {
     method: 'DELETE',
