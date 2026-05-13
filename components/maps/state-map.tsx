@@ -770,7 +770,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         map.fitBounds(bounds, { padding: [30, 30] });
       }
 
-      // ── Labels de votos por município (aparecem a partir do zoom 8) ──────
+      // ── Labels de votos com clustering dinâmico (recluster a cada zoom/move) ──
       const hasVotes = (votesData && Object.keys(votesData).length > 0) ||
                        (votesDataByName && Object.keys(votesDataByName).length > 0);
       if (hasVotes) {
@@ -780,7 +780,9 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           return String(v);
         };
 
-        const labelsGroup = L.layerGroup();
+        // 1. Pré-computar centroides e votos de todos os municípios
+        type LabelItem = { latlng: [number, number]; votos: number; nome: string };
+        const labelItems: LabelItem[] = [];
         geoLayer.eachLayer((layer: any) => {
           const feature = layer.feature;
           if (!feature) return;
@@ -789,34 +791,66 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           const votos = getVotos(codarea, nomeMun);
           if (!votos || votos === 0) return;
           try {
-            // Centroide geométrico real (média dos vértices do maior anel)
-            const getPolygonCentroid = (): { lat: number; lng: number } => {
-              try {
-                const raw = layer.getLatLngs();
-                // Achatar até encontrar um array de LatLng (suporta Polygon e MultiPolygon)
-                const findRings = (arr: any[]): any[][] => {
-                  if (arr.length > 0 && arr[0].lat !== undefined) return [arr];
-                  return arr.flatMap((x: any) => findRings(x));
-                };
-                const rings = findRings(raw);
-                // Usar o anel com mais vértices (maior polígono em multipolígonos)
-                const ring = rings.reduce((a, b) => (b.length > a.length ? b : a), rings[0] ?? []);
-                if (ring.length === 0) throw new Error();
-                const lat = ring.reduce((s: number, p: any) => s + p.lat, 0) / ring.length;
-                const lng = ring.reduce((s: number, p: any) => s + p.lng, 0) / ring.length;
-                return { lat, lng };
-              } catch {
-                const c = layer.getBounds().getCenter();
-                return { lat: c.lat, lng: c.lng };
-              }
+            const raw = layer.getLatLngs();
+            const findRings = (arr: any[]): any[][] => {
+              if (arr.length > 0 && arr[0].lat !== undefined) return [arr];
+              return arr.flatMap((x: any) => findRings(x));
             };
-            const center = getPolygonCentroid();
-            const label = fmtVotos(votos);
-            const sz = label.length <= 2 ? 24 : label.length <= 3 ? 28 : label.length <= 4 ? 32 : 36;
-            const fs = sz <= 24 ? 9 : sz <= 28 ? 10 : 10;
-            const marker = L.marker([center.lat, center.lng], {
+            const rings = findRings(raw);
+            const ring = rings.reduce((a, b) => (b.length > a.length ? b : a), rings[0] ?? []);
+            const lat = ring.length > 0
+              ? ring.reduce((s: number, p: any) => s + p.lat, 0) / ring.length
+              : layer.getBounds().getCenter().lat;
+            const lng = ring.length > 0
+              ? ring.reduce((s: number, p: any) => s + p.lng, 0) / ring.length
+              : layer.getBounds().getCenter().lng;
+            labelItems.push({ latlng: [lat, lng], votos, nome: nomeMun });
+          } catch (_) {}
+        });
+
+        const labelsGroup = L.layerGroup().addTo(map);
+        labelsLayerRef.current = labelsGroup;
+        registerLayer(labelsGroup);
+
+        // 2. Recluster: agrupa itens próximos (em pixels) numa única bolha
+        const reclusterVoteLabels = () => {
+          labelsGroup.clearLayers();
+          const THRESHOLD = 40; // px — aumentar = agrupa mais agressivamente
+          const items = labelItems.map(item => ({
+            ...item,
+            pt: map.latLngToContainerPoint(item.latlng),
+          }));
+          const assigned = new Set<number>();
+          for (let i = 0; i < items.length; i++) {
+            if (assigned.has(i)) continue;
+            let sumLat = items[i].latlng[0];
+            let sumLng = items[i].latlng[1];
+            let totalVotos = items[i].votos;
+            let count = 1;
+            assigned.add(i);
+            for (let j = i + 1; j < items.length; j++) {
+              if (assigned.has(j)) continue;
+              const dx = items[i].pt.x - items[j].pt.x;
+              const dy = items[i].pt.y - items[j].pt.y;
+              if (Math.sqrt(dx * dx + dy * dy) < THRESHOLD) {
+                sumLat += items[j].latlng[0];
+                sumLng += items[j].latlng[1];
+                totalVotos += items[j].votos;
+                count++;
+                assigned.add(j);
+              }
+            }
+            const avgLat = sumLat / count;
+            const avgLng = sumLng / count;
+            const label = fmtVotos(totalVotos);
+            const isCluster = count > 1;
+            const sz = label.length <= 2 ? 26 : label.length <= 3 ? 30 : label.length <= 4 ? 34 : 40;
+            const fs = sz <= 26 ? 9 : sz <= 30 ? 10 : 11;
+            const bg = isCluster ? 'rgba(7,47,90,0.9)' : 'rgba(13,38,76,0.88)';
+            const border = isCluster ? 'rgba(148,163,184,0.55)' : 'rgba(96,165,250,0.5)';
+            const marker = L.marker([avgLat, avgLng], {
               icon: L.divIcon({
-                html: `<div style="width:${sz}px;height:${sz}px;background:rgba(13,38,76,0.92);color:#bfdbfe;font-size:${fs}px;font-weight:800;border-radius:50%;border:2px solid rgba(96,165,250,0.5);display:flex;align-items:center;justify-content:center;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,0.45);font-family:'Segoe UI',system-ui,sans-serif;letter-spacing:-0.5px;">${label}</div>`,
+                html: `<div style="width:${sz}px;height:${sz}px;background:${bg};color:#bfdbfe;font-size:${fs}px;font-weight:800;border-radius:50%;border:2px solid ${border};display:flex;align-items:center;justify-content:center;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,0.4);letter-spacing:-0.5px;">${label}</div>`,
                 className: '',
                 iconSize: [sz, sz] as [number, number],
                 iconAnchor: [sz / 2, sz / 2] as [number, number],
@@ -825,21 +859,11 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
               pane: 'voteLabelsPane',
             });
             labelsGroup.addLayer(marker);
-          } catch (_) {}
-        });
-
-        labelsLayerRef.current = labelsGroup;
-        registerLayer(labelsGroup);
-
-        const updateVoteLabels = () => {
-          if (map.getZoom() >= 8) {
-            if (!map.hasLayer(labelsGroup)) labelsGroup.addTo(map);
-          } else {
-            if (map.hasLayer(labelsGroup)) map.removeLayer(labelsGroup);
           }
         };
-        map.on('zoomend', updateVoteLabels);
-        updateVoteLabels();
+
+        map.on('zoomend moveend', reclusterVoteLabels);
+        map.once('moveend', reclusterVoteLabels);
       }
 
       isInitializingRef.current = false;
