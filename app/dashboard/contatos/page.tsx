@@ -902,6 +902,11 @@ export default function ContatosPage() {
                   </div>
                 )}
 
+                {/* Overlay invisível — fecha popup ao clicar fora dele */}
+                {popup && (
+                  <div className="absolute inset-0 z-[15]" onClick={() => setPopup(null)} />
+                )}
+
                 {/* Popup de ação — aparece ao clicar em estado ou município */}
                 <AnimatePresence>
                   {popup && (
@@ -911,7 +916,8 @@ export default function ContatosPage() {
                       exit={{ opacity: 0, scale: 0.9, y: -8 }}
                       transition={{ duration: 0.15 }}
                       className="absolute top-4 left-1/2 -translate-x-1/2 z-20 rounded-2xl shadow-2xl overflow-hidden"
-                      style={{ background: 'rgba(4,17,31,0.95)', border: '1px solid rgba(201,162,39,0.35)', minWidth: 260, backdropFilter: 'blur(12px)' }}>
+                      style={{ background: 'rgba(4,17,31,0.95)', border: '1px solid rgba(201,162,39,0.35)', minWidth: 260, backdropFilter: 'blur(12px)' }}
+                      onClick={e => e.stopPropagation()}>
                       <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                         <div className="flex items-center gap-2">
                           {popup.type === 'estado' ? <Layers className="h-3.5 w-3.5" style={{ color: '#c9a227' }} /> : <Building2 className="h-3.5 w-3.5" style={{ color: '#c9a227' }} />}
@@ -945,7 +951,7 @@ export default function ContatosPage() {
                   )}
                 </AnimatePresence>
 
-                <div className="h-full p-3" onClick={() => popup && setPopup(null)}>
+                <div className="h-full p-3">
                   {view === 'brasil' && <BrazilMap onStateClick={handleStateClick} />}
                   {view === 'estado' && (
                     <StateMap uf={selectedUf} stateName={selectedStateName}
