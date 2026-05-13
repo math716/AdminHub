@@ -60,16 +60,9 @@ function getBaseUrl(req: import('next/server').NextRequest): string {
   return `${proto}://${host}`;
 }
 
+// Usa apenas HTTP fetch para os GeoJSON — fs.readFile causaria bundling de ~110 MB no Vercel
 async function loadGeo(uf: string, baseUrl: string): Promise<any | null> {
   if (geoCache.has(uf)) return geoCache.get(uf)!;
-  const fp = path.join(process.cwd(), 'public', 'geojson', `${uf}_bairros_CD2022.json`);
-  try {
-    if (fs.existsSync(fp)) {
-      const data = JSON.parse(fs.readFileSync(fp, 'utf8'));
-      geoCache.set(uf, data);
-      return data;
-    }
-  } catch { /* fallthrough */ }
   try {
     const res = await fetch(`${baseUrl}/geojson/${uf}_bairros_CD2022.json`);
     if (!res.ok) return null;
@@ -79,21 +72,11 @@ async function loadGeo(uf: string, baseUrl: string): Promise<any | null> {
   } catch { return null; }
 }
 
-// Tenta carregar o GeoJSON específico do município (public/geojson/municipios/{UF}/{NOME}.json)
+// Fallback: arquivo por município em public/geojson/municipios/{UF}/{NOME}.json (CDN)
 async function loadGeoMunicipio(uf: string, munNorm: string, baseUrl: string): Promise<any[] | null> {
   const fileNorm = munNorm.replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '_');
   const cacheKey = `mun:${uf}:${fileNorm}`;
   if (geoCache.has(cacheKey)) return geoCache.get(cacheKey)!;
-
-  const fp = path.join(process.cwd(), 'public', 'geojson', 'municipios', uf, `${fileNorm}.json`);
-  try {
-    if (fs.existsSync(fp)) {
-      const data = JSON.parse(fs.readFileSync(fp, 'utf8'));
-      const features = data.features ?? [];
-      geoCache.set(cacheKey, features);
-      return features;
-    }
-  } catch { /* fallthrough */ }
   try {
     const res = await fetch(`${baseUrl}/geojson/municipios/${uf}/${fileNorm}.json`);
     if (!res.ok) return null;
