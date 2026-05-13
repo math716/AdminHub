@@ -887,6 +887,7 @@ export const MUNICIPIOS_COM_POLIGONOS: Record<string, string[]> = {
     "BOTUCATU",
     "BRAGANCA PAULISTA",
     "CAIEIRAS",
+    "CAMPINAS",
     "CATANDUVA",
     "CUBATAO",
     "DIADEMA",
