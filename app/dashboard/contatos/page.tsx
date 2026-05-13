@@ -417,11 +417,13 @@ export default function ContatosPage() {
       setView('estado'); setNavMunicipio(null);
       setBairroContacts({}); setBairroCount({}); setBairroFeatures([]);
       setSelectedBairros(new Set()); setBairroLoading(false);
+      setSelectedIds(new Set());
     } else {
       setView('brasil'); setSelectedUf(''); setSelectedStateName('');
       setContactsByMunCode({}); setStateContactIds(new Set());
       setNavMunicipio(null); setBairroContacts({}); setBairroCount({}); setBairroFeatures([]);
       setSelectedBairros(new Set());
+      setSelectedIds(new Set());
     }
     setPopup(null);
   }, [view]);
