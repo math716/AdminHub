@@ -9,11 +9,12 @@ import {
   User, FileUp, Upload, CheckCircle2, AlertCircle,
   Map as MapIcon, List, Globe, Layers, Building2, ChevronRight,
   Users, MessageSquare, Send, ExternalLink, Copy, Check,
-  UserCheck, UserX, Phone, Pencil,
+  UserCheck, UserX, Phone, Pencil, Navigation, MousePointer,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import type { ContatoMapItem } from '@/components/maps/contatos-municipio-map';
+import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 
 // ---------------------------------------------------------------------------
 // Dynamic map imports
@@ -28,6 +29,15 @@ const BrazilMap = dynamic(() => import('@/components/maps/brazil-map'), {
 });
 
 const StateMap = dynamic(() => import('@/components/maps/state-map'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'rgba(7,29,54,0.5)' }}>
+      <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+    </div>
+  ),
+});
+
+const ContatosBairrosMap = dynamic(() => import('@/components/maps/contatos-bairros-map'), {
   ssr: false,
   loading: () => (
     <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'rgba(7,29,54,0.5)' }}>
@@ -169,13 +179,20 @@ export default function ContatosPage() {
   const [reGeocodingId, setReGeocodingId] = useState<string | null>(null);
 
   // ── Mapa ──
-  const [view, setView] = useState<'brasil' | 'estado'>('brasil');
+  const [view, setView] = useState<'brasil' | 'estado' | 'municipio'>('brasil');
   const [selectedUf, setSelectedUf] = useState('');
   const [selectedStateName, setSelectedStateName] = useState('');
-  const [selectedMunicipios, setSelectedMunicipios] = useState<Map<string, string>>(new Map()); // codigo → nome
-  const [selectedMunicipiosContacts, setSelectedMunicipiosContacts] = useState<ContatoMapItem[]>([]);
+  const [navMunicipio, setNavMunicipio] = useState<{ codigo: string; nome: string } | null>(null);
+  // popup de ação ao clicar em estado ou município
+  const [popup, setPopup] = useState<{ type: 'estado' | 'municipio'; uf: string; codigo?: string; nome: string } | null>(null);
   const [contactsByMunCode, setContactsByMunCode] = useState<Record<string, number>>({});
   const [stateContactIds, setStateContactIds] = useState<Set<string>>(new Set());
+  // bairros do município navegado
+  const [bairroContacts, setBairroContacts] = useState<Record<string, string[]>>({}); // normNome → ids
+  const [bairroCount, setBairroCount] = useState<Record<string, number>>({}); // normNome → count
+  const [selectedBairros, setSelectedBairros] = useState<Set<string>>(new Set());
+  const [bairroLoading, setBairroLoading] = useState(false);
+  const [munHasBairros, setMunHasBairros] = useState(false);
   const [pipLoading, setPipLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [mapSearch, setMapSearch] = useState('');
@@ -257,61 +274,134 @@ export default function ContatosPage() {
     } catch { return []; }
   }, [geocodedContacts, fetchStateGeojson]);
 
-  // Recompute contacts when selected municipalities change
-  useEffect(() => {
-    if (selectedMunicipios.size === 0) { setSelectedMunicipiosContacts([]); return; }
-    const compute = async () => {
-      setPipLoading(true);
-      try {
-        const all: ContatoMapItem[] = [];
-        const seen = new Set<string>();
-        for (const codigo of selectedMunicipios.keys()) {
-          const contacts = await computeMunicipioContactsForCode(selectedUf, codigo);
-          for (const c of contacts) {
-            if (!seen.has(c.id)) { seen.add(c.id); all.push(c); }
-          }
-        }
-        setSelectedMunicipiosContacts(all);
-      } finally { setPipLoading(false); }
-    };
-    compute();
-  }, [selectedMunicipios, selectedUf, computeMunicipioContactsForCode]);
+  // ── Handlers de navegação e seleção ──
 
-  const handleStateClick = (uf: string, name: string) => {
-    setSelectedUf(uf); setSelectedStateName(name);
-    setSelectedMunicipios(new Map()); setSelectedMunicipiosContacts([]); setSelectedIds(new Set());
-    setView('estado'); computePiP(uf);
-  };
-  const handleMunicipioClick = useCallback((codigo: string, nome: string) => {
-    setSelectedMunicipios(prev => {
-      const next = new Map(prev);
-      if (next.has(codigo)) { next.delete(codigo); } else { next.set(codigo, nome); }
-      return next;
-    });
-    setSelectedIds(new Set());
+  const handleStateClick = useCallback((uf: string, name: string) => {
+    setPopup({ type: 'estado', uf, nome: name });
   }, []);
-  const goBack = () => {
-    setView('brasil');
-    setSelectedUf(''); setSelectedStateName('');
-    setSelectedMunicipios(new Map()); setSelectedMunicipiosContacts([]);
-    setContactsByMunCode({}); setStateContactIds(new Set()); setSelectedIds(new Set());
-  };
+
+  const handleMunicipioClick = useCallback((codigo: string, nome: string) => {
+    setPopup({ type: 'municipio', uf: selectedUf, codigo, nome });
+  }, [selectedUf]);
+
+  const navigateToState = useCallback((uf: string, nome: string) => {
+    setSelectedUf(uf); setSelectedStateName(nome);
+    setView('estado'); setPopup(null);
+    computePiP(uf);
+  }, [computePiP]);
+
+  const selectStateContacts = useCallback(async (uf: string) => {
+    setPipLoading(true); setPopup(null);
+    try {
+      const geojson = await fetchStateGeojson(uf);
+      if (!geojson) return;
+      const inState = new Set<string>();
+      for (const f of geojson.features ?? []) {
+        for (const c of geocodedContacts) {
+          if (pointInFeature(c.lng, c.lat, f.geometry)) inState.add(c.id);
+        }
+      }
+      setSelectedIds(prev => { const n = new Set(prev); inState.forEach(id => n.add(id)); return n; });
+    } finally { setPipLoading(false); }
+  }, [geocodedContacts, fetchStateGeojson]);
+
+  const navigateToMunicipio = useCallback(async (codigo: string, nome: string) => {
+    setNavMunicipio({ codigo, nome });
+    setView('municipio'); setPopup(null);
+    const has = hasBairrosPoligonos(selectedUf, nome);
+    setMunHasBairros(has);
+    if (!has) { setBairroContacts({}); setBairroCount({}); return; }
+
+    setBairroLoading(true);
+    try {
+      const [geoState, geoBairrosRes] = await Promise.all([
+        fetchStateGeojson(selectedUf),
+        fetch(`/geojson/${selectedUf}_bairros_CD2022.json`),
+      ]);
+      if (!geoBairrosRes.ok) return;
+      const geoBairros = await geoBairrosRes.json();
+
+      const n = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+      const munNorm = n(nome);
+      const munFeature = geoState?.features?.find((f: any) => String(f.properties?.codarea ?? '') === String(codigo));
+      const contatosMun = munFeature
+        ? geocodedContacts.filter(c => pointInFeature(c.lng, c.lat, munFeature.geometry))
+        : geocodedContacts;
+
+      const bContacts: Record<string, string[]> = {};
+      const bCount: Record<string, number> = {};
+      const features = (geoBairros.features ?? []).filter((f: any) => n(f.properties?.NM_MUN ?? '') === munNorm);
+      for (const f of features) {
+        const normNm = n(f.properties?.NM_BAIRRO ?? '');
+        const inside = contatosMun.filter(c => pointInFeature(c.lng, c.lat, f.geometry));
+        bContacts[normNm] = inside.map(c => c.id);
+        bCount[normNm] = inside.length;
+      }
+      setBairroContacts(bContacts);
+      setBairroCount(bCount);
+    } catch {} finally { setBairroLoading(false); }
+  }, [selectedUf, geocodedContacts, fetchStateGeojson]);
+
+  const selectMunicipioContacts = useCallback(async (uf: string, codigo: string) => {
+    setPipLoading(true); setPopup(null);
+    try {
+      const contacts = await computeMunicipioContactsForCode(uf, codigo);
+      setSelectedIds(prev => { const n = new Set(prev); contacts.forEach(c => n.add(c.id)); return n; });
+    } finally { setPipLoading(false); }
+  }, [computeMunicipioContactsForCode]);
+
+  const handleBairroClick = useCallback((normNome: string) => {
+    const ids = bairroContacts[normNome] ?? [];
+    if (ids.length === 0) return;
+    setSelectedBairros(prev => {
+      const n = new Set(prev);
+      if (n.has(normNome)) {
+        n.delete(normNome);
+        setSelectedIds(p => { const s = new Set(p); ids.forEach(id => s.delete(id)); return s; });
+      } else {
+        n.add(normNome);
+        setSelectedIds(p => { const s = new Set(p); ids.forEach(id => s.add(id)); return s; });
+      }
+      return n;
+    });
+  }, [bairroContacts]);
+
+  const goBack = useCallback(() => {
+    if (view === 'municipio') {
+      setView('estado'); setNavMunicipio(null);
+      setBairroContacts({}); setBairroCount({}); setSelectedBairros(new Set()); setBairroLoading(false);
+    } else {
+      setView('brasil'); setSelectedUf(''); setSelectedStateName('');
+      setContactsByMunCode({}); setStateContactIds(new Set());
+      setNavMunicipio(null); setBairroContacts({}); setBairroCount({});
+      setSelectedBairros(new Set());
+    }
+    setPopup(null);
+  }, [view]);
+
   const toggleContact = useCallback((id: string) => {
     setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }, []);
 
-  // ── Sidebar list for map tab ──
+  // ── Sidebar list para a aba mapa ──
   const mapSidebarContacts = useMemo(() => {
-    const base =
-      view === 'estado' && selectedMunicipios.size > 0 ? selectedMunicipiosContacts :
-      view === 'estado' ? geocodedContacts.filter(c => stateContactIds.has(c.id)) :
-      geocodedContacts;
+    let base: { id: string; nome: string; numero: string }[];
+    if (view === 'municipio') {
+      const allIds = Object.values(bairroContacts).flat();
+      const seen = new Set<string>();
+      base = allIds.filter(id => { if (seen.has(id)) return false; seen.add(id); return true; })
+        .map(id => geocodedContacts.find(c => c.id === id)!).filter(Boolean);
+    } else if (view === 'estado') {
+      base = geocodedContacts.filter(c => stateContactIds.has(c.id));
+    } else {
+      base = geocodedContacts;
+    }
     if (!mapSearch.trim()) return base;
     const q = mapSearch.toLowerCase();
     return base.filter(c => c.nome.toLowerCase().includes(q) || c.numero.includes(q));
-  }, [view, selectedMunicipios, selectedMunicipiosContacts, geocodedContacts, stateContactIds, mapSearch]);
+  }, [view, bairroContacts, geocodedContacts, stateContactIds, mapSearch]);
 
-  const selectAll = () => setSelectedIds(new Set(mapSidebarContacts.map(c => c.id)));
+  const selectAll = () => setSelectedIds(prev => { const n = new Set(prev); mapSidebarContacts.forEach(c => n.add(c.id)); return n; });
   const clearAll  = () => setSelectedIds(new Set());
 
   // ── Re-geocode existing contact ──
@@ -629,9 +719,9 @@ export default function ContatosPage() {
           {/* Breadcrumb */}
           <div className="flex items-center gap-1 text-sm rounded-xl px-4 py-2.5 w-fit flex-wrap"
             style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(201,162,39,0.13)' }}>
-            <button onClick={goBack}
+            <button onClick={view === 'brasil' ? undefined : goBack}
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
-              style={view === 'brasil' ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 } : { color: 'rgba(255,255,255,0.4)' }}>
+              style={view === 'brasil' ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 } : { color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>
               <Globe className="h-3.5 w-3.5" /> Brasil
             </button>
             <ChevronRight className="h-3.5 w-3.5" style={{ color: 'rgba(255,255,255,0.2)' }} />
@@ -640,19 +730,30 @@ export default function ContatosPage() {
                 style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede' }}>
                 <Layers className="h-3.5 w-3.5" /> {selectedStateName}
               </span>
+            ) : view === 'municipio' ? (
+              <button onClick={goBack} className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
+                style={{ color: 'rgba(255,255,255,0.55)' }}>
+                <Layers className="h-3.5 w-3.5" /> {selectedStateName}
+              </button>
             ) : (
               <span className="flex items-center gap-1.5 px-2 py-1" style={{ color: 'rgba(255,255,255,0.2)' }}>
                 <Layers className="h-3.5 w-3.5" /> Estado
               </span>
             )}
-            {view === 'estado' && selectedMunicipios.size > 0 && (
+            {view === 'municipio' && navMunicipio && (
               <>
                 <ChevronRight className="h-3.5 w-3.5" style={{ color: 'rgba(255,255,255,0.2)' }} />
-                <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold"
-                  style={{ background: 'rgba(201,162,39,0.12)', color: '#c9a227' }}>
-                  <Building2 className="h-3.5 w-3.5" /> {selectedMunicipios.size} município{selectedMunicipios.size !== 1 ? 's' : ''}
+                <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg font-semibold"
+                  style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede' }}>
+                  <Building2 className="h-3.5 w-3.5" /> {navMunicipio.nome}
                 </span>
               </>
+            )}
+            {selectedIds.size > 0 && (
+              <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)' }}>
+                {selectedIds.size} selecionado{selectedIds.size !== 1 ? 's' : ''}
+              </span>
             )}
           </div>
 
@@ -662,60 +763,80 @@ export default function ContatosPage() {
               {/* Stats */}
               <div className="rounded-xl p-4" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' }}>
                 <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  {view === 'estado' ? selectedStateName : 'Visão Geral'}
+                  {view === 'municipio' ? navMunicipio?.nome : view === 'estado' ? selectedStateName : 'Visão Geral'}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.15)' }}>
                     <p className="text-lg font-bold" style={{ color: '#c9a227' }}>
-                      {view === 'estado' && selectedMunicipios.size > 0 ? selectedMunicipiosContacts.length : view === 'estado' ? stateContactIds.size : contatos.length}
+                      {view === 'municipio'
+                        ? Object.values(bairroContacts).reduce((a, b) => a + b.length, 0)
+                        : view === 'estado' ? stateContactIds.size : contatos.length}
                     </p>
                     <p className="text-[10px] uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                      {view === 'estado' && selectedMunicipios.size > 0 ? 'selecionados' : view === 'estado' ? 'neste estado' : 'total'}
+                      {view === 'municipio' ? 'neste município' : view === 'estado' ? 'neste estado' : 'total'}
                     </p>
                   </div>
-                  <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(74,158,222,0.08)', border: '1px solid rgba(74,158,222,0.15)' }}>
-                    <p className="text-lg font-bold" style={{ color: '#4a9ede' }}>
-                      {view === 'estado' ? stateContactIds.size : geocodedContacts.length}
-                    </p>
-                    <p className="text-[10px] uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>no mapa</p>
+                  <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)' }}>
+                    <p className="text-lg font-bold" style={{ color: '#4ade80' }}>{selectedIds.size}</p>
+                    <p className="text-[10px] uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>selecionados</p>
                   </div>
                 </div>
                 {selectedIds.size > 0 && (
-                  <div className="mt-2 rounded-lg p-2 text-center" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                    <p className="text-sm font-bold" style={{ color: '#4ade80' }}>{selectedIds.size} para disparo</p>
-                  </div>
+                  <button onClick={clearAll} className="mt-2 w-full text-xs text-center py-1 rounded-lg transition-all hover:opacity-70"
+                    style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    Limpar seleção
+                  </button>
                 )}
               </div>
 
-              {/* Municípios selecionados chips */}
-              {view === 'estado' && selectedMunicipios.size > 0 && (
-                <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.2)' }}>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold" style={{ color: '#c9a227' }}>Municípios selecionados</p>
-                    <button onClick={() => { setSelectedMunicipios(new Map()); setSelectedMunicipiosContacts([]); setSelectedIds(new Set()); }}
-                      className="text-xs hover:opacity-70 transition-all" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                      Limpar
-                    </button>
+              {/* Bairros list (view municipio) */}
+              {view === 'municipio' && munHasBairros && (
+                <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(74,158,222,0.2)' }}>
+                  <div className="px-3 py-2.5 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                    <MapPin className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
+                    <span className="text-xs font-semibold" style={{ color: '#4a9ede' }}>Bairros</span>
+                    <span className="text-[10px] ml-auto" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                      clique para selecionar
+                    </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {Array.from(selectedMunicipios.entries()).map(([codigo, nome]) => (
-                      <span key={codigo} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-full"
-                        style={{ background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)', color: '#e6b83a' }}>
-                        {nome}
-                        <button onClick={() => setSelectedMunicipios(prev => { const n = new Map(prev); n.delete(codigo); return n; })}
-                          className="hover:opacity-70 ml-0.5">
-                          <X className="w-2.5 h-2.5" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                    Clique num município no mapa para adicionar/remover
-                  </p>
+                  {bairroLoading ? (
+                    <div className="flex items-center justify-center py-6 gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" style={{ color: '#4a9ede' }} />
+                      <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Calculando...</span>
+                    </div>
+                  ) : (
+                    <div className="max-h-64 overflow-y-auto">
+                      {Object.entries(bairroCount).filter(([, c]) => c > 0).sort(([, a], [, b]) => b - a).map(([nome, count]) => {
+                        const isSel = selectedBairros.has(nome);
+                        return (
+                          <button key={nome} onClick={() => handleBairroClick(nome)}
+                            className="w-full text-left px-3 py-2 transition-all hover:bg-white/5 flex items-center gap-2"
+                            style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: isSel ? 'rgba(29,78,216,0.2)' : undefined }}>
+                            <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
+                              style={isSel ? { background: '#1d4ed8' } : { border: '1px solid rgba(255,255,255,0.2)' }}>
+                              {isSel && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+                            </span>
+                            <span className="text-xs font-medium flex-1 truncate" style={{ color: isSel ? '#93c5fd' : 'rgba(255,255,255,0.7)' }}>{nome}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0"
+                              style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede' }}>{count}</span>
+                          </button>
+                        );
+                      })}
+                      {Object.values(bairroCount).every(c => c === 0) && (
+                        <p className="text-xs text-center py-5" style={{ color: 'rgba(255,255,255,0.3)' }}>Nenhum contato geolocado neste município</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Search + list */}
+              {view === 'municipio' && !munHasBairros && (
+                <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Sem dados de bairros para este município</p>
+                </div>
+              )}
+
+              {/* Search + contacts list */}
               {view !== 'brasil' && (
                 <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' }}>
                   <div className="p-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
@@ -723,7 +844,7 @@ export default function ContatosPage() {
                       style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                       <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.35)' }} />
                       <input value={mapSearch} onChange={e => setMapSearch(e.target.value)}
-                        placeholder={selectedMunicipios.size > 0 ? 'Buscar nos municípios...' : 'Buscar no estado...'}
+                        placeholder="Buscar contatos..."
                         className="flex-1 bg-transparent text-white text-xs outline-none placeholder-white/20" />
                     </div>
                   </div>
@@ -737,10 +858,10 @@ export default function ContatosPage() {
                       </button>
                     )}
                   </div>
-                  <div className="max-h-56 overflow-y-auto divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                  <div className="max-h-48 overflow-y-auto divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
                     {mapSidebarContacts.length === 0 ? (
                       <p className="text-xs text-center py-5" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                        {pipLoading ? 'Calculando...' : selectedMunicipios.size > 0 ? 'Nenhum contato geolocado nestes municípios' : 'Nenhum contato neste estado'}
+                        {(pipLoading || bairroLoading) ? 'Calculando...' : 'Nenhum contato geolocado aqui'}
                       </p>
                     ) : mapSidebarContacts.map(c => {
                       const sel = selectedIds.has(c.id);
@@ -774,18 +895,78 @@ export default function ContatosPage() {
             {/* Map */}
             <div className="lg:col-span-3">
               <div className="rounded-2xl overflow-hidden relative" style={{ height: 560, background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(201,162,39,0.13)' }}>
-                {pipLoading && (
+                {(pipLoading || bairroLoading) && (
                   <div className="absolute inset-0 flex items-center justify-center z-10 rounded-2xl" style={{ background: 'rgba(4,17,31,0.6)' }}>
                     <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: '#4a9ede' }} />
-                    <span className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>Calculando zonas...</span>
+                    <span className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>Calculando...</span>
                   </div>
                 )}
-                <div className="h-full p-3">
+
+                {/* Popup de ação — aparece ao clicar em estado ou município */}
+                <AnimatePresence>
+                  {popup && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9, y: -8 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: -8 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-4 left-1/2 -translate-x-1/2 z-20 rounded-2xl shadow-2xl overflow-hidden"
+                      style={{ background: 'rgba(4,17,31,0.95)', border: '1px solid rgba(201,162,39,0.35)', minWidth: 260, backdropFilter: 'blur(12px)' }}>
+                      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                        <div className="flex items-center gap-2">
+                          {popup.type === 'estado' ? <Layers className="h-3.5 w-3.5" style={{ color: '#c9a227' }} /> : <Building2 className="h-3.5 w-3.5" style={{ color: '#c9a227' }} />}
+                          <span className="text-sm font-semibold text-white">{popup.nome}</span>
+                        </div>
+                        <button onClick={() => setPopup(null)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <div className="p-3 space-y-2">
+                        <button
+                          onClick={() => popup.type === 'estado'
+                            ? navigateToState(popup.uf, popup.nome)
+                            : navigateToMunicipio(popup.codigo!, popup.nome)}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90"
+                          style={{ background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.25)', color: '#4a9ede' }}>
+                          <Navigation className="h-4 w-4 flex-shrink-0" />
+                          <span>Navegar {popup.type === 'estado' ? 'pelo estado' : 'pelo município'}</span>
+                        </button>
+                        <button
+                          onClick={() => popup.type === 'estado'
+                            ? selectStateContacts(popup.uf)
+                            : selectMunicipioContacts(popup.uf, popup.codigo!)}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90"
+                          style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: '#4ade80' }}>
+                          <MousePointer className="h-4 w-4 flex-shrink-0" />
+                          <span>Selecionar contatos {popup.type === 'estado' ? 'do estado' : 'do município'}</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="h-full p-3" onClick={() => popup && setPopup(null)}>
                   {view === 'brasil' && <BrazilMap onStateClick={handleStateClick} />}
                   {view === 'estado' && (
                     <StateMap uf={selectedUf} stateName={selectedStateName}
                       votesData={contactsByMunCode} onMunicipioClick={handleMunicipioClick}
                       valueLabel="contatos" disableSubdivisao />
+                  )}
+                  {view === 'municipio' && navMunicipio && munHasBairros && (
+                    <ContatosBairrosMap
+                      municipio={navMunicipio.nome}
+                      uf={selectedUf}
+                      contatosPorBairro={bairroCount}
+                      selectedBairros={selectedBairros}
+                      onBairroClick={handleBairroClick}
+                      height="100%"
+                    />
+                  )}
+                  {view === 'municipio' && navMunicipio && !munHasBairros && !bairroLoading && (
+                    <div className="h-full flex flex-col items-center justify-center gap-3">
+                      <Building2 className="h-12 w-12 opacity-20" style={{ color: '#4a9ede' }} />
+                      <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Dados de bairros não disponíveis para {navMunicipio.nome}</p>
+                    </div>
                   )}
                 </div>
               </div>
