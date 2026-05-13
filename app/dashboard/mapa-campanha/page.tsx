@@ -2313,52 +2313,98 @@ export default function MapaCampanhaPage() {
         transition={{ delay: 0.1 }}
       >
         <Card className="mb-6" style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(201,162,39,0.2)', backdropFilter: 'blur(8px)' }}>
-          <CardContent className="p-5">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-              <div className="md:col-span-2">
-                <Input
-                  placeholder="Nome do candidato"
-                  value={candidateName}
-                  onChange={(e) => setCandidateName(e.target.value)}
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
+          <CardContent className="p-5 space-y-5">
+
+            {/* Cabeçalho do card */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4" style={{ color: '#c9a227' }} />
+                <span className="text-sm font-semibold tracking-wide" style={{ color: '#c9a227' }}>
+                  Buscar Candidato
+                </span>
               </div>
-              <Select
-                value={ano}
-                onChange={(e) => setAno(e.target.value)}
-                options={anosOptions}
-                className="bg-slate-700 border-slate-600 text-white"
-              />
-              <Select
-                value={uf}
-                onChange={(e) => setUf(e.target.value)}
-                options={estadosOptions}
-                className="bg-slate-700 border-slate-600 text-white"
-              />
-              <Select
-                label="Ano Projeção"
-                value={anoProjecao}
-                onChange={(e) => setAnoProjecao(e.target.value)}
-                options={anosProjecaoOptions}
-                className="bg-slate-700 border-slate-600 text-white"
-              />
-              <Button
-                onClick={() => searchCandidate()}
-                loading={loading}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                Buscar
-              </Button>
               <Button
                 onClick={() => setShowNovoCandidatoModal(true)}
                 variant="outline"
-                className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 whitespace-nowrap"
+                className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 whitespace-nowrap text-sm h-8 px-3"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
                 Novo Candidato
               </Button>
             </div>
+
+            {/* Bloco 1 — identificação do candidato */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
+                  NOME DO CANDIDATO
+                </label>
+                <Input
+                  placeholder="Ex: João Silva, Tarcísio, Lula…"
+                  value={candidateName}
+                  onChange={(e) => setCandidateName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && searchCandidate()}
+                  className="bg-slate-700/60 border-slate-600 text-white placeholder:text-slate-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
+                    ANO DA ELEIÇÃO
+                  </label>
+                  <Select
+                    value={ano}
+                    onChange={(e) => setAno(e.target.value)}
+                    options={anosOptions}
+                    className="bg-slate-700/60 border-slate-600 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
+                    ESTADO
+                  </label>
+                  <Select
+                    value={uf}
+                    onChange={(e) => setUf(e.target.value)}
+                    options={estadosOptions}
+                    className="bg-slate-700/60 border-slate-600 text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Divisor — Projeção */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+              <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>
+                Projeção
+              </span>
+              <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+            </div>
+
+            {/* Bloco 2 — configuração de projeção + botão buscar */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
+                  ANO ALVO DA PROJEÇÃO
+                </label>
+                <Select
+                  value={anoProjecao}
+                  onChange={(e) => setAnoProjecao(e.target.value)}
+                  options={anosProjecaoOptions}
+                  className="bg-slate-700/60 border-slate-600 text-white"
+                />
+              </div>
+              <Button
+                onClick={() => searchCandidate()}
+                loading={loading}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 font-semibold"
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Buscar Candidato
+              </Button>
+            </div>
+
           </CardContent>
         </Card>
       </motion.div>
