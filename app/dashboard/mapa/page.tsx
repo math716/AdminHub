@@ -1019,7 +1019,7 @@ export default function MapaPage() {
                 </div>
               </div>
               <Select
-                label="Estado (opcional)"
+                label="Estado"
                 value={searchEstado}
                 onChange={(e) => setSearchEstado(e.target.value)}
                 options={[
