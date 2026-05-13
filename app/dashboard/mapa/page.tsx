@@ -261,7 +261,8 @@ export default function MapaPage() {
   // Search
   const [candidateName, setCandidateName] = useState('');
   const [ano, setAno] = useState('2022');
-  const [searchUf, setSearchUf] = useState('');
+  const [searchUf, setSearchUf] = useState('BR');
+  const [searchEstado, setSearchEstado] = useState('');
   const [searching, setSearching] = useState(false);
   const [loadingVotes, setLoadingVotes] = useState(false);
   const [searchError, setSearchError] = useState('');
@@ -710,7 +711,8 @@ export default function MapaPage() {
     setMensagemHomonimos('');
 
     try {
-      const params = new URLSearchParams({ candidato: candidateName, ano, ...(searchUf && { uf: searchUf }) });
+      const efectiveUf = searchEstado || 'BR';
+      const params = new URLSearchParams({ candidato: candidateName, ano, uf: efectiveUf });
       const res = await fetch(`/api/tse/candidato?${params.toString()}`);
       const data = await res.json();
 
@@ -722,20 +724,36 @@ export default function MapaPage() {
         return;
       }
 
-      setElectoralData(data);
-      const cargo = data.cargo?.toUpperCase() ?? '';
+      let finalData = data;
+
+      // When a specific state was chosen, also fetch national votosPorEstado so the
+      // Brasil view shows all states correctly when the user navigates back.
+      if (searchEstado) {
+        try {
+          const brRes = await fetch(`/api/tse/candidato?${new URLSearchParams({ candidato: candidateName, ano, uf: 'BR' }).toString()}`);
+          if (brRes.ok) {
+            const brData = await brRes.json();
+            if (!brData.multiplos && brData.votosPorEstado && Object.keys(brData.votosPorEstado).length > 1) {
+              finalData = { ...data, votosPorEstado: brData.votosPorEstado };
+            }
+          }
+        } catch {}
+      }
+
+      setElectoralData(finalData);
+      const cargo = finalData.cargo?.toUpperCase() ?? '';
       const isMunicipalCargo = cargo.includes('VEREADOR') || cargo.includes('PREFEITO');
-      if (isMunicipalCargo && searchUf && searchUf !== 'BR') {
-        setSelectedUf(searchUf);
-        const estado = ESTADOS_BRASIL?.find?.((e) => e?.sigla === searchUf);
-        setSelectedStateName(estado?.nome ?? searchUf);
-        if (!navigateToMunicipio(data, searchUf)) setView('estado');
-      } else if (searchUf && searchUf !== 'BR') {
-        setSelectedUf(searchUf);
-        const estado = ESTADOS_BRASIL?.find?.((e) => e?.sigla === searchUf);
-        setSelectedStateName(estado?.nome ?? searchUf);
-        setView('estado');
-      } else if (searchUf === 'BR') {
+
+      if (searchEstado) {
+        setSelectedUf(searchEstado);
+        const estado = ESTADOS_BRASIL?.find?.((e) => e?.sigla === searchEstado);
+        setSelectedStateName(estado?.nome ?? searchEstado);
+        if (isMunicipalCargo) {
+          if (!navigateToMunicipio(finalData, searchEstado)) setView('estado');
+        } else {
+          setView('estado');
+        }
+      } else {
         setView('brasil');
       }
     } catch { setSearchError('Erro ao buscar dados eleitorais'); }
@@ -746,28 +764,43 @@ export default function MapaPage() {
     setSearching(true);
     setSearchError('');
     try {
-      const params = new URLSearchParams({ candidatoId, ano, uf: searchUf });
+      const efectiveUf = searchEstado || 'BR';
+      const params = new URLSearchParams({ candidatoId, ano, uf: efectiveUf });
       const res = await fetch(`/api/tse/candidato?${params.toString()}`);
       const data = await res.json();
 
       if (!res.ok) { setSearchError(data?.error ?? 'Erro ao buscar dados'); return; }
-      setElectoralData(data);
       setCandidatosHomonimos([]);
       setMensagemHomonimos('');
 
-      const cargoH = data.cargo?.toUpperCase() ?? '';
+      let finalData = data;
+
+      if (searchEstado) {
+        try {
+          const brRes = await fetch(`/api/tse/candidato?${new URLSearchParams({ candidato: candidateName, ano, uf: 'BR' }).toString()}`);
+          if (brRes.ok) {
+            const brData = await brRes.json();
+            if (!brData.multiplos && brData.votosPorEstado && Object.keys(brData.votosPorEstado).length > 1) {
+              finalData = { ...data, votosPorEstado: brData.votosPorEstado };
+            }
+          }
+        } catch {}
+      }
+
+      setElectoralData(finalData);
+      const cargoH = finalData.cargo?.toUpperCase() ?? '';
       const isMunicipalCargoH = cargoH.includes('VEREADOR') || cargoH.includes('PREFEITO');
-      if (isMunicipalCargoH && searchUf && searchUf !== 'BR') {
-        setSelectedUf(searchUf);
-        const estado = ESTADOS_BRASIL?.find?.((e) => e?.sigla === searchUf);
-        setSelectedStateName(estado?.nome ?? searchUf);
-        if (!navigateToMunicipio(data, searchUf)) setView('estado');
-      } else if (searchUf && searchUf !== 'BR') {
-        setSelectedUf(searchUf);
-        const estado = ESTADOS_BRASIL?.find?.((e) => e?.sigla === searchUf);
-        setSelectedStateName(estado?.nome ?? searchUf);
-        setView('estado');
-      } else if (searchUf === 'BR') {
+
+      if (searchEstado) {
+        setSelectedUf(searchEstado);
+        const estado = ESTADOS_BRASIL?.find?.((e) => e?.sigla === searchEstado);
+        setSelectedStateName(estado?.nome ?? searchEstado);
+        if (isMunicipalCargoH) {
+          if (!navigateToMunicipio(finalData, searchEstado)) setView('estado');
+        } else {
+          setView('estado');
+        }
+      } else {
         setView('brasil');
       }
     } catch { setSearchError('Erro ao buscar dados eleitorais'); }
@@ -833,12 +866,6 @@ export default function MapaPage() {
     { value: '2022', label: '2022 - Federal/Estadual' },
     { value: '2020', label: '2020 - Municipal' },
     { value: '2018', label: '2018 - Federal/Estadual' },
-  ];
-
-  const estadoOptions = [
-    { value: '', label: 'Todos os estados' },
-    { value: 'BR', label: '🇧🇷 Brasil (Presidente / Federal)' },
-    ...(ESTADOS_BRASIL?.map?.((e) => ({ value: e?.sigla ?? '', label: e?.nome ?? '' })) ?? []),
   ];
 
   if (status === 'loading') return <div className="text-center py-12 text-slate-400">Carregando...</div>;
@@ -983,11 +1010,22 @@ export default function MapaPage() {
                 onChange={(e) => setAno(e.target.value)}
                 options={anoOptions}
               />
+              <div>
+                <p className="text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>País</p>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                  style={{ background: 'rgba(74,158,222,0.08)', border: '1px solid rgba(74,158,222,0.2)' }}>
+                  <Globe className="h-4 w-4 flex-shrink-0" style={{ color: '#4a9ede' }} />
+                  <span className="text-sm font-medium text-white">🇧🇷 Brasil</span>
+                </div>
+              </div>
               <Select
-                label="Estado"
-                value={searchUf}
-                onChange={(e) => setSearchUf(e.target.value)}
-                options={estadoOptions}
+                label="Estado (opcional)"
+                value={searchEstado}
+                onChange={(e) => setSearchEstado(e.target.value)}
+                options={[
+                  { value: '', label: 'Nenhum — busca nacional' },
+                  ...(ESTADOS_BRASIL?.map?.((e) => ({ value: e?.sigla ?? '', label: e?.nome ?? '' })) ?? []),
+                ]}
               />
               {searchError && <p className="text-sm text-red-500">{searchError}</p>}
               <Button className="w-full" onClick={handleSearch} loading={searching}>
