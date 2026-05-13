@@ -274,11 +274,14 @@ export async function GET(request: NextRequest) {
     const bairroVotesRaw: Record<string, number> = {};
 
     // ── Tentar votos exatos por seção (gerado com --secao) ──────────────────
+    // O arquivo de seção é indexado pelo NR_CANDIDATO (número na urna),
+    // que funciona tanto no formato votacao_secao (2018/2022) quanto no
+    // detalhe_votacao_secao (2020/2024) — veja tse-to-json.ts --secao.
     const secaoData = candidatoEncontrado && ano
       ? await loadSecaoVotes(munNorm, ano, uf, baseUrl)
       : null;
-    const localVotesMap = secaoData && candidatoEncontrado
-      ? secaoData[candidatoEncontrado.id]
+    const localVotesMap = secaoData && candidatoEncontrado?.numero
+      ? secaoData[String(candidatoEncontrado.numero)]
       : null;
 
     if (localVotesMap) {

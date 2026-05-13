@@ -365,8 +365,14 @@ function loadManifest(): Map<string, Set<string>> {
 }
 
 function findSecaoCsvBuffer(ano: number, uf: string): Buffer | null {
+  // 2018 e 2022: votacao_secao_XXXX
+  // 2020 e 2024: detalhe_votacao_secao_XXXX (TSE mudou o nome)
+  const prefixos = ano === 2020 || ano === 2024
+    ? [`detalhe_votacao_secao_${ano}`, `votacao_secao_${ano}`]
+    : [`votacao_secao_${ano}`, `detalhe_votacao_secao_${ano}`];
+
   const subfolders = [
-    path.join(INPUT_DIR, `votacao_secao_${ano}`),
+    ...prefixos.map(p => path.join(INPUT_DIR, p)),
     path.join(INPUT_DIR, String(ano)),
     INPUT_DIR,
   ];
@@ -375,25 +381,27 @@ function findSecaoCsvBuffer(ano: number, uf: string): Buffer | null {
     if (!fs.existsSync(dir)) continue;
 
     // BR zip (contém um CSV por UF dentro do ZIP)
-    for (const brName of [`votacao_secao_${ano}_BR.zip`, `votacao_secao${ano}BR.zip`]) {
-      const brZip = path.join(dir, brName);
-      if (!fs.existsSync(brZip)) continue;
-      const entries = parseZip(fs.readFileSync(brZip));
-      const e = entries.find(x => x.filename.toUpperCase().includes(`_${uf}.CSV`))
-             ?? entries.find(x => x.filename.toLowerCase().endsWith('.csv') && x.filename.toLowerCase().includes(uf.toLowerCase()));
-      if (e) { console.log(`  ZIP secao BR: → ${e.filename}`); return e.data; }
+    for (const prefixo of prefixos) {
+      for (const brName of [`${prefixo}_BR.zip`, `${prefixo}BR.zip`]) {
+        const brZip = path.join(dir, brName);
+        if (!fs.existsSync(brZip)) continue;
+        const entries = parseZip(fs.readFileSync(brZip));
+        const e = entries.find(x => x.filename.toUpperCase().includes(`_${uf}.CSV`))
+               ?? entries.find(x => x.filename.toLowerCase().endsWith('.csv') && x.filename.toLowerCase().includes(uf.toLowerCase()));
+        if (e) { console.log(`  ZIP secao BR: ${path.basename(brZip)} → ${e.filename}`); return e.data; }
+      }
+
+      // ZIP por UF
+      for (const ufName of [`${prefixo}_${uf}.zip`, `${prefixo}${uf}.zip`]) {
+        const ufZip = path.join(dir, ufName);
+        if (!fs.existsSync(ufZip)) continue;
+        const entries = parseZip(fs.readFileSync(ufZip));
+        const e = entries.find(x => x.filename.toLowerCase().endsWith('.csv'));
+        if (e) { console.log(`  ZIP secao ${uf}: ${path.basename(ufZip)} → ${e.filename}`); return e.data; }
+      }
     }
 
-    // ZIP por UF
-    for (const ufName of [`votacao_secao_${ano}_${uf}.zip`, `votacao_secao${ano}${uf}.zip`]) {
-      const ufZip = path.join(dir, ufName);
-      if (!fs.existsSync(ufZip)) continue;
-      const entries = parseZip(fs.readFileSync(ufZip));
-      const e = entries.find(x => x.filename.toLowerCase().endsWith('.csv'));
-      if (e) { console.log(`  ZIP secao ${uf}: → ${e.filename}`); return e.data; }
-    }
-
-    // CSV direto
+    // CSV direto (qualquer arquivo com "secao" e a UF no nome)
     const files = fs.readdirSync(dir).filter(f =>
       f.toLowerCase().endsWith('.csv') &&
       f.toLowerCase().includes('secao') &&
@@ -414,7 +422,12 @@ function processSecaoUfAno(uf: string, ano: number, muns: Set<string>): boolean 
   const buf = findSecaoCsvBuffer(ano, uf);
   if (!buf) { console.log(`  [SKIP] secao ${uf} ${ano} — CSV não encontrado`); return false; }
 
-  // Map: munNorm → candidatoId → "zona-codLocal" → votos
+  // Índice por número do candidato na urna (NR_CANDIDATO / NR_VOTAVEL).
+  // Funciona tanto no formato votacao_secao (2018/2022, usa NR_CANDIDATO)
+  // quanto no detalhe_votacao_secao (2020/2024, usa NR_VOTAVEL).
+  // Dentro de um município os números não colidem entre cargos (prefeito 2 dígitos,
+  // vereador 5 dígitos, deputado/senador/governador/presidente têm faixas distintas).
+  // Map: munNorm → nrCandidato (string) → "zona-codLocal" → votos
   const byMun = new Map<string, Map<string, Record<string, number>>>();
   for (const mun of muns) byMun.set(mun, new Map());
 
@@ -423,20 +436,24 @@ function processSecaoUfAno(uf: string, ano: number, muns: Set<string>): boolean 
     rowCount++;
     if (getTurno(row) !== '1') return;
 
+    // Ignorar votos em branco, nulos e de legenda (só presentes no formato detalhe)
+    const tipo = row['CD_TIPO_VOTAVEL'] || '';
+    if (tipo && tipo !== '1' && !tipo.toLowerCase().startsWith('cand')) return;
+
     const mun = normText(row['NM_MUNICIPIO'] || row['NM_UE'] || '');
     if (!byMun.has(mun)) return;
 
-    const sq       = row['SQ_CANDIDATO'] || row['NR_CPF_CANDIDATO'] || '';
+    // NR_CANDIDATO (votacao_secao) ou NR_VOTAVEL (detalhe_votacao_secao)
+    const nrCand   = (row['NR_CANDIDATO'] || row['NR_VOTAVEL'] || '').trim();
     const zona     = parseInt(row['NR_ZONA'] || '0', 10);
     const codLocal = (row['NR_LOCAL_VOTACAO'] || row['CD_LOCAL_VOTACAO'] || row['CD_LOCAL'] || '').trim();
     const votos    = parseVotos(row);
 
-    if (!sq || !zona || !codLocal || votos === 0) return;
+    if (!nrCand || nrCand === '0' || !zona || !codLocal || votos === 0) return;
 
     const byCand = byMun.get(mun)!;
-    const id = `${uf}-${ano}-${sq}`;
-    if (!byCand.has(id)) byCand.set(id, {});
-    const locaisMap = byCand.get(id)!;
+    if (!byCand.has(nrCand)) byCand.set(nrCand, {});
+    const locaisMap = byCand.get(nrCand)!;
     const key = `${zona}-${codLocal}`;
     locaisMap[key] = (locaisMap[key] ?? 0) + votos;
   });
@@ -447,7 +464,7 @@ function processSecaoUfAno(uf: string, ano: number, muns: Set<string>): boolean 
   for (const [mun, byCand] of byMun) {
     if (byCand.size === 0) continue;
     const result: Record<string, Record<string, number>> = {};
-    for (const [id, locaisMap] of byCand) result[id] = locaisMap;
+    for (const [nrCand, locaisMap] of byCand) result[nrCand] = locaisMap;
     writeJson(path.join(outDir, `${mun}.json`), result);
     written++;
   }
