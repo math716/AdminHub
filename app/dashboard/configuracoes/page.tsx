@@ -223,14 +223,16 @@ export default function ConfiguracoesPage() {
           {/* DISCONNECTED / QR */}
           {(waStatus === 'disconnected' || waStatus === 'connecting') && (
             <div className="space-y-4">
-              {!instanceData?.instanceName && !qrCode ? (
-                // Nunca conectou — criar instância
+              {!qrCode ? (
+                // Sem QR code — mostrar apenas o botão, sem spinner
                 <div className="text-center py-4">
                   <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
                     style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)' }}>
                     <QrCode className="w-6 h-6" style={{ color: '#c9a227' }} />
                   </div>
-                  <p className="text-white font-medium mb-1">Nenhum número conectado</p>
+                  <p className="text-white font-medium mb-1">
+                    {instanceData?.instanceName ? 'WhatsApp desconectado' : 'Nenhum número conectado'}
+                  </p>
                   <p className="text-xs mb-4" style={{ color: 'rgba(255,255,255,0.4)' }}>
                     Clique abaixo para gerar o QR Code e conectar o WhatsApp do gabinete.
                   </p>
@@ -238,11 +240,11 @@ export default function ConfiguracoesPage() {
                     className="flex items-center gap-2 mx-auto px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
                     style={{ background: 'linear-gradient(135deg,#128c7e,#25d366)', color: '#fff' }}>
                     {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
-                    Gerar QR Code
+                    {creating ? 'Gerando QR Code…' : instanceData?.instanceName ? 'Reconectar WhatsApp' : 'Gerar QR Code'}
                   </button>
                 </div>
               ) : (
-                // Tem QR code para escanear
+                // QR code disponível — mostrar para escanear
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 p-3 rounded-xl"
                     style={{ background: 'rgba(201,162,39,0.07)', border: '1px solid rgba(201,162,39,0.2)' }}>
@@ -252,21 +254,15 @@ export default function ConfiguracoesPage() {
                     </p>
                   </div>
 
-                  {qrCode ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="p-3 rounded-2xl bg-white">
-                        <img src={qrCode} alt="QR Code WhatsApp" className="w-52 h-52 object-contain" />
-                      </div>
-                      <p className="text-xs flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                        <RefreshCw className="w-3 h-3 animate-spin" />
-                        Aguardando escaneamento… (atualiza automaticamente)
-                      </p>
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="p-3 rounded-2xl bg-white">
+                      <img src={qrCode} alt="QR Code WhatsApp" className="w-52 h-52 object-contain" />
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center py-6">
-                      <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#c9a227' }} />
-                    </div>
-                  )}
+                    <p className="text-xs flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      Aguardando escaneamento… (atualiza automaticamente)
+                    </p>
+                  </div>
 
                   <button onClick={handleCreate} disabled={creating}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80 disabled:opacity-50"
