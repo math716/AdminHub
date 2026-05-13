@@ -309,30 +309,75 @@ export default function ContatosPage() {
   const navigateToMunicipio = useCallback(async (codigo: string, nome: string) => {
     setNavMunicipio({ codigo, nome });
     setView('municipio'); setPopup(null);
+    setBairroContacts({}); setBairroCount({}); setBairroFeatures([]); setSelectedBairros(new Set());
+
+    const nStr = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    // converte nome para o formato do filename gerado pelo script (underscore)
+    const fileNorm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, '_').replace(/\s+/g, '_').trim();
+
+    const isSaoPauloCapital = selectedUf === 'SP' && nStr(nome) === 'SAO PAULO';
+
+    if (isSaoPauloCapital) {
+      // São Paulo capital: usa sp-distritos.geojson como proxy de bairros
+      setMunHasBairros(true);
+      setBairroLoading(true);
+      try {
+        const [geoState, spRes] = await Promise.all([
+          fetchStateGeojson(selectedUf),
+          fetch('/geojson/sp-distritos.geojson'),
+        ]);
+        if (!spRes.ok) return;
+        const spGeo = await spRes.json();
+        const munFeature = geoState?.features?.find((f: any) => String(f.properties?.codarea ?? '') === String(codigo));
+        const contatosMun = munFeature
+          ? geocodedContacts.filter(c => pointInFeature(c.lng, c.lat, munFeature.geometry))
+          : geocodedContacts;
+        // Normaliza propriedades para o formato esperado pelo ContatosBairrosMap
+        const features = (spGeo.features ?? []).map((f: any) => ({
+          ...f,
+          properties: {
+            ...f.properties,
+            NM_BAIRRO: f.properties?.nm_distrito_municipal ?? f.properties?.ds_nome ?? '',
+            NM_MUN: 'São Paulo',
+          },
+        }));
+        const bContacts: Record<string, string[]> = {};
+        const bCount: Record<string, number> = {};
+        for (const f of features) {
+          const normNm = nStr(f.properties?.NM_BAIRRO ?? '');
+          const inside = contatosMun.filter(c => pointInFeature(c.lng, c.lat, f.geometry));
+          bContacts[normNm] = inside.map(c => c.id);
+          bCount[normNm] = inside.length;
+        }
+        setBairroContacts(bContacts);
+        setBairroCount(bCount);
+        setBairroFeatures(features);
+      } catch {} finally { setBairroLoading(false); }
+      return;
+    }
+
     const has = hasBairrosPoligonos(selectedUf, nome);
     setMunHasBairros(has);
-    if (!has) { setBairroContacts({}); setBairroCount({}); return; }
+    if (!has) return;
 
     setBairroLoading(true);
     try {
+      const nmFile = fileNorm(nome);
       const [geoState, geoBairrosRes] = await Promise.all([
         fetchStateGeojson(selectedUf),
-        fetch(`/api/ibge/bairros?uf=${encodeURIComponent(selectedUf)}&municipio=${encodeURIComponent(nome)}`),
+        fetch(`/geojson/municipios/${selectedUf}/${nmFile}.json`),
       ]);
       if (!geoBairrosRes.ok) return;
       const geoBairros = await geoBairrosRes.json();
-
-      const n = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
       const munFeature = geoState?.features?.find((f: any) => String(f.properties?.codarea ?? '') === String(codigo));
       const contatosMun = munFeature
         ? geocodedContacts.filter(c => pointInFeature(c.lng, c.lat, munFeature.geometry))
         : geocodedContacts;
-
       const bContacts: Record<string, string[]> = {};
       const bCount: Record<string, number> = {};
       const features = geoBairros.features ?? [];
       for (const f of features) {
-        const normNm = n(f.properties?.NM_BAIRRO ?? '');
+        const normNm = nStr(f.properties?.NM_BAIRRO ?? '');
         const inside = contatosMun.filter(c => pointInFeature(c.lng, c.lat, f.geometry));
         bContacts[normNm] = inside.map(c => c.id);
         bCount[normNm] = inside.length;
@@ -960,7 +1005,12 @@ export default function ContatosPage() {
                       votesData={contactsByMunCode} onMunicipioClick={handleMunicipioClick}
                       valueLabel="contatos" disableSubdivisao />
                   )}
-                  {view === 'municipio' && navMunicipio && munHasBairros && bairroFeatures.length > 0 && (
+                  {view === 'municipio' && navMunicipio && bairroLoading && (
+                    <div className="h-full flex items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+                    </div>
+                  )}
+                  {view === 'municipio' && navMunicipio && !bairroLoading && munHasBairros && bairroFeatures.length > 0 && (
                     <ContatosBairrosMap
                       municipio={navMunicipio.nome}
                       uf={selectedUf}
@@ -971,7 +1021,7 @@ export default function ContatosPage() {
                       height="100%"
                     />
                   )}
-                  {view === 'municipio' && navMunicipio && !munHasBairros && !bairroLoading && (
+                  {view === 'municipio' && navMunicipio && !bairroLoading && (!munHasBairros || bairroFeatures.length === 0) && (
                     <div className="h-full flex flex-col items-center justify-center gap-3">
                       <Building2 className="h-12 w-12 opacity-20" style={{ color: '#4a9ede' }} />
                       <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Dados de bairros não disponíveis para {navMunicipio.nome}</p>
