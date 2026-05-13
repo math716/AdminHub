@@ -629,11 +629,11 @@ export default function MapaCampanhaPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uf, mgBairrosMunicipio, electoralData, ano]);
 
-  // Detecta municípios genéricos com polígonos (todos os estados exceto MG que tem MgBairrosMap)
+  // Detecta municípios genéricos com polígonos (todos os estados exceto cidades com mapas específicos)
   useEffect(() => {
     const normMun = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
     const isVereadorPrefeito = ['VEREADOR','PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c));
-    if (!isVereadorPrefeito || !municipioVereador || uf === 'MG') {
+    if (!isVereadorPrefeito || !municipioVereador) {
       setGenPoligonosMunicipio('');
       setGenPoligonosUf('');
       return;
@@ -1077,9 +1077,6 @@ export default function MapaCampanhaPage() {
         setRjVisualizacao('bairros');
       } else if (novoCandidatoUf === 'CE' && munNormalized === 'FORTALEZA') {
         setCeVisualizacao('bairros');
-      } else if (novoCandidatoUf === 'MG' && munNormalized && MG_MUNICIPIOS_COM_BAIRROS.has(munNormalized)) {
-        setMgVisualizacao('bairros');
-        setMgBairrosMunicipio(novoCandidatoMunicipio);
       } else {
         setSpVisualizacao('municipios');
         setRjVisualizacao('municipios');

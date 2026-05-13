@@ -134,22 +134,7 @@ const DfRegioesMap = dynamic(() => import('@/components/maps/df-regioes-map'), {
 const SpDistritosMap = dynamic(() => import('@/components/maps/sp-distritos-map'), { ssr: false });
 const RjBairrosMap   = dynamic(() => import('@/components/maps/rj-bairros-map'),   { ssr: false });
 const CeBairrosMap   = dynamic(() => import('@/components/maps/ce-bairros-map'),   { ssr: false });
-const MgBairrosMap          = dynamic(() => import('@/components/maps/mg-bairros-map'),          { ssr: false });
 const BairrosPoligonosMap   = dynamic(() => import('@/components/maps/bairros-poligonos-map'),  { ssr: false });
-
-// Municípios de MG com bairros disponíveis no GeoJSON IBGE CD2022
-const MG_MUNICIPIOS_COM_BAIRROS = new Set([
-  'ABAETE','ARAXA','AUGUSTO DE LIMA','BARBACENA','BELO HORIZONTE','BETIM','BICAS',
-  'CAMPINA VERDE','CANAPOLIS','CARANGOLA','CARATINGA','CARMO DO PARANAIBA',
-  'CONCEICAO DAS ALAGOAS','COQUEIRAL','COROMANDEL','CORONEL FABRICIANO','CRUCILANDIA',
-  'GOVERNADOR VALADARES','IBIA','IPATINGA','ITABIRITO','ITAUNA','ITUIUTABA',
-  'JUIZ DE FORA','MATUTINA','MONTE ALEGRE DE MINAS','NANUQUE','NATERCIA','NOVA ERA',
-  'NOVA PONTE','PAINS','PASSOS','PATOS DE MINAS','PATROCINIO','PECANHA','PIRAPORA',
-  'POMPEU','PONTE NOVA','POCOS DE CALDAS','RIO CASCA','SACRAMENTO','SANTA JULIANA',
-  'SOBRALIA','SAO GERALDO DO BAIXIO','SAO GOTARDO','SAO JOAO DEL REI','SAO ROMAO',
-  'TEOFILO OTONI','TIMOTEO','TRES CORACOES','TUPACIGUARA','UBERABA','UBERLANDIA',
-  'URUANA DE MINAS','VARGINHA',
-]);
 
 // Fração de votos por zona eleitoral → Bairro do Rio de Janeiro
 // Gerado via join espacial entre locais de votação TSE e GeoJSON IPP/Data.Rio
@@ -308,12 +293,7 @@ export default function MapaPage() {
   const [selectedCeBairro, setSelectedCeBairro] = useState<string | null>(null);
   const [ceBairrosVotes, setCeBairrosVotes] = useState<Record<string, number>>({});
 
-  // MG Bairros (municípios de Minas Gerais com GeoJSON IBGE)
-  const [mgVisualizacao, setMgVisualizacao] = useState<'bairros' | 'zonas'>('bairros');
-  const [selectedMgBairro, setSelectedMgBairro] = useState<string | null>(null);
-  const [mgBairrosVotes, setMgBairrosVotes] = useState<Record<string, number>>({});
-
-  // Bairros polígonos genéricos — todas UFs com GeoJSON IBGE CD2022 (exceto SP/RJ/CE/MG especiais)
+  // Bairros polígonos genéricos — todas UFs com GeoJSON IBGE CD2022 (exceto SP-SP/RJ-RJ/CE-Fortaleza especiais)
   const [genVisualizacao, setGenVisualizacao] = useState<'bairros' | 'zonas'>('bairros');
   const [selectedGenBairro, setSelectedGenBairro] = useState<string | null>(null);
   const [genBairrosApiVotes, setGenBairrosApiVotes] = useState<Record<string, number>>({});
@@ -484,22 +464,9 @@ export default function MapaPage() {
     setSelectedCeBairro(prev => prev === nome ? null : nome);
   }, []);
 
-  // Detecta se o município selecionado é de MG e tem bairros no GeoJSON IBGE
-  const isMgMunicipio = useMemo(() => {
-    if (selectedUf !== 'MG' || !selectedMunicipio) return false;
-    const norm = (s: string) =>
-      s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
-    return MG_MUNICIPIOS_COM_BAIRROS.has(norm(selectedMunicipio.nome));
-  }, [selectedUf, selectedMunicipio]);
-
-  const handleMgBairroClick = useCallback((nome: string) => {
-    setSelectedMgBairro(prev => prev === nome ? null : nome);
-  }, []);
-
-  // Detecta se o município selecionado tem polígonos IBGE genéricos (exceto MG/SP-SP/RJ-RJ/CE-Fortaleza)
+  // Detecta se o município selecionado tem polígonos IBGE genéricos (exceto SP-SP/RJ-RJ/CE-Fortaleza especiais)
   const isGenPoligonosMunicipio = useMemo(() => {
     if (!selectedMunicipio || !selectedUf) return false;
-    if (isMgMunicipio) return false;
     const norm = (s: string) =>
       s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
     const munNorm = norm(selectedMunicipio.nome);
@@ -507,7 +474,7 @@ export default function MapaPage() {
     if (selectedUf === 'RJ' && munNorm === 'RIO DE JANEIRO') return false;
     if (selectedUf === 'CE' && munNorm === 'FORTALEZA') return false;
     return hasBairrosPoligonos(selectedUf, selectedMunicipio.nome);
-  }, [selectedUf, selectedMunicipio, isMgMunicipio]);
+  }, [selectedUf, selectedMunicipio]);
 
   const handleGenBairroClick = useCallback((nome: string) => {
     setSelectedGenBairro(prev => prev === nome ? null : nome);
@@ -612,9 +579,6 @@ export default function MapaPage() {
     setRjVisualizacao('bairros');
     setSelectedCeBairro(null);
     setCeVisualizacao('bairros');
-    setSelectedMgBairro(null);
-    setMgVisualizacao('bairros');
-    setMgBairrosVotes({});
     setGenVisualizacao('bairros');
     setSelectedGenBairro(null);
     setGenBairrosApiVotes({});
@@ -665,20 +629,6 @@ export default function MapaPage() {
     setDfRegioesVotes(raVotes);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUf, electoralData]);
-
-  // Popula mgBairrosVotes via API P-I-P quando município MG é selecionado
-  useEffect(() => {
-    if (!isMgMunicipio || !selectedMunicipio) { setMgBairrosVotes({}); return; }
-    const params = new URLSearchParams({ municipio: selectedMunicipio.nome, uf: 'MG' });
-    if (electoralData?.candidatoId) {
-      params.set('candidatoId', electoralData.candidatoId);
-      params.set('ano', String(electoralData.ano));
-    }
-    fetch(`/api/tse/bairros-poligonos?${params}`)
-      .then(r => r.json())
-      .then(data => setMgBairrosVotes(data.bairroVotes ?? {}))
-      .catch(() => setMgBairrosVotes({}));
-  }, [isMgMunicipio, selectedMunicipio, electoralData]);
 
   // Popula genBairrosApiVotes via API P-I-P quando município genérico com polígonos é selecionado
   useEffect(() => {
@@ -745,9 +695,6 @@ export default function MapaPage() {
     setRjVisualizacao('bairros');
     setSelectedCeBairro(null);
     setCeVisualizacao('bairros');
-    setSelectedMgBairro(null);
-    setMgVisualizacao('bairros');
-    setMgBairrosVotes({});
     setGenVisualizacao('bairros');
     setSelectedGenBairro(null);
     setGenBairrosApiVotes({});
@@ -1715,25 +1662,6 @@ export default function MapaPage() {
                           </button>
                         </div>
                       )}
-                      {/* Toggle bairros/zonas — municípios de MG com GeoJSON */}
-                      {isMgMunicipio && (
-                        <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
-                          <button
-                            onClick={() => { setMgVisualizacao('bairros'); setSelectedBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${mgVisualizacao === 'bairros' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
-                            style={mgVisualizacao === 'bairros' ? { background: '#7c3aed' } : {}}
-                          >
-                            Bairros
-                          </button>
-                          <button
-                            onClick={() => { setMgVisualizacao('zonas'); setSelectedMgBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${mgVisualizacao === 'zonas' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
-                            style={mgVisualizacao === 'zonas' ? { background: '#7c3aed' } : {}}
-                          >
-                            Zonas
-                          </button>
-                        </div>
-                      )}
                       {/* Toggle bairros/zonas — municípios genéricos com GeoJSON IBGE CD2022 */}
                       {isGenPoligonosMunicipio && (
                         <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
@@ -1918,60 +1846,7 @@ export default function MapaPage() {
                       </>
                     )}
 
-                    {/* Mapa de bairros MG — para municípios de MG com GeoJSON IBGE */}
-                    {isMgMunicipio && mgVisualizacao === 'bairros' && (
-                      <>
-                        <div className="flex-1 min-w-0">
-                          <MgBairrosMap
-                            municipio={selectedMunicipio.nome}
-                            votesData={mgBairrosVotes}
-                            selectedBairro={selectedMgBairro}
-                            onBairroClick={handleMgBairroClick}
-                            height="100%"
-                          />
-                        </div>
-                        <div className="w-48 flex flex-col rounded-xl overflow-hidden"
-                          style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.2)' }}>
-                          <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
-                            <MapPin className="h-3.5 w-3.5" style={{ color: '#a78bfa' }} />
-                            <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#a78bfa' }}>Bairros</span>
-                            {Object.keys(mgBairrosVotes).length > 0 && (
-                              <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{Object.keys(mgBairrosVotes).length}</span>
-                            )}
-                          </div>
-                          <div className="flex-1 overflow-y-auto scrollbar-dark">
-                            {Object.keys(mgBairrosVotes).length === 0 ? (
-                              <p className="text-slate-600 text-xs text-center py-6 px-2">Sem dados de bairros</p>
-                            ) : (
-                              Object.entries(mgBairrosVotes)
-                                .sort(([, a], [, b]) => b - a)
-                                .map(([bairro, votos]) => (
-                                  <button
-                                    key={bairro}
-                                    onClick={() => handleMgBairroClick(bairro)}
-                                    className="w-full text-left px-3 py-2 transition-colors cursor-pointer hover:bg-white/5"
-                                    style={{
-                                      borderBottom: '1px solid rgba(74,158,222,0.1)',
-                                      background: selectedMgBairro === bairro ? 'rgba(124,58,237,0.15)' : undefined,
-                                    }}
-                                  >
-                                    <div className="text-[11px] font-semibold truncate"
-                                      style={{ color: selectedMgBairro === bairro ? '#a78bfa' : 'rgba(255,255,255,0.7)' }}>
-                                      {bairro}
-                                    </div>
-                                    <div className="font-bold text-sm leading-tight" style={{ color: '#a78bfa' }}>
-                                      {(votos as number).toLocaleString('pt-BR')}
-                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>votos</span>
-                                    </div>
-                                  </button>
-                                ))
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {/* Mapa de bairros polígonos genéricos — municípios com GeoJSON IBGE (exceto MG/SP-SP/RJ-RJ/CE-Fortaleza) */}
+                    {/* Mapa de bairros polígonos genéricos — municípios com GeoJSON IBGE CD2022 (exceto SP-SP/RJ-RJ/CE-Fortaleza) */}
                     {isGenPoligonosMunicipio && genVisualizacao === 'bairros' && (
                       <>
                         <div className="flex-1 min-w-0">
@@ -2035,7 +1910,7 @@ export default function MapaPage() {
                     )}
 
                     {/* Mapa de bairros (pins) — para outros municípios ou SP/RJ/CE/MG/gen no modo zonas */}
-                    {(!isSaoPauloCapital || spVisualizacao === 'bairros') && (!isRioDeJaneiro || rjVisualizacao === 'zonas') && (!isFortalezaCe || ceVisualizacao === 'zonas') && (!isMgMunicipio || mgVisualizacao === 'zonas') && (!isGenPoligonosMunicipio || genVisualizacao === 'zonas') && (!bairrosLoaded || bairrosData.length > 0) && (
+                    {(!isSaoPauloCapital || spVisualizacao === 'bairros') && (!isRioDeJaneiro || rjVisualizacao === 'zonas') && (!isFortalezaCe || ceVisualizacao === 'zonas') && (!isGenPoligonosMunicipio || genVisualizacao === 'zonas') && (!bairrosLoaded || bairrosData.length > 0) && (
                       <div className="flex-1 min-w-0">
                         <MunicipioMap
                           focusZona={focusZonaReq}
@@ -2055,8 +1930,8 @@ export default function MapaPage() {
                       </div>
                     )}
 
-                    {/* Lista de zonas — oculta quando SP/RJ/CE/MG/gen estão no modo bairros/distritos */}
-                    {!(isSaoPauloCapital && spVisualizacao === 'distritos') && !(isRioDeJaneiro && rjVisualizacao === 'bairros') && !(isFortalezaCe && ceVisualizacao === 'bairros') && !(isMgMunicipio && mgVisualizacao === 'bairros') && !(isGenPoligonosMunicipio && genVisualizacao === 'bairros') && <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0 && !isSaoPauloCapital && !isRioDeJaneiro) ? 'flex-1' : 'w-48'}`}
+                    {/* Lista de zonas — oculta quando SP/RJ/CE/gen estão no modo bairros/distritos */}
+                    {!(isSaoPauloCapital && spVisualizacao === 'distritos') && !(isRioDeJaneiro && rjVisualizacao === 'bairros') && !(isFortalezaCe && ceVisualizacao === 'bairros') && !(isGenPoligonosMunicipio && genVisualizacao === 'bairros') && <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0 && !isSaoPauloCapital && !isRioDeJaneiro) ? 'flex-1' : 'w-48'}`}
                       style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.2)' }}>
                       <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                         <Layers className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />

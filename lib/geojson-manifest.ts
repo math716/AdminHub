@@ -771,6 +771,63 @@ export const MUNICIPIOS_COM_POLIGONOS: Record<string, string[]> = {
     "XAXIM",
     "ZORTEA"
   ],
+  "MG": [
+    "ABAETE",
+    "ARAXA",
+    "AUGUSTO DE LIMA",
+    "BARBACENA",
+    "BELO HORIZONTE",
+    "BETIM",
+    "BICAS",
+    "CAMPINA VERDE",
+    "CANAPOLIS",
+    "CARANGOLA",
+    "CARATINGA",
+    "CARMO DO PARANAIBA",
+    "CONCEICAO DAS ALAGOAS",
+    "COQUEIRAL",
+    "COROMANDEL",
+    "CORONEL FABRICIANO",
+    "CRUCILANDIA",
+    "GOVERNADOR VALADARES",
+    "IBIA",
+    "IPATINGA",
+    "ITABIRITO",
+    "ITAUNA",
+    "ITUIUTABA",
+    "JUIZ DE FORA",
+    "MATUTINA",
+    "MONTE ALEGRE DE MINAS",
+    "NANUQUE",
+    "NATERCIA",
+    "NOVA ERA",
+    "NOVA PONTE",
+    "PAINS",
+    "PASSOS",
+    "PATOS DE MINAS",
+    "PATROCINIO",
+    "PECANHA",
+    "PIRAPORA",
+    "POCOS DE CALDAS",
+    "POMPEU",
+    "PONTE NOVA",
+    "RIO CASCA",
+    "SACRAMENTO",
+    "SANTA JULIANA",
+    "SAO GERALDO DO BAIXIO",
+    "SAO GOTARDO",
+    "SAO JOAO DEL REI",
+    "SAO ROMAO",
+    "SOBRALIA",
+    "TEOFILO OTONI",
+    "TIMOTEO",
+    "TRES CORACOES",
+    "TUPACIGUARA",
+    "UBERABA",
+    "UBERLANDIA",
+    "URUANA DE MINAS",
+    "VARGINHA"
+  ],
   "SE": [
     "ARACAJU",
     "BARRA DOS COQUEIROS",
@@ -787,7 +844,7 @@ export const MUNICIPIOS_COM_POLIGONOS: Record<string, string[]> = {
 };
 
 function norm(s: string): string {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/s+/g, ' ').trim();
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
 }
 
 export function hasBairrosPoligonos(uf: string, municipio: string): boolean {
