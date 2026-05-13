@@ -29,6 +29,14 @@ next-env.d.ts
 .DS_Store
 *.pem
 .vscode/
+.vs/
+
+# Downloads e backups locais
+tse-downloads/
+AdminHub-main/
+
+# Dados gerados localmente (não commitar)
+public/data/tse/secao/
 
 # Prisma
 prisma/migrations/dev.db
