@@ -232,34 +232,46 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── Point-in-Polygon: atribuir locais a features ────────────────────────
-    // Pré-computar uma lista de locais com coordenadas válidas
+    // ── Point-in-Polygon: cada local de votação → bairro; votos distribuídos
+    // proporcionalmente pela quantidade de locais por bairro dentro de cada zona.
+    // Ex: zona 192 com 12 locais no Jd. Luciana e 8 no Centro → 60% dos votos
+    // vão para Jd. Luciana e 40% para Centro.
     const locaisComCoordenadas = locaisMun.filter(
       l => l.lat && l.lng && l.lat >= -35 && l.lat <= 5 && l.lng >= -74 && l.lng <= -35
     );
 
-    // Quantidade de locais COM coordenadas por zona — garante que 100% dos votos
-    // da zona sejam distribuídos entre os locais que de fato serão posicionados
-    const locaisCountPorZona = new Map<number, number>();
-    for (const l of locaisComCoordenadas) {
-      locaisCountPorZona.set(l.zona, (locaisCountPorZona.get(l.zona) ?? 0) + 1);
-    }
-
-    // Para cada local com coordenadas, encontrar qual feature o contém
-    const bairroVotesRaw: Record<string, number> = {};
-
+    // Mapear cada local (zona+codLocal) para seu bairro via PiP
+    const localBairroMap = new Map<string, string>();
     for (const local of locaisComCoordenadas) {
-      const totalVotosZona = votosPorZona.get(local.zona) ?? 0;
-      if (totalVotosZona === 0) continue;
-      const totalLocaisZona = locaisCountPorZona.get(local.zona) ?? 1;
-      const votosLocal = totalVotosZona / totalLocaisZona;
-
       for (const feat of features) {
         if (pointInFeature(local.lng!, local.lat!, feat.geometry)) {
-          const nmBairro: string = feat.properties?.NM_BAIRRO ?? '';
-          bairroVotesRaw[nmBairro] = (bairroVotesRaw[nmBairro] ?? 0) + votosLocal;
+          localBairroMap.set(`${local.zona}-${local.codLocal}`, feat.properties?.NM_BAIRRO ?? '');
           break;
         }
+      }
+    }
+
+    // Agrupar contagem de locais mapeados por zona+bairro
+    const zonaBairroCount = new Map<number, Record<string, number>>();
+    for (const local of locaisComCoordenadas) {
+      const nmBairro = localBairroMap.get(`${local.zona}-${local.codLocal}`);
+      if (nmBairro === undefined) continue;
+      if (!zonaBairroCount.has(local.zona)) zonaBairroCount.set(local.zona, {});
+      const counts = zonaBairroCount.get(local.zona)!;
+      counts[nmBairro] = (counts[nmBairro] ?? 0) + 1;
+    }
+
+    const bairroVotesRaw: Record<string, number> = {};
+
+    // Para cada zona com votos, distribuir proporcionalmente pelos bairros
+    for (const [zona, votos] of votosPorZona) {
+      if (votos === 0) continue;
+      const counts = zonaBairroCount.get(zona);
+      if (!counts) continue;
+      const totalLocais = Object.values(counts).reduce((a, b) => a + b, 0);
+      if (totalLocais === 0) continue;
+      for (const [nmBairro, qtd] of Object.entries(counts)) {
+        bairroVotesRaw[nmBairro] = (bairroVotesRaw[nmBairro] ?? 0) + (votos * qtd) / totalLocais;
       }
     }
 
