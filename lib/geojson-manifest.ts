@@ -1,6 +1,6 @@
 // Auto-gerado a partir dos arquivos GeoJSON IBGE
 // Municípios com polígonos de bairros disponíveis por UF
-// Cidades já cobertas por mapas específicos (SP São Paulo, RJ Rio de Janeiro, CE Fortaleza) foram excluídas
+// Inclui todas as cidades com dados CD2022 disponíveis, incluindo capitais
 export const MUNICIPIOS_COM_POLIGONOS: Record<string, string[]> = {
   "AC": [
     "ASSIS BRASIL",
@@ -118,6 +118,7 @@ export const MUNICIPIOS_COM_POLIGONOS: Record<string, string[]> = {
     "EUSEBIO",
     "FARIAS BRITO",
     "FORQUILHA",
+    "FORTALEZA",
     "FRECHEIRINHA",
     "GENERAL SAMPAIO",
     "GRANJEIRO",
@@ -466,6 +467,7 @@ export const MUNICIPIOS_COM_POLIGONOS: Record<string, string[]> = {
     "QUISSAMA",
     "RESENDE",
     "RIO DAS OSTRAS",
+    "RIO DE JANEIRO",
     "SAO GONCALO",
     "SAO JOAO DE MERITI",
     "SAO PEDRO DA ALDEIA",
@@ -923,6 +925,7 @@ export const MUNICIPIOS_COM_POLIGONOS: Record<string, string[]> = {
     "SAO JOSE DO RIO PRETO",
     "SAO JOSE DOS CAMPOS",
     "SAO MANUEL",
+    "SAO PAULO",
     "SAO SEBASTIAO",
     "SAO VICENTE",
     "SUMARE",
