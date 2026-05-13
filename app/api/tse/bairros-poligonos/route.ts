@@ -238,9 +238,10 @@ export async function GET(request: NextRequest) {
       l => l.lat && l.lng && l.lat >= -35 && l.lat <= 5 && l.lng >= -74 && l.lng <= -35
     );
 
-    // Quantidade de locais por zona para distribuição proporcional
+    // Quantidade de locais COM coordenadas por zona — garante que 100% dos votos
+    // da zona sejam distribuídos entre os locais que de fato serão posicionados
     const locaisCountPorZona = new Map<number, number>();
-    for (const l of locaisMun) {
+    for (const l of locaisComCoordenadas) {
       locaisCountPorZona.set(l.zona, (locaisCountPorZona.get(l.zona) ?? 0) + 1);
     }
 
