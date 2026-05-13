@@ -190,6 +190,7 @@ export default function ContatosPage() {
   // bairros do município navegado
   const [bairroContacts, setBairroContacts] = useState<Record<string, string[]>>({}); // normNome → ids
   const [bairroCount, setBairroCount] = useState<Record<string, number>>({}); // normNome → count
+  const [bairroFeatures, setBairroFeatures] = useState<any[]>([]); // features GeoJSON filtradas
   const [selectedBairros, setSelectedBairros] = useState<Set<string>>(new Set());
   const [bairroLoading, setBairroLoading] = useState(false);
   const [munHasBairros, setMunHasBairros] = useState(false);
@@ -339,6 +340,7 @@ export default function ContatosPage() {
       }
       setBairroContacts(bContacts);
       setBairroCount(bCount);
+      setBairroFeatures(features); // passa features prontas ao mapa — sem re-fetch
     } catch {} finally { setBairroLoading(false); }
   }, [selectedUf, geocodedContacts, fetchStateGeojson]);
 
@@ -369,11 +371,12 @@ export default function ContatosPage() {
   const goBack = useCallback(() => {
     if (view === 'municipio') {
       setView('estado'); setNavMunicipio(null);
-      setBairroContacts({}); setBairroCount({}); setSelectedBairros(new Set()); setBairroLoading(false);
+      setBairroContacts({}); setBairroCount({}); setBairroFeatures([]);
+      setSelectedBairros(new Set()); setBairroLoading(false);
     } else {
       setView('brasil'); setSelectedUf(''); setSelectedStateName('');
       setContactsByMunCode({}); setStateContactIds(new Set());
-      setNavMunicipio(null); setBairroContacts({}); setBairroCount({});
+      setNavMunicipio(null); setBairroContacts({}); setBairroCount({}); setBairroFeatures([]);
       setSelectedBairros(new Set());
     }
     setPopup(null);
@@ -958,10 +961,11 @@ export default function ContatosPage() {
                       votesData={contactsByMunCode} onMunicipioClick={handleMunicipioClick}
                       valueLabel="contatos" disableSubdivisao />
                   )}
-                  {view === 'municipio' && navMunicipio && munHasBairros && (
+                  {view === 'municipio' && navMunicipio && munHasBairros && bairroFeatures.length > 0 && (
                     <ContatosBairrosMap
                       municipio={navMunicipio.nome}
                       uf={selectedUf}
+                      features={bairroFeatures}
                       contatosPorBairro={bairroCount}
                       selectedBairros={selectedBairros}
                       onBairroClick={handleBairroClick}

@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface ContatosBairrosMapProps {
-  municipio: string;
-  uf: string;
+  municipio: string;               // usado no key do wrapper externo
+  uf: string;                      // usado no key do wrapper externo
+  features: any[];                 // features GeoJSON já filtradas pelo pai
   contatosPorBairro: Record<string, number>;
   selectedBairros?: Set<string>;
   onBairroClick?: (nome: string) => void;
@@ -17,29 +18,28 @@ function norm(s: string): string {
 }
 
 function ContatosBairrosMapInner({
-  municipio, uf, contatosPorBairro, selectedBairros, onBairroClick, height = '100%',
+  features, contatosPorBairro, selectedBairros, onBairroClick, height = '100%',
 }: ContatosBairrosMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const geoLayerRef = useRef<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [mapReady, setMapReady] = useState(false);
 
-  // Keep latest props accessible inside Leaflet event handlers without stale closures
+  // Keep latest props accessible inside Leaflet handlers without stale closures
   const propsRef = useRef({ contatosPorBairro, selectedBairros, onBairroClick });
   useEffect(() => { propsRef.current = { contatosPorBairro, selectedBairros, onBairroClick }; });
 
-  // Initialize map + load GeoJSON — reruns only when city/state changes
+  // Initialize map only after features are available — same pattern as BairrosPoligonosMap
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!features.length || !containerRef.current) return;
+
     let cancelled = false;
 
-    const init = async () => {
+    const initMap = async () => {
       const L = (await import('leaflet')).default;
-      // @ts-ignore – CSS import without type declarations
-      await import('leaflet/dist/leaflet.css');
       if (cancelled || !containerRef.current) return;
 
+      // Clean up previous instance
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -50,39 +50,30 @@ function ContatosBairrosMapInner({
         zoomControl: true,
         attributionControl: false,
         scrollWheelZoom: true,
+        preferCanvas: false,
       });
       mapRef.current = map;
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: 'abcd',
+      }).addTo(map);
 
-      try {
-        const res = await fetch(`/geojson/${uf}_bairros_CD2022.json`);
-        if (!res.ok) throw new Error('not found');
-        const geo = await res.json();
-        if (cancelled) return;
+      const buildStyle = (feature: any) => {
+        const normNm = norm(feature?.properties?.NM_BAIRRO ?? '');
+        const { contatosPorBairro: cpb, selectedBairros: sb } = propsRef.current;
+        const counts = Object.values(cpb);
+        const maxCount = counts.length > 0 ? Math.max(1, ...counts) : 1;
+        const count = cpb[normNm] ?? 0;
+        const isSel = sb?.has(normNm) ?? false;
+        const fillColor = isSel ? '#1d4ed8' : count > 0 ? '#3b82f6' : '#1e3a5f';
+        const fillOpacity = isSel ? 0.75 : count > 0 ? 0.25 + (count / maxCount) * 0.55 : 0.15;
+        return { color: '#1e40af', weight: isSel ? 2 : 1, fillColor, fillOpacity, opacity: 0.9 };
+      };
 
-        const munNorm = norm(municipio);
-        const features = (geo.features ?? []).filter((f: any) => norm(f.properties?.NM_MUN ?? '') === munNorm);
-
-        if (features.length === 0) {
-          setErrorMsg('Bairros não disponíveis para este município');
-          setLoading(false);
-          return;
-        }
-
-        const buildStyle = (feature: any) => {
-          const normNm = norm(feature?.properties?.NM_BAIRRO ?? '');
-          const { contatosPorBairro: cpb, selectedBairros: sb } = propsRef.current;
-          const counts = Object.values(cpb);
-          const maxCount = counts.length > 0 ? Math.max(1, ...counts) : 1;
-          const count = cpb[normNm] ?? 0;
-          const isSel = sb?.has(normNm) ?? false;
-          const fillColor = isSel ? '#1d4ed8' : count > 0 ? '#3b82f6' : '#1e3a5f';
-          const fillOpacity = isSel ? 0.75 : count > 0 ? 0.25 + (count / maxCount) * 0.55 : 0.15;
-          return { color: '#1e40af', weight: isSel ? 2 : 1, fillColor, fillOpacity, opacity: 0.9 };
-        };
-
-        const geoLayer = L.geoJSON(features, {
+      const geoLayer = L.geoJSON(
+        { type: 'FeatureCollection', features } as any,
+        {
           style: buildStyle,
           onEachFeature: (feature: any, layer: any) => {
             const nmBairro = feature.properties?.NM_BAIRRO ?? '';
@@ -95,7 +86,7 @@ function ContatosBairrosMapInner({
             layer.on('mouseover', (e: any) => {
               const count = propsRef.current.contatosPorBairro[normNm] ?? 0;
               layer.setStyle({ fillOpacity: 0.85, weight: 2 });
-              L.popup({ closeButton: false, className: 'bairro-popup' })
+              L.popup({ closeButton: false })
                 .setLatLng(e.latlng)
                 .setContent(
                   `<div style="font:13px/1.4 sans-serif;padding:4px 2px">` +
@@ -110,36 +101,20 @@ function ContatosBairrosMapInner({
               map.closePopup();
             });
           },
-        }).addTo(map);
+        }
+      ).addTo(map);
 
-        geoLayerRef.current = geoLayer;
+      geoLayerRef.current = geoLayer;
 
-        // Collect coordinates for fitBounds
-        const allCoords: [number, number][] = [];
-        features.forEach((feature: any) => {
-          const coords = feature.geometry?.type === 'Polygon'
-            ? feature.geometry.coordinates[0]
-            : feature.geometry?.type === 'MultiPolygon'
-              ? feature.geometry.coordinates.flatMap((p: any) => p[0])
-              : [];
-          coords.forEach((c: [number, number]) => allCoords.push([c[1], c[0]]));
-        });
-
-        if (allCoords.length > 0) map.fitBounds(allCoords, { padding: [20, 20] });
-
-        // Force Leaflet to recalculate container size after React layout
-        setTimeout(() => {
-          if (!cancelled && mapRef.current) mapRef.current.invalidateSize();
-        }, 120);
-
-        setLoading(false);
-      } catch {
-        setErrorMsg('Erro ao carregar bairros');
-        setLoading(false);
+      const bounds = geoLayer.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [24, 24] });
       }
+
+      setMapReady(true);
     };
 
-    init();
+    initMap().catch(() => {});
 
     return () => {
       cancelled = true;
@@ -148,10 +123,11 @@ function ContatosBairrosMapInner({
         mapRef.current = null;
         geoLayerRef.current = null;
       }
+      setMapReady(false);
     };
-  }, [municipio, uf]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [features]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Update polygon styles reactively when selection or counts change — no remount
+  // Update polygon styles when selection or counts change — no remount
   useEffect(() => {
     if (!geoLayerRef.current) return;
     const counts = Object.values(contatosPorBairro);
@@ -168,24 +144,19 @@ function ContatosBairrosMapInner({
 
   return (
     <div className="relative w-full" style={{ height }}>
-      {loading && (
+      {!mapReady && (
         <div className="absolute inset-0 flex items-center justify-center z-10 rounded-xl"
           style={{ background: 'rgba(7,29,54,0.7)' }}>
           <Loader2 className="h-6 w-6 animate-spin" style={{ color: '#4a9ede' }} />
         </div>
       )}
-      {errorMsg && !loading && (
-        <div className="absolute inset-0 flex items-center justify-center rounded-xl"
-          style={{ background: 'rgba(7,29,54,0.5)' }}>
-          <p className="text-sm text-center px-4" style={{ color: 'rgba(255,255,255,0.4)' }}>{errorMsg}</p>
-        </div>
-      )}
-      <div ref={containerRef} className="w-full h-full rounded-xl" />
+      <div ref={containerRef} className="w-full h-full rounded-xl"
+        style={{ background: 'rgba(7,29,54,0.9)', minHeight: 400 }} />
     </div>
   );
 }
 
-// Key only on city+state — selection changes update styles in place without remounting
+// Remonta apenas quando cidade/estado mudam
 export default function ContatosBairrosMap(props: ContatosBairrosMapProps) {
   return <ContatosBairrosMapInner key={`${props.uf}-${props.municipio}`} {...props} />;
 }
