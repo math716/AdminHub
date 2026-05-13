@@ -79,6 +79,31 @@ async function loadGeo(uf: string, baseUrl: string): Promise<any | null> {
   } catch { return null; }
 }
 
+// Tenta carregar o GeoJSON específico do município (public/geojson/municipios/{UF}/{NOME}.json)
+async function loadGeoMunicipio(uf: string, munNorm: string, baseUrl: string): Promise<any[] | null> {
+  const fileNorm = munNorm.replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '_');
+  const cacheKey = `mun:${uf}:${fileNorm}`;
+  if (geoCache.has(cacheKey)) return geoCache.get(cacheKey)!;
+
+  const fp = path.join(process.cwd(), 'public', 'geojson', 'municipios', uf, `${fileNorm}.json`);
+  try {
+    if (fs.existsSync(fp)) {
+      const data = JSON.parse(fs.readFileSync(fp, 'utf8'));
+      const features = data.features ?? [];
+      geoCache.set(cacheKey, features);
+      return features;
+    }
+  } catch { /* fallthrough */ }
+  try {
+    const res = await fetch(`${baseUrl}/geojson/municipios/${uf}/${fileNorm}.json`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const features = data.features ?? [];
+    geoCache.set(cacheKey, features);
+    return features;
+  } catch { return null; }
+}
+
 async function loadLocais(uf: string, baseUrl: string): Promise<LocalJson[] | null> {
   if (locaisCache.has(uf)) return locaisCache.get(uf)!;
   const d = readJsonGz(path.join(process.cwd(), 'public', 'data', 'tse', 'locais', `${uf}.json`)) as LocalJson[] | null;
@@ -164,9 +189,15 @@ export async function GET(request: NextRequest) {
     }
 
     const munNorm = normalizar(municipio);
-    const features: any[] = (geo.features ?? []).filter(
-      (f: any) => normalizar(f.properties?.NM_MUN ?? '') === munNorm
-    );
+    let features: any[] = geo
+      ? (geo.features ?? []).filter((f: any) => normalizar(f.properties?.NM_MUN ?? '') === munNorm)
+      : [];
+
+    // Fallback: tenta o arquivo por município gerado pelo split-bairros-geojson.mjs
+    if (features.length === 0) {
+      const munFeatures = await loadGeoMunicipio(uf, munNorm, baseUrl);
+      if (munFeatures && munFeatures.length > 0) features = munFeatures;
+    }
 
     if (features.length === 0) {
       return NextResponse.json({ features: [], bairroVotes: {}, totalVotos: 0, message: 'Município não encontrado no GeoJSON' });
