@@ -838,52 +838,6 @@ export default function ContatosPage() {
                 )}
               </div>
 
-              {/* Bairros list (view municipio) */}
-              {view === 'municipio' && munHasBairros && (
-                <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(74,158,222,0.2)' }}>
-                  <div className="px-3 py-2.5 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                    <MapPin className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
-                    <span className="text-xs font-semibold" style={{ color: '#4a9ede' }}>Bairros</span>
-                    <span className="text-[10px] ml-auto" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                      clique para selecionar
-                    </span>
-                  </div>
-                  {bairroLoading ? (
-                    <div className="flex items-center justify-center py-6 gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" style={{ color: '#4a9ede' }} />
-                      <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Calculando...</span>
-                    </div>
-                  ) : (
-                    <div className="max-h-64 overflow-y-auto">
-                      {Object.entries(bairroCount).filter(([, c]) => c > 0).sort(([, a], [, b]) => b - a).map(([nome, count]) => {
-                        const isSel = selectedBairros.has(nome);
-                        return (
-                          <button key={nome} onClick={() => handleBairroClick(nome)}
-                            className="w-full text-left px-3 py-2 transition-all hover:bg-white/5 flex items-center gap-2"
-                            style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: isSel ? 'rgba(29,78,216,0.2)' : undefined }}>
-                            <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
-                              style={isSel ? { background: '#1d4ed8' } : { border: '1px solid rgba(255,255,255,0.2)' }}>
-                              {isSel && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
-                            </span>
-                            <span className="text-xs font-medium flex-1 truncate" style={{ color: isSel ? '#93c5fd' : 'rgba(255,255,255,0.7)' }}>{nome}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0"
-                              style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede' }}>{count}</span>
-                          </button>
-                        );
-                      })}
-                      {Object.values(bairroCount).every(c => c === 0) && (
-                        <p className="text-xs text-center py-5" style={{ color: 'rgba(255,255,255,0.3)' }}>Nenhum contato geolocado neste município</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {view === 'municipio' && !munHasBairros && (
-                <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Sem dados de bairros para este município</p>
-                </div>
-              )}
 
               {/* Search + contacts list */}
               {view !== 'brasil' && (
