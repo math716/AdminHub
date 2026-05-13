@@ -35,6 +35,7 @@ interface CandidatoJson {
 const geoCache = new Map<string, any>();
 const locaisCache = new Map<string, LocalJson[]>();
 const candCache = new Map<string, CandidatoJson[]>();
+const secaoCache = new Map<string, Record<string, Record<string, number>>>();
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -110,6 +111,26 @@ async function loadCandidatos(ano: string, uf: string, baseUrl: string): Promise
     const buf = await res.arrayBuffer();
     const parsed = JSON.parse(zlib.gunzipSync(Buffer.from(buf)).toString('utf8')) as CandidatoJson[];
     candCache.set(key, parsed);
+    return parsed;
+  } catch { return null; }
+}
+
+async function loadSecaoVotes(
+  munNorm: string, ano: string, uf: string, baseUrl: string
+): Promise<Record<string, Record<string, number>> | null> {
+  const key = `${ano}-${uf}-${munNorm}`;
+  if (secaoCache.has(key)) return secaoCache.get(key)!;
+  const fp = path.join(process.cwd(), 'public', 'data', 'tse', 'secao', ano, uf, `${munNorm}.json`);
+  try {
+    const d = readJsonGz(fp) as Record<string, Record<string, number>> | null;
+    if (d) { secaoCache.set(key, d); return d; }
+  } catch { /* fallthrough */ }
+  try {
+    const res = await fetch(`${baseUrl}/data/tse/secao/${ano}/${uf}/${encodeURIComponent(munNorm)}.json.gz`);
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    const parsed = JSON.parse(zlib.gunzipSync(Buffer.from(buf)).toString('utf8'));
+    secaoCache.set(key, parsed);
     return parsed;
   } catch { return null; }
 }
@@ -199,6 +220,7 @@ export async function GET(request: NextRequest) {
     // ── Encontrar candidato e votos por zona ────────────────────────────────
     const votosPorZona = new Map<number, number>();
     let totalVotos = 0;
+    let candidatoEncontrado: CandidatoJson | undefined;
 
     if (ano && (candidatoId || nome)) {
       const candidatos = await loadCandidatos(ano, uf, baseUrl);
@@ -222,6 +244,7 @@ export async function GET(request: NextRequest) {
           }
         }
         if (cand) {
+          candidatoEncontrado = cand;
           for (const z of cand.zonas) {
             if (normalizar(z.municipio) === munNorm) {
               votosPorZona.set(z.zona, (votosPorZona.get(z.zona) ?? 0) + z.votos);
@@ -232,15 +255,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── Point-in-Polygon: cada local de votação → bairro; votos distribuídos
-    // proporcionalmente pela quantidade de locais por bairro dentro de cada zona.
-    // Ex: zona 192 com 12 locais no Jd. Luciana e 8 no Centro → 60% dos votos
-    // vão para Jd. Luciana e 40% para Centro.
+    // ── Filtrar locais com coordenadas válidas ──────────────────────────────
     const locaisComCoordenadas = locaisMun.filter(
       l => l.lat && l.lng && l.lat >= -35 && l.lat <= 5 && l.lng >= -74 && l.lng <= -35
     );
 
-    // Mapear cada local (zona+codLocal) para seu bairro via PiP
+    // Mapear cada local (zona+codLocal) → bairro via PiP (usado por ambos os métodos)
     const localBairroMap = new Map<string, string>();
     for (const local of locaisComCoordenadas) {
       for (const feat of features) {
@@ -251,27 +271,47 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Agrupar contagem de locais mapeados por zona+bairro
-    const zonaBairroCount = new Map<number, Record<string, number>>();
-    for (const local of locaisComCoordenadas) {
-      const nmBairro = localBairroMap.get(`${local.zona}-${local.codLocal}`);
-      if (nmBairro === undefined) continue;
-      if (!zonaBairroCount.has(local.zona)) zonaBairroCount.set(local.zona, {});
-      const counts = zonaBairroCount.get(local.zona)!;
-      counts[nmBairro] = (counts[nmBairro] ?? 0) + 1;
-    }
-
     const bairroVotesRaw: Record<string, number> = {};
 
-    // Para cada zona com votos, distribuir proporcionalmente pelos bairros
-    for (const [zona, votos] of votosPorZona) {
-      if (votos === 0) continue;
-      const counts = zonaBairroCount.get(zona);
-      if (!counts) continue;
-      const totalLocais = Object.values(counts).reduce((a, b) => a + b, 0);
-      if (totalLocais === 0) continue;
-      for (const [nmBairro, qtd] of Object.entries(counts)) {
-        bairroVotesRaw[nmBairro] = (bairroVotesRaw[nmBairro] ?? 0) + (votos * qtd) / totalLocais;
+    // ── Tentar votos exatos por seção (gerado com --secao) ──────────────────
+    const secaoData = candidatoEncontrado && ano
+      ? await loadSecaoVotes(munNorm, ano, uf, baseUrl)
+      : null;
+    const localVotesMap = secaoData && candidatoEncontrado
+      ? secaoData[candidatoEncontrado.id]
+      : null;
+
+    if (localVotesMap) {
+      // Modo exato: cada local tem seu próprio total de votos por seção somados
+      for (const local of locaisComCoordenadas) {
+        const key = `${local.zona}-${local.codLocal}`;
+        const votosLocal = localVotesMap[key] ?? 0;
+        if (votosLocal === 0) continue;
+        const nmBairro = localBairroMap.get(key);
+        if (nmBairro === undefined) continue;
+        bairroVotesRaw[nmBairro] = (bairroVotesRaw[nmBairro] ?? 0) + votosLocal;
+      }
+    } else {
+      // Modo proporcional (fallback): distribui votos da zona pela quantidade de
+      // locais de votação por bairro dentro da zona
+      const zonaBairroCount = new Map<number, Record<string, number>>();
+      for (const local of locaisComCoordenadas) {
+        const nmBairro = localBairroMap.get(`${local.zona}-${local.codLocal}`);
+        if (nmBairro === undefined) continue;
+        if (!zonaBairroCount.has(local.zona)) zonaBairroCount.set(local.zona, {});
+        const counts = zonaBairroCount.get(local.zona)!;
+        counts[nmBairro] = (counts[nmBairro] ?? 0) + 1;
+      }
+
+      for (const [zona, votos] of votosPorZona) {
+        if (votos === 0) continue;
+        const counts = zonaBairroCount.get(zona);
+        if (!counts) continue;
+        const totalLocais = Object.values(counts).reduce((a, b) => a + b, 0);
+        if (totalLocais === 0) continue;
+        for (const [nmBairro, qtd] of Object.entries(counts)) {
+          bairroVotesRaw[nmBairro] = (bairroVotesRaw[nmBairro] ?? 0) + (votos * qtd) / totalLocais;
+        }
       }
     }
 

@@ -348,6 +348,140 @@ function processUfAno(uf: string, ano: number): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Processar votos por seção (per-local-de-votação)
+// Gera: public/data/tse/secao/{ano}/{UF}/{MUNICIPIO_NORM}.json.gz
+// Formato: { candidatoId: { "zona-codLocal": votos, ... }, ... }
+// ---------------------------------------------------------------------------
+
+function loadManifest(): Map<string, Set<string>> {
+  const fp = path.join(process.cwd(), 'public', 'geojson', 'municipios-manifest.json');
+  if (!fs.existsSync(fp)) return new Map();
+  const data: Record<string, string[]> = JSON.parse(fs.readFileSync(fp, 'utf8'));
+  const result = new Map<string, Set<string>>();
+  for (const [uf, muns] of Object.entries(data)) {
+    result.set(uf.toUpperCase(), new Set(muns.map(m => normText(m))));
+  }
+  return result;
+}
+
+function findSecaoCsvBuffer(ano: number, uf: string): Buffer | null {
+  const subfolders = [
+    path.join(INPUT_DIR, `votacao_secao_${ano}`),
+    path.join(INPUT_DIR, String(ano)),
+    INPUT_DIR,
+  ];
+
+  for (const dir of subfolders) {
+    if (!fs.existsSync(dir)) continue;
+
+    // BR zip (contém um CSV por UF dentro do ZIP)
+    for (const brName of [`votacao_secao_${ano}_BR.zip`, `votacao_secao${ano}BR.zip`]) {
+      const brZip = path.join(dir, brName);
+      if (!fs.existsSync(brZip)) continue;
+      const entries = parseZip(fs.readFileSync(brZip));
+      const e = entries.find(x => x.filename.toUpperCase().includes(`_${uf}.CSV`))
+             ?? entries.find(x => x.filename.toLowerCase().endsWith('.csv') && x.filename.toLowerCase().includes(uf.toLowerCase()));
+      if (e) { console.log(`  ZIP secao BR: → ${e.filename}`); return e.data; }
+    }
+
+    // ZIP por UF
+    for (const ufName of [`votacao_secao_${ano}_${uf}.zip`, `votacao_secao${ano}${uf}.zip`]) {
+      const ufZip = path.join(dir, ufName);
+      if (!fs.existsSync(ufZip)) continue;
+      const entries = parseZip(fs.readFileSync(ufZip));
+      const e = entries.find(x => x.filename.toLowerCase().endsWith('.csv'));
+      if (e) { console.log(`  ZIP secao ${uf}: → ${e.filename}`); return e.data; }
+    }
+
+    // CSV direto
+    const files = fs.readdirSync(dir).filter(f =>
+      f.toLowerCase().endsWith('.csv') &&
+      f.toLowerCase().includes('secao') &&
+      f.toLowerCase().includes(`_${uf.toLowerCase()}.`)
+    );
+    if (files.length > 0) {
+      const p = path.join(dir, files[0]);
+      console.log(`  CSV secao: ${files[0]}`);
+      return fs.readFileSync(p);
+    }
+  }
+  return null;
+}
+
+function processSecaoUfAno(uf: string, ano: number, muns: Set<string>): boolean {
+  const outDir = path.join(OUTPUT_DIR, 'secao', String(ano), uf);
+
+  const buf = findSecaoCsvBuffer(ano, uf);
+  if (!buf) { console.log(`  [SKIP] secao ${uf} ${ano} — CSV não encontrado`); return false; }
+
+  // Map: munNorm → candidatoId → "zona-codLocal" → votos
+  const byMun = new Map<string, Map<string, Record<string, number>>>();
+  for (const mun of muns) byMun.set(mun, new Map());
+
+  let rowCount = 0;
+  streamCsv(buf, (row) => {
+    rowCount++;
+    if (getTurno(row) !== '1') return;
+
+    const mun = normText(row['NM_MUNICIPIO'] || row['NM_UE'] || '');
+    if (!byMun.has(mun)) return;
+
+    const sq       = row['SQ_CANDIDATO'] || row['NR_CPF_CANDIDATO'] || '';
+    const zona     = parseInt(row['NR_ZONA'] || '0', 10);
+    const codLocal = (row['NR_LOCAL_VOTACAO'] || row['CD_LOCAL_VOTACAO'] || row['CD_LOCAL'] || '').trim();
+    const votos    = parseVotos(row);
+
+    if (!sq || !zona || !codLocal || votos === 0) return;
+
+    const byCand = byMun.get(mun)!;
+    const id = `${uf}-${ano}-${sq}`;
+    if (!byCand.has(id)) byCand.set(id, {});
+    const locaisMap = byCand.get(id)!;
+    const key = `${zona}-${codLocal}`;
+    locaisMap[key] = (locaisMap[key] ?? 0) + votos;
+  });
+
+  console.log(`  ${rowCount} linhas processadas (${uf} ${ano})`);
+
+  let written = 0;
+  for (const [mun, byCand] of byMun) {
+    if (byCand.size === 0) continue;
+    const result: Record<string, Record<string, number>> = {};
+    for (const [id, locaisMap] of byCand) result[id] = locaisMap;
+    writeJson(path.join(outDir, `${mun}.json`), result);
+    written++;
+  }
+
+  console.log(`  → ${uf} ${ano}: ${written} município(s) com dados de seção`);
+  return written > 0;
+}
+
+function processSecao(anosSecao: number[]) {
+  console.log('\n--- Votos por seção (per-local-de-votação) ---');
+  const manifest = loadManifest();
+  if (manifest.size === 0) {
+    console.warn('  [AVISO] municipios-manifest.json não encontrado — abortando secao');
+    return;
+  }
+
+  let total = 0;
+  for (const ano of anosSecao) {
+    console.log(`\n  Ano ${ano}:`);
+    for (const uf of UFS) {
+      const muns = manifest.get(uf);
+      if (!muns || muns.size === 0) continue;
+      if (processSecaoUfAno(uf, ano, muns)) total++;
+    }
+  }
+
+  console.log(`\n  Concluído secao: ${total} UF/ano(s) gerados em public/data/tse/secao/`);
+  console.log('  Próximo passo:');
+  console.log('    git add public/data/tse/secao/');
+  console.log('    git commit -m "dados: TSE votos por seção"');
+  console.log('    git push origin HEAD:main');
+}
+
+// ---------------------------------------------------------------------------
 // Processar locais de votação — streaming
 // ---------------------------------------------------------------------------
 function processLocais() {
@@ -413,25 +547,39 @@ function main() {
   const items = fs.readdirSync(INPUT_DIR);
   console.log(`Itens na pasta (${items.length}): ${items.join(', ')}\n`);
 
-  let total = 0;
-  for (const ano of ANOS) {
-    console.log(`\n--- Ano ${ano} ---`);
-    for (const uf of UFS) {
-      if (processUfAno(uf, ano)) total++;
+  // --secao  → processa apenas votos por seção (pula munzona e locais)
+  // --anos 2022,2024 → filtra anos (pode usar com --secao)
+  const modoSecao = process.argv.includes('--secao');
+
+  // Parse --anos flag: --anos 2022 ou --anos 2022,2024
+  const anosIdx = process.argv.indexOf('--anos');
+  const anosArg = anosIdx !== -1 && process.argv[anosIdx + 1]
+    ? process.argv[anosIdx + 1].split(',').map(Number).filter(n => ANOS.includes(n))
+    : ANOS;
+
+  if (modoSecao) {
+    processSecao(anosArg);
+  } else {
+    let total = 0;
+    for (const ano of anosArg) {
+      console.log(`\n--- Ano ${ano} ---`);
+      for (const uf of UFS) {
+        if (processUfAno(uf, ano)) total++;
+      }
     }
-  }
 
-  processLocais();
+    processLocais();
 
-  console.log('\n=======================================================');
-  console.log(`  Concluído! ${total} arquivo(s) gerados em public/data/tse/`);
-  if (total > 0) {
-    console.log('\n  Próximo passo — commit e push:');
-    console.log('    git add public/data/tse/');
-    console.log('    git commit -m "dados: TSE 2018-2024"');
-    console.log('    git push origin HEAD:main');
+    console.log('\n=======================================================');
+    console.log(`  Concluído! ${total} arquivo(s) gerados em public/data/tse/`);
+    if (total > 0) {
+      console.log('\n  Próximo passo — commit e push:');
+      console.log('    git add public/data/tse/');
+      console.log('    git commit -m "dados: TSE 2018-2024"');
+      console.log('    git push origin HEAD:main');
+    }
+    console.log('=======================================================\n');
   }
-  console.log('=======================================================\n');
 }
 
 main();
