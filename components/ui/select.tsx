@@ -84,7 +84,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             ref={ref}
             id={id}
             className={cn(
-              'group w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-sm',
+              'group w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-sm text-white',
               'transition-all duration-150 outline-none cursor-pointer',
               'hover:bg-white/[0.09] hover:[border-color:rgba(255,255,255,0.22)]',
               'data-[state=open]:bg-white/[0.09] data-[state=open]:[border-color:rgba(201,162,39,0.45)]',
