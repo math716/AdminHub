@@ -413,6 +413,7 @@ export default function MapaCampanhaPage() {
   // Data states
   const [electoralData, setElectoralData] = useState<ElectoralData | null>(null);
   const [projecao, setProjecao] = useState<Projecao | null>(null);
+  const [candidatoFotoUrl, setCandidatoFotoUrl] = useState<string | null>(null);
   const [projecoesSalvas, setProjecoesSalvas] = useState<Projecao[]>([]);
 
   // Cenário and filter states
@@ -546,6 +547,19 @@ export default function MapaCampanhaPage() {
   const [genPoligonosUf, setGenPoligonosUf] = useState<string>('');
   const [selectedGenBairro, setSelectedGenBairro] = useState<string | null>(null);
   const [genBairrosApiVotes, setGenBairrosApiVotes] = useState<Record<string, number>>({});
+
+  // Busca foto do candidato no TSE quando projecao é carregada
+  useEffect(() => {
+    if (!projecao) { setCandidatoFotoUrl(null); return; }
+    const nome = projecao.candidatoNome;
+    const ufProj = projecao.uf;
+    const anoProj = projecao.anoBase.toString();
+    if (!nome) return;
+    fetch(`/api/tse/foto?nome=${encodeURIComponent(nome)}&ano=${anoProj}&uf=${ufProj}`)
+      .then(r => r.json())
+      .then(d => setCandidatoFotoUrl(d.fotoUrl ?? null))
+      .catch(() => setCandidatoFotoUrl(null));
+  }, [projecao]);
 
   // Agrega votos por zona do candidato → Regiões Administrativas do DF
   useEffect(() => {
@@ -2426,10 +2440,22 @@ export default function MapaCampanhaPage() {
                 return (
                   <>
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm"
-                      style={{ background: 'rgba(201,162,39,0.18)', border: '1px solid rgba(201,162,39,0.35)', color: '#c9a227' }}
+                      className="w-10 h-10 rounded-xl flex-shrink-0 overflow-hidden"
+                      style={{ border: '1px solid rgba(201,162,39,0.35)' }}
                     >
-                      {initials}
+                      {candidatoFotoUrl ? (
+                        <img
+                          src={candidatoFotoUrl}
+                          alt={nomeCandidato}
+                          className="w-full h-full object-cover object-top"
+                          onError={() => setCandidatoFotoUrl(null)}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-bold text-sm"
+                          style={{ background: 'rgba(201,162,39,0.18)', color: '#c9a227' }}>
+                          {initials}
+                        </div>
+                      )}
                     </div>
 
                     {/* Nome + cargo */}
