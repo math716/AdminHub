@@ -2429,10 +2429,10 @@ export default function MapaCampanhaPage() {
             className="mb-4"
           >
             <div
-              className="flex items-center gap-4 px-4 py-3 rounded-2xl flex-wrap"
+              className="flex items-center gap-5 px-5 py-4 rounded-2xl flex-wrap"
               style={{ background: 'rgba(7,29,54,0.65)', border: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(8px)' }}
             >
-              {/* Avatar com iniciais */}
+              {/* Avatar com foto ou iniciais */}
               {(() => {
                 const nomeCandidato = projecao.candidatoNome || electoralData.nomeUrna || electoralData.candidateName || '';
                 const initials = nomeCandidato.split(' ').filter(Boolean).slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
@@ -2440,7 +2440,7 @@ export default function MapaCampanhaPage() {
                 return (
                   <>
                     <div
-                      className="w-10 h-10 rounded-xl flex-shrink-0 overflow-hidden"
+                      className="w-14 h-14 rounded-xl flex-shrink-0 overflow-hidden"
                       style={{ border: '1px solid rgba(201,162,39,0.35)' }}
                     >
                       {candidatoFotoUrl ? (
@@ -2451,7 +2451,7 @@ export default function MapaCampanhaPage() {
                           onError={() => setCandidatoFotoUrl(null)}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center font-bold text-sm"
+                        <div className="w-full h-full flex items-center justify-center font-bold text-base"
                           style={{ background: 'rgba(201,162,39,0.18)', color: '#c9a227' }}>
                           {initials}
                         </div>
@@ -2460,38 +2460,38 @@ export default function MapaCampanhaPage() {
 
                     {/* Nome + cargo */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-white font-bold text-sm truncate leading-tight">{nomeCandidato}</p>
-                      {cargo && <p className="text-xs mt-0.5 truncate" style={{ color: '#6b82a0' }}>{cargo}</p>}
+                      <p className="text-white font-bold text-base truncate leading-tight">{nomeCandidato}</p>
+                      {cargo && <p className="text-sm mt-0.5 truncate" style={{ color: '#6b82a0' }}>{cargo}</p>}
                     </div>
                   </>
                 );
               })()}
 
               {/* Separador */}
-              <div className="hidden sm:block w-px h-8 self-center" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'rgba(255,255,255,0.08)' }} />
 
               {/* Estado */}
               <div className="flex flex-col items-center gap-0.5">
                 <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Estado</span>
-                <span className="text-sm font-bold text-white">
+                <span className="text-base font-bold text-white">
                   {ESTADOS_BRASIL.find(e => e.sigla === projecao.uf)?.nome ?? projecao.uf}
                 </span>
               </div>
 
-              <div className="hidden sm:block w-px h-8 self-center" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'rgba(255,255,255,0.08)' }} />
 
               {/* Eleição base */}
               <div className="flex flex-col items-center gap-0.5">
                 <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Eleição</span>
-                <span className="text-sm font-bold" style={{ color: '#4a9ede' }}>{projecao.anoBase}</span>
+                <span className="text-base font-bold" style={{ color: '#4a9ede' }}>{projecao.anoBase}</span>
               </div>
 
-              <div className="hidden sm:block w-px h-8 self-center" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'rgba(255,255,255,0.08)' }} />
 
               {/* Projeção */}
               <div className="flex flex-col items-center gap-0.5">
                 <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Projeção</span>
-                <span className="text-sm font-bold" style={{ color: '#c9a227' }}>{projecao.anoProjecao}</span>
+                <span className="text-base font-bold" style={{ color: '#c9a227' }}>{projecao.anoProjecao}</span>
               </div>
             </div>
           </motion.div>
@@ -2504,10 +2504,10 @@ export default function MapaCampanhaPage() {
             className="mb-6"
           >
             <Card style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4 flex-wrap">
-                  <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Cenário</span>
-                  <div className="flex gap-1.5 p-1 rounded-xl" style={{ background: 'rgba(4,17,31,0.5)' }}>
+              <CardContent className="px-4 py-2.5">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Cenário</span>
+                  <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(4,17,31,0.5)' }}>
                     {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
                       const config = cenarioConfig[cenario];
                       const Icon = config.icon;
@@ -2516,13 +2516,13 @@ export default function MapaCampanhaPage() {
                         <button
                           key={cenario}
                           onClick={() => setCenarioAtivo(cenario)}
-                          className={`flex items-center gap-2 px-4 py-1.5 rounded-lg font-semibold text-sm transition-all ${
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-semibold text-xs transition-all ${
                             isActive
                               ? `${config.bg} text-white shadow-lg`
                               : `text-slate-400 hover:text-white`
                           }`}
                         >
-                          <Icon className="h-3.5 w-3.5" />
+                          <Icon className="h-3 w-3" />
                           {config.label}
                         </button>
                       );
@@ -2530,9 +2530,9 @@ export default function MapaCampanhaPage() {
                   </div>
                   <div className="flex-1" />
                   <div className="text-right">
-                    <p className="text-xs tracking-wide" style={{ color: '#6b82a0' }}>Totalizando cenário</p>
-                    <p className={`text-xl font-bold ${cenarioConfig[cenarioAtivo].color}`}>
-                      {getTotalVotosMeta().toLocaleString()} <span className="text-sm font-normal" style={{ color: '#6b82a0' }}>votos</span>
+                    <p className="text-[10px] tracking-wide" style={{ color: '#6b82a0' }}>Totalizando cenário</p>
+                    <p className={`text-lg font-bold ${cenarioConfig[cenarioAtivo].color}`}>
+                      {getTotalVotosMeta().toLocaleString()} <span className="text-xs font-normal" style={{ color: '#6b82a0' }}>votos</span>
                     </p>
                   </div>
                 </div>
