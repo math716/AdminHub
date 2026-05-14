@@ -613,10 +613,12 @@ export default function ContatosPage() {
   };
 
   // ── Lista filter ──
-  const filtered = contatos.filter(c => {
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return c.nome.toLowerCase().includes(q) || c.numero.includes(q) || (c.email ?? '').toLowerCase().includes(q) || (c.endereco ?? '').toLowerCase().includes(q);
-  });
+    return contatos.filter(c =>
+      c.nome.toLowerCase().includes(q) || c.numero.includes(q) || (c.email ?? '').toLowerCase().includes(q) || (c.endereco ?? '').toLowerCase().includes(q)
+    );
+  }, [contatos, search]);
 
   const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none transition-all';
   const inputStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' };

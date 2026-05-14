@@ -181,6 +181,8 @@ model Demand {
   @@index([priority])
   @@index([category])
   @@index([createdAt])
+  @@index([gabineteId, createdAt])
+  @@index([gabineteId, status])
   @@map("demands")
 }
 
@@ -216,6 +218,7 @@ model AgendaEvent {
 
   @@index([gabineteId])
   @@index([data])
+  @@index([gabineteId, data])
   @@map("agenda_events")
 }
 
@@ -465,6 +468,7 @@ model Contato {
 
   @@index([gabineteId])
   @@index([createdAt])
+  @@index([gabineteId, createdAt])
   @@map("contatos")
 }
 

@@ -20,49 +20,27 @@ export async function GET() {
     // Todas as queries filtradas pelo gabinete do usuário autenticado
     const scope = { gabineteId };
 
-    const [total, pendentes, emAndamento, resolvidas] = await Promise.all([
-      prisma.demand.count({ where: scope }),
-      prisma.demand.count({ where: { ...scope, status: 'PENDENTE' } }),
-      prisma.demand.count({ where: { ...scope, status: 'EM_ANDAMENTO' } }),
-      prisma.demand.count({ where: { ...scope, status: 'RESOLVIDA' } })
-    ]);
-
-    const byCategory = await prisma.demand.groupBy({
-      by: ['category'],
-      where: scope,
-      _count: { id: true }
-    });
-
-    const byPriority = await prisma.demand.groupBy({
-      by: ['priority'],
-      where: scope,
-      _count: { id: true }
-    });
-
-    const recentDemands = await prisma.demand.findMany({
-      where: scope,
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        title: true,
-        solicitante: true,
-        municipio: true,
-        estado: true,
-        status: true,
-        priority: true,
-        createdAt: true
-      }
-    });
-
-    // Timeline — últimos 30 dias, filtrada pelo gabinete
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const demands = await prisma.demand.findMany({
-      where: { ...scope, createdAt: { gte: thirtyDaysAgo } },
-      select: { createdAt: true }
-    });
+    const [total, pendentes, emAndamento, resolvidas, byCategory, byPriority, recentDemands, demands] = await Promise.all([
+      prisma.demand.count({ where: scope }),
+      prisma.demand.count({ where: { ...scope, status: 'PENDENTE' } }),
+      prisma.demand.count({ where: { ...scope, status: 'EM_ANDAMENTO' } }),
+      prisma.demand.count({ where: { ...scope, status: 'RESOLVIDA' } }),
+      prisma.demand.groupBy({ by: ['category'], where: scope, _count: { id: true } }),
+      prisma.demand.groupBy({ by: ['priority'], where: scope, _count: { id: true } }),
+      prisma.demand.findMany({
+        where: scope,
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, title: true, solicitante: true, municipio: true, estado: true, status: true, priority: true, createdAt: true }
+      }),
+      prisma.demand.findMany({
+        where: { ...scope, createdAt: { gte: thirtyDaysAgo } },
+        select: { createdAt: true }
+      }),
+    ]);
 
     const timelineMap: Record<string, number> = {};
     demands?.forEach?.((d: { createdAt: Date }) => {

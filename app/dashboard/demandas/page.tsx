@@ -361,7 +361,7 @@ export default function DemandasPage() {
               key={demand?.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
+              transition={{ delay: Math.min(index * 0.05, 0.3) }}
             >
               <Card hover className="cursor-pointer" onClick={() => handleEdit(demand)}>
                 <CardContent>

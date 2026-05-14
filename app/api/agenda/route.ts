@@ -18,10 +18,10 @@ export async function GET(request: NextRequest) {
     const mes = searchParams.get('mes');
     const ano = searchParams.get('ano');
 
-    // Auto-delete past events (before start of today)
+    // Auto-delete past events (fire-and-forget — don't block the response)
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
-    await prisma.agendaEvent.deleteMany({
+    prisma.agendaEvent.deleteMany({
       where: {
         gabineteId,
         OR: [
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
           { dataFim: null, data: { lt: startOfToday } },
         ],
       },
-    });
+    }).catch((e: unknown) => console.error('agenda cleanup error:', e));
 
     const where: any = { gabineteId };
 

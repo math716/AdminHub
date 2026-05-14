@@ -2241,15 +2241,14 @@ export default function MapaCampanhaPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dfZonas, projecao, activeTab, cenarioAtivo]);
 
-  // Função para obter bairros filtrados
-  const getFilteredBairros = () => {
+  const filteredBairros = useMemo(() => {
     if (!bairrosInfo || bairrosInfo.length === 0) return [];
-    return bairrosInfo.filter(b => 
-      searchMunicipio === '' || 
-      b.bairro.toLowerCase().includes(searchMunicipio.toLowerCase()) ||
-      b.municipio.toLowerCase().includes(searchMunicipio.toLowerCase())
+    if (searchMunicipio === '') return bairrosInfo;
+    const q = searchMunicipio.toLowerCase();
+    return bairrosInfo.filter(b =>
+      b.bairro.toLowerCase().includes(q) || b.municipio.toLowerCase().includes(q)
     );
-  };
+  }, [bairrosInfo, searchMunicipio]);
 
   if (status === 'loading') {
     return (
@@ -2987,7 +2986,7 @@ export default function MapaCampanhaPage() {
                     <div className="flex items-center gap-2">
                       <Badge variant="info" className="text-xs">
                         {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c))
-                          ? getFilteredBairros().length
+                          ? filteredBairros.length
                           : uf === 'DF' && getFilteredDfZonas().length > 0
                             ? getFilteredDfZonas().length
                             : getFilteredMunicipios().length}
@@ -3070,7 +3069,7 @@ export default function MapaCampanhaPage() {
                   {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c)) ? (
                     // Lista de Bairros (vereador) ou município focado (prefeito)
                     <div className="divide-y divide-slate-700">
-                      {getFilteredBairros()
+                      {filteredBairros
                         .sort((a, b) => b.votos - a.votos)
                         .map((bairro, idx) => {
                           const category = getBairroCategory(bairro.votos);
@@ -3116,7 +3115,7 @@ export default function MapaCampanhaPage() {
                             </div>
                           );
                         })}
-                      {getFilteredBairros().length === 0 && (
+                      {filteredBairros.length === 0 && (
                         <div className="p-4 text-center text-slate-400 text-sm">
                           Nenhum bairro encontrado
                         </div>

@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { NextRequest, NextResponse } from 'next/server';
 
 const UF_CODES: Record<string, number> = {
@@ -36,7 +34,9 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await res.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: { 'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400' },
+    });
   } catch (error) {
     console.error('IBGE GeoJSON error:', error);
     return NextResponse.json({ error: 'Erro ao buscar dados geográficos' }, { status: 500 });

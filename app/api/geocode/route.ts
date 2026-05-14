@@ -4,6 +4,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 
+// In-memory cache: key → { results, expiresAt }
+const geocodeCache = new Map<string, { results: unknown[]; expiresAt: number }>();
+const CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
+
 // Proxy para Nominatim (OpenStreetMap) — sem custo, sem API key
 // GET /api/geocode?address=Rua+das+Flores+123,+São+Paulo
 export async function GET(request: NextRequest) {
@@ -12,6 +16,12 @@ export async function GET(request: NextRequest) {
 
   const address = request.nextUrl.searchParams.get('address');
   if (!address) return NextResponse.json({ error: 'Parâmetro address obrigatório' }, { status: 400 });
+
+  const cacheKey = address.toLowerCase().trim();
+  const cached = geocodeCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return NextResponse.json({ results: cached.results });
+  }
 
   try {
     const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&countrycodes=br&q=${encodeURIComponent(address)}`;
@@ -39,6 +49,7 @@ export async function GET(request: NextRequest) {
         .join(', '),
     }));
 
+    geocodeCache.set(cacheKey, { results, expiresAt: Date.now() + CACHE_TTL_MS });
     return NextResponse.json({ results });
   } catch {
     return NextResponse.json({ error: 'Erro ao geocodificar endereço' }, { status: 500 });
