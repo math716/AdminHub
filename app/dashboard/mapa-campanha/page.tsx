@@ -2407,6 +2407,70 @@ export default function MapaCampanhaPage() {
 
       {electoralData && projecao && (
         <>
+          {/* Candidato identificação */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="mb-4"
+          >
+            <div
+              className="flex items-center gap-4 px-4 py-3 rounded-2xl flex-wrap"
+              style={{ background: 'rgba(7,29,54,0.65)', border: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(8px)' }}
+            >
+              {/* Avatar com iniciais */}
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm"
+                style={{ background: 'rgba(201,162,39,0.18)', border: '1px solid rgba(201,162,39,0.35)', color: '#c9a227' }}
+              >
+                {(electoralData.nomeUrna || electoralData.candidateName || '')
+                  .split(' ')
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((w: string) => w[0])
+                  .join('')
+                  .toUpperCase()}
+              </div>
+
+              {/* Nome + cargo */}
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-bold text-sm truncate leading-tight">
+                  {electoralData.nomeUrna || electoralData.candidateName}
+                </p>
+                <p className="text-xs mt-0.5 truncate" style={{ color: '#6b82a0' }}>
+                  {electoralData.cargo}
+                </p>
+              </div>
+
+              {/* Separador */}
+              <div className="hidden sm:block w-px h-8 self-center" style={{ background: 'rgba(255,255,255,0.08)' }} />
+
+              {/* Estado */}
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Estado</span>
+                <span className="text-sm font-bold text-white">
+                  {ESTADOS_BRASIL.find(e => e.sigla === projecao.uf)?.nome ?? projecao.uf}
+                </span>
+              </div>
+
+              <div className="hidden sm:block w-px h-8 self-center" style={{ background: 'rgba(255,255,255,0.08)' }} />
+
+              {/* Eleição base */}
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Eleição</span>
+                <span className="text-sm font-bold" style={{ color: '#4a9ede' }}>{projecao.anoBase}</span>
+              </div>
+
+              <div className="hidden sm:block w-px h-8 self-center" style={{ background: 'rgba(255,255,255,0.08)' }} />
+
+              {/* Projeção */}
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Projeção</span>
+                <span className="text-sm font-bold" style={{ color: '#c9a227' }}>{projecao.anoProjecao}</span>
+              </div>
+            </div>
+          </motion.div>
+
           {/* Scenario Selector */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
