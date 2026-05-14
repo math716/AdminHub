@@ -27,13 +27,13 @@ import { AdminGabineteSwitcher } from '@/components/admin-gabinete-switcher';
 
 const navigation = [
   { name: 'Dashboard',            href: '/dashboard',                 icon: LayoutDashboard, roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
-  { name: 'Mapa Eleitoral',       href: '/dashboard/mapa',            icon: Map,             roles: ['ADMIN', 'CHEFE'] },
-  { name: 'Projeto de Campanha',  href: '/dashboard/mapa-campanha',   icon: Target,          roles: ['ADMIN', 'CHEFE'] },
   { name: 'Mapa do Gabinete',     href: '/dashboard/mapa-demandas',   icon: MapPin,          roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
-  { name: 'Agenda',               href: '/dashboard/agenda',          icon: CalendarDays,    roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
-  { name: 'Favoritos',            href: '/dashboard/favoritos',       icon: Star,            roles: ['ADMIN', 'CHEFE'] },
-  { name: 'Demandas',             href: '/dashboard/demandas',        icon: FileText,        roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
   { name: 'Contatos',             href: '/dashboard/contatos',        icon: BookUser,        roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
+  { name: 'Agenda',               href: '/dashboard/agenda',          icon: CalendarDays,    roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
+  { name: 'Demandas',             href: '/dashboard/demandas',        icon: FileText,        roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
+  { name: 'Projeto de Campanha',  href: '/dashboard/mapa-campanha',   icon: Target,          roles: ['ADMIN', 'CHEFE'] },
+  { name: 'Mapa Eleitoral',       href: '/dashboard/mapa',            icon: Map,             roles: ['ADMIN', 'CHEFE'] },
+  { name: 'Favoritos',            href: '/dashboard/favoritos',       icon: Star,            roles: ['ADMIN', 'CHEFE'] },
   { name: 'Usuários',             href: '/dashboard/usuarios',        icon: Users,           roles: ['ADMIN'] },
   { name: 'Configurações',        href: '/dashboard/configuracoes',   icon: Settings,        roles: ['ADMIN', 'CHEFE'] },
 ];
