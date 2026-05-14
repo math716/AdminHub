@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -370,6 +370,81 @@ export default function MapaPage() {
       s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
     return norm(selectedMunicipio.nome) === 'SAO PAULO';
   }, [selectedUf, selectedMunicipio]);
+
+  // ── Auto-busca a partir dos parâmetros de URL (vindo dos Favoritos) ──
+  const urlParams = useSearchParams();
+  const autoSearchDone = useRef(false);
+
+  useEffect(() => {
+    const cp = urlParams.get('candidato');
+    const ap = urlParams.get('ano');
+    const up = urlParams.get('uf');
+
+    if (!cp || autoSearchDone.current) return;
+    autoSearchDone.current = true;
+
+    setCandidateName(cp);
+    if (ap) setAno(ap);
+    if (up) setSearchEstado(up);
+
+    const run = async () => {
+      setSearching(true);
+      setSearchError('');
+      setCandidatosHomonimos([]);
+      setMensagemHomonimos('');
+
+      try {
+        const efectiveUf = up || 'BR';
+        const yearParam  = ap  || '2022';
+        const res  = await fetch(`/api/tse/candidato?${new URLSearchParams({ candidato: cp, ano: yearParam, uf: efectiveUf })}`);
+        const data = await res.json();
+
+        if (!res.ok) { setSearchError(data?.error ?? 'Erro ao buscar dados'); return; }
+
+        if (data?.multiplos) {
+          setCandidatosHomonimos(data.candidatos ?? []);
+          setMensagemHomonimos(data.mensagem ?? 'Selecione um candidato:');
+          return;
+        }
+
+        let finalData = data;
+        if (up) {
+          try {
+            const brRes = await fetch(`/api/tse/candidato?${new URLSearchParams({ candidato: cp, ano: yearParam, uf: 'BR' })}`);
+            if (brRes.ok) {
+              const brData = await brRes.json();
+              if (!brData.multiplos && brData.votosPorEstado && Object.keys(brData.votosPorEstado).length > 1)
+                finalData = { ...data, votosPorEstado: brData.votosPorEstado };
+            }
+          } catch {}
+        }
+
+        setElectoralData(finalData);
+        const cargo = (finalData.cargo ?? '').toUpperCase();
+        const isMunicipalCargo = cargo.includes('VEREADOR') || cargo.includes('PREFEITO');
+
+        if (up) {
+          setSelectedUf(up);
+          const estado = ESTADOS_BRASIL?.find((e) => e?.sigla === up);
+          setSelectedStateName(estado?.nome ?? up);
+          if (isMunicipalCargo) {
+            if (!navigateToMunicipio(finalData, up)) setView('estado');
+          } else {
+            setView('estado');
+          }
+        } else {
+          setView('brasil');
+        }
+      } catch {
+        setSearchError('Erro ao buscar dados eleitorais');
+      } finally {
+        setSearching(false);
+      }
+    };
+
+    run();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Computa votos por distrito usando SP_ZONA_DISTRITO_MAP
   // Força Leaflet a recalcular tamanho ao entrar/sair da tela cheia
