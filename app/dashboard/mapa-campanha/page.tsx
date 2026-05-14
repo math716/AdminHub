@@ -555,7 +555,8 @@ export default function MapaCampanhaPage() {
     const ufProj = projecao.uf;
     const anoProj = projecao.anoBase.toString();
     if (!nome) return;
-    fetch(`/api/tse/foto?nome=${encodeURIComponent(nome)}&ano=${anoProj}&uf=${ufProj}`)
+    const cargo = projecao.cargo ?? '';
+    fetch(`/api/tse/foto?nome=${encodeURIComponent(nome)}&ano=${anoProj}&uf=${ufProj}&cargo=${encodeURIComponent(cargo)}`)
       .then(r => r.json())
       .then(d => setCandidatoFotoUrl(d.fotoUrl ?? null))
       .catch(() => setCandidatoFotoUrl(null));
