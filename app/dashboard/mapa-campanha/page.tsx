@@ -2419,28 +2419,27 @@ export default function MapaCampanhaPage() {
               style={{ background: 'rgba(7,29,54,0.65)', border: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(8px)' }}
             >
               {/* Avatar com iniciais */}
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm"
-                style={{ background: 'rgba(201,162,39,0.18)', border: '1px solid rgba(201,162,39,0.35)', color: '#c9a227' }}
-              >
-                {(electoralData.nomeUrna || electoralData.candidateName || '')
-                  .split(' ')
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((w: string) => w[0])
-                  .join('')
-                  .toUpperCase()}
-              </div>
+              {(() => {
+                const nomeCandidato = projecao.candidatoNome || electoralData.nomeUrna || electoralData.candidateName || '';
+                const initials = nomeCandidato.split(' ').filter(Boolean).slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
+                const cargo = projecao.cargo || electoralData.cargo || '';
+                return (
+                  <>
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm"
+                      style={{ background: 'rgba(201,162,39,0.18)', border: '1px solid rgba(201,162,39,0.35)', color: '#c9a227' }}
+                    >
+                      {initials}
+                    </div>
 
-              {/* Nome + cargo */}
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-bold text-sm truncate leading-tight">
-                  {electoralData.nomeUrna || electoralData.candidateName}
-                </p>
-                <p className="text-xs mt-0.5 truncate" style={{ color: '#6b82a0' }}>
-                  {electoralData.cargo}
-                </p>
-              </div>
+                    {/* Nome + cargo */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-bold text-sm truncate leading-tight">{nomeCandidato}</p>
+                      {cargo && <p className="text-xs mt-0.5 truncate" style={{ color: '#6b82a0' }}>{cargo}</p>}
+                    </div>
+                  </>
+                );
+              })()}
 
               {/* Separador */}
               <div className="hidden sm:block w-px h-8 self-center" style={{ background: 'rgba(255,255,255,0.08)' }} />
