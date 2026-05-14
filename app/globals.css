@@ -58,6 +58,25 @@ body {
   }
 }
 
+/* ── Landscape mobile: reduz o padding-top para ganhar altura de tela ── */
+@media (orientation: landscape) and (max-height: 600px) {
+  .landscape-content {
+    padding-top: 3rem !important; /* 48px em vez de 64px */
+  }
+
+  /* Dropdown do Select: cabeçalho e item mais compactos */
+  .select-item {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  /* Drawer do Mapa do Gabinete: inputs menores */
+  .mobile-demand-drawer .py-2 {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+}
+
 /* ── Custom Select (Radix UI) ── */
 @keyframes selectSlideIn {
   from { opacity: 0; transform: scale(0.96) translateY(-4px); }

@@ -576,7 +576,7 @@ export default function MapaDemandasPage() {
           <>
             <div className="md:hidden fixed inset-0 bg-black/60 z-[1500]" onClick={() => setMobileSidebar(false)} />
             <div className="md:hidden fixed inset-y-0 right-0 w-full max-w-xs bg-[#0a1628] border-l border-white/10 z-[1600] flex flex-col">
-              <div className="px-3 py-3 border-b border-white/10 flex items-center justify-between gap-2 flex-shrink-0">
+              <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between gap-2 flex-shrink-0">
                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
                   {filteredDemands.length} demanda{filteredDemands.length !== 1 ? 's' : ''}
                 </p>
@@ -593,7 +593,7 @@ export default function MapaDemandasPage() {
                 </div>
               </div>
               {/* Filtros mobile */}
-              <div className="px-3 py-2 border-b border-white/10 flex flex-col gap-2 flex-shrink-0">
+              <div className="px-3 py-1.5 border-b border-white/10 flex flex-col gap-1.5 flex-shrink-0">
                 <input value={searchText} onChange={(e) => setSearchText(e.target.value)}
                   placeholder="Buscar..." className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 outline-none" />
                 <div className="grid grid-cols-2 gap-2">

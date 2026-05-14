@@ -131,6 +131,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
               position="popper"
               sideOffset={6}
               avoidCollisions
+              collisionPadding={12}
             >
               <Radix.ScrollUpButton
                 className="flex items-center justify-center h-6 select-none"
@@ -139,7 +140,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                 <ChevronDown className="h-3.5 w-3.5 rotate-180" />
               </Radix.ScrollUpButton>
 
-              <Radix.Viewport className="p-1.5" style={{ maxHeight: 'min(240px, var(--radix-select-content-available-height))' }}>
+              <Radix.Viewport className="p-1.5" style={{ maxHeight: 'min(220px, calc(var(--radix-select-content-available-height) - 16px))' }}>
                 {radixOptions.map((opt) => (
                   <Radix.Item
                     key={opt.value}
