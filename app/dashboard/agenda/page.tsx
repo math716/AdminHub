@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Select } from '@/components/ui/select';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
@@ -660,14 +661,12 @@ export default function AgendaPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Tipo</label>
-                  <select
+                  <Select
                     value={form.tipo}
                     onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value, cor: TIPO_COLORS[e.target.value] ?? '' }))}
-                    className={inputCls}
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)' }}
-                  >
-                    {Object.entries(TIPO_LABELS).map(([k, v]) => <option key={k} value={k} style={{ background: '#071d36' }}>{v}</option>)}
-                  </select>
+                    options={Object.entries(TIPO_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Cor</label>

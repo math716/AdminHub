@@ -11,6 +11,7 @@ import {
   Maximize2, Minimize2, ChevronDown,
 } from 'lucide-react';
 import { CATEGORY_LABELS, CATEGORY_COLORS, STATUS_LABELS, STATUS_COLORS, PRIORITY_LABELS, PRIORITY_COLORS } from '@/lib/types';
+import { Select } from '@/components/ui/select';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -410,21 +411,21 @@ export default function MapaDemandasPage() {
             placeholder="Buscar por título, solicitante..."
             className="bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none w-56"
           />
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-gray-300 outline-none">
-            <option value="">Todos os status</option>
-            {Object.entries(STATUS_LABELS).filter(([k]) => k !== 'RESOLVIDA').map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-gray-300 outline-none">
-            <option value="">Todas as categorias</option>
-            {categoryKeys.map((k) => <option key={k} value={k}>{CATEGORY_LABELS[k]}</option>)}
-          </select>
-          <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-gray-300 outline-none">
-            <option value="">Todas as prioridades</option>
-            {Object.entries(PRIORITY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
+          <Select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            options={[{ value: '', label: 'Todos os status' }, ...Object.entries(STATUS_LABELS).filter(([k]) => k !== 'RESOLVIDA').map(([k, v]) => ({ value: k, label: v }))]}
+          />
+          <Select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            options={[{ value: '', label: 'Todas as categorias' }, ...categoryKeys.map((k) => ({ value: k, label: CATEGORY_LABELS[k] }))]}
+          />
+          <Select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            options={[{ value: '', label: 'Todas as prioridades' }, ...Object.entries(PRIORITY_LABELS).map(([k, v]) => ({ value: k, label: v }))]}
+          />
           {(filterStatus || filterCategory || filterPriority || searchText) && (
             <button onClick={() => { setFilterStatus(''); setFilterCategory(''); setFilterPriority(''); setSearchText(''); }}
               className="text-xs text-gray-400 hover:text-white flex items-center gap-1">
@@ -596,16 +597,16 @@ export default function MapaDemandasPage() {
                 <input value={searchText} onChange={(e) => setSearchText(e.target.value)}
                   placeholder="Buscar..." className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 outline-none" />
                 <div className="grid grid-cols-2 gap-2">
-                  <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-2 py-2 text-xs text-gray-300 outline-none">
-                    <option value="">Todos status</option>
-                    {Object.entries(STATUS_LABELS).filter(([k]) => k !== 'RESOLVIDA').map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                  <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-2 py-2 text-xs text-gray-300 outline-none">
-                    <option value="">Todas cat.</option>
-                    {categoryKeys.map((k) => <option key={k} value={k}>{CATEGORY_LABELS[k]}</option>)}
-                  </select>
+                  <Select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    options={[{ value: '', label: 'Todos status' }, ...Object.entries(STATUS_LABELS).filter(([k]) => k !== 'RESOLVIDA').map(([k, v]) => ({ value: k, label: v }))]}
+                  />
+                  <Select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    options={[{ value: '', label: 'Todas cat.' }, ...categoryKeys.map((k) => ({ value: k, label: CATEGORY_LABELS[k] }))]}
+                  />
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto">
@@ -906,24 +907,30 @@ export default function MapaDemandasPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Categoria</label>
-                  <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-gray-300 text-sm outline-none">
-                    {categoryKeys.map((k) => <option key={k} value={k}>{CATEGORY_LABELS[k]}</option>)}
-                  </select>
+                  <Select
+                    value={form.category}
+                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                    options={categoryKeys.map((k) => ({ value: k, label: CATEGORY_LABELS[k] }))}
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Status</label>
-                  <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-gray-300 text-sm outline-none">
-                    {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
+                  <Select
+                    value={form.status}
+                    onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                    options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Prioridade</label>
-                  <select value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
-                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-gray-300 text-sm outline-none">
-                    {Object.entries(PRIORITY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
+                  <Select
+                    value={form.priority}
+                    onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
+                    options={Object.entries(PRIORITY_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+                    className="mt-1"
+                  />
                 </div>
               </div>
 

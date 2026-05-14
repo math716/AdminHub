@@ -467,30 +467,23 @@ export default function DemandasPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="text-xs text-gray-400 uppercase tracking-wide">Estado *</label>
-              <select
+              <Select
                 value={formData.estado}
                 onChange={(e) => setFormData({ ...formData, estado: e.target.value, municipio: '' })}
-                required
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-gray-300 text-sm outline-none focus:border-sky-500"
-              >
-                {estadoOptions.map((o) => (
-                  <option key={o.value} value={o.value} className="bg-[#0d1b2a]">{o.label}</option>
-                ))}
-              </select>
+                options={estadoOptions}
+                placeholder="UF"
+                className="mt-1"
+              />
             </div>
             <div>
               <label className="text-xs text-gray-400 uppercase tracking-wide">Município *</label>
-              <select
+              <Select
                 value={formData.municipio}
                 onChange={(e) => setFormData({ ...formData, municipio: e.target.value })}
-                required
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-gray-300 text-sm outline-none focus:border-sky-500"
-              >
-                <option value="" className="bg-[#0d1b2a]">Selecione</option>
-                {formMunicipios?.map?.((m) => (
-                  <option key={m.id} value={m.nome} className="bg-[#0d1b2a]">{m.nome}</option>
-                ))}
-              </select>
+                options={[{ value: '', label: 'Selecione' }, ...(formMunicipios?.map?.((m) => ({ value: m.nome, label: m.nome })) ?? [])]}
+                placeholder="Selecione"
+                className="mt-1"
+              />
             </div>
             <div>
               <label className="text-xs text-gray-400 uppercase tracking-wide">Bairro</label>
@@ -534,39 +527,30 @@ export default function DemandasPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="text-xs text-gray-400 uppercase tracking-wide">Categoria</label>
-              <select
+              <Select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value as DemandCategory })}
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-gray-300 text-sm outline-none focus:border-sky-500"
-              >
-                {categoryOptions.map((o) => (
-                  <option key={o.value} value={o.value} className="bg-[#0d1b2a]">{o.label}</option>
-                ))}
-              </select>
+                options={categoryOptions}
+                className="mt-1"
+              />
             </div>
             <div>
               <label className="text-xs text-gray-400 uppercase tracking-wide">Status</label>
-              <select
+              <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as DemandStatus })}
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-gray-300 text-sm outline-none focus:border-sky-500"
-              >
-                {statusOptions.map((o) => (
-                  <option key={o.value} value={o.value} className="bg-[#0d1b2a]">{o.label}</option>
-                ))}
-              </select>
+                options={statusOptions}
+                className="mt-1"
+              />
             </div>
             <div>
               <label className="text-xs text-gray-400 uppercase tracking-wide">Prioridade</label>
-              <select
+              <Select
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value as DemandPriority })}
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-gray-300 text-sm outline-none focus:border-sky-500"
-              >
-                {priorityOptions.map((o) => (
-                  <option key={o.value} value={o.value} className="bg-[#0d1b2a]">{o.label}</option>
-                ))}
-              </select>
+                options={priorityOptions}
+                className="mt-1"
+              />
             </div>
           </div>
 
