@@ -2291,7 +2291,7 @@ export default function MapaCampanhaPage() {
   };
 
   return (
-    <div className="min-h-screen p-6" style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 50%, #0c2a4f 100%)' }}>
+    <div className="min-h-screen p-3 md:p-6" style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 50%, #0c2a4f 100%)' }}>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -2347,7 +2347,7 @@ export default function MapaCampanhaPage() {
                   className="bg-slate-700/60 border-slate-600 text-white placeholder:text-slate-500"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
                     ANO DA ELEIÇÃO

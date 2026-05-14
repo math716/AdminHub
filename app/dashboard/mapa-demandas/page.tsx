@@ -145,6 +145,9 @@ export default function MapaDemandasPage() {
   const [concluidasOpen, setConcluidasOpen] = useState(false);
   const [selectedConcluidaIds, setSelectedConcluidaIds] = useState<Set<string>>(new Set());
 
+  // Sidebar mobile
+  const [mobileSidebar, setMobileSidebar] = useState(false);
+
   // Força o Leaflet a recalcular o tamanho ao entrar/sair da tela cheia
   useEffect(() => {
     const t = setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
@@ -344,7 +347,7 @@ export default function MapaDemandasPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Busca de endereço no mapa */}
+          {/* Busca de endereço no mapa — só desktop */}
           <div className="relative hidden md:flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2">
             <Navigation className="w-4 h-4 text-gray-400" />
             <input
@@ -373,26 +376,34 @@ export default function MapaDemandasPage() {
               </div>
             )}
           </div>
+          {/* Lista — mobile only */}
+          <button
+            onClick={() => setMobileSidebar(true)}
+            className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-white/5 text-gray-300 hover:bg-white/10 transition-all"
+          >
+            <Filter className="w-4 h-4" />
+            Lista
+          </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${showFilters ? 'bg-sky-600 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}
+            className={`hidden md:flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${showFilters ? 'bg-sky-600 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}
           >
             <Filter className="w-4 h-4" />
             Filtros
           </button>
           <button
             onClick={() => { setShowNewModal(true); setForm({ ...EMPTY_FORM }); setSaveError(''); }}
-            className="flex items-center gap-1.5 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold transition-all"
+            className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold transition-all"
           >
             <Plus className="w-4 h-4" />
-            Nova Demanda
+            <span className="hidden sm:inline">Nova Demanda</span>
           </button>
         </div>
       </div>
 
-      {/* ── Filtros ── */}
+      {/* ── Filtros (desktop) ── */}
       {showFilters && (
-        <div className="flex items-center gap-3 px-4 py-2 border-b border-white/10 bg-white/2 flex-wrap flex-shrink-0">
+        <div className="hidden md:flex items-center gap-3 px-4 py-2 border-b border-white/10 bg-white/2 flex-wrap flex-shrink-0">
           <input
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
@@ -425,8 +436,8 @@ export default function MapaDemandasPage() {
 
       {/* ── Conteúdo principal ── */}
       <div className="flex flex-1 min-h-0">
-        {/* Painel lateral — lista de demandas */}
-        <div className="w-72 flex-shrink-0 flex flex-col border-r border-white/10 overflow-hidden">
+        {/* Painel lateral — lista de demandas (desktop) */}
+        <div className="hidden md:flex md:w-72 flex-shrink-0 flex-col border-r border-white/10 overflow-hidden">
           <div className="px-3 py-2 border-b border-white/10 flex-shrink-0 flex items-center justify-between gap-2">
             <p className="text-xs text-gray-400 font-medium uppercase tracking-wide truncate">
               {filteredDemands.length} demanda{filteredDemands.length !== 1 ? 's' : ''}
@@ -559,6 +570,79 @@ export default function MapaDemandasPage() {
           </div>
         </div>
 
+        {/* Drawer mobile — lista de demandas */}
+        {mobileSidebar && (
+          <>
+            <div className="md:hidden fixed inset-0 bg-black/60 z-[1500]" onClick={() => setMobileSidebar(false)} />
+            <div className="md:hidden fixed inset-y-0 right-0 w-full max-w-xs bg-[#0a1628] border-l border-white/10 z-[1600] flex flex-col">
+              <div className="px-3 py-3 border-b border-white/10 flex items-center justify-between gap-2 flex-shrink-0">
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                  {filteredDemands.length} demanda{filteredDemands.length !== 1 ? 's' : ''}
+                </p>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setShowDemands(v => !v)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showDemands ? 'bg-sky-500/20 border-sky-500/50 text-sky-400' : 'bg-white/5 border-white/10 text-gray-500'}`}>
+                    <MapPin className="w-3 h-3" />Demandas
+                  </button>
+                  <button onClick={() => setShowAgendas(v => !v)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showAgendas ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-white/5 border-white/10 text-gray-500'}`}>
+                    <Calendar className="w-3 h-3" />Agenda
+                  </button>
+                  <button onClick={() => setMobileSidebar(false)} className="ml-1 p-1.5 text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
+                </div>
+              </div>
+              {/* Filtros mobile */}
+              <div className="px-3 py-2 border-b border-white/10 flex flex-col gap-2 flex-shrink-0">
+                <input value={searchText} onChange={(e) => setSearchText(e.target.value)}
+                  placeholder="Buscar..." className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 outline-none" />
+                <div className="grid grid-cols-2 gap-2">
+                  <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-2 py-2 text-xs text-gray-300 outline-none">
+                    <option value="">Todos status</option>
+                    {Object.entries(STATUS_LABELS).filter(([k]) => k !== 'RESOLVIDA').map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                  <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-2 py-2 text-xs text-gray-300 outline-none">
+                    <option value="">Todas cat.</option>
+                    {categoryKeys.map((k) => <option key={k} value={k}>{CATEGORY_LABELS[k]}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {filteredDemands.map((d) => (
+                  <button key={d.id}
+                    onClick={() => { setSelectedDemand(d); setSelectedEvent(null); if (d.lat && d.lng) setMapCenter([d.lat, d.lng]); setMobileSidebar(false); }}
+                    className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedDemand?.id === d.id ? 'bg-sky-900/30 border-l-2 border-l-sky-400' : ''}`}>
+                    <p className="text-white text-xs font-semibold truncate mb-0.5">{d.title}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full"
+                        style={{ background: (STATUS_COLORS[d.status as keyof typeof STATUS_COLORS] ?? '#9e9e9e') + '22', color: STATUS_COLORS[d.status as keyof typeof STATUS_COLORS] ?? '#9e9e9e' }}>
+                        {STATUS_LABELS[d.status as keyof typeof STATUS_LABELS]}
+                      </span>
+                      <span className="text-gray-500 text-[10px] truncate">{d.solicitante}</span>
+                    </div>
+                  </button>
+                ))}
+                {agendaEvents.length > 0 && showAgendas && (
+                  <>
+                    <div className="px-3 py-2 border-b border-white/10 bg-white/2 flex-shrink-0 mt-1">
+                      <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Agenda</p>
+                    </div>
+                    {agendaEvents.map((e) => (
+                      <button key={e.id}
+                        onClick={() => { setSelectedEvent(e); setSelectedDemand(null); if (e.lat && e.lng) setMapCenter([e.lat, e.lng]); setMobileSidebar(false); }}
+                        className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedEvent?.id === e.id ? 'bg-indigo-900/30 border-l-2 border-l-indigo-400' : ''}`}>
+                        <p className="text-white text-xs font-semibold truncate">{e.titulo}</p>
+                        <p className="text-gray-500 text-[10px]">{TIPO_AGENDA_LABELS[e.tipo]} · {new Date(e.data).toLocaleDateString('pt-BR')}</p>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Mapa */}
         <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[#0d1b2a]' : 'flex-1 relative'}>
           <DemandaMapLeaflet
@@ -582,7 +666,7 @@ export default function MapaDemandasPage() {
 
           {/* Popup detalhe — demanda */}
           {selectedDemand && (
-            <div className="absolute top-4 right-4 w-80 bg-[#0d1b2a]/95 backdrop-blur border border-white/10 rounded-2xl shadow-2xl z-[1000] overflow-hidden">
+            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-4 md:right-4 md:left-auto md:w-80 w-full bg-[#0d1b2a]/98 backdrop-blur border-t md:border border-white/10 md:rounded-2xl shadow-2xl z-[1000] overflow-hidden max-h-[65vh] overflow-y-auto">
               {selectedDemand.foto && (
                 <div className="w-full h-40 bg-black overflow-hidden">
                   <img src={selectedDemand.foto} alt="Foto da demanda" className="w-full h-full object-cover" />
@@ -681,7 +765,7 @@ export default function MapaDemandasPage() {
 
           {/* Popup detalhe — evento */}
           {selectedEvent && (
-            <div className="absolute top-4 right-4 w-80 bg-[#0d1b2a]/95 backdrop-blur border border-white/10 rounded-2xl shadow-2xl z-[1000] overflow-hidden">
+            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-4 md:right-4 md:left-auto md:w-80 w-full bg-[#0d1b2a]/98 backdrop-blur border-t md:border border-white/10 md:rounded-2xl shadow-2xl z-[1000] overflow-hidden max-h-[60vh] overflow-y-auto">
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex-1">
@@ -745,8 +829,8 @@ export default function MapaDemandasPage() {
 
       {/* ── Modal nova demanda ── */}
       {showNewModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0d1b2a] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-[#0d1b2a] border border-white/10 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <Plus className="w-5 h-5 text-sky-400" />
@@ -767,7 +851,7 @@ export default function MapaDemandasPage() {
               </div>
 
               {/* Solicitante + Contato */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Solicitante *</label>
                   <input value={form.solicitante} onChange={(e) => setForm((f) => ({ ...f, solicitante: e.target.value }))}
@@ -783,7 +867,7 @@ export default function MapaDemandasPage() {
               </div>
 
               {/* Estado + Município */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Estado *</label>
                   <input value={form.estado} onChange={(e) => setForm((f) => ({ ...f, estado: e.target.value }))}
@@ -819,7 +903,7 @@ export default function MapaDemandasPage() {
               </div>
 
               {/* Categoria + Status + Prioridade */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Categoria</label>
                   <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}

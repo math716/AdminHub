@@ -304,8 +304,8 @@ export default function AgendaPage() {
     <div className="min-h-screen text-white p-4 md:p-6" style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 50%, #0c2a4f 100%)' }}>
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <div className="flex items-center gap-3 md:gap-4">
           <div
             className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}
@@ -313,7 +313,7 @@ export default function AgendaPage() {
             <CalendarDays className="w-5 h-5" style={{ color: '#c9a227' }} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Agenda do Gabinete</h1>
+            <h1 className="text-lg md:text-xl font-bold text-white tracking-tight">Agenda do Gabinete</h1>
             <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
               {events.length} evento{events.length !== 1 ? 's' : ''} em {MESES[viewMonth]}
             </p>
@@ -407,7 +407,7 @@ export default function AgendaPage() {
             <div className="grid grid-cols-7">
               {cells.map((day, idx) => {
                 if (!day) return (
-                  <div key={`empty-${idx}`} className="h-24"
+                  <div key={`empty-${idx}`} className="h-16 md:h-24"
                     style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }} />
                 );
                 const dayEvs = eventsByDay.get(day) ?? [];
@@ -423,7 +423,7 @@ export default function AgendaPage() {
                   <div
                     key={day}
                     onClick={() => setSelectedDay(isSel ? null : day)}
-                    className="h-24 p-1.5 cursor-pointer transition-all group"
+                    className="h-16 md:h-24 p-1 md:p-1.5 cursor-pointer transition-all group"
                     style={{
                       borderBottom: '1px solid rgba(255,255,255,0.04)',
                       borderRight: '1px solid rgba(255,255,255,0.04)',
@@ -618,9 +618,9 @@ export default function AgendaPage() {
 
       {/* ── Modal criar/editar evento ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
           <div
-            className="w-full max-w-lg rounded-2xl shadow-2xl max-h-[90vh] flex flex-col"
+            className="w-full max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[95vh] md:max-h-[90vh] flex flex-col"
             style={{
               background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)',
               border: '1px solid rgba(201,162,39,0.25)',
@@ -657,7 +657,7 @@ export default function AgendaPage() {
               </div>
 
               {/* Tipo + Cor */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Tipo</label>
                   <select
@@ -684,7 +684,7 @@ export default function AgendaPage() {
               </div>
 
               {/* Data início + Hora */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Data *</label>
                   <input type="date" value={form.data}
@@ -704,7 +704,7 @@ export default function AgendaPage() {
               </div>
 
               {/* Data fim + Hora fim */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Data Fim</label>
                   <input type="date" value={form.dataFim}
