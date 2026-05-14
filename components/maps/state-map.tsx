@@ -790,6 +790,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           const nomeMun = codigoToNome[codarea] || '';
           const votos = getVotos(codarea, nomeMun);
           if (!votos || votos === 0) return;
+          if (!isMunicipioFiltered(nomeMun)) return;
           try {
             const raw = layer.getLatLngs();
             const findRings = (arr: any[]): any[][] => {
