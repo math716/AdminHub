@@ -2355,7 +2355,6 @@ export default function MapaCampanhaPage() {
                     value={ano}
                     onChange={(e) => setAno(e.target.value)}
                     options={anosOptions}
-                    className="bg-slate-700/60 border-slate-600 text-white"
                   />
                 </div>
                 <div>
@@ -2366,7 +2365,6 @@ export default function MapaCampanhaPage() {
                     value={uf}
                     onChange={(e) => setUf(e.target.value)}
                     options={estadosOptions}
-                    className="bg-slate-700/60 border-slate-600 text-white"
                   />
                 </div>
               </div>
@@ -2391,7 +2389,6 @@ export default function MapaCampanhaPage() {
                   value={anoProjecao}
                   onChange={(e) => setAnoProjecao(e.target.value)}
                   options={anosProjecaoOptions}
-                  className="bg-slate-700/60 border-slate-600 text-white"
                 />
               </div>
               <Button
