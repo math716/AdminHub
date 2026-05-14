@@ -413,7 +413,6 @@ export default function MapaCampanhaPage() {
   // Data states
   const [electoralData, setElectoralData] = useState<ElectoralData | null>(null);
   const [projecao, setProjecao] = useState<Projecao | null>(null);
-  const [candidatoFotoUrl, setCandidatoFotoUrl] = useState<string | null>(null);
   const [projecoesSalvas, setProjecoesSalvas] = useState<Projecao[]>([]);
 
   // Cenário and filter states
@@ -548,19 +547,6 @@ export default function MapaCampanhaPage() {
   const [selectedGenBairro, setSelectedGenBairro] = useState<string | null>(null);
   const [genBairrosApiVotes, setGenBairrosApiVotes] = useState<Record<string, number>>({});
 
-  // Busca foto do candidato no TSE quando projecao é carregada
-  useEffect(() => {
-    if (!projecao) { setCandidatoFotoUrl(null); return; }
-    const nome = projecao.candidatoNome;
-    const ufProj = projecao.uf;
-    const anoProj = projecao.anoBase.toString();
-    if (!nome) return;
-    const cargo = projecao.cargo ?? '';
-    fetch(`/api/tse/foto?nome=${encodeURIComponent(nome)}&ano=${anoProj}&uf=${ufProj}&cargo=${encodeURIComponent(cargo)}`)
-      .then(r => r.json())
-      .then(d => setCandidatoFotoUrl(d.fotoUrl ?? null))
-      .catch(() => setCandidatoFotoUrl(null));
-  }, [projecao]);
 
   // Agrega votos por zona do candidato → Regiões Administrativas do DF
   useEffect(() => {
@@ -2430,41 +2416,18 @@ export default function MapaCampanhaPage() {
             className="mb-4"
           >
             <div
-              className="flex items-center gap-5 px-5 py-4 rounded-2xl flex-wrap"
+              className="flex items-center gap-5 px-5 py-3 rounded-2xl flex-wrap"
               style={{ background: 'rgba(7,29,54,0.65)', border: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(8px)' }}
             >
-              {/* Avatar com foto ou iniciais */}
+              {/* Nome + cargo */}
               {(() => {
                 const nomeCandidato = projecao.candidatoNome || electoralData.nomeUrna || electoralData.candidateName || '';
-                const initials = nomeCandidato.split(' ').filter(Boolean).slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
                 const cargo = projecao.cargo || electoralData.cargo || '';
                 return (
-                  <>
-                    <div
-                      className="w-14 h-14 rounded-xl flex-shrink-0 overflow-hidden"
-                      style={{ border: '1px solid rgba(201,162,39,0.35)' }}
-                    >
-                      {candidatoFotoUrl ? (
-                        <img
-                          src={candidatoFotoUrl}
-                          alt={nomeCandidato}
-                          className="w-full h-full object-cover object-top"
-                          onError={() => setCandidatoFotoUrl(null)}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center font-bold text-base"
-                          style={{ background: 'rgba(201,162,39,0.18)', color: '#c9a227' }}>
-                          {initials}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Nome + cargo */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-bold text-base truncate leading-tight">{nomeCandidato}</p>
-                      {cargo && <p className="text-sm mt-0.5 truncate" style={{ color: '#6b82a0' }}>{cargo}</p>}
-                    </div>
-                  </>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-bold text-xl truncate leading-tight">{nomeCandidato}</p>
+                    {cargo && <p className="text-sm mt-0.5 truncate" style={{ color: '#6b82a0' }}>{cargo}</p>}
+                  </div>
                 );
               })()}
 
@@ -2505,9 +2468,9 @@ export default function MapaCampanhaPage() {
             className="mb-6"
           >
             <Card style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <CardContent className="px-4 py-2.5">
+              <CardContent className="px-4 py-1.5">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Cenário</span>
+                  <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Cenário</span>
                   <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(4,17,31,0.5)' }}>
                     {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
                       const config = cenarioConfig[cenario];
@@ -2517,13 +2480,13 @@ export default function MapaCampanhaPage() {
                         <button
                           key={cenario}
                           onClick={() => setCenarioAtivo(cenario)}
-                          className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-semibold text-xs transition-all ${
+                          className={`flex items-center gap-1.5 px-3 py-0.5 rounded-md font-semibold text-sm transition-all ${
                             isActive
                               ? `${config.bg} text-white shadow-lg`
                               : `text-slate-400 hover:text-white`
                           }`}
                         >
-                          <Icon className="h-3 w-3" />
+                          <Icon className="h-3.5 w-3.5" />
                           {config.label}
                         </button>
                       );
@@ -2531,9 +2494,9 @@ export default function MapaCampanhaPage() {
                   </div>
                   <div className="flex-1" />
                   <div className="text-right">
-                    <p className="text-[10px] tracking-wide" style={{ color: '#6b82a0' }}>Totalizando cenário</p>
-                    <p className={`text-lg font-bold ${cenarioConfig[cenarioAtivo].color}`}>
-                      {getTotalVotosMeta().toLocaleString()} <span className="text-xs font-normal" style={{ color: '#6b82a0' }}>votos</span>
+                    <p className="text-xs tracking-wide" style={{ color: '#6b82a0' }}>Totalizando cenário</p>
+                    <p className={`text-xl font-bold ${cenarioConfig[cenarioAtivo].color}`}>
+                      {getTotalVotosMeta().toLocaleString()} <span className="text-sm font-normal" style={{ color: '#6b82a0' }}>votos</span>
                     </p>
                   </div>
                 </div>
