@@ -88,7 +88,7 @@ let spDistritosGeoCache: any = null;
 function demandaPinSvg(color: string, dotColor: string, foto?: string, selected = false): string {
   const size = selected ? 44 : 36;
   const h = Math.round(size * 1.45);
-  const border = selected ? '#facc15' : 'rgba(255,255,255,0.5)';
+  const border = selected ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.4)';
   const bw = selected ? 3 : 1.5;
 
   if (foto) {
@@ -120,7 +120,7 @@ function demandaPinSvg(color: string, dotColor: string, foto?: string, selected 
 function eventoPinSvg(color: string, selected = false): string {
   const size = selected ? 40 : 32;
   const h = Math.round(size * 1.45);
-  const border = selected ? '#facc15' : 'rgba(255,255,255,0.5)';
+  const border = selected ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.4)';
   const bw = selected ? 3 : 1.5;
   return `<svg width="${size}" height="${h}" viewBox="0 0 40 58" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 3px 8px rgba(0,0,0,0.6))">
     <path d="M20 2C11.2 2 4 9.2 4 18c0 12.3 16 38 16 38S36 30.3 36 18C36 9.2 28.8 2 20 2z" fill="${color}" stroke="${border}" stroke-width="${bw}"/>
@@ -283,6 +283,7 @@ export default function DemandaMapLeaflet({
       }
 
       // ── Pins de demandas
+      if (isMapStale()) return;
       const demandBounds: [number, number][] = [];
       demands.forEach((d) => {
         if (!d.lat || !d.lng) return;
@@ -316,6 +317,7 @@ export default function DemandaMapLeaflet({
       });
 
       // ── Pins de eventos
+      if (isMapStale()) return;
       agendaEvents.forEach((e) => {
         if (!e.lat || !e.lng) return;
         const eColor = e.cor ?? TIPO_AGENDA_COLORS[e.tipo] ?? '#6366f1';
@@ -342,6 +344,7 @@ export default function DemandaMapLeaflet({
       });
 
       // ── Pins de contatos
+      if (isMapStale()) return;
       contatos.forEach((c) => {
         if (!c.lat || !c.lng) return;
         const html = contatoPinSvg();
