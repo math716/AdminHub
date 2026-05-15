@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 
 export async function GET() {
   try {
@@ -23,7 +24,10 @@ export async function GET() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const [total, pendentes, emAndamento, resolvidas, byCategory, byPriority, recentDemands, demands] = await Promise.all([
+    // A timeline antes carregava todas as demandas dos ultimos 30 dias
+    // (select createdAt) e agregava em JS. Agora a agregacao acontece
+    // no Postgres com GROUP BY DATE — uma unica linha por dia.
+    const [total, pendentes, emAndamento, resolvidas, byCategory, byPriority, recentDemands, timelineRows] = await Promise.all([
       prisma.demand.count({ where: scope }),
       prisma.demand.count({ where: { ...scope, status: 'PENDENTE' } }),
       prisma.demand.count({ where: { ...scope, status: 'EM_ANDAMENTO' } }),
@@ -36,28 +40,19 @@ export async function GET() {
         orderBy: { createdAt: 'desc' },
         select: { id: true, title: true, solicitante: true, municipio: true, estado: true, status: true, priority: true, createdAt: true }
       }),
-      prisma.demand.findMany({
-        where: { ...scope, createdAt: { gte: thirtyDaysAgo } },
-        select: { createdAt: true }
-      }),
+      prisma.$queryRaw<Array<{ date: Date; count: bigint }>>(Prisma.sql`
+        SELECT DATE("createdAt") AS date, COUNT(*)::bigint AS count
+        FROM demands
+        WHERE "gabineteId" = ${gabineteId} AND "createdAt" >= ${thirtyDaysAgo}
+        GROUP BY 1
+        ORDER BY 1
+      `),
     ]);
 
-    const timelineMap: Record<string, number> = {};
-    demands?.forEach?.((d: { createdAt: Date }) => {
-      const dateStr = d?.createdAt?.toISOString?.()?.split?.('T')?.[0] ?? '';
-      if (dateStr) timelineMap[dateStr] = (timelineMap[dateStr] ?? 0) + 1;
-    });
-
-    const timeline = Object.entries(timelineMap ?? {})
-      ?.map?.(([date, count]) => ({
-        date: new Date(date)?.toLocaleDateString?.('pt-BR', { day: '2-digit', month: '2-digit' }) ?? date,
-        count: count ?? 0
-      }))
-      ?.sort?.((a, b) => {
-        const dateA = a?.date?.split?.('/')?.reverse?.()?.join?.('') ?? '';
-        const dateB = b?.date?.split?.('/')?.reverse?.()?.join?.('') ?? '';
-        return dateA?.localeCompare?.(dateB) ?? 0;
-      }) ?? [];
+    const timeline = (timelineRows ?? []).map((row) => ({
+      date: new Date(row.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      count: Number(row.count ?? 0),
+    }));
 
     return NextResponse.json({
       total:       total       ?? 0,

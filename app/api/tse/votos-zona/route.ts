@@ -45,37 +45,50 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Buscar informações dos locais de votação para cada zona
-    const zonasInfo: Record<string, Array<{ zona: number; locais: any[] }>> = {};
-    
-    for (const municipioNome of Object.keys(votosPorMunicipio)) {
-      const locaisVotacao = await prisma.localVotacao.findMany({
-        where: {
-          nomeMunicipio: { equals: municipioNome, mode: 'insensitive' }
-        },
-        select: {
-          zona: true,
-          nomeLocal: true,
-          endereco: true,
-          bairro: true,
-          latitude: true,
-          longitude: true
-        }
-      });
+    // Buscar locais de votacao de TODOS os municipios em uma unica query
+    // (eliminando o N+1 antigo: 1 round-trip por municipio).
+    const municipiosNomes = Object.keys(votosPorMunicipio);
+    const todosLocais = municipiosNomes.length === 0
+      ? []
+      : await prisma.localVotacao.findMany({
+          where: {
+            OR: municipiosNomes.map((nome) => ({
+              nomeMunicipio: { equals: nome, mode: 'insensitive' as const },
+            })),
+          },
+          select: {
+            zona: true,
+            nomeLocal: true,
+            endereco: true,
+            bairro: true,
+            latitude: true,
+            longitude: true,
+            nomeMunicipio: true,
+          },
+        });
 
-      // Agrupar locais por zona
-      const locaisPorZona: Record<number, any[]> = {};
-      for (const local of locaisVotacao) {
-        if (!locaisPorZona[local.zona]) {
-          locaisPorZona[local.zona] = [];
-        }
-        locaisPorZona[local.zona].push(local);
+    // Indexa locais por municipio (lowercase) -> por zona
+    const locaisPorMunicipioZona = new Map<string, Map<number, any[]>>();
+    for (const local of todosLocais) {
+      const key = local.nomeMunicipio?.toLowerCase() ?? '';
+      let zonaMap = locaisPorMunicipioZona.get(key);
+      if (!zonaMap) {
+        zonaMap = new Map();
+        locaisPorMunicipioZona.set(key, zonaMap);
       }
+      const lista = zonaMap.get(local.zona) ?? [];
+      // Remove o campo auxiliar antes de devolver
+      const { nomeMunicipio: _, ...localSemMun } = local;
+      lista.push(localSemMun);
+      zonaMap.set(local.zona, lista);
+    }
 
-      zonasInfo[municipioNome] = Object.entries(locaisPorZona).map(([zona, locais]) => ({
-        zona: parseInt(zona),
-        locais
-      }));
+    const zonasInfo: Record<string, Array<{ zona: number; locais: any[] }>> = {};
+    for (const municipioNome of municipiosNomes) {
+      const zonaMap = locaisPorMunicipioZona.get(municipioNome.toLowerCase()) ?? new Map();
+      zonasInfo[municipioNome] = Array.from(zonaMap.entries()).map(
+        ([zona, locais]) => ({ zona, locais })
+      );
     }
 
     return NextResponse.json({

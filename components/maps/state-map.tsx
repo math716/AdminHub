@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { Layers, Eye, EyeOff, Loader2, MapPin, Info } from 'lucide-react';
 import { useMapCleanup, throttle } from '@/hooks/use-map-cleanup';
+import { isTouchDevice } from '@/hooks/use-is-touch';
 
 interface StateMapProps {
   uf: string;
@@ -525,6 +526,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
     }
 
     let cancelled = false;
+    const isTouch = isTouchDevice();
 
     const initMap = async () => {
       const L = (await import('leaflet')).default;
@@ -713,33 +715,37 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
             onMunicipioClickRef.current?.(codarea, nome);
           });
 
-          layer.on('mouseover', (e: any) => {
-            if (selectedMunicipioRef.current !== nome) {
-              e.target.setStyle({
-                weight: 2.5,
-                color: '#1976d2',
-                fillOpacity: 0.1
-              });
-            }
-            e.target.bringToFront();
-            if (subdivisaoLayerRef.current) subdivisaoLayerRef.current.bringToFront();
-            // labelsLayerRef é um LayerGroup — não tem bringToFront; traz cada layer individualmente
-            if (labelsLayerRef.current) {
-              try { (labelsLayerRef.current as any).bringToFront?.(); } catch (_) {}
-            }
-          });
-
-          layer.on('mouseout', (e: any) => {
-            if (selectedMunicipioRef.current !== nome) {
-              if (disableSubdivisaoRef.current && municipioSelectedLayerRef.current) {
-                // No modo campanha, restaura estilo base mas mantém os demais apagados
-                geoLayer.resetStyle(e.target);
-                e.target.setStyle({ fillOpacity: 0, opacity: 0.4 });
-              } else {
-                geoLayer.resetStyle(e.target);
+          // Em touch o hover do Leaflet abre/fecha junto com o tap. O click
+          // ja faz a selecao persistente — basta nao bindar hover handlers.
+          if (!isTouch) {
+            layer.on('mouseover', (e: any) => {
+              if (selectedMunicipioRef.current !== nome) {
+                e.target.setStyle({
+                  weight: 2.5,
+                  color: '#1976d2',
+                  fillOpacity: 0.1
+                });
               }
-            }
-          });
+              e.target.bringToFront();
+              if (subdivisaoLayerRef.current) subdivisaoLayerRef.current.bringToFront();
+              // labelsLayerRef é um LayerGroup — não tem bringToFront; traz cada layer individualmente
+              if (labelsLayerRef.current) {
+                try { (labelsLayerRef.current as any).bringToFront?.(); } catch (_) {}
+              }
+            });
+
+            layer.on('mouseout', (e: any) => {
+              if (selectedMunicipioRef.current !== nome) {
+                if (disableSubdivisaoRef.current && municipioSelectedLayerRef.current) {
+                  // No modo campanha, restaura estilo base mas mantém os demais apagados
+                  geoLayer.resetStyle(e.target);
+                  e.target.setStyle({ fillOpacity: 0, opacity: 0.4 });
+                } else {
+                  geoLayer.resetStyle(e.target);
+                }
+              }
+            });
+          }
 
           layer.bindTooltip(
             `<div style="

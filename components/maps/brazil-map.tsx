@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, memo } from 'react';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
+import { isTouchDevice } from '@/hooks/use-is-touch';
 
 interface BrazilMapProps {
   onStateClick: (uf: string, name: string) => void;
@@ -67,6 +68,7 @@ function BrazilMapComponent({ onStateClick, highlightedStates }: BrazilMapProps)
     // Flag local por execução — evita que initMap em andamento (após await) continue
     // após o cleanup ter rodado e um novo initMap ter iniciado (race condition).
     let cancelled = false;
+    const isTouch = isTouchDevice();
 
     const initMap = async () => {
       const L = (await import('leaflet')).default;
@@ -138,18 +140,22 @@ function BrazilMapComponent({ onStateClick, highlightedStates }: BrazilMapProps)
             }
           });
 
-          layer.on('mouseover', (e: any) => {
-            e.target.setStyle({
-              weight: 2.5,
-              color: '#1565c0',
-              fillOpacity: 0.1
+          // Em touch o hover do Leaflet abre/fecha junto com o tap, gerando
+          // flicker. Click ja chama onStateClickRef — basta evitar o hover.
+          if (!isTouch) {
+            layer.on('mouseover', (e: any) => {
+              e.target.setStyle({
+                weight: 2.5,
+                color: '#1565c0',
+                fillOpacity: 0.1
+              });
+              e.target.bringToFront();
             });
-            e.target.bringToFront();
-          });
 
-          layer.on('mouseout', (e: any) => {
-            geoLayer.resetStyle(e.target);
-          });
+            layer.on('mouseout', (e: any) => {
+              geoLayer.resetStyle(e.target);
+            });
+          }
 
           if (estado) {
             layer.bindTooltip(

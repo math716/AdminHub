@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
+import { isTouchDevice } from '@/hooks/use-is-touch';
 import { Loader2, AlertTriangle } from 'lucide-react';
 
 interface BairrosPoligonosMapProps {
@@ -179,6 +180,7 @@ function BairrosPoligonosMapComponent({
     isInitializingRef.current = true;
 
     let cancelled = false;
+    const isTouch = isTouchDevice();
 
     const initMap = async () => {
       const L = (await import('leaflet')).default;
@@ -244,43 +246,48 @@ function BairrosPoligonosMapComponent({
             tooltipEl.style.display = 'none';
           });
 
-          layer.on('mouseover', () => {
-            if (selectedBairroRef.current !== nome) {
-              layer.setStyle({ weight: 2.5, fillOpacity: 0.18, color: '#4a9ede' });
-              layer.bringToFront();
-            }
-            const votos = getEffectiveVotes(nome);
-            tooltipEl.innerHTML = [
-              `<strong style="color:#7dd3fc;font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
-              votos > 0
-                ? `<span style="color:#e2e8f0;font-size:13px;">${votos.toLocaleString('pt-BR')} votos</span>`
-                : '<span style="color:#64748b;font-size:12px;">Sem dados de votos</span>',
-              '<div style="margin-top:6px;padding-top:5px;border-top:1px solid rgba(27,73,101,0.5);">',
-              '<span style="color:#78909c;font-size:10px;">Clique para selecionar</span></div>',
-            ].join('');
-            tooltipEl.style.display = 'block';
-          });
+          // Em touch (mobile/tablet sem mouse), mouseover/mouseout do Leaflet
+          // disparam ruidosamente apos um tap, fechando o tooltip. O click ja
+          // mantem a selecao persistente — basta nao bindar hover handlers.
+          if (!isTouch) {
+            layer.on('mouseover', () => {
+              if (selectedBairroRef.current !== nome) {
+                layer.setStyle({ weight: 2.5, fillOpacity: 0.18, color: '#4a9ede' });
+                layer.bringToFront();
+              }
+              const votos = getEffectiveVotes(nome);
+              tooltipEl.innerHTML = [
+                `<strong style="color:#7dd3fc;font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
+                votos > 0
+                  ? `<span style="color:#e2e8f0;font-size:13px;">${votos.toLocaleString('pt-BR')} votos</span>`
+                  : '<span style="color:#64748b;font-size:12px;">Sem dados de votos</span>',
+                '<div style="margin-top:6px;padding-top:5px;border-top:1px solid rgba(27,73,101,0.5);">',
+                '<span style="color:#78909c;font-size:10px;">Clique para selecionar</span></div>',
+              ].join('');
+              tooltipEl.style.display = 'block';
+            });
 
-          layer.on('mousemove', (e: any) => {
-            const pt = map.latLngToContainerPoint(e.latlng);
-            const w = tooltipEl.offsetWidth || 160;
-            const h = tooltipEl.offsetHeight || 80;
-            const mapW = map.getContainer().offsetWidth;
-            const mapH = map.getContainer().offsetHeight;
-            let left = pt.x + 14;
-            let top = pt.y - h - 10;
-            if (left + w > mapW) left = pt.x - w - 14;
-            if (top < 0) top = pt.y + 10;
-            tooltipEl.style.left = left + 'px';
-            tooltipEl.style.top = top + 'px';
-          });
+            layer.on('mousemove', (e: any) => {
+              const pt = map.latLngToContainerPoint(e.latlng);
+              const w = tooltipEl.offsetWidth || 160;
+              const h = tooltipEl.offsetHeight || 80;
+              const mapW = map.getContainer().offsetWidth;
+              const mapH = map.getContainer().offsetHeight;
+              let left = pt.x + 14;
+              let top = pt.y - h - 10;
+              if (left + w > mapW) left = pt.x - w - 14;
+              if (top < 0) top = pt.y + 10;
+              tooltipEl.style.left = left + 'px';
+              tooltipEl.style.top = top + 'px';
+            });
 
-          layer.on('mouseout', () => {
-            if (selectedBairroRef.current !== nome) {
-              layer.setStyle(style(feature, false));
-            }
-            tooltipEl.style.display = 'none';
-          });
+            layer.on('mouseout', () => {
+              if (selectedBairroRef.current !== nome) {
+                layer.setStyle(style(feature, false));
+              }
+              tooltipEl.style.display = 'none';
+            });
+          }
         },
       }).addTo(map);
 

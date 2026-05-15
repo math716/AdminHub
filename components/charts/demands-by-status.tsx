@@ -2,6 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { STATUS_LABELS, STATUS_COLORS } from '@/lib/types';
+import { useIsTouch } from '@/hooks/use-is-touch';
 
 interface Props {
   data: {
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function DemandsByStatusChart({ data }: Props) {
+  const isTouch = useIsTouch();
   const chartData = [
     { name: 'Pendentes', value: data?.pendentes ?? 0, color: STATUS_COLORS?.PENDENTE ?? '#FFC107' },
     { name: 'Em Andamento', value: data?.emAndamento ?? 0, color: STATUS_COLORS?.EM_ANDAMENTO ?? '#2196F3' },
@@ -43,6 +45,7 @@ export default function DemandsByStatusChart({ data }: Props) {
           ))}
         </Pie>
         <Tooltip
+          trigger={isTouch ? 'click' : 'hover'}
           contentStyle={{ fontSize: 11 }}
           formatter={(value: number) => [value, 'Quantidade']}
         />

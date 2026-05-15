@@ -117,6 +117,8 @@ export function Sidebar() {
               onClick={() => setMobileOpen(false)}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group',
+                // Garante area de toque confortavel em touch (lg = desktop fica mais compacto)
+                'min-h-[44px] lg:min-h-0',
                 isActive
                   ? 'text-white'
                   : 'text-white/60 hover:text-white/90'
@@ -157,7 +159,7 @@ export function Sidebar() {
         </div>
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 text-white/50 hover:text-white/90 rounded-lg transition-all duration-200 group"
+          className="w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] lg:min-h-0 text-white/50 hover:text-white/90 rounded-lg transition-all duration-200 group"
           style={{ borderLeft: '3px solid transparent' }}
         >
           <span className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200" style={{ background: 'rgba(255,255,255,0.06)' }}>
@@ -171,10 +173,11 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile toggle */}
+      {/* Mobile toggle — min 44x44 garante toque confortavel (iOS HIG) */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-40 p-2 bg-[#1e3a5f] text-white rounded-lg shadow-lg"
+        aria-label="Abrir menu"
+        className="lg:hidden fixed top-4 left-4 z-40 p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-[#1e3a5f] text-white rounded-lg shadow-lg"
       >
         <Menu className="h-6 w-6" />
       </button>
@@ -205,7 +208,8 @@ export function Sidebar() {
             >
               <button
                 onClick={() => setMobileOpen(false)}
-                className="absolute top-4 right-4 p-2 text-white/70 hover:text-white"
+                aria-label="Fechar menu"
+                className="absolute top-4 right-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/70 hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
+import { isTouchDevice } from '@/hooks/use-is-touch';
 import { Loader2 } from 'lucide-react';
 
 interface RjBairrosMapProps {
@@ -164,6 +165,7 @@ function RjBairrosMapComponent({ votesData, selectedBairro, onBairroClick, heigh
     isInitializingRef.current = true;
 
     let cancelled = false;
+    const isTouch = isTouchDevice();
 
     const initMap = async () => {
       const L = (await import('leaflet')).default;
@@ -226,42 +228,47 @@ function RjBairrosMapComponent({ votesData, selectedBairro, onBairroClick, heigh
             tooltipEl.style.display = 'none';
           });
 
-          layer.on('mouseover', () => {
-            if (selectedBairroRef.current !== nome) {
-              layer.setStyle({ weight: 2, fillOpacity: 0.18, color: '#4a9ede' });
-              layer.bringToFront();
-            }
-            const v = getVotos(nome);
-            tooltipEl.innerHTML = [
-              `<strong style="color:#7dd3fc;font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
-              v !== undefined
-                ? `<span style="color:#e2e8f0;font-size:13px;">${v.toLocaleString('pt-BR')} votos</span>`
-                : '<span style="color:#64748b;font-size:12px;">Sem dados de votos</span>',
-              '<div style="margin-top:6px;padding-top:5px;border-top:1px solid rgba(27,73,101,0.5);">',
-              '<span style="color:#78909c;font-size:10px;">Clique para selecionar</span></div>',
-            ].join('');
-            tooltipEl.style.display = 'block';
-          });
+          // Em touch (mobile/tablet sem mouse) o mouseover/mouseout do Leaflet
+          // dispara apos um tap e fecha o tooltip imediatamente. Em touch o
+          // click ja faz a selecao persistente — basta nao bindar hover.
+          if (!isTouch) {
+            layer.on('mouseover', () => {
+              if (selectedBairroRef.current !== nome) {
+                layer.setStyle({ weight: 2, fillOpacity: 0.18, color: '#4a9ede' });
+                layer.bringToFront();
+              }
+              const v = getVotos(nome);
+              tooltipEl.innerHTML = [
+                `<strong style="color:#7dd3fc;font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
+                v !== undefined
+                  ? `<span style="color:#e2e8f0;font-size:13px;">${v.toLocaleString('pt-BR')} votos</span>`
+                  : '<span style="color:#64748b;font-size:12px;">Sem dados de votos</span>',
+                '<div style="margin-top:6px;padding-top:5px;border-top:1px solid rgba(27,73,101,0.5);">',
+                '<span style="color:#78909c;font-size:10px;">Clique para selecionar</span></div>',
+              ].join('');
+              tooltipEl.style.display = 'block';
+            });
 
-          layer.on('mousemove', (e: any) => {
-            const pt = map.latLngToContainerPoint(e.latlng);
-            const w = tooltipEl.offsetWidth || 160;
-            const h = tooltipEl.offsetHeight || 80;
-            const mapW = map.getContainer().offsetWidth;
-            let left = pt.x + 14;
-            let top = pt.y - h - 10;
-            if (left + w > mapW) left = pt.x - w - 14;
-            if (top < 0) top = pt.y + 10;
-            tooltipEl.style.left = left + 'px';
-            tooltipEl.style.top = top + 'px';
-          });
+            layer.on('mousemove', (e: any) => {
+              const pt = map.latLngToContainerPoint(e.latlng);
+              const w = tooltipEl.offsetWidth || 160;
+              const h = tooltipEl.offsetHeight || 80;
+              const mapW = map.getContainer().offsetWidth;
+              let left = pt.x + 14;
+              let top = pt.y - h - 10;
+              if (left + w > mapW) left = pt.x - w - 14;
+              if (top < 0) top = pt.y + 10;
+              tooltipEl.style.left = left + 'px';
+              tooltipEl.style.top = top + 'px';
+            });
 
-          layer.on('mouseout', () => {
-            if (selectedBairroRef.current !== nome) {
-              layer.setStyle(style(feature, false));
-            }
-            tooltipEl.style.display = 'none';
-          });
+            layer.on('mouseout', () => {
+              if (selectedBairroRef.current !== nome) {
+                layer.setStyle(style(feature, false));
+              }
+              tooltipEl.style.display = 'none';
+            });
+          }
         },
       }).addTo(map);
 
