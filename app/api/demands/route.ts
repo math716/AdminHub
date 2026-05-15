@@ -47,17 +47,50 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const demands = await prisma.demand.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        createdBy: {
-          select: { name: true, email: true }
-        }
-      }
-    });
+    // Listagem nao traz o campo `foto` (base64, geralmente >100KB cada).
+    // O frontend recebe `hasFoto: boolean` e busca a foto sob demanda em
+    // /api/demands/[id] ao abrir o detalhe ou editar.
+    const [demands, idsComFoto] = await Promise.all([
+      prisma.demand.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          solicitante: true,
+          contato: true,
+          estado: true,
+          municipio: true,
+          bairro: true,
+          endereco: true,
+          lat: true,
+          lng: true,
+          category: true,
+          status: true,
+          priority: true,
+          observations: true,
+          closedAt: true,
+          gabineteId: true,
+          createdById: true,
+          createdAt: true,
+          updatedAt: true,
+          createdBy: { select: { name: true, email: true } },
+        },
+      }),
+      prisma.demand.findMany({
+        where: { ...where, foto: { not: null } },
+        select: { id: true },
+      }),
+    ]);
 
-    return NextResponse.json(demands ?? []);
+    const idsComFotoSet = new Set(idsComFoto.map((d) => d.id));
+    const light = (demands ?? []).map((d) => ({
+      ...d,
+      hasFoto: idsComFotoSet.has(d.id),
+    }));
+
+    return NextResponse.json(light);
   } catch (error) {
     console.error('Get demands error:', error);
     return NextResponse.json({ error: 'Erro ao buscar demandas' }, { status: 500 });

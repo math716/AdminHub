@@ -42,6 +42,14 @@ const nextConfig = {
     outputFileTracingIncludes: {
       '/api/tse/zonas': ['./public/data/tse/**/*'],
     },
+    // Os 232MB de geojson em /public sao servidos como assets estaticos pelo
+    // CDN da Vercel — nao precisam ser empacotados dentro de cada serverless
+    // function. Excluir reduz o cold-start e o tamanho de cada bundle Lambda.
+    outputFileTracingExcludes: {
+      '*': [
+        './public/geojson/**/*',
+      ],
+    },
   },
   async headers() {
     return [

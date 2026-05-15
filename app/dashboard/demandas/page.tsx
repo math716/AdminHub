@@ -176,24 +176,35 @@ export default function DemandasPage() {
     }
   };
 
-  const handleEdit = (demand: Demand) => {
+  const handleEdit = async (demand: Demand) => {
     setEditingDemand(demand);
+    // A listagem nao traz mais a foto (base64). Se a demanda tem foto
+    // (hasFoto), buscamos a versao completa via /api/demands/[id].
+    let fullDemand: Demand = demand;
+    if ((demand as any)?.hasFoto && !demand?.foto) {
+      try {
+        const res = await fetch(`/api/demands/${demand.id}`);
+        if (res.ok) fullDemand = await res.json();
+      } catch {
+        /* fallback: usa o objeto da lista sem foto */
+      }
+    }
     setFormData({
-      title: demand?.title ?? '',
-      description: demand?.description ?? '',
-      solicitante: demand?.solicitante ?? '',
-      contato: demand?.contato ?? '',
-      estado: demand?.estado ?? '',
-      municipio: demand?.municipio ?? '',
-      bairro: demand?.bairro ?? '',
-      endereco: demand?.endereco ?? '',
-      lat: demand?.lat ?? null,
-      lng: demand?.lng ?? null,
-      foto: demand?.foto ?? '',
-      category: demand?.category ?? 'OUTROS',
-      status: demand?.status ?? 'PENDENTE',
-      priority: demand?.priority ?? 'MEDIA',
-      observations: demand?.observations ?? ''
+      title: fullDemand?.title ?? '',
+      description: fullDemand?.description ?? '',
+      solicitante: fullDemand?.solicitante ?? '',
+      contato: fullDemand?.contato ?? '',
+      estado: fullDemand?.estado ?? '',
+      municipio: fullDemand?.municipio ?? '',
+      bairro: fullDemand?.bairro ?? '',
+      endereco: fullDemand?.endereco ?? '',
+      lat: fullDemand?.lat ?? null,
+      lng: fullDemand?.lng ?? null,
+      foto: fullDemand?.foto ?? '',
+      category: fullDemand?.category ?? 'OUTROS',
+      status: fullDemand?.status ?? 'PENDENTE',
+      priority: fullDemand?.priority ?? 'MEDIA',
+      observations: fullDemand?.observations ?? ''
     });
     setShowModal(true);
   };

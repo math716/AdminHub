@@ -120,6 +120,26 @@ export default function MapaDemandasPage() {
   const [selectedDemand, setSelectedDemand] = useState<Demand | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<AgendaEvent | null>(null);
 
+  // A listagem de /api/demands nao traz mais o campo `foto` (base64) por
+  // performance. Quando uma demanda com foto eh selecionada, fazemos um
+  // fetch leve para hidratar `selectedDemand.foto` apenas naquele item.
+  useEffect(() => {
+    if (!selectedDemand?.id) return;
+    if (selectedDemand?.foto) return; // ja temos
+    if (!(selectedDemand as any)?.hasFoto) return; // nao tem foto, nao precisa buscar
+    let cancelled = false;
+    fetch(`/api/demands/${selectedDemand.id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((full) => {
+        if (cancelled || !full?.foto) return;
+        setSelectedDemand((prev) =>
+          prev && prev.id === full.id ? { ...prev, foto: full.foto } : prev
+        );
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [selectedDemand?.id]);
+
   // Filtros
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
