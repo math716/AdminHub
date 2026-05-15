@@ -671,26 +671,26 @@ export default function MapaDemandasPage() {
             showSpDistritos
           />
 
-          {/* Toolbar flutuante — canto superior direito */}
-          <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2">
-            {sidebarCollapsed && (
-              <button
-                onClick={() => setSidebarCollapsed(false)}
-                title="Expandir painel lateral"
-                className="bg-[#0d1b2a]/90 border border-white/10 rounded-lg px-2.5 py-2 text-slate-300 hover:text-white hover:border-sky-500/50 transition-all shadow-lg flex items-center gap-1.5 text-xs font-medium"
-              >
-                <ChevronRight className="w-4 h-4" />
-                <span className="hidden sm:inline">Painel</span>
-              </button>
-            )}
+          {/* Botão expandir painel — canto superior esquerdo */}
+          {sidebarCollapsed && (
             <button
-              onClick={() => setMapFullscreen(f => !f)}
-              className="bg-[#0d1b2a]/90 border border-white/10 rounded-lg p-2 text-slate-300 hover:text-white hover:border-white/30 transition-all shadow-lg"
-              title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+              onClick={() => setSidebarCollapsed(false)}
+              title="Expandir painel lateral"
+              className="absolute top-3 left-3 z-[1000] bg-[#0d1b2a]/90 border border-white/10 rounded-lg px-2.5 py-2 text-slate-300 hover:text-white hover:border-sky-500/50 transition-all shadow-lg flex items-center gap-1.5 text-xs font-medium"
             >
-              {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              <ChevronRight className="w-4 h-4" />
+              <span className="hidden sm:inline">Painel</span>
             </button>
-          </div>
+          )}
+
+          {/* Botão tela cheia — canto superior direito */}
+          <button
+            onClick={() => setMapFullscreen(f => !f)}
+            className="absolute top-3 right-3 z-[1000] bg-[#0d1b2a]/90 border border-white/10 rounded-lg p-2 text-slate-300 hover:text-white hover:border-white/30 transition-all shadow-lg"
+            title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+          >
+            {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
 
           {/* Popup detalhe — demanda */}
           {selectedDemand && (
