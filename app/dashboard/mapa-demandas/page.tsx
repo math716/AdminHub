@@ -8,7 +8,7 @@ import {
   MapPin, Plus, Search, Filter, X, AlertCircle, Loader2,
   CheckCircle, Clock, AlertTriangle, Camera,
   Navigation, Calendar, User, Phone, Building2,
-  Maximize2, Minimize2, ChevronDown,
+  Maximize2, Minimize2, ChevronDown, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { CATEGORY_LABELS, CATEGORY_COLORS, STATUS_LABELS, STATUS_COLORS, PRIORITY_LABELS, PRIORITY_COLORS } from '@/lib/types';
 import { Select } from '@/components/ui/select';
@@ -148,6 +148,7 @@ export default function MapaDemandasPage() {
 
   // Sidebar mobile
   const [mobileSidebar, setMobileSidebar] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Força o Leaflet a recalcular o tamanho ao entrar/sair da tela cheia
   useEffect(() => {
@@ -438,7 +439,7 @@ export default function MapaDemandasPage() {
       {/* ── Conteúdo principal ── */}
       <div className="flex flex-1 min-h-0">
         {/* Painel lateral — lista de demandas (desktop) */}
-        <div className="hidden md:flex md:w-72 flex-shrink-0 flex-col border-r border-white/10 overflow-hidden">
+        <div className={`hidden md:flex flex-shrink-0 flex-col border-r border-white/10 overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'w-0 border-r-0' : 'w-72'}`}>
           <div className="px-3 py-2 border-b border-white/10 flex-shrink-0 flex items-center justify-between gap-2">
             <p className="text-xs text-gray-400 font-medium uppercase tracking-wide truncate">
               {filteredDemands.length} demanda{filteredDemands.length !== 1 ? 's' : ''}
@@ -446,7 +447,7 @@ export default function MapaDemandasPage() {
                 <span className="text-yellow-500/70 ml-1">({filteredDemands.length - demandsWithCoords.length} sem GPS)</span>
               )}
             </p>
-            <div className="flex gap-1 flex-shrink-0">
+            <div className="flex gap-1 flex-shrink-0 items-center">
               <button
                 onClick={() => setShowDemands(v => !v)}
                 title={showDemands ? 'Ocultar demandas' : 'Exibir demandas'}
@@ -462,6 +463,13 @@ export default function MapaDemandasPage() {
               >
                 <Calendar className="w-3 h-3" />
                 Agenda
+              </button>
+              <button
+                onClick={() => setSidebarCollapsed(true)}
+                title="Recolher painel"
+                className="p-1 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-all"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -657,17 +665,31 @@ export default function MapaDemandasPage() {
             onEventClick={handleMapEventClick}
             showSpDistritos
           />
-          <button
-            onClick={() => setMapFullscreen(f => !f)}
-            className="absolute top-3 left-3 z-[1000] bg-[#0d1b2a]/90 border border-white/10 rounded-lg p-2 text-slate-300 hover:text-white hover:border-white/30 transition-all shadow-lg"
-            title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
-          >
-            {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
+
+          {/* Toolbar flutuante — canto superior direito */}
+          <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2">
+            {sidebarCollapsed && (
+              <button
+                onClick={() => setSidebarCollapsed(false)}
+                title="Expandir painel lateral"
+                className="bg-[#0d1b2a]/90 border border-white/10 rounded-lg px-2.5 py-2 text-slate-300 hover:text-white hover:border-sky-500/50 transition-all shadow-lg flex items-center gap-1.5 text-xs font-medium"
+              >
+                <ChevronRight className="w-4 h-4" />
+                <span className="hidden sm:inline">Painel</span>
+              </button>
+            )}
+            <button
+              onClick={() => setMapFullscreen(f => !f)}
+              className="bg-[#0d1b2a]/90 border border-white/10 rounded-lg p-2 text-slate-300 hover:text-white hover:border-white/30 transition-all shadow-lg"
+              title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+            >
+              {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+          </div>
 
           {/* Popup detalhe — demanda */}
           {selectedDemand && (
-            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-4 md:right-4 md:left-auto md:w-80 w-full bg-[#0d1b2a]/98 backdrop-blur border-t md:border border-white/10 md:rounded-2xl shadow-2xl z-[1000] overflow-hidden max-h-[65vh] overflow-y-auto">
+            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-4 md:left-auto md:w-80 w-full bg-[#0d1b2a]/98 backdrop-blur border-t md:border border-white/10 md:rounded-2xl shadow-2xl z-[1000] overflow-hidden max-h-[65vh] overflow-y-auto">
               {selectedDemand.foto && (
                 <div className="w-full h-40 bg-black overflow-hidden">
                   <img src={selectedDemand.foto} alt="Foto da demanda" className="w-full h-full object-cover" />
@@ -766,7 +788,7 @@ export default function MapaDemandasPage() {
 
           {/* Popup detalhe — evento */}
           {selectedEvent && (
-            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-4 md:right-4 md:left-auto md:w-80 w-full bg-[#0d1b2a]/98 backdrop-blur border-t md:border border-white/10 md:rounded-2xl shadow-2xl z-[1000] overflow-hidden max-h-[60vh] overflow-y-auto">
+            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-4 md:left-auto md:w-80 w-full bg-[#0d1b2a]/98 backdrop-blur border-t md:border border-white/10 md:rounded-2xl shadow-2xl z-[1000] overflow-hidden max-h-[60vh] overflow-y-auto">
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex-1">
