@@ -676,7 +676,7 @@ export default function MapaDemandasPage() {
             <button
               onClick={() => setSidebarCollapsed(false)}
               title="Expandir painel lateral"
-              className="absolute top-3 left-3 z-[1000] bg-[#0d1b2a]/90 border border-white/10 rounded-lg px-2.5 py-2 text-slate-300 hover:text-white hover:border-sky-500/50 transition-all shadow-lg flex items-center gap-1.5 text-xs font-medium"
+              className="absolute top-3 left-3 z-[1000] flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-semibold tracking-wide text-slate-200 hover:text-white bg-[#0d1b2a]/95 backdrop-blur-md border border-white/20 hover:border-sky-400/50 hover:bg-[#111f35] transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
             >
               <ChevronRight className="w-4 h-4" />
               <span className="hidden sm:inline">Painel</span>
@@ -686,7 +686,7 @@ export default function MapaDemandasPage() {
           {/* Botão tela cheia — canto superior direito */}
           <button
             onClick={() => setMapFullscreen(f => !f)}
-            className="absolute top-3 right-3 z-[1000] bg-[#0d1b2a]/90 border border-white/10 rounded-lg p-2 text-slate-300 hover:text-white hover:border-white/30 transition-all shadow-lg"
+            className="absolute top-3 right-3 z-[1000] p-2.5 rounded-2xl text-slate-200 hover:text-white bg-[#0d1b2a]/95 backdrop-blur-md border border-white/20 hover:border-white/40 hover:bg-[#111f35] transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
             title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
           >
             {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
