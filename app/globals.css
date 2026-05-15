@@ -148,6 +148,56 @@ body {
   }
 }
 
+/* =====================================================================
+   Ajustes touch-only (mobile + tablet sem mouse)
+   Aplicados apenas em dispositivos sem hover preciso. Desktop e tablet
+   com mouse plugado nao sao afetados.
+   ===================================================================== */
+@media (hover: none) and (pointer: coarse) {
+  /* Leaflet zoom controls: 32 → 44px (iOS HIG / Material) */
+  .leaflet-control-zoom a {
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
+    font-size: 20px !important;
+  }
+
+  /* Utility opcional: aplicar `.touch-tap-target` em qualquer botao/link
+     que precise garantir tamanho minimo de toque. */
+  .touch-tap-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Botoes e inputs base ganham altura minima confortavel para toque.
+     Nao quebra desktop porque a query so ativa em touch puro. */
+  button:not([data-no-touch-min]),
+  [role="button"]:not([data-no-touch-min]),
+  a.button,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="search"],
+  input[type="url"],
+  select,
+  textarea {
+    min-height: 40px;
+  }
+
+  /* Inputs sao mais criticos: subir para 44 garante teclado nao cobrir */
+  input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 44px;
+  }
+}
+
+/* Viewport height dinamico: ajuda modais e drawers em mobile com teclado
+   aberto. Pode ser usado como `h-screen-d` substituindo `h-screen` quando
+   o conteudo precisa caber sem ser empurrado pelo teclado virtual. */
+.h-screen-d  { height: 100vh; height: 100dvh; }
+.max-h-screen-d { max-height: 100vh; max-height: 100dvh; }
+
 /* ── Custom Select (Radix UI) ── */
 @keyframes selectSlideIn {
   from { opacity: 0; transform: scale(0.96) translateY(-4px); }

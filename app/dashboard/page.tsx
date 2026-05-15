@@ -206,7 +206,8 @@ export default function DashboardPage() {
             <FileText className="h-5 w-5" style={{ color: '#c9a227' }} />
             <h3 className="text-white font-semibold">Demandas Recentes</h3>
           </div>
-          <div className="overflow-x-auto">
+          {/* Desktop / tablet landscape: tabela tradicional */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="text-left text-xs border-b" style={{ color: '#8fa3bf', borderColor: 'rgba(30,74,128,0.5)' }}>
@@ -220,7 +221,7 @@ export default function DashboardPage() {
                   <tr key={demand.id || index} className="last:border-0" style={{ borderBottom: '1px solid rgba(30,74,128,0.3)' }}>
                     <td className="py-3 text-white text-sm">
                       <div className="flex items-center gap-2">
-                        <div 
+                        <div
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: STATUS_COLORS?.[demand.status as DemandStatus] || '#6B7280' }}
                         />
@@ -228,9 +229,9 @@ export default function DashboardPage() {
                       </div>
                     </td>
                     <td className="py-3">
-                      <span 
+                      <span
                         className="text-xs px-2 py-1 rounded-full"
-                        style={{ 
+                        style={{
                           backgroundColor: `${STATUS_COLORS?.[demand.status as DemandStatus]}20`,
                           color: STATUS_COLORS?.[demand.status as DemandStatus]
                         }}
@@ -239,9 +240,9 @@ export default function DashboardPage() {
                       </span>
                     </td>
                     <td className="py-3">
-                      <span 
+                      <span
                         className="text-xs px-2 py-1 rounded-full"
-                        style={{ 
+                        style={{
                           backgroundColor: `${PRIORITY_COLORS?.[demand.priority as DemandPriority]}20`,
                           color: PRIORITY_COLORS?.[demand.priority as DemandPriority]
                         }}
@@ -259,6 +260,50 @@ export default function DashboardPage() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile portrait: lista em cards (sem overflow horizontal) */}
+          <div className="sm:hidden flex flex-col gap-2">
+            {stats?.recentDemands?.slice(0, 5)?.length
+              ? stats.recentDemands.slice(0, 5).map((demand: any, index: number) => (
+                  <div
+                    key={demand.id || index}
+                    className="flex flex-col gap-2 p-3 rounded-xl"
+                    style={{ background: 'rgba(30,74,128,0.18)', border: '1px solid rgba(30,74,128,0.4)' }}
+                  >
+                    <div className="flex items-start gap-2">
+                      <div
+                        className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                        style={{ backgroundColor: STATUS_COLORS?.[demand.status as DemandStatus] || '#6B7280' }}
+                      />
+                      <span className="text-white text-sm font-medium leading-snug break-words flex-1">
+                        {demand.title}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 pl-4">
+                      <span
+                        className="text-[11px] px-2 py-0.5 rounded-full"
+                        style={{
+                          backgroundColor: `${STATUS_COLORS?.[demand.status as DemandStatus]}20`,
+                          color: STATUS_COLORS?.[demand.status as DemandStatus],
+                        }}
+                      >
+                        {STATUS_LABELS?.[demand.status as DemandStatus] || demand.status}
+                      </span>
+                      <span
+                        className="text-[11px] px-2 py-0.5 rounded-full"
+                        style={{
+                          backgroundColor: `${PRIORITY_COLORS?.[demand.priority as DemandPriority]}20`,
+                          color: PRIORITY_COLORS?.[demand.priority as DemandPriority],
+                        }}
+                      >
+                        {PRIORITY_LABELS?.[demand.priority as DemandPriority] || demand.priority}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              : <p className="py-6 text-center text-gray-500 text-sm">Nenhuma demanda encontrada</p>
+            }
           </div>
         </motion.div>
 

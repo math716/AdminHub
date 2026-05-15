@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, LabelL
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/types';
 import { DemandCategory } from '@prisma/client';
 import { useEffect, useState } from 'react';
+import { useIsTouch } from '@/hooks/use-is-touch';
 
 interface Props {
   data: Record<string, number> | undefined;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function DemandsByCategoryChart({ data, darkMode = false }: Props) {
+  const isTouch = useIsTouch();
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
@@ -50,6 +52,7 @@ export default function DemandsByCategoryChart({ data, darkMode = false }: Props
           width={80}
         />
         <Tooltip
+          trigger={isTouch ? 'click' : 'hover'}
           contentStyle={{
             backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.95)' : '#fff',
             border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e5e7eb',

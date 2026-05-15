@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { isTouchDevice } from '@/hooks/use-is-touch';
 import { Loader2 } from 'lucide-react';
 
 interface ContatosBairrosMapProps {
@@ -34,6 +35,7 @@ function ContatosBairrosMapInner({
     if (!features.length || !containerRef.current) return;
 
     let cancelled = false;
+    const isTouch = isTouchDevice();
 
     const initMap = async () => {
       const L = (await import('leaflet')).default;
@@ -84,23 +86,27 @@ function ContatosBairrosMapInner({
               propsRef.current.onBairroClick?.(normNm);
             });
 
-            layer.on('mouseover', (e: any) => {
-              const count = propsRef.current.contatosPorBairro[normNm] ?? 0;
-              layer.setStyle({ fillOpacity: 0.85, weight: 2 });
-              L.popup({ closeButton: false })
-                .setLatLng(e.latlng)
-                .setContent(
-                  `<div style="font:13px/1.4 sans-serif;padding:4px 2px">` +
-                  `<strong style="color:#fff">${nmBairro}</strong><br>` +
-                  `<span style="color:#94a3b8">${count} contato${count !== 1 ? 's' : ''}</span></div>`
-                )
-                .openOn(map);
-            });
+            // Em touch, hover do Leaflet abre/fecha junto com o tap. O click
+            // ja chama onBairroClick — basta evitar bindar hover.
+            if (!isTouch) {
+              layer.on('mouseover', (e: any) => {
+                const count = propsRef.current.contatosPorBairro[normNm] ?? 0;
+                layer.setStyle({ fillOpacity: 0.85, weight: 2 });
+                L.popup({ closeButton: false })
+                  .setLatLng(e.latlng)
+                  .setContent(
+                    `<div style="font:13px/1.4 sans-serif;padding:4px 2px">` +
+                    `<strong style="color:#fff">${nmBairro}</strong><br>` +
+                    `<span style="color:#94a3b8">${count} contato${count !== 1 ? 's' : ''}</span></div>`
+                  )
+                  .openOn(map);
+              });
 
-            layer.on('mouseout', () => {
-              geoLayer.resetStyle(layer);
-              map.closePopup();
-            });
+              layer.on('mouseout', () => {
+                geoLayer.resetStyle(layer);
+                map.closePopup();
+              });
+            }
           },
         }
       ).addTo(map);

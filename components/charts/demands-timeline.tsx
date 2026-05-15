@@ -2,6 +2,7 @@
 
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState } from 'react';
+import { useIsTouch } from '@/hooks/use-is-touch';
 
 interface Props {
   data: { date: string; count: number }[] | undefined;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function DemandsTimelineChart({ data, darkMode = false }: Props) {
+  const isTouch = useIsTouch();
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
@@ -55,6 +57,7 @@ export default function DemandsTimelineChart({ data, darkMode = false }: Props) 
           tickLine={false}
         />
         <Tooltip
+          trigger={isTouch ? 'click' : 'hover'}
           contentStyle={{
             backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.95)' : '#fff',
             border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e5e7eb',

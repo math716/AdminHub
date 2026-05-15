@@ -2,6 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState } from 'react';
+import { useIsTouch } from '@/hooks/use-is-touch';
 
 interface DonutData {
   name: string;
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function Donut3DChart({ data, title, centerValue, centerLabel }: Props) {
+  const isTouch = useIsTouch();
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
@@ -108,6 +110,7 @@ export default function Donut3DChart({ data, title, centerValue, centerLabel }: 
           </Pie>
 
           <Tooltip
+            trigger={isTouch ? 'click' : 'hover'}
             contentStyle={{
               backgroundColor: 'rgba(15, 23, 42, 0.95)',
               border: '1px solid rgba(255,255,255,0.1)',

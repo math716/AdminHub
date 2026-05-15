@@ -3,12 +3,14 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { PRIORITY_LABELS, PRIORITY_COLORS } from '@/lib/types';
 import { DemandPriority } from '@prisma/client';
+import { useIsTouch } from '@/hooks/use-is-touch';
 
 interface Props {
   data: Record<string, number> | undefined;
 }
 
 export default function DemandsByPriorityChart({ data }: Props) {
+  const isTouch = useIsTouch();
   const chartData = Object.entries(data ?? {})?.map?.(([key, value]) => ({
     name: PRIORITY_LABELS?.[key as DemandPriority] ?? key,
     value: value ?? 0,
@@ -40,6 +42,7 @@ export default function DemandsByPriorityChart({ data }: Props) {
           ))}
         </Pie>
         <Tooltip
+          trigger={isTouch ? 'click' : 'hover'}
           contentStyle={{ fontSize: 11 }}
           formatter={(value: number) => [value, 'Quantidade']}
         />
