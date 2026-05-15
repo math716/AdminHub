@@ -694,96 +694,88 @@ export default function MapaDemandasPage() {
 
           {/* Popup detalhe — demanda */}
           {selectedDemand && (
-            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-4 md:left-auto md:w-80 w-full bg-[#0d1b2a]/98 backdrop-blur border-t md:border border-white/10 md:rounded-2xl shadow-2xl z-[1000] overflow-hidden max-h-[65vh] overflow-y-auto">
-              {selectedDemand.foto && (
-                <div className="w-full h-40 bg-black overflow-hidden">
-                  <img src={selectedDemand.foto} alt="Foto da demanda" className="w-full h-full object-cover" />
-                </div>
-              )}
+            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-4 md:left-auto md:w-80 w-full bg-[#0a1628] border-t md:border border-white/15 md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] z-[1000] overflow-hidden max-h-[65vh] overflow-y-auto">
+              {selectedDemand.foto
+                ? <div className="w-full h-40 bg-black overflow-hidden flex-shrink-0">
+                    <img src={selectedDemand.foto} alt="Foto da demanda" className="w-full h-full object-cover" />
+                  </div>
+                : <div className="h-1 w-full flex-shrink-0" style={{ background: CATEGORY_COLORS[selectedDemand.category as keyof typeof CATEGORY_COLORS] ?? '#4a9ede' }} />
+              }
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: CATEGORY_COLORS[selectedDemand.category as keyof typeof CATEGORY_COLORS] ?? '#9e9e9e' }} />
-                      <span className="text-xs text-gray-400">{CATEGORY_LABELS[selectedDemand.category as keyof typeof CATEGORY_LABELS]}</span>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CATEGORY_COLORS[selectedDemand.category as keyof typeof CATEGORY_COLORS] ?? '#9e9e9e' }} />
+                      <span className="text-xs font-semibold" style={{ color: CATEGORY_COLORS[selectedDemand.category as keyof typeof CATEGORY_COLORS] ?? '#9e9e9e' }}>
+                        {CATEGORY_LABELS[selectedDemand.category as keyof typeof CATEGORY_LABELS]}
+                      </span>
                     </div>
-                    <h3 className="text-white font-semibold text-sm leading-snug">{selectedDemand.title}</h3>
+                    <h3 className="text-white font-bold text-sm leading-snug">{selectedDemand.title}</h3>
                   </div>
-                  <button onClick={() => setSelectedDemand(null)} className="text-gray-500 hover:text-white flex-shrink-0">
+                  <button onClick={() => setSelectedDemand(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-white/10">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex items-center gap-2 text-gray-300">
-                    <User className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+
+                <div className="space-y-2 text-xs bg-white/5 rounded-xl p-3 mb-3 border border-white/5">
+                  <div className="flex items-center gap-2.5 text-gray-200">
+                    <User className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
                     <span>{selectedDemand.solicitante}</span>
                   </div>
                   {selectedDemand.contato && (
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Phone className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                    <div className="flex items-center gap-2.5 text-gray-200">
+                      <Phone className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
                       <span>{selectedDemand.contato}</span>
                     </div>
                   )}
-                  {selectedDemand.endereco && (
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <MapPin className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
-                      <span>{selectedDemand.endereco}</span>
-                    </div>
-                  )}
-                  {!selectedDemand.endereco && (
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Building2 className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
-                      <span>{selectedDemand.municipio}, {selectedDemand.estado}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 text-gray-300">
-                    <Calendar className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                  {selectedDemand.endereco
+                    ? <div className="flex items-center gap-2.5 text-gray-200">
+                        <MapPin className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
+                        <span>{selectedDemand.endereco}</span>
+                      </div>
+                    : <div className="flex items-center gap-2.5 text-gray-200">
+                        <Building2 className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
+                        <span>{selectedDemand.municipio}, {selectedDemand.estado}</span>
+                      </div>
+                  }
+                  <div className="flex items-center gap-2.5 text-gray-200">
+                    <Calendar className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
                     <span>{new Date(selectedDemand.createdAt).toLocaleDateString('pt-BR')}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 mt-3">
-                  <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full"
-                    style={{ background: (STATUS_COLORS[selectedDemand.status as keyof typeof STATUS_COLORS] ?? '#9e9e9e') + '22', color: STATUS_COLORS[selectedDemand.status as keyof typeof STATUS_COLORS] ?? '#9e9e9e' }}>
+
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-semibold"
+                    style={{ background: (STATUS_COLORS[selectedDemand.status as keyof typeof STATUS_COLORS] ?? '#9e9e9e') + '30', color: STATUS_COLORS[selectedDemand.status as keyof typeof STATUS_COLORS] ?? '#9e9e9e', border: `1px solid ${(STATUS_COLORS[selectedDemand.status as keyof typeof STATUS_COLORS] ?? '#9e9e9e')}50` }}>
                     {STATUS_ICON[selectedDemand.status]}
                     {STATUS_LABELS[selectedDemand.status as keyof typeof STATUS_LABELS]}
                   </span>
-                  <span className="text-xs px-2 py-1 rounded-full"
-                    style={{ background: (PRIORITY_COLORS[selectedDemand.priority as keyof typeof PRIORITY_COLORS] ?? '#9e9e9e') + '22', color: PRIORITY_COLORS[selectedDemand.priority as keyof typeof PRIORITY_COLORS] ?? '#9e9e9e' }}>
+                  <span className="text-xs px-2.5 py-1 rounded-lg font-semibold"
+                    style={{ background: (PRIORITY_COLORS[selectedDemand.priority as keyof typeof PRIORITY_COLORS] ?? '#9e9e9e') + '30', color: PRIORITY_COLORS[selectedDemand.priority as keyof typeof PRIORITY_COLORS] ?? '#9e9e9e', border: `1px solid ${(PRIORITY_COLORS[selectedDemand.priority as keyof typeof PRIORITY_COLORS] ?? '#9e9e9e')}50` }}>
                     {PRIORITY_LABELS[selectedDemand.priority as keyof typeof PRIORITY_LABELS]}
                   </span>
                 </div>
+
                 {selectedDemand.description && (
-                  <p className="text-gray-400 text-xs mt-2 leading-relaxed line-clamp-3">{selectedDemand.description}</p>
+                  <p className="text-gray-300 text-xs leading-relaxed line-clamp-3 mb-3">{selectedDemand.description}</p>
                 )}
 
-                {/* Botões de rota — só exibe se a demanda tem coordenadas */}
                 {selectedDemand.lat && selectedDemand.lng && (
-                  <div className="mt-3 pt-3 border-t border-white/10">
-                    <p className="text-xs text-gray-500 mb-2.5">Traçar rota até aqui</p>
+                  <div className="pt-3 border-t border-white/10">
+                    <p className="text-xs text-gray-400 font-medium mb-2.5">Traçar rota até aqui</p>
                     <div className="flex gap-3">
-
-                      {/* ── Waze ── */}
-                      <a
-                        href={`https://waze.com/ul?ll=${selectedDemand.lat},${selectedDemand.lng}&navigate=yes`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex flex-col items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
-                      >
+                      <a href={`https://waze.com/ul?ll=${selectedDemand.lat},${selectedDemand.lng}&navigate=yes`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="flex-1 flex flex-col items-center gap-1.5 transition-all hover:scale-105 active:scale-95">
                         <img src="/waze-logo.png" alt="Waze" className="w-12 h-12 rounded-2xl shadow-lg object-cover" />
-                        <span className="text-xs font-semibold text-gray-300">Waze</span>
+                        <span className="text-xs font-semibold text-gray-200">Waze</span>
                       </a>
-
-                      {/* ── Google Maps ── */}
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${selectedDemand.lat},${selectedDemand.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex flex-col items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
-                      >
+                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedDemand.lat},${selectedDemand.lng}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="flex-1 flex flex-col items-center gap-1.5 transition-all hover:scale-105 active:scale-95">
                         <img src="/google-maps-logo.png" alt="Google Maps" className="w-12 h-12 rounded-2xl shadow-lg object-cover" />
-                        <span className="text-xs font-semibold text-gray-300">Google Maps</span>
+                        <span className="text-xs font-semibold text-gray-200">Google Maps</span>
                       </a>
-
                     </div>
                   </div>
                 )}
@@ -793,58 +785,56 @@ export default function MapaDemandasPage() {
 
           {/* Popup detalhe — evento */}
           {selectedEvent && (
-            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-4 md:left-auto md:w-80 w-full bg-[#0d1b2a]/98 backdrop-blur border-t md:border border-white/10 md:rounded-2xl shadow-2xl z-[1000] overflow-hidden max-h-[60vh] overflow-y-auto">
+            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-4 md:left-auto md:w-80 w-full bg-[#0a1628] border-t md:border border-white/15 md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] z-[1000] overflow-hidden max-h-[60vh] overflow-y-auto">
+              <div className="h-1 w-full flex-shrink-0" style={{ background: selectedEvent.cor ?? TIPO_AGENDA_COLORS[selectedEvent.tipo] ?? '#6366f1' }} />
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: selectedEvent.cor ?? TIPO_AGENDA_COLORS[selectedEvent.tipo] ?? '#6366f1' }} />
-                      <span className="text-xs text-gray-400">{TIPO_AGENDA_LABELS[selectedEvent.tipo]}</span>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: selectedEvent.cor ?? TIPO_AGENDA_COLORS[selectedEvent.tipo] ?? '#6366f1' }} />
+                      <span className="text-xs font-semibold" style={{ color: selectedEvent.cor ?? TIPO_AGENDA_COLORS[selectedEvent.tipo] ?? '#6366f1' }}>
+                        {TIPO_AGENDA_LABELS[selectedEvent.tipo]}
+                      </span>
                     </div>
-                    <h3 className="text-white font-semibold text-sm">{selectedEvent.titulo}</h3>
+                    <h3 className="text-white font-bold text-sm">{selectedEvent.titulo}</h3>
                   </div>
-                  <button onClick={() => setSelectedEvent(null)} className="text-gray-500 hover:text-white flex-shrink-0">
+                  <button onClick={() => setSelectedEvent(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-white/10">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex items-center gap-2 text-gray-300">
-                    <Calendar className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+
+                <div className="space-y-2 text-xs bg-white/5 rounded-xl p-3 mb-3 border border-white/5">
+                  <div className="flex items-center gap-2.5 text-gray-200">
+                    <Calendar className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
                     <span>{new Date(selectedEvent.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
                   </div>
                   {selectedEvent.local && (
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <MapPin className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                    <div className="flex items-center gap-2.5 text-gray-200">
+                      <MapPin className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
                       <span>{selectedEvent.local}</span>
                     </div>
                   )}
-                  {selectedEvent.descricao && (
-                    <p className="text-gray-400 mt-2 leading-relaxed">{selectedEvent.descricao}</p>
-                  )}
                 </div>
 
-                {/* Botões de rota */}
+                {selectedEvent.descricao && (
+                  <p className="text-gray-300 text-xs leading-relaxed mb-3">{selectedEvent.descricao}</p>
+                )}
+
                 {selectedEvent.lat && selectedEvent.lng && (
-                  <div className="mt-3 pt-3 border-t border-white/10">
-                    <p className="text-xs text-gray-500 mb-2.5">Traçar rota até aqui</p>
+                  <div className="pt-3 border-t border-white/10">
+                    <p className="text-xs text-gray-400 font-medium mb-2.5">Traçar rota até aqui</p>
                     <div className="flex gap-3">
-                      <a
-                        href={`https://waze.com/ul?ll=${selectedEvent.lat},${selectedEvent.lng}&navigate=yes`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex flex-col items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
-                      >
+                      <a href={`https://waze.com/ul?ll=${selectedEvent.lat},${selectedEvent.lng}&navigate=yes`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="flex-1 flex flex-col items-center gap-1.5 transition-all hover:scale-105 active:scale-95">
                         <img src="/waze-logo.png" alt="Waze" className="w-12 h-12 rounded-2xl shadow-lg object-cover" />
-                        <span className="text-xs font-semibold text-gray-300">Waze</span>
+                        <span className="text-xs font-semibold text-gray-200">Waze</span>
                       </a>
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${selectedEvent.lat},${selectedEvent.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex flex-col items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
-                      >
+                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedEvent.lat},${selectedEvent.lng}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="flex-1 flex flex-col items-center gap-1.5 transition-all hover:scale-105 active:scale-95">
                         <img src="/google-maps-logo.png" alt="Google Maps" className="w-12 h-12 rounded-2xl shadow-lg object-cover" />
-                        <span className="text-xs font-semibold text-gray-300">Google Maps</span>
+                        <span className="text-xs font-semibold text-gray-200">Google Maps</span>
                       </a>
                     </div>
                   </div>
