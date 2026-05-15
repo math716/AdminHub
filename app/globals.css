@@ -2,33 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =====================================================================
+   AdminHub — Design Tokens
+   Paleta única do app: azul-marinho profundo + acento dourado + glass.
+   Valores em HSL (sem hsl(...)) para casarem com shadcn/Tailwind:
+     usar como  hsl(var(--token))           — opaco
+                hsl(var(--token) / 0.5)     — com alpha
+   ===================================================================== */
 :root {
-  --primary: #1e3a5f;
-  --primary-light: #1e4a80;
-  --secondary: #c9961a;
-  --secondary-light: #e6b83a;
-  --accent-blue: #4a9ede;
-  --background: #f8fafc;
-  --card: #ffffff;
-  --text: #1e293b;
-  --text-muted: #64748b;
-  --border: #e2e8f0;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  /* Surfaces — azul-marinho */
+  --navy-deep:    214 79% 7%;     /* #04111f - background mais profundo */
+  --navy-base:    213 77% 12%;    /* #071d36 - card / surface */
+  --navy-elev:    213 73% 18%;    /* #0c2a4f - elevação / input */
+  --navy-line:    213 60% 30%;    /* divisores sutis */
+
+  /* Action — azul de interação */
+  --blue-action:  210 73% 38%;    /* #1a5fa8 - botões primários */
+  --blue-bright:  207 70% 58%;    /* #4a9ede - links / outline / info */
+
+  /* Accent — dourado (identidade) */
+  --gold:         46 67% 47%;     /* #c9a227 */
+  --gold-light:   48 76% 60%;     /* #e6c84a - ativo / hover */
+
+  /* Texto */
+  --text-strong:    0 0% 100%;
+  --text-default:   0 0% 95%;
+  --text-muted:   213 24% 65%;    /* #8fa3bf */
+  --text-dim:     213 18% 45%;
+
+  /* Estados semânticos */
+  --success: 142 71% 45%;
+  --warning:  38 92% 50%;
+  --danger:    0 84% 60%;
+  --info:    207 70% 58%;
+
+  /* ───── Mapeamento shadcn → paleta do app
+     Os componentes que ainda usam `bg-background`, `text-foreground`, etc.
+     passam automaticamente a usar a paleta correta. */
+  --background:           var(--navy-deep);
+  --foreground:           var(--text-strong);
+
+  --card:                 var(--navy-base);
+  --card-foreground:      var(--text-strong);
+
+  --popover:              var(--navy-base);
+  --popover-foreground:   var(--text-strong);
+
+  --primary:              var(--blue-action);
+  --primary-foreground:   var(--text-strong);
+
+  --secondary:            var(--gold);
+  --secondary-foreground: var(--navy-deep);
+
+  --muted:                var(--navy-elev);
+  --muted-foreground:     var(--text-muted);
+
+  --accent:               var(--gold);
+  --accent-foreground:    var(--navy-deep);
+
+  --destructive:           var(--danger);
+  --destructive-foreground: var(--text-strong);
+
+  --border:               var(--navy-line);
+  --input:                var(--navy-elev);
+  --ring:                 var(--gold);
+
+  --radius: 0.875rem;            /* rounded-xl = base de inputs/buttons */
 }
 
 [data-hydration-error] { display: none !important; }
 
 body {
-  background-color: var(--background);
-  color: var(--text);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* ───── Helpers de superfície (glass) reutilizáveis */
+.surface-glass {
+  background: hsl(var(--navy-base) / 0.75);
+  border: 1px solid hsl(var(--gold) / 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.surface-glass-strong {
+  background: hsl(var(--navy-base) / 0.92);
+  border: 1px solid hsl(var(--gold) / 0.22);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.surface-input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
 }
 
 .glass-effect {
-  background: rgba(255, 255, 255, 0.8);
+  /* mantido para compat — agora alinhado com o tema escuro */
+  background: hsl(var(--navy-base) / 0.75);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid hsl(var(--gold) / 0.18);
 }
 
 .gradient-primary {
@@ -36,7 +107,7 @@ body {
 }
 
 .gradient-secondary {
-  background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%);
+  background: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(var(--gold-light)) 100%);
 }
 
 .card-shadow {

@@ -4,13 +4,25 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const alertVariants = cva(
-  'relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground',
+  cn(
+    'relative w-full rounded-xl border p-4',
+    // Posicionamento do ícone (lucide) à esquerda
+    '[&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:h-4 [&>svg]:w-4',
+    '[&>svg+div]:translate-y-[-3px] [&>svg~*]:pl-7'
+  ),
   {
     variants: {
       variant: {
-        default: 'bg-background text-foreground',
+        default:
+          'bg-navy-base/75 border-gold/20 text-white backdrop-blur-md [&>svg]:text-gold',
+        info:
+          'bg-blue-bright/10 border-blue-bright/30 text-blue-bright [&>svg]:text-blue-bright',
+        success:
+          'bg-state-success/10 border-state-success/35 text-state-success [&>svg]:text-state-success',
+        warning:
+          'bg-state-warning/10 border-state-warning/35 text-state-warning [&>svg]:text-state-warning',
         destructive:
-          'border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive',
+          'bg-state-danger/10 border-state-danger/40 text-state-danger [&>svg]:text-state-danger',
       },
     },
     defaultVariants: {
@@ -38,7 +50,7 @@ const AlertTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h5
     ref={ref}
-    className={cn('mb-1 font-medium leading-none tracking-tight', className)}
+    className={cn('mb-1 font-semibold leading-none tracking-tight', className)}
     {...props}
   />
 ));
@@ -50,7 +62,7 @@ const AlertDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('text-sm [&_p]:leading-relaxed', className)}
+    className={cn('text-sm opacity-90 [&_p]:leading-relaxed', className)}
     {...props}
   />
 ));

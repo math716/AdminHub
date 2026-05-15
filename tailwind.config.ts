@@ -60,6 +60,41 @@ const config: Config = {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
+
+        /* ───── Paleta semântica AdminHub
+           Uso: bg-navy-base, text-gold, border-gold/20, ring-blue-bright, etc. */
+        navy: {
+          deep: 'hsl(var(--navy-deep))',
+          base: 'hsl(var(--navy-base))',
+          elev: 'hsl(var(--navy-elev))',
+          line: 'hsl(var(--navy-line))',
+        },
+        gold: {
+          DEFAULT: 'hsl(var(--gold))',
+          light:   'hsl(var(--gold-light))',
+        },
+        blue: {
+          action: 'hsl(var(--blue-action))',
+          bright: 'hsl(var(--blue-bright))',
+        },
+        text: {
+          strong:  'hsl(var(--text-strong))',
+          default: 'hsl(var(--text-default))',
+          muted:   'hsl(var(--text-muted))',
+          dim:     'hsl(var(--text-dim))',
+        },
+        state: {
+          success: 'hsl(var(--success))',
+          warning: 'hsl(var(--warning))',
+          danger:  'hsl(var(--danger))',
+          info:    'hsl(var(--info))',
+        },
+      },
+      boxShadow: {
+        'glass':      '0 8px 32px rgba(0,0,0,0.35)',
+        'glass-lg':   '0 24px 64px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.35)',
+        'gold-glow':  '0 0 0 1px hsl(var(--gold) / 0.35), 0 8px 24px hsl(var(--gold) / 0.15)',
+        'inner-line': 'inset 0 1px 0 rgba(255,255,255,0.04)',
       },
       keyframes: {
         'accordion-down': {
