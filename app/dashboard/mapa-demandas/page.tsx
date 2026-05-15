@@ -150,11 +150,16 @@ export default function MapaDemandasPage() {
   const [mobileSidebar, setMobileSidebar] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Força o Leaflet a recalcular o tamanho ao entrar/sair da tela cheia
+  // Força o Leaflet a recalcular o tamanho ao entrar/sair da tela cheia ou recolher painel
   useEffect(() => {
     const t = setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
     return () => clearTimeout(t);
   }, [mapFullscreen]);
+
+  useEffect(() => {
+    const t = setTimeout(() => window.dispatchEvent(new Event('resize')), 320);
+    return () => clearTimeout(t);
+  }, [sidebarCollapsed]);
 
   // Foto
   const fotoInputRef = useRef<HTMLInputElement>(null);
@@ -437,9 +442,9 @@ export default function MapaDemandasPage() {
       )}
 
       {/* ── Conteúdo principal ── */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 gap-3 p-3 overflow-hidden">
         {/* Painel lateral — lista de demandas (desktop) */}
-        <div className={`hidden md:flex flex-shrink-0 flex-col border-r border-white/10 overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'w-0 border-r-0' : 'w-72'}`}>
+        <div className={`hidden md:flex flex-shrink-0 flex-col border border-white/10 rounded-2xl overflow-hidden transition-all duration-300 bg-[#0d1b2a] ${sidebarCollapsed ? 'w-0 border-transparent' : 'w-72'}`}>
           <div className="px-3 py-2 border-b border-white/10 flex-shrink-0 flex items-center justify-between gap-2">
             <p className="text-xs text-gray-400 font-medium uppercase tracking-wide truncate">
               {filteredDemands.length} demanda{filteredDemands.length !== 1 ? 's' : ''}
@@ -653,7 +658,7 @@ export default function MapaDemandasPage() {
         )}
 
         {/* Mapa */}
-        <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[#0d1b2a]' : 'flex-1 relative'}>
+        <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[#0d1b2a]' : 'flex-1 relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-[#0d1b2a]'}>
           <DemandaMapLeaflet
             demands={showDemands ? demandsWithCoords : []}
             agendaEvents={showAgendas ? agendaEvents : []}
