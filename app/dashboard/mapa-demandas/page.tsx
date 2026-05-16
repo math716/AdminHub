@@ -239,15 +239,14 @@ export default function MapaDemandasPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [dRes, aRes, emRes] = await Promise.all([
-        fetch('/api/demands'),
-        fetch('/api/agenda'),
-        fetch('/api/emendas'),
-      ]);
-      const [dData, aData, emData] = await Promise.all([dRes.json(), aRes.json(), emRes.json()]);
-      setDemands(Array.isArray(dData) ? dData : []);
-      setAgendaEvents(Array.isArray(aData) ? aData.filter((e: AgendaEvent) => e.lat && e.lng) : []);
-      setEmendas(Array.isArray(emData) ? emData : []);
+      // Endpoint combinado: 1 cold-start em vez de 3, 1 conexao DB em vez de 3.
+      const res = await fetch('/api/dashboard/mapa-gabinete');
+      const data = await res.json();
+      setDemands(Array.isArray(data?.demands) ? data.demands : []);
+      setAgendaEvents(Array.isArray(data?.agendaEvents)
+        ? data.agendaEvents.filter((e: AgendaEvent) => e.lat && e.lng)
+        : []);
+      setEmendas(Array.isArray(data?.emendas) ? data.emendas : []);
     } finally {
       setLoading(false);
     }
