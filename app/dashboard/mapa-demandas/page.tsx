@@ -9,6 +9,7 @@ import {
   CheckCircle, Clock, AlertTriangle, Camera,
   Navigation, Calendar, User, Phone, Building2,
   Maximize2, Minimize2, ChevronDown, ChevronLeft, ChevronRight,
+  DollarSign,
 } from 'lucide-react';
 import { CATEGORY_LABELS, CATEGORY_COLORS, STATUS_LABELS, STATUS_COLORS, PRIORITY_LABELS, PRIORITY_COLORS } from '@/lib/types';
 import { Select } from '@/components/ui/select';
@@ -60,6 +61,29 @@ interface Contato {
   lng?: number;
 }
 
+interface Emenda {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  valor?: number;
+  autor?: string;
+  numero?: string;
+  ano?: number;
+  tipo: string;
+  orgaoExecutor?: string;
+  status: string;
+  beneficiario?: string;
+  estado?: string;
+  municipio?: string;
+  bairro?: string;
+  endereco?: string;
+  lat?: number;
+  lng?: number;
+  foto?: string;
+  observations?: string;
+  createdAt: string;
+}
+
 interface GeoResult {
   lat: number;
   lng: number;
@@ -95,6 +119,20 @@ const TIPO_AGENDA_COLORS: Record<string, string> = {
   REUNIAO: '#6366f1', VISITA: '#f59e0b', EVENTO: '#ec4899', COMPROMISSO: '#14b8a6',
 };
 
+const EMENDA_STATUS_LABELS: Record<string, string> = {
+  PROPOSTA: 'Proposta', EMPENHADA: 'Empenhada', PAGA: 'Paga', CANCELADA: 'Cancelada',
+};
+const EMENDA_STATUS_COLORS: Record<string, string> = {
+  PROPOSTA: '#6366f1', EMPENHADA: '#f59e0b', PAGA: '#10b981', CANCELADA: '#64748b',
+};
+const EMENDA_TIPO_LABELS: Record<string, string> = {
+  INDIVIDUAL: 'Individual', BANCADA: 'Bancada', COMISSAO: 'Comissão', RELATOR: 'Relator',
+};
+const formatBRL = (n?: number | null) =>
+  typeof n === 'number'
+    ? n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+    : '';
+
 // ---------------------------------------------------------------------------
 // Formulário de nova demanda (modal)
 // ---------------------------------------------------------------------------
@@ -102,6 +140,15 @@ const EMPTY_FORM = {
   title: '', description: '', solicitante: '', contato: '',
   estado: '', municipio: '', bairro: '', endereco: '',
   category: 'OUTROS', status: 'PENDENTE', priority: 'MEDIA',
+  observations: '', lat: null as number | null, lng: null as number | null,
+  foto: '' as string,
+};
+
+const EMPTY_EMENDA_FORM = {
+  titulo: '', descricao: '', valor: '' as string,
+  autor: '', numero: '', ano: '' as string,
+  tipo: 'INDIVIDUAL', orgaoExecutor: '', status: 'PROPOSTA',
+  beneficiario: '', estado: '', municipio: '', bairro: '', endereco: '',
   observations: '', lat: null as number | null, lng: null as number | null,
   foto: '' as string,
 };
@@ -115,10 +162,12 @@ export default function MapaDemandasPage() {
 
   const [demands, setDemands] = useState<Demand[]>([]);
   const [agendaEvents, setAgendaEvents] = useState<AgendaEvent[]>([]);
+  const [emendas, setEmendas] = useState<Emenda[]>([]);
   const [contatos] = useState<Contato[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDemand, setSelectedDemand] = useState<Demand | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<AgendaEvent | null>(null);
+  const [selectedEmenda, setSelectedEmenda] = useState<Emenda | null>(null);
 
   // Filtros
   const [filterStatus, setFilterStatus] = useState('');
@@ -133,6 +182,13 @@ export default function MapaDemandasPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
+  // Modal nova emenda
+  const [showNewEmendaModal, setShowNewEmendaModal] = useState(false);
+  const [emendaForm, setEmendaForm] = useState({ ...EMPTY_EMENDA_FORM });
+  const [savingEmenda, setSavingEmenda] = useState(false);
+  const [emendaSaveError, setEmendaSaveError] = useState('');
+  const emendaFotoInputRef = useRef<HTMLInputElement>(null);
+
   // Geocodificação
   const [geoQuery, setGeoQuery] = useState('');
   const [geoResults, setGeoResults] = useState<GeoResult[]>([]);
@@ -141,6 +197,7 @@ export default function MapaDemandasPage() {
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [showDemands, setShowDemands] = useState(true);
   const [showAgendas, setShowAgendas] = useState(true);
+  const [showEmendas, setShowEmendas] = useState(true);
 
   // Demandas concluídas — seção colapsável com seleção individual para exibir no mapa
   const [concluidasOpen, setConcluidasOpen] = useState(false);
@@ -178,13 +235,15 @@ export default function MapaDemandasPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [dRes, aRes] = await Promise.all([
+      const [dRes, aRes, emRes] = await Promise.all([
         fetch('/api/demands'),
         fetch('/api/agenda'),
+        fetch('/api/emendas'),
       ]);
-      const [dData, aData] = await Promise.all([dRes.json(), aRes.json()]);
+      const [dData, aData, emData] = await Promise.all([dRes.json(), aRes.json(), emRes.json()]);
       setDemands(Array.isArray(dData) ? dData : []);
       setAgendaEvents(Array.isArray(aData) ? aData.filter((e: AgendaEvent) => e.lat && e.lng) : []);
+      setEmendas(Array.isArray(emData) ? emData : []);
     } finally {
       setLoading(false);
     }
@@ -325,6 +384,7 @@ export default function MapaDemandasPage() {
   const selectDemandWithFoto = async (d: Demand) => {
     setSelectedDemand(d);
     setSelectedEvent(null);
+    setSelectedEmenda(null);
     if (d.foto) return;
     try {
       const res = await fetch(`/api/demands/${d.id}`);
@@ -343,8 +403,94 @@ export default function MapaDemandasPage() {
   };
   const handleMapEventClick = (id: string) => {
     const e = agendaEvents.find((x) => x.id === id);
-    if (e) { setSelectedEvent(e); setSelectedDemand(null); }
+    if (e) { setSelectedEvent(e); setSelectedDemand(null); setSelectedEmenda(null); }
   };
+
+  // Mesma logica do selectDemandWithFoto para emenda (foto pode ser pesada).
+  const selectEmendaWithFoto = async (em: Emenda) => {
+    setSelectedEmenda(em);
+    setSelectedDemand(null);
+    setSelectedEvent(null);
+    if (em.foto) return;
+    try {
+      const res = await fetch(`/api/emendas/${em.id}`);
+      if (!res.ok) return;
+      const full = await res.json();
+      if (!full?.foto) return;
+      setSelectedEmenda((cur) => (cur?.id === em.id ? { ...cur, ...full } : cur));
+      setEmendas((arr) => arr.map((x) => (x.id === em.id ? { ...x, ...full } : x)));
+    } catch {}
+  };
+
+  const handleMapEmendaClick = (id: string) => {
+    const em = emendas.find((x) => x.id === id);
+    if (em) selectEmendaWithFoto(em);
+  };
+
+  // Upload foto emenda
+  const handleEmendaFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setEmendaForm((f) => ({ ...f, foto: (ev.target?.result as string) ?? '' }));
+    reader.readAsDataURL(file);
+  };
+
+  // Geocodificar endereco da emenda
+  const geocodeEmendaAddress = useCallback(async () => {
+    const addr = emendaForm.endereco || [emendaForm.municipio, emendaForm.estado].filter(Boolean).join(' ');
+    if (!addr.trim()) return;
+    setGeoLoading(true);
+    try {
+      const res = await fetch(`/api/geocode?address=${encodeURIComponent(addr)}`);
+      const data = await res.json();
+      if (data.results?.[0]) {
+        const r = data.results[0];
+        setEmendaForm((f) => ({ ...f, lat: r.lat, lng: r.lng, endereco: f.endereco || r.endereco }));
+        setMapCenter([r.lat, r.lng]);
+      }
+    } finally {
+      setGeoLoading(false);
+    }
+  }, [emendaForm.endereco, emendaForm.municipio, emendaForm.estado]);
+
+  // Salvar emenda
+  const handleSaveEmenda = async () => {
+    if (!emendaForm.titulo.trim()) {
+      setEmendaSaveError('Preencha ao menos o título.');
+      return;
+    }
+    setSavingEmenda(true);
+    setEmendaSaveError('');
+    try {
+      let payload: any = { ...emendaForm };
+      if (!payload.lat && (payload.endereco || payload.municipio)) {
+        const addr = payload.endereco || [payload.municipio, payload.estado].filter(Boolean).join(', ');
+        try {
+          const gRes = await fetch(`/api/geocode?address=${encodeURIComponent(addr)}`);
+          const gData = await gRes.json();
+          if (gData.results?.[0]) {
+            payload = { ...payload, lat: gData.results[0].lat, lng: gData.results[0].lng };
+          }
+        } catch {}
+      }
+      const res = await fetch('/api/emendas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Erro');
+      setShowNewEmendaModal(false);
+      setEmendaForm({ ...EMPTY_EMENDA_FORM });
+      await fetchAll();
+    } catch (err: any) {
+      setEmendaSaveError(err.message);
+    } finally {
+      setSavingEmenda(false);
+    }
+  };
+
+  const emendasWithCoords = useMemo(() => emendas.filter((em) => em.lat && em.lng), [emendas]);
 
   if (status === 'loading' || loading) {
     return (
@@ -422,6 +568,13 @@ export default function MapaDemandasPage() {
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nova Demanda</span>
           </button>
+          <button
+            onClick={() => { setShowNewEmendaModal(true); setEmendaForm({ ...EMPTY_EMENDA_FORM }); setEmendaSaveError(''); }}
+            className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all"
+          >
+            <DollarSign className="w-4 h-4" />
+            <span className="hidden sm:inline">Nova Emenda</span>
+          </button>
         </div>
       </div>
 
@@ -485,6 +638,14 @@ export default function MapaDemandasPage() {
               >
                 <Calendar className="w-3 h-3" />
                 Agenda
+              </button>
+              <button
+                onClick={() => setShowEmendas(v => !v)}
+                title={showEmendas ? 'Ocultar emendas' : 'Exibir emendas'}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showEmendas ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-white/5 border-white/10 text-gray-500 hover:text-gray-300'}`}
+              >
+                <DollarSign className="w-3 h-3" />
+                Emendas
               </button>
               <button
                 onClick={() => setSidebarCollapsed(true)}
@@ -585,7 +746,7 @@ export default function MapaDemandasPage() {
                 {agendaEvents.map((e) => (
                   <button
                     key={e.id}
-                    onClick={() => { setSelectedEvent(e); setSelectedDemand(null); if (e.lat && e.lng) setMapCenter([e.lat, e.lng]); }}
+                    onClick={() => { setSelectedEvent(e); setSelectedDemand(null); setSelectedEmenda(null); if (e.lat && e.lng) setMapCenter([e.lat, e.lng]); }}
                     className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedEvent?.id === e.id ? 'bg-indigo-900/30 border-l-2 border-l-indigo-400' : ''}`}
                   >
                     <div className="flex items-center gap-1.5 mb-0.5">
@@ -594,6 +755,30 @@ export default function MapaDemandasPage() {
                     </div>
                     <p className="text-gray-500 text-xs">{TIPO_AGENDA_LABELS[e.tipo]} · {new Date(e.data).toLocaleDateString('pt-BR')}</p>
                     {e.local && <p className="text-gray-600 text-xs truncate">{e.local}</p>}
+                  </button>
+                ))}
+              </>
+            )}
+            {showEmendas && emendas.length > 0 && (
+              <>
+                <div className="px-3 py-2 border-b border-white/10 bg-white/2 flex-shrink-0 mt-1">
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Emendas Parlamentares</p>
+                </div>
+                {emendas.map((em) => (
+                  <button
+                    key={em.id}
+                    onClick={() => { selectEmendaWithFoto(em); if (em.lat && em.lng) setMapCenter([em.lat, em.lng]); }}
+                    className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedEmenda?.id === em.id ? 'bg-emerald-900/30 border-l-2 border-l-emerald-400' : ''}`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: EMENDA_STATUS_COLORS[em.status] ?? '#10b981' }} />
+                      <span className="text-white text-xs font-semibold truncate">{em.titulo}</span>
+                    </div>
+                    <p className="text-gray-500 text-xs">
+                      {EMENDA_TIPO_LABELS[em.tipo]}
+                      {typeof em.valor === 'number' && <span className="text-amber-400/90 ml-1">· {formatBRL(em.valor)}</span>}
+                    </p>
+                    {em.beneficiario && <p className="text-gray-600 text-xs truncate">{em.beneficiario}</p>}
                   </button>
                 ))}
               </>
@@ -618,6 +803,10 @@ export default function MapaDemandasPage() {
                   <button onClick={() => setShowAgendas(v => !v)}
                     className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showAgendas ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-white/5 border-white/10 text-gray-500'}`}>
                     <Calendar className="w-3 h-3" />Agenda
+                  </button>
+                  <button onClick={() => setShowEmendas(v => !v)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showEmendas ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-white/5 border-white/10 text-gray-500'}`}>
+                    <DollarSign className="w-3 h-3" />Emendas
                   </button>
                   <button onClick={() => setMobileSidebar(false)} className="ml-1 p-1.5 text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
                 </div>
@@ -661,10 +850,28 @@ export default function MapaDemandasPage() {
                     </div>
                     {agendaEvents.map((e) => (
                       <button key={e.id}
-                        onClick={() => { setSelectedEvent(e); setSelectedDemand(null); if (e.lat && e.lng) setMapCenter([e.lat, e.lng]); setMobileSidebar(false); }}
+                        onClick={() => { setSelectedEvent(e); setSelectedDemand(null); setSelectedEmenda(null); if (e.lat && e.lng) setMapCenter([e.lat, e.lng]); setMobileSidebar(false); }}
                         className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedEvent?.id === e.id ? 'bg-indigo-900/30 border-l-2 border-l-indigo-400' : ''}`}>
                         <p className="text-white text-xs font-semibold truncate">{e.titulo}</p>
                         <p className="text-gray-500 text-[10px]">{TIPO_AGENDA_LABELS[e.tipo]} · {new Date(e.data).toLocaleDateString('pt-BR')}</p>
+                      </button>
+                    ))}
+                  </>
+                )}
+                {emendas.length > 0 && showEmendas && (
+                  <>
+                    <div className="px-3 py-2 border-b border-white/10 bg-white/2 flex-shrink-0 mt-1">
+                      <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Emendas</p>
+                    </div>
+                    {emendas.map((em) => (
+                      <button key={em.id}
+                        onClick={() => { selectEmendaWithFoto(em); if (em.lat && em.lng) setMapCenter([em.lat, em.lng]); setMobileSidebar(false); }}
+                        className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedEmenda?.id === em.id ? 'bg-emerald-900/30 border-l-2 border-l-emerald-400' : ''}`}>
+                        <p className="text-white text-xs font-semibold truncate">{em.titulo}</p>
+                        <p className="text-gray-500 text-[10px]">
+                          {EMENDA_TIPO_LABELS[em.tipo]}
+                          {typeof em.valor === 'number' && <span className="text-amber-400/90 ml-1">· {formatBRL(em.valor)}</span>}
+                        </p>
                       </button>
                     ))}
                   </>
@@ -679,12 +886,15 @@ export default function MapaDemandasPage() {
           <DemandaMapLeaflet
             demands={showDemands ? demandsWithCoords : []}
             agendaEvents={showAgendas ? agendaEvents : []}
+            emendas={showEmendas ? emendasWithCoords : []}
             contatos={contatos}
             center={mapCenter}
             selectedDemandId={selectedDemand?.id}
             selectedEventId={selectedEvent?.id}
+            selectedEmendaId={selectedEmenda?.id}
             onDemandClick={handleMapDemandClick}
             onEventClick={handleMapEventClick}
+            onEmendaClick={handleMapEmendaClick}
             showSpDistritos
           />
 
@@ -859,6 +1069,109 @@ export default function MapaDemandasPage() {
               </div>
             </div>
           )}
+
+          {/* Popup detalhe — emenda */}
+          {selectedEmenda && (
+            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-3 md:left-auto md:w-72 w-full bg-[#0a1628] border-t md:border border-white/15 md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] z-[1000] overflow-hidden max-h-[65vh] overflow-y-auto">
+              {selectedEmenda.foto
+                ? <div className="w-full h-32 bg-black overflow-hidden flex-shrink-0">
+                    <img src={selectedEmenda.foto} alt="Foto da emenda" className="w-full h-full object-cover" />
+                  </div>
+                : <div className="h-1 w-full flex-shrink-0" style={{ background: EMENDA_STATUS_COLORS[selectedEmenda.status] ?? '#10b981' }} />
+              }
+              <div className="p-3">
+                <div className="flex items-start justify-between gap-2 mb-2.5">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: EMENDA_STATUS_COLORS[selectedEmenda.status] ?? '#10b981' }} />
+                      <span className="text-[11px] font-semibold" style={{ color: EMENDA_STATUS_COLORS[selectedEmenda.status] ?? '#10b981' }}>
+                        Emenda {EMENDA_TIPO_LABELS[selectedEmenda.tipo]}
+                      </span>
+                    </div>
+                    <h3 className="text-white font-bold text-sm leading-snug">{selectedEmenda.titulo}</h3>
+                  </div>
+                  <button onClick={() => setSelectedEmenda(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-white/10">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {typeof selectedEmenda.valor === 'number' && (
+                  <div className="flex items-center gap-1.5 text-amber-300 text-base font-bold mb-2.5">
+                    <DollarSign className="w-4 h-4" />
+                    <span>{formatBRL(selectedEmenda.valor)}</span>
+                  </div>
+                )}
+
+                <div className="space-y-1.5 text-[11px] bg-white/5 rounded-xl p-2.5 mb-2.5 border border-white/5">
+                  {selectedEmenda.autor && (
+                    <div className="flex items-center gap-2 text-gray-200">
+                      <User className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                      <span>
+                        {selectedEmenda.autor}
+                        {selectedEmenda.numero && <span className="text-gray-500"> · nº {selectedEmenda.numero}</span>}
+                        {selectedEmenda.ano && <span className="text-gray-500"> ({selectedEmenda.ano})</span>}
+                      </span>
+                    </div>
+                  )}
+                  {selectedEmenda.beneficiario && (
+                    <div className="flex items-center gap-2 text-gray-200">
+                      <CheckCircle className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                      <span>{selectedEmenda.beneficiario}</span>
+                    </div>
+                  )}
+                  {selectedEmenda.orgaoExecutor && (
+                    <div className="flex items-center gap-2 text-gray-200">
+                      <Building2 className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                      <span>{selectedEmenda.orgaoExecutor}</span>
+                    </div>
+                  )}
+                  {selectedEmenda.endereco
+                    ? <div className="flex items-center gap-2 text-gray-200">
+                        <MapPin className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                        <span>{selectedEmenda.endereco}</span>
+                      </div>
+                    : (selectedEmenda.municipio || selectedEmenda.estado) && (
+                      <div className="flex items-center gap-2 text-gray-200">
+                        <MapPin className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                        <span>{[selectedEmenda.municipio, selectedEmenda.estado].filter(Boolean).join(', ')}</span>
+                      </div>
+                    )
+                  }
+                </div>
+
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg font-semibold"
+                    style={{ background: (EMENDA_STATUS_COLORS[selectedEmenda.status] ?? '#10b981') + '30', color: EMENDA_STATUS_COLORS[selectedEmenda.status] ?? '#10b981', border: `1px solid ${(EMENDA_STATUS_COLORS[selectedEmenda.status] ?? '#10b981')}50` }}>
+                    {EMENDA_STATUS_LABELS[selectedEmenda.status] ?? selectedEmenda.status}
+                  </span>
+                </div>
+
+                {selectedEmenda.descricao && (
+                  <p className="text-gray-300 text-[11px] leading-relaxed line-clamp-3 mb-2.5">{selectedEmenda.descricao}</p>
+                )}
+
+                {selectedEmenda.lat && selectedEmenda.lng && (
+                  <div className="pt-2.5 border-t border-white/10">
+                    <p className="text-[11px] text-gray-400 font-medium mb-2">Traçar rota até aqui</p>
+                    <div className="flex gap-3">
+                      <a href={`https://waze.com/ul?ll=${selectedEmenda.lat},${selectedEmenda.lng}&navigate=yes`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="flex-1 flex flex-col items-center gap-1 transition-all hover:scale-105 active:scale-95">
+                        <img src="/waze-logo.png" alt="Waze" className="w-10 h-10 rounded-xl shadow-lg object-cover" />
+                        <span className="text-[11px] font-semibold text-gray-200">Waze</span>
+                      </a>
+                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedEmenda.lat},${selectedEmenda.lng}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="flex-1 flex flex-col items-center gap-1 transition-all hover:scale-105 active:scale-95">
+                        <img src="/google-maps-logo.png" alt="Google Maps" className="w-10 h-10 rounded-xl shadow-lg object-cover" />
+                        <span className="text-[11px] font-semibold text-gray-200">Google Maps</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1015,6 +1328,178 @@ export default function MapaDemandasPage() {
                 className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                 Salvar Demanda
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal nova emenda ── */}
+      {showNewEmendaModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-[#0d1b2a] border border-white/10 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <DollarSign className="w-5 h-5 text-emerald-400" />
+                <h2 className="text-white font-semibold">Nova Emenda Parlamentar</h2>
+              </div>
+              <button onClick={() => setShowNewEmendaModal(false)} className="text-gray-500 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Título *</label>
+                <input value={emendaForm.titulo} onChange={(e) => setEmendaForm((f) => ({ ...f, titulo: e.target.value }))}
+                  className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-emerald-500"
+                  placeholder="Ex: Reforma da UBS Vila Nova" />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Valor (R$)</label>
+                  <input value={emendaForm.valor} onChange={(e) => setEmendaForm((f) => ({ ...f, valor: e.target.value }))}
+                    type="number" min="0" step="1000"
+                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-emerald-500"
+                    placeholder="500000" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Ano</label>
+                  <input value={emendaForm.ano} onChange={(e) => setEmendaForm((f) => ({ ...f, ano: e.target.value }))}
+                    type="number" min="2000" max="2100"
+                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-emerald-500"
+                    placeholder="2026" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Número</label>
+                  <input value={emendaForm.numero} onChange={(e) => setEmendaForm((f) => ({ ...f, numero: e.target.value }))}
+                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-emerald-500"
+                    placeholder="123" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Autor / Parlamentar</label>
+                  <input value={emendaForm.autor} onChange={(e) => setEmendaForm((f) => ({ ...f, autor: e.target.value }))}
+                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-emerald-500"
+                    placeholder="Nome do parlamentar" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Beneficiário</label>
+                  <input value={emendaForm.beneficiario} onChange={(e) => setEmendaForm((f) => ({ ...f, beneficiario: e.target.value }))}
+                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-emerald-500"
+                    placeholder="Entidade ou município beneficiado" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Tipo</label>
+                  <Select
+                    value={emendaForm.tipo}
+                    onChange={(e) => setEmendaForm((f) => ({ ...f, tipo: e.target.value }))}
+                    options={Object.entries(EMENDA_TIPO_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Status</label>
+                  <Select
+                    value={emendaForm.status}
+                    onChange={(e) => setEmendaForm((f) => ({ ...f, status: e.target.value }))}
+                    options={Object.entries(EMENDA_STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Órgão Executor</label>
+                  <input value={emendaForm.orgaoExecutor} onChange={(e) => setEmendaForm((f) => ({ ...f, orgaoExecutor: e.target.value }))}
+                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-emerald-500"
+                    placeholder="Ministério..." />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Estado</label>
+                  <input value={emendaForm.estado} onChange={(e) => setEmendaForm((f) => ({ ...f, estado: e.target.value }))}
+                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-emerald-500"
+                    placeholder="UF (ex: SP)" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Município</label>
+                  <input value={emendaForm.municipio} onChange={(e) => setEmendaForm((f) => ({ ...f, municipio: e.target.value }))}
+                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-emerald-500"
+                    placeholder="Nome do município" />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Endereço completo</label>
+                <div className="flex gap-2 mt-1">
+                  <input value={emendaForm.endereco} onChange={(e) => setEmendaForm((f) => ({ ...f, endereco: e.target.value }))}
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-emerald-500"
+                    placeholder="Rua, número, bairro (opcional)" />
+                  <button onClick={geocodeEmendaAddress} disabled={geoLoading}
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
+                    {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
+                    Localizar
+                  </button>
+                </div>
+                {emendaForm.lat && emendaForm.lng && (
+                  <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> Localização: {emendaForm.lat.toFixed(5)}, {emendaForm.lng.toFixed(5)}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Descrição</label>
+                <textarea value={emendaForm.descricao} onChange={(e) => setEmendaForm((f) => ({ ...f, descricao: e.target.value }))}
+                  rows={3}
+                  className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-emerald-500 resize-none"
+                  placeholder="Detalhes da emenda..." />
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Foto (opcional)</label>
+                <div className="mt-1 flex items-center gap-3">
+                  <button onClick={() => emendaFotoInputRef.current?.click()}
+                    className="flex items-center gap-2 px-3.5 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 hover:bg-white/10">
+                    <Camera className="w-4 h-4" />
+                    {emendaForm.foto ? 'Trocar foto' : 'Adicionar foto'}
+                  </button>
+                  {emendaForm.foto && (
+                    <div className="flex items-center gap-2">
+                      <img src={emendaForm.foto} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-white/10" />
+                      <button onClick={() => setEmendaForm((f) => ({ ...f, foto: '' }))} className="text-gray-500 hover:text-red-400">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <input ref={emendaFotoInputRef} type="file" accept="image/*" onChange={handleEmendaFotoChange} className="hidden" />
+              </div>
+
+              {emendaSaveError && (
+                <div className="flex items-center gap-2 text-red-400 text-sm bg-red-900/20 border border-red-500/20 rounded-lg px-3 py-2">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  {emendaSaveError}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-white/10">
+              <button onClick={() => setShowNewEmendaModal(false)}
+                className="px-4 py-2 text-gray-400 hover:text-white text-sm font-medium transition-colors rounded-xl">
+                Cancelar
+              </button>
+              <button onClick={handleSaveEmenda} disabled={savingEmenda}
+                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
+                {savingEmenda ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                Salvar Emenda
               </button>
             </div>
           </div>

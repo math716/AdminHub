@@ -45,6 +45,20 @@ enum DemandCategory {
   OUTROS
 }
 
+enum EmendaTipo {
+  INDIVIDUAL
+  BANCADA
+  COMISSAO
+  RELATOR
+}
+
+enum EmendaStatus {
+  PROPOSTA
+  EMPENHADA
+  PAGA
+  CANCELADA
+}
+
 // ============== MODELS ==============
 
 /// Gabinete/Secretaria
@@ -64,6 +78,7 @@ model Gabinete {
   demands       Demand[]
   agendaEvents  AgendaEvent[]
   contatos      Contato[]
+  emendas       Emenda[]
 
   @@map("gabinetes")
 }
@@ -88,6 +103,7 @@ model User {
   demands       Demand[]          @relation("CreatedBy")
   agendaEvents  AgendaEvent[]     @relation("AgendaCreatedBy")
   contatos      Contato[]         @relation("ContatoCreatedBy")
+  emendas       Emenda[]          @relation("EmendaCreatedBy")
   favorites     Favorite[]
   projecoes     ProjecaoCampanha[]
   accounts      Account[]
@@ -220,6 +236,45 @@ model AgendaEvent {
   @@index([data])
   @@index([gabineteId, data])
   @@map("agenda_events")
+}
+
+/// Emenda Parlamentar
+model Emenda {
+  id              String        @id @default(cuid())
+  titulo          String
+  descricao       String?
+  valor           Float?
+  autor           String?
+  numero          String?
+  ano             Int?
+  tipo            EmendaTipo    @default(INDIVIDUAL)
+  orgaoExecutor   String?
+  status          EmendaStatus  @default(PROPOSTA)
+  beneficiario    String?
+  estado          String?
+  municipio       String?
+  bairro          String?
+  endereco        String?
+  lat             Float?
+  lng             Float?
+  foto            String?       @db.Text
+  observations    String?
+
+  gabineteId      String
+  gabinete        Gabinete      @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+
+  createdById     String
+  createdBy       User          @relation("EmendaCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([gabineteId])
+  @@index([createdById])
+  @@index([status])
+  @@index([tipo])
+  @@index([ano])
+  @@map("emendas")
 }
 
 /// Favoritos do Usuário (Candidatos)
