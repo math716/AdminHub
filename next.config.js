@@ -38,8 +38,10 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: { unoptimized: true },
-  outputFileTracingIncludes: {
-    '/api/tse/zonas': ['./public/data/tse/**/*'],
+  experimental: {
+    outputFileTracingIncludes: {
+      '/api/tse/zonas': ['./public/data/tse/**/*'],
+    },
   },
   async headers() {
     return [
