@@ -9,7 +9,7 @@ import {
   CheckCircle, Clock, AlertTriangle, Camera,
   Navigation, Calendar, User, Phone, Building2,
   Maximize2, Minimize2, ChevronDown, ChevronLeft, ChevronRight,
-  DollarSign, Paperclip, FileText, Download,
+  DollarSign, Paperclip, FileText, Download, Trash2,
 } from 'lucide-react';
 import { CATEGORY_LABELS, CATEGORY_COLORS, STATUS_LABELS, STATUS_COLORS, PRIORITY_LABELS, PRIORITY_COLORS } from '@/lib/types';
 import { Select } from '@/components/ui/select';
@@ -159,7 +159,9 @@ const EMPTY_EMENDA_FORM = {
 // Componente principal
 // ---------------------------------------------------------------------------
 export default function MapaDemandasPage() {
-  const { status } = useSession();
+  const { status, data: session } = useSession();
+  const userRole = (session?.user as any)?.role || 'ASSESSOR';
+  const canDeleteEmenda = userRole === 'CHEFE' || userRole === 'ADMIN';
   const router = useRouter();
 
   const [demands, setDemands] = useState<Demand[]>([]);
@@ -427,6 +429,23 @@ export default function MapaDemandasPage() {
   const handleMapEmendaClick = (id: string) => {
     const em = emendas.find((x) => x.id === id);
     if (em) selectEmendaWithDoc(em);
+  };
+
+  const handleDeleteEmenda = async (id: string) => {
+    if (!canDeleteEmenda) return;
+    if (!confirm('Tem certeza que deseja excluir esta emenda? Esta ação não pode ser desfeita.')) return;
+    try {
+      const res = await fetch(`/api/emendas/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || 'Erro ao excluir emenda.');
+        return;
+      }
+      setSelectedEmenda(null);
+      setEmendas((arr) => arr.filter((x) => x.id !== id));
+    } catch {
+      alert('Erro ao excluir emenda.');
+    }
   };
 
   // Upload de documento da emenda (PDF, DOC, DOCX, XLS, XLSX, imagens, etc).
@@ -1097,9 +1116,20 @@ export default function MapaDemandasPage() {
                     </div>
                     <h3 className="text-white font-bold text-sm leading-snug">{selectedEmenda.titulo}</h3>
                   </div>
-                  <button onClick={() => setSelectedEmenda(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-white/10">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    {canDeleteEmenda && (
+                      <button
+                        onClick={() => handleDeleteEmenda(selectedEmenda.id)}
+                        title="Excluir emenda"
+                        className="text-gray-500 hover:text-red-400 transition-colors p-1 rounded-lg hover:bg-red-500/10"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button onClick={() => setSelectedEmenda(null)} className="text-gray-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {typeof selectedEmenda.valor === 'number' && (
