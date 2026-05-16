@@ -402,7 +402,7 @@ export default function MapaDemandasPage() {
       const full = await res.json();
       if (!full?.foto) return;
       setSelectedDemand((cur) => (cur?.id === d.id ? { ...cur, ...full } : cur));
-      setDemands((arr) => arr.map((x) => (x.id === d.id ? { ...x, ...full } : x)));
+      // Não atualiza o array `demands` para evitar rebuild do mapa; a foto fica só no selectedDemand.
     } catch {}
   };
 
@@ -428,7 +428,7 @@ export default function MapaDemandasPage() {
       const full = await res.json();
       if (!full?.documento) return;
       setSelectedEmenda((cur) => (cur?.id === em.id ? { ...cur, ...full } : cur));
-      setEmendas((arr) => arr.map((x) => (x.id === em.id ? { ...x, ...full } : x)));
+      // Não atualiza o array `emendas` para evitar rebuild do mapa; o documento fica só no selectedEmenda.
     } catch {}
   };
 

@@ -68,6 +68,8 @@ export async function GET() {
       demands:      demands      ?? [],
       agendaEvents: agendaEvents ?? [],
       emendas:      emendas      ?? [],
+    }, {
+      headers: { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=120' },
     });
   } catch (error) {
     console.error('GET /api/dashboard/mapa-gabinete error:', error);
