@@ -38,7 +38,12 @@ export async function GET(
       return NextResponse.json({ error: 'Demanda não encontrada' }, { status: 404 });
     }
 
-    return NextResponse.json(demand);
+    // Cache no browser (private = nao cacheia em CDN, ja que e dado autenticado).
+    // 60s e curto o suficiente para edicoes refletirem rapido, e longo o suficiente
+    // para que clicar varias vezes no mesmo pin nao re-baixe a foto base64.
+    return NextResponse.json(demand, {
+      headers: { 'Cache-Control': 'private, max-age=60, must-revalidate' },
+    });
   } catch (error) {
     console.error('Get demand error:', error);
     return NextResponse.json({ error: 'Erro ao buscar demanda' }, { status: 500 });

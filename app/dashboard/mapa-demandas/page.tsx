@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { CATEGORY_LABELS, CATEGORY_COLORS, STATUS_LABELS, STATUS_COLORS, PRIORITY_LABELS, PRIORITY_COLORS } from '@/lib/types';
 import { Select } from '@/components/ui/select';
+import { compressImage } from '@/lib/compress-image';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -334,13 +335,19 @@ export default function MapaDemandasPage() {
     }
   }, [form.endereco, form.municipio, form.estado]);
 
-  // Upload foto
-  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Upload foto — comprime no client (foto da camera de 5MB vira ~300KB).
+  const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setForm((f) => ({ ...f, foto: (ev.target?.result as string) ?? '' }));
-    reader.readAsDataURL(file);
+    try {
+      const { dataUrl } = await compressImage(file);
+      setForm((f) => ({ ...f, foto: dataUrl }));
+    } catch {
+      // fallback: usa o arquivo original sem comprimir
+      const reader = new FileReader();
+      reader.onload = (ev) => setForm((f) => ({ ...f, foto: (ev.target?.result as string) ?? '' }));
+      reader.readAsDataURL(file);
+    }
   };
 
   // Salvar demanda
@@ -448,7 +455,8 @@ export default function MapaDemandasPage() {
   };
 
   // Upload de documento da emenda (PDF, DOC, DOCX, XLS, XLSX, imagens, etc).
-  const handleEmendaDocumentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Imagens passam por compressao no client; PDFs/DOCs passam direto.
+  const handleEmendaDocumentoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const MAX_MB = 5;
@@ -457,13 +465,18 @@ export default function MapaDemandasPage() {
       e.target.value = '';
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => setEmendaForm((f) => ({
-      ...f,
-      documento: (ev.target?.result as string) ?? '',
-      documentoNome: file.name,
-    }));
-    reader.readAsDataURL(file);
+    try {
+      const { dataUrl } = await compressImage(file);
+      setEmendaForm((f) => ({ ...f, documento: dataUrl, documentoNome: file.name }));
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (ev) => setEmendaForm((f) => ({
+        ...f,
+        documento: (ev.target?.result as string) ?? '',
+        documentoNome: file.name,
+      }));
+      reader.readAsDataURL(file);
+    }
   };
 
   // Geocodificar endereco da emenda

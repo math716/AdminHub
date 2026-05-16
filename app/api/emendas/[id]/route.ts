@@ -37,7 +37,9 @@ export async function GET(
       return NextResponse.json({ error: 'Emenda não encontrada' }, { status: 404 });
     }
 
-    return NextResponse.json(emenda);
+    return NextResponse.json(emenda, {
+      headers: { 'Cache-Control': 'private, max-age=60, must-revalidate' },
+    });
   } catch (error) {
     console.error('GET /api/emendas/[id] error:', error);
     return NextResponse.json({ error: 'Erro ao buscar emenda' }, { status: 500 });
