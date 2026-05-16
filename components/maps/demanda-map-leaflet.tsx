@@ -121,8 +121,8 @@ const formatBRL = (n?: number) =>
 // Cache módulo para não refazer o fetch a cada reinicialização do mapa
 let spDistritosGeoCache: any = null;
 
-// Gera SVG de pin para demanda — color = status, dotColor = categoria
-function demandaPinSvg(color: string, dotColor: string, foto?: string, selected = false): string {
+// Gera SVG de pin para demanda — color = status, dotColor = cor hex da categoria, categoryKey = chave da categoria
+function demandaPinSvg(color: string, dotColor: string, categoryKey: string, foto?: string, selected = false): string {
   const size = selected ? 44 : 36;
   const h = Math.round(size * 1.45);
   const border = selected ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.4)';
@@ -140,7 +140,7 @@ function demandaPinSvg(color: string, dotColor: string, foto?: string, selected 
     </div>`;
   }
 
-  const initial = (CATEGORY_LABELS[dotColor] ?? '?').charAt(0).toUpperCase();
+  const initial = (CATEGORY_LABELS[categoryKey] ?? '?').charAt(0).toUpperCase();
   return `<div style="position:relative;width:${size}px;height:${h}px;">
     <svg width="${size}" height="${h}" viewBox="0 0 44 64" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.7))">
       <path d="M22 2C12.6 2 5 9.6 5 19c0 13.5 17 43 17 43S39 32.5 39 19C39 9.6 31.4 2 22 2z" fill="${color}" stroke="${border}" stroke-width="${bw}"/>
@@ -371,7 +371,7 @@ export default function DemandaMapLeaflet({
       const isSelected = d.id === selectedDemandId;
       const size = isSelected ? 44 : 36;
       const h = Math.round(size * 1.45);
-      const html = demandaPinSvg(statusColor, catColor, d.foto, isSelected);
+      const html = demandaPinSvg(statusColor, catColor, d.category, d.foto, isSelected);
       const marker = L.marker([d.lat, d.lng], {
         icon: L.divIcon({ html, className: '', iconSize: [size, h], iconAnchor: [size / 2, h], tooltipAnchor: [0, -(h + 4)] }),
         zIndexOffset: isSelected ? 1000 : 0,
