@@ -9,7 +9,7 @@ import {
   CheckCircle, Clock, AlertTriangle, Camera,
   Navigation, Calendar, User, Phone, Building2,
   Maximize2, Minimize2, ChevronDown, ChevronLeft, ChevronRight,
-  DollarSign,
+  DollarSign, Paperclip, FileText, Download,
 } from 'lucide-react';
 import { CATEGORY_LABELS, CATEGORY_COLORS, STATUS_LABELS, STATUS_COLORS, PRIORITY_LABELS, PRIORITY_COLORS } from '@/lib/types';
 import { Select } from '@/components/ui/select';
@@ -79,7 +79,8 @@ interface Emenda {
   endereco?: string;
   lat?: number;
   lng?: number;
-  foto?: string;
+  documento?: string;
+  documentoNome?: string;
   observations?: string;
   createdAt: string;
 }
@@ -150,7 +151,8 @@ const EMPTY_EMENDA_FORM = {
   tipo: 'INDIVIDUAL', orgaoExecutor: '', status: 'PROPOSTA',
   beneficiario: '', estado: '', municipio: '', bairro: '', endereco: '',
   observations: '', lat: null as number | null, lng: null as number | null,
-  foto: '' as string,
+  documento: '' as string,
+  documentoNome: '' as string,
 };
 
 // ---------------------------------------------------------------------------
@@ -187,7 +189,7 @@ export default function MapaDemandasPage() {
   const [emendaForm, setEmendaForm] = useState({ ...EMPTY_EMENDA_FORM });
   const [savingEmenda, setSavingEmenda] = useState(false);
   const [emendaSaveError, setEmendaSaveError] = useState('');
-  const emendaFotoInputRef = useRef<HTMLInputElement>(null);
+  const emendaDocInputRef = useRef<HTMLInputElement>(null);
 
   // Geocodificação
   const [geoQuery, setGeoQuery] = useState('');
@@ -406,17 +408,17 @@ export default function MapaDemandasPage() {
     if (e) { setSelectedEvent(e); setSelectedDemand(null); setSelectedEmenda(null); }
   };
 
-  // Mesma logica do selectDemandWithFoto para emenda (foto pode ser pesada).
-  const selectEmendaWithFoto = async (em: Emenda) => {
+  // Mesma logica do selectDemandWithFoto para emenda (documento pode ser pesado).
+  const selectEmendaWithDoc = async (em: Emenda) => {
     setSelectedEmenda(em);
     setSelectedDemand(null);
     setSelectedEvent(null);
-    if (em.foto) return;
+    if (em.documento) return;
     try {
       const res = await fetch(`/api/emendas/${em.id}`);
       if (!res.ok) return;
       const full = await res.json();
-      if (!full?.foto) return;
+      if (!full?.documento) return;
       setSelectedEmenda((cur) => (cur?.id === em.id ? { ...cur, ...full } : cur));
       setEmendas((arr) => arr.map((x) => (x.id === em.id ? { ...x, ...full } : x)));
     } catch {}
@@ -424,15 +426,25 @@ export default function MapaDemandasPage() {
 
   const handleMapEmendaClick = (id: string) => {
     const em = emendas.find((x) => x.id === id);
-    if (em) selectEmendaWithFoto(em);
+    if (em) selectEmendaWithDoc(em);
   };
 
-  // Upload foto emenda
-  const handleEmendaFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Upload de documento da emenda (PDF, DOC, DOCX, XLS, XLSX, imagens, etc).
+  const handleEmendaDocumentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const MAX_MB = 5;
+    if (file.size > MAX_MB * 1024 * 1024) {
+      setEmendaSaveError(`Arquivo muito grande. Limite: ${MAX_MB} MB.`);
+      e.target.value = '';
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = (ev) => setEmendaForm((f) => ({ ...f, foto: (ev.target?.result as string) ?? '' }));
+    reader.onload = (ev) => setEmendaForm((f) => ({
+      ...f,
+      documento: (ev.target?.result as string) ?? '',
+      documentoNome: file.name,
+    }));
     reader.readAsDataURL(file);
   };
 
@@ -767,7 +779,7 @@ export default function MapaDemandasPage() {
                 {emendas.map((em) => (
                   <button
                     key={em.id}
-                    onClick={() => { selectEmendaWithFoto(em); if (em.lat && em.lng) setMapCenter([em.lat, em.lng]); }}
+                    onClick={() => { selectEmendaWithDoc(em); if (em.lat && em.lng) setMapCenter([em.lat, em.lng]); }}
                     className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedEmenda?.id === em.id ? 'bg-emerald-900/30 border-l-2 border-l-emerald-400' : ''}`}
                   >
                     <div className="flex items-center gap-1.5 mb-0.5">
@@ -865,7 +877,7 @@ export default function MapaDemandasPage() {
                     </div>
                     {emendas.map((em) => (
                       <button key={em.id}
-                        onClick={() => { selectEmendaWithFoto(em); if (em.lat && em.lng) setMapCenter([em.lat, em.lng]); setMobileSidebar(false); }}
+                        onClick={() => { selectEmendaWithDoc(em); if (em.lat && em.lng) setMapCenter([em.lat, em.lng]); setMobileSidebar(false); }}
                         className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedEmenda?.id === em.id ? 'bg-emerald-900/30 border-l-2 border-l-emerald-400' : ''}`}>
                         <p className="text-white text-xs font-semibold truncate">{em.titulo}</p>
                         <p className="text-gray-500 text-[10px]">
@@ -1073,12 +1085,7 @@ export default function MapaDemandasPage() {
           {/* Popup detalhe — emenda */}
           {selectedEmenda && (
             <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-3 md:left-auto md:w-72 w-full bg-[#0a1628] border-t md:border border-white/15 md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] z-[1000] overflow-hidden max-h-[65vh] overflow-y-auto">
-              {selectedEmenda.foto
-                ? <div className="w-full h-32 bg-black overflow-hidden flex-shrink-0">
-                    <img src={selectedEmenda.foto} alt="Foto da emenda" className="w-full h-full object-cover" />
-                  </div>
-                : <div className="h-1 w-full flex-shrink-0" style={{ background: EMENDA_STATUS_COLORS[selectedEmenda.status] ?? '#10b981' }} />
-              }
+              <div className="h-1 w-full flex-shrink-0" style={{ background: EMENDA_STATUS_COLORS[selectedEmenda.status] ?? '#10b981' }} />
               <div className="p-3">
                 <div className="flex items-start justify-between gap-2 mb-2.5">
                   <div className="flex-1">
@@ -1148,6 +1155,20 @@ export default function MapaDemandasPage() {
 
                 {selectedEmenda.descricao && (
                   <p className="text-gray-300 text-[11px] leading-relaxed line-clamp-3 mb-2.5">{selectedEmenda.descricao}</p>
+                )}
+
+                {selectedEmenda.documento && (
+                  <a
+                    href={selectedEmenda.documento}
+                    download={selectedEmenda.documentoNome || 'documento'}
+                    className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors rounded-xl px-3 py-2 mb-2.5"
+                  >
+                    <FileText className="w-4 h-4 text-emerald-300 flex-shrink-0" />
+                    <span className="text-[11px] text-emerald-100 truncate flex-1">
+                      {selectedEmenda.documentoNome || 'Documento anexado'}
+                    </span>
+                    <Download className="w-3.5 h-3.5 text-emerald-300 flex-shrink-0" />
+                  </a>
                 )}
 
                 {selectedEmenda.lat && selectedEmenda.lng && (
@@ -1464,23 +1485,33 @@ export default function MapaDemandasPage() {
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Foto (opcional)</label>
-                <div className="mt-1 flex items-center gap-3">
-                  <button onClick={() => emendaFotoInputRef.current?.click()}
+                <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Documento (opcional)</label>
+                <p className="text-[11px] text-gray-500 mt-0.5">PDF, DOC, DOCX, XLS, XLSX ou imagem — máx 5 MB</p>
+                <div className="mt-1.5 flex items-center gap-3">
+                  <button onClick={() => emendaDocInputRef.current?.click()}
                     className="flex items-center gap-2 px-3.5 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 hover:bg-white/10">
-                    <Camera className="w-4 h-4" />
-                    {emendaForm.foto ? 'Trocar foto' : 'Adicionar foto'}
+                    <Paperclip className="w-4 h-4" />
+                    {emendaForm.documento ? 'Trocar documento' : 'Anexar documento'}
                   </button>
-                  {emendaForm.foto && (
-                    <div className="flex items-center gap-2">
-                      <img src={emendaForm.foto} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-white/10" />
-                      <button onClick={() => setEmendaForm((f) => ({ ...f, foto: '' }))} className="text-gray-500 hover:text-red-400">
+                  {emendaForm.documento && (
+                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+                      <FileText className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      <span className="text-xs text-gray-200 truncate max-w-[180px]" title={emendaForm.documentoNome || 'documento'}>
+                        {emendaForm.documentoNome || 'documento'}
+                      </span>
+                      <button onClick={() => setEmendaForm((f) => ({ ...f, documento: '', documentoNome: '' }))} className="text-gray-500 hover:text-red-400">
                         <X className="w-4 h-4" />
                       </button>
                     </div>
                   )}
                 </div>
-                <input ref={emendaFotoInputRef} type="file" accept="image/*" onChange={handleEmendaFotoChange} className="hidden" />
+                <input
+                  ref={emendaDocInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*"
+                  onChange={handleEmendaDocumentoChange}
+                  className="hidden"
+                />
               </div>
 
               {emendaSaveError && (

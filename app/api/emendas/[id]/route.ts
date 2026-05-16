@@ -92,7 +92,8 @@ export async function PUT(
       endereco:      body?.endereco      ?? null,
       lat:           body?.lat           ?? null,
       lng:           body?.lng           ?? null,
-      foto:          body?.foto          ?? null,
+      documento:     body?.documento     ?? null,
+      documentoNome: body?.documentoNome ?? null,
       observations:  body?.observations  ?? null,
     };
     if (body?.tipo   && VALID_TIPO.includes(body.tipo))     updateData.tipo   = body.tipo;

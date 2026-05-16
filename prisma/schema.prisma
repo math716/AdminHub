@@ -257,7 +257,8 @@ model Emenda {
   endereco        String?
   lat             Float?
   lng             Float?
-  foto            String?       @db.Text
+  documento       String?       @db.Text
+  documentoNome   String?
   observations    String?
 
   gabineteId      String
