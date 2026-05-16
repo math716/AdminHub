@@ -236,7 +236,7 @@ export default function MapaDemandasPage() {
     setSelectedConcluidaIds(prev => {
       const next = new Set(prev);
       if (next.has(d.id)) { next.delete(d.id); }
-      else { next.add(d.id); setSelectedDemand(d); if (d.lat && d.lng) setMapCenter([d.lat, d.lng]); }
+      else { next.add(d.id); selectDemandWithFoto(d); if (d.lat && d.lng) setMapCenter([d.lat, d.lng]); }
       return next;
     });
   }, []);
@@ -319,10 +319,27 @@ export default function MapaDemandasPage() {
     }
   };
 
+  // Garante que `foto` esteja carregada antes de exibir o card. A listagem
+  // /api/demands pode (por otimizacao de payload) omitir o campo `foto`
+  // base64 — entao buscamos a demanda completa sob demanda.
+  const selectDemandWithFoto = async (d: Demand) => {
+    setSelectedDemand(d);
+    setSelectedEvent(null);
+    if (d.foto) return;
+    try {
+      const res = await fetch(`/api/demands/${d.id}`);
+      if (!res.ok) return;
+      const full = await res.json();
+      if (!full?.foto) return;
+      setSelectedDemand((cur) => (cur?.id === d.id ? { ...cur, ...full } : cur));
+      setDemands((arr) => arr.map((x) => (x.id === d.id ? { ...x, ...full } : x)));
+    } catch {}
+  };
+
   // Click no mapa — abre popup pelo demanda id
   const handleMapDemandClick = (id: string) => {
     const d = demands.find((x) => x.id === id);
-    if (d) { setSelectedDemand(d); setSelectedEvent(null); }
+    if (d) selectDemandWithFoto(d);
   };
   const handleMapEventClick = (id: string) => {
     const e = agendaEvents.find((x) => x.id === id);
@@ -488,7 +505,7 @@ export default function MapaDemandasPage() {
               filteredDemands.map((d) => (
                 <button
                   key={d.id}
-                  onClick={() => { setSelectedDemand(d); setSelectedEvent(null); if (d.lat && d.lng) setMapCenter([d.lat, d.lng]); }}
+                  onClick={() => { selectDemandWithFoto(d); if (d.lat && d.lng) setMapCenter([d.lat, d.lng]); }}
                   className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedDemand?.id === d.id ? 'bg-sky-900/30 border-l-2 border-l-sky-400' : ''}`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -625,7 +642,7 @@ export default function MapaDemandasPage() {
               <div className="flex-1 overflow-y-auto">
                 {filteredDemands.map((d) => (
                   <button key={d.id}
-                    onClick={() => { setSelectedDemand(d); setSelectedEvent(null); if (d.lat && d.lng) setMapCenter([d.lat, d.lng]); setMobileSidebar(false); }}
+                    onClick={() => { selectDemandWithFoto(d); if (d.lat && d.lng) setMapCenter([d.lat, d.lng]); setMobileSidebar(false); }}
                     className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedDemand?.id === d.id ? 'bg-sky-900/30 border-l-2 border-l-sky-400' : ''}`}>
                     <p className="text-white text-xs font-semibold truncate mb-0.5">{d.title}</p>
                     <div className="flex items-center gap-2">
