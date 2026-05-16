@@ -80,6 +80,11 @@ export async function PUT(
     if ((body?.observations ?? '').length > 2000)
       return NextResponse.json({ error: 'Observações devem ter no máximo 2000 caracteres' }, { status: 400 });
 
+    const MAX_FOTO_BYTES = 7 * 1024 * 1024;
+    if (typeof body?.foto === 'string' && body.foto.length > MAX_FOTO_BYTES) {
+      return NextResponse.json({ error: 'Foto muito grande (limite 5MB)' }, { status: 413 });
+    }
+
     const updateData: any = {
       title:        body?.title,
       description:  body?.description,

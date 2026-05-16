@@ -72,6 +72,8 @@ export async function GET() {
       ),
       recentDemands: recentDemands ?? [],
       timeline:      timeline      ?? []
+    }, {
+      headers: { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=120' },
     });
   } catch (error) {
     console.error('Dashboard stats error:', error);

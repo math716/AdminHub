@@ -74,6 +74,11 @@ export async function PUT(
     if ((body?.observations ?? '').length > 2000)
       return NextResponse.json({ error: 'Observações devem ter no máximo 2000 caracteres' }, { status: 400 });
 
+    const MAX_DOC_BYTES = 7 * 1024 * 1024;
+    if (typeof body?.documento === 'string' && body.documento.length > MAX_DOC_BYTES) {
+      return NextResponse.json({ error: 'Documento muito grande (limite 5MB)' }, { status: 413 });
+    }
+
     const valor = body?.valor !== undefined && body?.valor !== null && body?.valor !== ''
       ? Number(body.valor) : null;
     const ano = body?.ano !== undefined && body?.ano !== null && body?.ano !== ''

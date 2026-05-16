@@ -115,6 +115,14 @@ export async function POST(request: NextRequest) {
     if ((body?.observations ?? '').length > 2000)
       return NextResponse.json({ error: 'Observações devem ter no máximo 2000 caracteres' }, { status: 400 });
 
+    // Validacao server-side do tamanho do payload da foto base64.
+    // Cliente ja limita a 5MB no formulario, mas atacante pode contornar
+    // via curl e enviar payload arbitrario, esgotando memoria/Postgres.
+    const MAX_FOTO_BYTES = 7 * 1024 * 1024; // 7MB base64 ~= 5MB binario
+    if (typeof body?.foto === 'string' && body.foto.length > MAX_FOTO_BYTES) {
+      return NextResponse.json({ error: 'Foto muito grande (limite 5MB)' }, { status: 413 });
+    }
+
     const status   = VALID_STATUS.includes(body?.status)     ? body.status   : 'PENDENTE';
     const category = VALID_CATEGORY.includes(body?.category) ? body.category : 'OUTROS';
     const priority = VALID_PRIORITY.includes(body?.priority) ? body.priority : 'MEDIA';

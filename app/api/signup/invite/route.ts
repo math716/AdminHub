@@ -5,9 +5,22 @@ import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendAdminApprovalEmail } from '@/lib/email';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 5 tentativas por IP a cada 5min — previne brute-force de
+    // tokens JWT de convite e enumeracao de gabinetes.
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim()
+      || request.headers.get('x-real-ip')
+      || 'unknown';
+    if (!checkRateLimit(`invite:${ip}`, 5, 5 * 60_000)) {
+      return NextResponse.json(
+        { error: 'Muitas tentativas. Aguarde alguns minutos.' },
+        { status: 429 },
+      );
+    }
+
     const body = await request.json();
     const { name, email, password, token } = body;
 
@@ -15,9 +28,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 });
     }
 
+    const secret = process.env.NEXTAUTH_SECRET;
+    if (!secret) {
+      console.error('NEXTAUTH_SECRET nao configurado');
+      return NextResponse.json({ error: 'Servidor mal configurado' }, { status: 500 });
+    }
+
     let payload: any;
     try {
-      payload = jwt.verify(token, process.env.NEXTAUTH_SECRET!);
+      payload = jwt.verify(token, secret);
     } catch {
       return NextResponse.json({ error: 'Convite inválido ou expirado' }, { status: 400 });
     }

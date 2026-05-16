@@ -100,6 +100,12 @@ export async function POST(request: NextRequest) {
     if ((body?.observations ?? '').length > 2000)
       return NextResponse.json({ error: 'Observações devem ter no máximo 2000 caracteres' }, { status: 400 });
 
+    // Validacao server-side do tamanho do documento base64 (5MB binario ~= 7MB base64).
+    const MAX_DOC_BYTES = 7 * 1024 * 1024;
+    if (typeof body?.documento === 'string' && body.documento.length > MAX_DOC_BYTES) {
+      return NextResponse.json({ error: 'Documento muito grande (limite 5MB)' }, { status: 413 });
+    }
+
     const tipo   = VALID_TIPO.includes(body?.tipo)     ? body.tipo   : 'INDIVIDUAL';
     const status = VALID_STATUS.includes(body?.status) ? body.status : 'PROPOSTA';
     const valor  = body?.valor !== undefined && body?.valor !== null && body?.valor !== ''
