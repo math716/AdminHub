@@ -39,10 +39,39 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    // Listagem nao traz o campo `documento` (base64, ate 5MB cada).
+    // O frontend recebe `documentoNome` (leve) e busca o conteudo sob
+    // demanda em /api/emendas/[id] ao abrir o detalhe — implementado via
+    // selectEmendaWithDoc na pagina mapa-demandas.
     const emendas = await prisma.emenda.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      include: { createdBy: { select: { name: true, email: true } } },
+      select: {
+        id: true,
+        titulo: true,
+        descricao: true,
+        valor: true,
+        autor: true,
+        numero: true,
+        ano: true,
+        tipo: true,
+        orgaoExecutor: true,
+        status: true,
+        beneficiario: true,
+        estado: true,
+        municipio: true,
+        bairro: true,
+        endereco: true,
+        lat: true,
+        lng: true,
+        documentoNome: true,
+        observations: true,
+        gabineteId: true,
+        createdById: true,
+        createdAt: true,
+        updatedAt: true,
+        createdBy: { select: { name: true, email: true } },
+      },
     });
 
     return NextResponse.json(emendas ?? []);

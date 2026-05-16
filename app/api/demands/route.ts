@@ -47,14 +47,36 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    // Listagem nao traz o campo `foto` (base64, frequentemente >100KB).
+    // O frontend recebe `hasFoto: boolean` e busca a foto sob demanda em
+    // /api/demands/[id] ao abrir o detalhe — ja implementado via
+    // selectDemandWithFoto na pagina mapa-demandas.
     const demands = await prisma.demand.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      include: {
-        createdBy: {
-          select: { name: true, email: true }
-        }
-      }
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        solicitante: true,
+        contato: true,
+        estado: true,
+        municipio: true,
+        bairro: true,
+        endereco: true,
+        lat: true,
+        lng: true,
+        category: true,
+        status: true,
+        priority: true,
+        observations: true,
+        closedAt: true,
+        gabineteId: true,
+        createdById: true,
+        createdAt: true,
+        updatedAt: true,
+        createdBy: { select: { name: true, email: true } },
+      },
     });
 
     return NextResponse.json(demands ?? []);
