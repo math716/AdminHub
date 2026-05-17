@@ -24,16 +24,34 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminGabineteSwitcher } from '@/components/admin-gabinete-switcher';
 
-const navigation = [
-  { name: 'Dashboard',            href: '/dashboard',                 icon: LayoutDashboard, roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
-  { name: 'Mapa do Gabinete',     href: '/dashboard/mapa-demandas',   icon: MapPin,          roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
-  { name: 'Contatos',             href: '/dashboard/contatos',        icon: BookUser,        roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
-  { name: 'Agenda',               href: '/dashboard/agenda',          icon: CalendarDays,    roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
-  { name: 'Demandas',             href: '/dashboard/demandas',        icon: FileText,        roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
-  { name: 'Projeto de Campanha',  href: '/dashboard/mapa-campanha',   icon: Target,          roles: ['ADMIN', 'CHEFE'] },
-  { name: 'Mapa Eleitoral',       href: '/dashboard/mapa',            icon: Map,             roles: ['ADMIN', 'CHEFE'] },
-  { name: 'Usuários',             href: '/dashboard/usuarios',        icon: Users,           roles: ['ADMIN'] },
-  { name: 'Configurações',        href: '/dashboard/configuracoes',   icon: Settings,        roles: ['ADMIN', 'CHEFE'] },
+const navigation: {
+  section: string;
+  items: { name: string; href: string; icon: any; roles: string[] }[];
+}[] = [
+  {
+    section: 'Principal',
+    items: [
+      { name: 'Dashboard',         href: '/dashboard',                 icon: LayoutDashboard, roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
+      { name: 'Mapa do Gabinete',  href: '/dashboard/mapa-demandas',   icon: MapPin,          roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
+      { name: 'Contatos',          href: '/dashboard/contatos',        icon: BookUser,        roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
+      { name: 'Agenda',            href: '/dashboard/agenda',          icon: CalendarDays,    roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
+    ],
+  },
+  {
+    section: 'Operação',
+    items: [
+      { name: 'Demandas',            href: '/dashboard/demandas',      icon: FileText, roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
+      { name: 'Projeto de Campanha', href: '/dashboard/mapa-campanha', icon: Target,   roles: ['ADMIN', 'CHEFE'] },
+      { name: 'Mapa Eleitoral',      href: '/dashboard/mapa',          icon: Map,      roles: ['ADMIN', 'CHEFE'] },
+    ],
+  },
+  {
+    section: 'Administração',
+    items: [
+      { name: 'Usuários',      href: '/dashboard/usuarios',      icon: Users,    roles: ['ADMIN'] },
+      { name: 'Configurações', href: '/dashboard/configuracoes', icon: Settings, roles: ['ADMIN', 'CHEFE'] },
+    ],
+  },
 ];
 
 export function Sidebar() {
@@ -46,7 +64,12 @@ export function Sidebar() {
   const gabineteNome = (session?.user as any)?.gabineteNome;
   const isAdmin      = userRole === 'ADMIN';
 
-  const filteredNav = navigation?.filter?.((item) => item?.roles?.includes?.(userRole)) ?? [];
+  const filteredSections = (navigation ?? [])
+    .map((sec) => ({
+      ...sec,
+      items: (sec.items ?? []).filter((it) => it?.roles?.includes?.(userRole)),
+    }))
+    .filter((sec) => sec.items.length > 0);
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/login' });
@@ -104,64 +127,150 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="sidebar-nav flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {filteredNav?.map?.((item) => {
-          const isActive = pathname === item?.href || (item?.href !== '/dashboard' && pathname?.startsWith?.(`${item?.href}/`));
-          const Icon = item?.icon;
-          return (
-            <Link
-              key={item?.name}
-              href={item?.href ?? '#'}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group',
-                isActive
-                  ? 'text-white'
-                  : 'text-white/60 hover:text-white/90'
-              )}
-              style={isActive ? { background: 'rgba(201,162,39,0.12)', borderLeft: '3px solid #c9a227' } : { borderLeft: '3px solid transparent' }}
-            >
+      <nav className="sidebar-nav flex-1 px-3 py-4 overflow-y-auto">
+        {filteredSections.map((sec, secIdx) => (
+          <div key={sec.section} className={cn(secIdx > 0 && 'mt-5')}>
+            {/* Section label */}
+            <div className="flex items-center gap-2 px-3 mb-2">
               <span
-                className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200"
-                style={isActive
-                  ? { background: 'rgba(201,162,39,0.2)', color: '#c9a227' }
-                  : { background: 'rgba(255,255,255,0.06)', color: 'inherit' }
-                }
+                className="text-[10px] font-bold uppercase tracking-[0.2em]"
+                style={{ color: 'rgba(201,162,39,0.65)' }}
               >
-                {Icon && <Icon className="h-4 w-4" />}
+                {sec.section}
               </span>
-              <span className="font-medium text-sm">{item?.name}</span>
-              {!isActive && (
-                <span className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" style={{ background: 'rgba(255,255,255,0.05)' }} />
-              )}
-            </Link>
-          );
-        })}
+              <span
+                className="flex-1 h-px"
+                style={{ background: 'linear-gradient(90deg, rgba(201,162,39,0.25), transparent)' }}
+              />
+            </div>
+
+            <div className="space-y-0.5">
+              {sec.items.map((item) => {
+                const isActive =
+                  pathname === item?.href ||
+                  (item?.href !== '/dashboard' && pathname?.startsWith?.(`${item?.href}/`));
+                const Icon = item?.icon;
+                return (
+                  <Link
+                    key={item?.name}
+                    href={item?.href ?? '#'}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group',
+                      isActive ? 'text-white' : 'text-white/60 hover:text-white/95'
+                    )}
+                    style={
+                      isActive
+                        ? {
+                            background:
+                              'linear-gradient(90deg, rgba(201,162,39,0.18) 0%, rgba(201,162,39,0.04) 100%)',
+                            borderLeft: '3px solid #c9a227',
+                            boxShadow: 'inset 0 0 0 1px rgba(201,162,39,0.10)',
+                          }
+                        : { borderLeft: '3px solid transparent' }
+                    }
+                  >
+                    <span
+                      className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200 group-hover:scale-[1.04]"
+                      style={
+                        isActive
+                          ? {
+                              background: 'rgba(201,162,39,0.22)',
+                              color: '#c9a227',
+                              boxShadow:
+                                'inset 0 0 10px rgba(201,162,39,0.18), 0 0 12px rgba(201,162,39,0.25)',
+                              border: '1px solid rgba(201,162,39,0.35)',
+                            }
+                          : {
+                              background: 'rgba(255,255,255,0.05)',
+                              color: 'inherit',
+                              border: '1px solid rgba(255,255,255,0.06)',
+                            }
+                      }
+                    >
+                      {Icon && <Icon className="h-4 w-4" />}
+                    </span>
+                    <span className="font-medium text-sm tracking-wide">{item?.name}</span>
+
+                    {/* Indicador à direita no item ativo */}
+                    {isActive && (
+                      <span
+                        className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
+                        style={{
+                          background: '#c9a227',
+                          boxShadow: '0 0 8px rgba(201,162,39,0.7)',
+                        }}
+                      />
+                    )}
+
+                    {!isActive && (
+                      <span
+                        className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                        style={{
+                          background:
+                            'linear-gradient(90deg, rgba(201,162,39,0.06) 0%, rgba(255,255,255,0.03) 100%)',
+                        }}
+                      />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-white/10">
-        <div className="flex items-center gap-3 px-2 py-2 mb-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }}>
+      <div className="relative p-3">
+        {/* Divider dourado decorativo */}
+        <div
+          className="absolute left-3 right-3 top-0 h-px"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(201,162,39,0.4), transparent)' }}
+        />
+
+        <div
+          className="flex items-center gap-3 px-2.5 py-2.5 mb-2 rounded-xl"
+          style={{
+            background: 'linear-gradient(135deg, rgba(201,162,39,0.08) 0%, rgba(255,255,255,0.03) 100%)',
+            border: '1px solid rgba(201,162,39,0.18)',
+          }}
+        >
           <span
             className="flex items-center justify-center w-9 h-9 rounded-full text-sm font-bold flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}
+            style={{
+              background: 'linear-gradient(135deg, #c9a227, #e6b83a)',
+              color: '#04111f',
+              boxShadow: '0 0 0 2px rgba(7,29,54,1), 0 0 0 3px rgba(201,162,39,0.5), 0 0 10px rgba(201,162,39,0.3)',
+            }}
           >
             {initials || '?'}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-medium truncate leading-tight">{userName}</p>
-            <p className="text-white/50 text-xs truncate leading-tight">{userRole === 'ADMIN' ? 'Administrador' : userRole === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor'}</p>
+            <p className="text-white text-sm font-semibold truncate leading-tight">{userName}</p>
+            <p
+              className="text-[11px] truncate leading-tight mt-0.5 tracking-wide"
+              style={{ color: 'rgba(201,162,39,0.85)' }}
+            >
+              {userRole === 'ADMIN' ? 'Administrador' : userRole === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor'}
+            </p>
           </div>
         </div>
+
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 text-white/50 hover:text-white/90 rounded-lg transition-all duration-200 group"
+          className="w-full flex items-center gap-3 px-3 py-2.5 text-white/60 hover:text-white rounded-lg transition-all duration-200 group"
           style={{ borderLeft: '3px solid transparent' }}
         >
-          <span className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200" style={{ background: 'rgba(255,255,255,0.06)' }}>
+          <span
+            className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200 group-hover:scale-[1.04]"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}
+          >
             <LogOut className="h-4 w-4" />
           </span>
-          <span className="font-medium text-sm">Sair</span>
+          <span className="font-medium text-sm tracking-wide">Sair</span>
         </button>
       </div>
     </>
@@ -178,7 +287,15 @@ export function Sidebar() {
       </button>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 gradient-primary" style={{ borderRight: '1px solid rgba(201,162,39,0.12)' }}>
+      <aside
+        className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 gradient-primary relative"
+        style={{ borderRight: '1px solid rgba(201,162,39,0.12)' }}
+      >
+        {/* Fio dourado no topo */}
+        <span
+          className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(201,162,39,0.6), transparent)' }}
+        />
         <NavContent />
       </aside>
 
@@ -201,6 +318,10 @@ export function Sidebar() {
               className="lg:hidden fixed inset-y-0 left-0 w-64 gradient-primary z-50 flex flex-col"
               style={{ borderRight: '1px solid rgba(201,162,39,0.12)' }}
             >
+              <span
+                className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
+                style={{ background: 'linear-gradient(90deg, transparent, rgba(201,162,39,0.6), transparent)' }}
+              />
               <button
                 onClick={() => setMobileOpen(false)}
                 className="absolute top-4 right-4 p-2 text-white/70 hover:text-white"
