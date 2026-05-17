@@ -359,7 +359,12 @@ export default function DemandasPage() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] uppercase tracking-widest text-white/55 font-semibold">{s.label}</p>
+                  <p
+                    className="text-[11px] uppercase tracking-widest font-semibold"
+                    style={{ color: s.color, textShadow: `0 0 12px ${s.color}55` }}
+                  >
+                    {s.label}
+                  </p>
                   <p className="text-2xl sm:text-3xl font-bold text-white mt-1 tabular-nums">{s.value}</p>
                 </div>
                 <div
