@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import {
   Plus,
@@ -21,14 +20,22 @@ import {
   Navigation,
   Loader2,
   CheckCircle,
-  X
+  X,
+  AlertTriangle,
+  Clock,
+  CircleDot,
+  ListChecks,
+  Flag
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
   ESTADOS_BRASIL,
   CATEGORY_LABELS,
   STATUS_LABELS,
-  PRIORITY_LABELS
+  PRIORITY_LABELS,
+  CATEGORY_COLORS,
+  STATUS_COLORS,
+  PRIORITY_COLORS
 } from '@/lib/types';
 import { DemandCategory, DemandStatus, DemandPriority } from '@prisma/client';
 
@@ -277,6 +284,49 @@ export default function DemandasPage() {
     label: e?.nome ?? ''
   })) ?? [])];
 
+  // Stats por status
+  const stats = {
+    total: demands?.length ?? 0,
+    pendente: demands?.filter?.(d => d?.status === 'PENDENTE')?.length ?? 0,
+    andamento: demands?.filter?.(d => d?.status === 'EM_ANDAMENTO')?.length ?? 0,
+    resolvida: demands?.filter?.(d => d?.status === 'RESOLVIDA')?.length ?? 0,
+  };
+
+  const statCards = [
+    {
+      label: 'Total',
+      value: stats.total,
+      icon: ListChecks,
+      color: '#C9A227',
+      tint: 'rgba(201,162,39,0.12)',
+      border: 'rgba(201,162,39,0.28)',
+    },
+    {
+      label: 'Pendentes',
+      value: stats.pendente,
+      icon: AlertTriangle,
+      color: STATUS_COLORS.PENDENTE,
+      tint: 'rgba(239,68,68,0.10)',
+      border: 'rgba(239,68,68,0.25)',
+    },
+    {
+      label: 'Em Andamento',
+      value: stats.andamento,
+      icon: Clock,
+      color: STATUS_COLORS.EM_ANDAMENTO,
+      tint: 'rgba(33,150,243,0.10)',
+      border: 'rgba(33,150,243,0.25)',
+    },
+    {
+      label: 'Resolvidas',
+      value: stats.resolvida,
+      icon: CheckCircle,
+      color: STATUS_COLORS.RESOLVIDA,
+      tint: 'rgba(76,175,80,0.10)',
+      border: 'rgba(76,175,80,0.28)',
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -288,6 +338,44 @@ export default function DemandasPage() {
           <Plus className="h-5 w-5 mr-2" />
           Nova Demanda
         </Button>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {statCards.map((s, i) => {
+          const Icon = s.icon;
+          return (
+            <motion.div
+              key={s.label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className="relative overflow-hidden rounded-xl p-4"
+              style={{
+                background: `linear-gradient(135deg, ${s.tint} 0%, rgba(7,29,54,0.75) 70%)`,
+                border: `1px solid ${s.border}`,
+                backdropFilter: 'blur(8px)',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-widest text-white/55 font-semibold">{s.label}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-white mt-1 tabular-nums">{s.value}</p>
+                </div>
+                <div
+                  className="p-2.5 rounded-lg"
+                  style={{ background: s.tint, border: `1px solid ${s.border}` }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: s.color }} />
+                </div>
+              </div>
+              <div
+                className="absolute left-0 right-0 bottom-0 h-[2px]"
+                style={{ background: `linear-gradient(90deg, transparent, ${s.color}, transparent)` }}
+              />
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Search and Filters */}
@@ -355,67 +443,172 @@ export default function DemandasPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {demands?.map?.((demand, index) => (
-            <motion.div
-              key={demand?.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(index * 0.05, 0.3) }}
-            >
-              <Card hover className="cursor-pointer" onClick={() => handleEdit(demand)}>
-                <CardContent>
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-[#1e3a5f]/10 rounded-lg">
-                          <FileText className="h-5 w-5 text-cyan-400" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-white">{demand?.title}</h3>
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-slate-400">
-                            <span className="flex items-center gap-1">
-                              <User className="h-4 w-4" />
-                              {demand?.solicitante}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MapPin className="h-4 w-4" />
-                              {demand?.municipio}, {demand?.estado}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              {new Date(demand?.createdAt)?.toLocaleDateString?.('pt-BR')}
-                            </span>
+        <div className="space-y-3">
+          {demands?.map?.((demand, index) => {
+            const catColor = CATEGORY_COLORS?.[demand?.category] ?? '#94A3B8';
+            const statusColor = STATUS_COLORS?.[demand?.status] ?? '#94A3B8';
+            const priorityColor = PRIORITY_COLORS?.[demand?.priority] ?? '#94A3B8';
+            const isPending = demand?.status === 'PENDENTE';
+            const isHighPriority = demand?.priority === 'ALTA';
+
+            return (
+              <motion.div
+                key={demand?.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index * 0.04, 0.3) }}
+                whileHover={{ y: -2 }}
+                className="group relative"
+              >
+                <div
+                  onClick={() => handleEdit(demand)}
+                  className="relative cursor-pointer rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(7,29,54,0.85) 0%, rgba(7,29,54,0.65) 100%)',
+                    border: '1px solid rgba(201,162,39,0.15)',
+                    backdropFilter: 'blur(10px)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = `${catColor}55`;
+                    e.currentTarget.style.boxShadow = `0 10px 30px -10px ${catColor}40`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(201,162,39,0.15)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  {/* Barra lateral da categoria */}
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-1"
+                    style={{
+                      background: `linear-gradient(180deg, ${catColor} 0%, ${catColor}80 100%)`,
+                      boxShadow: `0 0 12px ${catColor}66`,
+                    }}
+                  />
+
+                  {/* Brilho sutil ao passar o mouse */}
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                    style={{
+                      background: `radial-gradient(circle at top left, ${catColor}10 0%, transparent 60%)`,
+                    }}
+                  />
+
+                  <div className="relative px-5 py-4 pl-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start gap-3.5">
+                          <div
+                            className="p-2.5 rounded-lg flex-shrink-0 transition-transform group-hover:scale-105"
+                            style={{
+                              background: `${catColor}15`,
+                              border: `1px solid ${catColor}35`,
+                              boxShadow: `inset 0 0 12px ${catColor}10`,
+                            }}
+                          >
+                            <FileText className="h-5 w-5" style={{ color: catColor }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {/* Indicador de status */}
+                              <span className="relative inline-flex items-center justify-center flex-shrink-0">
+                                <span
+                                  className="block w-2 h-2 rounded-full"
+                                  style={{
+                                    background: statusColor,
+                                    boxShadow: `0 0 8px ${statusColor}`,
+                                  }}
+                                />
+                                {isPending && (
+                                  <span
+                                    className="absolute inline-flex h-3 w-3 rounded-full opacity-60 animate-ping"
+                                    style={{ background: statusColor }}
+                                  />
+                                )}
+                              </span>
+                              <h3 className="font-semibold text-white truncate text-[15px] capitalize">
+                                {demand?.title}
+                              </h3>
+                              {isHighPriority && (
+                                <Flag className="h-3.5 w-3.5 flex-shrink-0" style={{ color: priorityColor }} fill={priorityColor} />
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-[13px] text-slate-400">
+                              <span className="flex items-center gap-1.5">
+                                <User className="h-3.5 w-3.5 text-slate-500" />
+                                <span className="text-slate-300">{demand?.solicitante}</span>
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                <MapPin className="h-3.5 w-3.5 text-slate-500" />
+                                {demand?.municipio}, {demand?.estado}
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                <Calendar className="h-3.5 w-3.5 text-slate-500" />
+                                {new Date(demand?.createdAt)?.toLocaleDateString?.('pt-BR')}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={demand?.status === 'RESOLVIDA' ? 'success' : demand?.status === 'EM_ANDAMENTO' ? 'info' : 'danger'}>
-                        {STATUS_LABELS?.[demand?.status] ?? demand?.status}
-                      </Badge>
-                      <Badge variant={demand?.priority === 'ALTA' ? 'danger' : demand?.priority === 'MEDIA' ? 'warning' : 'default'}>
-                        {PRIORITY_LABELS?.[demand?.priority] ?? demand?.priority}
-                      </Badge>
-                      <Badge>
-                        {CATEGORY_LABELS?.[demand?.category] ?? demand?.category}
-                      </Badge>
-                      {(userRole === 'CHEFE' || userRole === 'ADMIN') && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); handleDelete(demand?.id); }}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+
+                      <div className="flex flex-wrap items-center gap-1.5 pl-12 lg:pl-0">
+                        {/* Status */}
+                        <span
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide border"
+                          style={{
+                            background: `${statusColor}15`,
+                            color: statusColor,
+                            borderColor: `${statusColor}40`,
+                          }}
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
+                          <CircleDot className="h-3 w-3" />
+                          {STATUS_LABELS?.[demand?.status] ?? demand?.status}
+                        </span>
+
+                        {/* Prioridade */}
+                        <span
+                          className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide border"
+                          style={{
+                            background: `${priorityColor}15`,
+                            color: priorityColor,
+                            borderColor: `${priorityColor}40`,
+                          }}
+                        >
+                          {PRIORITY_LABELS?.[demand?.priority] ?? demand?.priority}
+                        </span>
+
+                        {/* Categoria — com cor própria */}
+                        <span
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide border"
+                          style={{
+                            background: `${catColor}15`,
+                            color: catColor,
+                            borderColor: `${catColor}40`,
+                          }}
+                        >
+                          <span
+                            className="inline-block w-1.5 h-1.5 rounded-full"
+                            style={{ background: catColor, boxShadow: `0 0 6px ${catColor}` }}
+                          />
+                          {CATEGORY_LABELS?.[demand?.category] ?? demand?.category}
+                        </span>
+
+                        {(userRole === 'CHEFE' || userRole === 'ADMIN') && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(demand?.id); }}
+                            className="ml-1 p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            aria-label="Excluir demanda"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
