@@ -550,10 +550,15 @@ export default function MapaDemandasPage() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <MapPin className="w-6 h-6 text-sky-400" />
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.35)' }}
+          >
+            <MapPin className="w-5 h-5" style={{ color: '#c9a227' }} />
+          </div>
           <div>
-            <h1 className="text-white font-bold text-lg leading-tight">Mapa do Gabinete</h1>
-            <p className="text-gray-400 text-xs">
+            <h1 className="text-white font-bold text-lg leading-tight tracking-tight">Mapa do Gabinete</h1>
+            <p className="text-slate-400 text-xs">
               {demandsWithCoords.length} demanda{demandsWithCoords.length !== 1 ? 's' : ''} no mapa
               {agendaEvents.length > 0 && ` · ${agendaEvents.length} evento${agendaEvents.length !== 1 ? 's' : ''} da agenda`}
             </p>

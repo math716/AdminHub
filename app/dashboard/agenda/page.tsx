@@ -9,6 +9,8 @@ import {
   Loader2, CheckCircle, AlertTriangle, MapPin, Navigation, Clock,
   Users, Mic, Briefcase, TrendingUp,
 } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -302,51 +304,40 @@ export default function AgendaPage() {
   }
 
   return (
-    <div className="min-h-screen text-white p-4 md:p-6" style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 50%, #0c2a4f 100%)' }}>
-
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-4 md:mb-6">
-        <div className="flex items-center gap-3 md:gap-4">
-          <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}
+    <div className="space-y-5 text-white">
+      <PageHeader
+        icon={CalendarDays}
+        title="Agenda do Gabinete"
+        subtitle={`${events.length} evento${events.length !== 1 ? 's' : ''} em ${MESES[viewMonth]}`}
+        actions={
+          <button
+            onClick={() => { setEditEvent(null); setForm({ ...EMPTY_FORM }); setFormError(''); setShowModal(true); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+            style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}
           >
-            <CalendarDays className="w-5 h-5" style={{ color: '#c9a227' }} />
-          </div>
-          <div>
-            <h1 className="text-lg md:text-xl font-bold text-white tracking-tight">Agenda do Gabinete</h1>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              {events.length} evento{events.length !== 1 ? 's' : ''} em {MESES[viewMonth]}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={() => { setEditEvent(null); setForm({ ...EMPTY_FORM }); setFormError(''); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}
-        >
-          <Plus className="w-4 h-4" />
-          Novo Evento
-        </button>
-      </div>
+            <Plus className="w-4 h-4" />
+            Novo Evento
+          </button>
+        }
+      />
 
       {/* ── Stats bar ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        {Object.entries(TIPO_LABELS).map(([tipo, label]) => {
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {Object.entries(TIPO_LABELS).map(([tipo, label], i) => {
           const count = statsByTipo[tipo] ?? 0;
           const color = TIPO_COLORS[tipo];
+          const tipoIconMap: Record<string, any> = {
+            REUNIAO: Users, VISITA: MapPin, EVENTO: Mic, COMPROMISSO: Briefcase,
+          };
           return (
-            <div
+            <StatCard
               key={tipo}
-              className="rounded-xl px-4 py-3 flex items-center gap-3"
-              style={{ background: 'rgba(7,29,54,0.7)', border: `1px solid ${color}28`, backdropFilter: 'blur(8px)' }}
-            >
-              <TipoIconBox tipo={tipo} box={36} icon={16} />
-              <div className="min-w-0">
-                <p className="text-2xl font-bold text-white leading-none">{count}</p>
-                <p className="text-xs mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{label}</p>
-              </div>
-            </div>
+              label={label}
+              value={count}
+              icon={tipoIconMap[tipo] ?? CalendarDays}
+              color={color}
+              delay={i * 0.05}
+            />
           );
         })}
       </div>

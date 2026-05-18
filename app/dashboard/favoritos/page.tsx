@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Star, Trash2, MapPin, Calendar, User, ArrowRight } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
+import { Star, Trash2, MapPin, Calendar, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ESTADOS_BRASIL } from '@/lib/types';
 
@@ -70,7 +72,7 @@ export default function FavoritosPage() {
   };
 
   if (status === 'loading' || loading) {
-    return <div className="text-center py-12 text-slate-400">Carregando...</div>;
+    return <LoadingState />;
   }
 
   if (userRole !== 'CHEFE' && userRole !== 'ADMIN') {
@@ -79,76 +81,90 @@ export default function FavoritosPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Candidatos Favoritos</h1>
-          <p className="text-slate-400">Acesse rapidamente os dados eleitorais dos seus candidatos salvos</p>
-        </div>
-        <Link href="/dashboard/mapa">
-          <Button>
-            <MapPin className="h-5 w-5 mr-2" />
-            Ir para o Mapa
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        icon={Star}
+        title="Candidatos Favoritos"
+        subtitle="Acesse rapidamente os dados eleitorais dos seus candidatos salvos"
+        actions={
+          <Link href="/dashboard/mapa">
+            <Button>
+              <MapPin className="h-5 w-5 mr-2" />
+              Ir para o Mapa
+            </Button>
+          </Link>
+        }
+      />
 
       {(favorites?.length ?? 0) === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Star className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-            <p className="text-slate-400 mb-4">Você ainda não tem candidatos favoritos</p>
+        <EmptyState
+          icon={Star}
+          title="Você ainda não tem candidatos favoritos"
+          description="Busque candidatos no Mapa Eleitoral e salve-os aqui para acesso rápido."
+          action={
             <Link href="/dashboard/mapa">
               <Button variant="outline">
                 Buscar candidatos no mapa
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </Link>
-          </CardContent>
-        </Card>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {favorites?.map?.((fav, index) => (
             <motion.div
               key={fav?.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: Math.min(index * 0.05, 0.3) }}
+              whileHover={{ y: -2 }}
             >
-              <Card hover>
-                <CardContent>
+              <Card hover className="h-full flex flex-col">
+                <CardContent className="flex flex-col flex-1">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-yellow-100 rounded-full">
-                        <Star className="h-5 w-5 text-yellow-500" />
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="p-2.5 rounded-lg flex-shrink-0"
+                        style={{
+                          background: 'rgba(201,162,39,0.15)',
+                          border: '1px solid rgba(201,162,39,0.35)',
+                          boxShadow: 'inset 0 0 10px rgba(201,162,39,0.10)',
+                        }}
+                      >
+                        <Star className="h-5 w-5" style={{ color: '#c9a227' }} fill="#c9a227" />
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-white">{fav?.candidateName}</h3>
-                        <p className="text-sm text-slate-400">{fav?.cargo ?? 'Candidato'}</p>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-white truncate">{fav?.candidateName}</h3>
+                        <p className="text-sm text-slate-400 truncate">{fav?.cargo ?? 'Candidato'}</p>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <button
                       onClick={() => handleDelete(fav?.id)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      className="ml-2 p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+                      aria-label="Remover favorito"
                     >
                       <Trash2 className="h-4 w-4" />
-                    </Button>
+                    </button>
                   </div>
 
-                  <div className="mt-4 space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                      <MapPin className="h-4 w-4" />
+                  <div className="mt-4 space-y-2 flex-1">
+                    <div className="flex items-center gap-2 text-sm text-slate-300">
+                      <MapPin className="h-4 w-4 text-slate-500" />
                       {getEstadoNome(fav?.uf)}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                      <Calendar className="h-4 w-4" />
+                    <div className="flex items-center gap-2 text-sm text-slate-300">
+                      <Calendar className="h-4 w-4 text-slate-500" />
                       Eleição de {fav?.ano}
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t">
-                    <Link href={`/dashboard/mapa?candidato=${encodeURIComponent(fav?.candidateName ?? '')}&ano=${fav?.ano}&uf=${fav?.uf}`}>
+                  <div
+                    className="mt-4 pt-4"
+                    style={{ borderTop: '1px solid rgba(201,162,39,0.18)' }}
+                  >
+                    <Link
+                      href={`/dashboard/mapa?candidato=${encodeURIComponent(fav?.candidateName ?? '')}&ano=${fav?.ano}&uf=${fav?.uf}`}
+                    >
                       <Button variant="outline" size="sm" className="w-full">
                         Ver no Mapa
                         <ArrowRight className="h-4 w-4 ml-2" />

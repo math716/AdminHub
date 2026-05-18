@@ -13,6 +13,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/ui/page-header';
+import { LoadingState } from '@/components/ui/loading-state';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { ContatoMapItem } from '@/components/maps/contatos-municipio-map';
 import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 
@@ -633,32 +636,25 @@ export default function ContatosPage() {
     <div className="space-y-5">
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}>
-            <BookUser className="w-5 h-5" style={{ color: '#c9a227' }} />
+      <PageHeader
+        icon={BookUser}
+        title="Contatos"
+        subtitle={`${contatos.length} contato${contatos.length !== 1 ? 's' : ''} · ${geocodedContacts.length} no mapa`}
+        actions={
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
+              style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.25)', color: '#4ade80' }}>
+              <FileUp className="w-4 h-4" /> Importar CSV
+            </button>
+            <button onClick={() => { setShowModal(true); setForm({ ...EMPTY_FORM }); setResolvedCoords(null); setSaveError(''); setEditingContact(null); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}>
+              <Plus className="w-4 h-4" /> Novo Contato
+            </button>
           </div>
-          <div>
-            <h1 className="text-white font-bold text-xl tracking-tight">Contatos</h1>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              {contatos.length} contato{contatos.length !== 1 ? 's' : ''} · {geocodedContacts.length} no mapa
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowImportModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-            style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.25)', color: '#4ade80' }}>
-            <FileUp className="w-4 h-4" /> Importar CSV
-          </button>
-          <button onClick={() => { setShowModal(true); setForm({ ...EMPTY_FORM }); setResolvedCoords(null); setSaveError(''); setEditingContact(null); }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}>
-            <Plus className="w-4 h-4" /> Novo Contato
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 p-1 rounded-xl w-fit"
@@ -688,14 +684,13 @@ export default function ContatosPage() {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center h-48">
-              <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#4a9ede' }} />
-            </div>
+            <LoadingState />
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48" style={{ color: 'rgba(255,255,255,0.3)' }}>
-              <BookUser className="w-12 h-12 mb-3 opacity-30" />
-              <p className="text-sm">{search ? 'Nenhum contato encontrado.' : 'Nenhum contato cadastrado ainda.'}</p>
-            </div>
+            <EmptyState
+              icon={BookUser}
+              title={search ? 'Nenhum contato encontrado' : 'Nenhum contato cadastrado ainda'}
+              description={search ? 'Tente ajustar o termo de busca.' : 'Comece cadastrando o primeiro contato do gabinete.'}
+            />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map(c => (

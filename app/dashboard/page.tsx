@@ -3,6 +3,8 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/ui/page-header';
+import { Card } from '@/components/ui/card';
 import {
   FileText,
   CheckCircle,
@@ -10,7 +12,8 @@ import {
   TrendingUp,
   BarChart3,
   Percent,
-  AlertTriangle
+  AlertTriangle,
+  LayoutDashboard
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
@@ -85,10 +88,10 @@ export default function DashboardPage() {
     : null;
 
   return (
-    <div className="min-h-screen -m-6 p-6 relative" style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 55%, #0c2a4f 100%)' }}>
+    <div className="space-y-6 relative">
       {/* Grade sutil de fundo */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="fixed inset-0 pointer-events-none z-0"
         style={{
           backgroundImage:
             'linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)',
@@ -96,24 +99,22 @@ export default function DashboardPage() {
         }}
       />
 
-      {/* Header */}
-      <div className="relative z-10 flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#8fa3bf' }}>Visão geral do gabinete</p>
-        </div>
-        <div className="flex items-center gap-3">
+      <PageHeader
+        icon={LayoutDashboard}
+        title="Dashboard"
+        subtitle="Visão geral do gabinete"
+        actions={
           <div className="text-right">
-            <p className="text-sm" style={{ color: '#8fa3bf' }}>{gabineteName}</p>
+            <p className="text-sm text-slate-400">{gabineteName}</p>
             <Badge variant={userRole === 'ADMIN' ? 'danger' : userRole === 'CHEFE' ? 'success' : 'info'}>
               {userRole === 'ADMIN' ? 'Administrador' : userRole === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor'}
             </Badge>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Gradient Cards Row */}
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         <GradientCard
           title="Total de Demandas"
           value={loading ? '-' : stats?.total ?? 0}
@@ -148,7 +149,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Row */}
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status Donut Chart */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -193,7 +194,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Table and Bar Chart Row */}
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Demands Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

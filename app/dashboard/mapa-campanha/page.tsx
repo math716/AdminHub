@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
+import { PageHeader } from '@/components/ui/page-header';
 import { toast } from 'sonner';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
@@ -2297,13 +2298,11 @@ export default function MapaCampanhaPage() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <div className="flex items-center gap-3 mb-1">
-          <div className="p-2 rounded-xl flex items-center justify-center" style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.35)' }}>
-            <Target className="h-5 w-5" style={{ color: '#c9a227' }} />
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Projeto de Campanha</h1>
-        </div>
-        <p className="text-sm ml-12" style={{ color: '#6b82a0' }}>Planeje e projete seus votos para as próximas eleições</p>
+        <PageHeader
+          icon={Target}
+          title="Projeto de Campanha"
+          subtitle="Planeje e projete seus votos para as próximas eleições"
+        />
       </motion.div>
 
       {/* Search Section */}

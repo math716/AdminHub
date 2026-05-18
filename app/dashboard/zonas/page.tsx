@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   Layers,
   Search,
@@ -207,17 +208,11 @@ export default function ZonasPage() {
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
-          <Layers className="h-5 w-5 text-blue-400" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-white">Zonas Eleitorais</h1>
-          <p className="text-slate-400 text-sm">
-            Lista completa de zonas com votos por município
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        icon={Layers}
+        title="Zonas Eleitorais"
+        subtitle="Lista completa de zonas com votos por município"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar de busca */}

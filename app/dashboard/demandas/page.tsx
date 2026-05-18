@@ -7,6 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
 import {
   Plus,
   Search,
@@ -329,58 +333,30 @@ export default function DemandasPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Demandas</h1>
-          <p className="text-slate-400">Gerencie as demandas do gabinete</p>
-        </div>
-        <Button onClick={() => { resetForm(); setEditingDemand(null); setShowModal(true); }}>
-          <Plus className="h-5 w-5 mr-2" />
-          Nova Demanda
-        </Button>
-      </div>
+      <PageHeader
+        icon={FileText}
+        title="Demandas"
+        subtitle="Gerencie as demandas do gabinete"
+        actions={
+          <Button onClick={() => { resetForm(); setEditingDemand(null); setShowModal(true); }}>
+            <Plus className="h-5 w-5 mr-2" />
+            Nova Demanda
+          </Button>
+        }
+      />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {statCards.map((s, i) => {
-          const Icon = s.icon;
-          return (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="relative overflow-hidden rounded-xl p-4"
-              style={{
-                background: `linear-gradient(135deg, ${s.tint} 0%, rgba(7,29,54,0.75) 70%)`,
-                border: `1px solid ${s.border}`,
-                backdropFilter: 'blur(8px)',
-              }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p
-                    className="text-[11px] uppercase tracking-widest font-semibold"
-                    style={{ color: s.color, textShadow: `0 0 12px ${s.color}55` }}
-                  >
-                    {s.label}
-                  </p>
-                  <p className="text-2xl sm:text-3xl font-bold text-white mt-1 tabular-nums">{s.value}</p>
-                </div>
-                <div
-                  className="p-2.5 rounded-lg"
-                  style={{ background: s.tint, border: `1px solid ${s.border}` }}
-                >
-                  <Icon className="h-5 w-5" style={{ color: s.color }} />
-                </div>
-              </div>
-              <div
-                className="absolute left-0 right-0 bottom-0 h-[2px]"
-                style={{ background: `linear-gradient(90deg, transparent, ${s.color}, transparent)` }}
-              />
-            </motion.div>
-          );
-        })}
+        {statCards.map((s, i) => (
+          <StatCard
+            key={s.label}
+            label={s.label}
+            value={s.value}
+            icon={s.icon}
+            color={s.color}
+            delay={i * 0.05}
+          />
+        ))}
       </div>
 
       {/* Search and Filters */}
@@ -439,14 +415,13 @@ export default function DemandasPage() {
 
       {/* Demands List */}
       {loading ? (
-        <div className="text-center py-12 text-slate-400">Carregando...</div>
+        <LoadingState />
       ) : (demands?.length ?? 0) === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <FileText className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-            <p className="text-slate-400">Nenhuma demanda encontrada</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={FileText}
+          title="Nenhuma demanda encontrada"
+          description="Ajuste os filtros ou cadastre uma nova demanda."
+        />
       ) : (
         <div className="space-y-3">
           {demands?.map?.((demand, index) => {

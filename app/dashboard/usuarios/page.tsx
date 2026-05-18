@@ -8,6 +8,7 @@ import {
   Loader2, ChevronDown, ChevronUp, CheckCircle2, AlertCircle,
   Link2, Copy, CheckCheck, Search, KeyRound, Trash2,
 } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ---------------------------------------------------------------------------
@@ -336,23 +337,17 @@ export default function UsuariosPage() {
       </AnimatePresence>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}>
-            <Users className="w-5 h-5" style={{ color: '#c9a227' }} />
-          </div>
-          <div>
-            <h1 className="text-white font-bold text-xl tracking-tight">Gerenciar Usuários</h1>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              {approvedUsers.length} ativo{approvedUsers.length !== 1 ? 's' : ''}
-              {pendingUsers.length > 0 && ` · ${pendingUsers.length} aguardando aprovação`}
-            </p>
-          </div>
-        </div>
-
-        {/* Botão de convite */}
-        <div className="relative flex-shrink-0">
+      <PageHeader
+        icon={Users}
+        title="Gerenciar Usuários"
+        subtitle={
+          <>
+            {approvedUsers.length} ativo{approvedUsers.length !== 1 ? 's' : ''}
+            {pendingUsers.length > 0 && ` · ${pendingUsers.length} aguardando aprovação`}
+          </>
+        }
+        actions={
+          <div className="relative flex-shrink-0">
           <button
             onClick={() => userRole === 'ADMIN' ? setShowInviteForm(f => !f) : handleGenerateInvite('ASSESSOR')}
             disabled={generatingInvite}
@@ -385,8 +380,9 @@ export default function UsuariosPage() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
 
       {/* ══════════════════════════════════════════════════════════════════════

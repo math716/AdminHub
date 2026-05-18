@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   Map,
   Search,
@@ -950,44 +951,39 @@ export default function MapaPage() {
     <div className="space-y-6">
       {/* Cabeçalho */}
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg" style={{ background: 'rgba(74,158,222,0.1)', border: '1px solid rgba(74,158,222,0.2)' }}>
-              <Map className="h-5 w-5" style={{ color: '#4a9ede' }} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">Mapa Eleitoral</h1>
-              <p className="text-slate-400 text-sm">
-                {electoralData
-                  ? `${electoralData.candidateName} — ${electoralData.ano}`
-                  : 'Busque um candidato para visualizar os votos no mapa'}
-              </p>
-            </div>
-          </div>
-
-          {view !== 'brasil' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (view === 'municipio') {
-                  setView('estado');
-                  setSelectedMunicipio(null);
-                  setSelectedBairro(null);
-                  setLocaisPorZona([]);
-                } else {
-                  setView('brasil');
-                  setSelectedUf('');
-                  setSelectedMunicipio(null);
-                  setSelectedBairro(null);
-                }
-              }}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
-            </Button>
-          )}
-        </div>
+        <PageHeader
+          icon={Map}
+          title="Mapa Eleitoral"
+          subtitle={
+            electoralData
+              ? `${electoralData.candidateName} — ${electoralData.ano}`
+              : 'Busque um candidato para visualizar os votos no mapa'
+          }
+          actions={
+            view !== 'brasil' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (view === 'municipio') {
+                    setView('estado');
+                    setSelectedMunicipio(null);
+                    setSelectedBairro(null);
+                    setLocaisPorZona([]);
+                  } else {
+                    setView('brasil');
+                    setSelectedUf('');
+                    setSelectedMunicipio(null);
+                    setSelectedBairro(null);
+                  }
+                }}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
+              </Button>
+            ) : undefined
+          }
+        />
 
         {/* Breadcrumb hierárquico */}
         <div className="flex items-center gap-1 text-sm rounded-xl px-4 py-2.5 w-fit flex-wrap"

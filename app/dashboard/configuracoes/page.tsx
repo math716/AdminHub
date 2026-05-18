@@ -8,6 +8,7 @@ import {
   Settings, Smartphone, Wifi, WifiOff, RefreshCw,
   Loader2, CheckCircle2, AlertCircle, Trash2, QrCode,
 } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 
 type WaStatus = 'loading' | 'not_configured' | 'disconnected' | 'connecting' | 'connected';
 
@@ -138,16 +139,11 @@ export default function ConfiguracoesPage() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-          style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}>
-          <Settings className="w-5 h-5" style={{ color: '#c9a227' }} />
-        </div>
-        <div>
-          <h1 className="text-white font-bold text-xl tracking-tight">Configurações</h1>
-          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Configurações do gabinete</p>
-        </div>
-      </div>
+      <PageHeader
+        icon={Settings}
+        title="Configurações"
+        subtitle="Configurações do gabinete"
+      />
 
       {/* WhatsApp Section */}
       <div className="rounded-2xl overflow-hidden" style={cardStyle}>
