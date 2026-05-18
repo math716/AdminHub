@@ -48,16 +48,17 @@ export async function GET() {
       if (dateStr) timelineMap[dateStr] = (timelineMap[dateStr] ?? 0) + 1;
     });
 
-    const timeline = Object.entries(timelineMap ?? {})
-      ?.map?.(([date, count]) => ({
-        date: new Date(date)?.toLocaleDateString?.('pt-BR', { day: '2-digit', month: '2-digit' }) ?? date,
-        count: count ?? 0
-      }))
-      ?.sort?.((a, b) => {
-        const dateA = a?.date?.split?.('/')?.reverse?.()?.join?.('') ?? '';
-        const dateB = b?.date?.split?.('/')?.reverse?.()?.join?.('') ?? '';
-        return dateA?.localeCompare?.(dateB) ?? 0;
-      }) ?? [];
+    const timeline: { date: string; count: number }[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const day = new Date();
+      day.setHours(0, 0, 0, 0);
+      day.setDate(day.getDate() - i);
+      const key = day.toISOString().split('T')[0];
+      timeline.push({
+        date: day.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        count: timelineMap[key] ?? 0,
+      });
+    }
 
     return NextResponse.json({
       total:       total       ?? 0,
