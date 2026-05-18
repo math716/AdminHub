@@ -3874,7 +3874,7 @@ export default function MapaCampanhaPage() {
                   />
                   <Handshake className={`h-5 w-5 ${dobradaAtivaTemp ? 'text-blue-400' : 'text-slate-500'}`} />
                   <span className={`font-medium ${dobradaAtivaTemp ? 'text-blue-300' : 'text-slate-400'}`}>
-                    Dobradinha com Deputado Federal
+                    Dobrada com Deputado Federal
                   </span>
                 </label>
               </div>
