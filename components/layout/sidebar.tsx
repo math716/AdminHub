@@ -20,6 +20,8 @@ import {
   Settings,
   Building2,
   ArrowLeftRight,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminGabineteSwitcher } from '@/components/admin-gabinete-switcher';
@@ -54,7 +56,12 @@ const navigation: {
   },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  open?: boolean;
+  onToggle?: () => void;
+}
+
+export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
   const [mobileOpen,    setMobileOpen]    = useState(false);
   const [switcherOpen,  setSwitcherOpen]  = useState(false);
   const pathname = usePathname();
@@ -286,18 +293,63 @@ export function Sidebar() {
         <Menu className="h-6 w-6" />
       </button>
 
-      {/* Desktop sidebar */}
-      <aside
-        className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 gradient-primary relative"
-        style={{ borderRight: '1px solid rgba(201,162,39,0.12)' }}
+      {/* Desktop sidebar — painel flutuante */}
+      <motion.aside
+        animate={{
+          x: open ? 0 : -260,
+          opacity: open ? 1 : 0,
+        }}
+        transition={{ type: 'spring', damping: 24, stiffness: 220 }}
+        className="hidden lg:flex lg:flex-col lg:fixed gradient-primary overflow-hidden"
+        style={{
+          top: 12,
+          bottom: 12,
+          left: 12,
+          width: 256,
+          borderRadius: 20,
+          border: '1px solid rgba(201,162,39,0.18)',
+          boxShadow:
+            '0 20px 50px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), 0 0 35px rgba(201,162,39,0.08)',
+          pointerEvents: open ? 'auto' : 'none',
+        }}
       >
         {/* Fio dourado no topo */}
         <span
           className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
           style={{ background: 'linear-gradient(90deg, transparent, rgba(201,162,39,0.6), transparent)' }}
         />
+        {/* Glow interno sutil para destacar do fundo */}
+        <span
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 50% 0%, rgba(201,162,39,0.06), transparent 60%)',
+            borderRadius: 20,
+          }}
+        />
         <NavContent />
-      </aside>
+      </motion.aside>
+
+      {/* Botão de toggle desktop — fica entre o sidebar e o conteúdo */}
+      {onToggle && (
+        <motion.button
+          onClick={onToggle}
+          aria-label={open ? 'Recolher sidebar' : 'Abrir sidebar'}
+          title={open ? 'Recolher menu' : 'Abrir menu'}
+          animate={{ left: open ? 256 : 8 }}
+          transition={{ type: 'spring', damping: 24, stiffness: 220 }}
+          className="hidden lg:flex fixed top-1/2 -translate-y-1/2 w-7 h-14 items-center justify-center z-30 hover:opacity-100 transition-opacity"
+          style={{
+            background: 'linear-gradient(135deg, #071d36 0%, #04111f 100%)',
+            border: '1px solid rgba(201,162,39,0.3)',
+            borderRadius: 10,
+            color: '#c9a227',
+            opacity: 0.9,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.5), 0 0 18px rgba(201,162,39,0.12)',
+          }}
+        >
+          {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </motion.button>
+      )}
 
       {/* Mobile sidebar */}
       <AnimatePresence>
