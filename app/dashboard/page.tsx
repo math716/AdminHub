@@ -65,8 +65,11 @@ export default function DashboardPage() {
   const resolvedPercent = stats?.total ? Math.round((stats.resolvidas / stats.total) * 100) : 0;
   const pendingPercent = stats?.total ? Math.round((stats.pendentes / stats.total) * 100) : 0;
   
-  // Generate mini chart data from timeline
-  const miniChartData = stats?.timeline?.slice(-12)?.map(t => ({ value: t.count })) || [];
+  // Mini chart acumulado: mostra o crescimento total de demandas ao longo dos ultimos 30 dias
+  const miniChartData = (() => {
+    let acc = 0;
+    return stats?.timeline?.map(t => ({ value: (acc += t.count) })) || [];
+  })();
 
   // Donut chart data for status
   const statusDonutData = [
