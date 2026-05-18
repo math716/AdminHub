@@ -34,7 +34,8 @@ interface DashboardStats {
   byCategory: Record<string, number>;
   byPriority: Record<string, number>;
   recentDemands: any[];
-  timeline: { date: string; count: number }[];
+  timeline: { date: string; count: number; resolved: number }[];
+  lastResolvedDate: string | null;
 }
 
 export default function DashboardPage() {
@@ -64,11 +65,18 @@ export default function DashboardPage() {
   // Calculate percentages
   const resolvedPercent = stats?.total ? Math.round((stats.resolvidas / stats.total) * 100) : 0;
   const pendingPercent = stats?.total ? Math.round((stats.pendentes / stats.total) * 100) : 0;
-  
-  // Mini chart acumulado: mostra o crescimento total de demandas ao longo dos ultimos 30 dias
-  const miniChartData = (() => {
+  const emAndamentoPercent = stats?.total ? Math.round((stats.emAndamento / stats.total) * 100) : 0;
+
+  // Mini chart acumulado do TOTAL de demandas ao longo dos 30 dias
+  const miniChartTotal = (() => {
     let acc = 0;
     return stats?.timeline?.map(t => ({ value: (acc += t.count) })) || [];
+  })();
+
+  // Mini chart acumulado de RESOLVIDAS ao longo dos 30 dias
+  const miniChartResolved = (() => {
+    let acc = 0;
+    return stats?.timeline?.map(t => ({ value: (acc += t.resolved) })) || [];
   })();
 
   // Donut chart data for status
@@ -86,8 +94,13 @@ export default function DashboardPage() {
   }));
 
   // Best performing stats
-  const bestCategory = stats?.byCategory 
-    ? Object.entries(stats.byCategory).sort((a, b) => b[1] - a[1])[0] 
+  const bestCategory = stats?.byCategory
+    ? Object.entries(stats.byCategory).sort((a, b) => b[1] - a[1])[0]
+    : null;
+
+  // Prioridade mais frequente (para o donut de prioridade)
+  const topPriority = priorityDonutData.length
+    ? [...priorityDonutData].sort((a, b) => b.value - a.value)[0]
     : null;
 
   return (
@@ -121,22 +134,22 @@ export default function DashboardPage() {
         <GradientCard
           title="Total de Demandas"
           value={loading ? '-' : stats?.total ?? 0}
-          subtitle="Mês com mais demandas"
+          subtitle="Categoria mais frequente"
           subtitleValue={bestCategory ? bestCategory[0] : 'N/A'}
           icon={FileText}
           gradient="teal"
-          chart={<MiniLineChart data={miniChartData} color="#fff" />}
+          chart={<MiniLineChart data={miniChartTotal} color="#fff" />}
           delay={0.1}
         />
 
         <GradientCard
           title="Demandas Resolvidas"
           value={loading ? '-' : stats?.resolvidas ?? 0}
-          subtitle="Taxa de resolução"
-          subtitleValue={`${resolvedPercent}%`}
+          subtitle="Última resolvida"
+          subtitleValue={stats?.lastResolvedDate ?? 'Nenhuma ainda'}
           icon={CheckCircle}
           gradient="purple"
-          chart={<MiniLineChart data={miniChartData} color="#fff" />}
+          chart={<MiniLineChart data={miniChartResolved} color="#fff" />}
           delay={0.2}
         />
 
@@ -147,6 +160,19 @@ export default function DashboardPage() {
           subtitleValue={`${pendingPercent}%`}
           icon={Percent}
           gradient="pink"
+          chart={
+            <div className="flex flex-col justify-end h-full gap-2 pb-1">
+              <div className="flex h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
+                <div title="Resolvidas" style={{ width: `${resolvedPercent}%`, background: 'rgba(255,255,255,0.9)' }} />
+                <div title="Em Andamento" style={{ width: `${emAndamentoPercent}%`, background: 'rgba(255,255,255,0.5)' }} />
+                <div title="Pendentes" style={{ width: `${pendingPercent}%`, background: 'rgba(255,255,255,0.25)' }} />
+              </div>
+              <div className="flex justify-between text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                <span>{stats?.resolvidas ?? 0} resolvidas</span>
+                <span>{(stats?.pendentes ?? 0) + (stats?.emAndamento ?? 0)} em aberto</span>
+              </div>
+            </div>
+          }
           delay={0.3}
         />
       </div>
@@ -187,10 +213,10 @@ export default function DashboardPage() {
             <h3 className="text-white font-semibold">Demandas por Prioridade</h3>
           </div>
           <div className="h-[280px]">
-            <Donut3DChart 
+            <Donut3DChart
               data={priorityDonutData}
-              centerValue={`${resolvedPercent}%`}
-              centerLabel="Resolvidas"
+              centerValue={topPriority ? topPriority.value : 0}
+              centerLabel={topPriority ? topPriority.name : 'Sem dados'}
             />
           </div>
         </motion.div>
