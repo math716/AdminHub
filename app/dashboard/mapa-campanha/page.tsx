@@ -797,10 +797,15 @@ export default function MapaCampanhaPage() {
     }
   }, [userRole]);
 
-  // Força Leaflet a recalcular tamanho ao entrar/sair da tela cheia
+  // Força Leaflet a recalcular tamanho ao entrar/sair da tela cheia.
+  // Dispara em sequencia para cobrir transicoes CSS e garantir que invalidateSize seja chamado.
   useEffect(() => {
-    const t = setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-    return () => clearTimeout(t);
+    const interval = setInterval(() => window.dispatchEvent(new Event('resize')), 60);
+    const stop = setTimeout(() => {
+      clearInterval(interval);
+      window.dispatchEvent(new Event('resize'));
+    }, 500);
+    return () => { clearInterval(interval); clearTimeout(stop); };
   }, [mapFullscreen]);
 
   // Carrega municípios do IBGE quando o modal de novo candidato muda cargo/UF

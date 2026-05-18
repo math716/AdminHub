@@ -212,15 +212,24 @@ export default function MapaDemandasPage() {
   const [mobileSidebar, setMobileSidebar] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Força o Leaflet a recalcular o tamanho ao entrar/sair da tela cheia ou recolher painel
+  // Força o Leaflet a recalcular o tamanho ao entrar/sair da tela cheia ou recolher painel.
+  // Dispara em sequencia para cobrir transicoes CSS e garantir que invalidateSize seja chamado.
   useEffect(() => {
-    const t = setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-    return () => clearTimeout(t);
+    const interval = setInterval(() => window.dispatchEvent(new Event('resize')), 60);
+    const stop = setTimeout(() => {
+      clearInterval(interval);
+      window.dispatchEvent(new Event('resize'));
+    }, 500);
+    return () => { clearInterval(interval); clearTimeout(stop); };
   }, [mapFullscreen]);
 
   useEffect(() => {
-    const t = setTimeout(() => window.dispatchEvent(new Event('resize')), 320);
-    return () => clearTimeout(t);
+    const interval = setInterval(() => window.dispatchEvent(new Event('resize')), 60);
+    const stop = setTimeout(() => {
+      clearInterval(interval);
+      window.dispatchEvent(new Event('resize'));
+    }, 500);
+    return () => { clearInterval(interval); clearTimeout(stop); };
   }, [sidebarCollapsed]);
 
   // Foto
@@ -1245,7 +1254,7 @@ export default function MapaDemandasPage() {
 
       {/* ── Modal nova demanda ── */}
       {showNewModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2100] flex items-end sm:items-center justify-center sm:p-4">
           <div className="bg-[#0d1b2a] border border-white/10 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <div className="flex items-center gap-3">
@@ -1404,7 +1413,7 @@ export default function MapaDemandasPage() {
 
       {/* ── Modal nova emenda ── */}
       {showNewEmendaModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2100] flex items-end sm:items-center justify-center sm:p-4">
           <div className="bg-[#0d1b2a] border border-white/10 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <div className="flex items-center gap-3">

@@ -22,8 +22,14 @@ export default function DashboardLayout({
 
   useEffect(() => {
     setMounted(true);
-    const stored = typeof window !== 'undefined' ? window.localStorage.getItem('sidebar-open') : null;
-    if (stored !== null) setSidebarOpen(stored === '1');
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem('sidebar-open');
+    if (stored !== null) {
+      setSidebarOpen(stored === '1');
+    } else {
+      // Primeira visita: aberto no desktop, fechado no mobile/tablet
+      setSidebarOpen(window.innerWidth >= 1024);
+    }
   }, []);
 
   useEffect(() => {
