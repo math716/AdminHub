@@ -38,26 +38,36 @@ export async function GET() {
       }),
       prisma.demand.findMany({
         where: { ...scope, createdAt: { gte: thirtyDaysAgo } },
-        select: { createdAt: true }
+        select: { createdAt: true, status: true, updatedAt: true }
       }),
     ]);
 
     const timelineMap: Record<string, number> = {};
-    demands?.forEach?.((d: { createdAt: Date }) => {
+    const resolvedMap: Record<string, number> = {};
+    demands?.forEach?.((d: { createdAt: Date; status: string; updatedAt: Date }) => {
       const dateStr = d?.createdAt?.toISOString?.()?.split?.('T')?.[0] ?? '';
       if (dateStr) timelineMap[dateStr] = (timelineMap[dateStr] ?? 0) + 1;
+      if (d?.status === 'RESOLVIDA') {
+        const resolvedStr = d?.updatedAt?.toISOString?.()?.split?.('T')?.[0] ?? dateStr;
+        if (resolvedStr) resolvedMap[resolvedStr] = (resolvedMap[resolvedStr] ?? 0) + 1;
+      }
     });
 
-    const timeline = Object.entries(timelineMap ?? {})
-      ?.map?.(([date, count]) => ({
-        date: new Date(date)?.toLocaleDateString?.('pt-BR', { day: '2-digit', month: '2-digit' }) ?? date,
-        count: count ?? 0
-      }))
-      ?.sort?.((a, b) => {
-        const dateA = a?.date?.split?.('/')?.reverse?.()?.join?.('') ?? '';
-        const dateB = b?.date?.split?.('/')?.reverse?.()?.join?.('') ?? '';
-        return dateA?.localeCompare?.(dateB) ?? 0;
-      }) ?? [];
+    const timeline: { date: string; count: number; resolved: number }[] = [];
+    let lastResolvedDate: string | null = null;
+    for (let i = 29; i >= 0; i--) {
+      const day = new Date();
+      day.setHours(0, 0, 0, 0);
+      day.setDate(day.getDate() - i);
+      const key = day.toISOString().split('T')[0];
+      const resolvedCount = resolvedMap[key] ?? 0;
+      if (resolvedCount > 0) lastResolvedDate = day.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      timeline.push({
+        date: day.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        count: timelineMap[key] ?? 0,
+        resolved: resolvedCount,
+      });
+    }
 
     return NextResponse.json({
       total:       total       ?? 0,
@@ -71,7 +81,8 @@ export async function GET() {
         (byPriority ?? []).map((p: { priority: string; _count: { id: number } }) => [p.priority, p._count.id ?? 0])
       ),
       recentDemands: recentDemands ?? [],
-      timeline:      timeline      ?? []
+      timeline:      timeline      ?? [],
+      lastResolvedDate: lastResolvedDate ?? null,
     }, {
       headers: { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=120' },
     });

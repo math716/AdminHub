@@ -11,8 +11,6 @@ import {
   FileText,
   Users,
   LogOut,
-  Menu,
-  X,
   Target,
   MapPin,
   CalendarDays,
@@ -20,6 +18,8 @@ import {
   Settings,
   Building2,
   ArrowLeftRight,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminGabineteSwitcher } from '@/components/admin-gabinete-switcher';
@@ -54,8 +54,12 @@ const navigation: {
   },
 ];
 
-export function Sidebar() {
-  const [mobileOpen,    setMobileOpen]    = useState(false);
+interface SidebarProps {
+  open?: boolean;
+  onToggle?: () => void;
+}
+
+export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
   const [switcherOpen,  setSwitcherOpen]  = useState(false);
   const pathname = usePathname();
   const { data: session } = useSession() || {};
@@ -154,7 +158,10 @@ export function Sidebar() {
                   <Link
                     key={item?.name}
                     href={item?.href ?? '#'}
-                    onClick={() => setMobileOpen(false)}
+                    onClick={() => {
+                      // Auto-recolhe o sidebar em telas pequenas ao navegar
+                      if (typeof window !== 'undefined' && window.innerWidth < 1024) onToggle?.();
+                    }}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group',
                       isActive ? 'text-white' : 'text-white/60 hover:text-white/95'
@@ -278,61 +285,77 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile toggle */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-40 p-2 bg-[#1e3a5f] text-white rounded-lg shadow-lg"
-      >
-        <Menu className="h-6 w-6" />
-      </button>
+      {/* Backdrop overlay — somente em mobile/tablet quando o sidebar esta aberto */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onToggle}
+            className="lg:hidden fixed inset-0 z-40"
+            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)' }}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Desktop sidebar */}
-      <aside
-        className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 gradient-primary relative"
-        style={{ borderRight: '1px solid rgba(201,162,39,0.12)' }}
+      {/* Sidebar — painel flutuante em todos os tamanhos */}
+      <motion.aside
+        animate={{
+          x: open ? 0 : -280,
+          opacity: open ? 1 : 0,
+        }}
+        transition={{ type: 'spring', damping: 24, stiffness: 220 }}
+        className="flex flex-col fixed gradient-primary overflow-hidden z-50"
+        style={{
+          top: 12,
+          bottom: 12,
+          left: 12,
+          width: 256,
+          borderRadius: 20,
+          border: '1px solid rgba(201,162,39,0.18)',
+          boxShadow:
+            '0 20px 50px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), 0 0 35px rgba(201,162,39,0.08)',
+          pointerEvents: open ? 'auto' : 'none',
+        }}
       >
         {/* Fio dourado no topo */}
         <span
           className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
           style={{ background: 'linear-gradient(90deg, transparent, rgba(201,162,39,0.6), transparent)' }}
         />
+        {/* Glow interno sutil para destacar do fundo */}
+        <span
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 50% 0%, rgba(201,162,39,0.06), transparent 60%)',
+            borderRadius: 20,
+          }}
+        />
         <NavContent />
-      </aside>
+      </motion.aside>
 
-      {/* Mobile sidebar */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobileOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/50 z-40"
-            />
-            <motion.aside
-              initial={{ x: -280 }}
-              animate={{ x: 0 }}
-              exit={{ x: -280 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="lg:hidden fixed inset-y-0 left-0 w-64 gradient-primary z-50 flex flex-col"
-              style={{ borderRight: '1px solid rgba(201,162,39,0.12)' }}
-            >
-              <span
-                className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
-                style={{ background: 'linear-gradient(90deg, transparent, rgba(201,162,39,0.6), transparent)' }}
-              />
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="absolute top-4 right-4 p-2 text-white/70 hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              <NavContent />
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Botão de toggle — chevron, funciona em todos os tamanhos */}
+      {onToggle && (
+        <motion.button
+          onClick={onToggle}
+          aria-label={open ? 'Recolher sidebar' : 'Abrir sidebar'}
+          title={open ? 'Recolher menu' : 'Abrir menu'}
+          animate={{ left: open ? 256 : 8 }}
+          transition={{ type: 'spring', damping: 24, stiffness: 220 }}
+          className="fixed top-1/2 -translate-y-1/2 w-7 h-14 flex items-center justify-center z-50 hover:opacity-100 transition-opacity"
+          style={{
+            background: 'linear-gradient(135deg, #143764 0%, #0d2c52 100%)',
+            border: '1px solid rgba(201,162,39,0.3)',
+            borderRadius: 10,
+            color: '#c9a227',
+            opacity: 0.95,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.5), 0 0 18px rgba(201,162,39,0.12)',
+          }}
+        >
+          {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </motion.button>
+      )}
 
       {/* Switcher de gabinete (ADMIN) */}
       <AdminGabineteSwitcher
