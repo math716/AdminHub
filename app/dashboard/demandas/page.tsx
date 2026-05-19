@@ -573,7 +573,7 @@ export default function DemandasPage() {
                           {CATEGORY_LABELS?.[demand?.category] ?? demand?.category}
                         </span>
 
-                        {(userRole === 'CHEFE' || userRole === 'ADMIN') && (
+                        {(userRole === 'ADMIN' || userRole === 'AGENTE_POLITICO' || userRole === 'CHEFE') && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDelete(demand?.id); }}
                             className="ml-1 p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"

@@ -23,33 +23,42 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminGabineteSwitcher } from '@/components/admin-gabinete-switcher';
+import { PERMISSIONS, type Permission, hasPermission, ROLE_LABELS } from '@/lib/permissions';
 
-const navigation: {
-  section: string;
-  items: { name: string; href: string; icon: any; roles: string[] }[];
-}[] = [
+type NavItem = {
+  name: string;
+  href: string;
+  icon: any;
+  // Quando definido, item aparece somente se hasPermission(user, permission) for true.
+  permission?: Permission;
+  // Quando definido, item aparece somente se o role do usuário estiver na lista.
+  // Usado para itens administrativos que não dependem do sistema de permissões.
+  roles?: string[];
+};
+
+const navigation: { section: string; items: NavItem[] }[] = [
   {
     section: 'Principal',
     items: [
-      { name: 'Dashboard',         href: '/dashboard',                 icon: LayoutDashboard, roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
-      { name: 'Mapa do Gabinete',  href: '/dashboard/mapa-demandas',   icon: MapPin,          roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
-      { name: 'Contatos',          href: '/dashboard/contatos',        icon: BookUser,        roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
-      { name: 'Agenda',            href: '/dashboard/agenda',          icon: CalendarDays,    roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
+      { name: 'Dashboard',        href: '/dashboard'              , icon: LayoutDashboard },
+      { name: 'Mapa do Gabinete', href: '/dashboard/mapa-demandas', icon: MapPin,       permission: PERMISSIONS.MAPA_GABINETE },
+      { name: 'Contatos',         href: '/dashboard/contatos'     , icon: BookUser,     permission: PERMISSIONS.CONTATOS      },
+      { name: 'Agenda',           href: '/dashboard/agenda'       , icon: CalendarDays, permission: PERMISSIONS.AGENDA        },
     ],
   },
   {
     section: 'Operação',
     items: [
-      { name: 'Demandas',            href: '/dashboard/demandas',      icon: FileText, roles: ['ADMIN', 'CHEFE', 'ASSESSOR'] },
-      { name: 'Projeto de Campanha', href: '/dashboard/mapa-campanha', icon: Target,   roles: ['ADMIN', 'CHEFE'] },
-      { name: 'Mapa Eleitoral',      href: '/dashboard/mapa',          icon: Map,      roles: ['ADMIN', 'CHEFE'] },
+      { name: 'Demandas',            href: '/dashboard/demandas'     , icon: FileText, permission: PERMISSIONS.DEMANDAS         },
+      { name: 'Projeto de Campanha', href: '/dashboard/mapa-campanha', icon: Target,   permission: PERMISSIONS.PROJETO_CAMPANHA },
+      { name: 'Mapa Eleitoral',      href: '/dashboard/mapa'         , icon: Map,      permission: PERMISSIONS.MAPA_ELEITORAL   },
     ],
   },
   {
     section: 'Administração',
     items: [
-      { name: 'Usuários',      href: '/dashboard/usuarios',      icon: Users,    roles: ['ADMIN'] },
-      { name: 'Configurações', href: '/dashboard/configuracoes', icon: Settings, roles: ['ADMIN', 'CHEFE'] },
+      { name: 'Usuários',      href: '/dashboard/usuarios'     , icon: Users,    roles: ['ADMIN', 'CHEFE']                    },
+      { name: 'Configurações', href: '/dashboard/configuracoes', icon: Settings, roles: ['ADMIN', 'AGENTE_POLITICO', 'CHEFE'] },
     ],
   },
 ];
@@ -63,15 +72,20 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
   const [switcherOpen,  setSwitcherOpen]  = useState(false);
   const pathname = usePathname();
   const { data: session } = useSession() || {};
-  const userRole     = (session?.user as any)?.role    || 'ASSESSOR';
-  const userName     = session?.user?.name             || 'Usuário';
-  const gabineteNome = (session?.user as any)?.gabineteNome;
-  const isAdmin      = userRole === 'ADMIN';
+  const userRole        = (session?.user as any)?.role    || 'ASSESSOR';
+  const userPermissions = (session?.user as any)?.permissions ?? [];
+  const userName        = session?.user?.name             || 'Usuário';
+  const gabineteNome    = (session?.user as any)?.gabineteNome;
+  const isAdmin         = userRole === 'ADMIN';
 
   const filteredSections = (navigation ?? [])
     .map((sec) => ({
       ...sec,
-      items: (sec.items ?? []).filter((it) => it?.roles?.includes?.(userRole)),
+      items: (sec.items ?? []).filter((it) => {
+        if (it?.roles) return it.roles.includes(userRole);
+        if (it?.permission) return hasPermission({ role: userRole, permissions: userPermissions }, it.permission);
+        return true; // sem restrição (ex.: Dashboard)
+      }),
     }))
     .filter((sec) => sec.items.length > 0);
 
@@ -258,7 +272,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
               className="text-[11px] truncate leading-tight mt-0.5 tracking-wide"
               style={{ color: 'rgba(201,162,39,0.85)' }}
             >
-              {userRole === 'ADMIN' ? 'Administrador' : userRole === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor'}
+              {ROLE_LABELS[userRole] ?? 'Assessor'}
             </p>
           </div>
         </div>

@@ -18,6 +18,7 @@ import {
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { STATUS_COLORS, PRIORITY_COLORS, PRIORITY_LABELS, STATUS_LABELS } from '@/lib/types';
+import { ROLE_LABELS } from '@/lib/permissions';
 import { DemandPriority, DemandStatus } from '@prisma/client';
 
 const Donut3DChart = dynamic(() => import('@/components/charts/donut-3d-chart'), { ssr: false });
@@ -122,8 +123,8 @@ export default function DashboardPage() {
         actions={
           <div className="text-right">
             <p className="text-sm text-slate-400">{gabineteName}</p>
-            <Badge variant={userRole === 'ADMIN' ? 'danger' : userRole === 'CHEFE' ? 'success' : 'info'}>
-              {userRole === 'ADMIN' ? 'Administrador' : userRole === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor'}
+            <Badge variant={userRole === 'ADMIN' ? 'danger' : userRole === 'AGENTE_POLITICO' ? 'warning' : userRole === 'CHEFE' ? 'success' : 'info'}>
+              {ROLE_LABELS[userRole] ?? 'Usuário'}
             </Badge>
           </div>
         }

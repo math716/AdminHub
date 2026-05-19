@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     const { gabineteId, role } = payload;
 
-    if (!gabineteId || !['CHEFE', 'ASSESSOR'].includes(role)) {
+    if (!gabineteId || !['CHEFE', 'ASSESSOR', 'AGENTE_POLITICO'].includes(role)) {
       return NextResponse.json({ error: 'Convite inválido' }, { status: 400 });
     }
 
@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Convite de CHEFE gerado pelo ADMIN → aprovado automaticamente
-    const autoApprove = role === 'CHEFE';
+    // Convites gerados pelo ADMIN (CHEFE e AGENTE_POLITICO) já vêm pré-aprovados
+    const autoApprove = role === 'CHEFE' || role === 'AGENTE_POLITICO';
 
     const user = await prisma.user.create({
       data: {
@@ -80,9 +80,10 @@ export async function POST(request: NextRequest) {
       }).catch(() => {});
     }
 
+    const roleLabel = role === 'CHEFE' ? 'Chefe de Gabinete' : role === 'AGENTE_POLITICO' ? 'Agente Político' : 'Assessor';
     return NextResponse.json({
       message: autoApprove
-        ? `Bem-vindo! Sua conta de Chefe de Gabinete no ${gabinete.nome} foi criada. Faça login para continuar.`
+        ? `Bem-vindo! Sua conta de ${roleLabel} no ${gabinete.nome} foi criada. Faça login para continuar.`
         : `Cadastro realizado! Aguarde a aprovação do Chefe de Gabinete do ${gabinete.nome}.`,
       user: {
         id: user.id,

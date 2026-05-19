@@ -28,6 +28,7 @@ export async function GET() {
         name: true,
         role: true,
         approved: true,
+        permissions: true,
         createdAt: true,
         gabinete: {
           select: {

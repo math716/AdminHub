@@ -1,5 +1,6 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
+import { requiredPermissionForPath, hasPermission } from '@/lib/permissions';
 
 export default withAuth(
   function middleware(req) {
@@ -22,6 +23,19 @@ export default withAuth(
     if (token && !token.approved && token.role !== 'ADMIN') {
       if (!pathname.startsWith('/aguardando-aprovacao')) {
         return NextResponse.redirect(new URL('/aguardando-aprovacao', req.url));
+      }
+      return NextResponse.next();
+    }
+
+    // Checa permissão granular por rota (apenas para usuários já aprovados)
+    const requiredPerm = requiredPermissionForPath(pathname);
+    if (requiredPerm) {
+      const allowed = hasPermission(
+        { role: token?.role, permissions: token?.permissions },
+        requiredPerm,
+      );
+      if (!allowed) {
+        return NextResponse.redirect(new URL('/dashboard', req.url));
       }
     }
 

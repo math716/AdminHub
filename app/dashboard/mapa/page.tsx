@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
+import { PERMISSIONS, hasPermission } from '@/lib/permissions';
 import {
   Map,
   Search,
@@ -251,6 +252,8 @@ export default function MapaPage() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
   const userRole = (session?.user as any)?.role;
+  const userPermissions = (session?.user as any)?.permissions ?? [];
+  const canAccess = hasPermission({ role: userRole, permissions: userPermissions }, PERMISSIONS.MAPA_ELEITORAL);
 
   // Hierarquia de navegação: brasil → estado → municipio
   const [mapFullscreen, setMapFullscreen] = useState(false);
@@ -569,10 +572,10 @@ export default function MapaPage() {
   }, [selectedCeBairro, ceBairrosVotes]);
 
   useEffect(() => {
-    if (status === 'authenticated' && userRole !== 'CHEFE' && userRole !== 'ADMIN') {
+    if (status === 'authenticated' && !canAccess) {
       router.replace('/dashboard');
     }
-  }, [status, userRole, router]);
+  }, [status, canAccess, router]);
 
   useEffect(() => {
     const fetchFavorites = async () => {
@@ -584,8 +587,8 @@ export default function MapaPage() {
         }
       } catch {}
     };
-    if (userRole === 'CHEFE' || userRole === 'ADMIN') fetchFavorites();
-  }, [userRole]);
+    if (canAccess) fetchFavorites();
+  }, [canAccess]);
 
   // Buscar zonas do município (chamado ao entrar na view 'municipio')
   const fetchZonasMunicipio = async (municipioNome: string, dataOverride?: ElectoralData, ufOverride?: string) => {
@@ -945,7 +948,7 @@ export default function MapaPage() {
   ];
 
   if (status === 'loading') return <div className="text-center py-12 text-slate-400">Carregando...</div>;
-  if (userRole !== 'CHEFE' && userRole !== 'ADMIN') return null;
+  if (!canAccess) return null;
 
   return (
     <div className="space-y-6">

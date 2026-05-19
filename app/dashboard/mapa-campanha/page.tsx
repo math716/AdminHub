@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { toast } from 'sonner';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
+import { PERMISSIONS, hasPermission } from '@/lib/permissions';
 import {
   Map,
   Target,
@@ -396,12 +397,14 @@ export default function MapaCampanhaPage() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
   const userRole = (session?.user as any)?.role;
+  const userPermissions = (session?.user as any)?.permissions ?? [];
+  const canAccess = hasPermission({ role: userRole, permissions: userPermissions }, PERMISSIONS.PROJETO_CAMPANHA);
 
   useEffect(() => {
-    if (status === 'authenticated' && userRole !== 'CHEFE' && userRole !== 'ADMIN') {
+    if (status === 'authenticated' && !canAccess) {
       router.push('/dashboard');
     }
-  }, [status, userRole, router]);
+  }, [status, canAccess, router]);
 
   // Search states
   const [candidateName, setCandidateName] = useState('');
@@ -792,7 +795,7 @@ export default function MapaCampanhaPage() {
         console.error('Erro ao carregar projeções:', error);
       }
     };
-    if (userRole === 'CHEFE' || userRole === 'ADMIN') {
+    if (canAccess) {
       loadProjecoes();
     }
   }, [userRole]);
@@ -2265,7 +2268,7 @@ export default function MapaCampanhaPage() {
     );
   }
 
-  if (userRole !== 'CHEFE' && userRole !== 'ADMIN') {
+  if (!canAccess) {
     return null;
   }
 
@@ -2292,8 +2295,8 @@ export default function MapaCampanhaPage() {
 
   const cenarioConfig = {
     conservador: { label: 'Conservador', icon: Shield, color: 'text-amber-400', bg: 'bg-amber-500', border: 'border-amber-500' },
-    possivel: { label: 'Possível', icon: Gauge, color: 'text-cyan-400', bg: 'bg-cyan-500', border: 'border-cyan-500' },
-    arrojado: { label: 'Arrojado', icon: Rocket, color: 'text-emerald-400', bg: 'bg-emerald-500', border: 'border-emerald-500' }
+    possivel: { label: 'Realista', icon: Gauge, color: 'text-cyan-400', bg: 'bg-cyan-500', border: 'border-cyan-500' },
+    arrojado: { label: 'Otimista', icon: Rocket, color: 'text-emerald-400', bg: 'bg-emerald-500', border: 'border-emerald-500' }
   };
 
   return (
@@ -3743,11 +3746,11 @@ export default function MapaCampanhaPage() {
                       </p>
                     </div>
 
-                    {/* Meta Possível */}
+                    {/* Meta Realista */}
                     <div className="bg-cyan-900/20 rounded-lg p-3 border border-cyan-500/30">
                       <div className="flex items-center gap-1 mb-2">
                         <Gauge className="h-4 w-4 text-cyan-400" />
-                        <span className="text-cyan-400 text-xs font-medium">Possível</span>
+                        <span className="text-cyan-400 text-xs font-medium">Realista</span>
                       </div>
                       <Input
                         type="number"
@@ -3767,7 +3770,7 @@ export default function MapaCampanhaPage() {
                     <div className="bg-emerald-900/20 rounded-lg p-3 border border-emerald-500/30">
                       <div className="flex items-center gap-1 mb-2">
                         <Rocket className="h-4 w-4 text-emerald-400" />
-                        <span className="text-emerald-400 text-xs font-medium">Arrojada</span>
+                        <span className="text-emerald-400 text-xs font-medium">Otimista</span>
                       </div>
                       <Input
                         type="number"
@@ -3811,9 +3814,9 @@ export default function MapaCampanhaPage() {
                             </div>
                           </div>
                         </div>
-                        {/* Possível Final */}
+                        {/* Realista Final */}
                         <div className="bg-slate-800/50 rounded-lg p-2 border border-cyan-500/20">
-                          <p className="text-cyan-400 mb-1 font-medium">Possível</p>
+                          <p className="text-cyan-400 mb-1 font-medium">Realista</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-slate-400">
                               <span>Meta Base:</span>
@@ -3831,7 +3834,7 @@ export default function MapaCampanhaPage() {
                         </div>
                         {/* Arrojada Final */}
                         <div className="bg-slate-800/50 rounded-lg p-2 border border-emerald-500/20">
-                          <p className="text-emerald-400 mb-1 font-medium">Arrojada</p>
+                          <p className="text-emerald-400 mb-1 font-medium">Otimista</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-slate-400">
                               <span>Meta Base:</span>
@@ -4133,7 +4136,7 @@ export default function MapaCampanhaPage() {
             <div className="bg-cyan-900/20 rounded-lg p-3 border border-cyan-500/30">
               <div className="flex items-center gap-1 mb-2">
                 <Gauge className="h-4 w-4 text-cyan-400" />
-                <span className="text-cyan-400 text-xs font-medium">Possível</span>
+                <span className="text-cyan-400 text-xs font-medium">Realista</span>
               </div>
               <Input
                 type="number"
@@ -4145,7 +4148,7 @@ export default function MapaCampanhaPage() {
             <div className="bg-emerald-900/20 rounded-lg p-3 border border-emerald-500/30">
               <div className="flex items-center gap-1 mb-2">
                 <Rocket className="h-4 w-4 text-emerald-400" />
-                <span className="text-emerald-400 text-xs font-medium">Arrojada</span>
+                <span className="text-emerald-400 text-xs font-medium">Otimista</span>
               </div>
               <Input
                 type="number"
@@ -4519,7 +4522,7 @@ export default function MapaCampanhaPage() {
                 </div>
                 <div className="text-center p-3 bg-cyan-900/20 rounded-lg border border-cyan-500/30">
                   <Gauge className="h-5 w-5 text-cyan-400 mx-auto mb-1" />
-                  <p className="text-cyan-400 text-xs mb-1">Possível</p>
+                  <p className="text-cyan-400 text-xs mb-1">Realista</p>
                   <p className="text-white font-bold">
                     {Math.round(selectedBairro.votos * 1.15).toLocaleString()}
                   </p>
@@ -4527,7 +4530,7 @@ export default function MapaCampanhaPage() {
                 </div>
                 <div className="text-center p-3 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
                   <Rocket className="h-5 w-5 text-emerald-400 mx-auto mb-1" />
-                  <p className="text-emerald-400 text-xs mb-1">Arrojada</p>
+                  <p className="text-emerald-400 text-xs mb-1">Otimista</p>
                   <p className="text-white font-bold">
                     {Math.round(selectedBairro.votos * 1.30).toLocaleString()}
                   </p>
@@ -4858,7 +4861,7 @@ export default function MapaCampanhaPage() {
               <div className="text-center">
                 <div className="p-3 bg-amber-900/30 rounded-lg border border-amber-500/50">
                   <Gauge className="h-5 w-5 text-amber-400 mx-auto mb-1" />
-                  <p className="text-amber-400 text-xs mb-1">Possível</p>
+                  <p className="text-amber-400 text-xs mb-1">Realista</p>
                   <input
                     type="number"
                     value={parceriaForm.metaPossivel || 0}
@@ -4871,7 +4874,7 @@ export default function MapaCampanhaPage() {
               <div className="text-center">
                 <div className="p-3 bg-slate-800 rounded-lg border border-slate-600">
                   <Rocket className="h-5 w-5 text-emerald-400 mx-auto mb-1" />
-                  <p className="text-emerald-400 text-xs mb-1">Arrojada</p>
+                  <p className="text-emerald-400 text-xs mb-1">Otimista</p>
                   <input
                     type="number"
                     value={parceriaForm.metaArrojada || 0}

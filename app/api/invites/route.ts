@@ -26,7 +26,9 @@ export async function POST(request: NextRequest) {
 
   if (userRole === 'ADMIN') {
     if (body.gabineteId) targetGabineteId = body.gabineteId;
-    if (body.role === 'CHEFE') inviteRole = 'CHEFE';
+    if (body.role === 'CHEFE' || body.role === 'AGENTE_POLITICO') {
+      inviteRole = body.role;
+    }
   } else {
     // CHEFE só pode convidar ASSESSORs para o próprio gabinete
     inviteRole = 'ASSESSOR';

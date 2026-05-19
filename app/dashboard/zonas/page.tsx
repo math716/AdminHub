@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
+import { PERMISSIONS, hasPermission } from '@/lib/permissions';
 import {
   Layers,
   Search,
@@ -72,6 +73,8 @@ export default function ZonasPage() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
   const userRole = (session?.user as any)?.role;
+  const userPermissions = (session?.user as any)?.permissions ?? [];
+  const canAccess = hasPermission({ role: userRole, permissions: userPermissions }, PERMISSIONS.MAPA_ELEITORAL);
 
   // Formulário de busca
   const [nome, setNome] = useState('');
@@ -92,10 +95,10 @@ export default function ZonasPage() {
   const [verTodos, setVerTodos] = useState(false);
 
   useEffect(() => {
-    if (status === 'authenticated' && userRole !== 'CHEFE' && userRole !== 'ADMIN') {
+    if (status === 'authenticated' && !canAccess) {
       router.replace('/dashboard');
     }
-  }, [status, userRole, router]);
+  }, [status, canAccess, router]);
 
   const anoOptions = [
     { value: '2024', label: '2024 - Municipal' },
@@ -203,7 +206,7 @@ export default function ZonasPage() {
     return <div className="text-center py-12 text-slate-400">Carregando...</div>;
   }
 
-  if (userRole !== 'CHEFE' && userRole !== 'ADMIN') return null;
+  if (!canAccess) return null;
 
   return (
     <div className="space-y-6">

@@ -14,6 +14,7 @@ datasource db {
 // ============== ENUMS ==============
 enum UserRole {
   ADMIN
+  AGENTE_POLITICO
   CHEFE
   ASSESSOR
   ANALISTA
@@ -92,6 +93,7 @@ model User {
   role               UserRole @default(VISUALIZADOR)
   approved           Boolean  @default(false)
   mustChangePassword Boolean  @default(false)
+  permissions        String[] @default([])
 
   gabineteId String?
   gabinete   Gabinete? @relation(fields: [gabineteId], references: [id], onDelete: SetNull)

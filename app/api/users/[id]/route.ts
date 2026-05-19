@@ -4,6 +4,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { ALL_PERMISSIONS } from '@/lib/permissions';
+import type { UserRole } from '@prisma/client';
+
+const VALID_ROLES = ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR', 'ANALISTA', 'VISUALIZADOR'];
 
 export async function PATCH(
   request: NextRequest,
@@ -13,10 +17,11 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const userRole = (session.user as any)?.role;
-    const sessionUserId = (session.user as any)?.id;
+    const sessionRole       = (session.user as any)?.role;
+    const sessionUserId     = (session.user as any)?.id;
+    const sessionGabineteId = (session.user as any)?.gabineteId;
 
-    if (userRole !== 'ADMIN') {
+    if (sessionRole !== 'ADMIN' && sessionRole !== 'CHEFE') {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
     }
 
@@ -24,18 +29,53 @@ export async function PATCH(
       return NextResponse.json({ error: 'Você não pode alterar o próprio perfil' }, { status: 400 });
     }
 
-    const body = await request.json();
-    const { role } = body;
+    const target = await prisma.user.findUnique({
+      where: { id: params.id },
+      select: { id: true, gabineteId: true, role: true },
+    });
+    if (!target) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
 
-    const allowed = ['ADMIN', 'CHEFE', 'ASSESSOR'];
-    if (!allowed.includes(role)) {
-      return NextResponse.json({ error: 'Role inválido' }, { status: 400 });
+    // CHEFE só pode mexer em usuários do próprio gabinete
+    if (sessionRole === 'CHEFE' && target.gabineteId !== sessionGabineteId) {
+      return NextResponse.json({ error: 'Você só pode alterar usuários do seu gabinete' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { role, permissions } = body ?? {};
+
+    const data: { role?: UserRole; permissions?: string[] } = {};
+
+    if (role !== undefined) {
+      // Apenas ADMIN pode mudar role
+      if (sessionRole !== 'ADMIN') {
+        return NextResponse.json({ error: 'Apenas administradores podem alterar o cargo' }, { status: 403 });
+      }
+      if (!VALID_ROLES.includes(role)) {
+        return NextResponse.json({ error: 'Cargo inválido' }, { status: 400 });
+      }
+      data.role = role as UserRole;
+    }
+
+    if (permissions !== undefined) {
+      if (!Array.isArray(permissions)) {
+        return NextResponse.json({ error: 'permissions deve ser um array' }, { status: 400 });
+      }
+      const invalid = permissions.filter((p: string) => !ALL_PERMISSIONS.includes(p as any));
+      if (invalid.length > 0) {
+        return NextResponse.json({ error: `Permissões inválidas: ${invalid.join(', ')}` }, { status: 400 });
+      }
+      // Remove duplicatas mantendo a ordem
+      data.permissions = Array.from(new Set(permissions));
+    }
+
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: 'Nada a atualizar' }, { status: 400 });
     }
 
     const updated = await prisma.user.update({
       where: { id: params.id },
-      data: { role },
-      select: { id: true, name: true, email: true, role: true, approved: true },
+      data,
+      select: { id: true, name: true, email: true, role: true, approved: true, permissions: true },
     });
 
     return NextResponse.json(updated);

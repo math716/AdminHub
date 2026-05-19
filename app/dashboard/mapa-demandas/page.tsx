@@ -162,7 +162,7 @@ const EMPTY_EMENDA_FORM = {
 export default function MapaDemandasPage() {
   const { status, data: session } = useSession();
   const userRole = (session?.user as any)?.role || 'ASSESSOR';
-  const canDeleteEmenda = userRole === 'CHEFE' || userRole === 'ADMIN';
+  const canDeleteEmenda = userRole === 'ADMIN' || userRole === 'AGENTE_POLITICO' || userRole === 'CHEFE';
   const router = useRouter();
 
   const [demands, setDemands] = useState<Demand[]>([]);

@@ -33,11 +33,13 @@ export default function ConfiguracoesPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
 
+  const canAccess = userRole === 'ADMIN' || userRole === 'AGENTE_POLITICO' || userRole === 'CHEFE';
+
   useEffect(() => {
-    if (status === 'authenticated' && userRole !== 'CHEFE' && userRole !== 'ADMIN') {
+    if (status === 'authenticated' && !canAccess) {
       router.replace('/dashboard');
     }
-  }, [status, userRole, router]);
+  }, [status, canAccess, router]);
 
   const showToast = (type: 'ok' | 'err', msg: string) => {
     setToast({ type, msg });
@@ -61,8 +63,8 @@ export default function ConfiguracoesPage() {
   }, []);
 
   useEffect(() => {
-    if (userRole === 'CHEFE' || userRole === 'ADMIN') fetchStatus();
-  }, [userRole, fetchStatus]);
+    if (canAccess) fetchStatus();
+  }, [canAccess, fetchStatus]);
 
   // Poll while connecting (waiting for QR scan)
   useEffect(() => {
@@ -117,7 +119,7 @@ export default function ConfiguracoesPage() {
   };
 
   if (status === 'loading') return null;
-  if (userRole !== 'CHEFE' && userRole !== 'ADMIN') return null;
+  if (!canAccess) return null;
 
   const cardStyle = { background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' };
 

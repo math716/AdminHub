@@ -6,20 +6,94 @@ import { useRouter } from 'next/navigation';
 import {
   Users, Check, X, Clock, Shield, Building2,
   Loader2, ChevronDown, ChevronUp, CheckCircle2, AlertCircle,
-  Link2, Copy, CheckCheck, Search, KeyRound, Trash2,
+  Link2, Copy, CheckCheck, Search, KeyRound, Trash2, SlidersHorizontal,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ALL_PERMISSIONS,
+  PERMISSION_LABELS,
+  type Permission,
+  hasFullAccess,
+} from '@/lib/permissions';
+
+// ---------------------------------------------------------------------------
+// Componente reutilizável: lista de permissões (moldura arredondada + tick na
+// cor do botão de Salvar)
+// ---------------------------------------------------------------------------
+type Accent = { solid: string; bgLight: string; borderLight: string };
+const ACCENT_PURPLE: Accent  = { solid: '#a855f7', bgLight: 'rgba(168,85,247,0.08)', borderLight: 'rgba(168,85,247,0.3)' };
+const ACCENT_EMERALD: Accent = { solid: '#22c55e', bgLight: 'rgba(34,197,94,0.08)',  borderLight: 'rgba(34,197,94,0.3)'  };
+
+function PermissionsChecklist({
+  selected,
+  onToggle,
+  onSelectAll,
+  onClear,
+  accent,
+}: {
+  selected: Set<string>;
+  onToggle: (perm: string) => void;
+  onSelectAll: () => void;
+  onClear: () => void;
+  accent: Accent;
+}) {
+  return (
+    <>
+      <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+        {ALL_PERMISSIONS.map((p) => {
+          const checked = selected.has(p);
+          return (
+            <button key={p} type="button" onClick={() => onToggle(p)}
+              className="w-full text-left flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200"
+              style={{
+                background: checked ? accent.bgLight : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${checked ? accent.borderLight : 'rgba(255,255,255,0.08)'}`,
+              }}>
+              <span className="text-sm font-medium tracking-wide"
+                style={{ color: checked ? '#fff' : 'rgba(255,255,255,0.75)' }}>
+                {PERMISSION_LABELS[p as Permission]}
+              </span>
+              <span className="flex items-center justify-center w-5 h-5 rounded-md flex-shrink-0 transition-all"
+                style={checked
+                  ? { background: accent.solid, color: '#fff', boxShadow: `0 0 8px ${accent.borderLight}` }
+                  : { background: 'transparent', border: '1.5px solid rgba(255,255,255,0.2)' }
+                }>
+                {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center justify-between text-[11px] pt-1">
+        <button type="button" onClick={onSelectAll}
+          className="font-semibold hover:opacity-80 transition-opacity"
+          style={{ color: accent.solid }}>
+          Marcar todas
+        </button>
+        <button type="button" onClick={onClear}
+          className="hover:opacity-80 transition-opacity"
+          style={{ color: 'rgba(255,255,255,0.45)' }}>
+          Limpar
+        </button>
+      </div>
+    </>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Tipos
 // ---------------------------------------------------------------------------
+type UserRoleKey = 'ADMIN' | 'AGENTE_POLITICO' | 'CHEFE' | 'ASSESSOR' | 'ANALISTA' | 'VISUALIZADOR';
+
 interface UserData {
   id: string;
   email: string;
   name: string;
-  role: 'ADMIN' | 'CHEFE' | 'ASSESSOR';
+  role: UserRoleKey;
   approved: boolean;
+  permissions: string[];
   createdAt: string;
   gabinete?: { id: string; nome: string };
 }
@@ -34,13 +108,21 @@ interface GabineteGroup {
 // Helpers visuais
 // ---------------------------------------------------------------------------
 const ROLE_LABELS: Record<string, string> = {
-  ADMIN: 'Administrador', CHEFE: 'Chefe de Gabinete', ASSESSOR: 'Assessor',
+  ADMIN:           'Administrador',
+  AGENTE_POLITICO: 'Agente Político',
+  CHEFE:           'Chefe de Gabinete',
+  ASSESSOR:        'Assessor',
+  ANALISTA:        'Analista',
+  VISUALIZADOR:    'Visualizador',
 };
 
 const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> = {
-  ADMIN:    { bg: 'rgba(201,162,39,0.12)',  color: '#c9a227',  border: 'rgba(201,162,39,0.3)' },
-  CHEFE:    { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)' },
-  ASSESSOR: { bg: 'rgba(34,197,94,0.10)',   color: '#4ade80',  border: 'rgba(34,197,94,0.25)' },
+  ADMIN:           { bg: 'rgba(201,162,39,0.12)',  color: '#c9a227',  border: 'rgba(201,162,39,0.3)'  },
+  AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: '#c084fc',  border: 'rgba(168,85,247,0.3)'  },
+  CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)'  },
+  ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: '#4ade80',  border: 'rgba(34,197,94,0.25)'  },
+  ANALISTA:        { bg: 'rgba(255,255,255,0.06)', color: '#cbd5e1',  border: 'rgba(255,255,255,0.12)' },
+  VISUALIZADOR:    { bg: 'rgba(255,255,255,0.06)', color: '#94a3b8',  border: 'rgba(255,255,255,0.12)' },
 };
 
 function RoleBadge({ role }: { role: string }) {
@@ -57,7 +139,7 @@ function RoleSelect({ userId, current, onChanged }: { userId: string; current: s
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const roles = ['ADMIN', 'CHEFE', 'ASSESSOR'];
+  const roles = ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR'];
 
   useEffect(() => {
     if (!open) return;
@@ -145,6 +227,17 @@ export default function UsuariosPage() {
   const [deleteGabTarget,    setDeleteGabTarget]    = useState<{ id: string; nome: string; userCount: number } | null>(null);
   const [deletingGab,        setDeletingGab]        = useState(false);
 
+  // ── aprovação com permissões ──────────────────────────────────────────────
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [approveTarget,    setApproveTarget]    = useState<UserData | null>(null);
+  const [approvePerms,     setApprovePerms]     = useState<Set<string>>(new Set());
+
+  // ── edição de permissões (usuário já aprovado) ────────────────────────────
+  const [showEditPermsModal, setShowEditPermsModal] = useState(false);
+  const [editPermsTarget,    setEditPermsTarget]    = useState<UserData | null>(null);
+  const [editPerms,          setEditPerms]          = useState<Set<string>>(new Set());
+  const [savingPerms,        setSavingPerms]        = useState(false);
+
   // ── reset senha ───────────────────────────────────────────────────────────
   const [showResetModal,  setShowResetModal]  = useState(false);
   const [resetTargetId,   setResetTargetId]   = useState('');
@@ -183,15 +276,70 @@ export default function UsuariosPage() {
     setTimeout(() => setToastData(null), 3500);
   };
 
-  const handleApprove = async (userId: string) => {
+  const openApproveModal = (u: UserData) => {
+    // ADMIN e AGENTE_POLITICO têm acesso total automaticamente — não precisa modal
+    if (hasFullAccess(u.role)) {
+      void approveUser(u.id, undefined);
+      return;
+    }
+    setApproveTarget(u);
+    setApprovePerms(new Set(u.permissions ?? []));
+    setShowApproveModal(true);
+  };
+
+  const approveUser = async (userId: string, perms?: string[]) => {
     setActionId(userId);
     try {
-      const res = await fetch(`/api/users/${userId}/approve`, { method: 'POST' });
+      const res = await fetch(`/api/users/${userId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(perms !== undefined ? { permissions: perms } : {}),
+      });
       if (res.ok) {
-        setUsers(prev => prev.map(u => u.id === userId ? { ...u, approved: true } : u));
+        setUsers(prev => prev.map(u =>
+          u.id === userId ? { ...u, approved: true, permissions: perms ?? u.permissions } : u,
+        ));
         showToast('ok', 'Usuário aprovado. E-mail de confirmação enviado.');
+        setShowApproveModal(false);
+        setApproveTarget(null);
       } else { showToast('err', 'Erro ao aprovar usuário.'); }
     } finally { setActionId(null); }
+  };
+
+  const openEditPermsModal = (u: UserData) => {
+    setEditPermsTarget(u);
+    setEditPerms(new Set(u.permissions ?? []));
+    setShowEditPermsModal(true);
+  };
+
+  const confirmEditPermissions = async () => {
+    if (!editPermsTarget) return;
+    setSavingPerms(true);
+    try {
+      const perms = Array.from(editPerms);
+      const res = await fetch(`/api/users/${editPermsTarget.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ permissions: perms }),
+      });
+      if (res.ok) {
+        setUsers(prev => prev.map(u =>
+          u.id === editPermsTarget.id ? { ...u, permissions: perms } : u,
+        ));
+        showToast('ok', 'Permissões atualizadas.');
+        setShowEditPermsModal(false);
+        setEditPermsTarget(null);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showToast('err', data.error || 'Erro ao atualizar permissões.');
+      }
+    } finally { setSavingPerms(false); }
+  };
+
+  const togglePermInSet = (set: Set<string>, setter: (s: Set<string>) => void, perm: string) => {
+    const next = new Set(set);
+    next.has(perm) ? next.delete(perm) : next.add(perm);
+    setter(next);
   };
 
   const handleReject = async (userId: string, name: string) => {
@@ -211,7 +359,7 @@ export default function UsuariosPage() {
     showToast('ok', `Perfil alterado para ${ROLE_LABELS[newRole] ?? newRole}.`);
   };
 
-  const handleGenerateInvite = async (role: 'ASSESSOR' | 'CHEFE' = 'ASSESSOR') => {
+  const handleGenerateInvite = async (role: 'ASSESSOR' | 'CHEFE' | 'AGENTE_POLITICO' = 'ASSESSOR') => {
     setGeneratingInvite(true);
     setShowInviteForm(false);
     try {
@@ -365,18 +513,28 @@ export default function UsuariosPage() {
                 className="absolute right-0 mt-1 z-20 rounded-xl overflow-hidden shadow-xl"
                 style={{ background: '#071d36', border: '1px solid rgba(201,162,39,0.2)', minWidth: 200 }}>
                 <p className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>Tipo de convite</p>
-                {(['ASSESSOR', 'CHEFE'] as const).map(r => (
-                  <button key={r} onClick={() => handleGenerateInvite(r)}
-                    className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/5"
-                    style={{ color: 'rgba(255,255,255,0.75)' }}>
-                    <span className="font-semibold" style={{ color: r === 'CHEFE' ? '#4a9ede' : '#4ade80' }}>
-                      {r === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor'}
-                    </span><br />
-                    <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px' }}>
-                      {r === 'CHEFE' ? 'Conta pré-aprovada pelo Admin' : 'Requer aprovação do Chefe'}
-                    </span>
-                  </button>
-                ))}
+                {(['ASSESSOR', 'CHEFE', 'AGENTE_POLITICO'] as const).map(r => {
+                  const labelColor =
+                    r === 'AGENTE_POLITICO' ? '#c084fc' :
+                    r === 'CHEFE'           ? '#4a9ede' :
+                                              '#4ade80';
+                  const label =
+                    r === 'AGENTE_POLITICO' ? 'Agente Político' :
+                    r === 'CHEFE'           ? 'Chefe de Gabinete' :
+                                              'Assessor';
+                  const desc =
+                    r === 'AGENTE_POLITICO' ? 'Deputado, Senador, Prefeito… acesso total ao gabinete' :
+                    r === 'CHEFE'           ? 'Conta pré-aprovada pelo Admin' :
+                                              'Requer aprovação do Chefe';
+                  return (
+                    <button key={r} onClick={() => handleGenerateInvite(r)}
+                      className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/5"
+                      style={{ color: 'rgba(255,255,255,0.75)' }}>
+                      <span className="font-semibold" style={{ color: labelColor }}>{label}</span><br />
+                      <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px' }}>{desc}</span>
+                    </button>
+                  );
+                })}
               </motion.div>
             )}
           </AnimatePresence>
@@ -546,12 +704,22 @@ export default function UsuariosPage() {
 
                                   {/* Aprovar (se pendente) */}
                                   {!u.approved && u.role !== 'ADMIN' && (
-                                    <button onClick={() => handleApprove(u.id)} disabled={actionId === u.id}
+                                    <button onClick={() => openApproveModal(u)} disabled={actionId === u.id}
                                       title="Aprovar usuário"
                                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80 disabled:opacity-50"
                                       style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}>
                                       {actionId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                                       Aprovar
+                                    </button>
+                                  )}
+
+                                  {/* Editar permissões (apenas usuários aprovados que dependem do array) */}
+                                  {u.approved && !hasFullAccess(u.role) && u.id !== sessionUserId && (
+                                    <button onClick={() => openEditPermsModal(u)}
+                                      title="Editar permissões"
+                                      className="p-1.5 rounded-lg transition-all hover:bg-purple-500/10"
+                                      style={{ color: 'rgba(255,255,255,0.3)' }}>
+                                      <SlidersHorizontal className="w-3.5 h-3.5" />
                                     </button>
                                   )}
 
@@ -688,9 +856,17 @@ export default function UsuariosPage() {
                 </div>
               </div>
               <p className="text-xs mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                Convite para <span style={{ color: inviteRoleResult === 'CHEFE' ? '#4a9ede' : '#4ade80', fontWeight: 600 }}>
-                  {inviteRoleResult === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor'}</span>.
-                {inviteRoleResult === 'CHEFE' ? ' A conta será pré-aprovada automaticamente.' : ' Requer aprovação após o cadastro.'}
+                Convite para <span style={{
+                  color:
+                    inviteRoleResult === 'AGENTE_POLITICO' ? '#c084fc' :
+                    inviteRoleResult === 'CHEFE'           ? '#4a9ede' :
+                                                              '#4ade80',
+                  fontWeight: 600,
+                }}>
+                  {ROLE_LABELS[inviteRoleResult] ?? 'Assessor'}</span>.
+                {inviteRoleResult === 'CHEFE' || inviteRoleResult === 'AGENTE_POLITICO'
+                  ? ' A conta será pré-aprovada automaticamente.'
+                  : ' Requer aprovação após o cadastro.'}
                 {' '}Expira em <span style={{ color: '#e6b83a' }}>7 dias</span>.
               </p>
               <div className="flex items-center gap-2 rounded-xl p-3 mb-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -810,6 +986,115 @@ export default function UsuariosPage() {
                   </button>
                 </>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL: Aprovar com permissões
+      ══════════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {showApproveModal && approveTarget && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+            onClick={e => { if (e.target === e.currentTarget && actionId !== approveTarget.id) setShowApproveModal(false); }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md rounded-2xl p-6 space-y-4"
+              style={{ background: '#071d36', border: '1px solid rgba(34,197,94,0.25)' }}>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)' }}>
+                  <Check className="w-5 h-5" style={{ color: '#4ade80' }} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-white font-semibold text-sm">Aprovar usuário</h3>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    {approveTarget.name} · <RoleBadge role={approveTarget.role} />
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                Selecione quais áreas este usuário poderá acessar:
+              </p>
+
+              <PermissionsChecklist
+                selected={approvePerms}
+                onToggle={(p) => togglePermInSet(approvePerms, setApprovePerms, p)}
+                onSelectAll={() => setApprovePerms(new Set(ALL_PERMISSIONS))}
+                onClear={() => setApprovePerms(new Set())}
+                accent={ACCENT_EMERALD}
+              />
+
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setShowApproveModal(false)} disabled={actionId === approveTarget.id}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+                  style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  Cancelar
+                </button>
+                <button onClick={() => approveUser(approveTarget.id, Array.from(approvePerms))}
+                  disabled={actionId === approveTarget.id}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg,#16a34a,#22c55e)', color: '#04111f' }}>
+                  {actionId === approveTarget.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  {actionId === approveTarget.id ? 'Aprovando...' : 'Aprovar'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL: Editar Permissões
+      ══════════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {showEditPermsModal && editPermsTarget && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+            onClick={e => { if (e.target === e.currentTarget && !savingPerms) setShowEditPermsModal(false); }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md rounded-2xl p-6 space-y-4"
+              style={{ background: '#071d36', border: '1px solid rgba(168,85,247,0.25)' }}>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)' }}>
+                  <SlidersHorizontal className="w-5 h-5" style={{ color: '#c084fc' }} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-white font-semibold text-sm">Editar permissões</h3>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    {editPermsTarget.name}
+                  </p>
+                </div>
+              </div>
+
+              <PermissionsChecklist
+                selected={editPerms}
+                onToggle={(p) => togglePermInSet(editPerms, setEditPerms, p)}
+                onSelectAll={() => setEditPerms(new Set(ALL_PERMISSIONS))}
+                onClear={() => setEditPerms(new Set())}
+                accent={ACCENT_PURPLE}
+              />
+
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setShowEditPermsModal(false)} disabled={savingPerms}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+                  style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  Cancelar
+                </button>
+                <button onClick={confirmEditPermissions} disabled={savingPerms}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg,#9333ea,#a855f7)', color: '#fff' }}>
+                  {savingPerms ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  {savingPerms ? 'Salvando...' : 'Salvar'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

@@ -39,6 +39,7 @@ export const authOptions: NextAuthOptions = {
           gabineteId: user.gabineteId,
           gabineteNome: user.gabinete?.nome,
           mustChangePassword: user.mustChangePassword,
+          permissions: user.permissions ?? [],
         };
       }
     })
@@ -69,20 +70,29 @@ export const authOptions: NextAuthOptions = {
         token.gabineteId = (user as any).gabineteId;
         token.gabineteNome = (user as any).gabineteNome;
         token.mustChangePassword = (user as any).mustChangePassword;
+        token.permissions = (user as any).permissions ?? [];
       }
       if (trigger === 'update') {
         const s = session as any ?? {};
         if (s?.gabineteId !== undefined) {
-          // Troca de gabinete pelo ADMIN (não persiste no DB, só na sessão)
-          token.gabineteId  = s.gabineteId  ?? null;
-          token.gabineteNome = s.gabineteNome ?? null;
+          // Troca de gabinete: apenas ADMIN pode. Para qualquer outro role o
+          // pedido é silenciosamente ignorado — não confiamos só na UI esconder
+          // o switcher porque o cliente pode chamar update() diretamente.
+          if (token.role === 'ADMIN') {
+            token.gabineteId  = s.gabineteId  ?? null;
+            token.gabineteNome = s.gabineteNome ?? null;
+          }
         } else if (token.id) {
-          // Refresh de mustChangePassword após redefinição de senha
+          // Refresh de mustChangePassword + permissions após mudanças no perfil
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { mustChangePassword: true },
+            select: { mustChangePassword: true, role: true, permissions: true },
           });
-          if (dbUser) token.mustChangePassword = dbUser.mustChangePassword;
+          if (dbUser) {
+            token.mustChangePassword = dbUser.mustChangePassword;
+            token.role = dbUser.role;
+            token.permissions = dbUser.permissions ?? [];
+          }
         }
       }
       return token;
@@ -95,6 +105,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).gabineteId = token.gabineteId;
         (session.user as any).gabineteNome = token.gabineteNome;
         (session.user as any).mustChangePassword = token.mustChangePassword;
+        (session.user as any).permissions = token.permissions ?? [];
       }
       return session;
     }

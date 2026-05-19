@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { sendUserApprovedEmail } from '@/lib/email';
+import { ALL_PERMISSIONS, hasFullAccess } from '@/lib/permissions';
 
 export async function POST(
   request: NextRequest,
@@ -36,9 +37,31 @@ export async function POST(
       return NextResponse.json({ error: 'Você só pode aprovar usuários do seu gabinete' }, { status: 403 });
     }
 
+    // Permissões opcionais no body. Para ADMIN/AGENTE_POLITICO o array é ignorado
+    // porque acesso total já é resolvido em tempo de execução (hasPermission).
+    let permissions: string[] | undefined;
+    try {
+      const body = await request.json().catch(() => null);
+      const raw = body?.permissions;
+      if (Array.isArray(raw)) {
+        const invalid = raw.filter((p: string) => !ALL_PERMISSIONS.includes(p as any));
+        if (invalid.length > 0) {
+          return NextResponse.json({ error: `Permissões inválidas: ${invalid.join(', ')}` }, { status: 400 });
+        }
+        permissions = Array.from(new Set(raw));
+      }
+    } catch {
+      // sem body — segue sem mexer em permissions
+    }
+
+    const data: { approved: boolean; permissions?: string[] } = { approved: true };
+    if (permissions !== undefined && !hasFullAccess(userToApprove.role)) {
+      data.permissions = permissions;
+    }
+
     const user = await prisma.user.update({
       where: { id: params?.id ?? '' },
-      data: { approved: true }
+      data,
     });
 
     // Notificar o usuário aprovado por e-mail

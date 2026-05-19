@@ -12,6 +12,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { Star, Trash2, MapPin, Calendar, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ESTADOS_BRASIL } from '@/lib/types';
+import { PERMISSIONS, hasPermission } from '@/lib/permissions';
 
 interface Favorite {
   id: string;
@@ -26,14 +27,16 @@ export default function FavoritosPage() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
   const userRole = (session?.user as any)?.role;
+  const userPermissions = (session?.user as any)?.permissions ?? [];
+  const canAccess = hasPermission({ role: userRole, permissions: userPermissions }, PERMISSIONS.MAPA_ELEITORAL);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'authenticated' && userRole !== 'CHEFE' && userRole !== 'ADMIN') {
+    if (status === 'authenticated' && !canAccess) {
       router.replace('/dashboard');
     }
-  }, [status, userRole, router]);
+  }, [status, canAccess, router]);
 
   useEffect(() => {
     const fetchFavorites = async () => {
@@ -49,10 +52,10 @@ export default function FavoritosPage() {
         setLoading(false);
       }
     };
-    if (userRole === 'CHEFE' || userRole === 'ADMIN') {
+    if (canAccess) {
       fetchFavorites();
     }
-  }, [userRole]);
+  }, [canAccess]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Remover este candidato dos favoritos?')) return;
@@ -75,7 +78,7 @@ export default function FavoritosPage() {
     return <LoadingState />;
   }
 
-  if (userRole !== 'CHEFE' && userRole !== 'ADMIN') {
+  if (!canAccess) {
     return null;
   }
 
