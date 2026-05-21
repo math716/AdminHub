@@ -59,33 +59,48 @@ function normalizeNome(s: string): string {
  * sem acento, sem pontuação.
  */
 const TSE_TO_IBGE_FIXES: Record<string, string> = {
-  // Apóstrofes que o TSE substitui por "DO"/"DOS"
-  'ALVORADA DO OESTE':     'ALVORADA D OESTE',
-  'ESPIGAO DO OESTE':      'ESPIGAO D OESTE',
-  // Z vs S
-  'DONA EUSEBIA':          'DONA EUZEBIA',
-  // L duplo vs simples
-  'MUNHOZ DE MELLO':       'MUNHOZ DE MELO',
-  // Hifenizações no IBGE que o TSE não usa (normalize já tira o hífen,
-  // mas só pra documentar — esses normalmente casam após normalize)
-  // Outros casos que podem aparecer:
-  'POXOREO':               'POXOREU',           // MT
-  'BIRITIBA MIRIM':        'BIRITIBA-MIRIM',    // SP (hífen)
-  'EMBU':                  'EMBU DAS ARTES',    // SP (renomeação)
-  'PINGO DAGUA':           'PINGO D AGUA',      // MG
-  'OLHO D AGUA':           'OLHOS D AGUA',      // MG (plural)
-  'BRASOPOLIS':            'BRAZOPOLIS',        // MG
-  'ITAOCARA':              'ITAOCARA',          // RJ (placeholder)
-  'TRAJANO DE MORAIS':     'TRAJANO DE MORAES', // RJ
-  'PARATI':                'PARATY',            // RJ
-  'MOJI MIRIM':            'MOGI MIRIM',        // SP
-  'MOGI MIRIM':            'MOGI MIRIM',        // SP
-  'SAO LUIS DO PARAITINGA': 'SAO LUIZ DO PARAITINGA', // SP
-  'SANT ANA DO LIVRAMENTO': 'SANTANA DO LIVRAMENTO',  // RS
-  'PRESIDENTE JUSCELINO':  'PRESIDENTE JUSCELINO', // MG/MA
-  'FLORINEA':              'FLORINIA',          // SP
-  'BIRITINGA':             'BIRITINGA',         // BA
-  'IGUARACI':              'IGUARACY',          // PE
+  // ── Apóstrofes que o TSE escreve "DO"/"DOS" (após normalize, vira espaço)
+  'ALVORADA DO OESTE':         'ALVORADA D OESTE',            // RO
+  'ESPIGAO DO OESTE':          'ESPIGAO D OESTE',             // RO
+
+  // ── Z vs S
+  'DONA EUSEBIA':              'DONA EUZEBIA',                // MG
+
+  // ── L duplo vs simples
+  'MUNHOZ DE MELLO':           'MUNHOZ DE MELO',              // PR
+
+  // ── DE vs DO / DOS — preposição diferente entre TSE e IBGE
+  'BARAO DE MONTE ALTO':       'BARAO DO MONTE ALTO',         // MG (TSE: DE, IBGE: DO)
+  'SANTO ANTONIO DO LEVERGER': 'SANTO ANTONIO DE LEVERGER',   // MT (TSE: DO, IBGE: DE)
+  'ELDORADO DOS CARAJAS':      'ELDORADO DO CARAJAS',         // PA (TSE: DOS, IBGE: DO)
+  'AMPARO DE SAO FRANCISCO':   'AMPARO DO SAO FRANCISCO',     // SE (TSE: DE, IBGE: DO)
+
+  // ── TH vs T
+  'SAO THOME DAS LETRAS':      'SAO TOME DAS LETRAS',         // MG
+
+  // ── Renomeações oficiais
+  'BOA SAUDE':                 'JANUARIO CICCO',              // RN (renomeado em 2002)
+  'EMBU':                      'EMBU DAS ARTES',              // SP (renomeado em 2011)
+
+  // ── Forma curta TSE vs forma completa IBGE
+  'SAO LUIZ':                  'SAO LUIZ DO ANAUA',           // RR
+  'CAMACA':                    'CAMACAN',                     // BA (TSE corta o N final)
+
+  // ── Apóstrofe IBGE vs ausência TSE (após normalize ambos ficam sem)
+  // mantidos como self-fix pra forçar lookup caso encoding traga invisíveis:
+  'SANT ANA DO LIVRAMENTO':    'SANTANA DO LIVRAMENTO',       // RS
+  'OLHO D AGUA':               'OLHO D AGUA',                 // PB (self — força match)
+
+  // ── Variações ortográficas que normalmente casam mas podem divergir
+  'FLORINEA':                  'FLORINEA',                    // SP (self)
+  'BIRITIBA MIRIM':            'BIRITIBA MIRIM',              // SP (self)
+  'POXOREO':                   'POXOREU',                     // MT
+  'BRASOPOLIS':                'BRAZOPOLIS',                  // MG
+  'TRAJANO DE MORAIS':         'TRAJANO DE MORAES',           // RJ
+  'PARATI':                    'PARATY',                      // RJ
+  'MOJI MIRIM':                'MOGI MIRIM',                  // SP
+  'SAO LUIS DO PARAITINGA':    'SAO LUIZ DO PARAITINGA',      // SP
+  'IGUARACI':                  'IGUARACY',                    // PE
 };
 
 function parseValorBR(v: any): number {
