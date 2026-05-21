@@ -1,9 +1,11 @@
 export const dynamic = 'force-dynamic';
+// Pode demorar até ~30s pra estados grandes — Vercel Pro suporta 60s.
+export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import { PORTAL_MOCK_MODE, listEmendasPorMunicipio, type PortalEmenda } from '@/lib/portal-transparencia';
+import { PORTAL_MOCK_MODE, getAllEmendasDoAno, type PortalEmenda } from '@/lib/portal-transparencia';
 
 // Resumo de emendas para um UF inteiro num determinado ano.
 // Retorna: total, top 5 municípios, totais por área, totais por parlamentar.
@@ -29,30 +31,9 @@ export async function GET(request: NextRequest) {
     const ufCode = ufCodes[uf];
     if (!ufCode) return NextResponse.json({ error: 'UF inválido' }, { status: 400 });
 
-    const munRes = await fetch(
-      `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${ufCode}/municipios`,
-      { next: { revalidate: 86400 } },
-    );
-    if (!munRes.ok) throw new Error('Falha ao listar municípios');
-    const munList: { id: number; nome: string }[] = await munRes.json();
-
-    // Coleta paralela (em modo mock é instantâneo; em produção rate-limit aplicado).
-    const all: PortalEmenda[] = [];
-    const batchSize = PORTAL_MOCK_MODE ? munList.length : 8;
-    for (let i = 0; i < munList.length; i += batchSize) {
-      const batch = munList.slice(i, i + batchSize);
-      const res = await Promise.all(
-        batch.map((m) =>
-          listEmendasPorMunicipio({
-            codigoIbge: String(m.id),
-            uf,
-            municipioNome: m.nome,
-            ano,
-          }).catch(() => [] as PortalEmenda[]),
-        ),
-      );
-      res.forEach((arr) => all.push(...arr));
-    }
+    // Fonte única: baixa todas as emendas do ano da UF de uma vez. O cache
+    // interno garante que detalhe de município e Top 5 batem nos números.
+    const all = await getAllEmendasDoAno({ ano, uf });
 
     // Agregações
     const totalEmpenhado = all.reduce((s, e) => s + (e.valorEmpenhado ?? 0), 0);

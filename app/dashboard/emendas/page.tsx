@@ -103,6 +103,7 @@ interface MunicipioStats {
   eleitores: number | null;
   tetoMac: number | null;
   tetoPap: number | null;
+  fonteHabitantes: string | null;
   hasSnapshot: boolean;
 }
 
@@ -927,10 +928,26 @@ function MunicipioPopup({
           </div>
         ) : (
           <div className="space-y-1.5 text-[11px]">
-            <PopupRow label="Habitantes" value={stats?.habitantes != null ? stats.habitantes.toLocaleString('pt-BR') : '—'} />
-            <PopupRow label="Eleitores"  value={stats?.eleitores  != null ? stats.eleitores.toLocaleString('pt-BR')  : '—'} />
-            <PopupRow label="Teto MAC"   value={stats?.tetoMac    != null ? formatBRL(stats.tetoMac)                  : 'não cadastrado'} />
-            <PopupRow label="Teto PAP"   value={stats?.tetoPap    != null ? formatBRL(stats.tetoPap)                  : 'não cadastrado'} />
+            <PopupRow
+              label="Habitantes"
+              value={stats?.habitantes != null ? stats.habitantes.toLocaleString('pt-BR') : '—'}
+              hint={stats?.fonteHabitantes ?? undefined}
+            />
+            <PopupRow
+              label="Eleitores"
+              value={stats?.eleitores != null ? stats.eleitores.toLocaleString('pt-BR') : '—'}
+              hint={stats?.eleitores == null ? 'requer importação do TSE' : undefined}
+            />
+            <PopupRow
+              label="Teto MAC"
+              value={stats?.tetoMac != null ? formatBRL(stats.tetoMac) : '—'}
+              hint={stats?.tetoMac == null ? 'requer cadastro manual (DataSUS)' : undefined}
+            />
+            <PopupRow
+              label="Teto PAP"
+              value={stats?.tetoPap != null ? formatBRL(stats.tetoPap) : '—'}
+              hint={stats?.tetoPap == null ? 'requer cadastro manual (DataSUS)' : undefined}
+            />
           </div>
         )}
       </motion.div>
@@ -938,11 +955,14 @@ function MunicipioPopup({
   );
 }
 
-function PopupRow({ label, value }: { label: string; value: string }) {
+function PopupRow({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-slate-400">{label}</span>
-      <span className="text-white font-semibold">{value}</span>
+    <div className="flex items-start justify-between gap-2">
+      <span className="text-slate-400 flex-shrink-0">{label}</span>
+      <div className="text-right min-w-0">
+        <span className={value === '—' ? 'text-slate-500' : 'text-white font-semibold'}>{value}</span>
+        {hint && <p className="text-[9px] text-slate-500 italic mt-0.5 leading-tight">{hint}</p>}
+      </div>
     </div>
   );
 }
