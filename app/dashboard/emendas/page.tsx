@@ -712,7 +712,13 @@ function EmendasPorAreaCard({
       ) : (
         <>
           <div className="h-44 relative">
-            <Donut3DChart data={data.slice(0, 6)} centerValue={formatBRLCompact(total)} centerLabel="total" />
+            <Donut3DChart
+              data={data.slice(0, 6)}
+              centerValue={formatBRLCompact(total)}
+              centerLabel="total"
+              hideLegend
+              valueFormatter={formatBRL}
+            />
           </div>
           <div className="mt-3 space-y-1.5">
             {areas.slice(0, 4).map((a) => {
@@ -1020,7 +1026,12 @@ function ParlamentarDashboard({
             ) : (
               <>
                 <div className="h-56 relative">
-                  <Donut3DChart data={porArea.slice(0, 6)} centerValue={formatBRLCompact(totalAno)} centerLabel={`em ${ano}`} />
+                  <Donut3DChart
+                    data={porArea.slice(0, 6)}
+                    centerValue={formatBRLCompact(totalAno)}
+                    centerLabel={`em ${ano}`}
+                    valueFormatter={formatBRL}
+                  />
                 </div>
               </>
             )}
