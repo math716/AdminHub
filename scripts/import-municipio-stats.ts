@@ -21,7 +21,15 @@ import readline from 'node:readline';
 import { PrismaClient } from '@prisma/client';
 import * as XLSX from 'xlsx';
 
-const prisma = new PrismaClient();
+// Força o uso do DIRECT_URL (Session Pooler 5432) em vez do DATABASE_URL
+// (Transaction Pooler 6543). O Transaction Pooler usa pgBouncer em "transaction
+// mode", que quebra prepared statements do Prisma (`prepared statement "s0"
+// does not exist`). Pra scripts longos com muitos upserts, Session Pooler
+// é a escolha certa.
+const dbUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+const prisma = new PrismaClient({
+  datasources: { db: { url: dbUrl } },
+});
 
 // ────────────────────────────────────────────────────────────────────────────
 // CLI args parsing
@@ -435,10 +443,11 @@ async function main() {
     return;
   }
 
-  // 4. Upsert em lotes
-  console.log(`\n💾 Gravando no banco em lotes de 50…`);
+  // 4. Upsert em lotes — batch menor pra não saturar o pooler.
+  // Pra free tier do Supabase, 10 conexões simultâneas é confortável.
+  console.log(`\n💾 Gravando no banco em lotes de 10…`);
   const ibgesArr = Array.from(ibgesParaUpsert);
-  const batchSize = 50;
+  const batchSize = 10;
   let total = 0;
 
   const round2 = (n: number | null | undefined): number | null =>
