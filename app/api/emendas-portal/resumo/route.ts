@@ -36,8 +36,15 @@ export async function GET(request: NextRequest) {
     const all = await getAllEmendasDoAno({ ano, uf });
 
     // Agregações
-    const totalEmpenhado = all.reduce((s, e) => s + (e.valorEmpenhado ?? 0), 0);
-    const totalPago      = all.reduce((s, e) => s + (e.valorPago ?? 0), 0);
+    // totalEmpenhado: TUDO (incluindo emendas com localidadeDoGasto = "Nacional"
+    // ou "UF inteiro", que não têm município identificado)
+    // totalMunicipalizado: só emendas com município identificado (bate com a
+    // soma dos top municípios e o valor mostrado no mapa)
+    // totalEstadual: emendas direcionadas ao estado todo ou Nacional
+    const totalEmpenhado       = all.reduce((s, e) => s + (e.valorEmpenhado ?? 0), 0);
+    const totalPago            = all.reduce((s, e) => s + (e.valorPago ?? 0), 0);
+    const totalMunicipalizado  = all.reduce((s, e) => s + (e.codigoIbge ? (e.valorEmpenhado ?? 0) : 0), 0);
+    const totalEstadual        = totalEmpenhado - totalMunicipalizado;
 
     const porMunicipio = new Map<string, { codigoIbge: string; nome: string; total: number; qtd: number }>();
     const porArea       = new Map<string, number>();
@@ -98,6 +105,8 @@ export async function GET(request: NextRequest) {
       ano,
       totalEmpenhado,
       totalPago,
+      totalMunicipalizado,
+      totalEstadual,
       totalEmendas: all.length,
       topMunicipios,
       valorPorMunicipio,

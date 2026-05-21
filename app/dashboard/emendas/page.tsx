@@ -112,6 +112,8 @@ interface ResumoEstado {
   ano: number;
   totalEmpenhado: number;
   totalPago: number;
+  totalMunicipalizado: number;
+  totalEstadual: number;
   totalEmendas: number;
   topMunicipios: { codigoIbge: string; nome: string; total: number; qtd: number }[];
   valorPorMunicipio: Record<string, number>;
@@ -579,9 +581,14 @@ function ResumoGeralCard({
   municipioStats: MunicipioStats | null;
   resumo: ResumoEstado | null;
 }) {
+  // Quando há município selecionado: mostra só o que foi destinado a ele.
+  // Quando NÃO há município (visão do estado): mostra o total municipalizado
+  // (que bate com a soma dos top municípios). O total estadual entra como
+  // sublinha pra deixar claro que ainda há "verba sem destino municipal".
   const total = municipio
     ? (resumo?.valorPorMunicipio?.[municipio.codigo] ?? 0)
-    : (resumo?.totalEmpenhado ?? 0);
+    : (resumo?.totalMunicipalizado ?? 0);
+  const totalEstadual = !municipio ? (resumo?.totalEstadual ?? 0) : 0;
   const tetoMac = municipio ? municipioStats?.tetoMac ?? null : null;
   const tetoPap = municipio ? municipioStats?.tetoPap ?? null : null;
   const habitantes = municipio ? municipioStats?.habitantes ?? null : null;
@@ -625,9 +632,13 @@ function ResumoGeralCard({
           icon={<Landmark className="w-4 h-4" />}
           iconBg="rgba(16,185,129,0.15)"
           iconColor="#10b981"
-          label="Total de Emendas"
+          label={municipio ? 'Total de Emendas' : 'Total Municipalizado'}
           value={formatBRL(total)}
-          sub={`em ${ano}`}
+          sub={
+            !municipio && totalEstadual > 0
+              ? `${formatBRLCompact(totalEstadual)} adicional sem município`
+              : `em ${ano}`
+          }
         />
         <ResumoStat
           icon={<Building2 className="w-4 h-4" />}
@@ -946,7 +957,7 @@ function MunicipioPopup({
             <PopupRow
               label="Teto PAP"
               value={stats?.tetoPap != null ? formatBRL(stats.tetoPap) : '—'}
-              hint={stats?.tetoPap == null ? 'requer cadastro manual (DataSUS)' : undefined}
+              hint={stats?.tetoPap == null ? 'fonte SISAPS — pendente' : undefined}
             />
           </div>
         )}
@@ -1131,23 +1142,27 @@ function ComparativoAreasCard({
   areasAtual: { area: EmendaArea; total: number }[];
   areasAnterior: Map<string, number>;
 }) {
+  // Cada card mostra UMA área literal (mesmo critério do donut acima).
+  // O card "OUTRAS ÁREAS" soma tudo que não é Saúde/Educação/Segurança —
+  // legendado como tal pra evitar confusão com a área literal "OUTROS".
   const principais: EmendaArea[] = ['SAUDE', 'EDUCACAO', 'SEGURANCA', 'OUTROS'];
 
-  // Reduz "OUTROS" como soma de todas as áreas fora das principais
-  const principaisSomadas: { area: EmendaArea; atual: number; anterior: number }[] = principais.map((area) => {
-    if (area === 'OUTROS') {
-      const principaisSet = new Set<EmendaArea>(['SAUDE', 'EDUCACAO', 'SEGURANCA']);
-      const atual = areasAtual.reduce((s, a) => s + (principaisSet.has(a.area) ? 0 : a.total), 0);
-      const anterior = Array.from(areasAnterior.entries()).reduce(
-        (s, [k, v]) => s + (principaisSet.has(k as EmendaArea) ? 0 : v),
-        0,
-      );
-      return { area, atual, anterior };
-    }
-    const atual = areasAtual.find((a) => a.area === area)?.total ?? 0;
-    const anterior = areasAnterior.get(area) ?? 0;
-    return { area, atual, anterior };
-  });
+  const principaisSomadas: { area: EmendaArea; label: string; atual: number; anterior: number }[] =
+    principais.map((area) => {
+      if (area === 'OUTROS') {
+        // "Outras áreas" — agrega tudo que não é uma das 3 principais
+        const principaisSet = new Set<EmendaArea>(['SAUDE', 'EDUCACAO', 'SEGURANCA']);
+        const atual = areasAtual.reduce((s, a) => s + (principaisSet.has(a.area) ? 0 : a.total), 0);
+        const anterior = Array.from(areasAnterior.entries()).reduce(
+          (s, [k, v]) => s + (principaisSet.has(k as EmendaArea) ? 0 : v),
+          0,
+        );
+        return { area, label: 'Outras áreas', atual, anterior };
+      }
+      const atual = areasAtual.find((a) => a.area === area)?.total ?? 0;
+      const anterior = areasAnterior.get(area) ?? 0;
+      return { area, label: AREA_LABELS[area], atual, anterior };
+    });
 
   return (
     <div
@@ -1158,7 +1173,7 @@ function ComparativoAreasCard({
         Comparativo por área (em relação ao ano anterior)
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {principaisSomadas.map(({ area, atual, anterior }) => {
+        {principaisSomadas.map(({ area, label, atual, anterior }) => {
           const delta = anterior > 0 ? ((atual - anterior) / anterior) * 100 : atual > 0 ? 100 : 0;
           const isUp = delta >= 0;
           const color = AREA_COLORS[area];
@@ -1167,13 +1182,14 @@ function ComparativoAreasCard({
               key={area}
               className="rounded-xl p-3.5"
               style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}
+              title={area === 'OUTROS' ? 'Soma de Assistência Social, Transporte, Cultura, Esporte e outras áreas que não são Saúde, Educação ou Segurança' : undefined}
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${color}22`, color, border: `1px solid ${color}44` }}>
                   <Landmark className="w-4 h-4" />
                 </div>
                 <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color }}>
-                  {AREA_LABELS[area]}
+                  {label}
                 </span>
               </div>
               <p className="text-white font-bold text-lg">{formatBRL(atual)}</p>
