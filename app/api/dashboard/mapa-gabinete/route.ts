@@ -6,9 +6,9 @@ import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 
 // Endpoint combinado que serve o load inicial da pagina Mapa do Gabinete.
-// Substitui 3 chamadas paralelas (/api/demands + /api/agenda + /api/emendas)
-// por 1 unica Lambda — corta 2/3 do custo de cold-start em serverless e
-// evita abrir 3 conexoes Postgres simultaneas.
+// Substitui 2 chamadas paralelas (/api/demands + /api/agenda) por 1 unica
+// Lambda — corta o custo de cold-start em serverless e evita abrir conexoes
+// Postgres simultaneas.
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -30,8 +30,8 @@ export async function GET() {
       },
     }).catch((e: unknown) => console.error('agenda cleanup error:', e));
 
-    // Tres queries em paralelo no MESMO processo — uma unica conexao do pool.
-    const [demands, agendaEvents, emendas] = await Promise.all([
+    // Duas queries em paralelo no MESMO processo — uma unica conexao do pool.
+    const [demands, agendaEvents] = await Promise.all([
       prisma.demand.findMany({
         where: { gabineteId },
         orderBy: { createdAt: 'desc' },
@@ -49,25 +49,11 @@ export async function GET() {
         orderBy: { data: 'asc' },
         include: { createdBy: { select: { name: true } } },
       }),
-      prisma.emenda.findMany({
-        where: { gabineteId },
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true, titulo: true, descricao: true, valor: true, autor: true,
-          numero: true, ano: true, tipo: true, orgaoExecutor: true,
-          status: true, beneficiario: true, estado: true, municipio: true,
-          bairro: true, endereco: true, lat: true, lng: true,
-          documentoNome: true, observations: true, gabineteId: true,
-          createdById: true, createdAt: true, updatedAt: true,
-          createdBy: { select: { name: true, email: true } },
-        },
-      }),
     ]);
 
     return NextResponse.json({
       demands:      demands      ?? [],
       agendaEvents: agendaEvents ?? [],
-      emendas:      emendas      ?? [],
     }, {
       headers: { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=120' },
     });

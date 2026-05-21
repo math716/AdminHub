@@ -42,3 +42,6 @@ public/data/tse/secao/
 prisma/migrations/dev.db
 *.db
 *.db-journal
+
+# Claude Code (agent local state)
+.claude/
