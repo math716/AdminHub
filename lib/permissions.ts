@@ -56,6 +56,7 @@ export const PERMISSIONS = {
   DEMANDAS:         'DEMANDAS',
   PROJETO_CAMPANHA: 'PROJETO_CAMPANHA',
   MAPA_ELEITORAL:   'MAPA_ELEITORAL',
+  EMENDAS_MAPA:     'EMENDAS_MAPA',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -69,6 +70,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   DEMANDAS:         'Demandas',
   PROJETO_CAMPANHA: 'Projeto de Campanha',
   MAPA_ELEITORAL:   'Mapa Eleitoral',
+  EMENDAS_MAPA:     'Mapa de Emendas',
 };
 
 // Mapeia prefixo de rota → permissão exigida. Rotas não listadas (/dashboard,
@@ -81,6 +83,7 @@ export const PATH_PERMISSIONS: { prefix: string; permission: Permission }[] = [
   { prefix: '/dashboard/demandas',      permission: PERMISSIONS.DEMANDAS         },
   { prefix: '/dashboard/mapa-campanha', permission: PERMISSIONS.PROJETO_CAMPANHA },
   { prefix: '/dashboard/mapa',          permission: PERMISSIONS.MAPA_ELEITORAL   },
+  { prefix: '/dashboard/emendas',       permission: PERMISSIONS.EMENDAS_MAPA     },
 ];
 
 export function requiredPermissionForPath(pathname: string): Permission | null {

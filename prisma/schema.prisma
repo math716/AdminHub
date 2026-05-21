@@ -46,18 +46,32 @@ enum DemandCategory {
   OUTROS
 }
 
-enum EmendaTipo {
-  INDIVIDUAL
-  BANCADA
-  COMISSAO
-  RELATOR
+/// Área temática da emenda parlamentar (Portal da Transparência).
+/// Derivada do campo `funcao` (classificação funcional do orçamento).
+enum EmendaArea {
+  SAUDE
+  EDUCACAO
+  SEGURANCA
+  INFRAESTRUTURA
+  ASSISTENCIA_SOCIAL
+  AGRICULTURA
+  CULTURA
+  ESPORTE
+  MEIO_AMBIENTE
+  TRANSPORTE
+  HABITACAO
+  SANEAMENTO
+  OUTROS
 }
 
-enum EmendaStatus {
-  PROPOSTA
-  EMPENHADA
-  PAGA
-  CANCELADA
+/// Esfera do parlamentar autor da emenda.
+enum ParlamentarCargo {
+  VEREADOR
+  PREFEITO
+  DEPUTADO_ESTADUAL
+  DEPUTADO_FEDERAL
+  SENADOR
+  GOVERNADOR
 }
 
 // ============== MODELS ==============
@@ -79,7 +93,6 @@ model Gabinete {
   demands       Demand[]
   agendaEvents  AgendaEvent[]
   contatos      Contato[]
-  emendas       Emenda[]
 
   @@map("gabinetes")
 }
@@ -105,7 +118,6 @@ model User {
   demands       Demand[]          @relation("CreatedBy")
   agendaEvents  AgendaEvent[]     @relation("AgendaCreatedBy")
   contatos      Contato[]         @relation("ContatoCreatedBy")
-  emendas       Emenda[]          @relation("EmendaCreatedBy")
   favorites     Favorite[]
   projecoes     ProjecaoCampanha[]
   accounts      Account[]
@@ -238,46 +250,6 @@ model AgendaEvent {
   @@index([data])
   @@index([gabineteId, data])
   @@map("agenda_events")
-}
-
-/// Emenda Parlamentar
-model Emenda {
-  id              String        @id @default(cuid())
-  titulo          String
-  descricao       String?
-  valor           Float?
-  autor           String?
-  numero          String?
-  ano             Int?
-  tipo            EmendaTipo    @default(INDIVIDUAL)
-  orgaoExecutor   String?
-  status          EmendaStatus  @default(PROPOSTA)
-  beneficiario    String?
-  estado          String?
-  municipio       String?
-  bairro          String?
-  endereco        String?
-  lat             Float?
-  lng             Float?
-  documento       String?       @db.Text
-  documentoNome   String?
-  observations    String?
-
-  gabineteId      String
-  gabinete        Gabinete      @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
-
-  createdById     String
-  createdBy       User          @relation("EmendaCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
-
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  @@index([gabineteId])
-  @@index([createdById])
-  @@index([status])
-  @@index([tipo])
-  @@index([ano])
-  @@map("emendas")
 }
 
 /// Favoritos do Usuário (Candidatos)
@@ -553,4 +525,95 @@ model Parceria {
 
   @@index([projecaoMunicipioId])
   @@map("parcerias")
+}
+
+/// Estatísticas anuais de um município (compartilhadas entre todos os gabinetes).
+/// Habitantes/eleitores podem ser sincronizados via IBGE/TSE; tetoMac e tetoPap
+/// (limites SUS de Média e Alta Complexidade / Procedimentos de Atenção Primária)
+/// são importados manualmente do DataSUS — ano a ano.
+model MunicipioStats {
+  id           String   @id @default(cuid())
+  codigoIbge   String
+  uf           String
+  nome         String
+  ano          Int
+  habitantes   Int?
+  eleitores    Int?
+  tetoMac      Float?
+  tetoPap      Float?
+  fonte        String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([codigoIbge, ano])
+  @@index([uf, ano])
+  @@map("municipio_stats")
+}
+
+/// Parlamentar autor de emendas (Portal da Transparência). Cache compartilhado
+/// entre gabinetes para evitar buscar repetidamente no Portal.
+model Parlamentar {
+  id           String           @id @default(cuid())
+  cpf          String?          @unique
+  idPortal     String?          @unique
+  nome         String
+  nomeUrna     String?
+  partido      String?
+  uf           String?
+  cargo        ParlamentarCargo
+  ativo        Boolean          @default(true)
+  fotoUrl      String?
+
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  emendas      EmendaParlamentar[]
+
+  @@index([cargo])
+  @@index([uf])
+  @@index([partido])
+  @@index([nome])
+  @@map("parlamentares")
+}
+
+/// Cache de emendas parlamentares puxadas do Portal da Transparência.
+/// idPortal é o identificador único do Portal — usado para upsert ao sincronizar.
+model EmendaParlamentar {
+  id                String       @id @default(cuid())
+  idPortal          String       @unique
+  ano               Int
+  numero            String?
+  tipo              String?
+  funcao            String?
+  subfuncao         String?
+  area              EmendaArea   @default(OUTROS)
+  objeto            String?
+  valorEmpenhado    Float        @default(0)
+  valorPago         Float        @default(0)
+  valorRestoPago    Float        @default(0)
+  valorProposto     Float?
+  orgaoExecutor     String?
+  unidadeOrcamentaria String?
+  beneficiario      String?
+  cnpjBeneficiario  String?
+
+  uf                String?
+  codigoIbge        String?
+  municipioNome     String?
+
+  parlamentarId     String?
+  parlamentar       Parlamentar? @relation(fields: [parlamentarId], references: [id], onDelete: SetNull)
+
+  fetchedAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([ano])
+  @@index([codigoIbge])
+  @@index([codigoIbge, ano])
+  @@index([parlamentarId])
+  @@index([parlamentarId, ano])
+  @@index([area])
+  @@index([uf, ano])
+  @@map("emendas_parlamentares")
 }

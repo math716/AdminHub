@@ -47,35 +47,15 @@ interface Contato {
   lng?: number;
 }
 
-interface Emenda {
-  id: string;
-  titulo: string;
-  autor?: string;
-  numero?: string;
-  ano?: number;
-  valor?: number;
-  tipo: string;
-  status: string;
-  beneficiario?: string;
-  municipio?: string;
-  estado?: string;
-  endereco?: string;
-  lat?: number;
-  lng?: number;
-}
-
 interface Props {
   demands: Demand[];
   agendaEvents: AgendaEvent[];
-  emendas?: Emenda[];
   contatos?: Contato[];
   center?: [number, number] | null;
   selectedDemandId?: string;
   selectedEventId?: string;
-  selectedEmendaId?: string;
   onDemandClick: (id: string) => void;
   onEventClick: (id: string) => void;
-  onEmendaClick?: (id: string) => void;
   showSpDistritos?: boolean;
 }
 
@@ -101,23 +81,6 @@ const TIPO_AGENDA_LABELS: Record<string, string> = {
   REUNIAO: 'Reunião', VISITA: 'Visita', EVENTO: 'Evento', COMPROMISSO: 'Compromisso',
 };
 
-const EMENDA_STATUS_COLORS: Record<string, string> = {
-  PROPOSTA:  '#6366f1',
-  EMPENHADA: '#f59e0b',
-  PAGA:      '#10b981',
-  CANCELADA: '#64748b',
-};
-const EMENDA_STATUS_LABELS: Record<string, string> = {
-  PROPOSTA: 'Proposta', EMPENHADA: 'Empenhada', PAGA: 'Paga', CANCELADA: 'Cancelada',
-};
-const EMENDA_TIPO_LABELS: Record<string, string> = {
-  INDIVIDUAL: 'Individual', BANCADA: 'Bancada', COMISSAO: 'Comissão', RELATOR: 'Relator',
-};
-const formatBRL = (n?: number) =>
-  typeof n === 'number'
-    ? n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
-    : '';
-
 // Cache módulo para não refazer o fetch a cada reinicialização do mapa
 let spDistritosGeoCache: any = null;
 
@@ -142,19 +105,6 @@ function demandaPinSvg(color: string, dotColor: string, foto?: string, selected 
 
   return `<svg width="${size}" height="${h}" viewBox="0 0 44 64" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 3px 8px rgba(0,0,0,0.7))">
     <path d="M22 2C12.6 2 5 9.6 5 19c0 13.5 17 43 17 43S39 32.5 39 19C39 9.6 31.4 2 22 2z" fill="${color}" stroke="${border}" stroke-width="${bw}"/>
-  </svg>`;
-}
-
-// Gera SVG de pin para emenda parlamentar (cifrão em destaque)
-function emendaPinSvg(color: string, selected = false): string {
-  const size = selected ? 42 : 34;
-  const h = Math.round(size * 1.45);
-  const border = selected ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.4)';
-  const bw = selected ? 3 : 1.5;
-  return `<svg width="${size}" height="${h}" viewBox="0 0 42 61" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 3px 8px rgba(0,0,0,0.6))">
-    <path d="M21 2C12 2 4.5 9.5 4.5 18.5C4.5 30.5 21 59 21 59S37.5 30.5 37.5 18.5C37.5 9.5 30 2 21 2z" fill="${color}" stroke="${border}" stroke-width="${bw}"/>
-    <circle cx="21" cy="18" r="10.5" fill="rgba(255,255,255,0.95)"/>
-    <text x="21" y="23" text-anchor="middle" fill="${color}" font-size="15" font-weight="800" font-family="system-ui,sans-serif">$</text>
   </svg>`;
 }
 
@@ -185,15 +135,12 @@ function contatoPinSvg(): string {
 export default function DemandaMapLeaflet({
   demands,
   agendaEvents,
-  emendas = [],
   contatos = [],
   center,
   selectedDemandId,
   selectedEventId,
-  selectedEmendaId,
   onDemandClick,
   onEventClick,
-  onEmendaClick,
   showSpDistritos = false,
 }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -205,10 +152,8 @@ export default function DemandaMapLeaflet({
   // Callback refs — sempre atuais sem precisar de deps
   const onDemandClickRef = useRef(onDemandClick);
   const onEventClickRef = useRef(onEventClick);
-  const onEmendaClickRef = useRef(onEmendaClick);
   onDemandClickRef.current = onDemandClick;
   onEventClickRef.current = onEventClick;
-  onEmendaClickRef.current = onEmendaClick;
 
   // ── Effect 1: Inicializa mapa UMA VEZ (tiles + GeoJSON IBGE, sem marcadores)
   useEffect(() => {
@@ -415,39 +360,6 @@ export default function DemandaMapLeaflet({
       allBounds.push([e.lat, e.lng]);
     });
 
-    // ── Pins de emendas parlamentares
-    emendas.forEach((em) => {
-      if (!em.lat || !em.lng) return;
-      const color = EMENDA_STATUS_COLORS[em.status] ?? '#6366f1';
-      const isSelected = em.id === selectedEmendaId;
-      const size = isSelected ? 42 : 34;
-      const h = Math.round(size * 1.45);
-      const html = emendaPinSvg(color, isSelected);
-      const marker = L.marker([em.lat, em.lng], {
-        icon: L.divIcon({ html, className: '', iconSize: [size, h], iconAnchor: [size / 2, h], tooltipAnchor: [0, -(h + 4)] }),
-        zIndexOffset: isSelected ? 950 : 0,
-      });
-      marker.addTo(map);
-      marker.on('click', () => onEmendaClickRef.current?.(em.id));
-      const localStr = em.endereco || [em.municipio, em.estado].filter(Boolean).join(', ');
-      marker.bindTooltip(
-        `<div style="background:rgba(13,27,42,0.97);padding:10px 14px;border-radius:10px;border:1px solid ${color}55;min-width:200px;max-width:260px;">
-          <div style="font-weight:600;color:${color};font-size:13px;margin-bottom:3px;">${em.titulo}</div>
-          ${em.autor ? `<div style="color:#94a3b8;font-size:11px;margin-bottom:2px;">${em.autor}${em.numero ? ` · nº ${em.numero}` : ''}${em.ano ? ` (${em.ano})` : ''}</div>` : ''}
-          ${typeof em.valor === 'number' ? `<div style="color:#fbbf24;font-size:12px;font-weight:600;margin-bottom:2px;">${formatBRL(em.valor)}</div>` : ''}
-          ${em.beneficiario ? `<div style="color:#cbd5e1;font-size:11px;margin-bottom:2px;">→ ${em.beneficiario}</div>` : ''}
-          ${localStr ? `<div style="color:#64748b;font-size:11px;">${localStr}</div>` : ''}
-          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
-            <span style="background:${color}22;color:${color};border-radius:4px;padding:2px 7px;font-size:10px;">${EMENDA_STATUS_LABELS[em.status] ?? em.status}</span>
-            <span style="background:#1e293b;color:#94a3b8;border-radius:4px;padding:2px 7px;font-size:10px;">${EMENDA_TIPO_LABELS[em.tipo] ?? em.tipo}</span>
-          </div>
-        </div>`,
-        { permanent: false, direction: 'top', className: 'demanda-tooltip', offset: [0, -h] }
-      );
-      markersRef.current.set(`em-${em.id}`, marker);
-      allBounds.push([em.lat, em.lng]);
-    });
-
     // ── Pins de contatos
     contatos.forEach((c) => {
       if (!c.lat || !c.lng) return;
@@ -476,7 +388,7 @@ export default function DemandaMapLeaflet({
         map.fitBounds(L.latLngBounds(allBounds), { padding: [60, 60], maxZoom: 14 });
       } catch (_) {}
     }
-  }, [mapReady, demands, agendaEvents, emendas, contatos, selectedDemandId, selectedEventId, selectedEmendaId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapReady, demands, agendaEvents, contatos, selectedDemandId, selectedEventId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Effect 3: Centralizar quando o centro externo mudar
   useEffect(() => {

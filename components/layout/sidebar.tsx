@@ -20,6 +20,7 @@ import {
   ArrowLeftRight,
   ChevronLeft,
   ChevronRight,
+  Landmark,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminGabineteSwitcher } from '@/components/admin-gabinete-switcher';
@@ -52,6 +53,7 @@ const navigation: { section: string; items: NavItem[] }[] = [
       { name: 'Demandas',            href: '/dashboard/demandas'     , icon: FileText, permission: PERMISSIONS.DEMANDAS         },
       { name: 'Projeto de Campanha', href: '/dashboard/mapa-campanha', icon: Target,   permission: PERMISSIONS.PROJETO_CAMPANHA },
       { name: 'Mapa Eleitoral',      href: '/dashboard/mapa'         , icon: Map,      permission: PERMISSIONS.MAPA_ELEITORAL   },
+      { name: 'Emendas',             href: '/dashboard/emendas'      , icon: Landmark, permission: PERMISSIONS.EMENDAS_MAPA     },
     ],
   },
   {
