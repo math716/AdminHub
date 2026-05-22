@@ -659,6 +659,20 @@ export default function EmendasPage() {
             </>
           )}
         </div>
+
+        {/* COMPARATIVO POR ÁREA — abaixo do mapa, ao lado direito do gráfico
+            pizza (que está na coluna esquerda). Ocupa 9 colunas (col 4–12)
+            pra se alinhar visualmente com o mapa + coluna direita. */}
+        {view === 'estado' && resumo && (
+          <div className="col-span-12 md:col-span-9 md:col-start-4">
+            <ComparativoAreasCard
+              ano={ano}
+              escopo={selectedMunicipio ? `município de ${selectedMunicipio.nome}` : `estado de ${selectedStateName}`}
+              areasAtual={selectedMunicipio && municipioAreasAtual ? municipioAreasAtual : resumo.areas}
+              areasAnterior={selectedMunicipio ? municipioAreasAnterior : comparativoAreasAnterior}
+            />
+          </div>
+        )}
       </div>
 
       {/* Dashboard do parlamentar (aparece quando há parlamentar selecionado) */}
@@ -678,18 +692,6 @@ export default function EmendasPage() {
           destinos={parlamentarDestinos}
           emendas={parlamentarEmendas}
           onMunicipioClick={(m) => setSelectedMunicipio({ codigo: m.codigoIbge, nome: m.nome })}
-        />
-      )}
-
-      {/* Comparativo por área vs. ano anterior
-          - Sem município selecionado: dados do estado todo
-          - Com município selecionado: dados específicos do município */}
-      {view === 'estado' && resumo && (
-        <ComparativoAreasCard
-          ano={ano}
-          escopo={selectedMunicipio ? `município de ${selectedMunicipio.nome}` : `estado de ${selectedStateName}`}
-          areasAtual={selectedMunicipio && municipioAreasAtual ? municipioAreasAtual : resumo.areas}
-          areasAnterior={selectedMunicipio ? municipioAreasAnterior : comparativoAreasAnterior}
         />
       )}
 
