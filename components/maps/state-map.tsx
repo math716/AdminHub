@@ -15,6 +15,13 @@ interface StateMapProps {
   disableSubdivisao?: boolean;
   highlightMunicipioNome?: string | null;
   valueLabel?: string;
+  /**
+   * Quando true, usa tile escuro (CartoDB Dark Matter) e paleta de cores
+   * intensidade-baseada (cor mais saturada = mais valor). Pensado pro
+   * dashboard de emendas. Default false mantém compatibilidade com
+   * mapa eleitoral, mapa-demandas etc.
+   */
+  darkMode?: boolean;
 }
 
 const UF_CODES: Record<string, string> = {
@@ -35,7 +42,7 @@ function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
 
 type SubdivisaoTipo = 'bairros' | 'bairrosTSE' | 'setores' | null;
 
-function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunicipioClick, filteredMunicipios, highlightColor, disableSubdivisao, highlightMunicipioNome, valueLabel = 'votos' }: StateMapProps) {
+function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunicipioClick, filteredMunicipios, highlightColor, disableSubdivisao, highlightMunicipioNome, valueLabel = 'votos', darkMode = false }: StateMapProps) {
   const [geoData, setGeoData] = useState<any>(null);
   const [codigoToNome, setCodigoToNome] = useState<Record<string, string>>({});
   const [nomeToCodigoRef, setNomeToCodigoRef] = useState<Record<string, string>>({});
@@ -555,8 +562,11 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       // consiga destruir este mapa caso o efeito seja cancelado.
       mapInstanceRef.current = map;
 
-      // Tile layer claro (CartoDB Positron – similar ao Google Maps, gratuito)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      // Tile layer: dark (CartoDB Dark Matter) ou claro (CartoDB Voyager) conforme darkMode
+      const tileUrl = darkMode
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      L.tileLayer(tileUrl, {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 20
@@ -608,7 +618,9 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       const maxValue = allVotes.length > 0 ? Math.max(...allVotes.filter(v => v > 0)) : 1;
 
       const getColor = (votos: number | undefined, isHighlighted: boolean) => {
-        if (votos === undefined || votos === 0) return '#dce8f5'; // cinza-azulado claro para fundo branco
+        if (votos === undefined || votos === 0) {
+          return darkMode ? 'transparent' : '#dce8f5'; // dark: sem preenchimento
+        }
 
         // Se tem filtro ativo e highlightColor definido, usar para destacados
         if (highlightColor && isHighlighted) {
@@ -620,6 +632,14 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         }
 
         const intensity = votos / maxValue;
+
+        if (darkMode) {
+          // Dark theme: do azul médio (pouco) ao ciano vivo (muito) — bem visível no fundo escuro
+          const lightness  = 35 + (intensity * 30); // 35% → 65% (claro o suficiente p/ contrastar com o tile)
+          const saturation = 65 + (intensity * 25); // 65% → 90%
+          return `hsl(205, ${saturation}%, ${lightness}%)`;
+        }
+
         // Choropleth claro→escuro para fundo branco: azul claro (pouco) a azul escuro (muito)
         const lightness = 85 - (intensity * 55); // 85% (quase branco) → 30% (azul escuro)
         const saturation = 55 + (intensity * 35); // 55 → 90%
@@ -642,15 +662,25 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         const votos = getVotos(codarea, nomeMun);
         const isFiltered = isMunicipioFiltered(nomeMun);
 
-        const fillOpacity = 0;
+        // Em darkMode, preenchimento proporcional ao valor — sem dados fica transparente.
+        // No modo claro original, fillOpacity=0 (só bordas).
+        const intensity = votos && maxValue > 0 ? votos / maxValue : 0;
+        const fillOpacity = darkMode
+          ? (votos && votos > 0 ? 0.55 + intensity * 0.4 : 0)
+          : 0;
         const borderOpacity = filteredMunicipios ? (isFiltered ? 1 : 0.3) : 1;
-        
+
+        // Bordas: claras pra contraste no dark, escuras no claro
+        const borderColor = darkMode
+          ? (isFiltered ? '#4a9ede' : 'rgba(74,158,222,0.35)')
+          : (isFiltered ? '#5b8db8' : '#9ab8d4');
+
         return {
           fillColor: getColor(votos, isFiltered),
-          weight: isFiltered ? 1.5 : 0.8,
+          weight: isFiltered ? (darkMode ? 1 : 1.5) : 0.6,
           opacity: borderOpacity,
-          color: isFiltered ? '#5b8db8' : '#9ab8d4', // bordas azul-acinzentado para mapa claro
-          fillOpacity: fillOpacity
+          color: borderColor,
+          fillOpacity: fillOpacity,
         };
       };
 

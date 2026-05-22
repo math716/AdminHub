@@ -628,6 +628,7 @@ export default function EmendasPage() {
                 highlightColor="gold"
                 highlightMunicipioNome={selectedMunicipio?.nome ?? null}
                 valueLabel={selectedParlamentar ? `de ${selectedParlamentar.nome.split(' ')[0]}` : 'em emendas'}
+                darkMode
               />
             )}
 
