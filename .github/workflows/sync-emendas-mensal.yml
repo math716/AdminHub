@@ -46,7 +46,7 @@ jobs:
             echo "anos=$ANO_ANTERIOR $ANO_ATUAL" >> $GITHUB_OUTPUT
           fi
 
-      - name: Sincronizar
+      - name: Sincronizar emendas
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
@@ -58,6 +58,15 @@ jobs:
             echo "================================================="
             npx tsx scripts/sync-emendas-portal.ts --ano $ano
           done
+
+      # Reclassifica senadores como SENADOR — o sync de emendas marca tudo
+      # como DEPUTADO_FEDERAL por default porque o Portal não diferencia.
+      # Este step corrige via API oficial do Senado.
+      - name: Reclassificar senadores
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: npx tsx scripts/sync-senadores.ts
 
       - name: Resumo
         if: always()
