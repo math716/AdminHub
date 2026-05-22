@@ -1,0 +1,488 @@
+/**
+ * Importa dados anuais por município pra tabela `municipio_stats`:
+ *   - Eleitores (CSV TSE perfil_eleitorado_<ano>.csv — agrega por município)
+ *   - Teto MAC  (xlsx Limites-MAC-Coletivas — soma todos os CNES por município)
+ *   - Teto PAP  (xlsx Limites-PAP-Coletivas — uma linha por município)
+ *
+ * Uso:
+ *   npx tsx --require dotenv/config scripts/import-municipio-stats.ts \
+ *     --tse  "C:/.../perfil_eleitorado_2024.csv" \
+ *     --mac  "C:/.../Limites-MAC-Coletivas.xlsx" \
+ *     --pap  "C:/.../Limites-PAP-Coletivas.xlsx" \
+ *     --ano  2024
+ *
+ * Qualquer um dos --tse/--mac/--pap pode ser omitido — só o que for fornecido é importado.
+ * Faz upsert por (codigoIbge, ano) — pode rodar de novo sem duplicar.
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import readline from 'node:readline';
+import { PrismaClient } from '@prisma/client';
+import * as XLSX from 'xlsx';
+
+// Força o uso do DIRECT_URL (Session Pooler 5432) em vez do DATABASE_URL
+// (Transaction Pooler 6543). O Transaction Pooler usa pgBouncer em "transaction
+// mode", que quebra prepared statements do Prisma (`prepared statement "s0"
+// does not exist`). Pra scripts longos com muitos upserts, Session Pooler
+// é a escolha certa.
+const dbUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+const prisma = new PrismaClient({
+  datasources: { db: { url: dbUrl } },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// CLI args parsing
+// ────────────────────────────────────────────────────────────────────────────
+function arg(name: string, def?: string): string | undefined {
+  const idx = process.argv.findIndex((a) => a === `--${name}`);
+  if (idx >= 0 && idx + 1 < process.argv.length) return process.argv[idx + 1];
+  return def;
+}
+
+const TSE_PATH  = arg('tse');
+const MAC_PATH  = arg('mac');
+const PAP_PATH  = arg('pap');
+const ANO       = parseInt(arg('ano', String(new Date().getFullYear()))!, 10);
+const DRY_RUN   = process.argv.includes('--dry-run');
+
+// ────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────────────────────────────────
+function normalizeNome(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Aliases TSE → IBGE. O TSE adota a grafia oficial dos seus registros, e o
+ * IBGE adota a do Decreto-Lei nº 2.972/68 e Lei Complementar nº 14/1973.
+ * Resultado: ~15 municípios divergem na ortografia. Mapeia o nome do TSE
+ * (após normalize) pro nome do IBGE (após normalize) — ambos UPPERCASE,
+ * sem acento, sem pontuação.
+ */
+const TSE_TO_IBGE_FIXES: Record<string, string> = {
+  // ── Apóstrofes que o TSE escreve "DO"/"DOS" (após normalize, vira espaço)
+  'ALVORADA DO OESTE':         'ALVORADA D OESTE',            // RO
+  'ESPIGAO DO OESTE':          'ESPIGAO D OESTE',             // RO
+
+  // ── Z vs S
+  'DONA EUSEBIA':              'DONA EUZEBIA',                // MG
+
+  // ── L duplo vs simples
+  'MUNHOZ DE MELLO':           'MUNHOZ DE MELO',              // PR
+
+  // ── DE vs DO / DOS — preposição diferente entre TSE e IBGE
+  'BARAO DE MONTE ALTO':       'BARAO DO MONTE ALTO',         // MG (TSE: DE, IBGE: DO)
+  'SANTO ANTONIO DO LEVERGER': 'SANTO ANTONIO DE LEVERGER',   // MT (TSE: DO, IBGE: DE)
+  'ELDORADO DOS CARAJAS':      'ELDORADO DO CARAJAS',         // PA (TSE: DOS, IBGE: DO)
+  'AMPARO DE SAO FRANCISCO':   'AMPARO DO SAO FRANCISCO',     // SE (TSE: DE, IBGE: DO)
+
+  // ── TH vs T
+  'SAO THOME DAS LETRAS':      'SAO TOME DAS LETRAS',         // MG
+
+  // ── Renomeações oficiais
+  'BOA SAUDE':                 'JANUARIO CICCO',              // RN (renomeado em 2002)
+  'EMBU':                      'EMBU DAS ARTES',              // SP (renomeado em 2011)
+
+  // ── Forma curta TSE vs forma completa IBGE
+  'SAO LUIZ':                  'SAO LUIZ DO ANAUA',           // RR
+  'CAMACA':                    'CAMACAN',                     // BA (TSE corta o N final)
+
+  // ── Apóstrofe IBGE vs ausência TSE (após normalize ambos ficam sem)
+  // mantidos como self-fix pra forçar lookup caso encoding traga invisíveis:
+  'SANT ANA DO LIVRAMENTO':    'SANTANA DO LIVRAMENTO',       // RS
+  'OLHO D AGUA':               'OLHO D AGUA',                 // PB (self — força match)
+
+  // ── Variações ortográficas que normalmente casam mas podem divergir
+  'FLORINEA':                  'FLORINEA',                    // SP (self)
+  'BIRITIBA MIRIM':            'BIRITIBA MIRIM',              // SP (self)
+  'POXOREO':                   'POXOREU',                     // MT
+  'BRASOPOLIS':                'BRAZOPOLIS',                  // MG
+  'TRAJANO DE MORAIS':         'TRAJANO DE MORAES',           // RJ
+  'PARATI':                    'PARATY',                      // RJ
+  'MOJI MIRIM':                'MOGI MIRIM',                  // SP
+  'SAO LUIS DO PARAITINGA':    'SAO LUIZ DO PARAITINGA',      // SP
+  'IGUARACI':                  'IGUARACY',                    // PE
+};
+
+function parseValorBR(v: any): number {
+  if (typeof v === 'number') return v;
+  if (typeof v !== 'string') return 0;
+  // "200.000,00" → 200000   ou   "200000.00" → 200000
+  const cleaned = v.replace(/[^\d,.\-]/g, '');
+  // Se tem vírgula e ponto: ponto é separador de milhar → remove
+  if (cleaned.includes(',')) {
+    const norm = cleaned.replace(/\./g, '').replace(',', '.');
+    return Number(norm) || 0;
+  }
+  return Number(cleaned) || 0;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Lista de municípios IBGE — fonte de verdade pro codigoIbge 7 dígitos
+// ────────────────────────────────────────────────────────────────────────────
+interface MunicipioIBGE {
+  codigoIbge: string;  // 7 dígitos
+  codigo6:    string;  // 6 primeiros dígitos (compat. FNS)
+  uf:         string;
+  nome:       string;
+  normNome:   string;
+}
+
+const UFs: Record<string, number> = {
+  AC: 12, AL: 27, AP: 16, AM: 13, BA: 29, CE: 23, DF: 53, ES: 32, GO: 52, MA: 21,
+  MT: 51, MS: 50, MG: 31, PA: 15, PB: 25, PR: 41, PE: 26, PI: 22, RJ: 33, RN: 24,
+  RS: 43, RO: 11, RR: 14, SC: 42, SP: 35, SE: 28, TO: 17,
+};
+
+async function carregarMunicipiosIBGE(): Promise<MunicipioIBGE[]> {
+  const all: MunicipioIBGE[] = [];
+  for (const [uf, code] of Object.entries(UFs)) {
+    const res = await fetch(
+      `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${code}/municipios`,
+    );
+    if (!res.ok) {
+      console.warn(`  [aviso] falha em ${uf}: HTTP ${res.status}`);
+      continue;
+    }
+    const data: any[] = await res.json();
+    data.forEach((m) => {
+      const codigoIbge = String(m.id);
+      all.push({
+        codigoIbge,
+        codigo6:  codigoIbge.slice(0, 6),
+        uf,
+        nome:     m.nome,
+        normNome: normalizeNome(m.nome),
+      });
+    });
+  }
+  return all;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Parser TSE — CSV com encoding latin1 e separador ;
+// ────────────────────────────────────────────────────────────────────────────
+function parseCSVLine(line: string): string[] {
+  const out: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (c === ';' && !inQuotes) {
+      out.push(cur);
+      cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+interface TSERow { uf: string; municipio: string; qtd: number; }
+
+/**
+ * Lê o CSV do TSE em STREAM (linha por linha) pra não estourar o limite de
+ * string do Node.js. O arquivo pode passar de 500 MB (uma linha por perfil
+ * demográfico — idade × gênero × escolaridade × etc, multiplicado por 5570
+ * municípios = dezenas de milhões de linhas).
+ *
+ * Decodifica latin1 chunk a chunk via stream.setEncoding('latin1'), e usa
+ * readline pra emitir uma linha por evento.
+ */
+async function lerTSE(filePath: string): Promise<TSERow[]> {
+  const stream = fs.createReadStream(filePath);
+  stream.setEncoding('latin1');
+  const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+
+  let idxUf  = -1;
+  let idxMun = -1;
+  let idxQtd = -1;
+  let lineNum = 0;
+  let processed = 0;
+
+  const agg = new Map<string, TSERow>();
+
+  for await (const line of rl) {
+    lineNum++;
+    if (line.trim().length === 0) continue;
+
+    const row = parseCSVLine(line);
+
+    if (lineNum === 1) {
+      // Cabeçalho
+      idxUf  = row.indexOf('SG_UF');
+      idxMun = row.indexOf('NM_MUNICIPIO');
+      idxQtd = row.indexOf('QT_ELEITORES_PERFIL');
+      if (idxUf < 0 || idxMun < 0 || idxQtd < 0) {
+        throw new Error(`TSE CSV: cabeçalho não tem SG_UF/NM_MUNICIPIO/QT_ELEITORES_PERFIL`);
+      }
+      continue;
+    }
+
+    const uf = row[idxUf]?.trim();
+    const mun = row[idxMun]?.trim();
+    const qtd = parseInt(row[idxQtd] || '0', 10);
+    if (!uf || !mun || !Number.isFinite(qtd)) continue;
+
+    const key = `${uf}|${normalizeNome(mun)}`;
+    const cur = agg.get(key);
+    if (cur) cur.qtd += qtd;
+    else agg.set(key, { uf, municipio: mun, qtd });
+
+    processed++;
+    if (processed % 500_000 === 0) {
+      process.stdout.write(`\r   processadas ${processed.toLocaleString('pt-BR')} linhas…`);
+    }
+  }
+
+  if (processed >= 500_000) {
+    process.stdout.write(`\r   processadas ${processed.toLocaleString('pt-BR')} linhas      \n`);
+  }
+  return Array.from(agg.values());
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Parser MAC (xlsx, sheet "CNES Público")
+// ────────────────────────────────────────────────────────────────────────────
+interface MACRow { codigo6: string; valor: number; }
+
+function lerMAC(filePath: string): MACRow[] {
+  const wb = XLSX.readFile(filePath);
+  // Match flexível pra "CNES Público" / "CNES Publico" / etc
+  const sheetName = wb.SheetNames.find((n) => /CNES.*P(u|ú|�)blico/i.test(n)) ?? wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  if (!ws) throw new Error(`MAC: sheet "${sheetName}" não encontrada`);
+
+  const rows: any[] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+  const headerRow = rows[0] as any[];
+
+  // Header pode vir com caracteres corrompidos no read_only=True; usamos índice de fallback
+  const idxIBGE  = headerRow.findIndex((h: any) => String(h).toUpperCase().includes('IBGE'));
+  const idxValor = headerRow.findIndex((h: any) => String(h).toUpperCase().includes('VALOR'));
+
+  if (idxIBGE < 0 || idxValor < 0) {
+    throw new Error(`MAC: cabeçalho não tem coluna IBGE ou VALOR (achou: ${headerRow.join(', ')})`);
+  }
+
+  const agg = new Map<string, number>();
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i] as any[];
+    if (!row || row.length === 0) continue;
+    const codigo6 = String(row[idxIBGE] ?? '').trim();
+    if (!/^\d{6,7}$/.test(codigo6)) continue;
+    const valor = parseValorBR(row[idxValor]);
+    if (!Number.isFinite(valor) || valor <= 0) continue;
+    const key = codigo6.length === 7 ? codigo6.slice(0, 6) : codigo6;
+    agg.set(key, (agg.get(key) ?? 0) + valor);
+  }
+  return Array.from(agg.entries()).map(([codigo6, valor]) => ({ codigo6, valor }));
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Parser PAP (xlsx, sheet "Emendas Coletivas")
+// ────────────────────────────────────────────────────────────────────────────
+interface PAPRow { codigo6: string; valor: number; }
+
+function lerPAP(filePath: string): PAPRow[] {
+  const wb = XLSX.readFile(filePath);
+  const sheetName = wb.SheetNames.find((n) => /emenda/i.test(n)) ?? wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  if (!ws) throw new Error(`PAP: sheet "${sheetName}" não encontrada`);
+
+  const rows: any[] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+  const headerRow = rows[0] as any[];
+
+  const idxIBGE  = headerRow.findIndex((h: any) => String(h).toUpperCase().trim().includes('IBGE'));
+  const idxValor = headerRow.findIndex((h: any) => String(h).toUpperCase().trim().includes('VALOR'));
+
+  if (idxIBGE < 0 || idxValor < 0) {
+    throw new Error(`PAP: cabeçalho não tem coluna IBGE ou VALOR (achou: ${headerRow.join(', ')})`);
+  }
+
+  const out: PAPRow[] = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i] as any[];
+    if (!row || row.length === 0) continue;
+    const codigo6 = String(row[idxIBGE] ?? '').trim();
+    if (!/^\d{6,7}$/.test(codigo6)) continue;
+    const valor = parseValorBR(row[idxValor]);
+    if (!Number.isFinite(valor) || valor <= 0) continue;
+    out.push({ codigo6: codigo6.length === 7 ? codigo6.slice(0, 6) : codigo6, valor });
+  }
+  return out;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Main
+// ────────────────────────────────────────────────────────────────────────────
+async function main() {
+  console.log(`\n📊 Import municipio_stats — ano=${ANO}${DRY_RUN ? ' (DRY RUN)' : ''}\n`);
+
+  if (!TSE_PATH && !MAC_PATH && !PAP_PATH) {
+    console.error('❌ Forneça pelo menos um arquivo: --tse, --mac ou --pap');
+    process.exit(1);
+  }
+
+  // 1. IBGE
+  console.log('🌎 Baixando lista de municípios do IBGE…');
+  const muns = await carregarMunicipiosIBGE();
+  console.log(`   ${muns.length} municípios carregados.`);
+
+  // Índices pra cruzamento rápido
+  const por7        = new Map(muns.map((m) => [m.codigoIbge, m]));
+  const por6        = new Map(muns.map((m) => [m.codigo6, m]));
+  const porUfNome   = new Map(muns.map((m) => [`${m.uf}|${m.normNome}`, m]));
+
+  // 2. Parse arquivos
+  const eleitoresPorIbge = new Map<string, number>();
+  const macPorIbge       = new Map<string, number>();
+  const papPorIbge       = new Map<string, number>();
+
+  if (TSE_PATH) {
+    if (!fs.existsSync(TSE_PATH)) throw new Error(`TSE: arquivo não existe — ${TSE_PATH}`);
+    console.log(`\n🗳️  Lendo TSE: ${path.basename(TSE_PATH)}…`);
+    const tseRows = await lerTSE(TSE_PATH);
+    let matched = 0, missed = 0;
+    const naoCasados: string[] = [];
+    for (const r of tseRows) {
+      const nomeNorm = normalizeNome(r.municipio);
+      const nomeIbge = TSE_TO_IBGE_FIXES[nomeNorm] ?? nomeNorm;
+      const hit = porUfNome.get(`${r.uf}|${nomeIbge}`);
+      if (hit) {
+        eleitoresPorIbge.set(hit.codigoIbge, r.qtd);
+        matched++;
+      } else {
+        missed++;
+        naoCasados.push(`${r.uf} / ${r.municipio}`);
+      }
+    }
+    console.log(`   ✅ ${matched} municípios casados, ${missed} sem match`);
+    if (missed > 0 && missed <= 20) {
+      console.log(`   sem match: ${naoCasados.join(', ')}`);
+    }
+  }
+
+  if (MAC_PATH) {
+    if (!fs.existsSync(MAC_PATH)) throw new Error(`MAC: arquivo não existe — ${MAC_PATH}`);
+    console.log(`\n🏥 Lendo MAC: ${path.basename(MAC_PATH)}…`);
+    const macRows = lerMAC(MAC_PATH);
+    let matched = 0, missed = 0, ufLevel = 0;
+    for (const r of macRows) {
+      // Códigos "XX0000" são da UF (entidades estaduais de saúde), não município.
+      // Ignoramos silenciosamente — esperado.
+      if (/^\d{2}0000$/.test(r.codigo6)) { ufLevel++; continue; }
+      const hit = por6.get(r.codigo6);
+      if (hit) {
+        macPorIbge.set(hit.codigoIbge, r.valor);
+        matched++;
+      } else {
+        missed++;
+        if (missed <= 5) console.log(`   [aviso] sem match IBGE: código FNS ${r.codigo6}`);
+      }
+    }
+    console.log(`   ✅ ${matched} municípios casados, ${missed} sem match (${ufLevel} ignorados — entidades estaduais)`);
+  }
+
+  if (PAP_PATH) {
+    if (!fs.existsSync(PAP_PATH)) throw new Error(`PAP: arquivo não existe — ${PAP_PATH}`);
+    console.log(`\n🏛️  Lendo PAP: ${path.basename(PAP_PATH)}…`);
+    const papRows = lerPAP(PAP_PATH);
+    let matched = 0, missed = 0;
+    for (const r of papRows) {
+      const hit = por6.get(r.codigo6);
+      if (hit) {
+        papPorIbge.set(hit.codigoIbge, r.valor);
+        matched++;
+      } else {
+        missed++;
+        if (missed <= 5) console.log(`   [aviso] sem match IBGE: código FNS ${r.codigo6}`);
+      }
+    }
+    console.log(`   ✅ ${matched} municípios casados, ${missed} sem match`);
+  }
+
+  // 3. Consolidar
+  const ibgesParaUpsert = new Set<string>([
+    ...eleitoresPorIbge.keys(),
+    ...macPorIbge.keys(),
+    ...papPorIbge.keys(),
+  ]);
+
+  const fonteParts = [
+    TSE_PATH ? `TSE ${ANO}` : null,
+    MAC_PATH ? 'MAC/SISMAC' : null,
+    PAP_PATH ? 'PAP/SISAPS (Emendas Coletivas)' : null,
+  ].filter(Boolean);
+  const fonte = fonteParts.join(' + ');
+
+  console.log(`\n📝 ${ibgesParaUpsert.size} municípios serão atualizados.`);
+
+  if (DRY_RUN) {
+    console.log('\n🧪 DRY RUN — mostrando 3 amostras (sem gravar no banco):');
+    let count = 0;
+    for (const codigoIbge of ibgesParaUpsert) {
+      if (count++ >= 3) break;
+      const m = por7.get(codigoIbge);
+      console.log(`   ${codigoIbge} ${m?.uf}/${m?.nome}:`);
+      console.log(`     eleitores: ${eleitoresPorIbge.get(codigoIbge) ?? '—'}`);
+      console.log(`     tetoMac:   ${macPorIbge.get(codigoIbge) ?? '—'}`);
+      console.log(`     tetoPap:   ${papPorIbge.get(codigoIbge) ?? '—'}`);
+    }
+    console.log('\n✓ DRY RUN concluído — re-rode sem --dry-run pra gravar.');
+    return;
+  }
+
+  // 4. Upsert em lotes — batch menor pra não saturar o pooler.
+  // Pra free tier do Supabase, 10 conexões simultâneas é confortável.
+  console.log(`\n💾 Gravando no banco em lotes de 10…`);
+  const ibgesArr = Array.from(ibgesParaUpsert);
+  const batchSize = 10;
+  let total = 0;
+
+  const round2 = (n: number | null | undefined): number | null =>
+    n == null ? null : Math.round(n * 100) / 100;
+
+  for (let i = 0; i < ibgesArr.length; i += batchSize) {
+    const batch = ibgesArr.slice(i, i + batchSize);
+    await Promise.all(
+      batch.map(async (codigoIbge) => {
+        const m = por7.get(codigoIbge)!;
+        const data = {
+          uf:         m.uf,
+          nome:       m.nome,
+          eleitores:  eleitoresPorIbge.get(codigoIbge) ?? null,
+          tetoMac:    round2(macPorIbge.get(codigoIbge)),
+          tetoPap:    round2(papPorIbge.get(codigoIbge)),
+          fonte,
+        };
+        await prisma.municipioStats.upsert({
+          where:  { codigoIbge_ano: { codigoIbge, ano: ANO } },
+          create: { codigoIbge, ano: ANO, ...data },
+          update: data,
+        });
+      }),
+    );
+    total += batch.length;
+    process.stdout.write(`\r   ${total}/${ibgesArr.length} gravados…`);
+  }
+
+  console.log(`\n\n✅ Concluído! ${total} municípios atualizados em municipio_stats (ano ${ANO}).`);
+}
+
+main()
+  .catch((e) => {
+    console.error('\n❌ Erro:', e);
+    process.exit(1);
+  })
+  .finally(() => prisma.$disconnect());

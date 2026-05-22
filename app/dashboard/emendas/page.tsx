@@ -103,6 +103,7 @@ interface MunicipioStats {
   eleitores: number | null;
   tetoMac: number | null;
   tetoPap: number | null;
+  fonteHabitantes: string | null;
   hasSnapshot: boolean;
 }
 
@@ -111,12 +112,16 @@ interface ResumoEstado {
   ano: number;
   totalEmpenhado: number;
   totalPago: number;
+  totalMunicipalizado: number;
+  totalEstadual: number;
   totalEmendas: number;
   topMunicipios: { codigoIbge: string; nome: string; total: number; qtd: number }[];
   valorPorMunicipio: Record<string, number>;
   areas: { area: EmendaArea; total: number }[];
   parlamentares: { cpf: string | null; idPortal: string; nome: string; cargo: string; partido: string | null; total: number; qtd: number }[];
   mock: boolean;
+  /** "banco" = dados completos do Supabase; "portal" = amostra parcial direto da API */
+  fonte?: 'banco' | 'portal';
 }
 
 // ---------------------------------------------------------------------------
@@ -151,6 +156,7 @@ export default function EmendasPage() {
   // Dados do município selecionado
   const [municipioStats, setMunicipioStats] = useState<MunicipioStats | null>(null);
   const [municipioEmendas, setMunicipioEmendas] = useState<PortalEmenda[]>([]);
+  const [municipioEmendasAnterior, setMunicipioEmendasAnterior] = useState<PortalEmenda[]>([]);
   const [loadingMunicipio, setLoadingMunicipio] = useState(false);
 
   // Parlamentar selecionado
@@ -197,6 +203,7 @@ export default function EmendasPage() {
     if (!selectedMunicipio) {
       setMunicipioStats(null);
       setMunicipioEmendas([]);
+      setMunicipioEmendasAnterior([]);
       return;
     }
     const ctrl = new AbortController();
@@ -204,10 +211,14 @@ export default function EmendasPage() {
     Promise.all([
       fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/stats?ano=${ano}`, { signal: ctrl.signal }).then((r) => r.json()),
       fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/emendas?uf=${selectedUf}&ano=${ano}`, { signal: ctrl.signal }).then((r) => r.json()),
+      // Emendas do ano anterior — pra alimentar o card de comparativo
+      // quando município está selecionado.
+      fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/emendas?uf=${selectedUf}&ano=${ano - 1}`, { signal: ctrl.signal }).then((r) => r.json()),
     ])
-      .then(([stats, emendas]) => {
+      .then(([stats, emendas, emendasAnt]) => {
         setMunicipioStats(stats);
         setMunicipioEmendas(Array.isArray(emendas?.emendas) ? emendas.emendas : []);
+        setMunicipioEmendasAnterior(Array.isArray(emendasAnt?.emendas) ? emendasAnt.emendas : []);
       })
       .catch((e: any) => {
         if (e?.name !== 'AbortError') console.error('Erro ao buscar município:', e);
@@ -217,27 +228,33 @@ export default function EmendasPage() {
   }, [selectedMunicipio, ano, selectedUf]);
 
   // ----- Autocomplete parlamentar -----
-  const debounceRef = useRef<number | null>(null);
+  // Filtra LOCALMENTE em resumo.parlamentares (lista já carregada do estado).
+  // É instantâneo, não bate no Portal, e cobre todos os parlamentares que
+  // efetivamente enviaram emendas pro estado neste ano.
   useEffect(() => {
-    if (parlamentarQuery.trim().length < 2) {
+    const q = parlamentarQuery.trim().toLowerCase();
+    if (q.length < 2 || !resumo?.parlamentares) {
       setParlamentarResults([]);
       return;
     }
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(async () => {
-      setSearchingParlamentar(true);
-      try {
-        const res = await fetch(`/api/emendas-portal/parlamentares?q=${encodeURIComponent(parlamentarQuery)}`);
-        const data = await res.json();
-        setParlamentarResults(Array.isArray(data?.results) ? data.results : []);
-      } finally {
-        setSearchingParlamentar(false);
-      }
-    }, 300);
-    return () => {
-      if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    };
-  }, [parlamentarQuery]);
+    setSearchingParlamentar(false);
+    const normalizar = (s: string) =>
+      s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const qNorm = normalizar(q);
+    const matches = resumo.parlamentares
+      .filter((p) => normalizar(p.nome).includes(qNorm))
+      .slice(0, 20)
+      .map<PortalParlamentar>((p) => ({
+        cpf:      p.cpf,
+        idPortal: p.idPortal,
+        nome:     p.nome,
+        nomeUrna: null,
+        partido:  p.partido,
+        uf:       selectedUf,
+        cargo:    p.cargo as ParlamentarCargo,
+      }));
+    setParlamentarResults(matches);
+  }, [parlamentarQuery, resumo, selectedUf]);
 
   // ----- Emendas do parlamentar selecionado -----
   useEffect(() => {
@@ -340,6 +357,23 @@ export default function EmendasPage() {
     return m;
   }, [resumoAnterior]);
 
+  // ----- Áreas do município (atual e anterior) — usado quando há município selecionado -----
+  const municipioAreasAtual = useMemo(() => {
+    if (!selectedMunicipio) return null;
+    const m = new Map<EmendaArea, number>();
+    municipioEmendas.forEach((e) => m.set(e.area, (m.get(e.area) ?? 0) + e.valorEmpenhado));
+    return Array.from(m.entries()).map(([area, total]) => ({ area, total }));
+  }, [selectedMunicipio, municipioEmendas]);
+
+  const municipioAreasAnterior = useMemo(() => {
+    if (!selectedMunicipio) return new Map<string, number>();
+    const m = new Map<string, number>();
+    municipioEmendasAnterior.forEach((e) => {
+      m.set(e.area, (m.get(e.area) ?? 0) + e.valorEmpenhado);
+    });
+    return m;
+  }, [selectedMunicipio, municipioEmendasAnterior]);
+
   // ----- Render -----
   if (status === 'loading') {
     return (
@@ -378,6 +412,19 @@ export default function EmendasPage() {
           <span className="font-semibold">Modo demonstração:</span>
           <span className="text-slate-300">
             os dados exibidos são sintéticos. Configure a variável <code className="px-1.5 py-0.5 rounded bg-black/30">PORTAL_TRANSPARENCIA_API_KEY</code> para usar dados reais do Portal da Transparência.
+          </span>
+        </div>
+      )}
+
+      {/* Amostra parcial banner — quando ainda está usando Portal ao vivo */}
+      {resumo && !resumo.mock && resumo.fonte === 'portal' && (
+        <div
+          className="rounded-xl px-4 py-2.5 flex items-start gap-2 text-xs"
+          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b' }}
+        >
+          <span className="font-semibold mt-0.5">⓵ Dados parciais:</span>
+          <span className="text-slate-300">
+            o ano {ano} ainda não foi sincronizado pro banco local — os números aqui são uma amostra das maiores emendas do Portal da Transparência (limitação técnica da API pública). Para dados completos, execute <code className="px-1.5 py-0.5 rounded bg-black/30">npx tsx scripts/sync-emendas-portal.ts --ano {ano}</code>.
           </span>
         </div>
       )}
@@ -537,12 +584,15 @@ export default function EmendasPage() {
         />
       )}
 
-      {/* Comparativo por área vs. ano anterior */}
+      {/* Comparativo por área vs. ano anterior
+          - Sem município selecionado: dados do estado todo
+          - Com município selecionado: dados específicos do município */}
       {view === 'estado' && resumo && (
         <ComparativoAreasCard
           ano={ano}
-          areasAtual={resumo.areas}
-          areasAnterior={comparativoAreasAnterior}
+          escopo={selectedMunicipio ? `município de ${selectedMunicipio.nome}` : `estado de ${selectedStateName}`}
+          areasAtual={selectedMunicipio && municipioAreasAtual ? municipioAreasAtual : resumo.areas}
+          areasAnterior={selectedMunicipio ? municipioAreasAnterior : comparativoAreasAnterior}
         />
       )}
 
@@ -578,14 +628,18 @@ function ResumoGeralCard({
   municipioStats: MunicipioStats | null;
   resumo: ResumoEstado | null;
 }) {
+  // Quando há município selecionado: mostra só o que foi destinado a ele.
+  // Quando NÃO há município (visão do estado): mostra o total municipalizado
+  // (que bate com a soma dos top municípios). O total estadual entra como
+  // sublinha pra deixar claro que ainda há "verba sem destino municipal".
   const total = municipio
     ? (resumo?.valorPorMunicipio?.[municipio.codigo] ?? 0)
-    : (resumo?.totalEmpenhado ?? 0);
+    : (resumo?.totalMunicipalizado ?? 0);
+  const totalEstadual = !municipio ? (resumo?.totalEstadual ?? 0) : 0;
   const tetoMac = municipio ? municipioStats?.tetoMac ?? null : null;
   const tetoPap = municipio ? municipioStats?.tetoPap ?? null : null;
   const habitantes = municipio ? municipioStats?.habitantes ?? null : null;
   const eleitores  = municipio ? municipioStats?.eleitores  ?? null : null;
-  const tetoSoma = (tetoMac ?? 0) + (tetoPap ?? 0);
 
   return (
     <div
@@ -624,20 +678,41 @@ function ResumoGeralCard({
           icon={<Landmark className="w-4 h-4" />}
           iconBg="rgba(16,185,129,0.15)"
           iconColor="#10b981"
-          label="Total de Emendas"
+          label={municipio ? 'Total de Emendas' : 'Total Municipalizado'}
           value={formatBRL(total)}
-          sub={`em ${ano}`}
+          sub={
+            !municipio && totalEstadual > 0
+              ? `${formatBRLCompact(totalEstadual)} adicional sem município`
+              : `em ${ano}`
+          }
         />
         <ResumoStat
           icon={<Building2 className="w-4 h-4" />}
           iconBg="rgba(245,158,11,0.15)"
           iconColor="#f59e0b"
-          label="Teto MAC e PAP"
-          value={tetoSoma > 0 ? formatBRL(tetoSoma) : municipio ? 'sem dados' : 'Selecione um município'}
-          sub={tetoMac != null || tetoPap != null
-            ? `MAC ${formatBRLCompact(tetoMac ?? 0)} · PAP ${formatBRLCompact(tetoPap ?? 0)}`
-            : undefined
+          label="Teto MAC"
+          value={
+            tetoMac != null
+              ? formatBRL(tetoMac)
+              : municipio
+                ? 'sem dados'
+                : 'Selecione um município'
           }
+          sub={municipio && tetoMac != null ? 'Média e Alta Complexidade · anual' : undefined}
+        />
+        <ResumoStat
+          icon={<Building2 className="w-4 h-4" />}
+          iconBg="rgba(20,184,166,0.15)"
+          iconColor="#14b8a6"
+          label="Teto PAP"
+          value={
+            tetoPap != null
+              ? formatBRL(tetoPap)
+              : municipio
+                ? 'sem dados'
+                : 'Selecione um município'
+          }
+          sub={municipio && tetoPap != null ? 'Atenção Primária · anual' : undefined}
         />
       </div>
     </div>
@@ -712,7 +787,13 @@ function EmendasPorAreaCard({
       ) : (
         <>
           <div className="h-44 relative">
-            <Donut3DChart data={data.slice(0, 6)} centerValue={formatBRLCompact(total)} centerLabel="total" />
+            <Donut3DChart
+              data={data.slice(0, 6)}
+              centerValue={formatBRLCompact(total)}
+              centerLabel="total"
+              hideLegend
+              valueFormatter={formatBRL}
+            />
           </div>
           <div className="mt-3 space-y-1.5">
             {areas.slice(0, 4).map((a) => {
@@ -921,10 +1002,26 @@ function MunicipioPopup({
           </div>
         ) : (
           <div className="space-y-1.5 text-[11px]">
-            <PopupRow label="Habitantes" value={stats?.habitantes != null ? stats.habitantes.toLocaleString('pt-BR') : '—'} />
-            <PopupRow label="Eleitores"  value={stats?.eleitores  != null ? stats.eleitores.toLocaleString('pt-BR')  : '—'} />
-            <PopupRow label="Teto MAC"   value={stats?.tetoMac    != null ? formatBRL(stats.tetoMac)                  : 'não cadastrado'} />
-            <PopupRow label="Teto PAP"   value={stats?.tetoPap    != null ? formatBRL(stats.tetoPap)                  : 'não cadastrado'} />
+            <PopupRow
+              label="Habitantes"
+              value={stats?.habitantes != null ? stats.habitantes.toLocaleString('pt-BR') : '—'}
+              hint={stats?.fonteHabitantes ?? undefined}
+            />
+            <PopupRow
+              label="Eleitores"
+              value={stats?.eleitores != null ? stats.eleitores.toLocaleString('pt-BR') : '—'}
+              hint={stats?.eleitores == null ? 'requer importação do TSE' : undefined}
+            />
+            <PopupRow
+              label="Teto MAC"
+              value={stats?.tetoMac != null ? formatBRL(stats.tetoMac) : '—'}
+              hint={stats?.tetoMac == null ? 'requer cadastro manual (DataSUS)' : undefined}
+            />
+            <PopupRow
+              label="Teto PAP"
+              value={stats?.tetoPap != null ? formatBRL(stats.tetoPap) : '—'}
+              hint={stats?.tetoPap == null ? 'fonte SISAPS — pendente' : undefined}
+            />
           </div>
         )}
       </motion.div>
@@ -932,11 +1029,14 @@ function MunicipioPopup({
   );
 }
 
-function PopupRow({ label, value }: { label: string; value: string }) {
+function PopupRow({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-slate-400">{label}</span>
-      <span className="text-white font-semibold">{value}</span>
+    <div className="flex items-start justify-between gap-2">
+      <span className="text-slate-400 flex-shrink-0">{label}</span>
+      <div className="text-right min-w-0">
+        <span className={value === '—' ? 'text-slate-500' : 'text-white font-semibold'}>{value}</span>
+        {hint && <p className="text-[9px] text-slate-500 italic mt-0.5 leading-tight">{hint}</p>}
+      </div>
     </div>
   );
 }
@@ -1020,7 +1120,12 @@ function ParlamentarDashboard({
             ) : (
               <>
                 <div className="h-56 relative">
-                  <Donut3DChart data={porArea.slice(0, 6)} centerValue={formatBRLCompact(totalAno)} centerLabel={`em ${ano}`} />
+                  <Donut3DChart
+                    data={porArea.slice(0, 6)}
+                    centerValue={formatBRLCompact(totalAno)}
+                    centerLabel={`em ${ano}`}
+                    valueFormatter={formatBRL}
+                  />
                 </div>
               </>
             )}
@@ -1094,40 +1199,50 @@ function ParlamentarDashboard({
 }
 
 function ComparativoAreasCard({
-  ano, areasAtual, areasAnterior,
+  ano, escopo, areasAtual, areasAnterior,
 }: {
   ano: number;
+  escopo: string;
   areasAtual: { area: EmendaArea; total: number }[];
   areasAnterior: Map<string, number>;
 }) {
+  // Cada card mostra UMA área literal (mesmo critério do donut acima).
+  // O card "OUTRAS ÁREAS" soma tudo que não é Saúde/Educação/Segurança —
+  // legendado como tal pra evitar confusão com a área literal "OUTROS".
   const principais: EmendaArea[] = ['SAUDE', 'EDUCACAO', 'SEGURANCA', 'OUTROS'];
 
-  // Reduz "OUTROS" como soma de todas as áreas fora das principais
-  const principaisSomadas: { area: EmendaArea; atual: number; anterior: number }[] = principais.map((area) => {
-    if (area === 'OUTROS') {
-      const principaisSet = new Set<EmendaArea>(['SAUDE', 'EDUCACAO', 'SEGURANCA']);
-      const atual = areasAtual.reduce((s, a) => s + (principaisSet.has(a.area) ? 0 : a.total), 0);
-      const anterior = Array.from(areasAnterior.entries()).reduce(
-        (s, [k, v]) => s + (principaisSet.has(k as EmendaArea) ? 0 : v),
-        0,
-      );
-      return { area, atual, anterior };
-    }
-    const atual = areasAtual.find((a) => a.area === area)?.total ?? 0;
-    const anterior = areasAnterior.get(area) ?? 0;
-    return { area, atual, anterior };
-  });
+  const principaisSomadas: { area: EmendaArea; label: string; atual: number; anterior: number }[] =
+    principais.map((area) => {
+      if (area === 'OUTROS') {
+        // "Outras áreas" — agrega tudo que não é uma das 3 principais
+        const principaisSet = new Set<EmendaArea>(['SAUDE', 'EDUCACAO', 'SEGURANCA']);
+        const atual = areasAtual.reduce((s, a) => s + (principaisSet.has(a.area) ? 0 : a.total), 0);
+        const anterior = Array.from(areasAnterior.entries()).reduce(
+          (s, [k, v]) => s + (principaisSet.has(k as EmendaArea) ? 0 : v),
+          0,
+        );
+        return { area, label: 'Outras áreas', atual, anterior };
+      }
+      const atual = areasAtual.find((a) => a.area === area)?.total ?? 0;
+      const anterior = areasAnterior.get(area) ?? 0;
+      return { area, label: AREA_LABELS[area], atual, anterior };
+    });
 
   return (
     <div
       className="rounded-2xl p-5"
       style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">
-        Comparativo por área (em relação ao ano anterior)
-      </p>
+      <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
+        <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+          Comparativo por área · {escopo}
+        </p>
+        <p className="text-[10px] text-slate-500">
+          {ano} vs. {ano - 1}
+        </p>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {principaisSomadas.map(({ area, atual, anterior }) => {
+        {principaisSomadas.map(({ area, label, atual, anterior }) => {
           const delta = anterior > 0 ? ((atual - anterior) / anterior) * 100 : atual > 0 ? 100 : 0;
           const isUp = delta >= 0;
           const color = AREA_COLORS[area];
@@ -1136,13 +1251,14 @@ function ComparativoAreasCard({
               key={area}
               className="rounded-xl p-3.5"
               style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}
+              title={area === 'OUTROS' ? 'Soma de Assistência Social, Transporte, Cultura, Esporte e outras áreas que não são Saúde, Educação ou Segurança' : undefined}
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${color}22`, color, border: `1px solid ${color}44` }}>
                   <Landmark className="w-4 h-4" />
                 </div>
                 <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color }}>
-                  {AREA_LABELS[area]}
+                  {label}
                 </span>
               </div>
               <p className="text-white font-bold text-lg">{formatBRL(atual)}</p>
@@ -1168,39 +1284,73 @@ function DestaqueDoAnoCard({
   municipio: { codigoIbge: string; nome: string; total: number };
   ano: number;
   stateName: string;
-  topParlamentar?: { nome: string; cargo: string; partido: string | null };
+  topParlamentar?: { nome: string; cargo: string; partido: string | null; total: number };
 }) {
   return (
     <div
-      className="rounded-2xl p-5 flex items-center gap-4"
+      className="rounded-2xl p-5"
       style={{
         background: 'linear-gradient(135deg, rgba(201,162,39,0.08), rgba(74,158,222,0.05))',
         border: '1px solid rgba(201,162,39,0.25)',
       }}
     >
-      <div
-        className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
-        style={{
-          background: 'rgba(201,162,39,0.15)',
-          border: '1px solid rgba(201,162,39,0.4)',
-          boxShadow: '0 0 24px rgba(201,162,39,0.25)',
-        }}
-      >
-        <Trophy className="w-7 h-7" style={{ color: '#e8c660' }} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[10px] uppercase tracking-widest font-bold text-amber-300">Destaque do ano em {stateName} ({ano})</p>
-        <p className="text-white text-sm mt-1">
-          Maior volume de emendas recebido por <span className="font-bold text-amber-300">{municipio.nome}</span>
+      <div className="flex items-center gap-3 mb-4">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{
+            background: 'rgba(201,162,39,0.15)',
+            border: '1px solid rgba(201,162,39,0.4)',
+            boxShadow: '0 0 18px rgba(201,162,39,0.25)',
+          }}
+        >
+          <Trophy className="w-5 h-5" style={{ color: '#e8c660' }} />
+        </div>
+        <p className="text-[10px] uppercase tracking-widest font-bold text-amber-300">
+          Destaque do ano em {stateName} ({ano})
         </p>
-        {topParlamentar && (
-          <p className="text-xs text-slate-400 mt-0.5">
-            Top parlamentar: <span className="text-white font-medium">{topParlamentar.nome}</span>
-            {topParlamentar.partido ? ` (${topParlamentar.partido})` : ''} — {CARGO_LABELS[topParlamentar.cargo as ParlamentarCargo] ?? topParlamentar.cargo}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Top município */}
+        <div
+          className="rounded-xl p-3.5"
+          style={{ background: 'rgba(7,29,54,0.4)', border: '1px solid rgba(255,255,255,0.06)' }}
+        >
+          <p className="text-[10px] uppercase tracking-widest text-cyan-300/80 font-bold">
+            Município que mais recebeu
           </p>
+          <p className="text-white font-bold text-base mt-1.5">{municipio.nome}</p>
+          <p className="text-cyan-300 font-bold text-xl mt-0.5">{formatBRL(municipio.total)}</p>
+          <p className="text-[10px] text-slate-500 mt-1 italic">
+            soma do que todos os parlamentares destinaram a esta cidade
+          </p>
+        </div>
+
+        {/* Top parlamentar */}
+        {topParlamentar && (
+          <div
+            className="rounded-xl p-3.5"
+            style={{ background: 'rgba(7,29,54,0.4)', border: '1px solid rgba(255,255,255,0.06)' }}
+          >
+            <p className="text-[10px] uppercase tracking-widest text-amber-300/80 font-bold">
+              Parlamentar que mais enviou
+            </p>
+            <p className="text-white font-bold text-base mt-1.5 truncate">{topParlamentar.nome}</p>
+            <p className="text-[11px] text-slate-400 -mt-0.5">
+              {CARGO_LABELS[topParlamentar.cargo as ParlamentarCargo] ?? topParlamentar.cargo}
+              {topParlamentar.partido ? ` · ${topParlamentar.partido}` : ''}
+            </p>
+            <p className="text-amber-300 font-bold text-xl mt-0.5">{formatBRL(topParlamentar.total)}</p>
+            <p className="text-[10px] text-slate-500 mt-1 italic">
+              total que este parlamentar enviou ao estado (todos os destinos somados)
+            </p>
+          </div>
         )}
       </div>
-      <p className="text-2xl font-bold text-white whitespace-nowrap">{formatBRL(municipio.total)}</p>
+
+      <p className="text-[10px] text-slate-500 mt-3 text-center italic">
+        ⓘ Os dois valores acima medem coisas diferentes — um é &ldquo;recebido pela cidade&rdquo;, outro é &ldquo;enviado pelo parlamentar ao estado todo&rdquo;.
+      </p>
     </div>
   );
 }

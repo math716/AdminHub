@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
+import { prisma } from '@/lib/db';
 import { listEmendasPorParlamentar, PORTAL_MOCK_MODE } from '@/lib/portal-transparencia';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -14,16 +15,67 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const anoRaw = request.nextUrl.searchParams.get('ano');
     const ano = anoRaw ? parseInt(anoRaw, 10) : undefined;
 
-    // id pode ser CPF (11 dígitos) ou idPortal
+    // id pode ser: CPF (11 dígitos), idPortal (= nome no nosso caso), ou o nome direto
     const isCpf = /^\d{11}$/.test(id);
 
+    // 1) Banco
+    const parlamentar = await prisma.parlamentar.findFirst({
+      where: isCpf
+        ? { cpf: id }
+        : { OR: [{ idPortal: id }, { nome: id }] },
+      select: { id: true },
+    });
+
+    if (parlamentar) {
+      const rows = await prisma.emendaParlamentar.findMany({
+        where: { parlamentarId: parlamentar.id, ...(ano ? { ano } : {}) },
+        select: {
+          idPortal: true, ano: true, numero: true, tipo: true, funcao: true,
+          area: true, objeto: true, valorEmpenhado: true, valorPago: true, valorRestoPago: true,
+          uf: true, codigoIbge: true, municipioNome: true,
+          parlamentar: { select: { cpf: true, nome: true, cargo: true, partido: true, uf: true } },
+        },
+        orderBy: [{ ano: 'desc' }, { valorEmpenhado: 'desc' }],
+      });
+
+      if (rows.length > 0) {
+        const emendas = rows.map((e) => ({
+          idPortal:       e.idPortal,
+          ano:            e.ano,
+          numero:         e.numero,
+          tipo:           e.tipo,
+          funcao:         e.funcao,
+          subfuncao:      null,
+          area:           e.area,
+          objeto:         e.objeto,
+          valorEmpenhado: e.valorEmpenhado,
+          valorPago:      e.valorPago,
+          valorRestoPago: e.valorRestoPago,
+          valorProposto:  null,
+          orgaoExecutor:  null,
+          beneficiario:   null,
+          cnpjBeneficiario: null,
+          uf:             e.uf,
+          codigoIbge:     e.codigoIbge,
+          municipioNome:  e.municipioNome,
+          autorCpf:       e.parlamentar?.cpf ?? null,
+          autorNome:      e.parlamentar?.nome ?? '—',
+          autorCargo:     e.parlamentar?.cargo ?? 'DEPUTADO_FEDERAL',
+          autorPartido:   e.parlamentar?.partido ?? null,
+          autorUf:        e.parlamentar?.uf ?? null,
+        }));
+        return NextResponse.json({ emendas, mock: false, fonte: 'banco' });
+      }
+    }
+
+    // 2) Fallback Portal — usando nome (id costuma ser o nome em maiúsculas)
     const emendas = await listEmendasPorParlamentar({
       cpf: isCpf ? id : undefined,
       idPortal: !isCpf ? id : undefined,
+      nome: !isCpf ? id : undefined,
       ano,
     });
-
-    return NextResponse.json({ emendas, mock: PORTAL_MOCK_MODE });
+    return NextResponse.json({ emendas, mock: PORTAL_MOCK_MODE, fonte: 'portal' });
   } catch (error) {
     console.error('GET /api/emendas-portal/parlamentar/[id] error:', error);
     return NextResponse.json({ error: 'Erro ao buscar emendas do parlamentar' }, { status: 500 });

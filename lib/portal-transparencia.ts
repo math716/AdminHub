@@ -216,6 +216,41 @@ async function portalFetchPaginated(
   return out;
 }
 
+// Pagina em paralelo em chunks. Quando um chunk inteiro vier "curto" (alguma
+// página com menos de 15 itens), assume que chegou ao fim e para. Mais rápido
+// que sequencial pra coletar grandes volumes.
+async function portalFetchPaginatedParallel(
+  path: string,
+  baseParams: Record<string, string | number | undefined>,
+  opts: { maxPages?: number; concurrency?: number } = {},
+): Promise<any[]> {
+  const maxPages   = opts.maxPages   ?? 100;
+  const concurrency = opts.concurrency ?? 8;
+  const out: any[] = [];
+
+  for (let start = 1; start <= maxPages; start += concurrency) {
+    const pages = Array.from(
+      { length: Math.min(concurrency, maxPages - start + 1) },
+      (_, i) => start + i,
+    );
+    const chunk = await Promise.all(
+      pages.map((pagina) => portalFetch(path, { ...baseParams, pagina }).catch(() => [])),
+    );
+
+    let sawEnd = false;
+    for (const data of chunk) {
+      if (!Array.isArray(data) || data.length === 0) {
+        sawEnd = true;
+        continue;
+      }
+      out.push(...data);
+      if (data.length < 15) sawEnd = true;
+    }
+    if (sawEnd) break;
+  }
+  return out;
+}
+
 // Parser de valor BR: "200.000,00" → 200000
 function parseValorBR(v: any): number {
   if (typeof v === 'number') return v;
@@ -325,7 +360,58 @@ async function resolverCodigoIbge(uf: string | null, municipio: string | null): 
 // ---------------------------------------------------------------------------
 
 /**
- * Lista emendas de um parlamentar (filtro por nome). Em produção: pagina o Portal.
+ * Baixa TODAS as emendas (uf, ano) do Portal e cacheia. Fonte única de verdade
+ * — todos os agregados (município, parlamentar, resumo) usam essa lista pra
+ * garantir que os números batem entre as telas.
+ *
+ * A API do Portal não tem filtro por UF nem por município, então buscamos
+ * por ano e filtramos client-side. Cache TTL = 5 min (configurável em TTL_MS).
+ *
+ * Custo: ~50-150 requisições ao Portal por (uf, ano), conforme o tamanho do
+ * estado. Em produção, idealmente isso seria sincronizado num cron job que
+ * popula a tabela `emendas_parlamentares` no banco.
+ */
+export async function getAllEmendasDoAno(opts: { ano: number; uf?: string }): Promise<PortalEmenda[]> {
+  const key = `all:${opts.ano}:${opts.uf ?? 'BR'}`;
+  const hit = cacheGet<PortalEmenda[]>(key);
+  if (hit) return hit;
+
+  let result: PortalEmenda[];
+  if (PORTAL_MOCK_MODE) {
+    // Em mock, agrega todas as emendas dos parlamentares mock
+    const all: PortalEmenda[] = [];
+    MOCK_PARLAMENTARES.forEach((p) => {
+      all.push(...mockEmendasPorParlamentar({ idPortal: p.idPortal, ano: opts.ano }));
+    });
+    result = opts.uf
+      ? all.filter((e) => e.uf === opts.uf.toUpperCase())
+      : all;
+  } else {
+    // Em paralelo (chunks de 12 páginas). Cobre estados grandes sem estourar
+    // timeout de serverless (60s no plano Pro do Vercel).
+    // ⚠️ Limitação fundamental: a API do Portal não suporta filtro por UF,
+    // então temos que baixar tudo do BR e filtrar client-side. Pro Brasil
+    // inteiro num ano, podem existir dezenas de milhares de emendas. O limite
+    // abaixo é o máximo que cabe em 60s de serverless. Os dados exibidos
+    // são uma AMOSTRA das emendas com maior valor (Portal retorna ordenado).
+    // Para totais reais, a arquitetura correta é sincronizar pro banco via
+    // cron job (a fazer).
+    const rows = await portalFetchPaginatedParallel('/api-de-dados/emendas', { ano: opts.ano }, {
+      maxPages: 400,
+      concurrency: 12,
+    });
+    const mapped = await Promise.all(rows.map(mapPortalRow));
+    result = opts.uf
+      ? mapped.filter((e) => e.uf === opts.uf.toUpperCase())
+      : mapped;
+  }
+
+  cacheSet(key, result);
+  return result;
+}
+
+/**
+ * Lista emendas de um parlamentar (filtro por nome). Em produção: filtra do cache global.
  * Mock: gera dataset sintético determinístico.
  */
 export async function listEmendasPorParlamentar(opts: {
@@ -342,12 +428,23 @@ export async function listEmendasPorParlamentar(opts: {
   if (PORTAL_MOCK_MODE) {
     result = mockEmendasPorParlamentar(opts);
   } else {
-    if (!opts.nome) return [];
-    const rows = await portalFetchPaginated('/api-de-dados/emendas', {
-      ano: opts.ano,
-      nomeAutor: opts.nome,
-    }, 10);
-    result = await Promise.all(rows.map(mapPortalRow));
+    // O Portal não retorna CPF — o idPortal carrega o nome em UPPERCASE.
+    // Aceita qualquer um dos 3 campos como identificador.
+    const nomeAlvo = opts.nome ?? opts.idPortal ?? opts.cpf;
+    if (!nomeAlvo) return [];
+
+    // Se temos ano, filtra do cache global (consistente com Top 5).
+    // Se não temos ano (histórico do parlamentar), faz fetch dedicado por nomeAutor.
+    if (opts.ano) {
+      const all = await getAllEmendasDoAno({ ano: opts.ano });
+      const alvo = nomeAlvo.toUpperCase().trim();
+      result = all.filter((e) => e.autorNome.toUpperCase().trim() === alvo);
+    } else {
+      const rows = await portalFetchPaginated('/api-de-dados/emendas', {
+        nomeAutor: nomeAlvo,
+      }, 20);
+      result = await Promise.all(rows.map(mapPortalRow));
+    }
   }
 
   cacheSet(key, result);
@@ -355,8 +452,8 @@ export async function listEmendasPorParlamentar(opts: {
 }
 
 /**
- * Lista emendas de um município. A API do Portal não tem filtro direto por
- * código IBGE — então buscamos por UF e fazemos match por nome do município.
+ * Lista emendas de um município. Usa o cache global de (uf, ano) — assim
+ * o detalhe sempre bate com o que aparece no Top 5.
  */
 export async function listEmendasPorMunicipio(opts: {
   codigoIbge: string;
@@ -372,30 +469,12 @@ export async function listEmendasPorMunicipio(opts: {
   if (PORTAL_MOCK_MODE) {
     result = mockEmendasPorMunicipio(opts);
   } else {
-    // Resolve o nome do município (caso não venha) pra fazer match
-    let nomeAlvo = opts.municipioNome;
-    if (!nomeAlvo) {
-      const list = await getMunicipiosByUf(opts.uf);
-      nomeAlvo = list.find((m) => m.id === opts.codigoIbge)?.nome;
+    if (!opts.ano) {
+      result = [];
+    } else {
+      const all = await getAllEmendasDoAno({ ano: opts.ano, uf: opts.uf });
+      result = all.filter((e) => e.codigoIbge === opts.codigoIbge);
     }
-    if (!nomeAlvo) return [];
-
-    // O Portal aceita filtro por UF beneficiária (campo `codigoIbgeUfBeneficiada`
-    // não existe — testamos `localidadeDoGasto` retornado e filtramos no client)
-    const rows = await portalFetchPaginated('/api-de-dados/emendas', {
-      ano: opts.ano,
-    }, 10);
-    const alvo = normalizeNome(nomeAlvo);
-    const filtered = rows.filter((row) => {
-      const loc = parseLocalidadeGasto(row?.localidadeDoGasto);
-      return loc.tipo === 'MUNICIPIO'
-        && loc.uf === opts.uf.toUpperCase()
-        && loc.municipio
-        && normalizeNome(loc.municipio) === alvo;
-    });
-    result = await Promise.all(filtered.map(mapPortalRow));
-    // Garante codigoIbge correto (já sabemos qual é)
-    result = result.map((e) => ({ ...e, codigoIbge: opts.codigoIbge, municipioNome: nomeAlvo ?? e.municipioNome }));
   }
 
   cacheSet(key, result);

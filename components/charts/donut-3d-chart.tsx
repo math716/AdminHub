@@ -14,9 +14,20 @@ interface Props {
   title?: string;
   centerValue?: string | number;
   centerLabel?: string;
+  /** Esconde a legenda interna (útil quando o card pai já tem sua própria lista). */
+  hideLegend?: boolean;
+  /** Formatador customizado pro valor do tooltip (ex.: BRL). Padrão: toLocaleString. */
+  valueFormatter?: (value: number) => string;
 }
 
-export default function Donut3DChart({ data, title, centerValue, centerLabel }: Props) {
+export default function Donut3DChart({
+  data,
+  title,
+  centerValue,
+  centerLabel,
+  hideLegend = false,
+  valueFormatter,
+}: Props) {
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
@@ -108,17 +119,25 @@ export default function Donut3DChart({ data, title, centerValue, centerLabel }: 
           </Pie>
 
           <Tooltip
+            cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+            wrapperStyle={{ outline: 'none', zIndex: 50 }}
             contentStyle={{
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
+              backgroundColor: 'rgba(13, 27, 42, 0.97)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '10px',
               color: '#fff',
               fontSize: '12px',
+              padding: '8px 12px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
             }}
-            formatter={(value: number, name: string) => [
-              `${value} (${((value / total) * 100).toFixed(1)}%)`,
-              name
-            ]}
+            itemStyle={{ color: '#fff', padding: '2px 0' }}
+            labelStyle={{ display: 'none' }}
+            separator=" "
+            formatter={(value: number, name: string) => {
+              const formatted = valueFormatter ? valueFormatter(value) : value.toLocaleString('pt-BR');
+              const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+              return [`${formatted} (${pct}%)`, name];
+            }}
           />
         </PieChart>
       </ResponsiveContainer>
@@ -138,17 +157,19 @@ export default function Donut3DChart({ data, title, centerValue, centerLabel }: 
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-0 left-0 right-0 flex flex-wrap justify-center gap-3 px-2">
-        {filteredData.map((entry, index) => (
-          <div key={index} className="flex items-center gap-1.5">
-            <div 
-              className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: entry.color, boxShadow: `0 0 6px ${entry.color}` }}
-            />
-            <span className="text-xs text-gray-300">{entry.name}</span>
-          </div>
-        ))}
-      </div>
+      {!hideLegend && (
+        <div className="absolute bottom-0 left-0 right-0 flex flex-wrap justify-center gap-3 px-2">
+          {filteredData.map((entry, index) => (
+            <div key={index} className="flex items-center gap-1.5">
+              <div
+                className="w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: entry.color, boxShadow: `0 0 6px ${entry.color}` }}
+              />
+              <span className="text-xs text-gray-300">{entry.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
