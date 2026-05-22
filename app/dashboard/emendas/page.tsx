@@ -345,6 +345,43 @@ export default function EmendasPage() {
       .sort((a, b) => a.ano - b.ano);
   }, [parlamentarHistorico]);
 
+  // Agrega emendas do parlamentar (ano selecionado) por município, com
+  // breakdown de áreas pra cada um. Usado na nova seção "Municípios
+  // beneficiados" do dashboard do parlamentar.
+  const parlamentarPorMunicipio = useMemo(() => {
+    const map = new Map<string, {
+      codigoIbge: string;
+      nome: string;
+      uf: string | null;
+      total: number;
+      areas: Map<EmendaArea, number>;
+    }>();
+    parlamentarEmendas.forEach((e) => {
+      if (!e.codigoIbge) return; // ignora emendas sem município identificado
+      const cur = map.get(e.codigoIbge) ?? {
+        codigoIbge: e.codigoIbge,
+        nome:       e.municipioNome ?? e.codigoIbge,
+        uf:         e.uf,
+        total:      0,
+        areas:      new Map<EmendaArea, number>(),
+      };
+      cur.total += e.valorEmpenhado ?? 0;
+      cur.areas.set(e.area, (cur.areas.get(e.area) ?? 0) + (e.valorEmpenhado ?? 0));
+      map.set(e.codigoIbge, cur);
+    });
+    return Array.from(map.values())
+      .map((m) => ({
+        codigoIbge: m.codigoIbge,
+        nome:       m.nome,
+        uf:         m.uf,
+        total:      m.total,
+        areas:      Array.from(m.areas.entries())
+                      .map(([area, valor]) => ({ area, valor }))
+                      .sort((a, b) => b.valor - a.valor),
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [parlamentarEmendas]);
+
   const maxParlamentarPorAno = useMemo(
     () => parlamentarPorAno.reduce((m, x) => Math.max(m, x.total), 1),
     [parlamentarPorAno],
@@ -581,6 +618,8 @@ export default function EmendasPage() {
           porArea={parlamentarPorArea}
           porAno={parlamentarPorAno}
           maxPorAno={maxParlamentarPorAno}
+          porMunicipio={parlamentarPorMunicipio}
+          onMunicipioClick={(m) => setSelectedMunicipio({ codigo: m.codigoIbge, nome: m.nome })}
         />
       )}
 
@@ -1065,8 +1104,16 @@ function LegendaCores() {
   );
 }
 
+interface ParlamentarPorMunicipio {
+  codigoIbge: string;
+  nome:       string;
+  uf:         string | null;
+  total:      number;
+  areas:      { area: EmendaArea; valor: number }[];
+}
+
 function ParlamentarDashboard({
-  parlamentar, ano, loading, totalAno, porArea, porAno, maxPorAno,
+  parlamentar, ano, loading, totalAno, porArea, porAno, maxPorAno, porMunicipio, onMunicipioClick,
 }: {
   parlamentar: PortalParlamentar;
   ano: number;
@@ -1075,6 +1122,8 @@ function ParlamentarDashboard({
   porArea: { name: string; value: number; color: string; area: EmendaArea }[];
   porAno: { ano: number; total: number }[];
   maxPorAno: number;
+  porMunicipio: ParlamentarPorMunicipio[];
+  onMunicipioClick?: (m: ParlamentarPorMunicipio) => void;
 }) {
   return (
     <div
@@ -1193,6 +1242,118 @@ function ParlamentarDashboard({
             )}
           </div>
         </div>
+      )}
+
+      {/* Lista de municípios beneficiados pelo parlamentar */}
+      {!loading && (
+        <MunicipiosBeneficiadosCard
+          ano={ano}
+          porMunicipio={porMunicipio}
+          onClick={onMunicipioClick}
+        />
+      )}
+    </div>
+  );
+}
+
+function MunicipiosBeneficiadosCard({
+  ano, porMunicipio, onClick,
+}: {
+  ano: number;
+  porMunicipio: ParlamentarPorMunicipio[];
+  onClick?: (m: ParlamentarPorMunicipio) => void;
+}) {
+  const [expandido, setExpandido] = useState(false);
+  const MAX_INICIAL = 8;
+  const visiveis = expandido ? porMunicipio : porMunicipio.slice(0, MAX_INICIAL);
+  const total = porMunicipio.reduce((s, m) => s + m.total, 0);
+
+  return (
+    <div
+      className="mt-4 rounded-xl p-4"
+      style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}
+    >
+      <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
+        <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+          Municípios beneficiados em {ano}
+        </p>
+        {porMunicipio.length > 0 && (
+          <p className="text-[10px] text-slate-500">
+            {porMunicipio.length} {porMunicipio.length === 1 ? 'município' : 'municípios'} ·{' '}
+            <span className="text-cyan-300 font-semibold">{formatBRL(total)}</span>
+          </p>
+        )}
+      </div>
+
+      {porMunicipio.length === 0 ? (
+        <p className="text-xs text-slate-500 text-center py-6">
+          Nenhuma emenda com município identificado em {ano}.
+          <br />
+          <span className="text-slate-600 text-[10px]">
+            (emendas com destino &ldquo;Nacional&rdquo; ou &ldquo;UF&rdquo; não aparecem aqui)
+          </span>
+        </p>
+      ) : (
+        <>
+          <div className="space-y-2">
+            {visiveis.map((m, i) => (
+              <button
+                key={m.codigoIbge}
+                onClick={onClick ? () => onClick(m) : undefined}
+                disabled={!onClick}
+                className="w-full text-left px-3 py-2.5 rounded-xl transition-colors group disabled:cursor-default"
+                style={{
+                  background: 'rgba(7,29,54,0.55)',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                }}
+              >
+                <div className="flex items-center justify-between gap-3 mb-1.5">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="text-[10px] font-bold text-slate-500 w-5 flex-shrink-0">{i + 1}.</span>
+                    <span className="text-white text-sm font-semibold truncate group-hover:text-amber-300 transition-colors">
+                      {m.nome}
+                    </span>
+                    {m.uf && (
+                      <span className="text-[10px] text-slate-500 flex-shrink-0">/ {m.uf}</span>
+                    )}
+                  </div>
+                  <span className="text-cyan-300 font-bold text-sm whitespace-nowrap">
+                    {formatBRL(m.total)}
+                  </span>
+                </div>
+                {/* Chips de áreas */}
+                <div className="flex flex-wrap gap-1.5 pl-7">
+                  {m.areas.map(({ area, valor }) => (
+                    <span
+                      key={area}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium"
+                      style={{
+                        background: `${AREA_COLORS[area]}22`,
+                        color: AREA_COLORS[area],
+                        border: `1px solid ${AREA_COLORS[area]}44`,
+                      }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: AREA_COLORS[area] }} />
+                      {AREA_LABELS[area]}
+                      <span className="text-white/70 font-semibold">{formatBRLCompact(valor)}</span>
+                    </span>
+                  ))}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {porMunicipio.length > MAX_INICIAL && (
+            <button
+              onClick={() => setExpandido((v) => !v)}
+              className="mt-3 w-full text-center text-[11px] text-amber-300 hover:text-amber-200 font-semibold transition-colors py-1.5 rounded-lg hover:bg-amber-300/5"
+            >
+              {expandido
+                ? `Mostrar apenas os ${MAX_INICIAL} maiores`
+                : `Ver todos os ${porMunicipio.length} municípios`}
+            </button>
+          )}
+        </>
       )}
     </div>
   );
