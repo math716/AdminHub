@@ -1,0 +1,68 @@
+name: Sync mensal — emendas do Portal da Transparência
+
+# Roda automaticamente todo dia 1º do mês às 03:00 UTC (= 00:00 horário de Brasília)
+# E permite trigger manual via "Run workflow" no GitHub.
+on:
+  schedule:
+    - cron: '0 3 1 * *'
+  workflow_dispatch:
+    inputs:
+      ano:
+        description: 'Ano específico pra sincronizar (deixe vazio = ano atual + anterior)'
+        required: false
+        type: string
+
+jobs:
+  sync:
+    name: Sync emendas Portal → Supabase
+    runs-on: ubuntu-latest
+    # Sync pode demorar até 2h pros 2 anos. GitHub Actions permite até 6h.
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Determinar anos a sincronizar
+        id: anos
+        run: |
+          if [ -n "${{ inputs.ano }}" ]; then
+            echo "anos=${{ inputs.ano }}" >> $GITHUB_OUTPUT
+          else
+            ANO_ATUAL=$(date +%Y)
+            ANO_ANTERIOR=$((ANO_ATUAL - 1))
+            echo "anos=$ANO_ANTERIOR $ANO_ATUAL" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Sincronizar
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          PORTAL_TRANSPARENCIA_API_KEY: ${{ secrets.PORTAL_TRANSPARENCIA_API_KEY }}
+        run: |
+          for ano in ${{ steps.anos.outputs.anos }}; do
+            echo "================================================="
+            echo "Sincronizando ano $ano…"
+            echo "================================================="
+            npx tsx scripts/sync-emendas-portal.ts --ano $ano
+          done
+
+      - name: Resumo
+        if: always()
+        run: |
+          echo "## Sync concluído" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Anos:** ${{ steps.anos.outputs.anos }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Hora de início:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
