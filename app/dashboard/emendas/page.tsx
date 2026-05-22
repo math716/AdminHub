@@ -398,6 +398,18 @@ export default function EmendasPage() {
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
   }, [parlamentarEmendas]);
 
+  // Quando há parlamentar selecionado, o mapa e o Top 5 mostram só os
+  // municípios beneficiados POR ELE — em vez do total do estado.
+  // Esse Record<codigoIbge, valor> é passado direto ao StateMap.
+  const parlamentarValorPorMunicipio = useMemo<Record<string, number>>(() => {
+    const map: Record<string, number> = {};
+    parlamentarEmendas.forEach((e) => {
+      if (!e.codigoIbge) return;
+      map[e.codigoIbge] = (map[e.codigoIbge] ?? 0) + (e.valorEmpenhado ?? 0);
+    });
+    return map;
+  }, [parlamentarEmendas]);
+
   // Agrega emendas do parlamentar (ano selecionado) por município, com
   // breakdown de áreas pra cada um. Usado na nova seção "Municípios
   // beneficiados" do dashboard do parlamentar.
@@ -584,9 +596,16 @@ export default function EmendasPage() {
               </div>
               <div
                 className="px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-widest font-bold pointer-events-auto"
-                style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)', color: '#e8c660' }}
+                style={{
+                  background: selectedParlamentar ? 'rgba(74,158,222,0.15)' : 'rgba(201,162,39,0.15)',
+                  border:     `1px solid ${selectedParlamentar ? 'rgba(74,158,222,0.4)' : 'rgba(201,162,39,0.3)'}`,
+                  color:      selectedParlamentar ? '#7fb8e0' : '#e8c660',
+                }}
+                title={selectedParlamentar ? `Filtrado por ${selectedParlamentar.nome}` : undefined}
               >
-                Emendas por Município
+                {selectedParlamentar
+                  ? `Filtrado: ${selectedParlamentar.nome.split(' ').slice(0, 2).join(' ')}`
+                  : 'Emendas por Município'}
               </div>
             </div>
 
@@ -597,13 +616,37 @@ export default function EmendasPage() {
               <StateMap
                 uf={selectedUf}
                 stateName={selectedStateName}
-                votesData={resumo?.valorPorMunicipio ?? {}}
+                /* Quando há parlamentar selecionado, mostra só os municípios
+                   que ele beneficiou. Senão, mostra todos do estado. */
+                votesData={
+                  selectedParlamentar
+                    ? parlamentarValorPorMunicipio
+                    : (resumo?.valorPorMunicipio ?? {})
+                }
                 onMunicipioClick={handleMunicipioClick}
                 disableSubdivisao
                 highlightColor="gold"
                 highlightMunicipioNome={selectedMunicipio?.nome ?? null}
-                valueLabel="em emendas"
+                valueLabel={selectedParlamentar ? `de ${selectedParlamentar.nome.split(' ')[0]}` : 'em emendas'}
               />
+            )}
+
+            {/* Banner explicativo quando parlamentar é selecionado e não tem
+                emendas com município identificado (típico de senadores e de
+                deputados que destinam ao estado todo). */}
+            {view === 'estado' && selectedParlamentar && Object.keys(parlamentarValorPorMunicipio).length === 0 && !loadingParlamentar && (
+              <div
+                className="absolute bottom-3 left-3 right-32 z-[400] rounded-xl px-3 py-2 pointer-events-none"
+                style={{
+                  background: 'rgba(245,158,11,0.12)',
+                  border: '1px solid rgba(245,158,11,0.35)',
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
+                <p className="text-[11px] text-amber-200">
+                  <span className="font-semibold">{selectedParlamentar.nome}</span> destinou todas as emendas a nível estadual em {ano} — nenhum município específico foi identificado.
+                </p>
+              </div>
             )}
 
             {/* Popup do município (habitantes/eleitores/MAC/PAP) */}
@@ -639,6 +682,20 @@ export default function EmendasPage() {
                 resumo={resumo}
                 loading={loadingResumo}
                 onClick={(m) => handleMunicipioClick(m.codigoIbge, m.nome)}
+                /* Quando há parlamentar selecionado, mostra os municípios
+                   beneficiados por ele em vez do agregado do estado. */
+                escopoParlamentar={
+                  selectedParlamentar
+                    ? {
+                        nome: selectedParlamentar.nome,
+                        municipios: parlamentarPorMunicipio.slice(0, 5).map((m) => ({
+                          codigoIbge: m.codigoIbge,
+                          nome: m.nome,
+                          total: m.total,
+                        })),
+                      }
+                    : null
+                }
               />
               <ParlamentarSearchCard
                 query={parlamentarQuery}
@@ -941,28 +998,51 @@ function Top5MunicipiosCard({
   resumo,
   loading,
   onClick,
+  escopoParlamentar,
 }: {
   resumo: ResumoEstado | null;
   loading: boolean;
   onClick: (m: { codigoIbge: string; nome: string }) => void;
+  /** Quando set, mostra o top 5 do parlamentar em vez do agregado do estado. */
+  escopoParlamentar?: {
+    nome: string;
+    municipios: { codigoIbge: string; nome: string; total: number }[];
+  } | null;
 }) {
+  // Se há parlamentar selecionado, usa o top dele. Senão, usa o do estado.
+  const top = escopoParlamentar?.municipios ?? resumo?.topMunicipios ?? [];
+  const isParlamentar = !!escopoParlamentar;
+
   return (
     <div
       className="rounded-2xl p-4"
       style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">Top 5 Municípios</p>
-      {loading && (
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">
+        Top 5 Municípios
+      </p>
+      {isParlamentar && (
+        <p className="text-[10px] text-amber-300/80 mb-2 truncate" title={escopoParlamentar.nome}>
+          beneficiados por {escopoParlamentar.nome}
+        </p>
+      )}
+      {!isParlamentar && <div className="mb-2" />}
+
+      {loading && !isParlamentar && (
         <div className="py-6 flex items-center justify-center">
           <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
         </div>
       )}
-      {!loading && (!resumo || resumo.topMunicipios.length === 0) && (
-        <p className="text-xs text-slate-500 text-center py-4">Sem dados disponíveis</p>
+      {!loading && top.length === 0 && (
+        <p className="text-xs text-slate-500 text-center py-4">
+          {isParlamentar
+            ? 'Nenhum município identificado (emendas em nível estadual)'
+            : 'Sem dados disponíveis'}
+        </p>
       )}
-      {!loading && resumo && resumo.topMunicipios.length > 0 && (
+      {top.length > 0 && (
         <ol className="space-y-2">
-          {resumo.topMunicipios.map((m, i) => (
+          {top.map((m, i) => (
             <li key={m.codigoIbge}>
               <button
                 onClick={() => onClick(m)}
