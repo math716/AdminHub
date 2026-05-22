@@ -610,7 +610,7 @@ export default function EmendasPage() {
             </div>
 
             {view === 'brasil' && (
-              <BrazilMap onStateClick={handleStateClick} />
+              <BrazilMap onStateClick={handleStateClick} darkMode />
             )}
             {view === 'estado' && selectedUf && (
               <StateMap

@@ -7,6 +7,8 @@ import { useMapCleanup } from '@/hooks/use-map-cleanup';
 interface BrazilMapProps {
   onStateClick: (uf: string, name: string) => void;
   highlightedStates?: Record<string, number>;
+  /** Tema escuro com tile CartoDB Dark Matter (pro dashboard de emendas) */
+  darkMode?: boolean;
 }
 
 const codeToUf: Record<string, string> = {
@@ -27,7 +29,7 @@ const STATE_CENTROIDS: Record<string, [number, number]> = {
   'SP': [-22.2, -48.7], 'SE': [-10.6, -37.4], 'TO': [-10.2, -48.3]
 };
 
-function BrazilMapComponent({ onStateClick, highlightedStates }: BrazilMapProps) {
+function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false }: BrazilMapProps) {
   const [geoData, setGeoData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -97,7 +99,10 @@ function BrazilMapComponent({ onStateClick, highlightedStates }: BrazilMapProps)
       // consiga destruir este mapa caso o efeito seja cancelado.
       mapInstanceRef.current = map;
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      const tileUrl = darkMode
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      L.tileLayer(tileUrl, {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 20
@@ -108,21 +113,41 @@ function BrazilMapComponent({ onStateClick, highlightedStates }: BrazilMapProps)
       const getColor = (codarea: string) => {
         const uf = codeToUf[codarea] || '';
         const value = highlightedStates?.[uf] ?? 0;
-        if (value === 0) return '#dce8f5'; // cinza-azulado claro para fundo branco
+        if (value === 0) return darkMode ? 'transparent' : '#dce8f5';
         const maxValue = Math.max(...Object.values(highlightedStates || { _: 1 }));
         const intensity = value / maxValue;
-        // Choropleth claro→escuro para fundo branco
+
+        if (darkMode) {
+          // Mais valor = cor mais escura/saturada (legenda: #7fb8e0 → #0c4f8a)
+          const lightness  = 70 - (intensity * 40); // 70% (pouco) → 30% (muito)
+          const saturation = 60 + (intensity * 25); // 60% → 85%
+          return `hsl(209, ${saturation}%, ${lightness}%)`;
+        }
+        // Modo claro original
         const lightness = 85 - (intensity * 55);
         return `hsl(210, 75%, ${lightness}%)`;
       };
 
-      const style = (feature: any) => ({
-        fillColor: getColor(feature?.properties?.codarea || ''),
-        weight: 1.2,
-        opacity: 0.9,
-        color: '#7aadcc', // borda azul-acinzentado visível no fundo claro
-        fillOpacity: 0
-      });
+      const getFillOpacity = (codarea: string): number => {
+        const uf = codeToUf[codarea] || '';
+        const value = highlightedStates?.[uf] ?? 0;
+        if (!darkMode) return 0; // modo claro mantém só bordas
+        if (!value) return 0;
+        const maxValue = Math.max(...Object.values(highlightedStates || { _: 1 }));
+        const intensity = value / maxValue;
+        return 0.65 + intensity * 0.3;
+      };
+
+      const style = (feature: any) => {
+        const codarea = feature?.properties?.codarea || '';
+        return {
+          fillColor: getColor(codarea),
+          weight: 1.2,
+          opacity: 0.9,
+          color: darkMode ? 'rgba(74,158,222,0.6)' : '#7aadcc',
+          fillOpacity: getFillOpacity(codarea),
+        };
+      };
 
       const geoLayer = L.geoJSON(geoData, {
         style: style,

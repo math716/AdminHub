@@ -634,10 +634,13 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         const intensity = votos / maxValue;
 
         if (darkMode) {
-          // Dark theme: do azul médio (pouco) ao ciano vivo (muito) — bem visível no fundo escuro
-          const lightness  = 35 + (intensity * 30); // 35% → 65% (claro o suficiente p/ contrastar com o tile)
-          const saturation = 65 + (intensity * 25); // 65% → 90%
-          return `hsl(205, ${saturation}%, ${lightness}%)`;
+          // Dark theme — paleta da legenda (#7fb8e0 → #0c4f8a):
+          //   Pouco valor: azul CLARO (#7fb8e0 ≈ L 69%)
+          //   Muito valor: azul ESCURO/saturado (#0c4f8a ≈ L 30%)
+          // Lightness diminui conforme valor aumenta, igual à legenda.
+          const lightness  = 70 - (intensity * 40); // 70% (pouco) → 30% (muito)
+          const saturation = 60 + (intensity * 25); // 60% → 85%
+          return `hsl(209, ${saturation}%, ${lightness}%)`;
         }
 
         // Choropleth claro→escuro para fundo branco: azul claro (pouco) a azul escuro (muito)
@@ -666,7 +669,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         // No modo claro original, fillOpacity=0 (só bordas).
         const intensity = votos && maxValue > 0 ? votos / maxValue : 0;
         const fillOpacity = darkMode
-          ? (votos && votos > 0 ? 0.55 + intensity * 0.4 : 0)
+          ? (votos && votos > 0 ? 0.65 + intensity * 0.3 : 0)
           : 0;
         const borderOpacity = filteredMunicipios ? (isFiltered ? 1 : 0.3) : 1;
 
