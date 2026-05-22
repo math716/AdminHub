@@ -350,6 +350,26 @@ export default function EmendasPage() {
       .sort((a, b) => a.ano - b.ano);
   }, [parlamentarHistorico]);
 
+  // Quebra do total do parlamentar em "destinado a municípios" vs "destinado
+  // ao estado inteiro" — ajuda a entender por que a lista de municípios pode
+  // estar vazia mesmo o donut mostrando valores altos (típico de senadores).
+  const parlamentarDestinos = useMemo(() => {
+    let municipal = 0;
+    let estadual  = 0;
+    let qtdMun    = 0;
+    let qtdEst    = 0;
+    parlamentarEmendas.forEach((e) => {
+      if (e.codigoIbge) {
+        municipal += e.valorEmpenhado ?? 0;
+        qtdMun++;
+      } else {
+        estadual += e.valorEmpenhado ?? 0;
+        qtdEst++;
+      }
+    });
+    return { municipal, estadual, qtdMun, qtdEst };
+  }, [parlamentarEmendas]);
+
   // Agrega emendas do parlamentar por tipo (Individual, Bancada, Comissão, ...)
   // Senadores e deputados podem aparecer em emendas de bancada/comissão também.
   // Mostrar o breakdown ajuda a entender o que vem da cota individual.
@@ -649,6 +669,7 @@ export default function EmendasPage() {
           maxPorAno={maxParlamentarPorAno}
           porMunicipio={parlamentarPorMunicipio}
           porTipo={parlamentarPorTipo}
+          destinos={parlamentarDestinos}
           onMunicipioClick={(m) => setSelectedMunicipio({ codigo: m.codigoIbge, nome: m.nome })}
         />
       )}
@@ -1143,7 +1164,7 @@ interface ParlamentarPorMunicipio {
 }
 
 function ParlamentarDashboard({
-  parlamentar, ano, escopo, loading, totalAno, porArea, porAno, maxPorAno, porMunicipio, porTipo, onMunicipioClick,
+  parlamentar, ano, escopo, loading, totalAno, porArea, porAno, maxPorAno, porMunicipio, porTipo, destinos, onMunicipioClick,
 }: {
   parlamentar: PortalParlamentar;
   ano: number;
@@ -1155,6 +1176,7 @@ function ParlamentarDashboard({
   maxPorAno: number;
   porMunicipio: ParlamentarPorMunicipio[];
   porTipo: { tipo: string; total: number; qtd: number }[];
+  destinos: { municipal: number; estadual: number; qtdMun: number; qtdEst: number };
   onMunicipioClick?: (m: ParlamentarPorMunicipio) => void;
 }) {
   return (
@@ -1186,6 +1208,18 @@ function ParlamentarDashboard({
           <p className="text-2xl font-bold text-white mt-0.5">
             {loading ? <Loader2 className="w-5 h-5 animate-spin inline" /> : formatBRL(totalAno)}
           </p>
+          {!loading && (destinos.municipal > 0 || destinos.estadual > 0) && (
+            <div className="mt-2 text-[10px] text-slate-300 space-y-0.5 text-right">
+              <p>
+                <span className="text-cyan-300">●</span> A municípios: <span className="font-semibold text-white">{formatBRL(destinos.municipal)}</span>
+                <span className="text-slate-500"> ({destinos.qtdMun})</span>
+              </p>
+              <p>
+                <span className="text-violet-400">●</span> Nível UF (sem município): <span className="font-semibold text-white">{formatBRL(destinos.estadual)}</span>
+                <span className="text-slate-500"> ({destinos.qtdEst})</span>
+              </p>
+            </div>
+          )}
           {!loading && porTipo.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2 justify-end max-w-[360px]">
               {porTipo.map((t) => (
