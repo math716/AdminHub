@@ -226,27 +226,33 @@ export default function EmendasPage() {
   }, [selectedMunicipio, ano, selectedUf]);
 
   // ----- Autocomplete parlamentar -----
-  const debounceRef = useRef<number | null>(null);
+  // Filtra LOCALMENTE em resumo.parlamentares (lista já carregada do estado).
+  // É instantâneo, não bate no Portal, e cobre todos os parlamentares que
+  // efetivamente enviaram emendas pro estado neste ano.
   useEffect(() => {
-    if (parlamentarQuery.trim().length < 2) {
+    const q = parlamentarQuery.trim().toLowerCase();
+    if (q.length < 2 || !resumo?.parlamentares) {
       setParlamentarResults([]);
       return;
     }
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(async () => {
-      setSearchingParlamentar(true);
-      try {
-        const res = await fetch(`/api/emendas-portal/parlamentares?q=${encodeURIComponent(parlamentarQuery)}`);
-        const data = await res.json();
-        setParlamentarResults(Array.isArray(data?.results) ? data.results : []);
-      } finally {
-        setSearchingParlamentar(false);
-      }
-    }, 300);
-    return () => {
-      if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    };
-  }, [parlamentarQuery]);
+    setSearchingParlamentar(false);
+    const normalizar = (s: string) =>
+      s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const qNorm = normalizar(q);
+    const matches = resumo.parlamentares
+      .filter((p) => normalizar(p.nome).includes(qNorm))
+      .slice(0, 20)
+      .map<PortalParlamentar>((p) => ({
+        cpf:      p.cpf,
+        idPortal: p.idPortal,
+        nome:     p.nome,
+        nomeUrna: null,
+        partido:  p.partido,
+        uf:       selectedUf,
+        cargo:    p.cargo as ParlamentarCargo,
+      }));
+    setParlamentarResults(matches);
+  }, [parlamentarQuery, resumo, selectedUf]);
 
   // ----- Emendas do parlamentar selecionado -----
   useEffect(() => {

@@ -387,11 +387,18 @@ export async function getAllEmendasDoAno(opts: { ano: number; uf?: string }): Pr
       ? all.filter((e) => e.uf === opts.uf.toUpperCase())
       : all;
   } else {
-    // Em paralelo (chunks de 8 páginas). Cobre estados grandes sem estourar
+    // Em paralelo (chunks de 12 páginas). Cobre estados grandes sem estourar
     // timeout de serverless (60s no plano Pro do Vercel).
+    // ⚠️ Limitação fundamental: a API do Portal não suporta filtro por UF,
+    // então temos que baixar tudo do BR e filtrar client-side. Pro Brasil
+    // inteiro num ano, podem existir dezenas de milhares de emendas. O limite
+    // abaixo é o máximo que cabe em 60s de serverless. Os dados exibidos
+    // são uma AMOSTRA das emendas com maior valor (Portal retorna ordenado).
+    // Para totais reais, a arquitetura correta é sincronizar pro banco via
+    // cron job (a fazer).
     const rows = await portalFetchPaginatedParallel('/api-de-dados/emendas', { ano: opts.ano }, {
-      maxPages: 120,
-      concurrency: 8,
+      maxPages: 400,
+      concurrency: 12,
     });
     const mapped = await Promise.all(rows.map(mapPortalRow));
     result = opts.uf
