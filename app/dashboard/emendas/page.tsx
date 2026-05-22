@@ -519,18 +519,31 @@ export default function EmendasPage() {
         </div>
       )}
 
-      {/* Grid principal de 2 linhas:
-            Linha 1 (alinhada): Resumo Geral (3) | Mapa (6) | Top 5 + Parlamentar (3)
-            Linha 2 (alinhada): Emendas por Área pizza (3) | Comparativo por Área (9) */}
+      {/* Grid principal — coluna esquerda ocupa 2 linhas (row-span-2) com
+            Resumo Geral e Pizza empilhados encostados. Coluna central+direita
+            tem Mapa+Top5/Parl na linha 1 e Comparativo na linha 2.
+            Layout:
+              ┌────────┬──────────┬─────────┐
+              │ Resumo │   Mapa   │ Top 5   │  ← linha 1
+              │ Geral  │          │ Parl    │
+              ├ Pizza  ├──────────┴─────────┤
+              │        │ Comparativo (9)   │  ← linha 2
+              └────────┴────────────────────┘ */}
       <div className="grid grid-cols-12 gap-4">
-        {/* LINHA 1 — Coluna esquerda: Resumo Geral */}
-        <div className="col-span-12 md:col-span-3">
+        {/* COLUNA ESQUERDA — Resumo + Pizza encostados (row-span-2 cobre as 2 linhas) */}
+        <div className="col-span-12 md:col-span-3 md:row-span-2 space-y-4">
           <ResumoGeralCard
             view={view}
             ano={ano}
             stateName={selectedStateName}
             municipio={selectedMunicipio}
             municipioStats={municipioStats}
+            resumo={resumo}
+          />
+          <EmendasPorAreaCard
+            view={view}
+            municipio={selectedMunicipio}
+            municipioEmendas={municipioEmendas}
             resumo={resumo}
           />
         </div>
@@ -656,18 +669,8 @@ export default function EmendasPage() {
           )}
         </div>
 
-        {/* LINHA 2 — Coluna esquerda: Gráfico Pizza (Emendas por Área) */}
-        <div className="col-span-12 md:col-span-3">
-          <EmendasPorAreaCard
-            view={view}
-            municipio={selectedMunicipio}
-            municipioEmendas={municipioEmendas}
-            resumo={resumo}
-          />
-        </div>
-
-        {/* LINHA 2 — Comparativo por Área ocupando as 9 colunas restantes */}
-        {view === 'estado' && resumo ? (
+        {/* LINHA 2 — Comparativo por Área ocupando 9 colunas (centro + direita) */}
+        {view === 'estado' && resumo && (
           <div className="col-span-12 md:col-span-9">
             <ComparativoAreasCard
               ano={ano}
@@ -676,9 +679,6 @@ export default function EmendasPage() {
               areasAnterior={selectedMunicipio ? municipioAreasAnterior : comparativoAreasAnterior}
             />
           </div>
-        ) : (
-          /* Placeholder na visão Brasil pra manter o grid alinhado */
-          <div className="hidden md:block md:col-span-9" />
         )}
       </div>
 
