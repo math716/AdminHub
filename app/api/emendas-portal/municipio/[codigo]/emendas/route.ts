@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
+import { prisma } from '@/lib/db';
 import { listEmendasPorMunicipio, PORTAL_MOCK_MODE } from '@/lib/portal-transparencia';
 
 export async function GET(request: NextRequest, { params }: { params: { codigo: string } }) {
@@ -15,8 +16,51 @@ export async function GET(request: NextRequest, { params }: { params: { codigo: 
     const anoRaw = request.nextUrl.searchParams.get('ano');
     const ano = anoRaw ? parseInt(anoRaw, 10) : undefined;
 
+    // 1) Banco
+    const noBanco = await prisma.emendaParlamentar.findMany({
+      where: { codigoIbge, ...(ano ? { ano } : {}) },
+      select: {
+        idPortal: true, ano: true, numero: true, tipo: true, funcao: true,
+        area: true, objeto: true, valorEmpenhado: true, valorPago: true, valorRestoPago: true,
+        uf: true, codigoIbge: true, municipioNome: true,
+        parlamentar: { select: { cpf: true, nome: true, cargo: true, partido: true, uf: true } },
+      },
+      orderBy: { valorEmpenhado: 'desc' },
+      take: 5000,
+    });
+
+    if (noBanco.length > 0) {
+      const emendas = noBanco.map((e) => ({
+        idPortal:       e.idPortal,
+        ano:            e.ano,
+        numero:         e.numero,
+        tipo:           e.tipo,
+        funcao:         e.funcao,
+        subfuncao:      null,
+        area:           e.area,
+        objeto:         e.objeto,
+        valorEmpenhado: e.valorEmpenhado,
+        valorPago:      e.valorPago,
+        valorRestoPago: e.valorRestoPago,
+        valorProposto:  null,
+        orgaoExecutor:  null,
+        beneficiario:   null,
+        cnpjBeneficiario: null,
+        uf:             e.uf,
+        codigoIbge:     e.codigoIbge,
+        municipioNome:  e.municipioNome,
+        autorCpf:       e.parlamentar?.cpf ?? null,
+        autorNome:      e.parlamentar?.nome ?? '—',
+        autorCargo:     e.parlamentar?.cargo ?? 'DEPUTADO_FEDERAL',
+        autorPartido:   e.parlamentar?.partido ?? null,
+        autorUf:        e.parlamentar?.uf ?? null,
+      }));
+      return NextResponse.json({ emendas, mock: false, fonte: 'banco' });
+    }
+
+    // 2) Fallback Portal
     const emendas = await listEmendasPorMunicipio({ codigoIbge, uf, ano });
-    return NextResponse.json({ emendas, mock: PORTAL_MOCK_MODE });
+    return NextResponse.json({ emendas, mock: PORTAL_MOCK_MODE, fonte: 'portal' });
   } catch (error) {
     console.error('GET /api/emendas-portal/municipio/[codigo]/emendas error:', error);
     return NextResponse.json({ error: 'Erro ao buscar emendas do município' }, { status: 500 });

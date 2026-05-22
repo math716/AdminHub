@@ -120,6 +120,8 @@ interface ResumoEstado {
   areas: { area: EmendaArea; total: number }[];
   parlamentares: { cpf: string | null; idPortal: string; nome: string; cargo: string; partido: string | null; total: number; qtd: number }[];
   mock: boolean;
+  /** "banco" = dados completos do Supabase; "portal" = amostra parcial direto da API */
+  fonte?: 'banco' | 'portal';
 }
 
 // ---------------------------------------------------------------------------
@@ -410,6 +412,19 @@ export default function EmendasPage() {
           <span className="font-semibold">Modo demonstração:</span>
           <span className="text-slate-300">
             os dados exibidos são sintéticos. Configure a variável <code className="px-1.5 py-0.5 rounded bg-black/30">PORTAL_TRANSPARENCIA_API_KEY</code> para usar dados reais do Portal da Transparência.
+          </span>
+        </div>
+      )}
+
+      {/* Amostra parcial banner — quando ainda está usando Portal ao vivo */}
+      {resumo && !resumo.mock && resumo.fonte === 'portal' && (
+        <div
+          className="rounded-xl px-4 py-2.5 flex items-start gap-2 text-xs"
+          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b' }}
+        >
+          <span className="font-semibold mt-0.5">⓵ Dados parciais:</span>
+          <span className="text-slate-300">
+            o ano {ano} ainda não foi sincronizado pro banco local — os números aqui são uma amostra das maiores emendas do Portal da Transparência (limitação técnica da API pública). Para dados completos, execute <code className="px-1.5 py-0.5 rounded bg-black/30">npx tsx scripts/sync-emendas-portal.ts --ano {ano}</code>.
           </span>
         </div>
       )}
