@@ -1388,16 +1388,40 @@ function EmendasDetalhadasCard({
   );
   const visiveis = expandido ? ordenadas : ordenadas.slice(0, MAX_INICIAL);
 
-  // Tipo curto pra caber na coluna
-  const tipoCurto = (tipo: string | null): { label: string; color: string } => {
+  // Tipo curto pra caber na coluna + tooltip explicativo no nome completo
+  const tipoCurto = (tipo: string | null): { label: string; color: string; hint: string } => {
     const t = (tipo ?? '').toLowerCase();
-    if (t.includes('individual') && t.includes('especial'))   return { label: 'Ind. Especial',  color: '#a855f7' };
-    if (t.includes('individual') && t.includes('finalidade')) return { label: 'Ind. Finalidade', color: '#3b82f6' };
-    if (t.includes('individual'))                              return { label: 'Individual',     color: '#3b82f6' };
-    if (t.includes('bancada'))                                 return { label: 'Bancada',        color: '#10b981' };
-    if (t.includes('comiss'))                                  return { label: 'Comissão',       color: '#f59e0b' };
-    if (t.includes('relator'))                                 return { label: 'Relator',        color: '#ec4899' };
-    return { label: tipo ?? '—', color: '#94a3b8' };
+    if (t.includes('individual') && t.includes('especial'))   return {
+      label: 'Individual / Especial',
+      color: '#a855f7',
+      hint:  'Transferência Especial — o parlamentar destina valor sem definir objeto específico (governo executor decide depois). Conhecida como "Emenda Pix".',
+    };
+    if (t.includes('individual') && t.includes('finalidade')) return {
+      label: 'Individual / Finalidade',
+      color: '#3b82f6',
+      hint:  'Transferência com Finalidade Definida — o parlamentar destina valor para uma finalidade específica (ex: construção de UBS). Modalidade tradicional.',
+    };
+    if (t.includes('individual'))                              return {
+      label: 'Individual',
+      color: '#3b82f6',
+      hint:  'Emenda Individual — cota anual de cada parlamentar (deputados e senadores).',
+    };
+    if (t.includes('bancada'))                                 return {
+      label: 'Bancada',
+      color: '#10b981',
+      hint:  'Emenda de Bancada Estadual — proposta coletiva pelos parlamentares de um estado/DF.',
+    };
+    if (t.includes('comiss'))                                  return {
+      label: 'Comissão',
+      color: '#f59e0b',
+      hint:  'Emenda de Comissão — proposta por uma comissão temática da Câmara ou Senado.',
+    };
+    if (t.includes('relator'))                                 return {
+      label: 'Relator',
+      color: '#ec4899',
+      hint:  'Emenda do Relator (RP9) — modalidade que perdeu eficácia após decisão do STF em 2022.',
+    };
+    return { label: tipo ?? '—', color: '#94a3b8', hint: tipo ?? '' };
   };
 
   return (
@@ -1439,7 +1463,8 @@ function EmendasDetalhadasCard({
                   <td className="py-2 px-2 text-slate-400 font-mono">{e.numero ?? '—'}</td>
                   <td className="py-2 px-2">
                     <span
-                      className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold"
+                      title={tipo.hint}
+                      className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold cursor-help"
                       style={{ background: `${tipo.color}22`, color: tipo.color, border: `1px solid ${tipo.color}44` }}
                     >
                       {tipo.label}
@@ -1448,8 +1473,14 @@ function EmendasDetalhadasCard({
                   <td className="py-2 px-2 text-slate-200 truncate max-w-[140px]" title={e.funcao ?? ''}>
                     {e.funcao ?? '—'}
                   </td>
-                  <td className="py-2 px-2 text-slate-300 truncate max-w-[140px]" title={e.municipioNome ?? ''}>
-                    {e.municipioNome ?? <span className="text-slate-600">UF</span>}
+                  <td
+                    className="py-2 px-2 text-slate-300 truncate max-w-[180px]"
+                    title={e.municipioNome ?? e.objeto ?? ''}
+                  >
+                    {e.municipioNome
+                      ? e.municipioNome
+                      : <span className="text-slate-500 italic">{e.objeto ?? 'sem destino'}</span>
+                    }
                   </td>
                   <td className="py-2 px-2 text-right text-white font-semibold whitespace-nowrap">
                     {formatBRL(e.valorEmpenhado)}
