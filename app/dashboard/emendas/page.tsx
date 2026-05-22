@@ -154,6 +154,7 @@ export default function EmendasPage() {
   // Dados do município selecionado
   const [municipioStats, setMunicipioStats] = useState<MunicipioStats | null>(null);
   const [municipioEmendas, setMunicipioEmendas] = useState<PortalEmenda[]>([]);
+  const [municipioEmendasAnterior, setMunicipioEmendasAnterior] = useState<PortalEmenda[]>([]);
   const [loadingMunicipio, setLoadingMunicipio] = useState(false);
 
   // Parlamentar selecionado
@@ -200,6 +201,7 @@ export default function EmendasPage() {
     if (!selectedMunicipio) {
       setMunicipioStats(null);
       setMunicipioEmendas([]);
+      setMunicipioEmendasAnterior([]);
       return;
     }
     const ctrl = new AbortController();
@@ -207,10 +209,14 @@ export default function EmendasPage() {
     Promise.all([
       fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/stats?ano=${ano}`, { signal: ctrl.signal }).then((r) => r.json()),
       fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/emendas?uf=${selectedUf}&ano=${ano}`, { signal: ctrl.signal }).then((r) => r.json()),
+      // Emendas do ano anterior — pra alimentar o card de comparativo
+      // quando município está selecionado.
+      fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/emendas?uf=${selectedUf}&ano=${ano - 1}`, { signal: ctrl.signal }).then((r) => r.json()),
     ])
-      .then(([stats, emendas]) => {
+      .then(([stats, emendas, emendasAnt]) => {
         setMunicipioStats(stats);
         setMunicipioEmendas(Array.isArray(emendas?.emendas) ? emendas.emendas : []);
+        setMunicipioEmendasAnterior(Array.isArray(emendasAnt?.emendas) ? emendasAnt.emendas : []);
       })
       .catch((e: any) => {
         if (e?.name !== 'AbortError') console.error('Erro ao buscar município:', e);
@@ -342,6 +348,23 @@ export default function EmendasPage() {
     resumoAnterior.areas.forEach((a) => m.set(a.area, a.total));
     return m;
   }, [resumoAnterior]);
+
+  // ----- Áreas do município (atual e anterior) — usado quando há município selecionado -----
+  const municipioAreasAtual = useMemo(() => {
+    if (!selectedMunicipio) return null;
+    const m = new Map<EmendaArea, number>();
+    municipioEmendas.forEach((e) => m.set(e.area, (m.get(e.area) ?? 0) + e.valorEmpenhado));
+    return Array.from(m.entries()).map(([area, total]) => ({ area, total }));
+  }, [selectedMunicipio, municipioEmendas]);
+
+  const municipioAreasAnterior = useMemo(() => {
+    if (!selectedMunicipio) return new Map<string, number>();
+    const m = new Map<string, number>();
+    municipioEmendasAnterior.forEach((e) => {
+      m.set(e.area, (m.get(e.area) ?? 0) + e.valorEmpenhado);
+    });
+    return m;
+  }, [selectedMunicipio, municipioEmendasAnterior]);
 
   // ----- Render -----
   if (status === 'loading') {
@@ -540,12 +563,15 @@ export default function EmendasPage() {
         />
       )}
 
-      {/* Comparativo por área vs. ano anterior */}
+      {/* Comparativo por área vs. ano anterior
+          - Sem município selecionado: dados do estado todo
+          - Com município selecionado: dados específicos do município */}
       {view === 'estado' && resumo && (
         <ComparativoAreasCard
           ano={ano}
-          areasAtual={resumo.areas}
-          areasAnterior={comparativoAreasAnterior}
+          escopo={selectedMunicipio ? `município de ${selectedMunicipio.nome}` : `estado de ${selectedStateName}`}
+          areasAtual={selectedMunicipio && municipioAreasAtual ? municipioAreasAtual : resumo.areas}
+          areasAnterior={selectedMunicipio ? municipioAreasAnterior : comparativoAreasAnterior}
         />
       )}
 
@@ -593,7 +619,6 @@ function ResumoGeralCard({
   const tetoPap = municipio ? municipioStats?.tetoPap ?? null : null;
   const habitantes = municipio ? municipioStats?.habitantes ?? null : null;
   const eleitores  = municipio ? municipioStats?.eleitores  ?? null : null;
-  const tetoSoma = (tetoMac ?? 0) + (tetoPap ?? 0);
 
   return (
     <div
@@ -644,12 +669,29 @@ function ResumoGeralCard({
           icon={<Building2 className="w-4 h-4" />}
           iconBg="rgba(245,158,11,0.15)"
           iconColor="#f59e0b"
-          label="Teto MAC e PAP"
-          value={tetoSoma > 0 ? formatBRL(tetoSoma) : municipio ? 'sem dados' : 'Selecione um município'}
-          sub={tetoMac != null || tetoPap != null
-            ? `MAC ${formatBRLCompact(tetoMac ?? 0)} · PAP ${formatBRLCompact(tetoPap ?? 0)}`
-            : undefined
+          label="Teto MAC"
+          value={
+            tetoMac != null
+              ? formatBRL(tetoMac)
+              : municipio
+                ? 'sem dados'
+                : 'Selecione um município'
           }
+          sub={municipio && tetoMac != null ? 'Média e Alta Complexidade · anual' : undefined}
+        />
+        <ResumoStat
+          icon={<Building2 className="w-4 h-4" />}
+          iconBg="rgba(20,184,166,0.15)"
+          iconColor="#14b8a6"
+          label="Teto PAP"
+          value={
+            tetoPap != null
+              ? formatBRL(tetoPap)
+              : municipio
+                ? 'sem dados'
+                : 'Selecione um município'
+          }
+          sub={municipio && tetoPap != null ? 'Atenção Primária · anual' : undefined}
         />
       </div>
     </div>
@@ -1136,9 +1178,10 @@ function ParlamentarDashboard({
 }
 
 function ComparativoAreasCard({
-  ano, areasAtual, areasAnterior,
+  ano, escopo, areasAtual, areasAnterior,
 }: {
   ano: number;
+  escopo: string;
   areasAtual: { area: EmendaArea; total: number }[];
   areasAnterior: Map<string, number>;
 }) {
@@ -1169,9 +1212,14 @@ function ComparativoAreasCard({
       className="rounded-2xl p-5"
       style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">
-        Comparativo por área (em relação ao ano anterior)
-      </p>
+      <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
+        <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+          Comparativo por área · {escopo}
+        </p>
+        <p className="text-[10px] text-slate-500">
+          {ano} vs. {ano - 1}
+        </p>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {principaisSomadas.map(({ area, label, atual, anterior }) => {
           const delta = anterior > 0 ? ((atual - anterior) / anterior) * 100 : atual > 0 ? 100 : 0;
