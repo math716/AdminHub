@@ -340,6 +340,11 @@ export default function EmendasPage() {
     [parlamentarEmendas],
   );
 
+  const parlamentarTotalPago = useMemo(
+    () => parlamentarEmendas.reduce((s, e) => s + (e.valorPago ?? 0), 0),
+    [parlamentarEmendas],
+  );
+
   const parlamentarPorAno = useMemo(() => {
     const map = new Map<number, number>();
     parlamentarHistorico.forEach((e) => {
@@ -664,12 +669,14 @@ export default function EmendasPage() {
           escopo={selectedStateName}
           loading={loadingParlamentar}
           totalAno={parlamentarTotalAno}
+          totalPago={parlamentarTotalPago}
           porArea={parlamentarPorArea}
           porAno={parlamentarPorAno}
           maxPorAno={maxParlamentarPorAno}
           porMunicipio={parlamentarPorMunicipio}
           porTipo={parlamentarPorTipo}
           destinos={parlamentarDestinos}
+          emendas={parlamentarEmendas}
           onMunicipioClick={(m) => setSelectedMunicipio({ codigo: m.codigoIbge, nome: m.nome })}
         />
       )}
@@ -1164,21 +1171,24 @@ interface ParlamentarPorMunicipio {
 }
 
 function ParlamentarDashboard({
-  parlamentar, ano, escopo, loading, totalAno, porArea, porAno, maxPorAno, porMunicipio, porTipo, destinos, onMunicipioClick,
+  parlamentar, ano, escopo, loading, totalAno, totalPago, porArea, porAno, maxPorAno, porMunicipio, porTipo, destinos, emendas, onMunicipioClick,
 }: {
   parlamentar: PortalParlamentar;
   ano: number;
   escopo?: string;
   loading: boolean;
   totalAno: number;
+  totalPago: number;
   porArea: { name: string; value: number; color: string; area: EmendaArea }[];
   porAno: { ano: number; total: number }[];
   maxPorAno: number;
   porMunicipio: ParlamentarPorMunicipio[];
   porTipo: { tipo: string; total: number; qtd: number }[];
   destinos: { municipal: number; estadual: number; qtdMun: number; qtdEst: number };
+  emendas: PortalEmenda[];
   onMunicipioClick?: (m: ParlamentarPorMunicipio) => void;
 }) {
+  const pctPago = totalAno > 0 ? (totalPago / totalAno) * 100 : 0;
   return (
     <div
       className="rounded-2xl p-5"
@@ -1208,6 +1218,12 @@ function ParlamentarDashboard({
           <p className="text-2xl font-bold text-white mt-0.5">
             {loading ? <Loader2 className="w-5 h-5 animate-spin inline" /> : formatBRL(totalAno)}
           </p>
+          {!loading && totalAno > 0 && (
+            <p className="text-[11px] text-emerald-300 mt-0.5">
+              Pago: <span className="font-bold">{formatBRL(totalPago)}</span>
+              <span className="text-emerald-400/60"> ({pctPago.toFixed(0)}%)</span>
+            </p>
+          )}
           {!loading && (destinos.municipal > 0 || destinos.estadual > 0) && (
             <div className="mt-2 text-[10px] text-slate-300 space-y-0.5 text-right">
               <p>
@@ -1330,6 +1346,11 @@ function ParlamentarDashboard({
         </div>
       )}
 
+      {/* Tabela detalhada das emendas individuais */}
+      {!loading && emendas.length > 0 && (
+        <EmendasDetalhadasCard ano={ano} emendas={emendas} />
+      )}
+
       {/* Lista de municípios beneficiados pelo parlamentar */}
       {!loading && (
         <MunicipiosBeneficiadosCard
@@ -1337,6 +1358,115 @@ function ParlamentarDashboard({
           porMunicipio={porMunicipio}
           onClick={onMunicipioClick}
         />
+      )}
+    </div>
+  );
+}
+
+function EmendasDetalhadasCard({
+  ano, emendas,
+}: {
+  ano: number;
+  emendas: PortalEmenda[];
+}) {
+  const [expandido, setExpandido] = useState(false);
+  const MAX_INICIAL = 10;
+
+  // Ordena por valor empenhado desc
+  const ordenadas = useMemo(
+    () => [...emendas].sort((a, b) => (b.valorEmpenhado ?? 0) - (a.valorEmpenhado ?? 0)),
+    [emendas],
+  );
+  const visiveis = expandido ? ordenadas : ordenadas.slice(0, MAX_INICIAL);
+
+  // Tipo curto pra caber na coluna
+  const tipoCurto = (tipo: string | null): { label: string; color: string } => {
+    const t = (tipo ?? '').toLowerCase();
+    if (t.includes('individual') && t.includes('especial'))   return { label: 'Ind. Especial',  color: '#a855f7' };
+    if (t.includes('individual') && t.includes('finalidade')) return { label: 'Ind. Finalidade', color: '#3b82f6' };
+    if (t.includes('individual'))                              return { label: 'Individual',     color: '#3b82f6' };
+    if (t.includes('bancada'))                                 return { label: 'Bancada',        color: '#10b981' };
+    if (t.includes('comiss'))                                  return { label: 'Comissão',       color: '#f59e0b' };
+    if (t.includes('relator'))                                 return { label: 'Relator',        color: '#ec4899' };
+    return { label: tipo ?? '—', color: '#94a3b8' };
+  };
+
+  return (
+    <div
+      className="mt-4 rounded-xl p-4"
+      style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}
+    >
+      <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
+        <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+          Detalhe das emendas em {ano}
+        </p>
+        <p className="text-[10px] text-slate-500">
+          {emendas.length} {emendas.length === 1 ? 'emenda' : 'emendas'}
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-[11px]">
+          <thead>
+            <tr className="text-left text-[9px] uppercase tracking-widest text-slate-500 border-b border-white/5">
+              <th className="py-2 px-2 font-semibold w-12">Nº</th>
+              <th className="py-2 px-2 font-semibold">Tipo</th>
+              <th className="py-2 px-2 font-semibold">Função</th>
+              <th className="py-2 px-2 font-semibold">Município</th>
+              <th className="py-2 px-2 font-semibold text-right">Empenhado</th>
+              <th className="py-2 px-2 font-semibold text-right">Pago</th>
+              <th className="py-2 px-2 font-semibold text-right w-14">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visiveis.map((e) => {
+              const tipo = tipoCurto(e.tipo);
+              const pct = e.valorEmpenhado > 0 ? (e.valorPago / e.valorEmpenhado) * 100 : 0;
+              return (
+                <tr
+                  key={e.idPortal}
+                  className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                >
+                  <td className="py-2 px-2 text-slate-400 font-mono">{e.numero ?? '—'}</td>
+                  <td className="py-2 px-2">
+                    <span
+                      className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold"
+                      style={{ background: `${tipo.color}22`, color: tipo.color, border: `1px solid ${tipo.color}44` }}
+                    >
+                      {tipo.label}
+                    </span>
+                  </td>
+                  <td className="py-2 px-2 text-slate-200 truncate max-w-[140px]" title={e.funcao ?? ''}>
+                    {e.funcao ?? '—'}
+                  </td>
+                  <td className="py-2 px-2 text-slate-300 truncate max-w-[140px]" title={e.municipioNome ?? ''}>
+                    {e.municipioNome ?? <span className="text-slate-600">UF</span>}
+                  </td>
+                  <td className="py-2 px-2 text-right text-white font-semibold whitespace-nowrap">
+                    {formatBRL(e.valorEmpenhado)}
+                  </td>
+                  <td className="py-2 px-2 text-right text-emerald-300 whitespace-nowrap">
+                    {formatBRL(e.valorPago)}
+                  </td>
+                  <td className="py-2 px-2 text-right text-slate-400 whitespace-nowrap">
+                    {pct.toFixed(0)}%
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {ordenadas.length > MAX_INICIAL && (
+        <button
+          onClick={() => setExpandido((v) => !v)}
+          className="mt-3 w-full text-center text-[11px] text-amber-300 hover:text-amber-200 font-semibold transition-colors py-1.5 rounded-lg hover:bg-amber-300/5"
+        >
+          {expandido
+            ? `Mostrar apenas as ${MAX_INICIAL} maiores`
+            : `Ver todas as ${ordenadas.length} emendas`}
+        </button>
       )}
     </div>
   );
