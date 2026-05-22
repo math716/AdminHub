@@ -421,16 +421,20 @@ export async function listEmendasPorParlamentar(opts: {
   if (PORTAL_MOCK_MODE) {
     result = mockEmendasPorParlamentar(opts);
   } else {
-    if (!opts.nome) return [];
+    // O Portal não retorna CPF — o idPortal carrega o nome em UPPERCASE.
+    // Aceita qualquer um dos 3 campos como identificador.
+    const nomeAlvo = opts.nome ?? opts.idPortal ?? opts.cpf;
+    if (!nomeAlvo) return [];
+
     // Se temos ano, filtra do cache global (consistente com Top 5).
     // Se não temos ano (histórico do parlamentar), faz fetch dedicado por nomeAutor.
     if (opts.ano) {
       const all = await getAllEmendasDoAno({ ano: opts.ano });
-      const alvo = opts.nome.toUpperCase().trim();
-      result = all.filter((e) => e.autorNome.toUpperCase() === alvo);
+      const alvo = nomeAlvo.toUpperCase().trim();
+      result = all.filter((e) => e.autorNome.toUpperCase().trim() === alvo);
     } else {
       const rows = await portalFetchPaginated('/api-de-dados/emendas', {
-        nomeAutor: opts.nome,
+        nomeAutor: nomeAlvo,
       }, 20);
       result = await Promise.all(rows.map(mapPortalRow));
     }

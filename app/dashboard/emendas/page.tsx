@@ -1215,7 +1215,7 @@ function DestaqueDoAnoCard({
   municipio: { codigoIbge: string; nome: string; total: number };
   ano: number;
   stateName: string;
-  topParlamentar?: { nome: string; cargo: string; partido: string | null };
+  topParlamentar?: { nome: string; cargo: string; partido: string | null; total: number };
 }) {
   return (
     <div
@@ -1238,16 +1238,21 @@ function DestaqueDoAnoCard({
       <div className="flex-1 min-w-0">
         <p className="text-[10px] uppercase tracking-widest font-bold text-amber-300">Destaque do ano em {stateName} ({ano})</p>
         <p className="text-white text-sm mt-1">
-          Maior volume de emendas recebido por <span className="font-bold text-amber-300">{municipio.nome}</span>
+          Município que mais recebeu: <span className="font-bold text-amber-300">{municipio.nome}</span>
+          <span className="text-slate-400"> · {formatBRL(municipio.total)}</span>
         </p>
         {topParlamentar && (
           <p className="text-xs text-slate-400 mt-0.5">
-            Top parlamentar: <span className="text-white font-medium">{topParlamentar.nome}</span>
+            Parlamentar que mais enviou: <span className="text-white font-medium">{topParlamentar.nome}</span>
             {topParlamentar.partido ? ` (${topParlamentar.partido})` : ''} — {CARGO_LABELS[topParlamentar.cargo as ParlamentarCargo] ?? topParlamentar.cargo}
+            <span className="text-amber-300/80"> · {formatBRL(topParlamentar.total)}</span>
           </p>
         )}
       </div>
-      <p className="text-2xl font-bold text-white whitespace-nowrap">{formatBRL(municipio.total)}</p>
+      <div className="text-right flex-shrink-0">
+        <p className="text-[10px] uppercase tracking-widest text-amber-300/70 font-bold">Top município</p>
+        <p className="text-2xl font-bold text-white whitespace-nowrap">{formatBRL(municipio.total)}</p>
+      </div>
     </div>
   );
 }
