@@ -265,7 +265,10 @@ export default function EmendasPage() {
     const ctrl = new AbortController();
     setLoadingParlamentar(true);
     const id = selectedParlamentar.cpf ?? selectedParlamentar.idPortal;
-    fetch(`/api/emendas-portal/parlamentar/${id}?ano=${ano}`, { signal: ctrl.signal })
+    // Filtra por UF do estado em foco — os números refletem só a fatia
+    // do parlamentar naquele estado, não o total nacional dele.
+    const ufParam = selectedUf ? `&uf=${selectedUf}` : '';
+    fetch(`/api/emendas-portal/parlamentar/${id}?ano=${ano}${ufParam}`, { signal: ctrl.signal })
       .then((r) => r.json())
       .then((data) => setParlamentarEmendas(Array.isArray(data?.emendas) ? data.emendas : []))
       .catch((e: any) => {
@@ -273,9 +276,10 @@ export default function EmendasPage() {
       })
       .finally(() => setLoadingParlamentar(false));
     return () => ctrl.abort();
-  }, [selectedParlamentar, ano]);
+  }, [selectedParlamentar, ano, selectedUf]);
 
-  // Histórico completo do parlamentar (todos os anos) — pro gráfico "Valor por Ano"
+  // Histórico completo do parlamentar (todos os anos) — também filtrado por UF
+  // pro gráfico "Valor por Ano" refletir o estado em foco.
   const [parlamentarHistorico, setParlamentarHistorico] = useState<PortalEmenda[]>([]);
   useEffect(() => {
     if (!selectedParlamentar) {
@@ -284,14 +288,15 @@ export default function EmendasPage() {
     }
     const ctrl = new AbortController();
     const id = selectedParlamentar.cpf ?? selectedParlamentar.idPortal;
-    fetch(`/api/emendas-portal/parlamentar/${id}`, { signal: ctrl.signal })
+    const ufParam = selectedUf ? `?uf=${selectedUf}` : '';
+    fetch(`/api/emendas-portal/parlamentar/${id}${ufParam}`, { signal: ctrl.signal })
       .then((r) => r.json())
       .then((data) => setParlamentarHistorico(Array.isArray(data?.emendas) ? data.emendas : []))
       .catch((e: any) => {
         if (e?.name !== 'AbortError') console.error('Erro ao buscar histórico:', e);
       });
     return () => ctrl.abort();
-  }, [selectedParlamentar]);
+  }, [selectedParlamentar, selectedUf]);
 
   // ----- Handlers -----
   const handleStateClick = useCallback((uf: string, name: string) => {
@@ -344,6 +349,29 @@ export default function EmendasPage() {
       .map(([ano, total]) => ({ ano, total }))
       .sort((a, b) => a.ano - b.ano);
   }, [parlamentarHistorico]);
+
+  // Agrega emendas do parlamentar por tipo (Individual, Bancada, Comissão, ...)
+  // Senadores e deputados podem aparecer em emendas de bancada/comissão também.
+  // Mostrar o breakdown ajuda a entender o que vem da cota individual.
+  const parlamentarPorTipo = useMemo(() => {
+    const map = new Map<string, { tipo: string; total: number; qtd: number }>();
+    parlamentarEmendas.forEach((e) => {
+      const tipo = e.tipo ?? 'Não classificada';
+      // Encurta tipos longos pra visualização ("Emenda Individual - ..." → "Individual")
+      const tipoCurto =
+        tipo.match(/individual/i)        ? 'Individual'
+        : tipo.match(/bancada/i)         ? 'Bancada'
+        : tipo.match(/comiss[ãa]o/i)     ? 'Comissão'
+        : tipo.match(/relator/i)         ? 'Relator'
+        : tipo.match(/especiais?/i)      ? 'Transf. Especial'
+        : tipo;
+      const cur = map.get(tipoCurto) ?? { tipo: tipoCurto, total: 0, qtd: 0 };
+      cur.total += e.valorEmpenhado ?? 0;
+      cur.qtd++;
+      map.set(tipoCurto, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [parlamentarEmendas]);
 
   // Agrega emendas do parlamentar (ano selecionado) por município, com
   // breakdown de áreas pra cada um. Usado na nova seção "Municípios
@@ -613,12 +641,14 @@ export default function EmendasPage() {
         <ParlamentarDashboard
           parlamentar={selectedParlamentar}
           ano={ano}
+          escopo={selectedStateName}
           loading={loadingParlamentar}
           totalAno={parlamentarTotalAno}
           porArea={parlamentarPorArea}
           porAno={parlamentarPorAno}
           maxPorAno={maxParlamentarPorAno}
           porMunicipio={parlamentarPorMunicipio}
+          porTipo={parlamentarPorTipo}
           onMunicipioClick={(m) => setSelectedMunicipio({ codigo: m.codigoIbge, nome: m.nome })}
         />
       )}
@@ -1113,16 +1143,18 @@ interface ParlamentarPorMunicipio {
 }
 
 function ParlamentarDashboard({
-  parlamentar, ano, loading, totalAno, porArea, porAno, maxPorAno, porMunicipio, onMunicipioClick,
+  parlamentar, ano, escopo, loading, totalAno, porArea, porAno, maxPorAno, porMunicipio, porTipo, onMunicipioClick,
 }: {
   parlamentar: PortalParlamentar;
   ano: number;
+  escopo?: string;
   loading: boolean;
   totalAno: number;
   porArea: { name: string; value: number; color: string; area: EmendaArea }[];
   porAno: { ano: number; total: number }[];
   maxPorAno: number;
   porMunicipio: ParlamentarPorMunicipio[];
+  porTipo: { tipo: string; total: number; qtd: number }[];
   onMunicipioClick?: (m: ParlamentarPorMunicipio) => void;
 }) {
   return (
@@ -1130,7 +1162,7 @@ function ParlamentarDashboard({
       className="rounded-2xl p-5"
       style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
     >
-      <div className="flex items-start justify-between gap-4 mb-5">
+      <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
         <div>
           <p className="text-[10px] uppercase tracking-widest font-bold text-amber-300">Dashboard do parlamentar</p>
           <h2 className="text-xl text-white font-bold mt-1">{parlamentar.nome}</h2>
@@ -1148,10 +1180,30 @@ function ParlamentarDashboard({
             boxShadow: 'inset 0 0 18px rgba(201,162,39,0.08)',
           }}
         >
-          <p className="text-[10px] uppercase tracking-widest text-amber-300 font-bold">Total enviado em {ano}</p>
+          <p className="text-[10px] uppercase tracking-widest text-amber-300 font-bold">
+            Total enviado em {ano}{escopo ? ` · ${escopo}` : ''}
+          </p>
           <p className="text-2xl font-bold text-white mt-0.5">
             {loading ? <Loader2 className="w-5 h-5 animate-spin inline" /> : formatBRL(totalAno)}
           </p>
+          {!loading && porTipo.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2 justify-end max-w-[360px]">
+              {porTipo.map((t) => (
+                <span
+                  key={t.tipo}
+                  className="text-[9px] px-1.5 py-0.5 rounded-md font-semibold"
+                  style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    color: '#cbd5e1',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                  }}
+                  title={`${t.qtd} ${t.qtd === 1 ? 'emenda' : 'emendas'}`}
+                >
+                  {t.tipo}: {formatBRLCompact(t.total)}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

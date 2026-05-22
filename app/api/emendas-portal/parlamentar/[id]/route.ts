@@ -14,6 +14,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const id = params.id;
     const anoRaw = request.nextUrl.searchParams.get('ano');
     const ano = anoRaw ? parseInt(anoRaw, 10) : undefined;
+    // Filtro opcional de UF — quando dashboard está no contexto de um estado,
+    // limita resultados àquele estado pra os totais refletirem a "fatia" do
+    // parlamentar naquele UF, não o total nacional dele.
+    const uf = request.nextUrl.searchParams.get('uf')?.toUpperCase() || undefined;
 
     // id pode ser: CPF (11 dígitos), idPortal (= nome no nosso caso), ou o nome direto
     const isCpf = /^\d{11}$/.test(id);
@@ -28,7 +32,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     if (parlamentar) {
       const rows = await prisma.emendaParlamentar.findMany({
-        where: { parlamentarId: parlamentar.id, ...(ano ? { ano } : {}) },
+        where: {
+          parlamentarId: parlamentar.id,
+          ...(ano ? { ano } : {}),
+          ...(uf  ? { uf  } : {}),
+        },
         select: {
           idPortal: true, ano: true, numero: true, tipo: true, funcao: true,
           area: true, objeto: true, valorEmpenhado: true, valorPago: true, valorRestoPago: true,
