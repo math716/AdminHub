@@ -543,7 +543,7 @@ export default function EmendasPage() {
               └────────┴────────────────────┘ */}
       <div className="grid grid-cols-12 gap-4">
         {/* COLUNA ESQUERDA — Resumo + Pizza encostados (row-span-2 cobre as 2 linhas) */}
-        <div className="col-span-12 md:col-span-3 md:row-span-2 space-y-4">
+        <div className="col-span-12 md:col-span-3 md:row-span-2 flex flex-col gap-4">
           <ResumoGeralCard
             view={view}
             ano={ano}
@@ -552,12 +552,14 @@ export default function EmendasPage() {
             municipioStats={municipioStats}
             resumo={resumo}
           />
-          <EmendasPorAreaCard
-            view={view}
-            municipio={selectedMunicipio}
-            municipioEmendas={municipioEmendas}
-            resumo={resumo}
-          />
+          <div className="flex-1 min-h-0">
+            <EmendasPorAreaCard
+              view={view}
+              municipio={selectedMunicipio}
+              municipioEmendas={municipioEmendas}
+              resumo={resumo}
+            />
+          </div>
         </div>
 
         {/* LINHA 1 — Coluna central: Mapa */}
@@ -940,7 +942,7 @@ function EmendasPorAreaCard({
 
   return (
     <div
-      className="rounded-2xl p-4"
+      className="rounded-2xl p-4 h-full"
       style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
     >
       <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">Emendas por Área</p>
