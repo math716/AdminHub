@@ -492,7 +492,7 @@ export default function EmendasPage() {
       <PageHeader
         icon={Landmark}
         title="Mapa de Emendas"
-        subtitle="Visão geral das emendas parlamentares por estado, município e parlamentar"
+        subtitle="Visão geral das emendas por estado, município e parlamentar"
         actions={
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-widest text-slate-400">Ano selecionado</span>
