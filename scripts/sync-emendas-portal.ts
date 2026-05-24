@@ -63,23 +63,37 @@ const DELAY_MS    = parseInt(arg('delay-ms', '700')!, 10);
 // ─────────────────────────────────────────────────────────────────────────
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Parser de valor BR — alinhado com lib/portal-transparencia.ts.
+// Trata "415.000,00" (1) e "415.000" (sem vírgula, 2) como o mesmo número 415000.
+// Versão anterior interpretava o ponto como decimal quando não havia vírgula,
+// causando subestimação de valores inteiros (ex.: empenhado vinha 415 em vez
+// de 415000 e gerava % de pagamento absurdo no dashboard).
 function parseValorBR(v: any): number {
   if (typeof v === 'number') return v;
   if (typeof v !== 'string') return 0;
   const cleaned = v.replace(/[^\d,.\-]/g, '');
-  if (cleaned.includes(',')) {
-    return Number(cleaned.replace(/\./g, '').replace(',', '.')) || 0;
-  }
-  return Number(cleaned) || 0;
+  if (!cleaned) return 0;
+  // Sempre tratamos o ponto como separador de milhar; a vírgula é o decimal.
+  const norm = cleaned.replace(/\./g, '').replace(',', '.');
+  const n = Number(norm);
+  return Number.isFinite(n) ? n : 0;
 }
 
+// Cargo inferido do tipoEmenda — usado só pra preencher Parlamentar.cargo na
+// criação inicial. O Portal da Transparência SÓ traz emendas federais (deputados
+// federais + senadores). NUNCA traz deputado estadual / vereador — eles fazem
+// emendas em portais estaduais/municipais, fora do escopo deste sync.
+//
+// Por isso, qualquer pessoa que aparece aqui é federal por definição. A regra
+// antiga checava "ESTADUAL" e classificava como DEPUTADO_ESTADUAL — falso
+// positivo (pegava coisas como "Bancada Estadual de SP", que ainda é federal).
+//
+// SENADOR só é detectado quando o tipoEmenda explicitamente menciona — na maioria
+// das vezes o Portal não diferencia. Por isso existe o sync-senadores.ts, que
+// roda DEPOIS e reclassifica via match de nome contra a API do Senado.
 function inferCargo(raw: string): ParlamentarCargo {
   const s = (raw ?? '').toUpperCase();
-  if (s.includes('SENADOR'))            return 'SENADOR';
-  if (s.includes('BANCADA'))            return 'DEPUTADO_FEDERAL';
-  if (s.includes('COMISSÃO') || s.includes('COMISSAO')) return 'DEPUTADO_FEDERAL';
-  if (s.includes('FEDERAL'))            return 'DEPUTADO_FEDERAL';
-  if (s.includes('ESTADUAL'))           return 'DEPUTADO_ESTADUAL';
+  if (s.includes('SENADOR')) return 'SENADOR';
   return 'DEPUTADO_FEDERAL';
 }
 
