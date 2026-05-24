@@ -79,21 +79,30 @@ function parseValorBR(v: any): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-// Cargo inferido do tipoEmenda — usado só pra preencher Parlamentar.cargo na
-// criação inicial. O Portal da Transparência SÓ traz emendas federais (deputados
-// federais + senadores). NUNCA traz deputado estadual / vereador — eles fazem
-// emendas em portais estaduais/municipais, fora do escopo deste sync.
+// Cargo inferido de (autorNome, tipoEmenda) — preenche Parlamentar.cargo na
+// criação inicial. Portal da Transparência só traz emendas federais; o
+// "autor" pode ser uma PESSOA (deputado federal/senador) ou uma ENTIDADE
+// COLETIVA (bancada, comissão, relator). A detecção da entidade coletiva é
+// feita pelo NOME do autor, que é o sinal mais confiável.
 //
-// Por isso, qualquer pessoa que aparece aqui é federal por definição. A regra
-// antiga checava "ESTADUAL" e classificava como DEPUTADO_ESTADUAL — falso
-// positivo (pegava coisas como "Bancada Estadual de SP", que ainda é federal).
-//
-// SENADOR só é detectado quando o tipoEmenda explicitamente menciona — na maioria
-// das vezes o Portal não diferencia. Por isso existe o sync-senadores.ts, que
-// roda DEPOIS e reclassifica via match de nome contra a API do Senado.
-function inferCargo(raw: string): ParlamentarCargo {
-  const s = (raw ?? '').toUpperCase();
-  if (s.includes('SENADOR')) return 'SENADOR';
+// Pessoas: ficam como DEPUTADO_FEDERAL por padrão. O sync-senadores.ts roda
+// depois e reclassifica os senadores via match de nome contra a API do Senado.
+function inferCargo(autorNome: string, tipoEmenda: string): ParlamentarCargo {
+  const nome = (autorNome ?? '').toUpperCase();
+  const tipo = (tipoEmenda ?? '').toUpperCase();
+
+  // 1) Entidade coletiva detectada pelo nome do autor (sinal forte)
+  if (nome.includes('BANCADA')) return 'BANCADA';
+  if (nome.includes('COMISSAO') || nome.includes('COMISSÃO')) return 'COMISSAO';
+  // "RELATOR" / "RELATOR GERAL" — startsWith pra não pegar nome de pessoa
+  if (/^RELATOR(\s|$)/.test(nome)) return 'RELATOR';
+
+  // 2) Fallback pelo tipo de emenda quando o nome não dá pista
+  if (tipo.includes('BANCADA')) return 'BANCADA';
+  if (tipo.includes('COMISSAO') || tipo.includes('COMISSÃO')) return 'COMISSAO';
+  if (tipo.includes('RELATOR')) return 'RELATOR';
+  if (tipo.includes('SENADOR')) return 'SENADOR';
+
   return 'DEPUTADO_FEDERAL';
 }
 
@@ -147,7 +156,7 @@ async function obterOuCriarParlamentar(nome: string, tipo: string, uf: string | 
   const cached = parlamentarIdPorNome.get(nome);
   if (cached) return cached;
 
-  const cargo = inferCargo(tipo);
+  const cargo = inferCargo(nome, tipo);
   // idPortal usado como chave única (Portal não dá CPF)
   const rec = await prisma.parlamentar.upsert({
     where:  { idPortal: nome },
@@ -234,7 +243,10 @@ function mapRow(row: any): EmendaDB | null {
     codigoIbge,
     municipioNome:  loc.municipio,
     autorNome:      (row?.nomeAutor ?? row?.autor ?? '—').toString().trim(),
-    autorCargo:     inferCargo(row?.tipoEmenda ?? ''),
+    autorCargo:     inferCargo(
+                      (row?.nomeAutor ?? row?.autor ?? '').toString(),
+                      row?.tipoEmenda ?? '',
+                    ),
   };
 }
 

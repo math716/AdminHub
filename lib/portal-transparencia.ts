@@ -39,7 +39,11 @@ export type ParlamentarCargo =
   | 'DEPUTADO_ESTADUAL'
   | 'DEPUTADO_FEDERAL'
   | 'SENADOR'
-  | 'GOVERNADOR';
+  | 'GOVERNADOR'
+  // Entidades coletivas que aparecem como "autor" no Portal:
+  | 'BANCADA'
+  | 'COMISSAO'
+  | 'RELATOR';
 
 export interface PortalEmenda {
   idPortal: string;
@@ -154,6 +158,9 @@ export const CARGO_LABELS: Record<ParlamentarCargo, string> = {
   DEPUTADO_FEDERAL:  'Deputado Federal',
   SENADOR:           'Senador',
   GOVERNADOR:        'Governador',
+  BANCADA:           'Bancada Estadual',
+  COMISSAO:          'Comissão',
+  RELATOR:           'Relator',
 };
 
 // ---------------------------------------------------------------------------

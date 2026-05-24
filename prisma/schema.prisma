@@ -64,7 +64,12 @@ enum EmendaArea {
   OUTROS
 }
 
-/// Esfera do parlamentar autor da emenda.
+/// Esfera/tipo do autor da emenda.
+/// Inclui pessoas físicas (vereador, deputado, senador, etc.) e entidades
+/// coletivas que aparecem como "autor" no Portal da Transparência:
+///   - BANCADA  → Bancada Estadual (ex: "BANCADA DO ESTADO DE SAO PAULO")
+///   - COMISSAO → Comissão temática do Congresso (ex: "COMISSAO DE EDUCACAO")
+///   - RELATOR  → Relator do orçamento
 enum ParlamentarCargo {
   VEREADOR
   PREFEITO
@@ -72,6 +77,9 @@ enum ParlamentarCargo {
   DEPUTADO_FEDERAL
   SENADOR
   GOVERNADOR
+  BANCADA
+  COMISSAO
+  RELATOR
 }
 
 // ============== MODELS ==============
