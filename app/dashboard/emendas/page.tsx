@@ -597,7 +597,7 @@ export default function EmendasPage() {
                 )}
               </div>
               <div
-                className="px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-widest font-bold pointer-events-auto"
+                className="px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-widest font-bold pointer-events-auto truncate max-w-[260px]"
                 style={{
                   background: selectedParlamentar ? 'rgba(74,158,222,0.15)' : 'rgba(201,162,39,0.15)',
                   border:     `1px solid ${selectedParlamentar ? 'rgba(74,158,222,0.4)' : 'rgba(201,162,39,0.3)'}`,
@@ -606,7 +606,7 @@ export default function EmendasPage() {
                 title={selectedParlamentar ? `Filtrado por ${selectedParlamentar.nome}` : undefined}
               >
                 {selectedParlamentar
-                  ? `Filtrado: ${selectedParlamentar.nome.split(' ').slice(0, 2).join(' ')}`
+                  ? `Filtrado: ${selectedParlamentar.nome}`
                   : 'Emendas por Município'}
               </div>
             </div>
@@ -632,24 +632,6 @@ export default function EmendasPage() {
                 valueLabel={selectedParlamentar ? `de ${selectedParlamentar.nome.split(' ')[0]}` : 'em emendas'}
                 darkMode
               />
-            )}
-
-            {/* Banner explicativo quando parlamentar é selecionado e não tem
-                emendas com município identificado (típico de senadores e de
-                deputados que destinam ao estado todo). */}
-            {view === 'estado' && selectedParlamentar && Object.keys(parlamentarValorPorMunicipio).length === 0 && !loadingParlamentar && (
-              <div
-                className="absolute bottom-3 left-3 right-32 z-[400] rounded-xl px-3 py-2 pointer-events-none"
-                style={{
-                  background: 'rgba(245,158,11,0.12)',
-                  border: '1px solid rgba(245,158,11,0.35)',
-                  backdropFilter: 'blur(6px)',
-                }}
-              >
-                <p className="text-[11px] text-amber-200">
-                  <span className="font-semibold">{selectedParlamentar.nome}</span> destinou todas as emendas a nível estadual em {ano} — nenhum município específico foi identificado.
-                </p>
-              </div>
             )}
 
             {/* Popup do município (habitantes/eleitores/MAC/PAP) */}

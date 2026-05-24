@@ -88,32 +88,41 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false 
       const map = L.map(mapRef.current, {
         center: [-14.235, -51.925],
         zoom: 4,
-        zoomControl: true,
+        // Zoom em bottomleft no darkMode pra liberar o topo-esquerdo do
+        // breadcrumb. Em modo claro mantemos o padrão Leaflet (topleft).
+        zoomControl: false,
         scrollWheelZoom: true,
         minZoom: 3,
         maxZoom: 14,
         attributionControl: true
       });
+      L.control.zoom({ position: darkMode ? 'bottomleft' : 'topleft' }).addTo(map);
 
       // Atribuir imediatamente para que cleanupMap() de execuções concorrentes
       // consiga destruir este mapa caso o efeito seja cancelado.
       mapInstanceRef.current = map;
 
-      const tileUrl = darkMode
-        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-      L.tileLayer(tileUrl, {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20
-      }).addTo(map);
+      // Em darkMode (dashboard de emendas) usamos só o azul marinho do <div>
+      // como fundo — sem tile do CartoDB. Os estados (já desenhados em GeoJSON)
+      // ficam destacados sobre o fundo, igual à referência aprovada pelo cliente.
+      if (!darkMode) {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 20
+        }).addTo(map);
+      }
 
       const hasVotes = highlightedStates && Object.keys(highlightedStates).length > 0;
 
       const getColor = (codarea: string) => {
         const uf = codeToUf[codarea] || '';
         const value = highlightedStates?.[uf] ?? 0;
-        if (value === 0) return darkMode ? 'transparent' : '#dce8f5';
+        if (value === 0) {
+          // Em darkMode, sem o tile preto, estados sem dado ficam visíveis
+          // como navy ligeiramente mais claro que o fundo (#071d36).
+          return darkMode ? '#0d2545' : '#dce8f5';
+        }
         const maxValue = Math.max(...Object.values(highlightedStates || { _: 1 }));
         const intensity = value / maxValue;
 
@@ -132,7 +141,9 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false 
         const uf = codeToUf[codarea] || '';
         const value = highlightedStates?.[uf] ?? 0;
         if (!darkMode) return 0; // modo claro mantém só bordas
-        if (!value) return 0;
+        // Estados sem dado ainda mantêm um leve preenchimento navy pra ficarem
+        // visíveis como "resto do mapa" contra o fundo azul marinho.
+        if (!value) return 0.55;
         const maxValue = Math.max(...Object.values(highlightedStates || { _: 1 }));
         const intensity = value / maxValue;
         return 0.65 + intensity * 0.3;
@@ -286,10 +297,13 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false 
 
   if (loading) {
     return (
-      <div className="h-full w-full flex items-center justify-center bg-[#f0f4f8] rounded-lg">
+      <div
+        className="h-full w-full flex items-center justify-center rounded-lg"
+        style={{ background: darkMode ? '#071d36' : '#f0f4f8' }}
+      >
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mb-3"></div>
-          <p className="text-gray-500">Carregando mapa...</p>
+          <p className={darkMode ? 'text-slate-400' : 'text-gray-500'}>Carregando mapa...</p>
         </div>
       </div>
     );
@@ -299,7 +313,7 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false 
     <div
       ref={mapRef}
       className="h-full w-full rounded-lg brazil-map-container"
-      style={{ minHeight: '500px', background: '#f0f4f8' }}
+      style={{ minHeight: '500px', background: darkMode ? '#071d36' : '#f0f4f8' }}
     />
   );
 }

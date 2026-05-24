@@ -44,6 +44,9 @@ type SubdivisaoTipo = 'bairros' | 'bairrosTSE' | 'setores' | null;
 
 function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunicipioClick, filteredMunicipios, highlightColor, disableSubdivisao, highlightMunicipioNome, valueLabel = 'votos', darkMode = false }: StateMapProps) {
   const [geoData, setGeoData] = useState<any>(null);
+  // Contorno do Brasil (outros estados) — usado em darkMode pra deixar claro
+  // que o azul marinho ao redor é "o resto do mapa não selecionado".
+  const [brasilGeoData, setBrasilGeoData] = useState<any>(null);
   const [codigoToNome, setCodigoToNome] = useState<Record<string, string>>({});
   const [nomeToCodigoRef, setNomeToCodigoRef] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -124,19 +127,26 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       try {
         setLoading(true);
         const ufCode = UF_CODES[uf];
-        
-        const [geoRes, nomesRes] = await Promise.all([
+
+        // Em darkMode buscamos também o GeoJSON do Brasil pra usar como
+        // camada de "resto do mapa não selecionado" atrás do estado em foco.
+        const [geoRes, nomesRes, brasilRes] = await Promise.all([
           fetch(`/api/ibge/geojson?type=estado&uf=${uf}`),
-          fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${ufCode}/municipios`)
+          fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${ufCode}/municipios`),
+          darkMode ? fetch('/api/ibge/geojson?type=brasil') : Promise.resolve(null),
         ]);
-        
+
         if (geoRes.ok) setGeoData(await geoRes.json());
-        
+
+        if (brasilRes && brasilRes.ok) {
+          setBrasilGeoData(await brasilRes.json());
+        }
+
         if (nomesRes.ok) {
           const nomesData = await nomesRes.json();
           const codeToName: Record<string, string> = {};
           const nameToCode: Record<string, string> = {};
-          nomesData.forEach((m: any) => { 
+          nomesData.forEach((m: any) => {
             codeToName[String(m.id)] = m.nome;
             nameToCode[m.nome.toUpperCase()] = String(m.id);
           });
@@ -150,7 +160,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       }
     };
     fetchData();
-  }, [uf]);
+  }, [uf, darkMode]);
 
   // Manter ref de selectedMunicipio em sincronia para uso nos handlers do mapa
   useEffect(() => { selectedMunicipioRef.current = selectedMunicipio; }, [selectedMunicipio]);
@@ -552,41 +562,77 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       }
 
       const map = L.map(mapRef.current, {
-        zoomControl: true,
+        // Em darkMode posicionamos o zoom embaixo-esquerda pra não brigar com
+        // o breadcrumb (Brasil > Estado) no topo-esquerdo. No modo claro
+        // mantemos o padrão topleft.
+        zoomControl: false,
         scrollWheelZoom: true,
         attributionControl: true,
         preferCanvas: true
       });
+      L.control.zoom({ position: darkMode ? 'bottomleft' : 'topleft' }).addTo(map);
 
       // Atribuir imediatamente para que cleanupMap() de execuções concorrentes
       // consiga destruir este mapa caso o efeito seja cancelado.
       mapInstanceRef.current = map;
 
-      // Tile layer: dark (CartoDB Dark Matter) ou claro (CartoDB Voyager) conforme darkMode
-      const tileUrl = darkMode
-        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-      L.tileLayer(tileUrl, {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20
-      }).addTo(map);
+      // Tile layer:
+      //   - Modo claro (mapa eleitoral, demandas etc.): CartoDB Voyager.
+      //   - darkMode (dashboard de emendas): SEM tile — usamos o azul marinho
+      //     do <div> como fundo + uma camada com os outros estados pra deixar
+      //     claro o que é "selecionado" vs "resto do mapa".
+      if (!darkMode) {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 20
+        }).addTo(map);
+      }
 
       // Panes para z-index
+      map.createPane('brasilContextPane');  // outros estados em darkMode (fundo)
       map.createPane('municipiosPane');
       map.createPane('bairrosFillPane');
       map.createPane('labelsPane');
       map.createPane('voteLabelsPane');
 
+      const brasilContextPane = map.getPane('brasilContextPane');
       const municipiosPane = map.getPane('municipiosPane');
       const bairrosFillPane = map.getPane('bairrosFillPane');
       const labelsPane = map.getPane('labelsPane');
       const voteLabelsPane = map.getPane('voteLabelsPane');
 
+      if (brasilContextPane) brasilContextPane.style.zIndex = '380';
       if (municipiosPane) municipiosPane.style.zIndex = '400';
       if (bairrosFillPane) bairrosFillPane.style.zIndex = '450';
       if (labelsPane) labelsPane.style.zIndex = '470';
       if (voteLabelsPane) voteLabelsPane.style.zIndex = '480';
+
+      // Camada de contexto: outros estados do Brasil em azul marinho discreto.
+      // Aparece só em darkMode — dá ao usuário a sensação de "estado selecionado
+      // vs resto do mapa", em vez de um vazio preto.
+      if (darkMode && brasilGeoData) {
+        const focoCodarea = UF_CODES[uf];
+        L.geoJSON(brasilGeoData, {
+          pane: 'brasilContextPane',
+          interactive: false,
+          style: (feat: any) => {
+            const codarea = feat?.properties?.codarea || '';
+            // O estado em foco é coberto pela camada de municípios — esconde
+            // aqui pra não conflitar com a borda do estado.
+            if (codarea === focoCodarea) {
+              return { fillOpacity: 0, opacity: 0, weight: 0 };
+            }
+            return {
+              fillColor:   '#0d2545',
+              fillOpacity: 0.65,
+              color:       'rgba(74,158,222,0.22)',
+              weight:      0.8,
+              opacity:     0.7,
+            };
+          },
+        }).addTo(map);
+      }
 
       // Normalize municipality name for comparison (removes accents, apostrophes, etc.)
       const normalizeName = (name: string): string => {
@@ -1056,45 +1102,48 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       )}
 
       {/* Mapa */}
-      <div 
-        ref={mapRef} 
+      <div
+        ref={mapRef}
         className="w-full h-full rounded-xl overflow-hidden"
-        style={{ background: '#f0f4f8', minHeight: '400px' }}
+        style={{ background: darkMode ? '#071d36' : '#f0f4f8', minHeight: '400px' }}
       />
 
-      {/* Legenda */}
-      <div className="absolute bottom-3 left-3 z-[1000] bg-white/90 backdrop-blur-md rounded-xl border border-gray-200 px-4 py-2.5 text-xs shadow-md">
-        <div className="flex items-center gap-5">
-          <div className="flex items-center gap-2">
-            <div
-              className="w-5 h-3 rounded-sm"
-              style={{
-                background: 'linear-gradient(to right, #dce8f5, #1e40af)',
-                border: '1px solid #9ab8d4'
-              }}
-            />
-            <span className="text-gray-600 font-medium">Municípios</span>
-          </div>
-          {showSubdivisao && subdivisaoData?.hasPolygons && (
+      {/* Legenda — escondida no darkMode (dashboard de emendas) porque a
+          legenda externa "VALOR DE EMENDAS" no card pai já cobre o mesmo papel. */}
+      {!darkMode && (
+        <div className="absolute bottom-3 left-3 z-[1000] bg-white/90 backdrop-blur-md rounded-xl border border-gray-200 px-4 py-2.5 text-xs shadow-md">
+          <div className="flex items-center gap-5">
             <div className="flex items-center gap-2">
               <div
                 className="w-5 h-3 rounded-sm"
                 style={{
-                  background: subdivisaoTipo === 'setores'
-                    ? 'rgba(124, 58, 237, 0.08)'
-                    : 'rgba(26, 115, 232, 0.08)',
-                  border: subdivisaoTipo === 'setores'
-                    ? '1.8px solid #7c3aed'
-                    : '1.8px solid #1a73e8'
+                  background: 'linear-gradient(to right, #dce8f5, #1e40af)',
+                  border: '1px solid #9ab8d4'
                 }}
               />
-              <span className="text-gray-600 font-medium">
-                {subdivisaoTipo === 'setores' ? 'Setores Censitários (IBGE)' : 'Bairros'}
-              </span>
+              <span className="text-gray-600 font-medium">Municípios</span>
             </div>
-          )}
+            {showSubdivisao && subdivisaoData?.hasPolygons && (
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-5 h-3 rounded-sm"
+                  style={{
+                    background: subdivisaoTipo === 'setores'
+                      ? 'rgba(124, 58, 237, 0.08)'
+                      : 'rgba(26, 115, 232, 0.08)',
+                    border: subdivisaoTipo === 'setores'
+                      ? '1.8px solid #7c3aed'
+                      : '1.8px solid #1a73e8'
+                  }}
+                />
+                <span className="text-gray-600 font-medium">
+                  {subdivisaoTipo === 'setores' ? 'Setores Censitários (IBGE)' : 'Bairros'}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
