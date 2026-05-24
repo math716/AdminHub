@@ -1213,13 +1213,15 @@ function PopupRow({ label, value, hint }: { label: string; value: string; hint?:
 }
 
 function LegendaCores() {
-  // Mesma escala usada pelo StateMap (interpola entre dois azuis)
+  // Mesmas faixas discretas usadas pelo StateMap em darkMode — qualquer mudança
+  // aqui precisa replicar no getColor de state-map.tsx pra legenda continuar
+  // batendo com o desenho.
   const items = [
     { label: 'Acima de R$ 2 milhões',         color: '#0c4f8a' },
     { label: 'R$ 1 milhão – 2 milhões',       color: '#1d6fb8' },
     { label: 'R$ 500 mil – 1 milhão',         color: '#3a8ed1' },
     { label: 'Até R$ 500 mil',                color: '#7fb8e0' },
-    { label: 'Sem emendas',                   color: 'transparent', border: '1px solid rgba(255,255,255,0.3)' },
+    { label: 'Sem emendas',                   color: '#15355c', border: '1px solid rgba(255,255,255,0.18)' },
   ];
   return (
     <div className="space-y-1">

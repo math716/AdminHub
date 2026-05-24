@@ -664,9 +664,20 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       const maxValue = allVotes.length > 0 ? Math.max(...allVotes.filter(v => v > 0)) : 1;
 
       const getColor = (votos: number | undefined, isHighlighted: boolean) => {
-        if (votos === undefined || votos === 0) {
-          return darkMode ? 'transparent' : '#dce8f5'; // dark: sem preenchimento
+        // darkMode (dashboard de emendas): faixas discretas em hex exatos
+        // batendo com a legenda "VALOR DE EMENDAS" no canto inferior direito.
+        // O "sem emendas" é um navy levemente mais claro que o contexto dos
+        // outros estados, pra ficar visível como município mas sem competir
+        // com as cores reais de emendas.
+        if (darkMode) {
+          if (votos === undefined || votos === 0) return '#15355c';
+          if (votos > 2_000_000) return '#0c4f8a';
+          if (votos > 1_000_000) return '#1d6fb8';
+          if (votos > 500_000)   return '#3a8ed1';
+          return '#7fb8e0';
         }
+
+        if (votos === undefined || votos === 0) return '#dce8f5';
 
         // Se tem filtro ativo e highlightColor definido, usar para destacados
         if (highlightColor && isHighlighted) {
@@ -678,17 +689,6 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         }
 
         const intensity = votos / maxValue;
-
-        if (darkMode) {
-          // Dark theme — paleta da legenda (#7fb8e0 → #0c4f8a):
-          //   Pouco valor: azul CLARO (#7fb8e0 ≈ L 69%)
-          //   Muito valor: azul ESCURO/saturado (#0c4f8a ≈ L 30%)
-          // Lightness diminui conforme valor aumenta, igual à legenda.
-          const lightness  = 70 - (intensity * 40); // 70% (pouco) → 30% (muito)
-          const saturation = 60 + (intensity * 25); // 60% → 85%
-          return `hsl(209, ${saturation}%, ${lightness}%)`;
-        }
-
         // Choropleth claro→escuro para fundo branco: azul claro (pouco) a azul escuro (muito)
         const lightness = 85 - (intensity * 55); // 85% (quase branco) → 30% (azul escuro)
         const saturation = 55 + (intensity * 35); // 55 → 90%
@@ -711,12 +711,9 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         const votos = getVotos(codarea, nomeMun);
         const isFiltered = isMunicipioFiltered(nomeMun);
 
-        // Em darkMode, preenchimento proporcional ao valor — sem dados fica transparente.
-        // No modo claro original, fillOpacity=0 (só bordas).
-        const intensity = votos && maxValue > 0 ? votos / maxValue : 0;
-        const fillOpacity = darkMode
-          ? (votos && votos > 0 ? 0.65 + intensity * 0.3 : 0)
-          : 0;
+        // darkMode: fill sólido (1.0) pra cor renderizada bater EXATAMENTE com
+        // os hex da legenda. Modo claro original: só bordas (fillOpacity 0).
+        const fillOpacity = darkMode ? 1 : 0;
         const borderOpacity = filteredMunicipios ? (isFiltered ? 1 : 0.3) : 1;
 
         // Bordas: claras pra contraste no dark, escuras no claro
