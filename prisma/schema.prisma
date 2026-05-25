@@ -619,6 +619,10 @@ model EmendaParlamentar {
   // decidido depois.
   transferenciasPix TransferenciaPix[]
 
+  // Documentos de despesa (empenho/liquidação/pagamento) — populados pelo
+  // cron de enrich a partir de /despesas/documentos/{cod}.
+  documentos        EmendaDocumento[]
+
   fetchedAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
@@ -630,6 +634,52 @@ model EmendaParlamentar {
   @@index([area])
   @@index([uf, ano])
   @@map("emendas_parlamentares")
+}
+
+/// Documentos de despesa (empenho / liquidação / pagamento) vinculados a uma
+/// emenda parlamentar. Vem do endpoint /api-de-dados/despesas/documentos/{codigo}
+/// do Portal da Transparência — traz favorecido (CNPJ + nome), descrição rica e
+/// breakdown por fase orçamentária, dados que o endpoint /emendas não retorna.
+///
+/// Município do favorecido é resolvido em cascata:
+///   1) subTitulo / localizadorGasto (regex "NO MUNICIPIO DE XYZ")
+///   2) ufFavorecido do documento (sempre vem)
+///   3) Fase 3: lookup CNPJ → município sede (não implementado no MVP)
+model EmendaDocumento {
+  id                   String   @id @default(cuid())
+  codigoDocumento      String   @unique
+  codigoDocumentoResumido String?
+
+  emendaId             String
+  emenda               EmendaParlamentar @relation(fields: [emendaId], references: [id], onDelete: Cascade)
+
+  fase                 String   // "Empenho" | "Liquidação" | "Pagamento"
+  data                 DateTime?
+  valor                Float    @default(0)
+
+  cnpjFavorecido       String?
+  nomeFavorecido       String?
+  ufFavorecido         String?
+  municipioFavorecido  String?
+  codigoIbgeFavorecido String?
+
+  subTitulo            String?
+  localizadorGasto     String?
+  observacao           String?  @db.Text
+  programa             String?
+  acao                 String?
+  orgao                String?
+  orgaoSuperior        String?
+
+  fetchedAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([emendaId])
+  @@index([emendaId, fase])
+  @@index([cnpjFavorecido])
+  @@index([codigoIbgeFavorecido])
+  @@index([fase])
+  @@map("emendas_documentos")
 }
 
 /// Transferência Especial (Pix) do Portal da Transparência.

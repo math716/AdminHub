@@ -34,6 +34,7 @@ import {
   type EmendaArea,
   type ParlamentarCargo,
 } from '@/lib/portal-transparencia';
+import { EmendaDocumentosModal } from '@/components/emendas/emenda-documentos-modal';
 
 // ---------------------------------------------------------------------------
 // Mapas dinâmicos (Leaflet SSR-off)
@@ -1507,6 +1508,8 @@ function EmendasDetalhadasCard({
   emendas: PortalEmenda[];
 }) {
   const [expandido, setExpandido] = useState(false);
+  // Emenda selecionada pra abrir modal de detalhes (favorecidos, observação, breakdown por fase)
+  const [emendaSelecionada, setEmendaSelecionada] = useState<{ codigo: string; titulo: string } | null>(null);
   const MAX_INICIAL = 10;
 
   // Ordena por valor empenhado desc
@@ -1586,7 +1589,12 @@ function EmendasDetalhadasCard({
               return (
                 <tr
                   key={e.idPortal}
-                  className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                  onClick={() => setEmendaSelecionada({
+                    codigo: e.idPortal,
+                    titulo: e.numero ? `Emenda nº ${e.numero}` : `Emenda ${e.idPortal}`,
+                  })}
+                  className="border-b border-white/5 hover:bg-amber-300/5 transition-colors cursor-pointer"
+                  title="Clique para ver favorecidos, descrição e breakdown por fase"
                 >
                   <td className="py-2 px-2 text-slate-400 font-mono">{e.numero ?? '—'}</td>
                   <td className="py-2 px-2">
@@ -1636,6 +1644,14 @@ function EmendasDetalhadasCard({
             : `Ver todas as ${ordenadas.length} emendas`}
         </button>
       )}
+
+      {/* Modal de detalhes da emenda — abre ao clicar em uma linha. Lazy-load
+          dos documentos (favorecidos, observação, breakdown por fase). */}
+      <EmendaDocumentosModal
+        codigoEmenda={emendaSelecionada?.codigo ?? null}
+        tituloFallback={emendaSelecionada?.titulo}
+        onClose={() => setEmendaSelecionada(null)}
+      />
     </div>
   );
 }
