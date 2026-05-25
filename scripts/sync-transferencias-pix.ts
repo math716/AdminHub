@@ -67,37 +67,77 @@ const DELAY_MS  = parseInt(arg('delay-ms', '700')!, 10);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ─────────────────────────────────────────────────────────────────────────
-// Endpoints candidatos — Portal mexe nos paths às vezes. Tenta na ordem.
+// Endpoints candidatos — Portal renomeia paths entre versões. Em --discover
+// tenta TODOS na ordem; em modo sync usa o primeiro que responder.
+//
+// Cada variante é um par: [path, paramOverrides] — params específicos do
+// endpoint. Os comuns (chave da API, paginação) são adicionados depois.
 // ─────────────────────────────────────────────────────────────────────────
-const ENDPOINT_CANDIDATES = [
-  '/api-de-dados/transferencias-especiais-orcamento',
-  '/api-de-dados/transferencias',
-];
+interface EndpointCandidate {
+  path:   string;
+  params: Record<string, string | number>;
+  desc:   string;
+}
+
+function buildCandidates(ano: number): EndpointCandidate[] {
+  return [
+    // Tentativas em ordem do mais específico pro mais genérico.
+    {
+      path:   '/api-de-dados/transferencias',
+      params: { mesAnoInicio: `01/${ano}`, mesAnoFim: `12/${ano}`, pagina: 1 },
+      desc:   'Transferências (intervalo MM/YYYY)',
+    },
+    {
+      path:   '/api-de-dados/transferencias',
+      params: { ano: ano, pagina: 1 },
+      desc:   'Transferências (ano simples)',
+    },
+    {
+      path:   '/api-de-dados/transferencias-especiais-do-cidadao',
+      params: { ano: ano, pagina: 1 },
+      desc:   'Transferências Especiais (variante "cidadao")',
+    },
+    {
+      path:   '/api-de-dados/transferencias-recursos',
+      params: { ano: ano, pagina: 1 },
+      desc:   'Transferências de Recursos',
+    },
+    {
+      path:   '/api-de-dados/emendas-orcamentarias',
+      params: { ano: ano, pagina: 1 },
+      desc:   'Emendas Orçamentárias (alternativa)',
+    },
+  ];
+}
 
 // ─────────────────────────────────────────────────────────────────────────
-// HTTP helper
+// HTTP helper — agora retorna { ok, status, body } pra diagnóstico em 4xx
 // ─────────────────────────────────────────────────────────────────────────
-async function portalFetch(path: string, params: Record<string, string | number | undefined>): Promise<any> {
+async function portalFetchRaw(path: string, params: Record<string, string | number | undefined>) {
   const url = new URL(`${PORTAL_BASE}${path}`);
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
   });
+  const res = await fetch(url.toString(), {
+    headers: { 'chave-api-dados': API_KEY!, accept: 'application/json' },
+  });
+  const text = await res.text();
+  let json: any = null;
+  try { json = JSON.parse(text); } catch { /* não é JSON */ }
+  return { status: res.status, ok: res.ok, body: json, raw: text, finalUrl: url.toString() };
+}
 
+async function portalFetch(path: string, params: Record<string, string | number | undefined>): Promise<any> {
   for (let tentativa = 0; tentativa < 3; tentativa++) {
     try {
-      const res = await fetch(url.toString(), {
-        headers: { 'chave-api-dados': API_KEY!, accept: 'application/json' },
-      });
-      if (res.status === 429) {
-        await sleep(5000);
-        continue;
-      }
-      if (res.status === 404) return null;  // endpoint não existe
-      if (!res.ok) {
-        console.warn(`   [aviso] ${path}: HTTP ${res.status}`);
+      const r = await portalFetchRaw(path, params);
+      if (r.status === 429) { await sleep(5000); continue; }
+      if (r.status === 404) return null;
+      if (!r.ok) {
+        console.warn(`   [aviso] ${path}: HTTP ${r.status}`);
         return null;
       }
-      const data = await res.json();
+      const data = r.body;
       return Array.isArray(data) ? data : (data?.dados ?? data?.data ?? []);
     } catch (e: any) {
       console.warn(`   [aviso] ${path} tentativa ${tentativa + 1}: ${e.message}`);
@@ -110,23 +150,14 @@ async function portalFetch(path: string, params: Record<string, string | number 
 // ─────────────────────────────────────────────────────────────────────────
 // Descobre qual endpoint funciona e em qual formato
 // ─────────────────────────────────────────────────────────────────────────
-async function descobrirEndpoint(): Promise<string | null> {
-  for (const ep of ENDPOINT_CANDIDATES) {
-    console.log(`   Tentando ${ep}…`);
-    // Bate com filtros mínimos pro ano corrente
-    const params: Record<string, string | number | undefined> = {
-      ano: ANO,
-      pagina: 1,
-    };
-    // Pra /transferencias, precisa de mesAno
-    if (ep === '/api-de-dados/transferencias') {
-      params.mesAnoInicio = `01/${ANO}`;
-      params.mesAnoFim    = `12/${ANO}`;
-    }
-    const data = await portalFetch(ep, params);
+async function descobrirEndpoint(): Promise<{ path: string; params: Record<string, string | number> } | null> {
+  const candidates = buildCandidates(ANO);
+  for (const c of candidates) {
+    console.log(`   Tentando ${c.path} (${c.desc})…`);
+    const data = await portalFetch(c.path, c.params);
     if (data && Array.isArray(data) && data.length > 0) {
-      console.log(`   ✓ Endpoint funcionando: ${ep}`);
-      return ep;
+      console.log(`   ✓ Endpoint funcionando: ${c.path}`);
+      return { path: c.path, params: c.params };
     }
   }
   return null;
@@ -245,44 +276,73 @@ async function resolverParlamentar(autorNome: string | null): Promise<string | n
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Modo descoberta — só loga a estrutura
+// Modo descoberta — testa endpoints + mostra status/body de erros
 // ─────────────────────────────────────────────────────────────────────────
 async function modoDescoberta() {
   console.log(`\n🔍 MODO DESCOBERTA — ano=${ANO}\n`);
 
-  for (const ep of ENDPOINT_CANDIDATES) {
-    console.log(`\n────── ${ep} ──────`);
-    const params: Record<string, string | number | undefined> = {
-      ano: ANO,
-      pagina: 1,
-    };
-    if (ep === '/api-de-dados/transferencias') {
-      params.mesAnoInicio = `01/${ANO}`;
-      params.mesAnoFim    = `12/${ANO}`;
+  // ── Sanity check primeiro: API key responde no endpoint /emendas? ──────
+  console.log(`────── SANITY CHECK: /api-de-dados/emendas (deve funcionar) ──────`);
+  const sanity = await portalFetchRaw('/api-de-dados/emendas', { ano: ANO, pagina: 1 });
+  console.log(`   URL: ${sanity.finalUrl}`);
+  console.log(`   Status: ${sanity.status}`);
+  if (sanity.ok) {
+    const count = Array.isArray(sanity.body) ? sanity.body.length : 'n/a';
+    console.log(`   ✓ Funcionou — ${count} registros. API key OK.`);
+  } else {
+    console.log(`   ❌ Falhou. Resposta:`);
+    console.log(`   ${sanity.raw.slice(0, 500)}`);
+    console.log(`\n   Se aqui falhou, sua API key tem algum problema. Os outros`);
+    console.log(`   endpoints não vão funcionar até resolver isso.\n`);
+    return;
+  }
+
+  // ── Tenta cada candidato de transferências ──────────────────────────────
+  const candidates = buildCandidates(ANO);
+  let achouAlgum = false;
+
+  for (const c of candidates) {
+    console.log(`\n────── ${c.path}`);
+    console.log(`         (${c.desc})`);
+    const r = await portalFetchRaw(c.path, c.params);
+    console.log(`   URL:    ${r.finalUrl}`);
+    console.log(`   Status: ${r.status}`);
+
+    if (!r.ok) {
+      // Mostra o body do erro — geralmente tem mensagem útil
+      const preview = r.raw.slice(0, 400);
+      console.log(`   Body:   ${preview}${r.raw.length > 400 ? '…' : ''}`);
+      continue;
     }
 
-    const data = await portalFetch(ep, params);
-    if (!data) {
-      console.log(`   ❌ Sem resposta (404 / 5xx).`);
-      continue;
-    }
-    if (!Array.isArray(data)) {
-      console.log(`   ❌ Resposta não é array. Tipo: ${typeof data}`);
-      continue;
-    }
-    if (data.length === 0) {
-      console.log(`   ⚠ Array vazio.`);
+    const data = Array.isArray(r.body) ? r.body : (r.body?.dados ?? r.body?.data ?? []);
+    if (!Array.isArray(data) || data.length === 0) {
+      console.log(`   ⚠ Resposta OK mas sem registros.`);
       continue;
     }
 
-    console.log(`   ✓ ${data.length} registros na página 1.`);
-    console.log(`   Estrutura do 1º registro:`);
+    achouAlgum = true;
+    console.log(`   ✓ ${data.length} registros na página 1.\n`);
+    console.log(`   📋 ESTRUTURA DO 1º REGISTRO:`);
     console.log(JSON.stringify(data[0], null, 2));
-    console.log(`\n   Campos extraídos pelo parser do script:`);
+    console.log(`\n   📋 CAMPOS EXTRAÍDOS PELO PARSER:`);
     console.log(JSON.stringify(extrairCampos(data[0]), null, 2));
   }
-  console.log(`\n✅ Descoberta concluída. Se algum campo importante saiu null,`);
-  console.log(`   me cole o JSON do registro pra eu ajustar o parser.\n`);
+
+  console.log(`\n${'─'.repeat(60)}`);
+  if (!achouAlgum) {
+    console.log(`❌ Nenhum endpoint candidato respondeu com dados.`);
+    console.log(`\nPróximos passos:`);
+    console.log(`  1. Verifica no Swagger se o nome do endpoint mudou:`);
+    console.log(`     https://api.portaldatransparencia.gov.br/swagger-ui/index.html`);
+    console.log(`  2. Se descobrir o path certo, me cola aqui que eu ajusto o script.`);
+    console.log(`  3. Se 403 persistir em todos, sua API key talvez não tenha o`);
+    console.log(`     tier de "transferências" liberado — checa o cadastro no Portal.`);
+  } else {
+    console.log(`✅ Pelo menos 1 endpoint respondeu. Me cole o output pra ajustar`);
+    console.log(`   o parser se algum campo saiu null no "Campos extraídos".`);
+  }
+  console.log('');
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -306,15 +366,13 @@ async function syncEfetivo() {
   let comMunicipio = 0;
 
   while (pagina <= MAX_PAGES) {
+    // Usa os params que o descobridor identificou como funcionais e sobrescreve
+    // pagina pra paginar
     const params: Record<string, string | number | undefined> = {
-      ano: ANO,
+      ...endpoint.params,
       pagina,
     };
-    if (endpoint === '/api-de-dados/transferencias') {
-      params.mesAnoInicio = `01/${ANO}`;
-      params.mesAnoFim    = `12/${ANO}`;
-    }
-    const rows = await portalFetch(endpoint, params);
+    const rows = await portalFetch(endpoint.path, params);
     if (!rows || rows.length === 0) {
       console.log(`\n   página ${pagina} vazia — fim dos dados.`);
       break;
