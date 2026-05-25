@@ -86,6 +86,20 @@ interface PortalEmenda {
   autorUf: string | null;
 }
 
+interface TransferenciaPix {
+  idPortal:         string;
+  ano:              number;
+  mes:              number | null;
+  dataReferencia:   string | null;
+  valor:            number;
+  uf:               string | null;
+  codigoIbge:       string | null;
+  municipioNome:    string | null;
+  beneficiarioNome: string | null;
+  cnpjBeneficiario: string | null;
+  emendaIdPortal:   string | null;
+}
+
 interface PortalParlamentar {
   cpf: string | null;
   idPortal: string;
@@ -165,6 +179,7 @@ export default function EmendasPage() {
   const [searchingParlamentar, setSearchingParlamentar] = useState(false);
   const [selectedParlamentar, setSelectedParlamentar] = useState<PortalParlamentar | null>(null);
   const [parlamentarEmendas, setParlamentarEmendas] = useState<PortalEmenda[]>([]);
+  const [parlamentarPix, setParlamentarPix] = useState<TransferenciaPix[]>([]);
   const [loadingParlamentar, setLoadingParlamentar] = useState(false);
 
   // Resumo do ano anterior (para o comparativo)
@@ -256,10 +271,11 @@ export default function EmendasPage() {
     setParlamentarResults(matches);
   }, [parlamentarQuery, resumo, selectedUf]);
 
-  // ----- Emendas do parlamentar selecionado -----
+  // ----- Emendas + transferências Pix do parlamentar selecionado -----
   useEffect(() => {
     if (!selectedParlamentar) {
       setParlamentarEmendas([]);
+      setParlamentarPix([]);
       return;
     }
     const ctrl = new AbortController();
@@ -270,7 +286,10 @@ export default function EmendasPage() {
     const ufParam = selectedUf ? `&uf=${selectedUf}` : '';
     fetch(`/api/emendas-portal/parlamentar/${id}?ano=${ano}${ufParam}`, { signal: ctrl.signal })
       .then((r) => r.json())
-      .then((data) => setParlamentarEmendas(Array.isArray(data?.emendas) ? data.emendas : []))
+      .then((data) => {
+        setParlamentarEmendas(Array.isArray(data?.emendas) ? data.emendas : []);
+        setParlamentarPix(Array.isArray(data?.transferenciasPix) ? data.transferenciasPix : []);
+      })
       .catch((e: any) => {
         if (e?.name !== 'AbortError') console.error('Erro ao buscar emendas do parlamentar:', e);
       })
@@ -446,6 +465,39 @@ export default function EmendasPage() {
       }))
       .sort((a, b) => b.total - a.total);
   }, [parlamentarEmendas]);
+
+  // Agregação de transferências Pix por município — preenche o card
+  // "Municípios via Pix" do dashboard. Diferente de parlamentarPorMunicipio
+  // (que vem das emendas), aqui o destino é o município REAL onde o Pix
+  // caiu, mesmo quando a emenda original foi cadastrada a nível UF.
+  const parlamentarPixPorMunicipio = useMemo(() => {
+    const map = new Map<string, {
+      codigoIbge: string;
+      nome:       string;
+      uf:         string | null;
+      total:      number;
+      qtd:        number;
+    }>();
+    parlamentarPix.forEach((t) => {
+      if (!t.codigoIbge) return;
+      const cur = map.get(t.codigoIbge) ?? {
+        codigoIbge: t.codigoIbge,
+        nome:       t.municipioNome ?? t.codigoIbge,
+        uf:         t.uf,
+        total:      0,
+        qtd:        0,
+      };
+      cur.total += t.valor ?? 0;
+      cur.qtd++;
+      map.set(t.codigoIbge, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [parlamentarPix]);
+
+  const parlamentarPixTotal = useMemo(
+    () => parlamentarPix.reduce((s, t) => s + (t.valor ?? 0), 0),
+    [parlamentarPix],
+  );
 
   const maxParlamentarPorAno = useMemo(
     () => parlamentarPorAno.reduce((m, x) => Math.max(m, x.total), 1),
@@ -740,6 +792,8 @@ export default function EmendasPage() {
           porTipo={parlamentarPorTipo}
           destinos={parlamentarDestinos}
           emendas={parlamentarEmendas}
+          pixPorMunicipio={parlamentarPixPorMunicipio}
+          pixTotal={parlamentarPixTotal}
           onMunicipioClick={(m) => setSelectedMunicipio({ codigo: m.codigoIbge, nome: m.nome })}
         />
       )}
@@ -1247,7 +1301,7 @@ interface ParlamentarPorMunicipio {
 }
 
 function ParlamentarDashboard({
-  parlamentar, ano, escopo, loading, totalAno, totalPago, porArea, porAno, maxPorAno, porMunicipio, porTipo, destinos, emendas, onMunicipioClick,
+  parlamentar, ano, escopo, loading, totalAno, totalPago, porArea, porAno, maxPorAno, porMunicipio, porTipo, destinos, emendas, pixPorMunicipio, pixTotal, onMunicipioClick,
 }: {
   parlamentar: PortalParlamentar;
   ano: number;
@@ -1262,6 +1316,8 @@ function ParlamentarDashboard({
   porTipo: { tipo: string; total: number; qtd: number }[];
   destinos: { municipal: number; estadual: number; qtdMun: number; qtdEst: number };
   emendas: PortalEmenda[];
+  pixPorMunicipio: { codigoIbge: string; nome: string; uf: string | null; total: number; qtd: number }[];
+  pixTotal: number;
   onMunicipioClick?: (m: ParlamentarPorMunicipio) => void;
 }) {
   const pctPago = totalAno > 0 ? (totalPago / totalAno) * 100 : 0;
@@ -1433,6 +1489,24 @@ function ParlamentarDashboard({
           ano={ano}
           porMunicipio={porMunicipio}
           onClick={onMunicipioClick}
+        />
+      )}
+
+      {/* Destinos de transferências Pix (EC 105/2019) — preenche quando a
+          emenda foi cadastrada a nível UF e o município só foi decidido
+          depois via Pix Parlamentar. */}
+      {!loading && pixPorMunicipio.length > 0 && (
+        <MunicipiosPixCard
+          ano={ano}
+          pixPorMunicipio={pixPorMunicipio}
+          pixTotal={pixTotal}
+          onClick={(m) => onMunicipioClick?.({
+            codigoIbge: m.codigoIbge,
+            nome:       m.nome,
+            uf:         m.uf,
+            total:      m.total,
+            areas:      [],
+          })}
         />
       )}
     </div>
@@ -1677,6 +1751,98 @@ function MunicipiosBeneficiadosCard({
             </button>
           )}
         </>
+      )}
+    </div>
+  );
+}
+
+// Lista de municípios que receberam Transferência Especial (Pix) do parlamentar.
+// Aparece quando as emendas originais foram cadastradas a nível UF e o destino
+// real só foi resolvido depois via repasse Pix (modalidade EC 105/2019).
+function MunicipiosPixCard({
+  ano, pixPorMunicipio, pixTotal, onClick,
+}: {
+  ano: number;
+  pixPorMunicipio: { codigoIbge: string; nome: string; uf: string | null; total: number; qtd: number }[];
+  pixTotal: number;
+  onClick?: (m: { codigoIbge: string; nome: string; uf: string | null; total: number; qtd: number }) => void;
+}) {
+  const [expandido, setExpandido] = useState(false);
+  const MAX_INICIAL = 8;
+  const visiveis = expandido ? pixPorMunicipio : pixPorMunicipio.slice(0, MAX_INICIAL);
+  return (
+    <div
+      className="mt-4 rounded-xl p-4"
+      style={{
+        background: 'linear-gradient(135deg, rgba(168,85,247,0.06), rgba(7,29,54,0.5))',
+        border: '1px solid rgba(168,85,247,0.25)',
+      }}
+    >
+      <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span
+            className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest"
+            style={{ background: 'rgba(168,85,247,0.18)', color: '#c084fc', border: '1px solid rgba(168,85,247,0.35)' }}
+          >
+            Pix
+          </span>
+          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+            Municípios que receberam Pix em {ano}
+          </p>
+        </div>
+        <p className="text-[10px] text-slate-500">
+          {pixPorMunicipio.length} {pixPorMunicipio.length === 1 ? 'município' : 'municípios'} ·{' '}
+          <span className="text-violet-300 font-semibold">{formatBRL(pixTotal)}</span>
+        </p>
+      </div>
+
+      <p className="text-[10px] text-slate-500 italic mb-3 leading-snug">
+        Transferências Especiais (EC 105/2019) — destinos reais dos repasses Pix do parlamentar
+        quando a emenda original foi cadastrada só a nível UF.
+      </p>
+
+      <div className="space-y-2">
+        {visiveis.map((m, i) => (
+          <button
+            key={m.codigoIbge}
+            onClick={onClick ? () => onClick(m) : undefined}
+            disabled={!onClick}
+            className="w-full text-left px-3 py-2.5 rounded-xl transition-colors group disabled:cursor-default"
+            style={{
+              background: 'rgba(7,29,54,0.55)',
+              border: '1px solid rgba(255,255,255,0.04)',
+            }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <span className="text-[10px] font-bold text-slate-500 w-5 flex-shrink-0">{i + 1}.</span>
+                <span className="text-white text-sm font-semibold truncate group-hover:text-violet-300 transition-colors">
+                  {m.nome}
+                </span>
+                {m.uf && (
+                  <span className="text-[10px] text-slate-500 flex-shrink-0">/ {m.uf}</span>
+                )}
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-violet-300 font-bold text-sm whitespace-nowrap">{formatBRL(m.total)}</p>
+                <p className="text-[10px] text-slate-500">
+                  {m.qtd} {m.qtd === 1 ? 'transferência' : 'transferências'}
+                </p>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {pixPorMunicipio.length > MAX_INICIAL && (
+        <button
+          onClick={() => setExpandido((v) => !v)}
+          className="mt-3 w-full text-center text-[11px] text-violet-300 hover:text-violet-200 font-semibold transition-colors py-1.5 rounded-lg hover:bg-violet-300/5"
+        >
+          {expandido
+            ? `Mostrar apenas os ${MAX_INICIAL} maiores`
+            : `Ver todos os ${pixPorMunicipio.length} municípios`}
+        </button>
       )}
     </div>
   );

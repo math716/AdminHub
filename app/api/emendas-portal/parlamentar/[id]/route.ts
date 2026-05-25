@@ -46,7 +46,25 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         orderBy: [{ ano: 'desc' }, { valorEmpenhado: 'desc' }],
       });
 
-      if (rows.length > 0) {
+      // Transferências Pix: destinos reais de emendas individuais de
+      // Transferência Especial. Vão pro card "Municípios via Pix" no dashboard
+      // mesmo quando todas as emendas estão a nível UF.
+      const transferenciasPix = await prisma.transferenciaPix.findMany({
+        where: {
+          parlamentarId: parlamentar.id,
+          ...(ano ? { ano } : {}),
+          ...(uf  ? { uf  } : {}),
+        },
+        select: {
+          idPortal: true, ano: true, mes: true, dataReferencia: true, valor: true,
+          uf: true, codigoIbge: true, municipioNome: true,
+          beneficiarioNome: true, cnpjBeneficiario: true,
+          emendaIdPortal: true,
+        },
+        orderBy: [{ ano: 'desc' }, { valor: 'desc' }],
+      });
+
+      if (rows.length > 0 || transferenciasPix.length > 0) {
         const emendas = rows.map((e) => ({
           idPortal:       e.idPortal,
           ano:            e.ano,
@@ -72,18 +90,30 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           autorPartido:   e.parlamentar?.partido ?? null,
           autorUf:        e.parlamentar?.uf ?? null,
         }));
-        return NextResponse.json({ emendas, mock: false, fonte: 'banco' });
+        return NextResponse.json({
+          emendas,
+          transferenciasPix,
+          mock: false,
+          fonte: 'banco',
+        });
       }
     }
 
-    // 2) Fallback Portal — usando nome (id costuma ser o nome em maiúsculas)
+    // 2) Fallback Portal — usando nome (id costuma ser o nome em maiúsculas).
+    // No fallback ao Portal não puxamos Pix em tempo real (custoso); fica
+    // array vazio até o sync rodar.
     const emendas = await listEmendasPorParlamentar({
       cpf: isCpf ? id : undefined,
       idPortal: !isCpf ? id : undefined,
       nome: !isCpf ? id : undefined,
       ano,
     });
-    return NextResponse.json({ emendas, mock: PORTAL_MOCK_MODE, fonte: 'portal' });
+    return NextResponse.json({
+      emendas,
+      transferenciasPix: [],
+      mock: PORTAL_MOCK_MODE,
+      fonte: 'portal',
+    });
   } catch (error) {
     console.error('GET /api/emendas-portal/parlamentar/[id] error:', error);
     return NextResponse.json({ error: 'Erro ao buscar emendas do parlamentar' }, { status: 500 });

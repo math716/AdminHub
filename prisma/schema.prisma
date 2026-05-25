@@ -576,7 +576,8 @@ model Parlamentar {
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
-  emendas      EmendaParlamentar[]
+  emendas          EmendaParlamentar[]
+  transferenciasPix TransferenciaPix[]
 
   @@index([cargo])
   @@index([uf])
@@ -613,6 +614,11 @@ model EmendaParlamentar {
   parlamentarId     String?
   parlamentar       Parlamentar? @relation(fields: [parlamentarId], references: [id], onDelete: SetNull)
 
+  // Transferências Pix (Transferências Especiais EC 105/2019) — destinos
+  // reais quando a emenda foi cadastrada a nível UF e o município só é
+  // decidido depois.
+  transferenciasPix TransferenciaPix[]
+
   fetchedAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
@@ -624,4 +630,58 @@ model EmendaParlamentar {
   @@index([area])
   @@index([uf, ano])
   @@map("emendas_parlamentares")
+}
+
+/// Transferência Especial (Pix) do Portal da Transparência.
+///
+/// Por que existe:
+///   Emendas individuais de Transferência Especial (modalidade Pix da
+///   EC 105/2019) frequentemente são cadastradas na tabela `emendas` com
+///   localidade "UF (UF)" — o município destino só é decidido depois,
+///   quando o parlamentar/gabinete instrui a transferência. O Portal
+///   rastreia esses repasses subsequentes num endpoint separado.
+///
+/// Linkagem:
+///   - `emendaIdPortal` aponta pra `EmendaParlamentar.idPortal` (codigoEmenda)
+///     quando disponível. Pode ser null se o Portal não associou.
+///   - `parlamentarId` desnormaliza o autor pra queries diretas
+///     (ex.: "todos Pix do Eduardo Bolsonaro em 2024").
+model TransferenciaPix {
+  id                String   @id @default(cuid())
+  idPortal          String   @unique     // identificador no Portal (id da transferência)
+
+  ano               Int
+  mes               Int?
+  dataReferencia    DateTime?
+
+  valor             Float    @default(0)
+
+  // Destino real do Pix
+  uf                String?
+  codigoIbge        String?
+  municipioNome     String?
+
+  // Beneficiário (ente recebedor — pode ser prefeitura, estado, ONG…)
+  beneficiarioNome  String?
+  cnpjBeneficiario  String?
+
+  // Linkagem com a emenda original (quando disponível)
+  emendaIdPortal    String?
+  emenda            EmendaParlamentar? @relation(fields: [emendaIdPortal], references: [idPortal], onDelete: SetNull)
+
+  // Desnormalização do parlamentar pra queries diretas
+  parlamentarId     String?
+  parlamentar       Parlamentar? @relation(fields: [parlamentarId], references: [id], onDelete: SetNull)
+
+  fetchedAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([ano])
+  @@index([codigoIbge])
+  @@index([codigoIbge, ano])
+  @@index([parlamentarId])
+  @@index([parlamentarId, ano])
+  @@index([emendaIdPortal])
+  @@index([uf, ano])
+  @@map("transferencias_pix")
 }
