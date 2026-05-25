@@ -79,35 +79,58 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
   useEffect(() => { disableSubdivisaoRef.current = disableSubdivisao; }, [disableSubdivisao]);
   useEffect(() => { codigoToNomeRef.current = codigoToNome; }, [codigoToNome]);
 
-  // Destaque programático (ex: clique na lista lateral) — usa refs para evitar closure stale
+  // Destaque programático (ex: clique na lista lateral) — usa refs para evitar closure stale.
+  // Quando há município selecionado: ele mantém a cor da faixa (via resetStyle) com
+  // uma borda dourada; demais ficam todos navy "sem emendas" (#15355c). Quando o
+  // highlight é limpo (popup fechado), restauramos as cores de faixa em todos.
   useEffect(() => {
-    if (!highlightMunicipioNome || !disableSubdivisao) return;
-    // Evita re-aplicar se já está selecionado (ex: clique direto no mapa)
-    if (selectedMunicipioRef.current?.toUpperCase() === highlightMunicipioNome.toUpperCase()) return;
+    if (!disableSubdivisao) return;
 
     const geoLayer = municipiosLayerRef.current;
     const map = mapInstanceRef.current;
     if (!geoLayer || !map) return;
 
+    // Sem município selecionado — restaura cores de faixa em todos
+    if (!highlightMunicipioNome) {
+      geoLayer.eachLayer((l: any) => geoLayer.resetStyle(l));
+      selectedMunicipioRef.current = null;
+      municipioSelectedLayerRef.current = null;
+      return;
+    }
+
+    // Evita re-aplicar se já está selecionado
+    if (selectedMunicipioRef.current?.toUpperCase() === highlightMunicipioNome.toUpperCase()) return;
+
     const nomeMap = codigoToNomeRef.current;
     let targetLayer: any = null;
     geoLayer.eachLayer((l: any) => {
-      geoLayer.resetStyle(l);
-      l.setStyle({ fillOpacity: 0, opacity: 0.4 });
       const codarea = l.feature?.properties?.codarea || '';
       const layerNome = nomeMap[codarea] || '';
       if (layerNome.toUpperCase() === highlightMunicipioNome.toUpperCase()) targetLayer = l;
     });
-    if (targetLayer) {
-      targetLayer.setStyle({ weight: 3, color: '#1565c0', fillColor: '#1976d2', fillOpacity: 0.15, opacity: 1 });
-      municipioSelectedLayerRef.current = targetLayer;
-      selectedMunicipioRef.current = highlightMunicipioNome;
-      targetLayer.bringToFront();
-      try {
-        const bounds = targetLayer.getBounds();
-        if (bounds.isValid()) map.fitBounds(bounds, { padding: [60, 60] });
-      } catch (_) {}
-    }
+    if (!targetLayer) return;
+
+    geoLayer.eachLayer((l: any) => {
+      if (l === targetLayer) {
+        geoLayer.resetStyle(l);  // restaura cor da faixa
+        l.setStyle({ weight: 3, color: '#c9a227', opacity: 1 });  // borda dourada de destaque
+      } else {
+        l.setStyle({
+          fillColor:   '#15355c',
+          fillOpacity: 1,
+          color:       'rgba(74,158,222,0.15)',
+          weight:      0.5,
+          opacity:     0.7,
+        });
+      }
+    });
+    targetLayer.bringToFront();
+    municipioSelectedLayerRef.current = targetLayer;
+    selectedMunicipioRef.current = highlightMunicipioNome;
+    try {
+      const bounds = targetLayer.getBounds();
+      if (bounds.isValid()) map.fitBounds(bounds, { padding: [60, 60] });
+    } catch (_) {}
   }, [highlightMunicipioNome, disableSubdivisao]);
 
   const [showSubdivisao, setShowSubdivisao] = useState(true);
@@ -742,21 +765,24 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
             setHoveredItemDisplay(null);
 
             if (disableSubdivisaoRef.current) {
-              // Modo campanha: zoom no município + destacar + apagar os demais
-              // Restaurar estilo de todos os municípios e redefinir opacidade
+              // Modo emendas/campanha: clicado mantém sua cor de faixa
+              // (via resetStyle) + borda dourada de destaque; demais viram
+              // navy "sem emendas" (#15355c).
               geoLayer.eachLayer((l: any) => {
-                geoLayer.resetStyle(l);
-                l.setStyle({ fillOpacity: 0, opacity: 0.4 });
+                if (l === layer) {
+                  geoLayer.resetStyle(l);
+                  l.setStyle({ weight: 3, color: '#c9a227', opacity: 1 });
+                } else {
+                  l.setStyle({
+                    fillColor:   '#15355c',
+                    fillOpacity: 1,
+                    color:       'rgba(74,158,222,0.15)',
+                    weight:      0.5,
+                    opacity:     0.7,
+                  });
+                }
               });
 
-              // Destacar o município clicado
-              layer.setStyle({
-                weight: 3,
-                color: '#1565c0',
-                fillColor: '#1976d2',
-                fillOpacity: 0.15,
-                opacity: 1,
-              });
               municipioSelectedLayerRef.current = layer;
               selectedMunicipioRef.current = nome;
               layer.bringToFront();
@@ -806,14 +832,19 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           });
 
           layer.on('mouseout', (e: any) => {
-            if (selectedMunicipioRef.current !== nome) {
-              if (disableSubdivisaoRef.current && municipioSelectedLayerRef.current) {
-                // No modo campanha, restaura estilo base mas mantém os demais apagados
-                geoLayer.resetStyle(e.target);
-                e.target.setStyle({ fillOpacity: 0, opacity: 0.4 });
-              } else {
-                geoLayer.resetStyle(e.target);
-              }
+            if (selectedMunicipioRef.current === nome) return;
+            if (disableSubdivisaoRef.current && municipioSelectedLayerRef.current) {
+              // Modo emendas com outro município selecionado: volta pro navy
+              // "sem emendas" pra não competir visualmente com o selecionado.
+              e.target.setStyle({
+                fillColor:   '#15355c',
+                fillOpacity: 1,
+                color:       'rgba(74,158,222,0.15)',
+                weight:      0.5,
+                opacity:     0.7,
+              });
+            } else {
+              geoLayer.resetStyle(e.target);
             }
           });
 
