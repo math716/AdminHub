@@ -570,19 +570,6 @@ export default function EmendasPage() {
         </div>
       )}
 
-      {/* Amostra parcial banner — quando ainda está usando Portal ao vivo */}
-      {resumo && !resumo.mock && resumo.fonte === 'portal' && (
-        <div
-          className="rounded-xl px-4 py-2.5 flex items-start gap-2 text-xs"
-          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b' }}
-        >
-          <span className="font-semibold mt-0.5">⓵ Dados parciais:</span>
-          <span className="text-slate-300">
-            o ano {ano} ainda não foi sincronizado pro banco local — os números aqui são uma amostra das maiores emendas do Portal da Transparência (limitação técnica da API pública). Para dados completos, execute <code className="px-1.5 py-0.5 rounded bg-black/30">npx tsx scripts/sync-emendas-portal.ts --ano {ano}</code>.
-          </span>
-        </div>
-      )}
-
       {/* Grid principal — coluna esquerda ocupa 2 linhas (row-span-2) com
             Resumo Geral e Pizza empilhados encostados. Coluna central+direita
             tem Mapa+Top5/Parl na linha 1 e Comparativo na linha 2.
@@ -1683,30 +1670,13 @@ function MunicipiosBeneficiadosCard({
       </div>
 
       {porMunicipio.length === 0 ? (
-        <div
-          className="rounded-xl px-4 py-4 text-[11px] leading-relaxed"
-          style={{
-            background: 'rgba(245,158,11,0.06)',
-            border: '1px solid rgba(245,158,11,0.20)',
-          }}
-        >
-          <p className="text-amber-200 font-semibold mb-2 flex items-center gap-1.5">
-            <span className="text-sm">ℹ️</span>
-            Nenhum município identificado em {ano}
-          </p>
-          <p className="text-slate-300 mb-2">
-            Todas as emendas deste parlamentar em {ano} foram cadastradas a{' '}
-            <span className="text-white font-semibold">nível UF</span> — modalidade conhecida
-            como <span className="text-white font-semibold">Pix Parlamentar</span>{' '}
-            (Transferência Especial, EC 105/2019).
-          </p>
-          <p className="text-slate-400 italic">
-            Nessa modalidade o parlamentar destina o valor ao estado inteiro;
-            o município destino só é decidido depois, quando o repasse é executado
-            pelo Tesouro Nacional. Esse passo fica em um endpoint separado do
-            Portal da Transparência, que ainda não está integrado ao sistema.
-          </p>
-        </div>
+        <p className="text-xs text-slate-500 text-center py-6">
+          Nenhuma emenda com município identificado em {ano}.
+          <br />
+          <span className="text-slate-600 text-[10px]">
+            (emendas com destino &ldquo;Nacional&rdquo; ou &ldquo;UF&rdquo; não aparecem aqui)
+          </span>
+        </p>
       ) : (
         <>
           <div className="space-y-2">
