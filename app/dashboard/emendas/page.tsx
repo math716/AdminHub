@@ -1683,13 +1683,30 @@ function MunicipiosBeneficiadosCard({
       </div>
 
       {porMunicipio.length === 0 ? (
-        <p className="text-xs text-slate-500 text-center py-6">
-          Nenhuma emenda com município identificado em {ano}.
-          <br />
-          <span className="text-slate-600 text-[10px]">
-            (emendas com destino &ldquo;Nacional&rdquo; ou &ldquo;UF&rdquo; não aparecem aqui)
-          </span>
-        </p>
+        <div
+          className="rounded-xl px-4 py-4 text-[11px] leading-relaxed"
+          style={{
+            background: 'rgba(245,158,11,0.06)',
+            border: '1px solid rgba(245,158,11,0.20)',
+          }}
+        >
+          <p className="text-amber-200 font-semibold mb-2 flex items-center gap-1.5">
+            <span className="text-sm">ℹ️</span>
+            Nenhum município identificado em {ano}
+          </p>
+          <p className="text-slate-300 mb-2">
+            Todas as emendas deste parlamentar em {ano} foram cadastradas a{' '}
+            <span className="text-white font-semibold">nível UF</span> — modalidade conhecida
+            como <span className="text-white font-semibold">Pix Parlamentar</span>{' '}
+            (Transferência Especial, EC 105/2019).
+          </p>
+          <p className="text-slate-400 italic">
+            Nessa modalidade o parlamentar destina o valor ao estado inteiro;
+            o município destino só é decidido depois, quando o repasse é executado
+            pelo Tesouro Nacional. Esse passo fica em um endpoint separado do
+            Portal da Transparência, que ainda não está integrado ao sistema.
+          </p>
+        </div>
       ) : (
         <>
           <div className="space-y-2">
