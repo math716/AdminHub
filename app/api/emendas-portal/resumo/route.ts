@@ -119,9 +119,12 @@ async function resumoDoBanco(uf: string, ano: number) {
     .map(([area, total]) => ({ area, total }))
     .sort((a, b) => b.total - a.total);
 
+  // Retorna TODOS os parlamentares que tiveram emendas no estado no ano.
+  // A UI usa essa lista pra (1) autocompletar a busca por nome — se
+  // limitarmos aqui, parlamentares de "cauda longa" ficam invisíveis na
+  // pesquisa. O TOP 5 e similares são fatiados na própria UI.
   const parlamentares = Array.from(porParlamentar.values())
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 50);
+    .sort((a, b) => b.total - a.total);
 
   return NextResponse.json({
     uf,
@@ -198,7 +201,7 @@ async function resumoDoPortal(uf: string, ano: number) {
     topMunicipios:    Array.from(porMunicipio.values()).sort((a, b) => b.total - a.total).slice(0, 5),
     valorPorMunicipio: Object.fromEntries(Array.from(porMunicipio.values()).map((v) => [v.codigoIbge, v.total])),
     areas:            Array.from(porArea.entries()).map(([area, total]) => ({ area, total })).sort((a, b) => b.total - a.total),
-    parlamentares:    Array.from(porParlamentar.values()).sort((a, b) => b.total - a.total).slice(0, 50),
+    parlamentares:    Array.from(porParlamentar.values()).sort((a, b) => b.total - a.total),
     mock: PORTAL_MOCK_MODE,
     fonte: 'portal' as const,
   });
