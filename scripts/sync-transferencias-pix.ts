@@ -60,6 +60,7 @@ function flag(name: string): boolean {
 
 const DISCOVER       = flag('discover');
 const INSPECT_EMENDA = arg('inspect-emenda');
+const INSPECT_AUTO   = flag('inspect-auto');
 // Default ano = 2024: o Portal costuma demorar a sincronizar o ano corrente,
 // 2024 é o último com dados completos.
 const ANO       = parseInt(arg('ano', '2024')!, 10);
@@ -520,10 +521,64 @@ async function modoInspectEmenda(codigoEmenda: string) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// Modo --inspect-auto
+// Pega uma emenda do tipo Pix do banco automaticamente e inspeciona.
+// Preferência por uma emenda de Eduardo Bolsonaro / similar — Pix de UF
+// inteiro é o caso que motivou essa investigação.
+// ─────────────────────────────────────────────────────────────────────────
+async function modoInspectAuto() {
+  console.log(`\n🔍 INSPECT AUTO — buscando uma emenda Pix no banco…\n`);
+
+  // Preferência: Eduardo Bolsonaro, depois qualquer Transferência Especial
+  let emenda = await prisma.emendaParlamentar.findFirst({
+    where: {
+      ano: ANO,
+      parlamentar: { nome: { contains: 'EDUARDO BOLSONARO', mode: 'insensitive' } },
+    },
+    orderBy: { valorEmpenhado: 'desc' },
+    select: { idPortal: true, ano: true, tipo: true, objeto: true, valorEmpenhado: true, parlamentar: { select: { nome: true } } },
+  });
+
+  if (!emenda) {
+    // Fallback: qualquer emenda do tipo "Transferência Especial"
+    emenda = await prisma.emendaParlamentar.findFirst({
+      where: { ano: ANO, tipo: { contains: 'Especial', mode: 'insensitive' } },
+      orderBy: { valorEmpenhado: 'desc' },
+      select: { idPortal: true, ano: true, tipo: true, objeto: true, valorEmpenhado: true, parlamentar: { select: { nome: true } } },
+    });
+  }
+
+  if (!emenda) {
+    // Último fallback: qualquer emenda do ano
+    emenda = await prisma.emendaParlamentar.findFirst({
+      where: { ano: ANO },
+      orderBy: { valorEmpenhado: 'desc' },
+      select: { idPortal: true, ano: true, tipo: true, objeto: true, valorEmpenhado: true, parlamentar: { select: { nome: true } } },
+    });
+  }
+
+  if (!emenda) {
+    console.log(`❌ Nenhuma emenda encontrada no banco pro ano ${ANO}.`);
+    return;
+  }
+
+  console.log(`   Emenda escolhida:`);
+  console.log(`     idPortal: ${emenda.idPortal}`);
+  console.log(`     autor:    ${emenda.parlamentar?.nome ?? '—'}`);
+  console.log(`     tipo:     ${emenda.tipo}`);
+  console.log(`     objeto:   ${emenda.objeto}`);
+  console.log(`     valor:    R$ ${emenda.valorEmpenhado.toLocaleString('pt-BR')}\n`);
+
+  await modoInspectEmenda(emenda.idPortal);
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // Main
 // ─────────────────────────────────────────────────────────────────────────
 async function main() {
-  if (INSPECT_EMENDA) {
+  if (INSPECT_AUTO) {
+    await modoInspectAuto();
+  } else if (INSPECT_EMENDA) {
     await modoInspectEmenda(INSPECT_EMENDA);
   } else if (DISCOVER) {
     await modoDescoberta();
