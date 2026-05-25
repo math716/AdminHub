@@ -58,11 +58,17 @@ function flag(name: string): boolean {
   return process.argv.includes(`--${name}`);
 }
 
-const DISCOVER  = flag('discover');
-const ANO       = parseInt(arg('ano', String(new Date().getFullYear() - 1))!, 10);
+const DISCOVER       = flag('discover');
+const INSPECT_EMENDA = arg('inspect-emenda');
+// Default ano = 2024: o Portal costuma demorar a sincronizar o ano corrente,
+// 2024 é o último com dados completos.
+const ANO       = parseInt(arg('ano', '2024')!, 10);
 const FROM_PAGE = parseInt(arg('from-pagina', '1')!, 10);
 const MAX_PAGES = parseInt(arg('max-paginas', '5000')!, 10);
 const DELAY_MS  = parseInt(arg('delay-ms', '700')!, 10);
+
+// User-Agent decente — alguns gateways bloqueiam o default do Node ("node-fetch")
+const USER_AGENT = 'AdminHub-Sync/1.0 (+https://github.com/math716/AdminHub)';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -81,17 +87,31 @@ interface EndpointCandidate {
 
 function buildCandidates(ano: number): EndpointCandidate[] {
   return [
-    // Tentativas em ordem do mais específico pro mais genérico.
+    // /transferencias — formato com mês/ano completo
     {
       path:   '/api-de-dados/transferencias',
       params: { mesAnoInicio: `01/${ano}`, mesAnoFim: `12/${ano}`, pagina: 1 },
-      desc:   'Transferências (intervalo MM/YYYY)',
+      desc:   'Transferências (intervalo MM/YYYY anual)',
     },
+    // /transferencias — só um mês (alguns endpoints limitam range)
     {
       path:   '/api-de-dados/transferencias',
-      params: { ano: ano, pagina: 1 },
-      desc:   'Transferências (ano simples)',
+      params: { mesAnoInicio: `01/${ano}`, mesAnoFim: `01/${ano}`, pagina: 1 },
+      desc:   'Transferências (1 mês — jan)',
     },
+    // /transferencias — formato data ISO
+    {
+      path:   '/api-de-dados/transferencias',
+      params: { dataInicio: `01/01/${ano}`, dataFim: `31/12/${ano}`, pagina: 1 },
+      desc:   'Transferências (dataInicio/dataFim DD/MM/YYYY)',
+    },
+    // Variante: especifica codigoIbge (a API às vezes exige filtro espacial)
+    {
+      path:   '/api-de-dados/transferencias',
+      params: { mesAnoInicio: `01/${ano}`, mesAnoFim: `12/${ano}`, codigoIbge: '3550308', pagina: 1 },
+      desc:   'Transferências (filtrado por SP capital — testa se exige codigoIbge)',
+    },
+    // Paths alternativos
     {
       path:   '/api-de-dados/transferencias-especiais-do-cidadao',
       params: { ano: ano, pagina: 1 },
@@ -107,6 +127,17 @@ function buildCandidates(ano: number): EndpointCandidate[] {
       params: { ano: ano, pagina: 1 },
       desc:   'Emendas Orçamentárias (alternativa)',
     },
+    // Pix Parlamentar pode estar em paths mais novos
+    {
+      path:   '/api-de-dados/pagamentos-transferencias-especiais',
+      params: { mesAnoInicio: `01/${ano}`, mesAnoFim: `12/${ano}`, pagina: 1 },
+      desc:   'Pagamentos de Transferências Especiais',
+    },
+    {
+      path:   '/api-de-dados/transferencia-aberta',
+      params: { mesAnoInicio: `01/${ano}`, mesAnoFim: `12/${ano}`, pagina: 1 },
+      desc:   'Transferência Aberta',
+    },
   ];
 }
 
@@ -119,7 +150,11 @@ async function portalFetchRaw(path: string, params: Record<string, string | numb
     if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
   });
   const res = await fetch(url.toString(), {
-    headers: { 'chave-api-dados': API_KEY!, accept: 'application/json' },
+    headers: {
+      'chave-api-dados': API_KEY!,
+      'accept':          'application/json',
+      'user-agent':      USER_AGENT,
+    },
   });
   const text = await res.text();
   let json: any = null;
@@ -451,10 +486,46 @@ async function syncEfetivo() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// Modo --inspect-emenda <codigoEmenda>
+// Busca uma emenda específica e mostra TODOS os campos. Útil pra ver se o
+// destino do Pix está embutido na resposta de /emendas (não precisaria de
+// endpoint separado).
+// ─────────────────────────────────────────────────────────────────────────
+async function modoInspectEmenda(codigoEmenda: string) {
+  console.log(`\n🔍 INSPECT EMENDA — codigo=${codigoEmenda}\n`);
+
+  // Endpoint de detalhe individual da emenda
+  const r = await portalFetchRaw(`/api-de-dados/emendas/${codigoEmenda}`, {});
+  console.log(`/api-de-dados/emendas/${codigoEmenda}`);
+  console.log(`   URL:    ${r.finalUrl}`);
+  console.log(`   Status: ${r.status}`);
+  if (r.ok && r.body) {
+    console.log(`\n📋 ESTRUTURA COMPLETA:`);
+    console.log(JSON.stringify(r.body, null, 2));
+  } else {
+    console.log(`   Body:   ${r.raw.slice(0, 400)}`);
+  }
+
+  // Também tenta o detalhe via /emendas?codigoEmenda=...
+  console.log(`\n/api-de-dados/emendas?codigoEmenda=${codigoEmenda}`);
+  const r2 = await portalFetchRaw('/api-de-dados/emendas', { codigoEmenda, pagina: 1 });
+  console.log(`   URL:    ${r2.finalUrl}`);
+  console.log(`   Status: ${r2.status}`);
+  if (r2.ok && Array.isArray(r2.body) && r2.body.length > 0) {
+    console.log(`\n📋 ESTRUTURA DO 1º REGISTRO:`);
+    console.log(JSON.stringify(r2.body[0], null, 2));
+  }
+
+  console.log('\n');
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // Main
 // ─────────────────────────────────────────────────────────────────────────
 async function main() {
-  if (DISCOVER) {
+  if (INSPECT_EMENDA) {
+    await modoInspectEmenda(INSPECT_EMENDA);
+  } else if (DISCOVER) {
     await modoDescoberta();
   } else {
     await syncEfetivo();
