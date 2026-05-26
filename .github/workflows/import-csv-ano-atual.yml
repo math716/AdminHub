@@ -61,7 +61,7 @@ jobs:
         run: |
           ANO="${{ github.event.inputs.ano || '2026' }}"
           BATCH="${{ github.event.inputs.batch || '200' }}"
-          npx tsx scripts/import-portal-csv.ts \
+          npx tsx scripts/import-portal-csv.mts \
             --file "data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip" \
             --batch $BATCH
 

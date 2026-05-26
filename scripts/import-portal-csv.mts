@@ -14,7 +14,7 @@
  * um ZIP. Lemos via stream pra não carregar 400MB em memória.
  *
  * Uso:
- *   npx tsx --require dotenv/config scripts/import-portal-csv.ts \
+ *   npx tsx scripts/import-portal-csv.mts \
  *     --file data/portal-csv-imports/2025_EmendasParlamentaresPorDocumento.zip \
  *     [--batch 500] [--limit 0]
  *
@@ -477,7 +477,7 @@ async function main() {
     writeFileSync(errFile, [...codigosComErro].join('\n'));
     console.log(`\n   ⚠️  ${codigosComErro.size} códigos com erro salvos em: ${errFile}`);
     console.log(`   Para reimportar só esses:`);
-    console.log(`   npx tsx --require dotenv/config scripts/import-portal-csv.ts --file <zip> --retry-file ${errFile}`);
+    console.log(`   npx tsx scripts/import-portal-csv.mts --file <zip> --retry-file ${errFile}`);
   }
 }
 

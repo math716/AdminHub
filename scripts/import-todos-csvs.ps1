@@ -19,8 +19,8 @@ foreach ($Ano in $Anos) {
     Write-Host "========================================" -ForegroundColor Cyan
 
     $cmdArgs = @(
-        "tsx", "--require", "dotenv/config",
-        "scripts/import-portal-csv.ts",
+        "tsx",
+        "scripts/import-portal-csv.mts",
         "--file", $Arquivo.FullName,
         "--batch", $Batch
     )
