@@ -26,7 +26,7 @@
  * Tempo estimado: 30-60min por arquivo (387k linhas em 2025).
  */
 
-import { createReadStream } from 'node:fs';
+import { createReadStream, readFileSync, writeFileSync } from 'node:fs';
 import * as unzipper from 'unzipper';
 import { parse } from 'csv-parse';
 import { PrismaClient } from '@prisma/client';
@@ -98,7 +98,7 @@ if (!FILE) {
 // Carrega códigos de emenda do retry-file (um código por linha)
 const retryCodigos = RETRY_FILE
   ? new Set(
-      (await import('node:fs')).readFileSync(RETRY_FILE, 'utf-8')
+      readFileSync(RETRY_FILE, 'utf-8')
         .split('\n').map((l) => l.trim()).filter(Boolean),
     )
   : null;
@@ -472,7 +472,6 @@ async function main() {
 
   // Salva códigos com erro para retry futuro
   if (codigosComErro.size > 0) {
-    const { writeFileSync } = await import('node:fs');
     const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const errFile = `import-errors-${ts}.txt`;
     writeFileSync(errFile, [...codigosComErro].join('\n'));
