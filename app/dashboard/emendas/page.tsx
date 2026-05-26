@@ -674,6 +674,14 @@ export default function EmendasPage() {
             municipio={selectedMunicipio}
             municipioStats={municipioStats}
             resumo={resumo}
+            parlamentar={selectedParlamentar}
+            parlamentarTotal={parlamentarTotalAno}
+            parlamentarTotalPago={parlamentarTotalPago}
+            parlamentarMunicipioTotal={
+              selectedMunicipio && selectedParlamentar
+                ? (parlamentarValorPorMunicipio[selectedMunicipio.codigo] ?? 0)
+                : null
+            }
           />
           <div className="flex-1 min-h-0">
             <EmendasPorAreaCard
@@ -902,6 +910,10 @@ function ResumoGeralCard({
   municipio,
   municipioStats,
   resumo,
+  parlamentar,
+  parlamentarTotal,
+  parlamentarTotalPago,
+  parlamentarMunicipioTotal,
 }: {
   view: 'brasil' | 'estado';
   ano: number;
@@ -909,19 +921,47 @@ function ResumoGeralCard({
   municipio: { codigo: string; nome: string } | null;
   municipioStats: MunicipioStats | null;
   resumo: ResumoEstado | null;
+  parlamentar: PortalParlamentar | null;
+  parlamentarTotal: number;
+  parlamentarTotalPago: number;
+  parlamentarMunicipioTotal: number | null;
 }) {
-  // Quando há município selecionado: mostra só o que foi destinado a ele.
-  // Quando NÃO há município (visão do estado): mostra o total municipalizado
-  // (que bate com a soma dos top municípios). O total estadual entra como
-  // sublinha pra deixar claro que ainda há "verba sem destino municipal".
-  const total = municipio
-    ? (resumo?.valorPorMunicipio?.[municipio.codigo] ?? 0)
-    : (resumo?.totalMunicipalizado ?? 0);
-  const totalEstadual = !municipio ? (resumo?.totalEstadual ?? 0) : 0;
-  const tetoMac = municipio ? municipioStats?.tetoMac ?? null : null;
-  const tetoPap = municipio ? municipioStats?.tetoPap ?? null : null;
+  const tetoMac   = municipio ? municipioStats?.tetoMac   ?? null : null;
+  const tetoPap   = municipio ? municipioStats?.tetoPap   ?? null : null;
   const habitantes = municipio ? municipioStats?.habitantes ?? null : null;
   const eleitores  = municipio ? municipioStats?.eleitores  ?? null : null;
+
+  // ── Lógica do card "Total de Emendas" ──────────────────────────────────
+  // Prioridade: ambos → só parlamentar → só município → estado inteiro
+  const hasBoth = !!(parlamentar && municipio);
+  const hasParl = !!parlamentar && !municipio;
+  const hasMun  = !!municipio   && !parlamentar;
+
+  const totalLabel = hasBoth
+    ? `${parlamentar!.nome.split(' ')[0]} em ${municipio!.nome}`
+    : hasParl
+    ? 'Total do Parlamentar'
+    : hasMun
+    ? 'Total de Emendas'
+    : 'Total Municipalizado';
+
+  const totalValue = hasBoth
+    ? (parlamentarMunicipioTotal ?? 0)
+    : hasParl
+    ? parlamentarTotal
+    : hasMun
+    ? (resumo?.valorPorMunicipio?.[municipio!.codigo] ?? 0)
+    : (resumo?.totalMunicipalizado ?? 0);
+
+  const totalSub = hasBoth
+    ? `de ${parlamentarTotal > 0 ? formatBRLCompact(parlamentarTotal) : '—'} total do parlamentar no estado`
+    : hasParl
+    ? `${formatBRLCompact(parlamentarTotalPago)} pago · em ${ano}`
+    : hasMun
+    ? `em ${ano}`
+    : (resumo?.totalEstadual ?? 0) > 0
+    ? `${formatBRLCompact(resumo!.totalEstadual)} adicional sem município`
+    : `em ${ano}`;
 
   return (
     <div
@@ -960,13 +1000,9 @@ function ResumoGeralCard({
           icon={<Landmark className="w-4 h-4" />}
           iconBg="rgba(16,185,129,0.15)"
           iconColor="#10b981"
-          label={municipio ? 'Total de Emendas' : 'Total Municipalizado'}
-          value={formatBRL(total)}
-          sub={
-            !municipio && totalEstadual > 0
-              ? `${formatBRLCompact(totalEstadual)} adicional sem município`
-              : `em ${ano}`
-          }
+          label={totalLabel}
+          value={formatBRL(totalValue)}
+          sub={totalSub}
         />
         <ResumoStat
           icon={<Building2 className="w-4 h-4" />}
