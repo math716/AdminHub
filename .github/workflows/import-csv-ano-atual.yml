@@ -1,15 +1,5 @@
-name: Import CSV — ano atual (dados em tempo real)
+name: Import CSV - ano atual
 
-# Roda toda segunda-feira às 05:00 UTC (02:00 BRT) para manter o ano atual atualizado.
-# Também pode ser disparado manualmente — útil pra anos específicos.
-#
-# Por que CSV e não API?
-#   A API do Portal da Transparência tem lag de ~1-2 anos.
-#   O download CSV da interface web é atualizado quase em tempo real.
-#
-# Secrets necessários no GitHub (Settings → Secrets → Actions):
-#   DATABASE_URL  → Transaction Pooler do Supabase (porta 6543)
-#                   ex: postgresql://postgres.xxx:senha@aws-1-sa-east-1.pooler.supabase.com:6543/postgres
 on:
   schedule:
     - cron: '0 5 * * 1'
@@ -26,13 +16,9 @@ on:
         default: '200'
         type: string
 
-env:
-  ANO: ${{ inputs.ano || '2026' }}
-  BATCH: ${{ inputs.batch || '200' }}
-
 jobs:
   import-csv:
-    name: Import CSV ${{ inputs.ano || '2026' }}
+    name: Import CSV
     runs-on: ubuntu-latest
     timeout-minutes: 180
 
@@ -46,44 +32,45 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Instalar dependências
+      - name: Instalar dependencias
         run: npm ci
 
       - name: Gerar Prisma Client
         run: npx prisma generate
 
-      - name: Criar diretório de dados
+      - name: Criar diretorio de dados
         run: mkdir -p data/portal-csv-imports
 
-      - name: Baixar CSV do Portal da Transparência
+      - name: Baixar CSV do Portal da Transparencia
         run: |
-          echo "Baixando emendas de ${{ env.ANO }}..."
+          ANO="${{ github.event.inputs.ano || '2026' }}"
+          echo "Baixando emendas de $ANO..."
           curl -L \
             --retry 5 \
             --retry-delay 15 \
             --retry-all-errors \
             --max-time 1800 \
-            -A "Mozilla/5.0 (compatible; AdminHub-bot/1.0)" \
-            "https://portaldatransparencia.gov.br/download-de-dados/emendas-parlamentares-documentos/${{ env.ANO }}" \
-            -o "data/portal-csv-imports/${{ env.ANO }}_EmendasParlamentaresPorDocumento.zip"
-
+            "https://portaldatransparencia.gov.br/download-de-dados/emendas-parlamentares-documentos/$ANO" \
+            -o "data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip"
           echo "Arquivo baixado:"
-          ls -lh "data/portal-csv-imports/${{ env.ANO }}_EmendasParlamentaresPorDocumento.zip"
+          ls -lh "data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip"
 
       - name: Importar dados no banco
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
+          ANO="${{ github.event.inputs.ano || '2026' }}"
+          BATCH="${{ github.event.inputs.batch || '200' }}"
           npx tsx scripts/import-portal-csv.ts \
-            --file "data/portal-csv-imports/${{ env.ANO }}_EmendasParlamentaresPorDocumento.zip" \
-            --batch ${{ env.BATCH }}
+            --file "data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip" \
+            --batch $BATCH
 
       - name: Reclassificar senadores
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx tsx scripts/sync-senadores.ts
 
-      - name: Reclassificar áreas (OUTROS → categoria correta)
+      - name: Reclassificar areas
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx tsx scripts/reclassificar-areas.ts
@@ -91,7 +78,7 @@ jobs:
       - name: Resumo
         if: always()
         run: |
-          echo "## Import CSV concluído" >> $GITHUB_STEP_SUMMARY
-          echo "- **Ano:** ${{ env.ANO }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Batch:** ${{ env.BATCH }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Horário:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          ANO="${{ github.event.inputs.ano || '2026' }}"
+          echo "## Import CSV concluido" >> $GITHUB_STEP_SUMMARY
+          echo "- **Ano:** $ANO" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horario:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
