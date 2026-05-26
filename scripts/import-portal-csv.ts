@@ -84,14 +84,24 @@ function arg(name: string, def?: string): string | undefined {
   return def;
 }
 
-const FILE = arg('file');
-const BATCH = parseInt(arg('batch', '500')!, 10);
-const LIMIT = parseInt(arg('limit', '0')!, 10);
+const FILE        = arg('file');
+const BATCH       = parseInt(arg('batch', '500')!, 10);
+const LIMIT       = parseInt(arg('limit', '0')!, 10);
+const SKIP        = parseInt(arg('skip', '0')!, 10);   // pula as primeiras N linhas
+const RETRY_FILE  = arg('retry-file');                  // reimporta só os códigos do arquivo
 
 if (!FILE) {
   console.error('❌ --file é obrigatório');
   process.exit(1);
 }
+
+// Carrega códigos de emenda do retry-file (um código por linha)
+const retryCodigos = RETRY_FILE
+  ? new Set(
+      (await import('node:fs')).readFileSync(RETRY_FILE, 'utf-8')
+        .split('\n').map((l) => l.trim()).filter(Boolean),
+    )
+  : null;
 
 // ─────────────────────────────────────────────────────────────────────────
 // Mapeamento de colunas (cabeçalho do CSV em português)
@@ -370,6 +380,7 @@ async function main() {
   let pulados = 0;
   let erros = 0;
   let buffer: Record<string, string>[] = [];
+  const codigosComErro = new Set<string>(); // acumula para salvar no final
 
   const flushBatch = async (batch: Record<string, string>[]) => {
     const results = await Promise.allSettled(
@@ -377,6 +388,8 @@ async function main() {
         const codigoEmenda = naIfEmpty(row[COL.codigoEmenda]);
         // Linhas sem código (rodapés, totalizadores, linhas em branco do CSV)
         if (!codigoEmenda) return 'skip';
+        // --retry-file: processa só os códigos que falharam antes
+        if (retryCodigos && !retryCodigos.has(codigoEmenda)) return 'skip';
 
         const nomeAutor = naIfEmpty(row[COL.nomeAutor]) ?? '—';
         const tipoEmenda = naIfEmpty(row[COL.tipoEmenda]);
@@ -406,9 +419,12 @@ async function main() {
       }),
     );
 
-    for (const r of results) {
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
       if (r.status === 'rejected') {
         erros++;
+        const codigo = naIfEmpty(batch[i][COL.codigoEmenda]);
+        if (codigo) codigosComErro.add(codigo);
         if (erros <= 10) {
           console.error(`\n   [erro #${erros}] ${(r.reason as any)?.message ?? r.reason}`);
         }
@@ -420,7 +436,10 @@ async function main() {
     }
   };
 
+  let linhaBruta = 0; // contador antes do SKIP, para exibição correta
   for await (const row of parser) {
+    linhaBruta++;
+    if (SKIP && linhaBruta <= SKIP) continue; // pula as primeiras N linhas
     if (LIMIT && total >= LIMIT) break;
     buffer.push(row as Record<string, string>);
     total++;
@@ -441,6 +460,8 @@ async function main() {
 
   const totalMin = ((Date.now() - inicio) / 60_000).toFixed(1);
   console.log(`\n\n✅ Import concluído!`);
+  if (SKIP) console.log(`   (puladas as primeiras ${SKIP} linhas via --skip)`);
+  if (retryCodigos) console.log(`   (modo retry: ${retryCodigos.size} códigos no arquivo)`);
   console.log(`   ${total} linhas lidas`);
   console.log(`   ${docsOk} documentos processados`);
   console.log(`   ${pulados} linhas puladas (sem código de emenda — rodapés do CSV)`);
@@ -448,6 +469,17 @@ async function main() {
   console.log(`   ${parlamentarPorNome.size} parlamentares no cache`);
   console.log(`   ${emendaPorCodigo.size} emendas no cache`);
   console.log(`   ${totalMin}min de execução`);
+
+  // Salva códigos com erro para retry futuro
+  if (codigosComErro.size > 0) {
+    const { writeFileSync } = await import('node:fs');
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const errFile = `import-errors-${ts}.txt`;
+    writeFileSync(errFile, [...codigosComErro].join('\n'));
+    console.log(`\n   ⚠️  ${codigosComErro.size} códigos com erro salvos em: ${errFile}`);
+    console.log(`   Para reimportar só esses:`);
+    console.log(`   npx tsx --require dotenv/config scripts/import-portal-csv.ts --file <zip> --retry-file ${errFile}`);
+  }
 }
 
 main()
