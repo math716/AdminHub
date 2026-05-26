@@ -5,7 +5,9 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "import:estados": "tsx --require dotenv/config scripts/estados/import-estados.ts",
+    "import:estados:dry": "tsx --require dotenv/config scripts/estados/import-estados.ts --dry-run"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config scripts/safe-seed.ts"
