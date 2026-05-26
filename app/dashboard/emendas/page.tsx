@@ -533,6 +533,27 @@ export default function EmendasPage() {
     return m;
   }, [parlamentarHistorico, ano]);
 
+  // Interseção: emendas do parlamentar filtradas pelo município selecionado
+  const parlamentarMunicipioEmendas = useMemo(() => {
+    if (!selectedParlamentar || !selectedMunicipio) return [];
+    return parlamentarEmendas.filter((e) => e.codigoIbge === selectedMunicipio.codigo);
+  }, [selectedParlamentar, selectedMunicipio, parlamentarEmendas]);
+
+  const parlamentarMunicipioAreasAtual = useMemo<{ area: EmendaArea; total: number }[]>(() => {
+    const m = new Map<EmendaArea, number>();
+    parlamentarMunicipioEmendas.forEach((e) => m.set(e.area, (m.get(e.area) ?? 0) + e.valorEmpenhado));
+    return Array.from(m.entries()).map(([area, total]) => ({ area, total }));
+  }, [parlamentarMunicipioEmendas]);
+
+  const parlamentarMunicipioAreasAnterior = useMemo<Map<string, number>>(() => {
+    if (!selectedMunicipio) return new Map();
+    const m = new Map<string, number>();
+    parlamentarHistorico
+      .filter((e) => e.ano === ano - 1 && e.codigoIbge === selectedMunicipio.codigo)
+      .forEach((e) => m.set(e.area, (m.get(e.area) ?? 0) + e.valorEmpenhado));
+    return m;
+  }, [parlamentarHistorico, ano, selectedMunicipio]);
+
   const comparativoAreasAnterior = useMemo(() => {
     if (!resumoAnterior) return new Map<string, number>();
     const m = new Map<string, number>();
@@ -687,7 +708,14 @@ export default function EmendasPage() {
             <EmendasPorAreaCard
               view={view}
               municipio={selectedMunicipio}
-              municipioEmendas={municipioEmendas}
+              parlamentar={selectedParlamentar}
+              emendas={
+                selectedParlamentar && selectedMunicipio
+                  ? parlamentarMunicipioEmendas
+                  : selectedParlamentar
+                  ? parlamentarEmendas
+                  : municipioEmendas
+              }
               resumo={resumo}
             />
           </div>
@@ -848,21 +876,27 @@ export default function EmendasPage() {
             <ComparativoAreasCard
               ano={ano}
               escopo={
-                selectedParlamentar
+                selectedParlamentar && selectedMunicipio
+                  ? `${selectedParlamentar.nome.split(' ')[0]} em ${selectedMunicipio.nome}`
+                  : selectedParlamentar
                   ? selectedParlamentar.nome
                   : selectedMunicipio
                   ? `município de ${selectedMunicipio.nome}`
                   : `estado de ${selectedStateName}`
               }
               areasAtual={
-                selectedParlamentar
+                selectedParlamentar && selectedMunicipio
+                  ? parlamentarMunicipioAreasAtual
+                  : selectedParlamentar
                   ? parlamentarAreasAtual
                   : selectedMunicipio && municipioAreasAtual
                   ? municipioAreasAtual
                   : resumo.areas
               }
               areasAnterior={
-                selectedParlamentar
+                selectedParlamentar && selectedMunicipio
+                  ? parlamentarMunicipioAreasAnterior
+                  : selectedParlamentar
                   ? parlamentarAreasAnterior
                   : selectedMunicipio
                   ? municipioAreasAnterior
@@ -1060,25 +1094,26 @@ function ResumoStat({
 function EmendasPorAreaCard({
   view,
   municipio,
-  municipioEmendas,
+  parlamentar,
+  emendas,
   resumo,
 }: {
   view: 'brasil' | 'estado';
   municipio: { codigo: string; nome: string } | null;
-  municipioEmendas: PortalEmenda[];
+  parlamentar: PortalParlamentar | null;
+  emendas: PortalEmenda[];
   resumo: ResumoEstado | null;
 }) {
-  // Se tem município selecionado, usa as emendas dele. Senão, usa o resumo do estado.
   const areas = useMemo(() => {
-    if (municipio) {
+    if (municipio || parlamentar) {
       const m = new Map<EmendaArea, number>();
-      municipioEmendas.forEach((e) => m.set(e.area, (m.get(e.area) ?? 0) + e.valorEmpenhado));
+      emendas.forEach((e) => m.set(e.area, (m.get(e.area) ?? 0) + e.valorEmpenhado));
       return Array.from(m.entries())
         .map(([area, total]) => ({ area, total }))
         .sort((a, b) => b.total - a.total);
     }
     return resumo?.areas ?? [];
-  }, [municipio, municipioEmendas, resumo]);
+  }, [municipio, parlamentar, emendas, resumo]);
 
   const data = useMemo(
     () =>
