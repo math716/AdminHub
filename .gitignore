@@ -49,3 +49,6 @@ prisma/migrations/dev.db
 
 # Claude Code (agent local state)
 .claude/
+
+.vercel
+.env*

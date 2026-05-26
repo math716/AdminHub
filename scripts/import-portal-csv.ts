@@ -32,12 +32,11 @@ import { parse } from 'csv-parse';
 import { PrismaClient } from '@prisma/client';
 import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
 
-// Prefere DIRECT_URL (conexão direta, sem PgBouncer).
-// Se só tiver DATABASE_URL (passa pelo PgBouncer do Supabase), adiciona
-// pgbouncer=true para que o Prisma não use prepared statements — evita
-// FK violations esporádicas em transaction mode.
+// Para imports em lote usa sempre o Transaction Pooler (porta 6543) com
+// pgbouncer=true — multiplexia muitas conexões sobre poucas conexões reais,
+// evitando "Can't reach database server" por esgotamento do Session Pooler.
+// DIRECT_URL (Session Pooler / porta 5432) é adequada só para migrations.
 const dbUrl = (() => {
-  if (process.env.DIRECT_URL) return process.env.DIRECT_URL;
   const raw = process.env.DATABASE_URL ?? '';
   return raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true';
 })();
