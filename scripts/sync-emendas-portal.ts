@@ -30,8 +30,12 @@ import {
   type ParlamentarCargo,
 } from '../lib/portal-transparencia';
 
-// Força DIRECT_URL (Session Pooler) — Transaction Pooler dá erro de prepared statement
-const dbUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+// Usa Transaction Pooler (porta 6543) com pgbouncer=true — evita esgotamento
+// de conexões do Session Pooler durante syncs longos de várias horas.
+const dbUrl = (() => {
+  const raw = process.env.DATABASE_URL ?? '';
+  return raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true';
+})();
 const prisma = new PrismaClient({
   datasources: { db: { url: dbUrl } },
 });

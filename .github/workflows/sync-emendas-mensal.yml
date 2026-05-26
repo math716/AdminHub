@@ -1,29 +1,30 @@
-name: Sync mensal — emendas do Portal da Transparência
+name: Sync mensal — emendas via API (anos anteriores)
 
-# Roda automaticamente todo dia 1º do mês às 03:00 UTC (= 00:00 horário de Brasília)
-# E permite trigger manual via "Run workflow" no GitHub.
+# Roda todo dia 1º do mês às 03:00 UTC (= 00:00 horário de Brasília).
+# Sincroniza via API do Portal da Transparência — idempotente, seguro re-executar.
+# IMPORTANTE: a API tem lag de ~1-2 anos. Use o workflow "import-csv-ano-atual"
+# para importar dados do ano corrente (2025/2026).
 on:
   schedule:
     - cron: '0 3 1 * *'
   workflow_dispatch:
     inputs:
       ano:
-        description: 'Ano específico pra sincronizar (deixe vazio = ano atual + anterior)'
+        description: 'Ano específico (vazio = ano anterior + retrasado)'
         required: false
         type: string
 
 jobs:
   sync:
-    name: Sync emendas Portal → Supabase
+    name: Sync API Portal → Supabase
     runs-on: ubuntu-latest
-    # Sync pode demorar até 2h pros 2 anos. GitHub Actions permite até 6h.
     timeout-minutes: 180
 
     steps:
-      - name: Checkout do código
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -42,36 +43,35 @@ jobs:
             echo "anos=${{ inputs.ano }}" >> $GITHUB_OUTPUT
           else
             ANO_ATUAL=$(date +%Y)
-            ANO_ANTERIOR=$((ANO_ATUAL - 1))
-            echo "anos=$ANO_ANTERIOR $ANO_ATUAL" >> $GITHUB_OUTPUT
+            # API tem lag — sincroniza os dois anos anteriores ao atual
+            echo "anos=$((ANO_ATUAL - 2)) $((ANO_ATUAL - 1))" >> $GITHUB_OUTPUT
           fi
 
-      - name: Sincronizar emendas
+      - name: Sincronizar emendas (API)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
           PORTAL_TRANSPARENCIA_API_KEY: ${{ secrets.PORTAL_TRANSPARENCIA_API_KEY }}
         run: |
           for ano in ${{ steps.anos.outputs.anos }}; do
             echo "================================================="
-            echo "Sincronizando ano $ano…"
+            echo "Sincronizando ano $ano via API..."
             echo "================================================="
             npx tsx scripts/sync-emendas-portal.ts --ano $ano
           done
 
-      # Reclassifica senadores como SENADOR — o sync de emendas marca tudo
-      # como DEPUTADO_FEDERAL por default porque o Portal não diferencia.
-      # Este step corrige via API oficial do Senado.
       - name: Reclassificar senadores
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
         run: npx tsx scripts/sync-senadores.ts
+
+      - name: Reclassificar áreas (OUTROS → categoria correta)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx scripts/reclassificar-areas.ts
 
       - name: Resumo
         if: always()
         run: |
-          echo "## Sync concluído" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Anos:** ${{ steps.anos.outputs.anos }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Hora de início:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "## Sync API concluído" >> $GITHUB_STEP_SUMMARY
+          echo "- **Anos sincronizados:** ${{ steps.anos.outputs.anos }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horário:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY

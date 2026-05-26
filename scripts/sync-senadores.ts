@@ -23,7 +23,10 @@
 
 import { PrismaClient } from '@prisma/client';
 
-const dbUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+const dbUrl = (() => {
+  const raw = process.env.DATABASE_URL ?? '';
+  return raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true';
+})();
 const prisma = new PrismaClient({
   datasources: { db: { url: dbUrl } },
 });
