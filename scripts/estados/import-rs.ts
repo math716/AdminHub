@@ -4,21 +4,18 @@
  * Fonte: Secretaria de Planejamento RS — arquivos XLSX por ano
  * Portal: https://planejamento.rs.gov.br/emendas-parlamentares-estaduais
  *
+ * Como baixar o arquivo:
+ *   1. Acesse https://planejamento.rs.gov.br/emendas-parlamentares-estaduais
+ *   2. Baixe o XLSX do ano desejado
+ *   3. Salve em data/estados/rs-{ano}.xlsx
+ *
  * Uso:
- *   npx tsx --require dotenv/config scripts/estados/import-rs.ts --ano 2024
- *   npx tsx --require dotenv/config scripts/estados/import-rs.ts --ano 2024 --dry-run
+ *   npx tsx --require dotenv/config scripts/estados/import-rs.ts --file data/estados/rs-2022.xlsx --ano 2022
+ *   npx tsx --require dotenv/config scripts/estados/import-rs.ts --file data/estados/rs-2022.xlsx --ano 2022 --dry-run
  */
+import { readFileSync } from 'node:fs';
 import * as XLSX from 'xlsx';
 import { buildPrisma, importarEmendas, parseValorBR, type EmendaEstadualRow } from './base-import-estadual';
-
-// URLs por ano — atualizar quando novos arquivos forem publicados
-// Fonte: https://planejamento.rs.gov.br/emendas-parlamentares-estaduais
-const URLS_POR_ANO: Record<number, string> = {
-  2020: 'https://planejamento.rs.gov.br/upload/arquivos/202107/20115932-emendas-parlamentares-estaduais-2020-com-remanejamento-de-10-04-2021.xlsx',
-  2021: 'https://planejamento.rs.gov.br/upload/arquivos/202109/21093325-08173320-emendas-parlamentares-estaduais-2021-com-remanejamento-de-17-09-2021.xlsx',
-  2022: 'https://planejamento.rs.gov.br/upload/arquivos/202507/15164801-27105304-13155514-eps-2022-para-site-spgg-em-14-07-25.xlsx',
-  // Adicionar 2023, 2024, 2025 quando publicados no portal
-};
 
 function arg(name: string, def?: string): string | undefined {
   const idx = process.argv.findIndex((a) => a === `--${name}`);
@@ -26,37 +23,28 @@ function arg(name: string, def?: string): string | undefined {
   return def;
 }
 
+const FILE    = arg('file');
 const ANO     = parseInt(arg('ano', String(new Date().getFullYear() - 1))!, 10);
 const DRY_RUN = process.argv.includes('--dry-run');
 
-async function baixarXlsx(url: string): Promise<Buffer> {
-  console.log(`  Baixando: ${url}`);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status} ao baixar ${url}`);
-  const ab = await res.arrayBuffer();
-  return Buffer.from(ab);
-}
-
 function mapearLinha(row: Record<string, any>, ano: number): EmendaEstadualRow | null {
-  // O RS usa colunas em português — mapeamento baseado no padrão do SPGG
-  // Ajustar nomes de coluna conforme o arquivo real do estado
-  const autor = (row['Autor'] ?? row['Parlamentar'] ?? row['Nome do Parlamentar'] ?? '').toString().trim();
+  const autor = (
+    row['Autor'] ?? row['Parlamentar'] ?? row['Nome do Parlamentar'] ?? row['AUTOR'] ?? ''
+  ).toString().trim();
   if (!autor) return null;
 
-  const numero = (row['Número'] ?? row['Nº Emenda'] ?? row['numero'] ?? '').toString().trim();
-  const funcao = (row['Função'] ?? row['Area'] ?? row['Área'] ?? '').toString().trim();
-  const municipio = (row['Município'] ?? row['Municipio'] ?? row['Beneficiário'] ?? '').toString().trim();
-  const objeto = (row['Objeto'] ?? row['Descrição'] ?? row['Finalidade'] ?? '').toString().trim();
+  const numero   = (row['Número'] ?? row['Nº Emenda'] ?? row['NUMERO'] ?? row['numero'] ?? '').toString().trim();
+  const funcao   = (row['Função'] ?? row['Área'] ?? row['Area'] ?? row['FUNCAO'] ?? '').toString().trim();
+  const municipio = (row['Município'] ?? row['Municipio'] ?? row['Beneficiário'] ?? row['MUNICIPIO'] ?? '').toString().trim();
+  const objeto   = (row['Objeto'] ?? row['Descrição'] ?? row['Finalidade'] ?? row['OBJETO'] ?? '').toString().trim();
+  const partido  = (row['Partido'] ?? row['PARTIDO'] ?? '').toString().trim();
 
-  const valorEmpenhado = parseValorBR(row['Empenhado'] ?? row['Valor Empenhado'] ?? row['Valor Realizado'] ?? 0);
-  const valorPago      = parseValorBR(row['Pago'] ?? row['Valor Pago'] ?? 0);
-  const valorProposto  = parseValorBR(row['Proposto'] ?? row['Valor Proposto'] ?? row['Dotação'] ?? 0);
-
-  // ID único: UF + ano + número da emenda
-  const idPortal = `RS-${ano}-${numero || autor.slice(0, 20)}-${Math.random().toString(36).slice(2, 6)}`;
+  const valorEmpenhado = parseValorBR(row['Empenhado'] ?? row['Valor Empenhado'] ?? row['Valor Realizado'] ?? row['EMPENHADO'] ?? 0);
+  const valorPago      = parseValorBR(row['Pago'] ?? row['Valor Pago'] ?? row['PAGO'] ?? 0);
+  const valorProposto  = parseValorBR(row['Proposto'] ?? row['Valor Proposto'] ?? row['Dotação'] ?? row['DOTACAO'] ?? 0);
 
   return {
-    idPortal: numero ? `RS-${ano}-${numero}` : idPortal,
+    idPortal:       numero ? `RS-${ano}-${numero}` : `RS-${ano}-${autor.slice(0, 20)}-${objeto.slice(0, 10)}`,
     ano,
     numero:         numero || undefined,
     funcao:         funcao || undefined,
@@ -68,33 +56,41 @@ function mapearLinha(row: Record<string, any>, ano: number): EmendaEstadualRow |
     municipioNome:  municipio || undefined,
     autorNome:      autor,
     autorCargo:     'DEPUTADO_ESTADUAL',
+    autorPartido:   partido || undefined,
   };
 }
 
 async function main() {
-  const url = URLS_POR_ANO[ANO];
-  if (!url) {
-    console.error(`\nURL não cadastrada para o ano ${ANO}.`);
-    console.error(`Anos disponíveis: ${Object.keys(URLS_POR_ANO).join(', ')}`);
-    console.error(`Adicione a URL em URLS_POR_ANO em scripts/estados/import-rs.ts`);
+  if (!FILE) {
+    console.error('\nUso: npx tsx --require dotenv/config scripts/estados/import-rs.ts --file <caminho.xlsx> --ano <ano>');
+    console.error('\nComo obter o arquivo:');
+    console.error('  1. Acesse https://planejamento.rs.gov.br/emendas-parlamentares-estaduais');
+    console.error('  2. Baixe o XLSX do ano desejado');
+    console.error('  3. Salve em data/estados/rs-2022.xlsx (por exemplo)');
     process.exit(1);
   }
 
-  console.log(`\n🔄 Import RS — ano=${ANO}${DRY_RUN ? ' [DRY RUN]' : ''}\n`);
+  console.log(`\n🔄 Import RS — arquivo=${FILE} ano=${ANO}${DRY_RUN ? ' [DRY RUN]' : ''}\n`);
 
-  const buffer = await baixarXlsx(url);
+  const buffer = readFileSync(FILE);
   const wb     = XLSX.read(buffer, { type: 'buffer' });
   const sheet  = wb.Sheets[wb.SheetNames[0]];
   const raw    = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
 
   console.log(`  ${raw.length} linhas lidas do XLSX.`);
 
+  if (raw.length === 0) {
+    console.error('XLSX vazio ou sem dados na primeira aba.');
+    process.exit(1);
+  }
+
+  console.log('  Colunas encontradas:', Object.keys(raw[0]).join(', '));
+
   const rows = raw.map((r) => mapearLinha(r, ANO)).filter((r): r is EmendaEstadualRow => r !== null);
   console.log(`  ${rows.length} emendas mapeadas.\n`);
 
   if (rows.length === 0) {
-    console.warn('Nenhuma emenda mapeada. Verifique os nomes das colunas no XLSX.');
-    console.log('Colunas encontradas:', Object.keys(raw[0] ?? {}).join(', '));
+    console.warn('Nenhuma emenda mapeada. Verifique os nomes das colunas acima e ajuste o mapeamento em mapearLinha().');
     process.exit(1);
   }
 

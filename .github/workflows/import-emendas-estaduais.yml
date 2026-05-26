@@ -1,35 +1,38 @@
 name: Import — emendas estaduais
 
-# Roda toda terça-feira às 05:30 UTC (02:30 BRT) — após o workflow federal de segunda.
-# Pode ser disparado manualmente para um estado/ano específico.
+# Este workflow NÃO baixa os arquivos automaticamente (portais estaduais
+# não oferecem download direto sem autenticação de navegador).
 #
-# Secrets necessários (Settings → Secrets → Actions):
-#   DATABASE_URL → Transaction Pooler Supabase (porta 6543)
+# Fluxo de uso:
+#   1. Baixe manualmente os arquivos de cada estado (instruções nos scripts)
+#   2. Coloque em data/estados/{uf}-{ano}.csv ou .xlsx
+#   3. Faça upload via "git push" ou acione o workflow manualmente
+#      passando os caminhos dos arquivos
+#
+# Disparar manualmente: Actions → "Import — emendas estaduais" → Run workflow
 on:
-  schedule:
-    - cron: '30 5 * * 2'
   workflow_dispatch:
     inputs:
       estado:
-        description: 'Estado (rs, sp, mg) ou "todos"'
-        required: false
-        default: 'todos'
+        description: 'Estado (rs, sp, mg)'
+        required: true
+        type: choice
+        options: [rs, sp, mg]
+      arquivo:
+        description: 'Caminho do arquivo no repo (ex: data/estados/rs-2022.xlsx)'
+        required: true
         type: string
       ano:
-        description: 'Ano a importar'
-        required: false
+        description: 'Ano dos dados'
+        required: true
         default: '2025'
         type: string
 
-env:
-  ESTADO: ${{ inputs.estado || 'todos' }}
-  ANO:    ${{ inputs.ano    || '2025' }}
-
 jobs:
   import-estadual:
-    name: Import emendas estaduais (${{ inputs.estado || 'todos' }} / ${{ inputs.ano || '2025' }})
+    name: Import ${{ inputs.estado }} ${{ inputs.ano }}
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -48,28 +51,31 @@ jobs:
         run: npx prisma generate
 
       - name: Import RS
-        if: env.ESTADO == 'todos' || env.ESTADO == 'rs'
+        if: inputs.estado == 'rs'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          echo "=== Importando RS ${{ env.ANO }} ==="
-          npx tsx scripts/estados/import-rs.ts --ano ${{ env.ANO }} || echo "RS falhou (ano pode não estar disponível)"
+          npx tsx scripts/estados/import-rs.ts \
+            --file "${{ inputs.arquivo }}" \
+            --ano ${{ inputs.ano }}
 
       - name: Import SP
-        if: env.ESTADO == 'todos' || env.ESTADO == 'sp'
+        if: inputs.estado == 'sp'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          echo "=== Importando SP ${{ env.ANO }} ==="
-          npx tsx scripts/estados/import-sp.ts --ano ${{ env.ANO }} || echo "SP falhou (verificar URL do resource)"
+          npx tsx scripts/estados/import-sp.ts \
+            --file "${{ inputs.arquivo }}" \
+            --ano ${{ inputs.ano }}
 
       - name: Import MG
-        if: env.ESTADO == 'todos' || env.ESTADO == 'mg'
+        if: inputs.estado == 'mg'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          echo "=== Importando MG ${{ env.ANO }} ==="
-          npx tsx scripts/estados/import-mg.ts --ano ${{ env.ANO }} || echo "MG falhou (verificar URL do CSV)"
+          npx tsx scripts/estados/import-mg.ts \
+            --file "${{ inputs.arquivo }}" \
+            --ano ${{ inputs.ano }}
 
       - name: Reclassificar áreas
         env:
@@ -79,7 +85,8 @@ jobs:
       - name: Resumo
         if: always()
         run: |
-          echo "## Import Estadual concluído" >> $GITHUB_STEP_SUMMARY
-          echo "- **Estado:** ${{ env.ESTADO }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Ano:** ${{ env.ANO }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Import Estadual" >> $GITHUB_STEP_SUMMARY
+          echo "- **Estado:** ${{ inputs.estado }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Arquivo:** ${{ inputs.arquivo }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Ano:** ${{ inputs.ano }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Horário:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
