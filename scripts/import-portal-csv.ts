@@ -40,7 +40,40 @@ const dbUrl = (() => {
   const raw = process.env.DATABASE_URL ?? '';
   return raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true';
 })();
-const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+let prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+
+// ─────────────────────────────────────────────────────────────────────────
+// Retry com reconexão automática
+// ─────────────────────────────────────────────────────────────────────────
+const isConnError = (e: any) =>
+  typeof e?.message === 'string' && (
+    e.message.includes('Server has closed the connection') ||
+    e.message.includes('Connection pool timeout') ||
+    e.message.includes("Can't reach database server") ||
+    e.message.includes('ECONNRESET') ||
+    e.message.includes('ETIMEDOUT')
+  );
+
+async function withRetry<T>(fn: () => Promise<T>, retries = 4): Promise<T> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      if (isConnError(e) && attempt < retries - 1) {
+        const waitMs = 3000 * (attempt + 1);
+        process.stdout.write(
+          `\n   [reconexão #${attempt + 1}] ${e.message.slice(0, 70)} — aguardando ${waitMs / 1000}s...\n`,
+        );
+        await new Promise((r) => setTimeout(r, waitMs));
+        await prisma.$disconnect().catch(() => {});
+        prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error('unreachable');
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 // CLI args
@@ -185,12 +218,12 @@ async function obterParlamentarId(nome: string, cargo: ParlamentarCargo, uf: str
   const promise = (async () => {
     try {
       const idPortal = `PORTAL:${nomeNorm}`;
-      const p = await prisma.parlamentar.upsert({
+      const p = await withRetry(() => prisma.parlamentar.upsert({
         where: { idPortal },
         create: { idPortal, nome: nomeNorm, cargo, uf },
         update: {},
         select: { id: true },
-      });
+      }));
       parlamentarPorNome.set(nomeNorm, p.id);
       return p.id;
     } finally {
@@ -222,7 +255,7 @@ async function obterEmendaId(opts: {
   if (emendaInflight.has(opts.codigoEmenda)) return emendaInflight.get(opts.codigoEmenda)!;
 
   const promise = (async () => {
-    const e = await prisma.emendaParlamentar.upsert({
+    const e = await withRetry(() => prisma.emendaParlamentar.upsert({
       where: { idPortal: opts.codigoEmenda },
       create: {
         idPortal:       opts.codigoEmenda,
@@ -250,7 +283,7 @@ async function obterEmendaId(opts: {
         municipioNome: opts.municipioNome ?? undefined,
       },
       select: { id: true },
-    });
+    }));
     emendaPorCodigo.set(opts.codigoEmenda, e.id);
     emendaInflight.delete(opts.codigoEmenda);
     return e.id;
@@ -268,7 +301,7 @@ async function upsertDocumento(emendaId: string, row: Record<string, string>): P
   const munFav    = naIfEmpty(row[COL.municipioFavorecido]);
   const ufFav     = naIfEmpty(row[COL.ufFavorecido]);
 
-  await prisma.emendaDocumento.upsert({
+  await withRetry(() => prisma.emendaDocumento.upsert({
     where: { codigoDocumento },
     create: {
       codigoDocumento,
@@ -304,7 +337,7 @@ async function upsertDocumento(emendaId: string, row: Record<string, string>): P
       orgao:               naIfEmpty(row[COL.orgao])                ?? undefined,
       orgaoSuperior:       naIfEmpty(row[COL.orgaoSuperior])        ?? undefined,
     },
-  });
+  }));
 }
 
 // ─────────────────────────────────────────────────────────────────────────
