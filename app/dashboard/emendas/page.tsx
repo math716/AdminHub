@@ -2176,69 +2176,58 @@ function DestaqueDoAnoCard({
 }) {
   return (
     <div
-      className="rounded-2xl p-5"
+      className="rounded-xl px-4 py-3"
       style={{
         background: 'linear-gradient(135deg, rgba(201,162,39,0.08), rgba(74,158,222,0.05))',
         border: '1px solid rgba(201,162,39,0.25)',
       }}
     >
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-2 mb-2.5">
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
           style={{
             background: 'rgba(201,162,39,0.15)',
             border: '1px solid rgba(201,162,39,0.4)',
-            boxShadow: '0 0 18px rgba(201,162,39,0.25)',
           }}
         >
-          <Trophy className="w-5 h-5" style={{ color: '#e8c660' }} />
+          <Trophy className="w-3.5 h-3.5" style={{ color: '#e8c660' }} />
         </div>
         <p className="text-[10px] uppercase tracking-widest font-bold text-amber-300">
           Destaque do ano em {stateName} ({ano})
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {/* Top município */}
         <div
-          className="rounded-xl p-3.5"
+          className="rounded-lg px-3 py-2 flex items-center gap-3"
           style={{ background: 'rgba(7,29,54,0.4)', border: '1px solid rgba(255,255,255,0.06)' }}
         >
-          <p className="text-[10px] uppercase tracking-widest text-cyan-300/80 font-bold">
-            Município que mais recebeu
-          </p>
-          <p className="text-white font-bold text-base mt-1.5">{municipio.nome}</p>
-          <p className="text-cyan-300 font-bold text-xl mt-0.5">{formatBRL(municipio.total)}</p>
-          <p className="text-[10px] text-slate-500 mt-1 italic">
-            soma do que todos os parlamentares destinaram a esta cidade
-          </p>
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-widest text-cyan-300/80 font-bold">Município que mais recebeu</p>
+            <p className="text-white font-bold text-sm mt-0.5 truncate">{municipio.nome}</p>
+            <p className="text-cyan-300 font-bold text-base leading-tight">{formatBRL(municipio.total)}</p>
+          </div>
         </div>
 
         {/* Top parlamentar */}
         {topParlamentar && (
           <div
-            className="rounded-xl p-3.5"
+            className="rounded-lg px-3 py-2 flex items-center gap-3"
             style={{ background: 'rgba(7,29,54,0.4)', border: '1px solid rgba(255,255,255,0.06)' }}
           >
-            <p className="text-[10px] uppercase tracking-widest text-amber-300/80 font-bold">
-              Parlamentar que mais enviou
-            </p>
-            <p className="text-white font-bold text-base mt-1.5 truncate">{topParlamentar.nome}</p>
-            <p className="text-[11px] text-slate-400 -mt-0.5">
-              {CARGO_LABELS[topParlamentar.cargo as ParlamentarCargo] ?? topParlamentar.cargo}
-              {topParlamentar.partido ? ` · ${topParlamentar.partido}` : ''}
-            </p>
-            <p className="text-amber-300 font-bold text-xl mt-0.5">{formatBRL(topParlamentar.total)}</p>
-            <p className="text-[10px] text-slate-500 mt-1 italic">
-              total que este parlamentar enviou ao estado (todos os destinos somados)
-            </p>
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-widest text-amber-300/80 font-bold">Parlamentar que mais enviou</p>
+              <p className="text-white font-bold text-sm mt-0.5 truncate">{topParlamentar.nome}</p>
+              <p className="text-[11px] text-slate-400 leading-tight truncate">
+                {CARGO_LABELS[topParlamentar.cargo as ParlamentarCargo] ?? topParlamentar.cargo}
+                {topParlamentar.partido ? ` · ${topParlamentar.partido}` : ''}
+              </p>
+              <p className="text-amber-300 font-bold text-base leading-tight">{formatBRL(topParlamentar.total)}</p>
+            </div>
           </div>
         )}
       </div>
-
-      <p className="text-[10px] text-slate-500 mt-3 text-center italic">
-        ⓘ Os dois valores acima medem coisas diferentes — um é &ldquo;recebido pela cidade&rdquo;, outro é &ldquo;enviado pelo parlamentar ao estado todo&rdquo;.
-      </p>
     </div>
   );
 }
