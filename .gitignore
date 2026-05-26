@@ -38,6 +38,10 @@ AdminHub-main/
 # Dados gerados localmente (não commitar)
 public/data/tse/secao/
 
+# CSV/ZIP baixados manualmente do Portal da Transparência
+# (importados pelo script scripts/import-portal-csv.ts pro banco)
+data/portal-csv-imports/
+
 # Prisma
 prisma/migrations/dev.db
 *.db

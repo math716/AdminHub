@@ -90,11 +90,15 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
     const map = mapInstanceRef.current;
     if (!geoLayer || !map) return;
 
-    // Sem município selecionado — restaura cores de faixa em todos
+    // Sem município selecionado — restaura cores de faixa e zoom ao estado
     if (!highlightMunicipioNome) {
       geoLayer.eachLayer((l: any) => geoLayer.resetStyle(l));
       selectedMunicipioRef.current = null;
       municipioSelectedLayerRef.current = null;
+      try {
+        const stateBounds = geoLayer.getBounds();
+        if (stateBounds.isValid()) map.fitBounds(stateBounds, { padding: [20, 20] });
+      } catch (_) {}
       return;
     }
 

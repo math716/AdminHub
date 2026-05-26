@@ -500,6 +500,18 @@ export default function EmendasPage() {
     [parlamentarPix],
   );
 
+  // Top 5 parlamentares que mais enviaram emendas para o município selecionado
+  const top5ParlamentaresDoMunicipio = useMemo(() => {
+    if (!selectedMunicipio || municipioEmendas.length === 0) return [];
+    const map = new Map<string, { nome: string; total: number; cargo: ParlamentarCargo }>();
+    municipioEmendas.forEach((e) => {
+      const cur = map.get(e.autorNome) ?? { nome: e.autorNome, total: 0, cargo: e.autorCargo };
+      cur.total += e.valorEmpenhado ?? 0;
+      map.set(e.autorNome, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, 5);
+  }, [selectedMunicipio, municipioEmendas]);
+
   const maxParlamentarPorAno = useMemo(
     () => parlamentarPorAno.reduce((m, x) => Math.max(m, x.total), 1),
     [parlamentarPorAno],
@@ -557,6 +569,61 @@ export default function EmendasPage() {
           </div>
         }
       />
+
+      {/* Barra de pesquisa de parlamentar — abaixo do título, visível quando há estado selecionado */}
+      {view === 'estado' && (
+        <div className="relative">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                value={parlamentarQuery}
+                onChange={(e) => setParlamentarQuery(e.target.value)}
+                placeholder="Pesquisar parlamentar…"
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-amber-500/50 transition-colors"
+              />
+            </div>
+            {selectedParlamentar && (
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded-xl flex-shrink-0"
+                style={{ background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.3)' }}
+              >
+                <span className="text-xs text-white font-semibold truncate max-w-[180px]">{selectedParlamentar.nome}</span>
+                <button onClick={() => setSelectedParlamentar(null)} className="text-slate-400 hover:text-white">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+          {parlamentarQuery.length >= 2 && parlamentarResults.length > 0 && (
+            <div
+              className="absolute top-full left-0 right-0 mt-1 z-50 rounded-xl overflow-hidden"
+              style={{ background: 'rgba(7,29,54,0.98)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}
+            >
+              {parlamentarResults.map((p) => (
+                <button
+                  key={p.idPortal}
+                  onClick={() => { setSelectedParlamentar(p); setParlamentarQuery(''); setParlamentarResults([]); }}
+                  className="w-full text-left px-4 py-2.5 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                >
+                  <p className="text-sm text-white font-medium">{p.nome}</p>
+                  <p className="text-[11px] text-slate-400">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Destaque do ano — acima do grid principal */}
+      {view === 'estado' && resumo && resumo.topMunicipios?.[0] && (
+        <DestaqueDoAnoCard
+          municipio={resumo.topMunicipios[0]}
+          ano={ano}
+          stateName={selectedStateName}
+          topParlamentar={resumo.parlamentares?.[0]}
+        />
+      )}
 
       {/* Mock banner */}
       {resumo?.mock && (
@@ -697,57 +764,57 @@ export default function EmendasPage() {
           </div>
         </div>
 
-        {/* LINHA 1 — Coluna direita: Top 5 + Parlamentar */}
+        {/* LINHA 1 — Coluna direita: Top 5 */}
         <div className="col-span-12 md:col-span-3 space-y-4">
           {view === 'brasil' ? (
             <SelecionarEstadoCard />
+          ) : selectedMunicipio ? (
+            /* Município selecionado → mostra top 5 parlamentares desse município */
+            <Top5ParlamentaresDoMunicipioCard
+              municipioNome={selectedMunicipio.nome}
+              parlamentares={top5ParlamentaresDoMunicipio}
+              loading={loadingMunicipio}
+              onPick={(nome) => {
+                const p = resumo?.parlamentares.find((r) => r.nome === nome);
+                if (p) setSelectedParlamentar({
+                  cpf: p.cpf, idPortal: p.idPortal, nome: p.nome,
+                  nomeUrna: null, partido: p.partido, uf: selectedUf,
+                  cargo: p.cargo as ParlamentarCargo,
+                });
+              }}
+            />
           ) : (
-            <>
-              <Top5MunicipiosCard
-                resumo={resumo}
-                loading={loadingResumo}
-                onClick={(m) => handleMunicipioClick(m.codigoIbge, m.nome)}
-                /* Quando há parlamentar selecionado, mostra os municípios
-                   beneficiados por ele em vez do agregado do estado. */
-                escopoParlamentar={
-                  selectedParlamentar
-                    ? {
-                        nome: selectedParlamentar.nome,
-                        municipios: parlamentarPorMunicipio.slice(0, 5).map((m) => ({
-                          codigoIbge: m.codigoIbge,
-                          nome: m.nome,
-                          total: m.total,
-                        })),
-                      }
-                    : null
-                }
-              />
-              <ParlamentarSearchCard
-                query={parlamentarQuery}
-                setQuery={setParlamentarQuery}
-                results={parlamentarResults}
-                searching={searchingParlamentar}
-                onPick={(p) => {
-                  setSelectedParlamentar(p);
-                  setParlamentarQuery('');
-                  setParlamentarResults([]);
-                }}
-                topResumo={resumo?.parlamentares ?? []}
-                onPickFromResumo={(p) =>
-                  setSelectedParlamentar({
-                    cpf: p.cpf,
-                    idPortal: p.idPortal,
-                    nome: p.nome,
-                    nomeUrna: null,
-                    partido: p.partido,
-                    uf: selectedUf,
-                    cargo: p.cargo as ParlamentarCargo,
-                  })
-                }
-                selected={selectedParlamentar}
-                onClear={() => setSelectedParlamentar(null)}
-              />
-            </>
+            <Top5MunicipiosCard
+              resumo={resumo}
+              loading={loadingResumo}
+              onClick={(m) => handleMunicipioClick(m.codigoIbge, m.nome)}
+              escopoParlamentar={
+                selectedParlamentar
+                  ? {
+                      nome: selectedParlamentar.nome,
+                      municipios: parlamentarPorMunicipio.slice(0, 5).map((m) => ({
+                        codigoIbge: m.codigoIbge,
+                        nome: m.nome,
+                        total: m.total,
+                      })),
+                    }
+                  : null
+              }
+            />
+          )}
+
+          {/* Top 5 parlamentares do estado (quando não há município selecionado) */}
+          {!selectedMunicipio && (
+            <Top5ParlamentaresEstadoCard
+              topResumo={resumo?.parlamentares ?? []}
+              onPick={(p) =>
+                setSelectedParlamentar({
+                  cpf: p.cpf, idPortal: p.idPortal, nome: p.nome,
+                  nomeUrna: null, partido: p.partido, uf: selectedUf,
+                  cargo: p.cargo as ParlamentarCargo,
+                })
+              }
+            />
           )}
         </div>
 
@@ -786,15 +853,6 @@ export default function EmendasPage() {
         />
       )}
 
-      {/* Destaque do ano */}
-      {view === 'estado' && resumo && resumo.topMunicipios?.[0] && (
-        <DestaqueDoAnoCard
-          municipio={resumo.topMunicipios[0]}
-          ano={ano}
-          stateName={selectedStateName}
-          topParlamentar={resumo.parlamentares?.[0]}
-        />
-      )}
     </div>
   );
 }
@@ -1017,6 +1075,86 @@ function SelecionarEstadoCard() {
         <li>Escolha um município (popup mostra habitantes, eleitores e tetos)</li>
         <li>Pesquise um parlamentar para ver os gráficos por área e por ano</li>
       </ol>
+    </div>
+  );
+}
+
+function Top5ParlamentaresDoMunicipioCard({
+  municipioNome, parlamentares, loading, onPick,
+}: {
+  municipioNome: string;
+  parlamentares: { nome: string; total: number; cargo: ParlamentarCargo }[];
+  loading: boolean;
+  onPick: (nome: string) => void;
+}) {
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
+    >
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Top 5 Parlamentares</p>
+      <p className="text-[10px] text-amber-300/80 mb-2 truncate" title={municipioNome}>
+        que mais enviaram para {municipioNome}
+      </p>
+      {loading && (
+        <div className="py-6 flex items-center justify-center">
+          <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
+        </div>
+      )}
+      {!loading && parlamentares.length === 0 && (
+        <p className="text-xs text-slate-500 text-center py-4">Sem dados disponíveis</p>
+      )}
+      {!loading && parlamentares.length > 0 && (
+        <ol className="space-y-2">
+          {parlamentares.map((p, i) => (
+            <li key={p.nome}>
+              <button
+                onClick={() => onPick(p.nome)}
+                className="w-full flex items-center gap-2 group hover:bg-white/5 -mx-2 px-2 py-1 rounded-lg transition-colors text-left"
+              >
+                <span className="text-xs font-bold text-slate-500 w-4">{i + 1}.</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-white truncate group-hover:text-amber-300 transition-colors">{p.nome}</p>
+                  <p className="text-[10px] text-slate-500">{CARGO_LABELS[p.cargo]}</p>
+                </div>
+                <span className="text-xs font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+function Top5ParlamentaresEstadoCard({
+  topResumo, onPick,
+}: {
+  topResumo: { cpf: string | null; idPortal: string; nome: string; cargo: string; partido: string | null; total: number }[];
+  onPick: (p: { cpf: string | null; idPortal: string; nome: string; cargo: string; partido: string | null; total: number }) => void;
+}) {
+  if (topResumo.length === 0) return null;
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
+    >
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">Top 5 Parlamentares</p>
+      <div className="space-y-1.5">
+        {topResumo.slice(0, 5).map((p) => (
+          <button
+            key={p.idPortal}
+            onClick={() => onPick(p)}
+            className="w-full flex items-center gap-2 group text-left hover:bg-white/5 -mx-1 px-1 py-1 rounded-lg transition-colors"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] text-white truncate group-hover:text-amber-300">{p.nome}</p>
+              <p className="text-[10px] text-slate-500">{CARGO_LABELS[p.cargo as ParlamentarCargo] ?? p.cargo}</p>
+            </div>
+            <span className="text-[11px] font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1888,7 +2026,7 @@ function ComparativoAreasCard({
     >
       <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
         <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
-          Comparativo por área · {escopo}
+          Comparativo por Área
         </p>
         <p className="text-[10px] text-slate-500">
           {ano} vs. {ano - 1}

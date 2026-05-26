@@ -136,19 +136,19 @@ export const AREA_LABELS: Record<EmendaArea, string> = {
 };
 
 export const AREA_COLORS: Record<EmendaArea, string> = {
-  SAUDE:              '#3b82f6',
-  EDUCACAO:           '#10b981',
-  SEGURANCA:          '#f59e0b',
-  INFRAESTRUTURA:     '#8b5cf6',
-  ASSISTENCIA_SOCIAL: '#ec4899',
-  AGRICULTURA:        '#84cc16',
-  CULTURA:            '#a855f7',
-  ESPORTE:            '#06b6d4',
-  MEIO_AMBIENTE:      '#22c55e',
-  TRANSPORTE:         '#0ea5e9',
-  HABITACAO:          '#f97316',
-  SANEAMENTO:         '#14b8a6',
-  OUTROS:             '#94a3b8',
+  SAUDE:              '#60a5fa',
+  EDUCACAO:           '#34d399',
+  SEGURANCA:          '#fbbf24',
+  INFRAESTRUTURA:     '#a78bfa',
+  ASSISTENCIA_SOCIAL: '#f472b6',
+  AGRICULTURA:        '#a3e635',
+  CULTURA:            '#c084fc',
+  ESPORTE:            '#22d3ee',
+  MEIO_AMBIENTE:      '#4ade80',
+  TRANSPORTE:         '#38bdf8',
+  HABITACAO:          '#fb923c',
+  SANEAMENTO:         '#2dd4bf',
+  OUTROS:             '#cbd5e1',
 };
 
 export const CARGO_LABELS: Record<ParlamentarCargo, string> = {

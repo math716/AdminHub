@@ -63,8 +63,8 @@ export default function Donut3DChart({
               y2="100%"
             >
               <stop offset="0%" stopColor={entry.color} stopOpacity={1} />
-              <stop offset="50%" stopColor={entry.color} stopOpacity={0.8} />
-              <stop offset="100%" stopColor={entry.color} stopOpacity={0.6} />
+              <stop offset="50%" stopColor={entry.color} stopOpacity={0.95} />
+              <stop offset="100%" stopColor={entry.color} stopOpacity={0.88} />
             </linearGradient>
           ))}
           {/* Shadow filter for 3D depth */}
