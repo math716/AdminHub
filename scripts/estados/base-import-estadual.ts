@@ -1,0 +1,197 @@
+/**
+ * Módulo base compartilhado por todos os scripts de importação estadual.
+ * Cada estado implementa a interface EstadoImporter com suas próprias regras
+ * de download e mapeamento de campos.
+ */
+import { PrismaClient } from '@prisma/client';
+import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
+import { classificarArea } from '../../lib/portal-transparencia';
+
+// Transaction Pooler — padrão para todos os scripts de importação
+export function buildPrisma(): PrismaClient {
+  const raw = process.env.DATABASE_URL ?? '';
+  const url = raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true';
+  return new PrismaClient({ datasources: { db: { url } } });
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Tipos
+// ─────────────────────────────────────────────────────────────────────────
+
+export interface EmendaEstadualRow {
+  /** ID único no portal de origem — vai para EmendaParlamentar.idPortal */
+  idPortal: string;
+  /** Ano orçamentário */
+  ano: number;
+  /** Número da emenda na LOA estadual */
+  numero?: string;
+  /** Tipo de emenda (individual, bancada, comissão…) */
+  tipo?: string;
+  /** Função orçamentária (ex: "Saúde", "Educação") */
+  funcao?: string;
+  /** Subfunção orçamentária */
+  subfuncao?: string;
+  /** Área temática — se não vier do CSV, será classificada automaticamente */
+  area?: EmendaArea;
+  /** Descrição / objeto da emenda */
+  objeto?: string;
+  /** Valor proposto/autorizado */
+  valorProposto?: number;
+  /** Valor empenhado */
+  valorEmpenhado: number;
+  /** Valor pago */
+  valorPago: number;
+  /** Valor em restos a pagar */
+  valorRestoPago?: number;
+  /** UF do estado (ex: "RS") */
+  uf: string;
+  /** Código IBGE 7 dígitos do município beneficiado */
+  codigoIbge?: string;
+  /** Nome do município beneficiado */
+  municipioNome?: string;
+  /** Nome do parlamentar autor */
+  autorNome: string;
+  /** Cargo do parlamentar (default DEPUTADO_ESTADUAL) */
+  autorCargo?: ParlamentarCargo;
+  /** Partido do parlamentar */
+  autorPartido?: string;
+}
+
+export interface ImportResult {
+  inseridas: number;
+  erros: number;
+  parlamentares: number;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────
+
+export function parseValorBR(v: any): number {
+  if (typeof v === 'number') return v;
+  if (typeof v !== 'string' || !v.trim()) return 0;
+  // Remove R$, espaços, etc.; trata ponto como milhar, vírgula como decimal
+  const cleaned = v.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
+
+export function normalizeNome(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Importação genérica
+// ─────────────────────────────────────────────────────────────────────────
+
+export async function importarEmendas(
+  prisma: PrismaClient,
+  uf: string,
+  rows: EmendaEstadualRow[],
+  opts: { batchSize?: number; dryRun?: boolean } = {},
+): Promise<ImportResult> {
+  const { batchSize = 200, dryRun = false } = opts;
+  const result: ImportResult = { inseridas: 0, erros: 0, parlamentares: 0 };
+
+  // Cache de parlamentares em memória para evitar SELECT repetitivo
+  const parlamentarCache = new Map<string, string>();
+
+  async function obterParlamentar(row: EmendaEstadualRow): Promise<string | null> {
+    const chave = normalizeNome(row.autorNome);
+    if (parlamentarCache.has(chave)) return parlamentarCache.get(chave)!;
+
+    if (dryRun) return null;
+
+    try {
+      // idPortal estadual prefixado com UF para evitar colisão com federal
+      const idPortal = `${uf}:${chave}`;
+      const p = await prisma.parlamentar.upsert({
+        where: { idPortal },
+        create: {
+          idPortal,
+          nome: row.autorNome,
+          cargo: row.autorCargo ?? 'DEPUTADO_ESTADUAL',
+          partido: row.autorPartido ?? null,
+          uf,
+        },
+        update: {
+          // Atualiza partido se vier no CSV e estava vazio
+          ...(row.autorPartido ? { partido: row.autorPartido } : {}),
+        },
+      });
+      parlamentarCache.set(chave, p.id);
+      result.parlamentares++;
+      return p.id;
+    } catch (e: any) {
+      console.warn(`  [parlamentar] erro ao upsert "${row.autorNome}": ${e.message}`);
+      return null;
+    }
+  }
+
+  // Processa em batches
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+
+    await Promise.all(
+      batch.map(async (row) => {
+        try {
+          const parlamentarId = await obterParlamentar(row);
+          const area = row.area ?? classificarArea(null, row.funcao ?? null);
+
+          if (!dryRun) {
+            await prisma.emendaParlamentar.upsert({
+              where: { idPortal: row.idPortal },
+              create: {
+                idPortal:       row.idPortal,
+                esfera:         'ESTADUAL',
+                ano:            row.ano,
+                numero:         row.numero ?? null,
+                tipo:           row.tipo ?? null,
+                funcao:         row.funcao ?? null,
+                subfuncao:      row.subfuncao ?? null,
+                area,
+                objeto:         row.objeto ?? null,
+                valorProposto:  row.valorProposto ?? null,
+                valorEmpenhado: row.valorEmpenhado,
+                valorPago:      row.valorPago,
+                valorRestoPago: row.valorRestoPago ?? 0,
+                uf:             row.uf,
+                codigoIbge:     row.codigoIbge ?? null,
+                municipioNome:  row.municipioNome ?? null,
+                parlamentarId:  parlamentarId ?? undefined,
+              },
+              update: {
+                esfera:         'ESTADUAL',
+                numero:         row.numero ?? null,
+                tipo:           row.tipo ?? null,
+                funcao:         row.funcao ?? null,
+                subfuncao:      row.subfuncao ?? null,
+                area,
+                objeto:         row.objeto ?? null,
+                valorProposto:  row.valorProposto ?? null,
+                valorEmpenhado: row.valorEmpenhado,
+                valorPago:      row.valorPago,
+                valorRestoPago: row.valorRestoPago ?? 0,
+                uf:             row.uf,
+                codigoIbge:     row.codigoIbge ?? null,
+                municipioNome:  row.municipioNome ?? null,
+                ...(parlamentarId ? { parlamentarId } : {}),
+              },
+            });
+          }
+
+          result.inseridas++;
+        } catch (e: any) {
+          console.warn(`  [emenda] erro "${row.idPortal}": ${e.message}`);
+          result.erros++;
+        }
+      }),
+    );
+
+    const pct = Math.round(((i + batch.length) / rows.length) * 100);
+    process.stdout.write(`\r  ${i + batch.length}/${rows.length} (${pct}%)${dryRun ? ' [DRY RUN]' : ''}   `);
+  }
+
+  console.log('');
+  return result;
+}

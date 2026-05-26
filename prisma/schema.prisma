@@ -46,6 +46,12 @@ enum DemandCategory {
   OUTROS
 }
 
+/// Esfera orçamentária da emenda: federal (Congresso) ou estadual (AL).
+enum EmendaEsfera {
+  FEDERAL
+  ESTADUAL
+}
+
 /// Área temática da emenda parlamentar (Portal da Transparência).
 /// Derivada do campo `funcao` (classificação funcional do orçamento).
 enum EmendaArea {
@@ -591,6 +597,7 @@ model Parlamentar {
 model EmendaParlamentar {
   id                String       @id @default(cuid())
   idPortal          String       @unique
+  esfera            EmendaEsfera @default(FEDERAL)
   ano               Int
   numero            String?
   tipo              String?

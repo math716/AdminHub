@@ -1,0 +1,85 @@
+name: Import — emendas estaduais
+
+# Roda toda terça-feira às 05:30 UTC (02:30 BRT) — após o workflow federal de segunda.
+# Pode ser disparado manualmente para um estado/ano específico.
+#
+# Secrets necessários (Settings → Secrets → Actions):
+#   DATABASE_URL → Transaction Pooler Supabase (porta 6543)
+on:
+  schedule:
+    - cron: '30 5 * * 2'
+  workflow_dispatch:
+    inputs:
+      estado:
+        description: 'Estado (rs, sp, mg) ou "todos"'
+        required: false
+        default: 'todos'
+        type: string
+      ano:
+        description: 'Ano a importar'
+        required: false
+        default: '2025'
+        type: string
+
+env:
+  ESTADO: ${{ inputs.estado || 'todos' }}
+  ANO:    ${{ inputs.ano    || '2025' }}
+
+jobs:
+  import-estadual:
+    name: Import emendas estaduais (${{ inputs.estado || 'todos' }} / ${{ inputs.ano || '2025' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Import RS
+        if: env.ESTADO == 'todos' || env.ESTADO == 'rs'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "=== Importando RS ${{ env.ANO }} ==="
+          npx tsx scripts/estados/import-rs.ts --ano ${{ env.ANO }} || echo "RS falhou (ano pode não estar disponível)"
+
+      - name: Import SP
+        if: env.ESTADO == 'todos' || env.ESTADO == 'sp'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "=== Importando SP ${{ env.ANO }} ==="
+          npx tsx scripts/estados/import-sp.ts --ano ${{ env.ANO }} || echo "SP falhou (verificar URL do resource)"
+
+      - name: Import MG
+        if: env.ESTADO == 'todos' || env.ESTADO == 'mg'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "=== Importando MG ${{ env.ANO }} ==="
+          npx tsx scripts/estados/import-mg.ts --ano ${{ env.ANO }} || echo "MG falhou (verificar URL do CSV)"
+
+      - name: Reclassificar áreas
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx scripts/reclassificar-areas.ts
+
+      - name: Resumo
+        if: always()
+        run: |
+          echo "## Import Estadual concluído" >> $GITHUB_STEP_SUMMARY
+          echo "- **Estado:** ${{ env.ESTADO }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Ano:** ${{ env.ANO }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horário:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
