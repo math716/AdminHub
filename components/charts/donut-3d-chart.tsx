@@ -63,8 +63,7 @@ export default function Donut3DChart({
               y2="100%"
             >
               <stop offset="0%" stopColor={entry.color} stopOpacity={1} />
-              <stop offset="50%" stopColor={entry.color} stopOpacity={0.95} />
-              <stop offset="100%" stopColor={entry.color} stopOpacity={0.88} />
+              <stop offset="100%" stopColor={entry.color} stopOpacity={1} />
             </linearGradient>
           ))}
           {/* Shadow filter for 3D depth */}
@@ -76,26 +75,6 @@ export default function Donut3DChart({
 
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          {/* Shadow layer for 3D depth effect */}
-          <Pie
-            data={filteredData}
-            cx="50%"
-            cy="55%"
-            innerRadius={55}
-            outerRadius={85}
-            paddingAngle={3}
-            dataKey="value"
-            stroke="none"
-          >
-            {filteredData.map((entry, index) => (
-              <Cell 
-                key={`shadow-${index}`} 
-                fill="rgba(0,0,0,0.2)"
-              />
-            ))}
-          </Pie>
-          
-          {/* Main donut */}
           <Pie
             data={filteredData}
             cx="50%"
@@ -104,16 +83,13 @@ export default function Donut3DChart({
             outerRadius={85}
             paddingAngle={3}
             dataKey="value"
-            stroke="rgba(255,255,255,0.1)"
+            stroke="rgba(255,255,255,0.08)"
             strokeWidth={1}
           >
             {filteredData.map((entry, index) => (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={`url(#${getGradientId(index)})`}
-                style={{
-                  filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.3))',
-                }}
+              <Cell
+                key={`cell-${index}`}
+                fill={entry.color}
               />
             ))}
           </Pie>
