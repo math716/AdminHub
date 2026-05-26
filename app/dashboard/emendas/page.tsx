@@ -1679,14 +1679,6 @@ function ParlamentarDashboard({
         <EmendasDetalhadasCard ano={ano} emendas={emendas} />
       )}
 
-      {/* Lista de municípios beneficiados pelo parlamentar */}
-      {!loading && (
-        <MunicipiosBeneficiadosCard
-          ano={ano}
-          porMunicipio={porMunicipio}
-          onClick={onMunicipioClick}
-        />
-      )}
 
       {/* Destinos de transferências Pix (EC 105/2019) — preenche quando a
           emenda foi cadastrada a nível UF e o município só foi decidido
