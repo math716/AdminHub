@@ -87,35 +87,51 @@ export interface PortalParlamentar {
 // ---------------------------------------------------------------------------
 // Códigos da classificação funcional do orçamento federal (Portaria MOG 42/1999).
 const FUNCAO_AREA_MAP: Record<string, EmendaArea> = {
-  '10': 'SAUDE',
-  '12': 'EDUCACAO',
-  '06': 'SEGURANCA',
-  '15': 'INFRAESTRUTURA', // Urbanismo
-  '17': 'SANEAMENTO',
+  '05': 'SEGURANCA',        // Defesa Nacional
+  '06': 'SEGURANCA',        // Segurança Pública
   '08': 'ASSISTENCIA_SOCIAL',
-  '20': 'AGRICULTURA',
+  '09': 'ASSISTENCIA_SOCIAL', // Previdência Social
+  '10': 'SAUDE',
+  '11': 'ASSISTENCIA_SOCIAL', // Trabalho
+  '12': 'EDUCACAO',
   '13': 'CULTURA',
-  '27': 'ESPORTE',
-  '18': 'MEIO_AMBIENTE',
-  '26': 'TRANSPORTE',
+  '14': 'ASSISTENCIA_SOCIAL', // Direitos da Cidadania
+  '15': 'INFRAESTRUTURA',   // Urbanismo
   '16': 'HABITACAO',
+  '17': 'SANEAMENTO',
+  '18': 'MEIO_AMBIENTE',    // Gestão Ambiental
+  '20': 'AGRICULTURA',
+  '21': 'AGRICULTURA',      // Organização Agrária
+  '22': 'INFRAESTRUTURA',   // Indústria
+  '24': 'INFRAESTRUTURA',   // Comunicações
+  '25': 'INFRAESTRUTURA',   // Energia
+  '26': 'TRANSPORTE',
+  '27': 'ESPORTE',          // Desporto e Lazer
 };
 
 export function classificarArea(funcaoCodigo?: string | null, funcaoNome?: string | null): EmendaArea {
   if (funcaoCodigo && FUNCAO_AREA_MAP[funcaoCodigo]) return FUNCAO_AREA_MAP[funcaoCodigo];
   const nome = (funcaoNome ?? '').toLowerCase();
   if (nome.includes('saúde') || nome.includes('saude')) return 'SAUDE';
-  if (nome.includes('educa'))      return 'EDUCACAO';
-  if (nome.includes('segura'))     return 'SEGURANCA';
+  if (nome.includes('educa'))       return 'EDUCACAO';
+  if (nome.includes('segura') || nome.includes('defesa')) return 'SEGURANCA';
   if (nome.includes('urban') || nome.includes('infraestrutura')) return 'INFRAESTRUTURA';
-  if (nome.includes('saneamento')) return 'SANEAMENTO';
+  if (nome.includes('saneamento'))  return 'SANEAMENTO';
   if (nome.includes('assistência') || nome.includes('assistencia')) return 'ASSISTENCIA_SOCIAL';
-  if (nome.includes('agricultura'))return 'AGRICULTURA';
-  if (nome.includes('cultura'))    return 'CULTURA';
-  if (nome.includes('esporte') || nome.includes('desporto')) return 'ESPORTE';
-  if (nome.includes('ambiente'))   return 'MEIO_AMBIENTE';
-  if (nome.includes('transporte'))return 'TRANSPORTE';
-  if (nome.includes('habita'))     return 'HABITACAO';
+  if (nome.includes('previdência') || nome.includes('previdencia')) return 'ASSISTENCIA_SOCIAL';
+  if (nome.includes('trabalho'))    return 'ASSISTENCIA_SOCIAL';
+  if (nome.includes('cidadania'))   return 'ASSISTENCIA_SOCIAL';
+  if (nome.includes('organização agrária') || nome.includes('organizacao agraria')) return 'AGRICULTURA';
+  if (nome.includes('agricultura')) return 'AGRICULTURA';
+  if (nome.includes('gestão ambiental') || nome.includes('gestao ambiental')) return 'MEIO_AMBIENTE';
+  if (nome.includes('ambiente'))    return 'MEIO_AMBIENTE';
+  if (nome.includes('cultura'))     return 'CULTURA';
+  if (nome.includes('esporte') || nome.includes('desporto') || nome.includes('lazer')) return 'ESPORTE';
+  if (nome.includes('transporte'))  return 'TRANSPORTE';
+  if (nome.includes('habita'))      return 'HABITACAO';
+  if (nome.includes('comunicaç') || nome.includes('comunicac')) return 'INFRAESTRUTURA';
+  if (nome.includes('energia'))     return 'INFRAESTRUTURA';
+  if (nome.includes('indústria') || nome.includes('industria')) return 'INFRAESTRUTURA';
   return 'OUTROS';
 }
 

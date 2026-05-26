@@ -119,17 +119,25 @@ function naIfEmpty(v: string | undefined): string | null {
 function classificarArea(funcaoNome?: string | null): EmendaArea {
   const nome = (funcaoNome ?? '').toLowerCase();
   if (nome.includes('saúde') || nome.includes('saude')) return 'SAUDE';
-  if (nome.includes('educa')) return 'EDUCACAO';
+  if (nome.includes('educa'))       return 'EDUCACAO';
   if (nome.includes('segura') || nome.includes('defesa')) return 'SEGURANCA';
   if (nome.includes('urban') || nome.includes('infraestrutura')) return 'INFRAESTRUTURA';
-  if (nome.includes('saneamento')) return 'SANEAMENTO';
+  if (nome.includes('saneamento'))  return 'SANEAMENTO';
   if (nome.includes('assistência') || nome.includes('assistencia')) return 'ASSISTENCIA_SOCIAL';
+  if (nome.includes('previdência') || nome.includes('previdencia')) return 'ASSISTENCIA_SOCIAL';
+  if (nome.includes('trabalho'))    return 'ASSISTENCIA_SOCIAL';
+  if (nome.includes('cidadania'))   return 'ASSISTENCIA_SOCIAL';
+  if (nome.includes('organização agrária') || nome.includes('organizacao agraria')) return 'AGRICULTURA';
   if (nome.includes('agricultura')) return 'AGRICULTURA';
-  if (nome.includes('cultura')) return 'CULTURA';
-  if (nome.includes('esporte') || nome.includes('desporto')) return 'ESPORTE';
-  if (nome.includes('ambiente')) return 'MEIO_AMBIENTE';
-  if (nome.includes('transporte')) return 'TRANSPORTE';
-  if (nome.includes('habita')) return 'HABITACAO';
+  if (nome.includes('gestão ambiental') || nome.includes('gestao ambiental')) return 'MEIO_AMBIENTE';
+  if (nome.includes('ambiente'))    return 'MEIO_AMBIENTE';
+  if (nome.includes('cultura'))     return 'CULTURA';
+  if (nome.includes('esporte') || nome.includes('desporto') || nome.includes('lazer')) return 'ESPORTE';
+  if (nome.includes('transporte'))  return 'TRANSPORTE';
+  if (nome.includes('habita'))      return 'HABITACAO';
+  if (nome.includes('comunicaç') || nome.includes('comunicac')) return 'INFRAESTRUTURA';
+  if (nome.includes('energia'))     return 'INFRAESTRUTURA';
+  if (nome.includes('indústria') || nome.includes('industria')) return 'INFRAESTRUTURA';
   return 'OUTROS';
 }
 
