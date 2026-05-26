@@ -517,6 +517,22 @@ export default function EmendasPage() {
     [parlamentarPorAno],
   );
 
+  // Áreas do parlamentar (ano atual) — formato esperado pelo ComparativoAreasCard
+  const parlamentarAreasAtual = useMemo<{ area: EmendaArea; total: number }[]>(() => {
+    const m = new Map<EmendaArea, number>();
+    parlamentarEmendas.forEach((e) => m.set(e.area, (m.get(e.area) ?? 0) + e.valorEmpenhado));
+    return Array.from(m.entries()).map(([area, total]) => ({ area, total }));
+  }, [parlamentarEmendas]);
+
+  // Áreas do parlamentar (ano anterior) — derivado do histórico
+  const parlamentarAreasAnterior = useMemo<Map<string, number>>(() => {
+    const m = new Map<string, number>();
+    parlamentarHistorico
+      .filter((e) => e.ano === ano - 1)
+      .forEach((e) => m.set(e.area, (m.get(e.area) ?? 0) + e.valorEmpenhado));
+    return m;
+  }, [parlamentarHistorico, ano]);
+
   const comparativoAreasAnterior = useMemo(() => {
     if (!resumoAnterior) return new Map<string, number>();
     const m = new Map<string, number>();
@@ -823,9 +839,27 @@ export default function EmendasPage() {
           <div className="col-span-12 md:col-span-9">
             <ComparativoAreasCard
               ano={ano}
-              escopo={selectedMunicipio ? `município de ${selectedMunicipio.nome}` : `estado de ${selectedStateName}`}
-              areasAtual={selectedMunicipio && municipioAreasAtual ? municipioAreasAtual : resumo.areas}
-              areasAnterior={selectedMunicipio ? municipioAreasAnterior : comparativoAreasAnterior}
+              escopo={
+                selectedParlamentar
+                  ? selectedParlamentar.nome
+                  : selectedMunicipio
+                  ? `município de ${selectedMunicipio.nome}`
+                  : `estado de ${selectedStateName}`
+              }
+              areasAtual={
+                selectedParlamentar
+                  ? parlamentarAreasAtual
+                  : selectedMunicipio && municipioAreasAtual
+                  ? municipioAreasAtual
+                  : resumo.areas
+              }
+              areasAnterior={
+                selectedParlamentar
+                  ? parlamentarAreasAnterior
+                  : selectedMunicipio
+                  ? municipioAreasAnterior
+                  : comparativoAreasAnterior
+              }
             />
           </div>
         )}
