@@ -64,7 +64,7 @@ jobs:
             --retry-all-errors \
             --max-time 1800 \
             -A "Mozilla/5.0 (compatible; AdminHub-bot/1.0)" \
-            "https://portaldatransparencia.gov.br/download-de-dados/emendas/${{ env.ANO }}" \
+            "https://portaldatransparencia.gov.br/download-de-dados/emendas-parlamentares-documentos/${{ env.ANO }}" \
             -o "data/portal-csv-imports/${{ env.ANO }}_EmendasParlamentaresPorDocumento.zip"
 
           echo "Arquivo baixado:"
