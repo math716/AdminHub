@@ -32,7 +32,15 @@ import { parse } from 'csv-parse';
 import { PrismaClient } from '@prisma/client';
 import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
 
-const dbUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+// Prefere DIRECT_URL (conexão direta, sem PgBouncer).
+// Se só tiver DATABASE_URL (passa pelo PgBouncer do Supabase), adiciona
+// pgbouncer=true para que o Prisma não use prepared statements — evita
+// FK violations esporádicas em transaction mode.
+const dbUrl = (() => {
+  if (process.env.DIRECT_URL) return process.env.DIRECT_URL;
+  const raw = process.env.DATABASE_URL ?? '';
+  return raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true';
+})();
 const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -176,16 +184,21 @@ async function obterParlamentarId(nome: string, cargo: ParlamentarCargo, uf: str
   if (parlamentarInflight.has(nomeNorm)) return parlamentarInflight.get(nomeNorm)!;
 
   const promise = (async () => {
-    const idPortal = `PORTAL:${nomeNorm}`;
-    const p = await prisma.parlamentar.upsert({
-      where: { idPortal },
-      create: { idPortal, nome: nomeNorm, cargo, uf },
-      update: {},
-      select: { id: true },
-    });
-    parlamentarPorNome.set(nomeNorm, p.id);
-    parlamentarInflight.delete(nomeNorm);
-    return p.id;
+    try {
+      const idPortal = `PORTAL:${nomeNorm}`;
+      const p = await prisma.parlamentar.upsert({
+        where: { idPortal },
+        create: { idPortal, nome: nomeNorm, cargo, uf },
+        update: {},
+        select: { id: true },
+      });
+      parlamentarPorNome.set(nomeNorm, p.id);
+      return p.id;
+    } finally {
+      // Sempre limpa o inflight — inclusive em caso de erro,
+      // para não deixar promise rejeitada presa no cache.
+      parlamentarInflight.delete(nomeNorm);
+    }
   })();
 
   parlamentarInflight.set(nomeNorm, promise);
@@ -251,10 +264,6 @@ async function obterEmendaId(opts: {
 async function upsertDocumento(emendaId: string, row: Record<string, string>): Promise<void> {
   const codigoDocumento = naIfEmpty(row[COL.codigoDocumento]);
   if (!codigoDocumento) return;
-
-  const ibgeAplic = naIfEmpty(row[COL.ibgeAplicacao]);
-  const munAplic  = naIfEmpty(row[COL.municipioAplicacao]);
-  const ufAplic   = naIfEmpty(row[COL.ufAplicacao]);
 
   // Município "do recurso" tem prioridade sobre "do favorecido" pra exibição
   const munFav    = naIfEmpty(row[COL.municipioFavorecido]);
