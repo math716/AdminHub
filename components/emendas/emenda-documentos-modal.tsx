@@ -186,17 +186,8 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, onClose }:
 
             {/* Pendente enrich */}
             {data && data.pendingEnrich && !data.notFound && (
-              <div className="rounded-lg p-6 text-sm text-amber-200 bg-amber-950/30 border border-amber-500/30">
-                <div className="flex items-start gap-3">
-                  <Clock className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold mb-1">Detalhes ainda não sincronizados</p>
-                    <p className="text-xs text-amber-200/70 leading-relaxed">
-                      Esta emenda ainda não passou pelo enriquecimento — o cron sincroniza em lotes e ela está na fila.
-                      Volte em alguns minutos pra ver favorecido, descrição e breakdown por fase.
-                    </p>
-                  </div>
-                </div>
+              <div className="rounded-lg p-6 text-sm text-slate-400 bg-slate-900/40 border border-white/5 text-center">
+                Detalhes detalhados não disponíveis para esta emenda.
               </div>
             )}
 
