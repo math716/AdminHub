@@ -87,6 +87,7 @@ export interface PortalParlamentar {
 // ---------------------------------------------------------------------------
 // Códigos da classificação funcional do orçamento federal (Portaria MOG 42/1999).
 const FUNCAO_AREA_MAP: Record<string, EmendaArea> = {
+  '04': 'INFRAESTRUTURA',   // Administração
   '05': 'SEGURANCA',        // Defesa Nacional
   '06': 'SEGURANCA',        // Segurança Pública
   '08': 'ASSISTENCIA_SOCIAL',
@@ -100,9 +101,11 @@ const FUNCAO_AREA_MAP: Record<string, EmendaArea> = {
   '16': 'HABITACAO',
   '17': 'SANEAMENTO',
   '18': 'MEIO_AMBIENTE',    // Gestão Ambiental
+  '19': 'EDUCACAO',         // Ciência e Tecnologia
   '20': 'AGRICULTURA',
   '21': 'AGRICULTURA',      // Organização Agrária
   '22': 'INFRAESTRUTURA',   // Indústria
+  '23': 'INFRAESTRUTURA',   // Comércio e Serviços
   '24': 'INFRAESTRUTURA',   // Comunicações
   '25': 'INFRAESTRUTURA',   // Energia
   '26': 'TRANSPORTE',
@@ -132,6 +135,9 @@ export function classificarArea(funcaoCodigo?: string | null, funcaoNome?: strin
   if (nome.includes('comunicaç') || nome.includes('comunicac')) return 'INFRAESTRUTURA';
   if (nome.includes('energia'))     return 'INFRAESTRUTURA';
   if (nome.includes('indústria') || nome.includes('industria')) return 'INFRAESTRUTURA';
+  if (nome.includes('administraç') || nome.includes('administrac')) return 'INFRAESTRUTURA';
+  if (nome.includes('ciência') || nome.includes('ciencia') || nome.includes('tecnologia')) return 'EDUCACAO';
+  if (nome.includes('comércio') || nome.includes('comercio') || nome.includes('serviços') || nome.includes('servicos')) return 'INFRAESTRUTURA';
   return 'OUTROS';
 }
 
@@ -148,7 +154,7 @@ export const AREA_LABELS: Record<EmendaArea, string> = {
   TRANSPORTE:         'Transporte',
   HABITACAO:          'Habitação',
   SANEAMENTO:         'Saneamento',
-  OUTROS:             'Outros',
+  OUTROS:             'Encargos Especiais',
 };
 
 export const AREA_COLORS: Record<EmendaArea, string> = {
