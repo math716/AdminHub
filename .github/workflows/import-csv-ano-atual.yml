@@ -45,28 +45,60 @@ jobs:
         run: |
           ANO="${{ github.event.inputs.ano || '2026' }}"
           ZIP="data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip"
-          echo "Baixando emendas de $ANO..."
-          curl -L \
-            --retry 5 \
-            --retry-delay 15 \
-            --retry-all-errors \
-            --max-time 1800 \
-            --user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" \
-            -H "Accept: application/zip, application/octet-stream, */*" \
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          BASE="https://portaldatransparencia.gov.br"
+          URL="$BASE/download-de-dados/emendas-parlamentares-documentos/$ANO"
+
+          echo "=== Passo 1: obter cookies de sessao ==="
+          curl -s -c /tmp/portal-cookies.txt \
+            --user-agent "$UA" \
+            -H "Accept: text/html,*/*" \
+            -o /dev/null \
+            "$BASE/download-de-dados/emendas-parlamentares-documentos"
+          echo "Cookies obtidos:"
+          cat /tmp/portal-cookies.txt 2>/dev/null || echo "(nenhum)"
+
+          echo ""
+          echo "=== Passo 2: descobrir URL real do arquivo ==="
+          REDIRECT_URL=$(curl -s -o /dev/null -w "%{url_effective}" -L \
+            -b /tmp/portal-cookies.txt \
+            --user-agent "$UA" \
+            -H "Accept: application/zip,application/octet-stream,*/*" \
+            -H "Referer: $BASE/download-de-dados/emendas-parlamentares-documentos" \
+            --max-time 30 \
+            "$URL")
+          echo "URL final apos redirecionamentos: $REDIRECT_URL"
+
+          echo ""
+          echo "=== Passo 3: download com diagnostico ==="
+          HTTP_INFO=$(curl -L \
+            -b /tmp/portal-cookies.txt \
+            --user-agent "$UA" \
+            -H "Accept: application/zip,application/octet-stream,*/*" \
             -H "Accept-Language: pt-BR,pt;q=0.9" \
-            -H "Referer: https://portaldatransparencia.gov.br/download-de-dados/emendas-parlamentares-documentos" \
-            "https://portaldatransparencia.gov.br/download-de-dados/emendas-parlamentares-documentos/$ANO" \
-            -o "$ZIP"
-          echo "Tamanho: $(ls -lh "$ZIP" | awk '{print $5}')"
-          MAGIC=$(xxd -p -l 4 "$ZIP")
+            -H "Referer: $BASE/download-de-dados/emendas-parlamentares-documentos" \
+            --retry 3 --retry-delay 10 --retry-all-errors \
+            --max-time 1800 \
+            -w "\nHTTP_CODE=%{http_code}\nCONTENT_TYPE=%{content_type}\nSIZE=%{size_download}" \
+            -o "$ZIP" \
+            "$URL")
+          echo "$HTTP_INFO"
+
+          echo ""
+          MAGIC=$(xxd -p -l 4 "$ZIP" 2>/dev/null || echo "erro-xxd")
+          echo "Magic bytes: $MAGIC (esperado 504b0304 para ZIP)"
+
           if [ "$MAGIC" != "504b0304" ]; then
-            echo "ERRO: Arquivo nao e um ZIP valido. Assinatura: $MAGIC (esperado 504b0304)"
-            echo "--- Primeiros 500 bytes do arquivo ---"
-            head -c 500 "$ZIP"
-            echo "--------------------------------------"
+            echo ""
+            echo "ERRO: Nao e um ZIP. Primeiros 1000 bytes do que foi baixado:"
+            echo "---"
+            head -c 1000 "$ZIP"
+            echo ""
+            echo "---"
             exit 1
           fi
-          echo "ZIP valido. Tamanho: $(stat -c%s "$ZIP") bytes"
+
+          echo "ZIP valido! Tamanho: $(stat -c%s "$ZIP") bytes ($(ls -lh "$ZIP" | awk '{print $5}'))"
 
       - name: Importar dados no banco
         env:
