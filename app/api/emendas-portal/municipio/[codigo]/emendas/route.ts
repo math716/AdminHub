@@ -20,6 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: { codigo: 
     const noBanco = await prisma.emendaParlamentar.findMany({
       where: { codigoIbge, ...(ano ? { ano } : {}) },
       select: {
+        id: true,
         idPortal: true, ano: true, numero: true, tipo: true, funcao: true,
         area: true, objeto: true, valorEmpenhado: true, valorPago: true, valorRestoPago: true,
         uf: true, codigoIbge: true, municipioNome: true,
@@ -30,31 +31,52 @@ export async function GET(request: NextRequest, { params }: { params: { codigo: 
     });
 
     if (noBanco.length > 0) {
-      const emendas = noBanco.map((e) => ({
-        idPortal:       e.idPortal,
-        ano:            e.ano,
-        numero:         e.numero,
-        tipo:           e.tipo,
-        funcao:         e.funcao,
-        subfuncao:      null,
-        area:           e.area,
-        objeto:         e.objeto,
-        valorEmpenhado: e.valorEmpenhado,
-        valorPago:      e.valorPago,
-        valorRestoPago: e.valorRestoPago,
-        valorProposto:  null,
-        orgaoExecutor:  null,
-        beneficiario:   null,
-        cnpjBeneficiario: null,
-        uf:             e.uf,
-        codigoIbge:     e.codigoIbge,
-        municipioNome:  e.municipioNome,
-        autorCpf:       e.parlamentar?.cpf ?? null,
-        autorNome:      e.parlamentar?.nome ?? '—',
-        autorCargo:     e.parlamentar?.cargo ?? 'DEPUTADO_FEDERAL',
-        autorPartido:   e.parlamentar?.partido ?? null,
-        autorUf:        e.parlamentar?.uf ?? null,
-      }));
+      const emendaIds = noBanco.map((e) => e.id);
+      const docAggs = emendaIds.length > 0
+        ? await prisma.emendaDocumento.groupBy({
+            by: ['emendaId', 'fase'],
+            where: { emendaId: { in: emendaIds } },
+            _sum: { valor: true },
+          })
+        : [];
+
+      const docValMap = new Map<string, { empenhado: number; pago: number }>();
+      for (const d of docAggs) {
+        const cur = docValMap.get(d.emendaId) ?? { empenhado: 0, pago: 0 };
+        const fase = d.fase.toLowerCase();
+        if (fase.includes('empenho')) cur.empenhado += d._sum.valor ?? 0;
+        else if (fase.includes('pagamento')) cur.pago += d._sum.valor ?? 0;
+        docValMap.set(d.emendaId, cur);
+      }
+
+      const emendas = noBanco.map((e) => {
+        const docVals = docValMap.get(e.id);
+        return {
+          idPortal:       e.idPortal,
+          ano:            e.ano,
+          numero:         e.numero,
+          tipo:           e.tipo,
+          funcao:         e.funcao,
+          subfuncao:      null,
+          area:           e.area,
+          objeto:         e.objeto,
+          valorEmpenhado: docVals ? docVals.empenhado : e.valorEmpenhado,
+          valorPago:      docVals ? docVals.pago       : e.valorPago,
+          valorRestoPago: e.valorRestoPago,
+          valorProposto:  null,
+          orgaoExecutor:  null,
+          beneficiario:   null,
+          cnpjBeneficiario: null,
+          uf:             e.uf,
+          codigoIbge:     e.codigoIbge,
+          municipioNome:  e.municipioNome,
+          autorCpf:       e.parlamentar?.cpf ?? null,
+          autorNome:      e.parlamentar?.nome ?? '—',
+          autorCargo:     e.parlamentar?.cargo ?? 'DEPUTADO_FEDERAL',
+          autorPartido:   e.parlamentar?.partido ?? null,
+          autorUf:        e.parlamentar?.uf ?? null,
+        };
+      });
       return NextResponse.json({ emendas, mock: false, fonte: 'banco' });
     }
 

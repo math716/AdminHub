@@ -52,6 +52,7 @@ async function resumoDoBanco(uf: string, ano: number) {
   const emendas = await prisma.emendaParlamentar.findMany({
     where: { uf, ano },
     select: {
+      id: true,
       area: true,
       valorEmpenhado: true,
       valorPago: true,
@@ -62,6 +63,27 @@ async function resumoDoBanco(uf: string, ano: number) {
       },
     },
   });
+
+  // Agrega valores de EmendaDocumento por emenda+fase — mais preciso que o scalar,
+  // que pode estar desatualizado (lag do portal federal). State emendas sem documentos
+  // ficam fora do map e usam o scalar normalmente.
+  const emendaIds = emendas.map((e) => e.id);
+  const docAggs = emendaIds.length > 0
+    ? await prisma.emendaDocumento.groupBy({
+        by: ['emendaId', 'fase'],
+        where: { emendaId: { in: emendaIds } },
+        _sum: { valor: true },
+      })
+    : [];
+
+  const docValMap = new Map<string, { empenhado: number; pago: number }>();
+  for (const d of docAggs) {
+    const cur = docValMap.get(d.emendaId) ?? { empenhado: 0, pago: 0 };
+    const fase = d.fase.toLowerCase();
+    if (fase.includes('empenho')) cur.empenhado += d._sum.valor ?? 0;
+    else if (fase.includes('pagamento')) cur.pago += d._sum.valor ?? 0;
+    docValMap.set(d.emendaId, cur);
+  }
 
   let totalEmpenhado      = 0;
   let totalPago           = 0;
@@ -74,9 +96,10 @@ async function resumoDoBanco(uf: string, ano: number) {
   }>();
 
   emendas.forEach((e) => {
-    const valor = e.valorEmpenhado ?? 0;
+    const docVals = docValMap.get(e.id);
+    const valor = docVals ? docVals.empenhado : (e.valorEmpenhado ?? 0);
     totalEmpenhado += valor;
-    totalPago += e.valorPago ?? 0;
+    totalPago += docVals ? docVals.pago : (e.valorPago ?? 0);
 
     if (e.codigoIbge) {
       totalMunicipalizado += valor;
