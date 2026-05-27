@@ -50,7 +50,7 @@ interface FaseBreakdown {
 }
 
 interface ApiResponse {
-  emenda: { codigoEmenda: string; ano: number; numero: string | null; tipo: string | null; valorEmpenhado: number; valorPago: number } | null;
+  emenda: { codigoEmenda: string; ano: number; numero: string | null; tipo: string | null; esfera: string; valorEmpenhado: number; valorPago: number } | null;
   documentos: DocumentoApi[];
   breakdown: { favorecidos: FavorecidoBreakdown[]; fases: FaseBreakdown[] };
   pendingEnrich: boolean;
@@ -187,7 +187,9 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, onClose }:
             {/* Pendente enrich */}
             {data && data.pendingEnrich && !data.notFound && (
               <div className="rounded-lg p-6 text-sm text-slate-400 bg-slate-900/40 border border-white/5 text-center">
-                Detalhes detalhados não disponíveis para esta emenda.
+                {data.emenda?.esfera === 'ESTADUAL'
+                  ? 'Os dados detalhados desta emenda não são disponibilizados no portal estadual.'
+                  : 'Os dados detalhados desta emenda ainda não estão disponíveis.'}
               </div>
             )}
 
