@@ -8,10 +8,46 @@ import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
 import { classificarArea } from '../../lib/portal-transparencia';
 
 // Transaction Pooler — padrão para todos os scripts de importação
-export function buildPrisma(): PrismaClient {
+export function buildPrismaUrl(): string {
   const raw = process.env.DATABASE_URL ?? '';
-  const url = raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true';
-  return new PrismaClient({ datasources: { db: { url } } });
+  return raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true';
+}
+
+export function buildPrisma(): PrismaClient {
+  return new PrismaClient({ datasources: { db: { url: buildPrismaUrl() } } });
+}
+
+const isConnError = (e: any) =>
+  typeof e?.message === 'string' && (
+    e.message.includes('Server has closed the connection') ||
+    e.message.includes('Connection pool timeout') ||
+    e.message.includes("Can't reach database server") ||
+    e.message.includes('ECONNRESET') ||
+    e.message.includes('ETIMEDOUT')
+  );
+
+export async function withRetry<T>(
+  fn: (prisma: PrismaClient) => Promise<T>,
+  getPrisma: () => PrismaClient,
+  setPrisma: (p: PrismaClient) => void,
+  retries = 4,
+): Promise<T> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fn(getPrisma());
+    } catch (e: any) {
+      if (isConnError(e) && attempt < retries - 1) {
+        const waitMs = 3000 * (attempt + 1);
+        process.stdout.write(`\n   [reconexão #${attempt + 1}] aguardando ${waitMs / 1000}s...\n`);
+        await new Promise((r) => setTimeout(r, waitMs));
+        await getPrisma().$disconnect().catch(() => {});
+        setPrisma(new PrismaClient({ datasources: { db: { url: buildPrismaUrl() } } }));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error('unreachable');
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -85,50 +121,44 @@ export function normalizeNome(s: string): string {
 // ─────────────────────────────────────────────────────────────────────────
 
 export async function importarEmendas(
-  prisma: PrismaClient,
+  prismaInicial: PrismaClient,
   uf: string,
   rows: EmendaEstadualRow[],
   opts: { batchSize?: number; dryRun?: boolean } = {},
 ): Promise<ImportResult> {
-  const { batchSize = 200, dryRun = false } = opts;
+  const { batchSize = 100, dryRun = false } = opts;
   const result: ImportResult = { inseridas: 0, erros: 0, parlamentares: 0 };
 
-  // Cache de parlamentares em memória para evitar SELECT repetitivo
+  let prisma = prismaInicial;
+  const getPrisma = () => prisma;
+  const setPrisma = (p: PrismaClient) => { prisma = p; };
+
   const parlamentarCache = new Map<string, string>();
 
   async function obterParlamentar(row: EmendaEstadualRow): Promise<string | null> {
     const chave = normalizeNome(row.autorNome);
     if (parlamentarCache.has(chave)) return parlamentarCache.get(chave)!;
-
     if (dryRun) return null;
 
     try {
-      // idPortal estadual prefixado com UF para evitar colisão com federal
       const idPortal = `${uf}:${chave}`;
-      const p = await prisma.parlamentar.upsert({
-        where: { idPortal },
-        create: {
-          idPortal,
-          nome: row.autorNome,
-          cargo: row.autorCargo ?? 'DEPUTADO_ESTADUAL',
-          partido: row.autorPartido ?? null,
-          uf,
-        },
-        update: {
-          // Atualiza partido se vier no CSV e estava vazio
-          ...(row.autorPartido ? { partido: row.autorPartido } : {}),
-        },
-      });
+      const p = await withRetry(
+        (db) => db.parlamentar.upsert({
+          where: { idPortal },
+          create: { idPortal, nome: row.autorNome, cargo: row.autorCargo ?? 'DEPUTADO_ESTADUAL', partido: row.autorPartido ?? null, uf },
+          update: { ...(row.autorPartido ? { partido: row.autorPartido } : {}) },
+        }),
+        getPrisma, setPrisma,
+      );
       parlamentarCache.set(chave, p.id);
       result.parlamentares++;
       return p.id;
     } catch (e: any) {
-      console.warn(`  [parlamentar] erro ao upsert "${row.autorNome}": ${e.message}`);
+      console.warn(`  [parlamentar] erro "${row.autorNome}": ${e.message?.slice(0, 80)}`);
       return null;
     }
   }
 
-  // Processa em batches
   for (let i = 0; i < rows.length; i += batchSize) {
     const batch = rows.slice(i, i + batchSize);
 
@@ -139,50 +169,40 @@ export async function importarEmendas(
           const area = row.area ?? classificarArea(null, row.funcao ?? null);
 
           if (!dryRun) {
-            await prisma.emendaParlamentar.upsert({
-              where: { idPortal: row.idPortal },
-              create: {
-                idPortal:       row.idPortal,
-                esfera:         'ESTADUAL',
-                ano:            row.ano,
-                numero:         row.numero ?? null,
-                tipo:           row.tipo ?? null,
-                funcao:         row.funcao ?? null,
-                subfuncao:      row.subfuncao ?? null,
-                area,
-                objeto:         row.objeto ?? null,
-                valorProposto:  row.valorProposto ?? null,
-                valorEmpenhado: row.valorEmpenhado,
-                valorPago:      row.valorPago,
-                valorRestoPago: row.valorRestoPago ?? 0,
-                uf:             row.uf,
-                codigoIbge:     row.codigoIbge ?? null,
-                municipioNome:  row.municipioNome ?? null,
-                parlamentarId:  parlamentarId ?? undefined,
-              },
-              update: {
-                esfera:         'ESTADUAL',
-                numero:         row.numero ?? null,
-                tipo:           row.tipo ?? null,
-                funcao:         row.funcao ?? null,
-                subfuncao:      row.subfuncao ?? null,
-                area,
-                objeto:         row.objeto ?? null,
-                valorProposto:  row.valorProposto ?? null,
-                valorEmpenhado: row.valorEmpenhado,
-                valorPago:      row.valorPago,
-                valorRestoPago: row.valorRestoPago ?? 0,
-                uf:             row.uf,
-                codigoIbge:     row.codigoIbge ?? null,
-                municipioNome:  row.municipioNome ?? null,
-                ...(parlamentarId ? { parlamentarId } : {}),
-              },
-            });
+            await withRetry(
+              (db) => db.emendaParlamentar.upsert({
+                where: { idPortal: row.idPortal },
+                create: {
+                  idPortal: row.idPortal, esfera: 'ESTADUAL', ano: row.ano,
+                  numero: row.numero ?? null, tipo: row.tipo ?? null,
+                  funcao: row.funcao ?? null, subfuncao: row.subfuncao ?? null,
+                  area, objeto: row.objeto ?? null,
+                  valorProposto: row.valorProposto ?? null,
+                  valorEmpenhado: row.valorEmpenhado, valorPago: row.valorPago,
+                  valorRestoPago: row.valorRestoPago ?? 0,
+                  uf: row.uf, codigoIbge: row.codigoIbge ?? null,
+                  municipioNome: row.municipioNome ?? null,
+                  parlamentarId: parlamentarId ?? undefined,
+                },
+                update: {
+                  esfera: 'ESTADUAL', numero: row.numero ?? null, tipo: row.tipo ?? null,
+                  funcao: row.funcao ?? null, subfuncao: row.subfuncao ?? null,
+                  area, objeto: row.objeto ?? null,
+                  valorProposto: row.valorProposto ?? null,
+                  valorEmpenhado: row.valorEmpenhado, valorPago: row.valorPago,
+                  valorRestoPago: row.valorRestoPago ?? 0,
+                  uf: row.uf, codigoIbge: row.codigoIbge ?? null,
+                  municipioNome: row.municipioNome ?? null,
+                  ...(parlamentarId ? { parlamentarId } : {}),
+                },
+              }),
+              getPrisma, setPrisma,
+            );
           }
 
           result.inseridas++;
         } catch (e: any) {
-          console.warn(`  [emenda] erro "${row.idPortal}": ${e.message}`);
+          console.warn(`  [emenda] erro "${row.idPortal}": ${e.message?.slice(0, 80)}`);
           result.erros++;
         }
       }),
