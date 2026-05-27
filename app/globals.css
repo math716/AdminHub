@@ -166,6 +166,25 @@ body {
   color: white !important;
 }
 
+/* Tooltip de município no mapa de estado — wrapper transparente,
+   o conteúdo já tem estilo próprio inline */
+.leaflet-tooltip.municipio-tooltip,
+.municipio-tooltip {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  outline: none !important;
+}
+
+.leaflet-tooltip.municipio-tooltip::before,
+.leaflet-tooltip.municipio-tooltip::after,
+.municipio-tooltip::before,
+.municipio-tooltip::after {
+  display: none !important;
+}
+
 .leaflet-tooltip {
   pointer-events: none;
 }
