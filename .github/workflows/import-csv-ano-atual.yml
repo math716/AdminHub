@@ -44,16 +44,29 @@ jobs:
       - name: Baixar CSV do Portal da Transparencia
         run: |
           ANO="${{ github.event.inputs.ano || '2026' }}"
+          ZIP="data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip"
           echo "Baixando emendas de $ANO..."
           curl -L \
             --retry 5 \
             --retry-delay 15 \
             --retry-all-errors \
             --max-time 1800 \
+            --user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" \
+            -H "Accept: application/zip, application/octet-stream, */*" \
+            -H "Accept-Language: pt-BR,pt;q=0.9" \
+            -H "Referer: https://portaldatransparencia.gov.br/download-de-dados/emendas-parlamentares-documentos" \
             "https://portaldatransparencia.gov.br/download-de-dados/emendas-parlamentares-documentos/$ANO" \
-            -o "data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip"
-          echo "Arquivo baixado:"
-          ls -lh "data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip"
+            -o "$ZIP"
+          echo "Tamanho: $(ls -lh "$ZIP" | awk '{print $5}')"
+          MAGIC=$(xxd -p -l 4 "$ZIP")
+          if [ "$MAGIC" != "504b0304" ]; then
+            echo "ERRO: Arquivo nao e um ZIP valido. Assinatura: $MAGIC (esperado 504b0304)"
+            echo "--- Primeiros 500 bytes do arquivo ---"
+            head -c 500 "$ZIP"
+            echo "--------------------------------------"
+            exit 1
+          fi
+          echo "ZIP valido. Tamanho: $(stat -c%s "$ZIP") bytes"
 
       - name: Importar dados no banco
         env:
