@@ -11,9 +11,14 @@ on:
         default: '2026'
         type: string
       batch:
-        description: 'Tamanho do batch (50 recomendado para evitar erros de conexao)'
+        description: 'Tamanho do chunk de leitura (default 500)'
         required: false
-        default: '50'
+        default: '500'
+        type: string
+      concurrency:
+        description: 'Operacoes simultaneas no banco (default 20, max seguro para Supabase free)'
+        required: false
+        default: '20'
         type: string
 
 jobs:
@@ -105,10 +110,12 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           ANO="${{ github.event.inputs.ano || '2026' }}"
-          BATCH="${{ github.event.inputs.batch || '50' }}"
+          BATCH="${{ github.event.inputs.batch || '500' }}"
+          CONC="${{ github.event.inputs.concurrency || '20' }}"
           npx tsx scripts/import-portal-csv.mts \
             --file "data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip" \
-            --batch $BATCH
+            --batch $BATCH \
+            --concurrency $CONC
 
       - name: Reclassificar senadores
         env:

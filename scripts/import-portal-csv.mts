@@ -19,9 +19,10 @@
  *     [--batch 500] [--limit 0]
  *
  * Flags:
- *   --file  caminho do ZIP a importar (obrigatório)
- *   --batch tamanho do batch de upserts paralelos (default 500)
- *   --limit pra teste: para após N linhas (default 0 = todas)
+ *   --file        caminho do ZIP a importar (obrigatório)
+ *   --batch       tamanho do chunk de leitura (default 500)
+ *   --concurrency máximo de operações simultâneas no banco (default 20)
+ *   --limit       pra teste: para após N linhas (default 0 = todas)
  *
  * Tempo estimado: 30-60min por arquivo (387k linhas em 2025).
  */
@@ -86,6 +87,7 @@ function arg(name: string, def?: string): string | undefined {
 
 const FILE        = arg('file');
 const BATCH       = parseInt(arg('batch', '500')!, 10);
+const CONCURRENCY = parseInt(arg('concurrency', '20')!, 10); // ops simultâneas no banco
 const LIMIT       = parseInt(arg('limit', '0')!, 10);
 const SKIP        = parseInt(arg('skip', '0')!, 10);   // pula as primeiras N linhas
 const RETRY_FILE  = arg('retry-file');                  // reimporta só os códigos do arquivo
@@ -354,7 +356,7 @@ async function upsertDocumento(emendaId: string, row: Record<string, string>): P
 // Stream loop principal
 // ─────────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log(`\n📥 Importando ${FILE}\n   batch=${BATCH}, limit=${LIMIT || 'sem limite'}\n`);
+  console.log(`\n📥 Importando ${FILE}\n   batch=${BATCH}, concurrency=${CONCURRENCY}, limit=${LIMIT || 'sem limite'}\n`);
   const inicio = Date.now();
 
   // CSV parser com decoder ISO-8859-1
@@ -382,56 +384,60 @@ async function main() {
   let buffer: Record<string, string>[] = [];
   const codigosComErro = new Set<string>(); // acumula para salvar no final
 
+  const processRow = async (row: Record<string, string>): Promise<'ok' | 'skip'> => {
+    const codigoEmenda = naIfEmpty(row[COL.codigoEmenda]);
+    if (!codigoEmenda) return 'skip';
+    if (retryCodigos && !retryCodigos.has(codigoEmenda)) return 'skip';
+
+    const nomeAutor = naIfEmpty(row[COL.nomeAutor]) ?? '—';
+    const tipoEmenda = naIfEmpty(row[COL.tipoEmenda]);
+    const cargo = inferCargo(tipoEmenda ?? undefined);
+    const ufFav = naIfEmpty(row[COL.ufFavorecido]);
+    const ufAplic = naIfEmpty(row[COL.ufAplicacao]);
+    const ufRef = ufAplic ?? ufFav;
+
+    const parlamentarId = await obterParlamentarId(nomeAutor, cargo, ufRef);
+    const emendaId = await obterEmendaId({
+      codigoEmenda,
+      ano:           parseInt(row[COL.anoEmenda] ?? '0', 10),
+      numero:        naIfEmpty(row[COL.numeroEmenda]),
+      tipo:          tipoEmenda,
+      funcao:        naIfEmpty(row[COL.funcao]),
+      uf:            ufRef,
+      codigoIbge:    naIfEmpty(row[COL.ibgeAplicacao]),
+      municipioNome: naIfEmpty(row[COL.municipioAplicacao]),
+      valorEmpenhado: parseValorBR(row[COL.valorEmpenhado]),
+      valorPago:      parseValorBR(row[COL.valorPago]),
+      parlamentarId,
+      objeto:        naIfEmpty(row[COL.localidadeAplicacao]),
+    });
+
+    await upsertDocumento(emendaId, row);
+    return 'ok';
+  };
+
+  // Processa um batch de linhas respeitando o limite de concorrência no banco.
+  // BATCH controla quantas linhas são lidas de uma vez; CONCURRENCY controla
+  // quantas operações simultâneas chegam ao Supabase (evita esgotar o pool).
   const flushBatch = async (batch: Record<string, string>[]) => {
-    const results = await Promise.allSettled(
-      batch.map(async (row): Promise<'ok' | 'skip'> => {
-        const codigoEmenda = naIfEmpty(row[COL.codigoEmenda]);
-        // Linhas sem código (rodapés, totalizadores, linhas em branco do CSV)
-        if (!codigoEmenda) return 'skip';
-        // --retry-file: processa só os códigos que falharam antes
-        if (retryCodigos && !retryCodigos.has(codigoEmenda)) return 'skip';
+    for (let i = 0; i < batch.length; i += CONCURRENCY) {
+      const sub = batch.slice(i, i + CONCURRENCY);
+      const results = await Promise.allSettled(sub.map(processRow));
 
-        const nomeAutor = naIfEmpty(row[COL.nomeAutor]) ?? '—';
-        const tipoEmenda = naIfEmpty(row[COL.tipoEmenda]);
-        const cargo = inferCargo(tipoEmenda ?? undefined);
-        const ufFav = naIfEmpty(row[COL.ufFavorecido]);
-        const ufAplic = naIfEmpty(row[COL.ufAplicacao]);
-        const ufRef = ufAplic ?? ufFav;
-
-        const parlamentarId = await obterParlamentarId(nomeAutor, cargo, ufRef);
-        const emendaId = await obterEmendaId({
-          codigoEmenda,
-          ano:           parseInt(row[COL.anoEmenda] ?? '0', 10),
-          numero:        naIfEmpty(row[COL.numeroEmenda]),
-          tipo:          tipoEmenda,
-          funcao:        naIfEmpty(row[COL.funcao]),
-          uf:            ufRef,
-          codigoIbge:    naIfEmpty(row[COL.ibgeAplicacao]),
-          municipioNome: naIfEmpty(row[COL.municipioAplicacao]),
-          valorEmpenhado: parseValorBR(row[COL.valorEmpenhado]),
-          valorPago:      parseValorBR(row[COL.valorPago]),
-          parlamentarId,
-          objeto:        naIfEmpty(row[COL.localidadeAplicacao]),
-        });
-
-        await upsertDocumento(emendaId, row);
-        return 'ok';
-      }),
-    );
-
-    for (let i = 0; i < results.length; i++) {
-      const r = results[i];
-      if (r.status === 'rejected') {
-        erros++;
-        const codigo = naIfEmpty(batch[i][COL.codigoEmenda]);
-        if (codigo) codigosComErro.add(codigo);
-        if (erros <= 10) {
-          console.error(`\n   [erro #${erros}] ${(r.reason as any)?.message ?? r.reason}`);
+      for (let j = 0; j < results.length; j++) {
+        const r = results[j];
+        if (r.status === 'rejected') {
+          erros++;
+          const codigo = naIfEmpty(sub[j][COL.codigoEmenda]);
+          if (codigo) codigosComErro.add(codigo);
+          if (erros <= 10) {
+            console.error(`\n   [erro #${erros}] ${(r.reason as any)?.message ?? r.reason}`);
+          }
+        } else if (r.value === 'skip') {
+          pulados++;
+        } else {
+          docsOk++;
         }
-      } else if (r.value === 'skip') {
-        pulados++;
-      } else {
-        docsOk++;
       }
     }
   };
