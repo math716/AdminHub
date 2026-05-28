@@ -49,7 +49,9 @@ export default function Donut3DChart({
   const getGradientId = (index: number) => `gradient-${index}`;
 
   return (
-    <div className="relative h-full w-full">
+    <div className={`h-full w-full ${hideLegend ? 'relative' : 'flex flex-col'}`}>
+      {/* Chart area */}
+      <div className={hideLegend ? 'relative h-full' : 'relative flex-1 min-h-0'}>
       {/* SVG Gradients for 3D effect */}
       <svg width="0" height="0">
         <defs>
@@ -132,13 +134,15 @@ export default function Donut3DChart({
         </div>
       )}
 
-      {/* Legend */}
+      </div>{/* end chart area */}
+
+      {/* Legend — below chart, not overlapping */}
       {!hideLegend && (
-        <div className="absolute bottom-0 left-0 right-0 flex flex-wrap justify-center gap-3 px-2">
+        <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 px-2 pt-2 pb-1">
           {filteredData.map((entry, index) => (
             <div key={index} className="flex items-center gap-1.5">
               <div
-                className="w-2.5 h-2.5 rounded-full"
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                 style={{ backgroundColor: entry.color, boxShadow: `0 0 6px ${entry.color}` }}
               />
               <span className="text-xs text-gray-300">{entry.name}</span>

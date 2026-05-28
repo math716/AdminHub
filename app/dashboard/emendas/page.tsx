@@ -420,12 +420,23 @@ export default function EmendasPage() {
 
   // Quando há parlamentar selecionado, o mapa e o Top 5 mostram só os
   // municípios beneficiados POR ELE — em vez do total do estado.
-  // Esse Record<codigoIbge, valor> é passado direto ao StateMap.
   const parlamentarValorPorMunicipio = useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {};
     parlamentarEmendas.forEach((e) => {
       if (!e.codigoIbge) return;
       map[e.codigoIbge] = (map[e.codigoIbge] ?? 0) + (e.valorEmpenhado ?? 0);
+    });
+    return map;
+  }, [parlamentarEmendas]);
+
+  // Versão por nome — para emendas estaduais sem codigoIbge (ex: RJ, MG).
+  // Passado como votesDataByName ao StateMap, que já suporta match por nome.
+  const parlamentarValorPorMunicipioNome = useMemo<Record<string, number>>(() => {
+    const map: Record<string, number> = {};
+    parlamentarEmendas.forEach((e) => {
+      if (e.codigoIbge || !e.municipioNome) return;
+      const nome = e.municipioNome.toUpperCase();
+      map[nome] = (map[nome] ?? 0) + (e.valorEmpenhado ?? 0);
     });
     return map;
   }, [parlamentarEmendas]);
@@ -442,17 +453,19 @@ export default function EmendasPage() {
       areas: Map<EmendaArea, number>;
     }>();
     parlamentarEmendas.forEach((e) => {
-      if (!e.codigoIbge) return; // ignora emendas sem município identificado
-      const cur = map.get(e.codigoIbge) ?? {
-        codigoIbge: e.codigoIbge,
-        nome:       e.municipioNome ?? e.codigoIbge,
+      // Usa codigoIbge como chave; quando ausente (emendas estaduais) usa municipioNome
+      const key = e.codigoIbge ?? (e.municipioNome ? `nome:${e.municipioNome.toUpperCase()}` : null);
+      if (!key) return;
+      const cur = map.get(key) ?? {
+        codigoIbge: e.codigoIbge ?? '',
+        nome:       e.municipioNome ?? e.codigoIbge ?? '',
         uf:         e.uf,
         total:      0,
         areas:      new Map<EmendaArea, number>(),
       };
       cur.total += e.valorEmpenhado ?? 0;
       cur.areas.set(e.area, (cur.areas.get(e.area) ?? 0) + (e.valorEmpenhado ?? 0));
-      map.set(e.codigoIbge, cur);
+      map.set(key, cur);
     });
     return Array.from(map.values())
       .map((m) => ({
@@ -783,6 +796,9 @@ export default function EmendasPage() {
                   selectedParlamentar
                     ? parlamentarValorPorMunicipio
                     : (resumo?.valorPorMunicipio ?? {})
+                }
+                votesDataByName={
+                  selectedParlamentar ? parlamentarValorPorMunicipioNome : undefined
                 }
                 onMunicipioClick={handleMunicipioClick}
                 disableSubdivisao
