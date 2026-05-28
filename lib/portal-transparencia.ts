@@ -136,8 +136,15 @@ export function classificarArea(funcaoCodigo?: string | null, funcaoNome?: strin
   if (nome.includes('energia'))     return 'INFRAESTRUTURA';
   if (nome.includes('indústria') || nome.includes('industria')) return 'INFRAESTRUTURA';
   if (nome.includes('administraç') || nome.includes('administrac')) return 'INFRAESTRUTURA';
-  if (nome.includes('ciência') || nome.includes('ciencia') || nome.includes('tecnologia')) return 'EDUCACAO';
+  if (nome.includes('ciência') || nome.includes('ciencia') || nome.includes('tecnologia') || nome.includes('inovaç') || nome.includes('inovac')) return 'EDUCACAO';
   if (nome.includes('comércio') || nome.includes('comercio') || nome.includes('serviços') || nome.includes('servicos')) return 'INFRAESTRUTURA';
+  if (nome.includes('desenvolvimento social') || nome.includes('social')) return 'ASSISTENCIA_SOCIAL';
+  if (nome.includes('rural') || nome.includes('pecuária') || nome.includes('pecuaria') || nome.includes('irrigaç') || nome.includes('irrigac')) return 'AGRICULTURA';
+  if (nome.includes('universidade') || nome.includes('escola técnica') || nome.includes('escola tecnica')) return 'EDUCACAO';
+  if (nome.includes('mulher') || nome.includes('igualdade')) return 'ASSISTENCIA_SOCIAL';
+  if (nome.includes('turismo')) return 'INFRAESTRUTURA';
+  if (nome.includes('planejamento') || nome.includes('econôm') || nome.includes('econom') || nome.includes('estradas') || nome.includes('rodagem')) return 'INFRAESTRUTURA';
+  if (nome.includes('trânsito') || nome.includes('transito')) return 'TRANSPORTE';
   return 'OUTROS';
 }
 

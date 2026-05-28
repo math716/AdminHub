@@ -1,21 +1,20 @@
 /**
- * Importa emendas parlamentares estaduais do Rio Grande do Sul.
+ * Importa emendas parlamentares estaduais do Rio Grande do Sul (ALRS).
+ * Todos os parlamentares são DEPUTADO_ESTADUAL.
  *
- * Fonte: Secretaria de Planejamento RS — arquivos XLSX por ano
- * Portal: https://planejamento.rs.gov.br/emendas-parlamentares-estaduais
- *
- * Como baixar o arquivo:
- *   1. Acesse https://planejamento.rs.gov.br/emendas-parlamentares-estaduais
- *   2. Baixe o XLSX do ano desejado
- *   3. Salve em data/estados/rs-{ano}.xlsx
+ * Fonte: ALRS — arquivo multi-ano com aba "Export"
+ * Colunas: Ano, Deputado, Partido, Município, Órgão, Projeto,
+ *          Subprojeto, Forma de Repasse, Valor
  *
  * Uso:
- *   npx tsx --require dotenv/config scripts/estados/import-rs.ts --file data/estados/rs-2022.xlsx --ano 2022
- *   npx tsx --require dotenv/config scripts/estados/import-rs.ts --file data/estados/rs-2022.xlsx --ano 2022 --dry-run
+ *   npx tsx --require dotenv/config scripts/estados/import-rs.ts \
+ *     --file data/estados/RS-2022-A-2026.xlsx
+ *   npx tsx --require dotenv/config scripts/estados/import-rs.ts \
+ *     --file data/estados/RS-2022-A-2026.xlsx --dry-run
  */
-import { readFileSync } from 'node:fs';
 import * as XLSX from 'xlsx';
-import { buildPrisma, importarEmendas, parseValorBR, type EmendaEstadualRow } from './base-import-estadual';
+import { buildPrisma, importarEmendas, type EmendaEstadualRow } from './base-import-estadual';
+import { classificarArea } from '../../lib/portal-transparencia';
 
 function arg(name: string, def?: string): string | undefined {
   const idx = process.argv.findIndex((a) => a === `--${name}`);
@@ -24,84 +23,103 @@ function arg(name: string, def?: string): string | undefined {
 }
 
 const FILE    = arg('file');
-const ANO     = parseInt(arg('ano', String(new Date().getFullYear() - 1))!, 10);
 const DRY_RUN = process.argv.includes('--dry-run');
 
-function mapearLinha(row: Record<string, any>, ano: number): EmendaEstadualRow | null {
-  const autor = (
-    row['Autor'] ?? row['Parlamentar'] ?? row['Nome do Parlamentar'] ?? row['AUTOR'] ?? ''
-  ).toString().trim();
-  if (!autor) return null;
+// ─── Mapeamento ───────────────────────────────────────────────────────────────
 
-  const numero   = (row['Número'] ?? row['Nº Emenda'] ?? row['NUMERO'] ?? row['numero'] ?? '').toString().trim();
-  const funcao   = (row['Função'] ?? row['Área'] ?? row['Area'] ?? row['FUNCAO'] ?? '').toString().trim();
-  const municipio = (row['Município'] ?? row['Municipio'] ?? row['Beneficiário'] ?? row['MUNICIPIO'] ?? '').toString().trim();
-  const objeto   = (row['Objeto'] ?? row['Descrição'] ?? row['Finalidade'] ?? row['OBJETO'] ?? '').toString().trim();
-  const partido  = (row['Partido'] ?? row['PARTIDO'] ?? '').toString().trim();
+function mapearLinha(row: Record<string, any>): EmendaEstadualRow | null {
+  // Filtra rodapés — Ano deve ser número
+  if (typeof row['Ano'] !== 'number') return null;
 
-  const valorEmpenhado = parseValorBR(row['Empenhado'] ?? row['Valor Empenhado'] ?? row['Valor Realizado'] ?? row['EMPENHADO'] ?? 0);
-  const valorPago      = parseValorBR(row['Pago'] ?? row['Valor Pago'] ?? row['PAGO'] ?? 0);
-  const valorProposto  = parseValorBR(row['Proposto'] ?? row['Valor Proposto'] ?? row['Dotação'] ?? row['DOTACAO'] ?? 0);
+  const deputado = String(row['Deputado'] ?? '').trim();
+  if (!deputado) return null;
+
+  const ano        = row['Ano'] as number;
+  const partido    = String(row['Partido'] ?? '').trim() || undefined;
+  const municipio  = String(row['Município'] ?? '').trim();
+  const orgao      = String(row['Órgão'] ?? '').trim();
+  const projeto    = String(row['Projeto'] ?? '').trim();
+  const subprojeto = String(row['Subprojeto'] ?? '').trim();
+  const forma      = String(row['Forma de Repasse'] ?? '').trim();
+
+  const valor = typeof row['Valor'] === 'number'
+    ? row['Valor']
+    : Number(String(row['Valor'] ?? '0').replace(/\./g, '').replace(',', '.')) || 0;
+
+  // Subprojeto contém código único por emenda (ex: "Ep 2180 - …")
+  const idPortal = `RS-${ano}-${subprojeto.slice(0, 80)}`;
 
   return {
-    idPortal:       numero ? `RS-${ano}-${numero}` : `RS-${ano}-${autor.slice(0, 20)}-${objeto.slice(0, 10)}`,
+    idPortal,
     ano,
-    numero:         numero || undefined,
-    funcao:         funcao || undefined,
-    objeto:         objeto || undefined,
-    valorProposto,
-    valorEmpenhado,
-    valorPago,
-    uf:             'RS',
-    municipioNome:  municipio || undefined,
-    autorNome:      autor,
-    autorCargo:     'DEPUTADO_ESTADUAL',
-    autorPartido:   partido || undefined,
+    tipo:          forma || undefined,
+    funcao:        orgao || undefined,
+    subfuncao:     projeto || undefined,
+    objeto:        subprojeto || undefined,
+    area:          classificarArea(null, orgao),
+    valorProposto:  valor,
+    valorEmpenhado: valor,
+    valorPago:      0,
+    uf:            'RS',
+    municipioNome: municipio || undefined,
+    autorNome:     deputado,
+    autorCargo:    'DEPUTADO_ESTADUAL',
+    autorPartido:  partido,
   };
 }
 
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
 async function main() {
   if (!FILE) {
-    console.error('\nUso: npx tsx --require dotenv/config scripts/estados/import-rs.ts --file <caminho.xlsx> --ano <ano>');
-    console.error('\nComo obter o arquivo:');
-    console.error('  1. Acesse https://planejamento.rs.gov.br/emendas-parlamentares-estaduais');
-    console.error('  2. Baixe o XLSX do ano desejado');
-    console.error('  3. Salve em data/estados/rs-2022.xlsx (por exemplo)');
+    console.error('\nUso: npx tsx --require dotenv/config scripts/estados/import-rs.ts --file <xlsx>');
     process.exit(1);
   }
 
-  console.log(`\n🔄 Import RS — arquivo=${FILE} ano=${ANO}${DRY_RUN ? ' [DRY RUN]' : ''}\n`);
+  console.log(`\n🔄 Import RS — arquivo=${FILE}${DRY_RUN ? ' [DRY RUN]' : ''}\n`);
 
-  const buffer = readFileSync(FILE);
-  const wb     = XLSX.read(buffer, { type: 'buffer' });
-  const sheet  = wb.Sheets[wb.SheetNames[0]];
-  const raw    = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
+  const wb  = XLSX.readFile(FILE);
+  const ws  = wb.Sheets[wb.SheetNames[0]];
+  const raw = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: '' });
+  console.log(`  ${raw.length} linhas lidas`);
+  if (raw[0]) console.log('  Colunas:', Object.keys(raw[0]).join(', '));
 
-  console.log(`  ${raw.length} linhas lidas do XLSX.`);
+  const rows = raw
+    .map(mapearLinha)
+    .filter((r): r is EmendaEstadualRow => r !== null);
 
-  if (raw.length === 0) {
-    console.error('XLSX vazio ou sem dados na primeira aba.');
-    process.exit(1);
+  console.log(`  ${rows.length} emendas mapeadas`);
+
+  const semMunicipio = rows.filter(r => !r.municipioNome).length;
+  const semValor     = rows.filter(r => !r.valorEmpenhado && !r.valorProposto).length;
+  const anos         = [...new Set(rows.map(r => r.ano))].sort();
+  console.log(`\n  Validação:`);
+  console.log(`    anos                          : ${anos.join(', ')}`);
+  console.log(`    sem município (nível estadual): ${semMunicipio}`);
+  console.log(`    sem valor                     : ${semValor}`);
+
+  const areaCount: Record<string, number> = {};
+  rows.forEach(r => { areaCount[r.area ?? 'OUTROS'] = (areaCount[r.area ?? 'OUTROS'] ?? 0) + 1; });
+  console.log(`  Áreas:`, areaCount);
+
+  if (rows[0]) {
+    console.log(`\n  Exemplo:`);
+    console.log(`    parlamentar : ${rows[0].autorNome} (${rows[0].autorPartido})`);
+    console.log(`    município   : ${rows[0].municipioNome ?? '(nível estadual)'}`);
+    console.log(`    área        : ${rows[0].area}`);
+    console.log(`    valor       : R$ ${rows[0].valorEmpenhado?.toLocaleString('pt-BR')}`);
   }
 
-  console.log('  Colunas encontradas:', Object.keys(raw[0]).join(', '));
-
-  const rows = raw.map((r) => mapearLinha(r, ANO)).filter((r): r is EmendaEstadualRow => r !== null);
-  console.log(`  ${rows.length} emendas mapeadas.\n`);
-
-  if (rows.length === 0) {
-    console.warn('Nenhuma emenda mapeada. Verifique os nomes das colunas acima e ajuste o mapeamento em mapearLinha().');
-    process.exit(1);
-  }
+  if (rows.length === 0) { console.error('\nNenhuma emenda mapeada.'); process.exit(1); }
+  if (DRY_RUN) { console.log('\n[dry-run] nenhuma escrita realizada.'); return; }
 
   const prisma = buildPrisma();
   try {
-    const result = await importarEmendas(prisma, 'RS', rows, { dryRun: DRY_RUN });
+    const result = await importarEmendas(prisma, 'RS', rows);
     console.log(`\n✅ Import RS concluído:`);
-    console.log(`   emendas inseridas/atualizadas: ${result.inseridas}`);
+    console.log(`   emendas inseridas/atualizadas    : ${result.inseridas}`);
     console.log(`   parlamentares criados/atualizados: ${result.parlamentares}`);
-    console.log(`   erros: ${result.erros}`);
-    if (DRY_RUN) console.log('\n  [dry-run] nenhuma escrita realizada.');
+    console.log(`   erros                            : ${result.erros}`);
   } finally {
     await prisma.$disconnect();
   }
