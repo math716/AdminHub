@@ -10,7 +10,8 @@ import { classificarArea } from '../../lib/portal-transparencia';
 // Transaction Pooler — padrão para todos os scripts de importação
 export function buildPrismaUrl(): string {
   const raw = process.env.DATABASE_URL ?? '';
-  return raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true';
+  const sep = raw.includes('?') ? '&' : '?';
+  return `${raw}${sep}pgbouncer=true&connection_limit=50&pool_timeout=60`;
 }
 
 export function buildPrisma(): PrismaClient {
@@ -126,7 +127,7 @@ export async function importarEmendas(
   rows: EmendaEstadualRow[],
   opts: { batchSize?: number; dryRun?: boolean } = {},
 ): Promise<ImportResult> {
-  const { batchSize = 100, dryRun = false } = opts;
+  const { batchSize = 20, dryRun = false } = opts;
   const result: ImportResult = { inseridas: 0, erros: 0, parlamentares: 0 };
 
   let prisma = prismaInicial;

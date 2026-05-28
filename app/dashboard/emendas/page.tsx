@@ -1759,6 +1759,10 @@ function EmendasDetalhadasCard({
   emendas: PortalEmenda[];
 }) {
   const [expandido, setExpandido] = useState(false);
+  const semDadosPagamento = emendas.length > 0
+    && emendas.every((e) => e.autorCargo === 'DEPUTADO_ESTADUAL' && e.valorPago === 0);
+  const semDadosExecucao = semDadosPagamento
+    && emendas.every((e) => e.valorEmpenhado === 0);
   // Emenda selecionada pra abrir modal de detalhes (favorecidos, observação, breakdown por fase)
   const [emendaSelecionada, setEmendaSelecionada] = useState<{ codigo: string; titulo: string } | null>(null);
   const MAX_INICIAL = 10;
@@ -1819,6 +1823,17 @@ function EmendasDetalhadasCard({
           {emendas.length} {emendas.length === 1 ? 'emenda' : 'emendas'}
         </p>
       </div>
+
+      {semDadosExecucao && (
+        <p className="text-[11px] text-amber-400/80 italic mb-3">
+          Informações de empenho e pagamento não disponíveis no portal estadual — apenas o valor da dotação inicial é reportado.
+        </p>
+      )}
+      {semDadosPagamento && !semDadosExecucao && (
+        <p className="text-[11px] text-amber-400/80 italic mb-3">
+          Informações de pagamento não disponíveis no portal estadual — apenas o valor empenhado é reportado.
+        </p>
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full text-[11px]">
