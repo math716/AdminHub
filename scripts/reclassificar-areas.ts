@@ -53,11 +53,14 @@ async function main() {
     }
 
     if (!DRY_RUN && updates.length > 0) {
-      await Promise.all(
-        updates.map((u) =>
-          prisma.emendaParlamentar.update({ where: { id: u.id }, data: { area: u.area } }),
-        ),
-      );
+      const CONC = 5; // respeita connection_limit=5 do Supabase free
+      for (let i = 0; i < updates.length; i += CONC) {
+        await Promise.all(
+          updates.slice(i, i + CONC).map((u) =>
+            prisma.emendaParlamentar.update({ where: { id: u.id }, data: { area: u.area } }),
+          ),
+        );
+      }
     }
 
     atualizadas += updates.length;
