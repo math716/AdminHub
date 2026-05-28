@@ -13,7 +13,10 @@ import { classificarArea, EmendaArea } from '../lib/portal-transparencia';
 // falls back to simple queries.
 function buildPrisma() {
   const url = process.env.DATABASE_URL ?? '';
-  const safeUrl = url.includes('pgbouncer=true') ? url : url + (url.includes('?') ? '&' : '?') + 'pgbouncer=true';
+  const sep = url.includes('?') ? '&' : '?';
+  const safeUrl = url.includes('pgbouncer=true')
+    ? url
+    : `${url}${sep}pgbouncer=true&connection_limit=50&pool_timeout=60`;
   return new PrismaClient({ datasources: { db: { url: safeUrl } } });
 }
 
@@ -53,7 +56,7 @@ async function main() {
     }
 
     if (!DRY_RUN && updates.length > 0) {
-      const CONC = 5; // respeita connection_limit=5 do Supabase free
+      const CONC = 50; // pool local agora tem 50 conexões — sem fila
       for (let i = 0; i < updates.length; i += CONC) {
         await Promise.all(
           updates.slice(i, i + CONC).map((u) =>

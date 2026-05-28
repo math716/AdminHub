@@ -39,7 +39,11 @@ import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
 // DIRECT_URL (Session Pooler / porta 5432) é adequada só para migrations.
 const dbUrl = (() => {
   const raw = process.env.DATABASE_URL ?? '';
-  return raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true';
+  const sep = raw.includes('?') ? '&' : '?';
+  // pgbouncer=true: sem prepared statements (obrigatório para transaction pooler)
+  // connection_limit=50: pool local do Prisma — deve bater com CONCURRENCY
+  // pool_timeout=60: aguarda até 60s por uma conexão livre (evita P2024)
+  return `${raw}${sep}pgbouncer=true&connection_limit=50&pool_timeout=60`;
 })();
 let prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
 
@@ -87,7 +91,7 @@ function arg(name: string, def?: string): string | undefined {
 
 const FILE        = arg('file');
 const BATCH       = parseInt(arg('batch', '500')!, 10);
-const CONCURRENCY = parseInt(arg('concurrency', '20')!, 10); // ops simultâneas no banco
+const CONCURRENCY = parseInt(arg('concurrency', '50')!, 10); // ops simultâneas no banco
 const LIMIT       = parseInt(arg('limit', '0')!, 10);
 const SKIP        = parseInt(arg('skip', '0')!, 10);   // pula as primeiras N linhas
 const RETRY_FILE  = arg('retry-file');                  // reimporta só os códigos do arquivo
