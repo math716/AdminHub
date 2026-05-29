@@ -111,6 +111,21 @@ interface PortalParlamentar {
   cargo: ParlamentarCargo;
 }
 
+interface DestinoRow {
+  codigoEmenda: string;
+  numeroEmenda: string | null;
+  tipoEmenda: string | null;
+  funcao: string | null;
+  nomeFavorecido: string | null;
+  cnpjFavorecido: string | null;
+  municipio: string | null;
+  uf: string | null;
+  codigoIbge: string | null;
+  valorEmpenhado: number;
+  valorPago: number;
+  fonte: 'documento' | 'emenda';
+}
+
 interface MunicipioStats {
   codigoIbge: string;
   ano: number;
@@ -181,6 +196,7 @@ export default function EmendasPage() {
   const [selectedParlamentar, setSelectedParlamentar] = useState<PortalParlamentar | null>(null);
   const [parlamentarEmendas, setParlamentarEmendas] = useState<PortalEmenda[]>([]);
   const [parlamentarPix, setParlamentarPix] = useState<TransferenciaPix[]>([]);
+  const [parlamentarDestinosFlat, setParlamentarDestinosFlat] = useState<DestinoRow[]>([]);
   const [loadingParlamentar, setLoadingParlamentar] = useState(false);
 
   // Resumo do ano anterior (para o comparativo)
@@ -272,24 +288,26 @@ export default function EmendasPage() {
     setParlamentarResults(matches);
   }, [parlamentarQuery, resumo, selectedUf]);
 
-  // ----- Emendas + transferências Pix do parlamentar selecionado -----
+  // ----- Emendas + transferências Pix + destinos do parlamentar selecionado -----
   useEffect(() => {
     if (!selectedParlamentar) {
       setParlamentarEmendas([]);
       setParlamentarPix([]);
+      setParlamentarDestinosFlat([]);
       return;
     }
     const ctrl = new AbortController();
     setLoadingParlamentar(true);
     const id = selectedParlamentar.cpf ?? selectedParlamentar.idPortal;
-    // Filtra por UF do estado em foco — os números refletem só a fatia
-    // do parlamentar naquele estado, não o total nacional dele.
     const ufParam = selectedUf ? `&uf=${selectedUf}` : '';
-    fetch(`/api/emendas-portal/parlamentar/${id}?ano=${ano}${ufParam}`, { signal: ctrl.signal })
-      .then((r) => r.json())
-      .then((data) => {
+    Promise.all([
+      fetch(`/api/emendas-portal/parlamentar/${id}?ano=${ano}${ufParam}`, { signal: ctrl.signal }).then((r) => r.json()),
+      fetch(`/api/emendas-portal/parlamentar/${id}/destinos?ano=${ano}${ufParam}`, { signal: ctrl.signal }).then((r) => r.json()),
+    ])
+      .then(([data, destData]) => {
         setParlamentarEmendas(Array.isArray(data?.emendas) ? data.emendas : []);
         setParlamentarPix(Array.isArray(data?.transferenciasPix) ? data.transferenciasPix : []);
+        setParlamentarDestinosFlat(Array.isArray(destData?.destinos) ? destData.destinos : []);
       })
       .catch((e: any) => {
         if (e?.name !== 'AbortError') console.error('Erro ao buscar emendas do parlamentar:', e);
@@ -939,6 +957,7 @@ export default function EmendasPage() {
           porMunicipio={parlamentarPorMunicipio}
           porTipo={parlamentarPorTipo}
           destinos={parlamentarDestinos}
+          destinosFlat={parlamentarDestinosFlat}
           emendas={parlamentarEmendas}
           pixPorMunicipio={parlamentarPixPorMunicipio}
           pixTotal={parlamentarPixTotal}
@@ -1549,7 +1568,7 @@ interface ParlamentarPorMunicipio {
 }
 
 function ParlamentarDashboard({
-  parlamentar, ano, uf, escopo, loading, totalAno, totalPago, porArea, porAno, maxPorAno, porMunicipio, porTipo, destinos, emendas, pixPorMunicipio, pixTotal, onMunicipioClick,
+  parlamentar, ano, uf, escopo, loading, totalAno, totalPago, porArea, porAno, maxPorAno, porMunicipio, porTipo, destinos, destinosFlat, emendas, pixPorMunicipio, pixTotal, onMunicipioClick,
 }: {
   parlamentar: PortalParlamentar;
   ano: number;
@@ -1564,6 +1583,7 @@ function ParlamentarDashboard({
   porMunicipio: ParlamentarPorMunicipio[];
   porTipo: { tipo: string; total: number; qtd: number }[];
   destinos: { municipal: number; estadual: number; qtdMun: number; qtdEst: number };
+  destinosFlat: DestinoRow[];
   emendas: PortalEmenda[];
   pixPorMunicipio: { codigoIbge: string; nome: string; uf: string | null; total: number; qtd: number }[];
   pixTotal: number;
@@ -1728,8 +1748,8 @@ function ParlamentarDashboard({
       )}
 
       {/* Tabela detalhada das emendas individuais */}
-      {!loading && emendas.length > 0 && (
-        <EmendasDetalhadasCard ano={ano} uf={uf} emendas={emendas} />
+      {!loading && (emendas.length > 0 || destinosFlat.length > 0) && (
+        <EmendasDetalhadasCard ano={ano} uf={uf} emendas={emendas} destinosFlat={destinosFlat} />
       )}
 
 
@@ -1755,11 +1775,12 @@ function ParlamentarDashboard({
 }
 
 function EmendasDetalhadasCard({
-  ano, uf, emendas,
+  ano, uf, emendas, destinosFlat,
 }: {
   ano: number;
   uf?: string;
   emendas: PortalEmenda[];
+  destinosFlat: DestinoRow[];
 }) {
   const semDadosPagamento = emendas.length > 0
     && emendas.every((e) => e.autorCargo === 'DEPUTADO_ESTADUAL' && e.valorPago === 0);
@@ -1775,27 +1796,50 @@ function EmendasDetalhadasCard({
   const [valorMin, setValorMin] = useState('');
   const [valorMax, setValorMax] = useState('');
 
-  // Listas únicas para os dropdowns
+  // Quando há destinosFlat usa-os; caso contrário usa emendas como fallback
+  const usandoFlat = destinosFlat.length > 0;
+
+  // Dropdowns: populados a partir dos destinos flat (ou emendas no fallback)
   const funcoes = useMemo(() => {
     const s = new Set<string>();
-    emendas.forEach((e) => { if (e.funcao) s.add(e.funcao); });
+    if (usandoFlat) destinosFlat.forEach((d) => { if (d.funcao) s.add(d.funcao); });
+    else            emendas.forEach((e) => { if (e.funcao) s.add(e.funcao); });
     return Array.from(s).sort();
-  }, [emendas]);
+  }, [usandoFlat, destinosFlat, emendas]);
 
   const tiposCurtos = useMemo(() => {
     const s = new Set<string>();
-    emendas.forEach((e) => { if (e.tipo) s.add(tipoCurtoLabel(e.tipo)); });
+    if (usandoFlat) destinosFlat.forEach((d) => { if (d.tipoEmenda) s.add(tipoCurtoLabel(d.tipoEmenda)); });
+    else            emendas.forEach((e) => { if (e.tipo) s.add(tipoCurtoLabel(e.tipo)); });
     return Array.from(s).sort();
-  }, [emendas]);
+  }, [usandoFlat, destinosFlat, emendas]);
 
   const normalizar = (s: string) =>
     s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-  // Aplica filtros e ordena por valor empenhado desc
-  const filtradas = useMemo(() => {
-    const q = normalizar(busca.trim());
-    const vMin = valorMin ? parseFloat(valorMin.replace(/\./g, '').replace(',', '.')) : null;
-    const vMax = valorMax ? parseFloat(valorMax.replace(/\./g, '').replace(',', '.')) : null;
+  const vMinNum = valorMin ? parseFloat(valorMin) : null;
+  const vMaxNum = valorMax ? parseFloat(valorMax) : null;
+  const q = normalizar(busca.trim());
+
+  // ── Flat (destinos reais por favorecido) ──────────────────────────────────
+  const destinosFiltrados = useMemo(() => {
+    if (!usandoFlat) return [];
+    return destinosFlat.filter((d) => {
+      if (q && !normalizar(d.municipio ?? '').includes(q)
+             && !normalizar(d.nomeFavorecido ?? '').includes(q)
+             && !normalizar(d.funcao ?? '').includes(q)
+             && !normalizar(d.numeroEmenda ?? '').includes(q)) return false;
+      if (funcaoFiltro && d.funcao !== funcaoFiltro) return false;
+      if (tipoFiltro && tipoCurtoLabel(d.tipoEmenda) !== tipoFiltro) return false;
+      if (vMinNum !== null && d.valorEmpenhado < vMinNum) return false;
+      if (vMaxNum !== null && d.valorEmpenhado > vMaxNum) return false;
+      return true;
+    });
+  }, [usandoFlat, destinosFlat, q, funcaoFiltro, tipoFiltro, vMinNum, vMaxNum]);
+
+  // ── Fallback: emendas filtradas ───────────────────────────────────────────
+  const emendasFiltradas = useMemo(() => {
+    if (usandoFlat) return [];
     return [...emendas]
       .filter((e) => {
         if (q && !normalizar(e.municipioNome ?? '').includes(q)
@@ -1804,16 +1848,21 @@ function EmendasDetalhadasCard({
                && !normalizar(e.numero ?? '').includes(q)) return false;
         if (funcaoFiltro && e.funcao !== funcaoFiltro) return false;
         if (tipoFiltro && tipoCurtoLabel(e.tipo) !== tipoFiltro) return false;
-        if (vMin !== null && (e.valorEmpenhado ?? 0) < vMin) return false;
-        if (vMax !== null && (e.valorEmpenhado ?? 0) > vMax) return false;
+        if (vMinNum !== null && (e.valorEmpenhado ?? 0) < vMinNum) return false;
+        if (vMaxNum !== null && (e.valorEmpenhado ?? 0) > vMaxNum) return false;
         return true;
       })
       .sort((a, b) => (b.valorEmpenhado ?? 0) - (a.valorEmpenhado ?? 0));
-  }, [emendas, busca, funcaoFiltro, tipoFiltro, valorMin, valorMax]);
+  }, [usandoFlat, emendas, q, funcaoFiltro, tipoFiltro, vMinNum, vMaxNum]);
 
   const temFiltro = busca || funcaoFiltro || tipoFiltro || valorMin || valorMax;
-  const totalFiltrado = filtradas.reduce((s, e) => s + (e.valorEmpenhado ?? 0), 0);
-  const totalGeral    = emendas.reduce((s, e) => s + (e.valorEmpenhado ?? 0), 0);
+  const totalItens   = usandoFlat ? destinosFlat.length   : emendas.length;
+  const filtradoQtd  = usandoFlat ? destinosFiltrados.length : emendasFiltradas.length;
+  const totalValor   = usandoFlat
+    ? (temFiltro ? destinosFiltrados : destinosFlat).reduce((s, d) => s + d.valorEmpenhado, 0)
+    : (temFiltro ? emendasFiltradas  : emendas).reduce((s, e) => s + (e.valorEmpenhado ?? 0), 0);
+
+  const labelItens = usandoFlat ? 'destinos' : (emendas.length === 1 ? 'emenda' : 'emendas');
 
   return (
     <div
@@ -1827,8 +1876,8 @@ function EmendasDetalhadasCard({
         </p>
         <p className="text-[10px] text-slate-500">
           {temFiltro
-            ? <><span className="text-amber-300 font-semibold">{filtradas.length}</span> de {emendas.length} emendas · {formatBRLCompact(totalFiltrado)}</>
-            : <>{emendas.length} {emendas.length === 1 ? 'emenda' : 'emendas'} · {formatBRLCompact(totalGeral)}</>
+            ? <><span className="text-amber-300 font-semibold">{filtradoQtd}</span> de {totalItens} {labelItens} · {formatBRLCompact(totalValor)}</>
+            : <>{totalItens} {labelItens} · {formatBRLCompact(totalValor)}</>
           }
         </p>
       </div>
@@ -1847,18 +1896,15 @@ function EmendasDetalhadasCard({
 
       {/* Filtros */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
-        {/* Busca texto */}
         <div className="relative lg:col-span-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500" />
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Município, função, nº…"
+            placeholder={usandoFlat ? 'Favorecido, município, nº…' : 'Município, função, nº…'}
             className="w-full bg-white/5 border border-white/10 rounded-lg pl-7 pr-3 py-1.5 text-[11px] text-white placeholder-slate-500 outline-none focus:border-amber-500/50 transition-colors"
           />
         </div>
-
-        {/* Filtro área/função */}
         <select
           value={funcaoFiltro}
           onChange={(e) => setFuncaoFiltro(e.target.value)}
@@ -1868,8 +1914,6 @@ function EmendasDetalhadasCard({
           <option value="">Todas as áreas</option>
           {funcoes.map((f) => <option key={f} value={f}>{f}</option>)}
         </select>
-
-        {/* Filtro tipo */}
         <select
           value={tipoFiltro}
           onChange={(e) => setTipoFiltro(e.target.value)}
@@ -1879,8 +1923,6 @@ function EmendasDetalhadasCard({
           <option value="">Todos os tipos</option>
           {tiposCurtos.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
-
-        {/* Faixa de valor */}
         <div className="flex items-center gap-1.5">
           <input
             value={valorMin}
@@ -1902,7 +1944,6 @@ function EmendasDetalhadasCard({
         </div>
       </div>
 
-      {/* Botão limpar filtros */}
       {temFiltro && (
         <button
           onClick={() => { setBusca(''); setFuncaoFiltro(''); setTipoFiltro(''); setValorMin(''); setValorMax(''); }}
@@ -1912,76 +1953,117 @@ function EmendasDetalhadasCard({
         </button>
       )}
 
-      {/* Tabela */}
-      {filtradas.length === 0 ? (
-        <p className="text-center text-[11px] text-slate-500 py-6">
-          Nenhuma emenda encontrada com os filtros aplicados.
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-[11px]">
-            <thead>
-              <tr className="text-left text-[9px] uppercase tracking-widest text-slate-500 border-b border-white/5">
-                <th className="py-2 px-2 font-semibold w-12">Nº</th>
-                <th className="py-2 px-2 font-semibold">Tipo</th>
-                <th className="py-2 px-2 font-semibold">Área</th>
-                <th className="py-2 px-2 font-semibold" title="Município principal registrado na emenda. Clique para ver todos os favorecidos reais.">Destino ↗</th>
-                <th className="py-2 px-2 font-semibold text-right">Empenhado</th>
-                <th className="py-2 px-2 font-semibold text-right">Pago</th>
-                <th className="py-2 px-2 font-semibold text-right w-14">%</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtradas.map((e) => {
-                const tipo = tipoCurtoInfo(e.tipo);
-                const pct = e.valorEmpenhado > 0 ? (e.valorPago / e.valorEmpenhado) * 100 : 0;
-                return (
-                  <tr
-                    key={e.idPortal}
-                    onClick={() => setEmendaSelecionada({
-                      codigo: e.idPortal,
-                      titulo: e.numero ? `Emenda nº ${e.numero}` : `Emenda ${e.idPortal}`,
-                    })}
-                    className="border-b border-white/5 hover:bg-amber-300/5 transition-colors cursor-pointer"
-                    title="Clique para ver favorecidos, descrição e breakdown por fase"
-                  >
-                    <td className="py-2 px-2 text-slate-400 font-mono">{e.numero ?? '—'}</td>
-                    <td className="py-2 px-2">
-                      <span
-                        title={tipo.hint}
-                        className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold cursor-help"
-                        style={{ background: `${tipo.color}22`, color: tipo.color, border: `1px solid ${tipo.color}44` }}
-                      >
-                        {tipo.label}
-                      </span>
-                    </td>
-                    <td className="py-2 px-2 text-slate-200 truncate max-w-[140px]" title={e.funcao ?? ''}>
-                      {e.funcao ?? '—'}
-                    </td>
-                    <td
-                      className="py-2 px-2 text-slate-300 truncate max-w-[180px]"
-                      title={e.municipioNome ?? e.objeto ?? ''}
+      {/* ── Tabela flat (destinos reais) ─────────────────────────────────── */}
+      {usandoFlat && (
+        destinosFiltrados.length === 0 ? (
+          <p className="text-center text-[11px] text-slate-500 py-6">Nenhum destino encontrado com os filtros aplicados.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="text-left text-[9px] uppercase tracking-widest text-slate-500 border-b border-white/5">
+                  <th className="py-2 px-2 font-semibold w-12">Nº</th>
+                  <th className="py-2 px-2 font-semibold">Tipo</th>
+                  <th className="py-2 px-2 font-semibold">Área</th>
+                  <th className="py-2 px-2 font-semibold">Favorecido</th>
+                  <th className="py-2 px-2 font-semibold">Município</th>
+                  <th className="py-2 px-2 font-semibold text-right">Empenhado</th>
+                  <th className="py-2 px-2 font-semibold text-right">Pago</th>
+                  <th className="py-2 px-2 font-semibold text-right w-14">%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {destinosFiltrados.map((d, i) => {
+                  const tipo = tipoCurtoInfo(d.tipoEmenda);
+                  const pct  = d.valorEmpenhado > 0 ? (d.valorPago / d.valorEmpenhado) * 100 : 0;
+                  return (
+                    <tr
+                      key={`${d.codigoEmenda}-${d.cnpjFavorecido ?? d.nomeFavorecido ?? i}`}
+                      onClick={() => setEmendaSelecionada({
+                        codigo: d.codigoEmenda,
+                        titulo: d.numeroEmenda ? `Emenda nº ${d.numeroEmenda}` : `Emenda ${d.codigoEmenda}`,
+                      })}
+                      className="border-b border-white/5 hover:bg-amber-300/5 transition-colors cursor-pointer"
+                      title="Clique para ver todos os documentos desta emenda"
                     >
-                      {e.municipioNome
-                        ? e.municipioNome
-                        : <span className="text-slate-500 italic">{e.objeto ?? 'sem destino'}</span>
-                      }
-                    </td>
-                    <td className="py-2 px-2 text-right text-white font-semibold whitespace-nowrap">
-                      {formatBRL(e.valorEmpenhado)}
-                    </td>
-                    <td className="py-2 px-2 text-right text-emerald-300 whitespace-nowrap">
-                      {formatBRL(e.valorPago)}
-                    </td>
-                    <td className="py-2 px-2 text-right text-slate-400 whitespace-nowrap">
-                      {pct.toFixed(0)}%
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      <td className="py-2 px-2 text-slate-400 font-mono whitespace-nowrap">{d.numeroEmenda ?? '—'}</td>
+                      <td className="py-2 px-2">
+                        <span
+                          title={tipo.hint}
+                          className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold cursor-help whitespace-nowrap"
+                          style={{ background: `${tipo.color}22`, color: tipo.color, border: `1px solid ${tipo.color}44` }}
+                        >
+                          {tipo.label}
+                        </span>
+                      </td>
+                      <td className="py-2 px-2 text-slate-200 truncate max-w-[100px]" title={d.funcao ?? ''}>{d.funcao ?? '—'}</td>
+                      <td className="py-2 px-2 text-slate-300 truncate max-w-[200px]" title={d.nomeFavorecido ?? ''}>
+                        {d.nomeFavorecido ?? <span className="text-slate-500 italic">sem favorecido</span>}
+                      </td>
+                      <td className="py-2 px-2 text-slate-400 truncate max-w-[140px]" title={[d.municipio, d.uf].filter(Boolean).join(' / ')}>
+                        {d.municipio
+                          ? <>{d.municipio}{d.uf ? <span className="text-slate-600"> / {d.uf}</span> : null}</>
+                          : <span className="text-slate-600 italic">—</span>}
+                      </td>
+                      <td className="py-2 px-2 text-right text-white font-semibold whitespace-nowrap">{formatBRL(d.valorEmpenhado)}</td>
+                      <td className="py-2 px-2 text-right text-emerald-300 whitespace-nowrap">{formatBRL(d.valorPago)}</td>
+                      <td className="py-2 px-2 text-right text-slate-400 whitespace-nowrap">{pct.toFixed(0)}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
+      )}
+
+      {/* ── Tabela fallback (por emenda) ─────────────────────────────────── */}
+      {!usandoFlat && (
+        emendasFiltradas.length === 0 ? (
+          <p className="text-center text-[11px] text-slate-500 py-6">Nenhuma emenda encontrada com os filtros aplicados.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="text-left text-[9px] uppercase tracking-widest text-slate-500 border-b border-white/5">
+                  <th className="py-2 px-2 font-semibold w-12">Nº</th>
+                  <th className="py-2 px-2 font-semibold">Tipo</th>
+                  <th className="py-2 px-2 font-semibold">Área</th>
+                  <th className="py-2 px-2 font-semibold">Destino</th>
+                  <th className="py-2 px-2 font-semibold text-right">Empenhado</th>
+                  <th className="py-2 px-2 font-semibold text-right">Pago</th>
+                  <th className="py-2 px-2 font-semibold text-right w-14">%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {emendasFiltradas.map((e) => {
+                  const tipo = tipoCurtoInfo(e.tipo);
+                  const pct  = e.valorEmpenhado > 0 ? (e.valorPago / e.valorEmpenhado) * 100 : 0;
+                  return (
+                    <tr
+                      key={e.idPortal}
+                      onClick={() => setEmendaSelecionada({ codigo: e.idPortal, titulo: e.numero ? `Emenda nº ${e.numero}` : `Emenda ${e.idPortal}` })}
+                      className="border-b border-white/5 hover:bg-amber-300/5 transition-colors cursor-pointer"
+                      title="Clique para ver favorecidos e breakdown por fase"
+                    >
+                      <td className="py-2 px-2 text-slate-400 font-mono">{e.numero ?? '—'}</td>
+                      <td className="py-2 px-2">
+                        <span title={tipo.hint} className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold cursor-help" style={{ background: `${tipo.color}22`, color: tipo.color, border: `1px solid ${tipo.color}44` }}>{tipo.label}</span>
+                      </td>
+                      <td className="py-2 px-2 text-slate-200 truncate max-w-[140px]" title={e.funcao ?? ''}>{e.funcao ?? '—'}</td>
+                      <td className="py-2 px-2 text-slate-300 truncate max-w-[180px]" title={e.municipioNome ?? e.objeto ?? ''}>
+                        {e.municipioNome ?? <span className="text-slate-500 italic">{e.objeto ?? 'sem destino'}</span>}
+                      </td>
+                      <td className="py-2 px-2 text-right text-white font-semibold whitespace-nowrap">{formatBRL(e.valorEmpenhado)}</td>
+                      <td className="py-2 px-2 text-right text-emerald-300 whitespace-nowrap">{formatBRL(e.valorPago)}</td>
+                      <td className="py-2 px-2 text-right text-slate-400 whitespace-nowrap">{pct.toFixed(0)}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
       )}
 
       <EmendaDocumentosModal
