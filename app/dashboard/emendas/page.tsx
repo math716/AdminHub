@@ -273,7 +273,19 @@ export default function EmendasPage() {
     const normalizar = (s: string) =>
       s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
     const qNorm = normalizar(q);
-    const matches = resumo.parlamentares
+
+    // Quando há município selecionado, restringe ao pool de parlamentares daquele município
+    let pool = resumo.parlamentares;
+    if (selectedMunicipio && municipioEmendas.length > 0) {
+      const cpfsNoMunicipio = new Set(municipioEmendas.map((e) => e.autorCpf).filter(Boolean) as string[]);
+      const nomesNoMunicipio = new Set(municipioEmendas.map((e) => normalizar(e.autorNome)));
+      pool = resumo.parlamentares.filter((p) =>
+        (p.cpf && cpfsNoMunicipio.has(p.cpf)) ||
+        nomesNoMunicipio.has(normalizar(p.nome))
+      );
+    }
+
+    const matches = pool
       .filter((p) => normalizar(p.nome).includes(qNorm))
       .slice(0, 20)
       .map<PortalParlamentar>((p) => ({
@@ -286,7 +298,7 @@ export default function EmendasPage() {
         cargo:    p.cargo as ParlamentarCargo,
       }));
     setParlamentarResults(matches);
-  }, [parlamentarQuery, resumo, selectedUf]);
+  }, [parlamentarQuery, resumo, selectedUf, selectedMunicipio, municipioEmendas]);
 
   // ----- Emendas + transferências Pix + destinos do parlamentar selecionado -----
   useEffect(() => {
@@ -549,14 +561,25 @@ export default function EmendasPage() {
   // Top 5 parlamentares que mais enviaram emendas para o município selecionado
   const top5ParlamentaresDoMunicipio = useMemo(() => {
     if (!selectedMunicipio || municipioEmendas.length === 0) return [];
-    const map = new Map<string, { nome: string; total: number; cargo: ParlamentarCargo }>();
+    type ParlItem = { cpf: string | null; idPortal: string; nome: string; total: number; cargo: ParlamentarCargo; partido: string | null };
+    const map = new Map<string, ParlItem>();
     municipioEmendas.forEach((e) => {
-      const cur = map.get(e.autorNome) ?? { nome: e.autorNome, total: 0, cargo: e.autorCargo };
-      cur.total += e.valorEmpenhado ?? 0;
-      map.set(e.autorNome, cur);
+      const key = e.autorCpf ?? e.autorNome;
+      if (!map.has(key)) {
+        const fromResumo = resumo?.parlamentares.find((r) => e.autorCpf ? r.cpf === e.autorCpf : r.nome.toUpperCase() === e.autorNome.toUpperCase());
+        map.set(key, {
+          cpf:      e.autorCpf,
+          idPortal: fromResumo?.idPortal ?? e.autorCpf ?? e.autorNome,
+          nome:     fromResumo?.nome ?? e.autorNome,
+          total:    0,
+          cargo:    e.autorCargo,
+          partido:  fromResumo?.partido ?? e.autorPartido,
+        });
+      }
+      map.get(key)!.total += e.valorEmpenhado ?? 0;
     });
     return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, 5);
-  }, [selectedMunicipio, municipioEmendas]);
+  }, [selectedMunicipio, municipioEmendas, resumo]);
 
   const maxParlamentarPorAno = useMemo(
     () => parlamentarPorAno.reduce((m, x) => Math.max(m, x.total), 1),
@@ -875,12 +898,11 @@ export default function EmendasPage() {
               municipioNome={selectedMunicipio.nome}
               parlamentares={top5ParlamentaresDoMunicipio}
               loading={loadingMunicipio}
-              onPick={(nome) => {
-                const p = resumo?.parlamentares.find((r) => r.nome === nome);
-                if (p) setSelectedParlamentar({
+              onPick={(p) => {
+                setSelectedParlamentar({
                   cpf: p.cpf, idPortal: p.idPortal, nome: p.nome,
                   nomeUrna: null, partido: p.partido, uf: selectedUf,
-                  cargo: p.cargo as ParlamentarCargo,
+                  cargo: p.cargo,
                 });
               }}
             />
@@ -1239,9 +1261,9 @@ function Top5ParlamentaresDoMunicipioCard({
   municipioNome, parlamentares, loading, onPick,
 }: {
   municipioNome: string;
-  parlamentares: { nome: string; total: number; cargo: ParlamentarCargo }[];
+  parlamentares: { cpf: string | null; idPortal: string; nome: string; total: number; cargo: ParlamentarCargo; partido: string | null }[];
   loading: boolean;
-  onPick: (nome: string) => void;
+  onPick: (p: { cpf: string | null; idPortal: string; nome: string; total: number; cargo: ParlamentarCargo; partido: string | null }) => void;
 }) {
   return (
     <div
@@ -1263,15 +1285,15 @@ function Top5ParlamentaresDoMunicipioCard({
       {!loading && parlamentares.length > 0 && (
         <ol className="space-y-2">
           {parlamentares.map((p, i) => (
-            <li key={p.nome}>
+            <li key={p.idPortal}>
               <button
-                onClick={() => onPick(p.nome)}
+                onClick={() => onPick(p)}
                 className="w-full flex items-center gap-2 group hover:bg-white/5 -mx-2 px-2 py-1 rounded-lg transition-colors text-left"
               >
                 <span className="text-xs font-bold text-slate-500 w-4">{i + 1}.</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-white truncate group-hover:text-amber-300 transition-colors">{p.nome}</p>
-                  <p className="text-[10px] text-slate-500">{CARGO_LABELS[p.cargo]}</p>
+                  <p className="text-[10px] text-slate-500">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
                 </div>
                 <span className="text-xs font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
               </button>
