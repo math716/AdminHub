@@ -436,28 +436,43 @@ export default function EmendasPage() {
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
   }, [parlamentarEmendas]);
 
-  // Quando há parlamentar selecionado, o mapa e o Top 5 mostram só os
-  // municípios beneficiados POR ELE — em vez do total do estado.
+  // Quando há parlamentar selecionado, o mapa mostra os municípios beneficiados.
+  // Prioriza destinosFlat (favorecidos reais de EmendaDocumento) quando disponível;
+  // fallback para parlamentarEmendas (um município por emenda).
   const parlamentarValorPorMunicipio = useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {};
-    parlamentarEmendas.forEach((e) => {
-      if (!e.codigoIbge) return;
-      map[e.codigoIbge] = (map[e.codigoIbge] ?? 0) + (e.valorEmpenhado ?? 0);
-    });
+    if (parlamentarDestinosFlat.length > 0) {
+      parlamentarDestinosFlat.forEach((d) => {
+        if (!d.codigoIbge) return;
+        map[d.codigoIbge] = (map[d.codigoIbge] ?? 0) + d.valorEmpenhado;
+      });
+    } else {
+      parlamentarEmendas.forEach((e) => {
+        if (!e.codigoIbge) return;
+        map[e.codigoIbge] = (map[e.codigoIbge] ?? 0) + (e.valorEmpenhado ?? 0);
+      });
+    }
     return map;
-  }, [parlamentarEmendas]);
+  }, [parlamentarEmendas, parlamentarDestinosFlat]);
 
-  // Versão por nome — para emendas estaduais sem codigoIbge (ex: RJ, MG).
-  // Passado como votesDataByName ao StateMap, que já suporta match por nome.
+  // Versão por nome — para destinos sem codigoIbge.
   const parlamentarValorPorMunicipioNome = useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {};
-    parlamentarEmendas.forEach((e) => {
-      if (e.codigoIbge || !e.municipioNome) return;
-      const nome = e.municipioNome.toUpperCase();
-      map[nome] = (map[nome] ?? 0) + (e.valorEmpenhado ?? 0);
-    });
+    if (parlamentarDestinosFlat.length > 0) {
+      parlamentarDestinosFlat.forEach((d) => {
+        if (d.codigoIbge || !d.municipio) return;
+        const nome = d.municipio.toUpperCase();
+        map[nome] = (map[nome] ?? 0) + d.valorEmpenhado;
+      });
+    } else {
+      parlamentarEmendas.forEach((e) => {
+        if (e.codigoIbge || !e.municipioNome) return;
+        const nome = e.municipioNome.toUpperCase();
+        map[nome] = (map[nome] ?? 0) + (e.valorEmpenhado ?? 0);
+      });
+    }
     return map;
-  }, [parlamentarEmendas]);
+  }, [parlamentarEmendas, parlamentarDestinosFlat]);
 
   // Agrega emendas do parlamentar (ano selecionado) por município, com
   // breakdown de áreas pra cada um. Usado na nova seção "Municípios
