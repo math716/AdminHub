@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
@@ -37,7 +37,7 @@ import {
 import { EmendaDocumentosModal } from '@/components/emendas/emenda-documentos-modal';
 
 // ---------------------------------------------------------------------------
-// Mapas dinÃ¢micos (Leaflet SSR-off)
+// Mapas dinâmicos (Leaflet SSR-off)
 // ---------------------------------------------------------------------------
 const BrazilMap = dynamic(() => import('@/components/maps/brazil-map'), {
   ssr: false,
@@ -161,7 +161,7 @@ const ANOS_DISPONIVEIS = [2026, 2025, 2024, 2023, 2022, 2021];
 const ANO_PADRAO = 2026;
 
 // ---------------------------------------------------------------------------
-// PÃ¡gina
+// Página
 // ---------------------------------------------------------------------------
 export default function EmendasPage() {
   const { data: session, status } = useSession() || {};
@@ -170,7 +170,7 @@ export default function EmendasPage() {
   const userPermissions = (session?.user as any)?.permissions ?? [];
   const canAccess = hasPermission({ role: userRole, permissions: userPermissions }, PERMISSIONS.EMENDAS_MAPA);
 
-  // NavegaÃ§Ã£o: Brasil â†’ Estado â†’ MunicÃ­pio
+  // Navegação: Brasil → Estado → Município
   const [view, setView] = useState<'brasil' | 'estado'>('brasil');
   const [selectedUf, setSelectedUf] = useState('');
   const [selectedStateName, setSelectedStateName] = useState('');
@@ -183,7 +183,7 @@ export default function EmendasPage() {
   const [resumo, setResumo] = useState<ResumoEstado | null>(null);
   const [loadingResumo, setLoadingResumo] = useState(false);
 
-  // Dados do municÃ­pio selecionado
+  // Dados do município selecionado
   const [municipioStats, setMunicipioStats] = useState<MunicipioStats | null>(null);
   const [municipioEmendas, setMunicipioEmendas] = useState<PortalEmenda[]>([]);
   const [municipioEmendasAnterior, setMunicipioEmendasAnterior] = useState<PortalEmenda[]>([]);
@@ -207,7 +207,7 @@ export default function EmendasPage() {
     if (status === 'authenticated' && !canAccess) router.replace('/dashboard');
   }, [status, canAccess, router]);
 
-  // ----- Resumo do estado (top municÃ­pios, totais por Ã¡rea etc) -----
+  // ----- Resumo do estado (top municípios, totais por área etc) -----
   const fetchResumo = useCallback(async (uf: string, year: number, signal?: AbortSignal): Promise<ResumoEstado | null> => {
     const res = await fetch(`/api/emendas-portal/resumo?uf=${uf}&ano=${year}`, { signal });
     if (!res.ok) return null;
@@ -230,7 +230,7 @@ export default function EmendasPage() {
     return () => ctrl.abort();
   }, [view, selectedUf, ano, fetchResumo]);
 
-  // ----- Stats + emendas do municÃ­pio selecionado -----
+  // ----- Stats + emendas do município selecionado -----
   useEffect(() => {
     if (!selectedMunicipio) {
       setMunicipioStats(null);
@@ -243,8 +243,8 @@ export default function EmendasPage() {
     Promise.all([
       fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/stats?ano=${ano}`, { signal: ctrl.signal }).then((r) => r.json()),
       fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/emendas?uf=${selectedUf}&ano=${ano}`, { signal: ctrl.signal }).then((r) => r.json()),
-      // Emendas do ano anterior â€” pra alimentar o card de comparativo
-      // quando municÃ­pio estÃ¡ selecionado.
+      // Emendas do ano anterior — pra alimentar o card de comparativo
+      // quando município está selecionado.
       fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/emendas?uf=${selectedUf}&ano=${ano - 1}`, { signal: ctrl.signal }).then((r) => r.json()),
     ])
       .then(([stats, emendas, emendasAnt]) => {
@@ -253,15 +253,15 @@ export default function EmendasPage() {
         setMunicipioEmendasAnterior(Array.isArray(emendasAnt?.emendas) ? emendasAnt.emendas : []);
       })
       .catch((e: any) => {
-        if (e?.name !== 'AbortError') console.error('Erro ao buscar municÃ­pio:', e);
+        if (e?.name !== 'AbortError') console.error('Erro ao buscar município:', e);
       })
       .finally(() => setLoadingMunicipio(false));
     return () => ctrl.abort();
   }, [selectedMunicipio, ano, selectedUf]);
 
   // ----- Autocomplete parlamentar -----
-  // Filtra LOCALMENTE em resumo.parlamentares (lista jÃ¡ carregada do estado).
-  // Ã‰ instantÃ¢neo, nÃ£o bate no Portal, e cobre todos os parlamentares que
+  // Filtra LOCALMENTE em resumo.parlamentares (lista já carregada do estado).
+  // É instantâneo, não bate no Portal, e cobre todos os parlamentares que
   // efetivamente enviaram emendas pro estado neste ano.
   useEffect(() => {
     const q = parlamentarQuery.trim().toLowerCase();
@@ -274,7 +274,7 @@ export default function EmendasPage() {
       s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const qNorm = normalizar(q);
 
-    // Quando hÃ¡ municÃ­pio selecionado, restringe ao pool de parlamentares daquele municÃ­pio
+    // Quando há município selecionado, restringe ao pool de parlamentares daquele município
     let pool = resumo.parlamentares;
     if (selectedMunicipio && municipioEmendas.length > 0) {
       const cpfsNoMunicipio = new Set(municipioEmendas.map((e) => e.autorCpf).filter(Boolean) as string[]);
@@ -300,7 +300,7 @@ export default function EmendasPage() {
     setParlamentarResults(matches);
   }, [parlamentarQuery, resumo, selectedUf, selectedMunicipio, municipioEmendas]);
 
-  // ----- Emendas + transferÃªncias Pix + destinos do parlamentar selecionado -----
+  // ----- Emendas + transferências Pix + destinos do parlamentar selecionado -----
   useEffect(() => {
     if (!selectedParlamentar) {
       setParlamentarEmendas([]);
@@ -328,8 +328,8 @@ export default function EmendasPage() {
     return () => ctrl.abort();
   }, [selectedParlamentar, ano, selectedUf]);
 
-  // HistÃ³rico completo do parlamentar (todos os anos) â€” tambÃ©m filtrado por UF
-  // pro grÃ¡fico "Valor por Ano" refletir o estado em foco.
+  // Histórico completo do parlamentar (todos os anos) — também filtrado por UF
+  // pro gráfico "Valor por Ano" refletir o estado em foco.
   const [parlamentarHistorico, setParlamentarHistorico] = useState<PortalEmenda[]>([]);
   useEffect(() => {
     if (!selectedParlamentar) {
@@ -343,7 +343,7 @@ export default function EmendasPage() {
       .then((r) => r.json())
       .then((data) => setParlamentarHistorico(Array.isArray(data?.emendas) ? data.emendas : []))
       .catch((e: any) => {
-        if (e?.name !== 'AbortError') console.error('Erro ao buscar histÃ³rico:', e);
+        if (e?.name !== 'AbortError') console.error('Erro ao buscar histórico:', e);
       });
     return () => ctrl.abort();
   }, [selectedParlamentar, selectedUf]);
@@ -369,7 +369,7 @@ export default function EmendasPage() {
     setResumoAnterior(null);
   }, []);
 
-  // ----- CÃ¡lculos derivados (donut/comparativo do parlamentar) -----
+  // ----- Cálculos derivados (donut/comparativo do parlamentar) -----
   const parlamentarPorArea = useMemo(() => {
     const map = new Map<EmendaArea, number>();
     parlamentarEmendas.forEach((e) => {
@@ -405,9 +405,9 @@ export default function EmendasPage() {
       .sort((a, b) => a.ano - b.ano);
   }, [parlamentarHistorico]);
 
-  // Quebra do total do parlamentar em "destinado a municÃ­pios" vs "destinado
-  // ao estado inteiro" â€” ajuda a entender por que a lista de municÃ­pios pode
-  // estar vazia mesmo o donut mostrando valores altos (tÃ­pico de senadores).
+  // Quebra do total do parlamentar em "destinado a municípios" vs "destinado
+  // ao estado inteiro" — ajuda a entender por que a lista de municípios pode
+  // estar vazia mesmo o donut mostrando valores altos (típico de senadores).
   const parlamentarDestinos = useMemo(() => {
     let municipal = 0;
     let estadual  = 0;
@@ -425,18 +425,18 @@ export default function EmendasPage() {
     return { municipal, estadual, qtdMun, qtdEst };
   }, [parlamentarEmendas]);
 
-  // Agrega emendas do parlamentar por tipo (Individual, Bancada, ComissÃ£o, ...)
-  // Senadores e deputados podem aparecer em emendas de bancada/comissÃ£o tambÃ©m.
+  // Agrega emendas do parlamentar por tipo (Individual, Bancada, Comissão, ...)
+  // Senadores e deputados podem aparecer em emendas de bancada/comissão também.
   // Mostrar o breakdown ajuda a entender o que vem da cota individual.
   const parlamentarPorTipo = useMemo(() => {
     const map = new Map<string, { tipo: string; total: number; qtd: number }>();
     parlamentarEmendas.forEach((e) => {
-      const tipo = e.tipo ?? 'NÃ£o classificada';
-      // Encurta tipos longos pra visualizaÃ§Ã£o ("Emenda Individual - ..." â†’ "Individual")
+      const tipo = e.tipo ?? 'Não classificada';
+      // Encurta tipos longos pra visualização ("Emenda Individual - ..." → "Individual")
       const tipoCurto =
         tipo.match(/individual/i)        ? 'Individual'
         : tipo.match(/bancada/i)         ? 'Bancada'
-        : tipo.match(/comiss[Ã£a]o/i)     ? 'ComissÃ£o'
+        : tipo.match(/comiss[ãa]o/i)     ? 'Comissão'
         : tipo.match(/relator/i)         ? 'Relator'
         : tipo.match(/especiais?/i)      ? 'Transf. Especial'
         : tipo;
@@ -448,9 +448,9 @@ export default function EmendasPage() {
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
   }, [parlamentarEmendas]);
 
-  // Quando hÃ¡ parlamentar selecionado, o mapa mostra os municÃ­pios beneficiados.
-  // Prioriza destinosFlat (favorecidos reais de EmendaDocumento) quando disponÃ­vel;
-  // fallback para parlamentarEmendas (um municÃ­pio por emenda).
+  // Quando há parlamentar selecionado, o mapa mostra os municípios beneficiados.
+  // Prioriza destinosFlat (favorecidos reais de EmendaDocumento) quando disponível;
+  // fallback para parlamentarEmendas (um município por emenda).
   const parlamentarValorPorMunicipio = useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {};
     if (parlamentarDestinosFlat.length > 0) {
@@ -467,7 +467,7 @@ export default function EmendasPage() {
     return map;
   }, [parlamentarEmendas, parlamentarDestinosFlat]);
 
-  // VersÃ£o por nome â€” para destinos sem codigoIbge.
+  // Versão por nome — para destinos sem codigoIbge.
   const parlamentarValorPorMunicipioNome = useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {};
     if (parlamentarDestinosFlat.length > 0) {
@@ -486,8 +486,8 @@ export default function EmendasPage() {
     return map;
   }, [parlamentarEmendas, parlamentarDestinosFlat]);
 
-  // Agrega emendas do parlamentar (ano selecionado) por municÃ­pio, com
-  // breakdown de Ã¡reas pra cada um. Usado na nova seÃ§Ã£o "MunicÃ­pios
+  // Agrega emendas do parlamentar (ano selecionado) por município, com
+  // breakdown de áreas pra cada um. Usado na nova seção "Municípios
   // beneficiados" do dashboard do parlamentar.
   const parlamentarPorMunicipio = useMemo(() => {
     const map = new Map<string, {
@@ -525,10 +525,10 @@ export default function EmendasPage() {
       .sort((a, b) => b.total - a.total);
   }, [parlamentarEmendas]);
 
-  // AgregaÃ§Ã£o de transferÃªncias Pix por municÃ­pio â€” preenche o card
-  // "MunicÃ­pios via Pix" do dashboard. Diferente de parlamentarPorMunicipio
-  // (que vem das emendas), aqui o destino Ã© o municÃ­pio REAL onde o Pix
-  // caiu, mesmo quando a emenda original foi cadastrada a nÃ­vel UF.
+  // Agregação de transferências Pix por município — preenche o card
+  // "Municípios via Pix" do dashboard. Diferente de parlamentarPorMunicipio
+  // (que vem das emendas), aqui o destino é o município REAL onde o Pix
+  // caiu, mesmo quando a emenda original foi cadastrada a nível UF.
   const parlamentarPixPorMunicipio = useMemo(() => {
     const map = new Map<string, {
       codigoIbge: string;
@@ -558,7 +558,7 @@ export default function EmendasPage() {
     [parlamentarPix],
   );
 
-  // Top 5 parlamentares que mais enviaram emendas para o municÃ­pio selecionado
+  // Top 5 parlamentares que mais enviaram emendas para o município selecionado
   const top5ParlamentaresDoMunicipio = useMemo(() => {
     if (!selectedMunicipio || municipioEmendas.length === 0) return [];
     type ParlItem = { cpf: string | null; idPortal: string; nome: string; total: number; cargo: ParlamentarCargo; partido: string | null };
@@ -586,14 +586,14 @@ export default function EmendasPage() {
     [parlamentarPorAno],
   );
 
-  // Ãreas do parlamentar (ano atual) â€” formato esperado pelo ComparativoAreasCard
+  // Áreas do parlamentar (ano atual) — formato esperado pelo ComparativoAreasCard
   const parlamentarAreasAtual = useMemo<{ area: EmendaArea; total: number }[]>(() => {
     const m = new Map<EmendaArea, number>();
     parlamentarEmendas.forEach((e) => m.set(e.area, (m.get(e.area) ?? 0) + e.valorEmpenhado));
     return Array.from(m.entries()).map(([area, total]) => ({ area, total }));
   }, [parlamentarEmendas]);
 
-  // Ãreas do parlamentar (ano anterior) â€” derivado do histÃ³rico
+  // Áreas do parlamentar (ano anterior) — derivado do histórico
   const parlamentarAreasAnterior = useMemo<Map<string, number>>(() => {
     const m = new Map<string, number>();
     parlamentarHistorico
@@ -602,7 +602,7 @@ export default function EmendasPage() {
     return m;
   }, [parlamentarHistorico, ano]);
 
-  // InterseÃ§Ã£o: emendas do parlamentar filtradas pelo municÃ­pio selecionado
+  // Interseção: emendas do parlamentar filtradas pelo município selecionado
   const parlamentarMunicipioEmendas = useMemo(() => {
     if (!selectedParlamentar || !selectedMunicipio) return [];
     return parlamentarEmendas.filter((e) => e.codigoIbge === selectedMunicipio.codigo);
@@ -630,7 +630,7 @@ export default function EmendasPage() {
     return m;
   }, [resumoAnterior]);
 
-  // ----- Ãreas do municÃ­pio (atual e anterior) â€” usado quando hÃ¡ municÃ­pio selecionado -----
+  // ----- Áreas do município (atual e anterior) — usado quando há município selecionado -----
   const municipioAreasAtual = useMemo(() => {
     if (!selectedMunicipio) return null;
     const m = new Map<EmendaArea, number>();
@@ -663,7 +663,7 @@ export default function EmendasPage() {
       <PageHeader
         icon={Landmark}
         title="Mapa de Emendas"
-        subtitle="VisÃ£o geral das emendas por estado, municÃ­pio e parlamentar"
+        subtitle="Visão geral das emendas por estado, município e parlamentar"
         actions={
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-widest text-slate-400">Ano selecionado</span>
@@ -676,7 +676,7 @@ export default function EmendasPage() {
         }
       />
 
-      {/* Barra de pesquisa de parlamentar â€” abaixo do tÃ­tulo, visÃ­vel quando hÃ¡ estado selecionado */}
+      {/* Barra de pesquisa de parlamentar — abaixo do título, visível quando há estado selecionado */}
       {view === 'estado' && (
         <div className="relative">
           <div className="flex items-center gap-2">
@@ -685,7 +685,7 @@ export default function EmendasPage() {
               <input
                 value={parlamentarQuery}
                 onChange={(e) => setParlamentarQuery(e.target.value)}
-                placeholder="Pesquisar parlamentarâ€¦"
+                placeholder="Pesquisar parlamentar…"
                 className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-amber-500/50 transition-colors"
               />
             </div>
@@ -713,7 +713,7 @@ export default function EmendasPage() {
                   className="w-full text-left px-4 py-2.5 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
                 >
                   <p className="text-sm text-white font-medium">{p.nome}</p>
-                  <p className="text-[11px] text-slate-400">{CARGO_LABELS[p.cargo]}{p.partido ? ` Â· ${p.partido}` : ''}</p>
+                  <p className="text-[11px] text-slate-400">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
                 </button>
               ))}
             </div>
@@ -721,7 +721,7 @@ export default function EmendasPage() {
         </div>
       )}
 
-      {/* Destaque do ano â€” acima do grid principal */}
+      {/* Destaque do ano — acima do grid principal */}
       {view === 'estado' && resumo && resumo.topMunicipios?.[0] && (
         <DestaqueDoAnoCard
           municipio={resumo.topMunicipios[0]}
@@ -737,25 +737,25 @@ export default function EmendasPage() {
           className="rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs"
           style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.25)', color: '#e8c660' }}
         >
-          <span className="font-semibold">Modo demonstraÃ§Ã£o:</span>
+          <span className="font-semibold">Modo demonstração:</span>
           <span className="text-slate-300">
-            os dados exibidos sÃ£o sintÃ©ticos. Configure a variÃ¡vel <code className="px-1.5 py-0.5 rounded bg-black/30">PORTAL_TRANSPARENCIA_API_KEY</code> para usar dados reais do Portal da TransparÃªncia.
+            os dados exibidos são sintéticos. Configure a variável <code className="px-1.5 py-0.5 rounded bg-black/30">PORTAL_TRANSPARENCIA_API_KEY</code> para usar dados reais do Portal da Transparência.
           </span>
         </div>
       )}
 
-      {/* Grid principal â€” coluna esquerda ocupa 2 linhas (row-span-2) com
+      {/* Grid principal — coluna esquerda ocupa 2 linhas (row-span-2) com
             Resumo Geral e Pizza empilhados encostados. Coluna central+direita
             tem Mapa+Top5/Parl na linha 1 e Comparativo na linha 2.
             Layout:
-              â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-              â”‚ Resumo â”‚   Mapa   â”‚ Top 5   â”‚  â† linha 1
-              â”‚ Geral  â”‚          â”‚ Parl    â”‚
-              â”œ Pizza  â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-              â”‚        â”‚ Comparativo (9)   â”‚  â† linha 2
-              â””â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ */}
+              ┌────────┬──────────┬─────────┐
+              │ Resumo │   Mapa   │ Top 5   │  ← linha 1
+              │ Geral  │          │ Parl    │
+              ├ Pizza  ├──────────┴─────────┤
+              │        │ Comparativo (9)   │  ← linha 2
+              └────────┴────────────────────┘ */}
       <div className="grid grid-cols-12 gap-4">
-        {/* COLUNA ESQUERDA â€” Resumo + Pizza encostados (row-span-2 cobre as 2 linhas) */}
+        {/* COLUNA ESQUERDA — Resumo + Pizza encostados (row-span-2 cobre as 2 linhas) */}
         <div className="col-span-12 md:col-span-3 md:row-span-2 flex flex-col gap-4">
           <ResumoGeralCard
             view={view}
@@ -790,7 +790,7 @@ export default function EmendasPage() {
           </div>
         </div>
 
-        {/* LINHA 1 â€” Coluna central: Mapa */}
+        {/* LINHA 1 — Coluna central: Mapa */}
         <div className="col-span-12 md:col-span-6">
           <div
             className="relative rounded-2xl overflow-hidden h-[560px]"
@@ -835,7 +835,7 @@ export default function EmendasPage() {
               >
                 {selectedParlamentar
                   ? `Filtrado: ${selectedParlamentar.nome}`
-                  : 'Emendas por MunicÃ­pio'}
+                  : 'Emendas por Município'}
               </div>
             </div>
 
@@ -846,8 +846,8 @@ export default function EmendasPage() {
               <StateMap
                 uf={selectedUf}
                 stateName={selectedStateName}
-                /* Quando hÃ¡ parlamentar selecionado, mostra sÃ³ os municÃ­pios
-                   que ele beneficiou. SenÃ£o, mostra todos do estado. */
+                /* Quando há parlamentar selecionado, mostra só os municípios
+                   que ele beneficiou. Senão, mostra todos do estado. */
                 votesData={
                   selectedParlamentar
                     ? parlamentarValorPorMunicipio
@@ -865,7 +865,7 @@ export default function EmendasPage() {
               />
             )}
 
-            {/* Popup do municÃ­pio (habitantes/eleitores/MAC/PAP) */}
+            {/* Popup do município (habitantes/eleitores/MAC/PAP) */}
             {selectedMunicipio && (
               <MunicipioPopup
                 municipio={selectedMunicipio}
@@ -888,12 +888,12 @@ export default function EmendasPage() {
           </div>
         </div>
 
-        {/* LINHA 1 â€” Coluna direita: Top 5 */}
+        {/* LINHA 1 — Coluna direita: Top 5 */}
         <div className="col-span-12 md:col-span-3 space-y-4">
           {view === 'brasil' ? (
             <SelecionarEstadoCard />
           ) : selectedMunicipio ? (
-            /* MunicÃ­pio selecionado â†’ mostra top 5 parlamentares desse municÃ­pio */
+            /* Município selecionado → mostra top 5 parlamentares desse município */
             <Top5ParlamentaresDoMunicipioCard
               municipioNome={selectedMunicipio.nome}
               parlamentares={top5ParlamentaresDoMunicipio}
@@ -926,7 +926,7 @@ export default function EmendasPage() {
             />
           )}
 
-          {/* Top 5 parlamentares do estado (quando nÃ£o hÃ¡ municÃ­pio selecionado) */}
+          {/* Top 5 parlamentares do estado (quando não há município selecionado) */}
           {!selectedMunicipio && (
             <Top5ParlamentaresEstadoCard
               topResumo={resumo?.parlamentares ?? []}
@@ -941,7 +941,7 @@ export default function EmendasPage() {
           )}
         </div>
 
-        {/* LINHA 2 â€” Comparativo por Ãrea ocupando 9 colunas (centro + direita) */}
+        {/* LINHA 2 — Comparativo por Área ocupando 9 colunas (centro + direita) */}
         {view === 'estado' && resumo && (
           <div className="col-span-12 md:col-span-9">
             <ComparativoAreasCard
@@ -952,7 +952,7 @@ export default function EmendasPage() {
                   : selectedParlamentar
                   ? selectedParlamentar.nome
                   : selectedMunicipio
-                  ? `municÃ­pio de ${selectedMunicipio.nome}`
+                  ? `município de ${selectedMunicipio.nome}`
                   : `estado de ${selectedStateName}`
               }
               areasAtual={
@@ -978,7 +978,7 @@ export default function EmendasPage() {
         )}
       </div>
 
-      {/* Dashboard do parlamentar (aparece quando hÃ¡ parlamentar selecionado) */}
+      {/* Dashboard do parlamentar (aparece quando há parlamentar selecionado) */}
       {selectedParlamentar && (
         <ParlamentarDashboard
           parlamentar={selectedParlamentar}
@@ -1038,8 +1038,8 @@ function ResumoGeralCard({
   const habitantes = municipio ? municipioStats?.habitantes ?? null : null;
   const eleitores  = municipio ? municipioStats?.eleitores  ?? null : null;
 
-  // â”€â”€ LÃ³gica do card "Total de Emendas" â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Prioridade: ambos â†’ sÃ³ parlamentar â†’ sÃ³ municÃ­pio â†’ estado inteiro
+  // ── Lógica do card "Total de Emendas" ──────────────────────────────────
+  // Prioridade: ambos → só parlamentar → só município → estado inteiro
   const hasBoth = !!(parlamentar && municipio);
   const hasParl = !!parlamentar && !municipio;
   const hasMun  = !!municipio   && !parlamentar;
@@ -1061,13 +1061,13 @@ function ResumoGeralCard({
     : (resumo?.totalMunicipalizado ?? 0);
 
   const totalSub = hasBoth
-    ? `de ${parlamentarTotal > 0 ? formatBRLCompact(parlamentarTotal) : 'â€”'} total do parlamentar no estado`
+    ? `de ${parlamentarTotal > 0 ? formatBRLCompact(parlamentarTotal) : '—'} total do parlamentar no estado`
     : hasParl
-    ? `${formatBRLCompact(parlamentarTotalPago)} pago Â· em ${ano}`
+    ? `${formatBRLCompact(parlamentarTotalPago)} pago · em ${ano}`
     : hasMun
     ? `em ${ano}`
     : (resumo?.totalEstadual ?? 0) > 0
-    ? `${formatBRLCompact(resumo!.totalEstadual)} adicional sem municÃ­pio`
+    ? `${formatBRLCompact(resumo!.totalEstadual)} adicional sem município`
     : `em ${ano}`;
 
   return (
@@ -1081,13 +1081,13 @@ function ResumoGeralCard({
           icon={<Users className="w-4 h-4" />}
           iconBg="rgba(74,158,222,0.15)"
           iconColor="#4a9ede"
-          label="PopulaÃ§Ã£o Total"
+          label="População Total"
           value={
             view === 'brasil'
-              ? 'â€”'
+              ? '—'
               : municipio
-                ? habitantes != null ? habitantes.toLocaleString('pt-BR') : 'â€”'
-                : 'Selecione um municÃ­pio'
+                ? habitantes != null ? habitantes.toLocaleString('pt-BR') : '—'
+                : 'Selecione um município'
           }
           sub={view === 'estado' && municipio ? 'habitantes' : undefined}
         />
@@ -1098,8 +1098,8 @@ function ResumoGeralCard({
           label="Eleitores"
           value={
             municipio
-              ? eleitores != null ? eleitores.toLocaleString('pt-BR') : 'â€”'
-              : 'Selecione um municÃ­pio'
+              ? eleitores != null ? eleitores.toLocaleString('pt-BR') : '—'
+              : 'Selecione um município'
           }
           sub={municipio ? 'eleitores' : undefined}
         />
@@ -1121,9 +1121,9 @@ function ResumoGeralCard({
               ? formatBRLCompact(tetoMac)
               : municipio
                 ? 'sem dados'
-                : 'Selecione um municÃ­pio'
+                : 'Selecione um município'
           }
-          sub={municipio && tetoMac != null ? 'MÃ©dia e Alta Complexidade Â· anual' : undefined}
+          sub={municipio && tetoMac != null ? 'Média e Alta Complexidade · anual' : undefined}
         />
         <ResumoStat
           icon={<Building2 className="w-4 h-4" />}
@@ -1135,9 +1135,9 @@ function ResumoGeralCard({
               ? formatBRLCompact(tetoPap)
               : municipio
                 ? 'sem dados'
-                : 'Selecione um municÃ­pio'
+                : 'Selecione um município'
           }
-          sub={municipio && tetoPap != null ? 'AtenÃ§Ã£o PrimÃ¡ria Â· anual' : undefined}
+          sub={municipio && tetoPap != null ? 'Atenção Primária · anual' : undefined}
         />
       </div>
     </div>
@@ -1205,7 +1205,7 @@ function EmendasPorAreaCard({
       className="rounded-2xl p-4 h-full"
       style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">Emendas por Ãrea</p>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">Emendas por Área</p>
       {view === 'brasil' || areas.length === 0 ? (
         <p className="text-xs text-slate-500 text-center py-6">
           {view === 'brasil' ? 'Selecione um estado no mapa' : 'Sem dados para o ano selecionado'}
@@ -1250,8 +1250,8 @@ function SelecionarEstadoCard() {
       <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Como usar</p>
       <ol className="text-xs text-slate-300 space-y-2 list-decimal list-inside">
         <li>Clique em um estado no mapa</li>
-        <li>Escolha um municÃ­pio (popup mostra habitantes, eleitores e tetos)</li>
-        <li>Pesquise um parlamentar para ver os grÃ¡ficos por Ã¡rea e por ano</li>
+        <li>Escolha um município (popup mostra habitantes, eleitores e tetos)</li>
+        <li>Pesquise um parlamentar para ver os gráficos por área e por ano</li>
       </ol>
     </div>
   );
@@ -1280,7 +1280,7 @@ function Top5ParlamentaresDoMunicipioCard({
         </div>
       )}
       {!loading && parlamentares.length === 0 && (
-        <p className="text-xs text-slate-500 text-center py-4">Sem dados disponÃ­veis</p>
+        <p className="text-xs text-slate-500 text-center py-4">Sem dados disponíveis</p>
       )}
       {!loading && parlamentares.length > 0 && (
         <ol className="space-y-2">
@@ -1293,7 +1293,7 @@ function Top5ParlamentaresDoMunicipioCard({
                 <span className="text-xs font-bold text-slate-500 w-4">{i + 1}.</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-white truncate group-hover:text-amber-300 transition-colors">{p.nome}</p>
-                  <p className="text-[10px] text-slate-500">{CARGO_LABELS[p.cargo]}{p.partido ? ` Â· ${p.partido}` : ''}</p>
+                  <p className="text-[10px] text-slate-500">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
                 </div>
                 <span className="text-xs font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
               </button>
@@ -1352,7 +1352,7 @@ function Top5MunicipiosCard({
     municipios: { codigoIbge: string; nome: string; total: number }[];
   } | null;
 }) {
-  // Se hÃ¡ parlamentar selecionado, usa o top dele. SenÃ£o, usa o do estado.
+  // Se há parlamentar selecionado, usa o top dele. Senão, usa o do estado.
   const top = escopoParlamentar?.municipios ?? resumo?.topMunicipios ?? [];
   const isParlamentar = !!escopoParlamentar;
 
@@ -1362,7 +1362,7 @@ function Top5MunicipiosCard({
       style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
     >
       <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">
-        Top 5 MunicÃ­pios
+        Top 5 Municípios
       </p>
       {isParlamentar && (
         <p className="text-[10px] text-amber-300/80 mb-2 truncate" title={escopoParlamentar.nome}>
@@ -1379,8 +1379,8 @@ function Top5MunicipiosCard({
       {!loading && top.length === 0 && (
         <p className="text-xs text-slate-500 text-center py-4">
           {isParlamentar
-            ? 'Nenhum municÃ­pio identificado (emendas em nÃ­vel estadual)'
-            : 'Sem dados disponÃ­veis'}
+            ? 'Nenhum município identificado (emendas em nível estadual)'
+            : 'Sem dados disponíveis'}
         </p>
       )}
       {top.length > 0 && (
@@ -1428,7 +1428,7 @@ function ParlamentarSearchCard({
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Pesquisar parlamentarâ€¦"
+          placeholder="Pesquisar parlamentar…"
           className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-500/50"
         />
         {searching && <Loader2 className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-slate-500" />}
@@ -1445,8 +1445,8 @@ function ParlamentarSearchCard({
               <p className="text-xs text-white font-medium truncate">{p.nome}</p>
               <p className="text-[10px] text-slate-500">
                 {CARGO_LABELS[p.cargo]}
-                {p.partido ? ` Â· ${p.partido}` : ''}
-                {p.uf ? ` Â· ${p.uf}` : ''}
+                {p.partido ? ` · ${p.partido}` : ''}
+                {p.uf ? ` · ${p.uf}` : ''}
               </p>
             </button>
           ))}
@@ -1460,7 +1460,7 @@ function ParlamentarSearchCard({
           <div className="flex-1 min-w-0">
             <p className="text-xs text-white font-semibold truncate">{selected.nome}</p>
             <p className="text-[10px] text-amber-300/80">
-              {CARGO_LABELS[selected.cargo]}{selected.partido ? ` Â· ${selected.partido}` : ''}
+              {CARGO_LABELS[selected.cargo]}{selected.partido ? ` · ${selected.partido}` : ''}
             </p>
           </div>
           <button onClick={onClear} className="text-slate-500 hover:text-white p-1 rounded-lg">
@@ -1516,7 +1516,7 @@ function MunicipioPopup({
           <div>
             <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-cyan-300">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-              MunicÃ­pio
+              Município
             </span>
             <p className="text-white font-bold text-sm mt-0.5">{municipio.nome}</p>
           </div>
@@ -1533,23 +1533,23 @@ function MunicipioPopup({
           <div className="space-y-1.5 text-[11px]">
             <PopupRow
               label="Habitantes"
-              value={stats?.habitantes != null ? stats.habitantes.toLocaleString('pt-BR') : 'â€”'}
+              value={stats?.habitantes != null ? stats.habitantes.toLocaleString('pt-BR') : '—'}
               hint={stats?.fonteHabitantes ?? undefined}
             />
             <PopupRow
               label="Eleitores"
-              value={stats?.eleitores != null ? stats.eleitores.toLocaleString('pt-BR') : 'â€”'}
-              hint={stats?.eleitores == null ? 'requer importaÃ§Ã£o do TSE' : undefined}
+              value={stats?.eleitores != null ? stats.eleitores.toLocaleString('pt-BR') : '—'}
+              hint={stats?.eleitores == null ? 'requer importação do TSE' : undefined}
             />
             <PopupRow
               label="Teto MAC"
-              value={stats?.tetoMac != null ? formatBRLCompact(stats.tetoMac) : 'â€”'}
+              value={stats?.tetoMac != null ? formatBRLCompact(stats.tetoMac) : '—'}
               hint={stats?.tetoMac == null ? 'requer cadastro manual (DataSUS)' : undefined}
             />
             <PopupRow
               label="Teto PAP"
-              value={stats?.tetoPap != null ? formatBRLCompact(stats.tetoPap) : 'â€”'}
-              hint={stats?.tetoPap == null ? 'fonte SISAPS â€” pendente' : undefined}
+              value={stats?.tetoPap != null ? formatBRLCompact(stats.tetoPap) : '—'}
+              hint={stats?.tetoPap == null ? 'fonte SISAPS — pendente' : undefined}
             />
           </div>
         )}
@@ -1563,7 +1563,7 @@ function PopupRow({ label, value, hint }: { label: string; value: string; hint?:
     <div className="flex items-start justify-between gap-2">
       <span className="text-slate-400 flex-shrink-0">{label}</span>
       <div className="text-right min-w-0">
-        <span className={value === 'â€”' ? 'text-slate-500' : 'text-white font-semibold'}>{value}</span>
+        <span className={value === '—' ? 'text-slate-500' : 'text-white font-semibold'}>{value}</span>
         {hint && <p className="text-[9px] text-slate-500 italic mt-0.5 leading-tight">{hint}</p>}
       </div>
     </div>
@@ -1571,14 +1571,14 @@ function PopupRow({ label, value, hint }: { label: string; value: string; hint?:
 }
 
 function LegendaCores() {
-  // Mesmas faixas discretas usadas pelo StateMap em darkMode â€” qualquer mudanÃ§a
+  // Mesmas faixas discretas usadas pelo StateMap em darkMode — qualquer mudança
   // aqui precisa replicar no getColor de state-map.tsx pra legenda continuar
   // batendo com o desenho.
   const items = [
-    { label: 'Acima de R$ 2 milhÃµes',         color: '#0c4f8a' },
-    { label: 'R$ 1 milhÃ£o â€“ 2 milhÃµes',       color: '#1d6fb8' },
-    { label: 'R$ 500 mil â€“ 1 milhÃ£o',         color: '#3a8ed1' },
-    { label: 'AtÃ© R$ 500 mil',                color: '#7fb8e0' },
+    { label: 'Acima de R$ 2 milhões',         color: '#0c4f8a' },
+    { label: 'R$ 1 milhão – 2 milhões',       color: '#1d6fb8' },
+    { label: 'R$ 500 mil – 1 milhão',         color: '#3a8ed1' },
+    { label: 'Até R$ 500 mil',                color: '#7fb8e0' },
     { label: 'Sem emendas',                   color: '#15355c', border: '1px solid rgba(255,255,255,0.18)' },
   ];
   return (
@@ -1638,8 +1638,8 @@ function ParlamentarDashboard({
           <h2 className="text-xl text-white font-bold mt-1">{parlamentar.nome}</h2>
           <p className="text-xs text-slate-400 mt-0.5">
             {CARGO_LABELS[parlamentar.cargo]}
-            {parlamentar.partido ? ` Â· ${parlamentar.partido}` : ''}
-            {parlamentar.uf ? ` Â· ${parlamentar.uf}` : ''}
+            {parlamentar.partido ? ` · ${parlamentar.partido}` : ''}
+            {parlamentar.uf ? ` · ${parlamentar.uf}` : ''}
           </p>
         </div>
         <div
@@ -1651,7 +1651,7 @@ function ParlamentarDashboard({
           }}
         >
           <p className="text-[10px] uppercase tracking-widest text-amber-300 font-bold">
-            Total enviado em {ano}{escopo ? ` Â· ${escopo}` : ''}
+            Total enviado em {ano}{escopo ? ` · ${escopo}` : ''}
           </p>
           <p className="text-2xl font-bold text-white mt-0.5">
             {loading ? <Loader2 className="w-5 h-5 animate-spin inline" /> : formatBRLCompact(totalAno)}
@@ -1665,11 +1665,11 @@ function ParlamentarDashboard({
           {!loading && (destinos.municipal > 0 || destinos.estadual > 0) && (
             <div className="mt-2 text-[10px] text-slate-300 space-y-0.5 text-right">
               <p>
-                <span className="text-cyan-300">â—</span> A municÃ­pios: <span className="font-semibold text-white">{formatBRLCompact(destinos.municipal)}</span>
+                <span className="text-cyan-300">●</span> A municípios: <span className="font-semibold text-white">{formatBRLCompact(destinos.municipal)}</span>
                 <span className="text-slate-500"> ({destinos.qtdMun})</span>
               </p>
               <p>
-                <span className="text-violet-400">â—</span> NÃ­vel UF (sem municÃ­pio): <span className="font-semibold text-white">{formatBRLCompact(destinos.estadual)}</span>
+                <span className="text-violet-400">●</span> Nível UF (sem município): <span className="font-semibold text-white">{formatBRLCompact(destinos.estadual)}</span>
                 <span className="text-slate-500"> ({destinos.qtdEst})</span>
               </p>
             </div>
@@ -1701,9 +1701,9 @@ function ParlamentarDashboard({
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Donut: Emendas por Ãrea */}
+          {/* Donut: Emendas por Área */}
           <div className="rounded-xl p-4" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">DistribuiÃ§Ã£o por Ã¡rea</p>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Distribuição por área</p>
             {porArea.length === 0 ? (
               <p className="text-xs text-slate-500 text-center py-10">Sem emendas em {ano}</p>
             ) : (
@@ -1722,9 +1722,9 @@ function ParlamentarDashboard({
 
           {/* Linha: Valor por Ano */}
           <div className="rounded-xl p-4" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Valor por ano (histÃ³rico)</p>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Valor por ano (histórico)</p>
             {porAno.length === 0 ? (
-              <p className="text-xs text-slate-500 text-center py-10">Sem histÃ³rico disponÃ­vel</p>
+              <p className="text-xs text-slate-500 text-center py-10">Sem histórico disponível</p>
             ) : (
               <div className="space-y-2 mt-2">
                 {porAno.map((p) => {
@@ -1756,9 +1756,9 @@ function ParlamentarDashboard({
             )}
           </div>
 
-          {/* Barras: Comparativo de todas as Ã¡reas (do ano selecionado) */}
+          {/* Barras: Comparativo de todas as áreas (do ano selecionado) */}
           <div className="rounded-xl p-4" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Comparativo de Ã¡reas em {ano}</p>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Comparativo de áreas em {ano}</p>
             {porArea.length === 0 ? (
               <p className="text-xs text-slate-500 text-center py-10">Sem dados</p>
             ) : (
@@ -1790,8 +1790,8 @@ function ParlamentarDashboard({
       )}
 
 
-      {/* Destinos de transferÃªncias Pix (EC 105/2019) â€” preenche quando a
-          emenda foi cadastrada a nÃ­vel UF e o municÃ­pio sÃ³ foi decidido
+      {/* Destinos de transferências Pix (EC 105/2019) — preenche quando a
+          emenda foi cadastrada a nível UF e o município só foi decidido
           depois via Pix Parlamentar. */}
       {!loading && pixPorMunicipio.length > 0 && (
         <MunicipiosPixCard
@@ -1833,7 +1833,7 @@ function EmendasDetalhadasCard({
   const [valorMin, setValorMin] = useState('');
   const [valorMax, setValorMax] = useState('');
 
-  // Quando hÃ¡ destinosFlat usa-os; caso contrÃ¡rio usa emendas como fallback
+  // Quando há destinosFlat usa-os; caso contrário usa emendas como fallback
   const usandoFlat = destinosFlat.length > 0;
 
   // Dropdowns: populados a partir dos destinos flat (ou emendas no fallback)
@@ -1858,7 +1858,7 @@ function EmendasDetalhadasCard({
   const vMaxNum = valorMax ? parseFloat(valorMax) : null;
   const q = normalizar(busca.trim());
 
-  // â”€â”€ Flat (destinos reais por favorecido) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Flat (destinos reais por favorecido) ──────────────────────────────────
   const destinosFiltrados = useMemo(() => {
     if (!usandoFlat) return [];
     return destinosFlat.filter((d) => {
@@ -1874,7 +1874,7 @@ function EmendasDetalhadasCard({
     });
   }, [usandoFlat, destinosFlat, q, funcaoFiltro, tipoFiltro, vMinNum, vMaxNum]);
 
-  // â”€â”€ Fallback: emendas filtradas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Fallback: emendas filtradas ───────────────────────────────────────────
   const emendasFiltradas = useMemo(() => {
     if (usandoFlat) return [];
     return [...emendas]
@@ -1908,7 +1908,7 @@ function EmendasDetalhadasCard({
       className="mt-4 rounded-2xl overflow-hidden"
       style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.07)' }}
     >
-      {/* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Header ───────────────────────────────────────────────────────── */}
       <div
         className="px-5 py-3.5 flex items-center justify-between gap-4 flex-wrap"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
@@ -1920,7 +1920,7 @@ function EmendasDetalhadasCard({
         </div>
         <div className="flex items-center gap-3">
           {semDadosExecucao && (
-            <span className="text-[10px] text-amber-400/70 italic hidden sm:block">Sem dados de execuÃ§Ã£o estadual</span>
+            <span className="text-[10px] text-amber-400/70 italic hidden sm:block">Sem dados de execução estadual</span>
           )}
           {semDadosPagamento && !semDadosExecucao && (
             <span className="text-[10px] text-amber-400/70 italic hidden sm:block">Sem dados de pagamento estadual</span>
@@ -1933,7 +1933,7 @@ function EmendasDetalhadasCard({
               {temFiltro ? filtradoQtd : totalItens}
             </span>
             <span className="text-[10px] text-slate-400">{labelItens}</span>
-            <span className="text-slate-600 text-[10px]">Â·</span>
+            <span className="text-slate-600 text-[10px]">·</span>
             <span className="text-[11px] font-semibold text-emerald-300">{formatBRLCompact(totalValor)}</span>
           </div>
           {temFiltro && (
@@ -1948,7 +1948,7 @@ function EmendasDetalhadasCard({
         </div>
       </div>
 
-      {/* â”€â”€ Barra de filtros â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Barra de filtros ─────────────────────────────────────────────── */}
       <div className="px-5 py-3 flex flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         {/* Busca */}
         <div className="relative flex-1 min-w-[180px]">
@@ -1956,7 +1956,7 @@ function EmendasDetalhadasCard({
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder={usandoFlat ? 'Buscar favorecido, municÃ­pio ou nÂºâ€¦' : 'Buscar municÃ­pio, funÃ§Ã£o ou nÂºâ€¦'}
+            placeholder={usandoFlat ? 'Buscar favorecido, município ou nº…' : 'Buscar município, função ou nº…'}
             className="w-full h-9 rounded-xl pl-9 pr-3 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
             style={{
               background: busca ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.04)',
@@ -1965,7 +1965,7 @@ function EmendasDetalhadasCard({
           />
         </div>
 
-        {/* Ãrea */}
+        {/* Área */}
         <div className="relative min-w-[150px]">
           <select
             value={funcaoFiltro}
@@ -1976,7 +1976,7 @@ function EmendasDetalhadasCard({
               border: funcaoFiltro ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)',
             }}
           >
-            <option value="" style={{ background: '#0a1f3d' }}>Todas as Ã¡reas</option>
+            <option value="" style={{ background: '#0a1f3d' }}>Todas as áreas</option>
             {funcoes.map((f) => <option key={f} value={f} style={{ background: '#0a1f3d' }}>{f}</option>)}
           </select>
           <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
@@ -2010,7 +2010,7 @@ function EmendasDetalhadasCard({
             <input
               value={valorMin}
               onChange={(e) => setValorMin(e.target.value)}
-              placeholder="MÃ­n"
+              placeholder="Mín"
               type="number"
               min={0}
               className="w-full h-9 rounded-xl pl-7 pr-2 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
@@ -2026,7 +2026,7 @@ function EmendasDetalhadasCard({
             <input
               value={valorMax}
               onChange={(e) => setValorMax(e.target.value)}
-              placeholder="MÃ¡x"
+              placeholder="Máx"
               type="number"
               min={0}
               className="w-full h-9 rounded-xl pl-7 pr-2 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
@@ -2039,7 +2039,7 @@ function EmendasDetalhadasCard({
         </div>
       </div>
 
-      {/* â”€â”€ Tabelas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Tabelas ──────────────────────────────────────────────────────── */}
       <div className="px-5 pb-4">
         {/* Vazio */}
         {((usandoFlat && destinosFiltrados.length === 0) || (!usandoFlat && emendasFiltradas.length === 0)) && (
@@ -2060,7 +2060,7 @@ function EmendasDetalhadasCard({
             <table className="w-full text-[12px] border-separate border-spacing-0">
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                  {(['NÂº', 'Tipo', 'Ãrea', 'Favorecido', 'MunicÃ­pio', 'Empenhado', 'Pago', '%'] as const).map((h, i) => (
+                  {(['Nº', 'Tipo', 'Área', 'Favorecido', 'Município', 'Empenhado', 'Pago', '%'] as const).map((h, i) => (
                     <th
                       key={h}
                       className={`py-2.5 px-3 text-[9px] uppercase tracking-widest font-bold text-slate-500 whitespace-nowrap ${i >= 5 ? 'text-right' : 'text-left'}`}
@@ -2081,14 +2081,14 @@ function EmendasDetalhadasCard({
                       key={`${d.codigoEmenda}-${d.cnpjFavorecido ?? d.nomeFavorecido ?? i}`}
                       onClick={() => setEmendaSelecionada({
                         codigo: d.codigoEmenda,
-                        titulo: d.numeroEmenda ? `Emenda nÂº ${d.numeroEmenda}` : `Emenda ${d.codigoEmenda}`,
+                        titulo: d.numeroEmenda ? `Emenda nº ${d.numeroEmenda}` : `Emenda ${d.codigoEmenda}`,
                       })}
                       className="group cursor-pointer transition-colors"
                       style={{ background: par ? 'transparent' : 'rgba(255,255,255,0.015)' }}
                       title="Clique para ver todos os documentos desta emenda"
                     >
                       <td className="py-2.5 px-3 text-slate-500 font-mono text-[11px] whitespace-nowrap group-hover:text-slate-300 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        {d.numeroEmenda ?? 'â€”'}
+                        {d.numeroEmenda ?? '—'}
                       </td>
                       <td className="py-2.5 px-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                         <span
@@ -2100,7 +2100,7 @@ function EmendasDetalhadasCard({
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-slate-300 truncate max-w-[110px] group-hover:text-white transition-colors" title={d.funcao ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        {d.funcao ?? 'â€”'}
+                        {d.funcao ?? '—'}
                       </td>
                       <td className="py-2.5 px-3 truncate max-w-[220px]" title={d.nomeFavorecido ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                         <span className="text-slate-200 group-hover:text-white transition-colors font-medium">
@@ -2113,7 +2113,7 @@ function EmendasDetalhadasCard({
                             {d.municipio}
                             {d.uf && <span className="text-slate-600 ml-1 text-[10px]">/ {d.uf}</span>}
                           </span>
-                        ) : <span className="text-slate-600">â€”</span>}
+                        ) : <span className="text-slate-600">—</span>}
                       </td>
                       <td className="py-2.5 px-3 text-right font-semibold text-white whitespace-nowrap group-hover:text-amber-200 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                         {formatBRLCompact(d.valorEmpenhado)}
@@ -2146,7 +2146,7 @@ function EmendasDetalhadasCard({
             <table className="w-full text-[12px] border-separate border-spacing-0">
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                  {(['NÂº', 'Tipo', 'Ãrea', 'Destino', 'Empenhado', 'Pago', '%'] as const).map((h, i) => (
+                  {(['Nº', 'Tipo', 'Área', 'Destino', 'Empenhado', 'Pago', '%'] as const).map((h, i) => (
                     <th
                       key={h}
                       className={`py-2.5 px-3 text-[9px] uppercase tracking-widest font-bold text-slate-500 whitespace-nowrap ${i >= 4 ? 'text-right' : 'text-left'}`}
@@ -2165,16 +2165,16 @@ function EmendasDetalhadasCard({
                   return (
                     <tr
                       key={e.idPortal}
-                      onClick={() => setEmendaSelecionada({ codigo: e.idPortal, titulo: e.numero ? `Emenda nÂº ${e.numero}` : `Emenda ${e.idPortal}` })}
+                      onClick={() => setEmendaSelecionada({ codigo: e.idPortal, titulo: e.numero ? `Emenda nº ${e.numero}` : `Emenda ${e.idPortal}` })}
                       className="group cursor-pointer transition-colors"
                       style={{ background: par ? 'transparent' : 'rgba(255,255,255,0.015)' }}
                       title="Clique para ver favorecidos e breakdown por fase"
                     >
-                      <td className="py-2.5 px-3 text-slate-500 font-mono text-[11px] whitespace-nowrap group-hover:text-slate-300 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{e.numero ?? 'â€”'}</td>
+                      <td className="py-2.5 px-3 text-slate-500 font-mono text-[11px] whitespace-nowrap group-hover:text-slate-300 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{e.numero ?? '—'}</td>
                       <td className="py-2.5 px-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                         <span title={tipo.hint} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap" style={{ background: `${tipo.color}18`, color: tipo.color, border: `1px solid ${tipo.color}33` }}>{tipo.label}</span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-300 truncate max-w-[140px] group-hover:text-white transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{e.funcao ?? 'â€”'}</td>
+                      <td className="py-2.5 px-3 text-slate-300 truncate max-w-[140px] group-hover:text-white transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{e.funcao ?? '—'}</td>
                       <td className="py-2.5 px-3 text-slate-200 truncate max-w-[200px] font-medium group-hover:text-white transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                         {e.municipioNome ?? <span className="text-slate-600 italic font-normal">{e.objeto ?? 'sem destino'}</span>}
                       </td>
@@ -2209,20 +2209,20 @@ function tipoCurtoLabel(tipo: string | null): string {
   if (t.includes('individual') && t.includes('finalidade')) return 'Individual / Finalidade';
   if (t.includes('individual'))  return 'Individual';
   if (t.includes('bancada'))     return 'Bancada';
-  if (t.includes('comiss'))      return 'ComissÃ£o';
+  if (t.includes('comiss'))      return 'Comissão';
   if (t.includes('relator'))     return 'Relator';
-  return tipo ?? 'â€”';
+  return tipo ?? '—';
 }
 
 function tipoCurtoInfo(tipo: string | null): { label: string; color: string; hint: string } {
   const t = (tipo ?? '').toLowerCase();
-  if (t.includes('individual') && t.includes('especial'))   return { label: 'Individual / Especial',   color: '#a855f7', hint: 'TransferÃªncia Especial ("Emenda Pix") â€” parlamentar destina sem definir objeto.' };
-  if (t.includes('individual') && t.includes('finalidade')) return { label: 'Individual / Finalidade', color: '#3b82f6', hint: 'TransferÃªncia com Finalidade Definida â€” destinaÃ§Ã£o para objeto especÃ­fico.' };
-  if (t.includes('individual'))  return { label: 'Individual',  color: '#3b82f6', hint: 'Emenda Individual â€” cota anual de cada parlamentar.' };
-  if (t.includes('bancada'))     return { label: 'Bancada',     color: '#10b981', hint: 'Emenda de Bancada Estadual â€” proposta coletiva.' };
-  if (t.includes('comiss'))      return { label: 'ComissÃ£o',    color: '#f59e0b', hint: 'Emenda de ComissÃ£o â€” proposta por comissÃ£o temÃ¡tica.' };
-  if (t.includes('relator'))     return { label: 'Relator',     color: '#ec4899', hint: 'Emenda do Relator (RP9) â€” perdeu eficÃ¡cia apÃ³s STF 2022.' };
-  return { label: tipo ?? 'â€”', color: '#94a3b8', hint: tipo ?? '' };
+  if (t.includes('individual') && t.includes('especial'))   return { label: 'Individual / Especial',   color: '#a855f7', hint: 'Transferência Especial ("Emenda Pix") — parlamentar destina sem definir objeto.' };
+  if (t.includes('individual') && t.includes('finalidade')) return { label: 'Individual / Finalidade', color: '#3b82f6', hint: 'Transferência com Finalidade Definida — destinação para objeto específico.' };
+  if (t.includes('individual'))  return { label: 'Individual',  color: '#3b82f6', hint: 'Emenda Individual — cota anual de cada parlamentar.' };
+  if (t.includes('bancada'))     return { label: 'Bancada',     color: '#10b981', hint: 'Emenda de Bancada Estadual — proposta coletiva.' };
+  if (t.includes('comiss'))      return { label: 'Comissão',    color: '#f59e0b', hint: 'Emenda de Comissão — proposta por comissão temática.' };
+  if (t.includes('relator'))     return { label: 'Relator',     color: '#ec4899', hint: 'Emenda do Relator (RP9) — perdeu eficácia após STF 2022.' };
+  return { label: tipo ?? '—', color: '#94a3b8', hint: tipo ?? '' };
 }
 
 function MunicipiosBeneficiadosCard({
@@ -2244,11 +2244,11 @@ function MunicipiosBeneficiadosCard({
     >
       <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
         <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
-          MunicÃ­pios beneficiados em {ano}
+          Municípios beneficiados em {ano}
         </p>
         {porMunicipio.length > 0 && (
           <p className="text-[10px] text-slate-500">
-            {porMunicipio.length} {porMunicipio.length === 1 ? 'municÃ­pio' : 'municÃ­pios'} Â·{' '}
+            {porMunicipio.length} {porMunicipio.length === 1 ? 'município' : 'municípios'} ·{' '}
             <span className="text-cyan-300 font-semibold">{formatBRLCompact(total)}</span>
           </p>
         )}
@@ -2256,10 +2256,10 @@ function MunicipiosBeneficiadosCard({
 
       {porMunicipio.length === 0 ? (
         <p className="text-xs text-slate-500 text-center py-6">
-          Nenhuma emenda com municÃ­pio identificado em {ano}.
+          Nenhuma emenda com município identificado em {ano}.
           <br />
           <span className="text-slate-600 text-[10px]">
-            (emendas com destino &ldquo;Nacional&rdquo; ou &ldquo;UF&rdquo; nÃ£o aparecem aqui)
+            (emendas com destino &ldquo;Nacional&rdquo; ou &ldquo;UF&rdquo; não aparecem aqui)
           </span>
         </p>
       ) : (
@@ -2290,7 +2290,7 @@ function MunicipiosBeneficiadosCard({
                     {formatBRLCompact(m.total)}
                   </span>
                 </div>
-                {/* Chips de Ã¡reas */}
+                {/* Chips de áreas */}
                 <div className="flex flex-wrap gap-1.5 pl-7">
                   {m.areas.map(({ area, valor }) => (
                     <span
@@ -2319,7 +2319,7 @@ function MunicipiosBeneficiadosCard({
             >
               {expandido
                 ? `Mostrar apenas os ${MAX_INICIAL} maiores`
-                : `Ver todos os ${porMunicipio.length} municÃ­pios`}
+                : `Ver todos os ${porMunicipio.length} municípios`}
             </button>
           )}
         </>
@@ -2328,9 +2328,9 @@ function MunicipiosBeneficiadosCard({
   );
 }
 
-// Lista de municÃ­pios que receberam TransferÃªncia Especial (Pix) do parlamentar.
-// Aparece quando as emendas originais foram cadastradas a nÃ­vel UF e o destino
-// real sÃ³ foi resolvido depois via repasse Pix (modalidade EC 105/2019).
+// Lista de municípios que receberam Transferência Especial (Pix) do parlamentar.
+// Aparece quando as emendas originais foram cadastradas a nível UF e o destino
+// real só foi resolvido depois via repasse Pix (modalidade EC 105/2019).
 function MunicipiosPixCard({
   ano, pixPorMunicipio, pixTotal, onClick,
 }: {
@@ -2359,18 +2359,18 @@ function MunicipiosPixCard({
             Pix
           </span>
           <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
-            MunicÃ­pios que receberam Pix em {ano}
+            Municípios que receberam Pix em {ano}
           </p>
         </div>
         <p className="text-[10px] text-slate-500">
-          {pixPorMunicipio.length} {pixPorMunicipio.length === 1 ? 'municÃ­pio' : 'municÃ­pios'} Â·{' '}
+          {pixPorMunicipio.length} {pixPorMunicipio.length === 1 ? 'município' : 'municípios'} ·{' '}
           <span className="text-violet-300 font-semibold">{formatBRLCompact(pixTotal)}</span>
         </p>
       </div>
 
       <p className="text-[10px] text-slate-500 italic mb-3 leading-snug">
-        TransferÃªncias Especiais (EC 105/2019) â€” destinos reais dos repasses Pix do parlamentar
-        quando a emenda original foi cadastrada sÃ³ a nÃ­vel UF.
+        Transferências Especiais (EC 105/2019) — destinos reais dos repasses Pix do parlamentar
+        quando a emenda original foi cadastrada só a nível UF.
       </p>
 
       <div className="space-y-2">
@@ -2398,7 +2398,7 @@ function MunicipiosPixCard({
               <div className="text-right flex-shrink-0">
                 <p className="text-violet-300 font-bold text-sm whitespace-nowrap">{formatBRLCompact(m.total)}</p>
                 <p className="text-[10px] text-slate-500">
-                  {m.qtd} {m.qtd === 1 ? 'transferÃªncia' : 'transferÃªncias'}
+                  {m.qtd} {m.qtd === 1 ? 'transferência' : 'transferências'}
                 </p>
               </div>
             </div>
@@ -2413,7 +2413,7 @@ function MunicipiosPixCard({
         >
           {expandido
             ? `Mostrar apenas os ${MAX_INICIAL} maiores`
-            : `Ver todos os ${pixPorMunicipio.length} municÃ­pios`}
+            : `Ver todos os ${pixPorMunicipio.length} municípios`}
         </button>
       )}
     </div>
@@ -2428,22 +2428,22 @@ function ComparativoAreasCard({
   areasAtual: { area: EmendaArea; total: number }[];
   areasAnterior: Map<string, number>;
 }) {
-  // Cada card mostra UMA Ã¡rea literal (mesmo critÃ©rio do donut acima).
-  // O card "OUTRAS ÃREAS" soma tudo que nÃ£o Ã© SaÃºde/EducaÃ§Ã£o/SeguranÃ§a â€”
-  // legendado como tal pra evitar confusÃ£o com a Ã¡rea literal "OUTROS".
+  // Cada card mostra UMA área literal (mesmo critério do donut acima).
+  // O card "OUTRAS ÁREAS" soma tudo que não é Saúde/Educação/Segurança —
+  // legendado como tal pra evitar confusão com a área literal "OUTROS".
   const principais: EmendaArea[] = ['SAUDE', 'EDUCACAO', 'SEGURANCA', 'OUTROS'];
 
   const principaisSomadas: { area: EmendaArea; label: string; atual: number; anterior: number }[] =
     principais.map((area) => {
       if (area === 'OUTROS') {
-        // "Outras Ã¡reas" â€” agrega tudo que nÃ£o Ã© uma das 3 principais
+        // "Outras áreas" — agrega tudo que não é uma das 3 principais
         const principaisSet = new Set<EmendaArea>(['SAUDE', 'EDUCACAO', 'SEGURANCA']);
         const atual = areasAtual.reduce((s, a) => s + (principaisSet.has(a.area) ? 0 : a.total), 0);
         const anterior = Array.from(areasAnterior.entries()).reduce(
           (s, [k, v]) => s + (principaisSet.has(k as EmendaArea) ? 0 : v),
           0,
         );
-        return { area, label: 'Outras Ã¡reas', atual, anterior };
+        return { area, label: 'Outras áreas', atual, anterior };
       }
       const atual = areasAtual.find((a) => a.area === area)?.total ?? 0;
       const anterior = areasAnterior.get(area) ?? 0;
@@ -2457,7 +2457,7 @@ function ComparativoAreasCard({
     >
       <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
         <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
-          Comparativo por Ãrea
+          Comparativo por Área
         </p>
         <p className="text-[10px] text-slate-500">
           {ano} vs. {ano - 1}
@@ -2473,7 +2473,7 @@ function ComparativoAreasCard({
               key={area}
               className="rounded-xl p-3.5"
               style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}
-              title={area === 'OUTROS' ? 'Soma de AssistÃªncia Social, Transporte, Cultura, Esporte e outras Ã¡reas que nÃ£o sÃ£o SaÃºde, EducaÃ§Ã£o ou SeguranÃ§a' : undefined}
+              title={area === 'OUTROS' ? 'Soma de Assistência Social, Transporte, Cultura, Esporte e outras áreas que não são Saúde, Educação ou Segurança' : undefined}
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${color}22`, color, border: `1px solid ${color}44` }}>
@@ -2521,7 +2521,7 @@ function DestaqueDoAnoCard({
       <div className="flex items-center gap-1.5 flex-shrink-0">
         <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#e8c660' }} />
         <p className="text-[9px] uppercase tracking-widest font-bold text-amber-300/70 whitespace-nowrap">
-          Destaque {ano} Â· {stateName}
+          Destaque {ano} · {stateName}
         </p>
       </div>
 
@@ -2529,7 +2529,7 @@ function DestaqueDoAnoCard({
       <div className="w-px h-6 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)' }} />
 
       <div className="flex items-center gap-3 flex-wrap flex-1">
-        {/* Top municÃ­pio */}
+        {/* Top município */}
         <div
           className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl flex-shrink-0"
           style={{
@@ -2538,7 +2538,7 @@ function DestaqueDoAnoCard({
           }}
         >
           <div className="flex flex-col leading-tight">
-            <span className="text-[8px] uppercase tracking-widest font-semibold text-cyan-400/60">MunicÃ­pio</span>
+            <span className="text-[8px] uppercase tracking-widest font-semibold text-cyan-400/60">Município</span>
             <span className="text-white font-bold text-[13px] truncate max-w-[150px] leading-tight">{municipio.nome}</span>
           </div>
           <div
@@ -2564,7 +2564,7 @@ function DestaqueDoAnoCard({
                 <span className="text-white font-bold text-[13px] truncate max-w-[180px] leading-tight">{topParlamentar.nome}</span>
                 <span className="text-[9px] text-slate-500 whitespace-nowrap hidden sm:block">
                   {CARGO_LABELS[topParlamentar.cargo as ParlamentarCargo] ?? topParlamentar.cargo}
-                  {topParlamentar.partido ? ` Â· ${topParlamentar.partido}` : ''}
+                  {topParlamentar.partido ? ` · ${topParlamentar.partido}` : ''}
                 </span>
               </div>
             </div>
@@ -2580,4 +2580,3 @@ function DestaqueDoAnoCard({
     </div>
   );
 }
-
