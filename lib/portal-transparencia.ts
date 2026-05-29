@@ -744,7 +744,8 @@ export function formatBRL(n?: number | null): string {
 
 export function formatBRLCompact(n?: number | null): string {
   if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
-  if (n >= 1_000_000) return `R$ ${(n / 1_000_000).toFixed(1).replace('.', ',')}M`;
-  if (n >= 1_000)     return `R$ ${(n / 1_000).toFixed(0)}K`;
+  if (n >= 1_000_000_000) return `R$ ${(n / 1_000_000_000).toFixed(2).replace('.', ',')}Bi`;
+  if (n >= 1_000_000)     return `R$ ${(n / 1_000_000).toFixed(1).replace('.', ',')}M`;
+  if (n >= 1_000)         return `R$ ${(n / 1_000).toFixed(0)}K`;
   return `R$ ${n.toFixed(0)}`;
 }
