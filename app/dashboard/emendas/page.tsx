@@ -271,7 +271,7 @@ export default function EmendasPage() {
     }
     setSearchingParlamentar(false);
     const normalizar = (s: string) =>
-      s.normalize('NFD').replace(/[Ì€-Í¯]/g, '').toLowerCase();
+      s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const qNorm = normalizar(q);
 
     // Quando hÃ¡ municÃ­pio selecionado, restringe ao pool de parlamentares daquele municÃ­pio
@@ -1852,7 +1852,7 @@ function EmendasDetalhadasCard({
   }, [usandoFlat, destinosFlat, emendas]);
 
   const normalizar = (s: string) =>
-    s.normalize('NFD').replace(/[Ì€-Í¯]/g, '').toLowerCase();
+    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
   const vMinNum = valorMin ? parseFloat(valorMin) : null;
   const vMaxNum = valorMax ? parseFloat(valorMax) : null;
