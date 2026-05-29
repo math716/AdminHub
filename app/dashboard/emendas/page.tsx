@@ -1879,118 +1879,181 @@ function EmendasDetalhadasCard({
 
   const labelItens = usandoFlat ? 'destinos' : (emendas.length === 1 ? 'emenda' : 'emendas');
 
+  const limparFiltros = () => { setBusca(''); setFuncaoFiltro(''); setTipoFiltro(''); setValorMin(''); setValorMax(''); };
+
   return (
     <div
-      className="mt-4 rounded-xl p-4"
-      style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}
+      className="mt-4 rounded-2xl overflow-hidden"
+      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.07)' }}
     >
-      {/* Header */}
-      <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
-        <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
-          Detalhe das emendas em {ano}
-        </p>
-        <p className="text-[10px] text-slate-500">
-          {temFiltro
-            ? <><span className="text-amber-300 font-semibold">{filtradoQtd}</span> de {totalItens} {labelItens} · {formatBRLCompact(totalValor)}</>
-            : <>{totalItens} {labelItens} · {formatBRLCompact(totalValor)}</>
-          }
-        </p>
+      {/* ── Header ───────────────────────────────────────────────────────── */}
+      <div
+        className="px-5 py-3.5 flex items-center justify-between gap-4 flex-wrap"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-4 rounded-full" style={{ background: 'linear-gradient(180deg,#f59e0b,#d97706)' }} />
+          <p className="text-xs font-bold text-white tracking-wide">Detalhe das Emendas</p>
+          <span className="text-[10px] text-slate-500 font-medium">{ano}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          {semDadosExecucao && (
+            <span className="text-[10px] text-amber-400/70 italic hidden sm:block">Sem dados de execução estadual</span>
+          )}
+          {semDadosPagamento && !semDadosExecucao && (
+            <span className="text-[10px] text-amber-400/70 italic hidden sm:block">Sem dados de pagamento estadual</span>
+          )}
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            {temFiltro && (
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+            )}
+            <span className="text-[11px] font-semibold text-white">
+              {temFiltro ? filtradoQtd : totalItens}
+            </span>
+            <span className="text-[10px] text-slate-400">{labelItens}</span>
+            <span className="text-slate-600 text-[10px]">·</span>
+            <span className="text-[11px] font-semibold text-emerald-300">{formatBRLCompact(totalValor)}</span>
+          </div>
+          {temFiltro && (
+            <button
+              onClick={limparFiltros}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium text-slate-300 hover:text-white transition-colors"
+              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}
+            >
+              <X className="w-3 h-3" /> Limpar
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Avisos de dados */}
-      {semDadosExecucao && (
-        <p className="text-[11px] text-amber-400/80 italic mb-3">
-          Informações de empenho e pagamento não disponíveis no portal estadual — apenas o valor da dotação inicial é reportado.
-        </p>
-      )}
-      {semDadosPagamento && !semDadosExecucao && (
-        <p className="text-[11px] text-amber-400/80 italic mb-3">
-          Informações de pagamento não disponíveis no portal estadual — apenas o valor empenhado é reportado.
-        </p>
-      )}
-
-      {/* Filtros */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
-        <div className="relative lg:col-span-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500" />
+      {/* ── Barra de filtros ─────────────────────────────────────────────── */}
+      <div className="px-5 py-3 flex flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        {/* Busca */}
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder={usandoFlat ? 'Favorecido, município, nº…' : 'Município, função, nº…'}
-            className="w-full bg-white/5 border border-white/10 rounded-lg pl-7 pr-3 py-1.5 text-[11px] text-white placeholder-slate-500 outline-none focus:border-amber-500/50 transition-colors"
+            placeholder={usandoFlat ? 'Buscar favorecido, município ou nº…' : 'Buscar município, função ou nº…'}
+            className="w-full h-9 rounded-xl pl-9 pr-3 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
+            style={{
+              background: busca ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.04)',
+              border: busca ? '1px solid rgba(245,158,11,0.35)' : '1px solid rgba(255,255,255,0.08)',
+            }}
           />
         </div>
-        <select
-          value={funcaoFiltro}
-          onChange={(e) => setFuncaoFiltro(e.target.value)}
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[11px] text-white outline-none focus:border-amber-500/50 transition-colors"
-          style={{ background: 'rgba(7,29,54,0.8)' }}
-        >
-          <option value="">Todas as áreas</option>
-          {funcoes.map((f) => <option key={f} value={f}>{f}</option>)}
-        </select>
-        <select
-          value={tipoFiltro}
-          onChange={(e) => setTipoFiltro(e.target.value)}
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[11px] text-white outline-none focus:border-amber-500/50 transition-colors"
-          style={{ background: 'rgba(7,29,54,0.8)' }}
-        >
-          <option value="">Todos os tipos</option>
-          {tiposCurtos.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <div className="flex items-center gap-1.5">
-          <input
-            value={valorMin}
-            onChange={(e) => setValorMin(e.target.value)}
-            placeholder="R$ mín"
-            type="number"
-            min={0}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder-slate-500 outline-none focus:border-amber-500/50 transition-colors"
-          />
-          <span className="text-slate-600 text-[10px] flex-shrink-0">—</span>
-          <input
-            value={valorMax}
-            onChange={(e) => setValorMax(e.target.value)}
-            placeholder="R$ máx"
-            type="number"
-            min={0}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder-slate-500 outline-none focus:border-amber-500/50 transition-colors"
-          />
+
+        {/* Área */}
+        <div className="relative min-w-[150px]">
+          <select
+            value={funcaoFiltro}
+            onChange={(e) => setFuncaoFiltro(e.target.value)}
+            className="w-full h-9 rounded-xl px-3 pr-8 text-[12px] text-white outline-none appearance-none cursor-pointer transition-all"
+            style={{
+              background: funcaoFiltro ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.04)',
+              border: funcaoFiltro ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <option value="" style={{ background: '#0a1f3d' }}>Todas as áreas</option>
+            {funcoes.map((f) => <option key={f} value={f} style={{ background: '#0a1f3d' }}>{f}</option>)}
+          </select>
+          <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
+            <svg className="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+          </div>
+        </div>
+
+        {/* Tipo */}
+        <div className="relative min-w-[150px]">
+          <select
+            value={tipoFiltro}
+            onChange={(e) => setTipoFiltro(e.target.value)}
+            className="w-full h-9 rounded-xl px-3 pr-8 text-[12px] text-white outline-none appearance-none cursor-pointer transition-all"
+            style={{
+              background: tipoFiltro ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
+              border: tipoFiltro ? '1px solid rgba(16,185,129,0.35)' : '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <option value="" style={{ background: '#0a1f3d' }}>Todos os tipos</option>
+            {tiposCurtos.map((t) => <option key={t} value={t} style={{ background: '#0a1f3d' }}>{t}</option>)}
+          </select>
+          <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
+            <svg className="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+          </div>
+        </div>
+
+        {/* Faixa de valor */}
+        <div className="flex items-center gap-1.5 min-w-[180px]">
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-medium pointer-events-none">R$</span>
+            <input
+              value={valorMin}
+              onChange={(e) => setValorMin(e.target.value)}
+              placeholder="Mín"
+              type="number"
+              min={0}
+              className="w-full h-9 rounded-xl pl-7 pr-2 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
+              style={{
+                background: valorMin ? 'rgba(74,158,222,0.1)' : 'rgba(255,255,255,0.04)',
+                border: valorMin ? '1px solid rgba(74,158,222,0.35)' : '1px solid rgba(255,255,255,0.08)',
+              }}
+            />
+          </div>
+          <div className="w-3 h-px bg-slate-600 flex-shrink-0" />
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-medium pointer-events-none">R$</span>
+            <input
+              value={valorMax}
+              onChange={(e) => setValorMax(e.target.value)}
+              placeholder="Máx"
+              type="number"
+              min={0}
+              className="w-full h-9 rounded-xl pl-7 pr-2 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
+              style={{
+                background: valorMax ? 'rgba(74,158,222,0.1)' : 'rgba(255,255,255,0.04)',
+                border: valorMax ? '1px solid rgba(74,158,222,0.35)' : '1px solid rgba(255,255,255,0.08)',
+              }}
+            />
+          </div>
         </div>
       </div>
 
-      {temFiltro && (
-        <button
-          onClick={() => { setBusca(''); setFuncaoFiltro(''); setTipoFiltro(''); setValorMin(''); setValorMax(''); }}
-          className="mb-3 text-[10px] text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1"
-        >
-          <X className="w-3 h-3" /> Limpar filtros
-        </button>
-      )}
+      {/* ── Tabelas ──────────────────────────────────────────────────────── */}
+      <div className="px-5 pb-4">
+        {/* Vazio */}
+        {((usandoFlat && destinosFiltrados.length === 0) || (!usandoFlat && emendasFiltradas.length === 0)) && (
+          <div className="flex flex-col items-center justify-center py-10 gap-2">
+            <Search className="w-5 h-5 text-slate-600" />
+            <p className="text-[12px] text-slate-500">Nenhum resultado encontrado</p>
+            {temFiltro && (
+              <button onClick={limparFiltros} className="text-[11px] text-amber-400 hover:text-amber-300 mt-1 transition-colors">
+                Limpar filtros
+              </button>
+            )}
+          </div>
+        )}
 
-      {/* ── Tabela flat (destinos reais) ─────────────────────────────────── */}
-      {usandoFlat && (
-        destinosFiltrados.length === 0 ? (
-          <p className="text-center text-[11px] text-slate-500 py-6">Nenhum destino encontrado com os filtros aplicados.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-[11px]">
+        {/* Flat */}
+        {usandoFlat && destinosFiltrados.length > 0 && (
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-[12px] border-separate border-spacing-0">
               <thead>
-                <tr className="text-left text-[9px] uppercase tracking-widest text-slate-500 border-b border-white/5">
-                  <th className="py-2 px-2 font-semibold w-12">Nº</th>
-                  <th className="py-2 px-2 font-semibold">Tipo</th>
-                  <th className="py-2 px-2 font-semibold">Área</th>
-                  <th className="py-2 px-2 font-semibold">Favorecido</th>
-                  <th className="py-2 px-2 font-semibold">Município</th>
-                  <th className="py-2 px-2 font-semibold text-right">Empenhado</th>
-                  <th className="py-2 px-2 font-semibold text-right">Pago</th>
-                  <th className="py-2 px-2 font-semibold text-right w-14">%</th>
+                <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  {(['Nº', 'Tipo', 'Área', 'Favorecido', 'Município', 'Empenhado', 'Pago', '%'] as const).map((h, i) => (
+                    <th
+                      key={h}
+                      className={`py-2.5 px-3 text-[9px] uppercase tracking-widest font-bold text-slate-500 whitespace-nowrap ${i >= 5 ? 'text-right' : 'text-left'}`}
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {destinosFiltrados.map((d, i) => {
                   const tipo = tipoCurtoInfo(d.tipoEmenda);
                   const pct  = d.valorEmpenhado > 0 ? (d.valorPago / d.valorEmpenhado) * 100 : 0;
+                  const par  = i % 2 === 0;
                   return (
                     <tr
                       key={`${d.codigoEmenda}-${d.cnpjFavorecido ?? d.nomeFavorecido ?? i}`}
@@ -1998,88 +2061,114 @@ function EmendasDetalhadasCard({
                         codigo: d.codigoEmenda,
                         titulo: d.numeroEmenda ? `Emenda nº ${d.numeroEmenda}` : `Emenda ${d.codigoEmenda}`,
                       })}
-                      className="border-b border-white/5 hover:bg-amber-300/5 transition-colors cursor-pointer"
+                      className="group cursor-pointer transition-colors"
+                      style={{ background: par ? 'transparent' : 'rgba(255,255,255,0.015)' }}
                       title="Clique para ver todos os documentos desta emenda"
                     >
-                      <td className="py-2 px-2 text-slate-400 font-mono whitespace-nowrap">{d.numeroEmenda ?? '—'}</td>
-                      <td className="py-2 px-2">
+                      <td className="py-2.5 px-3 text-slate-500 font-mono text-[11px] whitespace-nowrap group-hover:text-slate-300 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        {d.numeroEmenda ?? '—'}
+                      </td>
+                      <td className="py-2.5 px-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                         <span
                           title={tipo.hint}
-                          className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold cursor-help whitespace-nowrap"
-                          style={{ background: `${tipo.color}22`, color: tipo.color, border: `1px solid ${tipo.color}44` }}
+                          className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap"
+                          style={{ background: `${tipo.color}18`, color: tipo.color, border: `1px solid ${tipo.color}33` }}
                         >
                           {tipo.label}
                         </span>
                       </td>
-                      <td className="py-2 px-2 text-slate-200 truncate max-w-[100px]" title={d.funcao ?? ''}>{d.funcao ?? '—'}</td>
-                      <td className="py-2 px-2 text-slate-300 truncate max-w-[200px]" title={d.nomeFavorecido ?? ''}>
-                        {d.nomeFavorecido ?? <span className="text-slate-500 italic">sem favorecido</span>}
+                      <td className="py-2.5 px-3 text-slate-300 truncate max-w-[110px] group-hover:text-white transition-colors" title={d.funcao ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        {d.funcao ?? '—'}
                       </td>
-                      <td className="py-2 px-2 text-slate-400 truncate max-w-[140px]" title={[d.municipio, d.uf].filter(Boolean).join(' / ')}>
-                        {d.municipio
-                          ? <>{d.municipio}{d.uf ? <span className="text-slate-600"> / {d.uf}</span> : null}</>
-                          : <span className="text-slate-600 italic">—</span>}
+                      <td className="py-2.5 px-3 truncate max-w-[220px]" title={d.nomeFavorecido ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <span className="text-slate-200 group-hover:text-white transition-colors font-medium">
+                          {d.nomeFavorecido ?? <span className="text-slate-600 italic font-normal">sem favorecido</span>}
+                        </span>
                       </td>
-                      <td className="py-2 px-2 text-right text-white font-semibold whitespace-nowrap">{formatBRL(d.valorEmpenhado)}</td>
-                      <td className="py-2 px-2 text-right text-emerald-300 whitespace-nowrap">{formatBRL(d.valorPago)}</td>
-                      <td className="py-2 px-2 text-right text-slate-400 whitespace-nowrap">{pct.toFixed(0)}%</td>
+                      <td className="py-2.5 px-3 truncate max-w-[150px]" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        {d.municipio ? (
+                          <span className="text-slate-400 group-hover:text-slate-200 transition-colors">
+                            {d.municipio}
+                            {d.uf && <span className="text-slate-600 ml-1 text-[10px]">/ {d.uf}</span>}
+                          </span>
+                        ) : <span className="text-slate-600">—</span>}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-semibold text-white whitespace-nowrap group-hover:text-amber-200 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        {formatBRL(d.valorEmpenhado)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-emerald-400 whitespace-nowrap" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        {formatBRL(d.valorPago)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <span
+                          className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                          style={{
+                            background: pct >= 80 ? 'rgba(16,185,129,0.12)' : pct >= 40 ? 'rgba(245,158,11,0.12)' : 'rgba(100,116,139,0.12)',
+                            color:      pct >= 80 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#64748b',
+                          }}
+                        >
+                          {pct.toFixed(0)}%
+                        </span>
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-        )
-      )}
+        )}
 
-      {/* ── Tabela fallback (por emenda) ─────────────────────────────────── */}
-      {!usandoFlat && (
-        emendasFiltradas.length === 0 ? (
-          <p className="text-center text-[11px] text-slate-500 py-6">Nenhuma emenda encontrada com os filtros aplicados.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-[11px]">
+        {/* Fallback por emenda */}
+        {!usandoFlat && emendasFiltradas.length > 0 && (
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-[12px] border-separate border-spacing-0">
               <thead>
-                <tr className="text-left text-[9px] uppercase tracking-widest text-slate-500 border-b border-white/5">
-                  <th className="py-2 px-2 font-semibold w-12">Nº</th>
-                  <th className="py-2 px-2 font-semibold">Tipo</th>
-                  <th className="py-2 px-2 font-semibold">Área</th>
-                  <th className="py-2 px-2 font-semibold">Destino</th>
-                  <th className="py-2 px-2 font-semibold text-right">Empenhado</th>
-                  <th className="py-2 px-2 font-semibold text-right">Pago</th>
-                  <th className="py-2 px-2 font-semibold text-right w-14">%</th>
+                <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  {(['Nº', 'Tipo', 'Área', 'Destino', 'Empenhado', 'Pago', '%'] as const).map((h, i) => (
+                    <th
+                      key={h}
+                      className={`py-2.5 px-3 text-[9px] uppercase tracking-widest font-bold text-slate-500 whitespace-nowrap ${i >= 4 ? 'text-right' : 'text-left'}`}
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {emendasFiltradas.map((e) => {
+                {emendasFiltradas.map((e, i) => {
                   const tipo = tipoCurtoInfo(e.tipo);
                   const pct  = e.valorEmpenhado > 0 ? (e.valorPago / e.valorEmpenhado) * 100 : 0;
+                  const par  = i % 2 === 0;
                   return (
                     <tr
                       key={e.idPortal}
                       onClick={() => setEmendaSelecionada({ codigo: e.idPortal, titulo: e.numero ? `Emenda nº ${e.numero}` : `Emenda ${e.idPortal}` })}
-                      className="border-b border-white/5 hover:bg-amber-300/5 transition-colors cursor-pointer"
+                      className="group cursor-pointer transition-colors"
+                      style={{ background: par ? 'transparent' : 'rgba(255,255,255,0.015)' }}
                       title="Clique para ver favorecidos e breakdown por fase"
                     >
-                      <td className="py-2 px-2 text-slate-400 font-mono">{e.numero ?? '—'}</td>
-                      <td className="py-2 px-2">
-                        <span title={tipo.hint} className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold cursor-help" style={{ background: `${tipo.color}22`, color: tipo.color, border: `1px solid ${tipo.color}44` }}>{tipo.label}</span>
+                      <td className="py-2.5 px-3 text-slate-500 font-mono text-[11px] whitespace-nowrap group-hover:text-slate-300 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{e.numero ?? '—'}</td>
+                      <td className="py-2.5 px-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <span title={tipo.hint} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap" style={{ background: `${tipo.color}18`, color: tipo.color, border: `1px solid ${tipo.color}33` }}>{tipo.label}</span>
                       </td>
-                      <td className="py-2 px-2 text-slate-200 truncate max-w-[140px]" title={e.funcao ?? ''}>{e.funcao ?? '—'}</td>
-                      <td className="py-2 px-2 text-slate-300 truncate max-w-[180px]" title={e.municipioNome ?? e.objeto ?? ''}>
-                        {e.municipioNome ?? <span className="text-slate-500 italic">{e.objeto ?? 'sem destino'}</span>}
+                      <td className="py-2.5 px-3 text-slate-300 truncate max-w-[140px] group-hover:text-white transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{e.funcao ?? '—'}</td>
+                      <td className="py-2.5 px-3 text-slate-200 truncate max-w-[200px] font-medium group-hover:text-white transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        {e.municipioNome ?? <span className="text-slate-600 italic font-normal">{e.objeto ?? 'sem destino'}</span>}
                       </td>
-                      <td className="py-2 px-2 text-right text-white font-semibold whitespace-nowrap">{formatBRL(e.valorEmpenhado)}</td>
-                      <td className="py-2 px-2 text-right text-emerald-300 whitespace-nowrap">{formatBRL(e.valorPago)}</td>
-                      <td className="py-2 px-2 text-right text-slate-400 whitespace-nowrap">{pct.toFixed(0)}%</td>
+                      <td className="py-2.5 px-3 text-right font-semibold text-white whitespace-nowrap group-hover:text-amber-200 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatBRL(e.valorEmpenhado)}</td>
+                      <td className="py-2.5 px-3 text-right text-emerald-400 whitespace-nowrap" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatBRL(e.valorPago)}</td>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: pct >= 80 ? 'rgba(16,185,129,0.12)' : pct >= 40 ? 'rgba(245,158,11,0.12)' : 'rgba(100,116,139,0.12)', color: pct >= 80 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#64748b' }}>{pct.toFixed(0)}%</span>
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-        )
-      )}
+        )}
+      </div>
 
       <EmendaDocumentosModal
         codigoEmenda={emendaSelecionada?.codigo ?? null}
