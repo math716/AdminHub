@@ -16,6 +16,12 @@ import { PORTAL_MOCK_MODE, getAllEmendasDoAno, type PortalEmenda } from '@/lib/p
 //      consulta o banco (rápido + completo).
 //   2) Senão, cai pro Portal ao vivo (lento + parcial). Vale como fallback
 //      enquanto a sincronização (scripts/sync-emendas-portal.ts) não rodou.
+function normalizarNomeParlamentar(nome: string, nomeUrna?: string | null): string {
+  if (nomeUrna) return nomeUrna;
+  return nome.replace(/\s*\(.*\)\s*$/, '').trim()
+    .toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -59,7 +65,7 @@ async function resumoDoBanco(uf: string, ano: number) {
       codigoIbge: true,
       municipioNome: true,
       parlamentar: {
-        select: { id: true, cpf: true, idPortal: true, nome: true, cargo: true, partido: true },
+        select: { id: true, cpf: true, idPortal: true, nome: true, nomeUrna: true, cargo: true, partido: true },
       },
     },
   });
@@ -92,7 +98,7 @@ async function resumoDoBanco(uf: string, ano: number) {
   const porMunicipio = new Map<string, { codigoIbge: string; nome: string; total: number; qtd: number }>();
   const porArea = new Map<string, number>();
   const porParlamentar = new Map<string, {
-    cpf: string | null; idPortal: string; nome: string; cargo: string; partido: string | null; total: number; qtd: number;
+    cpf: string | null; idPortal: string; nome: string; nomeUrna: string | null; cargo: string; partido: string | null; total: number; qtd: number;
   }>();
 
   emendas.forEach((e) => {
@@ -120,7 +126,8 @@ async function resumoDoBanco(uf: string, ano: number) {
       const curP = porParlamentar.get(pk) ?? {
         cpf:      e.parlamentar.cpf,
         idPortal: e.parlamentar.idPortal ?? e.parlamentar.nome,
-        nome:     e.parlamentar.nome,
+        nome:     normalizarNomeParlamentar(e.parlamentar.nome, e.parlamentar.nomeUrna),
+        nomeUrna: e.parlamentar.nomeUrna ?? null,
         cargo:    e.parlamentar.cargo,
         partido:  e.parlamentar.partido,
         total:    0, qtd: 0,
@@ -205,7 +212,7 @@ async function resumoDoPortal(uf: string, ano: number) {
     porArea.set(e.area, (porArea.get(e.area) ?? 0) + (e.valorEmpenhado ?? 0));
     const pk = e.autorCpf ?? e.autorNome;
     const curP = porParlamentar.get(pk) ?? {
-      cpf: e.autorCpf, idPortal: e.autorCpf ?? e.autorNome, nome: e.autorNome,
+      cpf: e.autorCpf, idPortal: e.autorCpf ?? e.autorNome, nome: normalizarNomeParlamentar(e.autorNome),
       cargo: e.autorCargo, partido: e.autorPartido, total: 0, qtd: 0,
     };
     curP.total += e.valorEmpenhado ?? 0;

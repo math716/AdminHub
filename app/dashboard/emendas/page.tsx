@@ -148,7 +148,7 @@ interface ResumoEstado {
   topMunicipios: { codigoIbge: string; nome: string; total: number; qtd: number }[];
   valorPorMunicipio: Record<string, number>;
   areas: { area: EmendaArea; total: number }[];
-  parlamentares: { cpf: string | null; idPortal: string; nome: string; cargo: string; partido: string | null; total: number; qtd: number }[];
+  parlamentares: { cpf: string | null; idPortal: string; nome: string; nomeUrna?: string | null; cargo: string; partido: string | null; total: number; qtd: number }[];
   mock: boolean;
   /** "banco" = dados completos do Supabase; "portal" = amostra parcial direto da API */
   fonte?: 'banco' | 'portal';
@@ -279,8 +279,8 @@ export default function EmendasPage() {
       .map<PortalParlamentar>((p) => ({
         cpf:      p.cpf,
         idPortal: p.idPortal,
-        nome:     p.nome,
-        nomeUrna: null,
+        nome:     p.nomeUrna ?? p.nome,
+        nomeUrna: p.nomeUrna ?? null,
         partido:  p.partido,
         uf:       selectedUf,
         cargo:    p.cargo as ParlamentarCargo,
