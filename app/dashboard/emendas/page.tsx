@@ -2488,55 +2488,38 @@ function DestaqueDoAnoCard({
 }) {
   return (
     <div
-      className="rounded-xl px-4 py-3"
+      className="rounded-xl px-4 py-2 flex items-center gap-4 flex-wrap"
       style={{
-        background: 'linear-gradient(135deg, rgba(201,162,39,0.08), rgba(74,158,222,0.05))',
-        border: '1px solid rgba(201,162,39,0.25)',
+        background: 'linear-gradient(135deg, rgba(201,162,39,0.06), rgba(74,158,222,0.04))',
+        border: '1px solid rgba(201,162,39,0.2)',
       }}
     >
-      <div className="flex items-center gap-2 mb-2.5">
-        <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{
-            background: 'rgba(201,162,39,0.15)',
-            border: '1px solid rgba(201,162,39,0.4)',
-          }}
-        >
-          <Trophy className="w-3.5 h-3.5" style={{ color: '#e8c660' }} />
-        </div>
-        <p className="text-[10px] uppercase tracking-widest font-bold text-amber-300">
-          Destaque do ano em {stateName} ({ano})
+      {/* Label */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#e8c660' }} />
+        <p className="text-[9px] uppercase tracking-widest font-bold text-amber-300/80 whitespace-nowrap">
+          Destaque {ano} · {stateName}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="flex items-center gap-3 flex-wrap flex-1">
         {/* Top município */}
-        <div
-          className="rounded-lg px-3 py-2 flex items-center gap-3"
-          style={{ background: 'rgba(7,29,54,0.4)', border: '1px solid rgba(255,255,255,0.06)' }}
-        >
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-widest text-cyan-300/80 font-bold">Município que mais recebeu</p>
-            <p className="text-white font-bold text-sm mt-0.5 truncate">{municipio.nome}</p>
-            <p className="text-cyan-300 font-bold text-base leading-tight">{formatBRL(municipio.total)}</p>
-          </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <p className="text-[9px] uppercase tracking-widest text-cyan-300/70 font-bold whitespace-nowrap">Município</p>
+          <p className="text-white font-bold text-[12px] truncate max-w-[160px]">{municipio.nome}</p>
+          <p className="text-cyan-300 font-bold text-[12px] whitespace-nowrap">{formatBRL(municipio.total)}</p>
         </div>
 
         {/* Top parlamentar */}
         {topParlamentar && (
-          <div
-            className="rounded-lg px-3 py-2 flex items-center gap-3"
-            style={{ background: 'rgba(7,29,54,0.4)', border: '1px solid rgba(255,255,255,0.06)' }}
-          >
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-widest text-amber-300/80 font-bold">Parlamentar que mais enviou</p>
-              <p className="text-white font-bold text-sm mt-0.5 truncate">{topParlamentar.nome}</p>
-              <p className="text-[11px] text-slate-400 leading-tight truncate">
-                {CARGO_LABELS[topParlamentar.cargo as ParlamentarCargo] ?? topParlamentar.cargo}
-                {topParlamentar.partido ? ` · ${topParlamentar.partido}` : ''}
-              </p>
-              <p className="text-amber-300 font-bold text-base leading-tight">{formatBRL(topParlamentar.total)}</p>
-            </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <p className="text-[9px] uppercase tracking-widest text-amber-300/70 font-bold whitespace-nowrap">Parlamentar</p>
+            <p className="text-white font-bold text-[12px] truncate max-w-[200px]">{topParlamentar.nome}</p>
+            <p className="text-[10px] text-slate-500 whitespace-nowrap hidden sm:block">
+              {CARGO_LABELS[topParlamentar.cargo as ParlamentarCargo] ?? topParlamentar.cargo}
+              {topParlamentar.partido ? ` · ${topParlamentar.partido}` : ''}
+            </p>
+            <p className="text-amber-300 font-bold text-[12px] whitespace-nowrap">{formatBRL(topParlamentar.total)}</p>
           </div>
         )}
       </div>
