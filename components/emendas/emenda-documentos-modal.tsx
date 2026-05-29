@@ -54,6 +54,7 @@ interface ApiResponse {
   documentos: DocumentoApi[];
   breakdown: { favorecidos: FavorecidoBreakdown[]; fases: FaseBreakdown[] };
   pendingEnrich: boolean;
+  semExecucaoNoEstado?: boolean;
   notFound?: boolean;
   total?: number;
 }
@@ -61,6 +62,7 @@ interface ApiResponse {
 interface Props {
   codigoEmenda: string | null;
   tituloFallback?: string;
+  filtroUf?: string;
   onClose: () => void;
 }
 
@@ -89,7 +91,7 @@ function formatCnpj(cnpj: string | null): string {
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
 
-export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, onClose }: Props) {
+export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, onClose }: Props) {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -101,7 +103,8 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, onClose }:
     setErro(null);
     setData(null);
 
-    fetch(`/api/emendas-portal/emenda/${encodeURIComponent(codigoEmenda)}/documentos`)
+    const ufQuery = filtroUf ? `?uf=${encodeURIComponent(filtroUf)}` : '';
+    fetch(`/api/emendas-portal/emenda/${encodeURIComponent(codigoEmenda)}/documentos${ufQuery}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return (await res.json()) as ApiResponse;
@@ -119,7 +122,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, onClose }:
     return () => {
       aborted = true;
     };
-  }, [codigoEmenda]);
+  }, [codigoEmenda, filtroUf]);
 
   return (
     <AnimatePresence>
@@ -193,6 +196,13 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, onClose }:
               </div>
             )}
 
+            {/* Sem execução no estado filtrado */}
+            {data && data.semExecucaoNoEstado && !data.notFound && (
+              <div className="rounded-lg p-6 text-sm text-slate-400 bg-slate-900/40 border border-white/5 text-center">
+                Esta emenda não possui execução registrada neste estado.
+              </div>
+            )}
+
             {/* Not found */}
             {data && data.notFound && (
               <div className="rounded-lg p-6 text-sm text-slate-400 bg-slate-900/40 border border-white/5">
@@ -201,7 +211,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, onClose }:
             )}
 
             {/* Conteúdo */}
-            {data && !data.pendingEnrich && !data.notFound && (
+            {data && !data.pendingEnrich && !data.notFound && !data.semExecucaoNoEstado && (
               <div className="space-y-5">
                 {/* Breakdown por fase */}
                 {data.breakdown.fases.length > 0 && (

@@ -17,12 +17,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 
-export async function GET(_request: NextRequest, { params }: { params: { codigo: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { codigo: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const codigoEmenda = params.codigo;
+    const uf = request.nextUrl.searchParams.get('uf') ?? undefined;
 
     const emenda = await prisma.emendaParlamentar.findUnique({
       where: { idPortal: codigoEmenda },
@@ -48,7 +49,7 @@ export async function GET(_request: NextRequest, { params }: { params: { codigo:
     }
 
     const documentos = await prisma.emendaDocumento.findMany({
-      where: { emendaId: emenda.id },
+      where: { emendaId: emenda.id, ...(uf ? { ufFavorecido: uf } : {}) },
       orderBy: [{ data: 'asc' }, { fase: 'asc' }],
       select: {
         codigoDocumento: true,
@@ -104,6 +105,12 @@ export async function GET(_request: NextRequest, { params }: { params: { codigo:
       porFase.set(d.fase, f);
     }
 
+    // Se veio filtro por UF e não há docs naquele UF, verifica se há docs no total
+    // para distinguir "sem execução neste estado" de "ainda não enriquecida"
+    const totalGeral = uf
+      ? await prisma.emendaDocumento.count({ where: { emendaId: emenda.id } })
+      : documentos.length;
+
     return NextResponse.json({
       emenda: {
         codigoEmenda: emenda.idPortal,
@@ -119,7 +126,8 @@ export async function GET(_request: NextRequest, { params }: { params: { codigo:
         favorecidos: Array.from(porFavorecido.values()).sort((a, b) => b.total - a.total),
         fases: Array.from(porFase.values()).sort((a, b) => b.total - a.total),
       },
-      pendingEnrich: documentos.length === 0,
+      pendingEnrich: totalGeral === 0,
+      semExecucaoNoEstado: uf ? documentos.length === 0 && totalGeral > 0 : false,
       total: documentos.length,
     });
   } catch (error) {
