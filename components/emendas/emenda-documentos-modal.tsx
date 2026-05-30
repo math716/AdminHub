@@ -9,7 +9,7 @@
  * mostra mensagem orientando.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Building2, FileText, ExternalLink, Clock, MapPin } from 'lucide-react';
 import { formatBRL } from '@/lib/portal-transparencia';
@@ -63,6 +63,7 @@ interface Props {
   codigoEmenda: string | null;
   tituloFallback?: string;
   filtroUf?: string;
+  filtroFavorecido?: { cnpj: string | null; nome: string | null; municipio: string | null; uf: string | null };
   onClose: () => void;
 }
 
@@ -91,10 +92,40 @@ function formatCnpj(cnpj: string | null): string {
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
 
-export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, onClose }: Props) {
+export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, filtroFavorecido, onClose }: Props) {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+
+  // Quando há filtroFavorecido, restringe docs/favorecidos/fases ao favorecido clicado
+  const docsFiltrados = useMemo(() => {
+    if (!data || !filtroFavorecido) return data?.documentos ?? [];
+    const { cnpj, nome } = filtroFavorecido;
+    return data.documentos.filter((d) =>
+      cnpj ? d.cnpjFavorecido === cnpj : d.nomeFavorecido === nome,
+    );
+  }, [data, filtroFavorecido]);
+
+  const fasesFiltradas = useMemo(() => {
+    if (!data) return [];
+    if (!filtroFavorecido) return data.breakdown.fases;
+    const map = new Map<string, { total: number; qtd: number }>();
+    docsFiltrados.forEach((d) => {
+      const cur = map.get(d.fase) ?? { total: 0, qtd: 0 };
+      cur.total += d.valor;
+      cur.qtd++;
+      map.set(d.fase, cur);
+    });
+    return Array.from(map.entries()).map(([fase, { total, qtd }]) => ({ fase, total, qtd }));
+  }, [data, filtroFavorecido, docsFiltrados]);
+
+  const favorecidosFiltrados = useMemo(() => {
+    if (!data || !filtroFavorecido) return data?.breakdown.favorecidos ?? [];
+    const { cnpj, nome } = filtroFavorecido;
+    return data.breakdown.favorecidos.filter((f) =>
+      cnpj ? f.cnpj === cnpj : f.nome === nome,
+    );
+  }, [data, filtroFavorecido]);
 
   useEffect(() => {
     if (!codigoEmenda) return;
@@ -214,13 +245,13 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
             {data && !data.pendingEnrich && !data.notFound && !data.semExecucaoNoEstado && (
               <div className="space-y-5">
                 {/* Breakdown por fase */}
-                {data.breakdown.fases.length > 0 && (
+                {fasesFiltradas.length > 0 && (
                   <section>
                     <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">
                       Execução por fase
                     </p>
                     <div className="grid grid-cols-3 gap-2">
-                      {data.breakdown.fases.map((f) => (
+                      {fasesFiltradas.map((f) => (
                         <div
                           key={f.fase}
                           className="rounded-lg p-3"
@@ -241,13 +272,13 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                 )}
 
                 {/* Favorecidos */}
-                {data.breakdown.favorecidos.length > 0 && (
+                {favorecidosFiltrados.length > 0 && (
                   <section>
                     <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">
-                      Favorecidos ({data.breakdown.favorecidos.length})
+                      {filtroFavorecido ? 'Favorecido' : `Favorecidos (${favorecidosFiltrados.length})`}
                     </p>
                     <div className="space-y-2">
-                      {data.breakdown.favorecidos.slice(0, 10).map((f) => (
+                      {favorecidosFiltrados.slice(0, 10).map((f) => (
                         <div
                           key={f.cnpj ?? f.nome}
                           className="rounded-lg p-3 flex items-start justify-between gap-3"
@@ -272,9 +303,9 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                           </div>
                         </div>
                       ))}
-                      {data.breakdown.favorecidos.length > 10 && (
+                      {favorecidosFiltrados.length > 10 && (
                         <p className="text-[10px] text-slate-500 text-center">
-                          + {data.breakdown.favorecidos.length - 10} outros favorecidos
+                          + {favorecidosFiltrados.length - 10} outros favorecidos
                         </p>
                       )}
                     </div>
@@ -284,10 +315,10 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                 {/* Lista de documentos com observação */}
                 <section>
                   <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">
-                    Documentos ({data.documentos.length})
+                    Documentos ({docsFiltrados.length})
                   </p>
                   <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                    {data.documentos.map((d) => (
+                    {docsFiltrados.map((d) => (
                       <div
                         key={d.codigoDocumento}
                         className="rounded-lg p-2.5"

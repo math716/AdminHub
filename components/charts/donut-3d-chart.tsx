@@ -123,12 +123,12 @@ export default function Donut3DChart({
       {/* Center content */}
       {(centerValue !== undefined || centerLabel) && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center">
+          <div className="text-center px-1">
             {centerValue !== undefined && (
-              <div className="text-2xl font-bold text-white">{centerValue}</div>
+              <div className="text-sm font-bold text-white leading-tight">{centerValue}</div>
             )}
             {centerLabel && (
-              <div className="text-xs text-gray-400">{centerLabel}</div>
+              <div className="text-[10px] text-gray-400 leading-tight">{centerLabel}</div>
             )}
           </div>
         </div>

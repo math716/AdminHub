@@ -449,42 +449,27 @@ export default function EmendasPage() {
   }, [parlamentarEmendas]);
 
   // Quando há parlamentar selecionado, o mapa mostra os municípios beneficiados.
-  // Prioriza destinosFlat (favorecidos reais de EmendaDocumento) quando disponível;
-  // fallback para parlamentarEmendas (um município por emenda).
+  // Usa EmendaParlamentar.codigoIbge como fonte canônica do município destino —
+  // EmendaDocumento.codigoIbgeFavorecido não é confiável (não vem no CSV granular).
   const parlamentarValorPorMunicipio = useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {};
-    if (parlamentarDestinosFlat.length > 0) {
-      parlamentarDestinosFlat.forEach((d) => {
-        if (!d.codigoIbge) return;
-        map[d.codigoIbge] = (map[d.codigoIbge] ?? 0) + d.valorEmpenhado;
-      });
-    } else {
-      parlamentarEmendas.forEach((e) => {
-        if (!e.codigoIbge) return;
-        map[e.codigoIbge] = (map[e.codigoIbge] ?? 0) + (e.valorEmpenhado ?? 0);
-      });
-    }
+    parlamentarEmendas.forEach((e) => {
+      if (!e.codigoIbge) return;
+      map[e.codigoIbge] = (map[e.codigoIbge] ?? 0) + (e.valorEmpenhado ?? 0);
+    });
     return map;
-  }, [parlamentarEmendas, parlamentarDestinosFlat]);
+  }, [parlamentarEmendas]);
 
-  // Versão por nome — para destinos sem codigoIbge.
+  // Versão por nome — para emendas estaduais sem codigoIbge.
   const parlamentarValorPorMunicipioNome = useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {};
-    if (parlamentarDestinosFlat.length > 0) {
-      parlamentarDestinosFlat.forEach((d) => {
-        if (d.codigoIbge || !d.municipio) return;
-        const nome = d.municipio.toUpperCase();
-        map[nome] = (map[nome] ?? 0) + d.valorEmpenhado;
-      });
-    } else {
-      parlamentarEmendas.forEach((e) => {
-        if (e.codigoIbge || !e.municipioNome) return;
-        const nome = e.municipioNome.toUpperCase();
-        map[nome] = (map[nome] ?? 0) + (e.valorEmpenhado ?? 0);
-      });
-    }
+    parlamentarEmendas.forEach((e) => {
+      if (e.codigoIbge || !e.municipioNome) return;
+      const nome = e.municipioNome.toUpperCase();
+      map[nome] = (map[nome] ?? 0) + (e.valorEmpenhado ?? 0);
+    });
     return map;
-  }, [parlamentarEmendas, parlamentarDestinosFlat]);
+  }, [parlamentarEmendas]);
 
   // Agrega emendas do parlamentar (ano selecionado) por município, com
   // breakdown de áreas pra cada um. Usado na nova seção "Municípios
@@ -1824,12 +1809,17 @@ function EmendasDetalhadasCard({
   const semDadosExecucao = semDadosPagamento
     && emendas.every((e) => e.valorEmpenhado === 0);
 
-  const [emendaSelecionada, setEmendaSelecionada] = useState<{ codigo: string; titulo: string } | null>(null);
+  const [emendaSelecionada, setEmendaSelecionada] = useState<{
+    codigo: string;
+    titulo: string;
+    filtroFavorecido?: { cnpj: string | null; nome: string | null; municipio: string | null; uf: string | null };
+  } | null>(null);
 
   // Filtros
   const [busca, setBusca] = useState('');
   const [funcaoFiltro, setFuncaoFiltro] = useState('');
   const [tipoFiltro, setTipoFiltro] = useState('');
+  const [valorColuna, setValorColuna] = useState<'empenhado' | 'pago'>('empenhado');
   const [valorMin, setValorMin] = useState('');
   const [valorMax, setValorMax] = useState('');
 
@@ -1868,11 +1858,12 @@ function EmendasDetalhadasCard({
              && !normalizar(d.numeroEmenda ?? '').includes(q)) return false;
       if (funcaoFiltro && d.funcao !== funcaoFiltro) return false;
       if (tipoFiltro && tipoCurtoLabel(d.tipoEmenda) !== tipoFiltro) return false;
-      if (vMinNum !== null && d.valorEmpenhado < vMinNum) return false;
-      if (vMaxNum !== null && d.valorEmpenhado > vMaxNum) return false;
+      const valFiltro = valorColuna === 'pago' ? d.valorPago : d.valorEmpenhado;
+      if (vMinNum !== null && valFiltro < vMinNum) return false;
+      if (vMaxNum !== null && valFiltro > vMaxNum) return false;
       return true;
     });
-  }, [usandoFlat, destinosFlat, q, funcaoFiltro, tipoFiltro, vMinNum, vMaxNum]);
+  }, [usandoFlat, destinosFlat, q, funcaoFiltro, tipoFiltro, valorColuna, vMinNum, vMaxNum]);
 
   // ── Fallback: emendas filtradas ───────────────────────────────────────────
   const emendasFiltradas = useMemo(() => {
@@ -1885,14 +1876,15 @@ function EmendasDetalhadasCard({
                && !normalizar(e.numero ?? '').includes(q)) return false;
         if (funcaoFiltro && e.funcao !== funcaoFiltro) return false;
         if (tipoFiltro && tipoCurtoLabel(e.tipo) !== tipoFiltro) return false;
-        if (vMinNum !== null && (e.valorEmpenhado ?? 0) < vMinNum) return false;
-        if (vMaxNum !== null && (e.valorEmpenhado ?? 0) > vMaxNum) return false;
+        const valFiltro = valorColuna === 'pago' ? (e.valorPago ?? 0) : (e.valorEmpenhado ?? 0);
+        if (vMinNum !== null && valFiltro < vMinNum) return false;
+        if (vMaxNum !== null && valFiltro > vMaxNum) return false;
         return true;
       })
       .sort((a, b) => (b.valorEmpenhado ?? 0) - (a.valorEmpenhado ?? 0));
-  }, [usandoFlat, emendas, q, funcaoFiltro, tipoFiltro, vMinNum, vMaxNum]);
+  }, [usandoFlat, emendas, q, funcaoFiltro, tipoFiltro, valorColuna, vMinNum, vMaxNum]);
 
-  const temFiltro = busca || funcaoFiltro || tipoFiltro || valorMin || valorMax;
+  const temFiltro = busca || funcaoFiltro || tipoFiltro || valorMin || valorMax || valorColuna !== 'empenhado';
   const totalItens   = usandoFlat ? destinosFlat.length   : emendas.length;
   const filtradoQtd  = usandoFlat ? destinosFiltrados.length : emendasFiltradas.length;
   const totalValor   = usandoFlat
@@ -2003,38 +1995,58 @@ function EmendasDetalhadasCard({
           </div>
         </div>
 
-        {/* Faixa de valor */}
-        <div className="flex items-center gap-1.5 min-w-[180px]">
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-medium pointer-events-none">R$</span>
-            <input
-              value={valorMin}
-              onChange={(e) => setValorMin(e.target.value)}
-              placeholder="Mín"
-              type="number"
-              min={0}
-              className="w-full h-9 rounded-xl pl-7 pr-2 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
-              style={{
-                background: valorMin ? 'rgba(74,158,222,0.1)' : 'rgba(255,255,255,0.04)',
-                border: valorMin ? '1px solid rgba(74,158,222,0.35)' : '1px solid rgba(255,255,255,0.08)',
-              }}
-            />
+        {/* Coluna de valor + faixa */}
+        <div className="flex items-center gap-1.5">
+          {/* Toggle Empenhado / Pago */}
+          <div className="flex rounded-xl overflow-hidden border border-white/10 flex-shrink-0">
+            {(['empenhado', 'pago'] as const).map((col) => (
+              <button
+                key={col}
+                onClick={() => { setValorColuna(col); setValorMin(''); setValorMax(''); }}
+                className="h-9 px-3 text-[11px] font-semibold transition-all whitespace-nowrap"
+                style={{
+                  background: valorColuna === col ? 'rgba(74,158,222,0.2)' : 'rgba(255,255,255,0.03)',
+                  color: valorColuna === col ? '#4a9ede' : '#64748b',
+                  borderRight: col === 'empenhado' ? '1px solid rgba(255,255,255,0.08)' : undefined,
+                }}
+              >
+                {col === 'empenhado' ? 'Empenhado' : 'Pago'}
+              </button>
+            ))}
           </div>
-          <div className="w-3 h-px bg-slate-600 flex-shrink-0" />
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-medium pointer-events-none">R$</span>
-            <input
-              value={valorMax}
-              onChange={(e) => setValorMax(e.target.value)}
-              placeholder="Máx"
-              type="number"
-              min={0}
-              className="w-full h-9 rounded-xl pl-7 pr-2 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
-              style={{
-                background: valorMax ? 'rgba(74,158,222,0.1)' : 'rgba(255,255,255,0.04)',
-                border: valorMax ? '1px solid rgba(74,158,222,0.35)' : '1px solid rgba(255,255,255,0.08)',
-              }}
-            />
+          {/* Faixa de valor */}
+          <div className="flex items-center gap-1.5 min-w-[160px]">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-medium pointer-events-none">R$</span>
+              <input
+                value={valorMin}
+                onChange={(e) => setValorMin(e.target.value)}
+                placeholder="Mín"
+                type="number"
+                min={0}
+                className="w-full h-9 rounded-xl pl-7 pr-2 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
+                style={{
+                  background: valorMin ? 'rgba(74,158,222,0.1)' : 'rgba(255,255,255,0.04)',
+                  border: valorMin ? '1px solid rgba(74,158,222,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                }}
+              />
+            </div>
+            <div className="w-3 h-px bg-slate-600 flex-shrink-0" />
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-medium pointer-events-none">R$</span>
+              <input
+                value={valorMax}
+                onChange={(e) => setValorMax(e.target.value)}
+                placeholder="Máx"
+                type="number"
+                min={0}
+                className="w-full h-9 rounded-xl pl-7 pr-2 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
+                style={{
+                  background: valorMax ? 'rgba(74,158,222,0.1)' : 'rgba(255,255,255,0.04)',
+                  border: valorMax ? '1px solid rgba(74,158,222,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -2082,6 +2094,7 @@ function EmendasDetalhadasCard({
                       onClick={() => setEmendaSelecionada({
                         codigo: d.codigoEmenda,
                         titulo: d.numeroEmenda ? `Emenda nº ${d.numeroEmenda}` : `Emenda ${d.codigoEmenda}`,
+                        filtroFavorecido: { cnpj: d.cnpjFavorecido, nome: d.nomeFavorecido, municipio: d.municipio, uf: d.uf },
                       })}
                       className="group cursor-pointer transition-colors"
                       style={{ background: par ? 'transparent' : 'rgba(255,255,255,0.015)' }}
@@ -2196,6 +2209,7 @@ function EmendasDetalhadasCard({
         codigoEmenda={emendaSelecionada?.codigo ?? null}
         tituloFallback={emendaSelecionada?.titulo}
         filtroUf={uf}
+        filtroFavorecido={emendaSelecionada?.filtroFavorecido}
         onClose={() => setEmendaSelecionada(null)}
       />
     </div>
