@@ -147,6 +147,7 @@ interface ResumoEstado {
   totalEmendas: number;
   topMunicipios: { codigoIbge: string; nome: string; total: number; qtd: number }[];
   valorPorMunicipio: Record<string, number>;
+  valorPorMunicipioNome?: Record<string, number>;
   areas: { area: EmendaArea; total: number }[];
   parlamentares: { cpf: string | null; idPortal: string; nome: string; nomeUrna?: string | null; cargo: string; partido: string | null; total: number; qtd: number }[];
   mock: boolean;
@@ -460,16 +461,28 @@ export default function EmendasPage() {
     return map;
   }, [parlamentarEmendas]);
 
-  // Versão por nome — para emendas estaduais sem codigoIbge.
+  // Versão por nome — fallback para quando o lookup por código IBGE falha.
+  // Inclui TODOS os municípios com nome (com ou sem codigoIbge).
   const parlamentarValorPorMunicipioNome = useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {};
     parlamentarEmendas.forEach((e) => {
-      if (e.codigoIbge || !e.municipioNome) return;
+      if (!e.municipioNome) return;
       const nome = e.municipioNome.toUpperCase();
       map[nome] = (map[nome] ?? 0) + (e.valorEmpenhado ?? 0);
     });
     return map;
   }, [parlamentarEmendas]);
+
+  // Props estabilizadas para StateMap — evita recriar objeto vazio a cada render
+  // enquanto resumo ainda carrega, o que causaria cascade de re-inicializações do mapa.
+  const mapVotesData = useMemo<Record<string, number>>(
+    () => selectedParlamentar ? parlamentarValorPorMunicipio : (resumo?.valorPorMunicipio ?? {}),
+    [selectedParlamentar, parlamentarValorPorMunicipio, resumo],
+  );
+  const mapVotesDataByName = useMemo<Record<string, number> | undefined>(
+    () => selectedParlamentar ? parlamentarValorPorMunicipioNome : (resumo?.valorPorMunicipioNome ?? undefined),
+    [selectedParlamentar, parlamentarValorPorMunicipioNome, resumo],
+  );
 
   // Agrega emendas do parlamentar (ano selecionado) por município, com
   // breakdown de áreas pra cada um. Usado na nova seção "Municípios
@@ -833,14 +846,8 @@ export default function EmendasPage() {
                 stateName={selectedStateName}
                 /* Quando há parlamentar selecionado, mostra só os municípios
                    que ele beneficiou. Senão, mostra todos do estado. */
-                votesData={
-                  selectedParlamentar
-                    ? parlamentarValorPorMunicipio
-                    : (resumo?.valorPorMunicipio ?? {})
-                }
-                votesDataByName={
-                  selectedParlamentar ? parlamentarValorPorMunicipioNome : undefined
-                }
+                votesData={mapVotesData}
+                votesDataByName={mapVotesDataByName}
                 onMunicipioClick={handleMunicipioClick}
                 disableSubdivisao
                 highlightColor="gold"

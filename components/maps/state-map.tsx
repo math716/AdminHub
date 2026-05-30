@@ -673,7 +673,17 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       };
 
       const getVotos = (codarea: string, nomeMun: string): number | undefined => {
+        // Exact code match
         if (votesData?.[codarea] !== undefined) return votesData[codarea];
+        // If GeoJSON returns 7-digit but DB stored 6-digit (without check digit)
+        if (codarea.length === 7 && votesData?.[codarea.slice(0, 6)] !== undefined) return votesData[codarea.slice(0, 6)];
+        // If GeoJSON returns 6-digit but DB stored 7-digit (padded)
+        if (codarea.length === 6) {
+          for (const key of Object.keys(votesData ?? {})) {
+            if (key.length === 7 && key.startsWith(codarea)) return votesData![key];
+          }
+        }
+        // Name-based fallback (handles any code format mismatch)
         if (votesDataByName && nomeMun) {
           const nomeNormalizado = normalizeName(nomeMun);
           // Try exact match first

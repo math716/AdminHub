@@ -143,7 +143,13 @@ async function resumoDoBanco(uf: string, ano: number) {
     .slice(0, 5);
 
   const valorPorMunicipio: Record<string, number> = {};
-  porMunicipio.forEach((v) => { valorPorMunicipio[v.codigoIbge] = v.total; });
+  const valorPorMunicipioNome: Record<string, number> = {};
+  porMunicipio.forEach((v) => {
+    valorPorMunicipio[v.codigoIbge] = v.total;
+    if (v.nome && v.nome !== v.codigoIbge) {
+      valorPorMunicipioNome[v.nome.toUpperCase()] = v.total;
+    }
+  });
 
   const areas = Array.from(porArea.entries())
     .map(([area, total]) => ({ area, total }))
@@ -166,6 +172,7 @@ async function resumoDoBanco(uf: string, ano: number) {
     totalEmendas: emendas.length,
     topMunicipios,
     valorPorMunicipio,
+    valorPorMunicipioNome,
     areas,
     parlamentares,
     mock: false,
@@ -230,6 +237,11 @@ async function resumoDoPortal(uf: string, ano: number) {
     totalEmendas: all.length,
     topMunicipios:    Array.from(porMunicipio.values()).sort((a, b) => b.total - a.total).slice(0, 5),
     valorPorMunicipio: Object.fromEntries(Array.from(porMunicipio.values()).map((v) => [v.codigoIbge, v.total])),
+    valorPorMunicipioNome: Object.fromEntries(
+      Array.from(porMunicipio.values())
+        .filter((v) => v.nome && v.nome !== v.codigoIbge)
+        .map((v) => [v.nome.toUpperCase(), v.total])
+    ),
     areas:            Array.from(porArea.entries()).map(([area, total]) => ({ area, total })).sort((a, b) => b.total - a.total),
     parlamentares:    Array.from(porParlamentar.values()).sort((a, b) => b.total - a.total),
     mock: PORTAL_MOCK_MODE,
