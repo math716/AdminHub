@@ -1859,6 +1859,7 @@ function EmendasDetalhadasCard({
       if (funcaoFiltro && d.funcao !== funcaoFiltro) return false;
       if (tipoFiltro && tipoCurtoLabel(d.tipoEmenda) !== tipoFiltro) return false;
       const valFiltro = valorColuna === 'pago' ? d.valorPago : d.valorEmpenhado;
+      if (valorColuna === 'pago' && d.valorPago === 0) return false;
       if (vMinNum !== null && valFiltro < vMinNum) return false;
       if (vMaxNum !== null && valFiltro > vMaxNum) return false;
       return true;
@@ -1877,6 +1878,7 @@ function EmendasDetalhadasCard({
         if (funcaoFiltro && e.funcao !== funcaoFiltro) return false;
         if (tipoFiltro && tipoCurtoLabel(e.tipo) !== tipoFiltro) return false;
         const valFiltro = valorColuna === 'pago' ? (e.valorPago ?? 0) : (e.valorEmpenhado ?? 0);
+        if (valorColuna === 'pago' && (e.valorPago ?? 0) === 0) return false;
         if (vMinNum !== null && valFiltro < vMinNum) return false;
         if (vMaxNum !== null && valFiltro > vMaxNum) return false;
         return true;
