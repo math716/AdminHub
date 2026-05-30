@@ -365,7 +365,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                 {data.emenda && (
                   <div className="pt-2 border-t border-white/5">
                     <a
-                      href={`https://portaldatransparencia.gov.br/emendas/consulta?de=${data.emenda.codigoEmenda}`}
+                      href={`https://portaldatransparencia.gov.br/emendas/consulta?ordenarPor=autor&direcao=asc&codigoEmenda=${data.emenda.codigoEmenda}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-[11px] text-amber-300 hover:text-amber-200"
