@@ -523,6 +523,32 @@ export default function EmendasPage() {
       .sort((a, b) => b.total - a.total);
   }, [parlamentarEmendas]);
 
+  // Top 5 municípios por valor recebido — usa dados de documento (mesma fonte
+  // que "Detalhe das Emendas") para refletir os valores reais por favorecido.
+  // Se destinos ainda não carregaram, cai para dados de emenda.
+  const parlamentarTop5PorDestino = useMemo(() => {
+    if (parlamentarDestinosFlat.length > 0) {
+      const nomeToIbge = new Map<string, string>();
+      parlamentarEmendas.forEach((e) => {
+        if (e.municipioNome && e.codigoIbge) {
+          nomeToIbge.set(e.municipioNome.toUpperCase(), e.codigoIbge);
+        }
+      });
+      const map = new Map<string, { nome: string; codigoIbge: string; total: number }>();
+      parlamentarDestinosFlat.forEach((d) => {
+        if (!d.municipio) return;
+        const key = d.municipio.toUpperCase();
+        const cur = map.get(key) ?? { nome: d.municipio, codigoIbge: nomeToIbge.get(key) ?? '', total: 0 };
+        cur.total += d.valorEmpenhado ?? 0;
+        map.set(key, cur);
+      });
+      return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, 5);
+    }
+    return parlamentarPorMunicipio.slice(0, 5).map((m) => ({
+      nome: m.nome, codigoIbge: m.codigoIbge, total: m.total,
+    }));
+  }, [parlamentarDestinosFlat, parlamentarEmendas, parlamentarPorMunicipio]);
+
   // Agregação de transferências Pix por município — preenche o card
   // "Municípios via Pix" do dashboard. Diferente de parlamentarPorMunicipio
   // (que vem das emendas), aqui o destino é o município REAL onde o Pix
@@ -905,14 +931,7 @@ export default function EmendasPage() {
               onClick={(m) => handleMunicipioClick(m.codigoIbge, m.nome)}
               escopoParlamentar={
                 selectedParlamentar
-                  ? {
-                      nome: selectedParlamentar.nome,
-                      municipios: parlamentarPorMunicipio.slice(0, 5).map((m) => ({
-                        codigoIbge: m.codigoIbge,
-                        nome: m.nome,
-                        total: m.total,
-                      })),
-                    }
+                  ? { nome: selectedParlamentar.nome, municipios: parlamentarTop5PorDestino }
                   : null
               }
             />
