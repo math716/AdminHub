@@ -815,7 +815,7 @@ export default function EmendasPage() {
         </div>
 
         {/* LINHA 1 — Coluna central: Mapa */}
-        <div className="col-span-12 md:col-span-6">
+        <div className="col-span-12 md:col-span-7">
           <div
             className="relative rounded-2xl overflow-hidden h-[560px]"
             style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}
@@ -907,7 +907,7 @@ export default function EmendasPage() {
         </div>
 
         {/* LINHA 1 — Coluna direita: Top 5 */}
-        <div className="col-span-12 md:col-span-3 space-y-4">
+        <div className="col-span-12 md:col-span-2 space-y-4">
           {view === 'brasil' ? (
             <SelecionarEstadoCard />
           ) : selectedMunicipio ? (
