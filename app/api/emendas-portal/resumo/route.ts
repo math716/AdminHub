@@ -16,6 +16,16 @@ import { PORTAL_MOCK_MODE, getAllEmendasDoAno, type PortalEmenda } from '@/lib/p
 //      consulta o banco (rápido + completo).
 //   2) Senão, cai pro Portal ao vivo (lento + parcial). Vale como fallback
 //      enquanto a sincronização (scripts/sync-emendas-portal.ts) não rodou.
+// Prefixo IBGE de 2 dígitos por UF — usado para garantir que só municípios
+// do estado correto apareçam no top 5 (emendas de parlamentares SP podem ter
+// codigoIbge apontando para municípios de outros estados).
+const UF_IBGE_PREFIX: Record<string, string> = {
+  AC:'12', AL:'27', AP:'16', AM:'13', BA:'29', CE:'23', DF:'53',
+  ES:'32', GO:'52', MA:'21', MT:'51', MS:'50', MG:'31', PA:'15',
+  PB:'25', PR:'41', PE:'26', PI:'22', RJ:'33', RN:'24', RS:'43',
+  RO:'11', RR:'14', SC:'42', SP:'35', SE:'28', TO:'17',
+};
+
 function normalizarNomeParlamentar(nome: string, nomeUrna?: string | null): string {
   if (nomeUrna) return nomeUrna;
   return nome.replace(/\s*\(.*\)\s*$/, '').trim()
@@ -109,14 +119,18 @@ async function resumoDoBanco(uf: string, ano: number) {
 
     if (e.codigoIbge) {
       totalMunicipalizado += valor;
-      const cur = porMunicipio.get(e.codigoIbge) ?? {
-        codigoIbge: e.codigoIbge,
-        nome: e.municipioNome ?? e.codigoIbge,
-        total: 0, qtd: 0,
-      };
-      cur.total += valor;
-      cur.qtd++;
-      porMunicipio.set(e.codigoIbge, cur);
+      // Só acumula no mapa se o município realmente pertence ao estado consultado
+      const ibgePrefix = UF_IBGE_PREFIX[uf];
+      if (!ibgePrefix || e.codigoIbge.startsWith(ibgePrefix)) {
+        const cur = porMunicipio.get(e.codigoIbge) ?? {
+          codigoIbge: e.codigoIbge,
+          nome: e.municipioNome ?? e.codigoIbge,
+          total: 0, qtd: 0,
+        };
+        cur.total += valor;
+        cur.qtd++;
+        porMunicipio.set(e.codigoIbge, cur);
+      }
     }
 
     porArea.set(e.area, (porArea.get(e.area) ?? 0) + valor);
