@@ -450,28 +450,46 @@ export default function EmendasPage() {
   }, [parlamentarEmendas]);
 
   // Quando há parlamentar selecionado, o mapa mostra os municípios beneficiados.
-  // Usa EmendaParlamentar.codigoIbge como fonte canônica do município destino —
-  // EmendaDocumento.codigoIbgeFavorecido não é confiável (não vem no CSV granular).
+  // Usa parlamentarDestinosFlat como fonte primária — ela já expande
+  // EmendaDocumento por favorecido e cai de volta para EmendaParlamentar quando
+  // não há documentos. Isso garante que o mapa reflita todos os municípios que
+  // aparecem na tabela de destinos (federal + estadual).
   const parlamentarValorPorMunicipio = useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {};
-    parlamentarEmendas.forEach((e) => {
-      if (!e.codigoIbge) return;
-      map[e.codigoIbge] = (map[e.codigoIbge] ?? 0) + (e.valorEmpenhado ?? 0);
-    });
+    if (parlamentarDestinosFlat.length > 0) {
+      parlamentarDestinosFlat.forEach((d) => {
+        if (!d.codigoIbge) return;
+        map[d.codigoIbge] = (map[d.codigoIbge] ?? 0) + (d.valorEmpenhado ?? 0);
+      });
+    } else {
+      // Fallback enquanto destinos ainda não carregaram ou não existem
+      parlamentarEmendas.forEach((e) => {
+        if (!e.codigoIbge) return;
+        map[e.codigoIbge] = (map[e.codigoIbge] ?? 0) + (e.valorEmpenhado ?? 0);
+      });
+    }
     return map;
-  }, [parlamentarEmendas]);
+  }, [parlamentarDestinosFlat, parlamentarEmendas]);
 
   // Versão por nome — fallback para quando o lookup por código IBGE falha.
   // Inclui TODOS os municípios com nome (com ou sem codigoIbge).
   const parlamentarValorPorMunicipioNome = useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {};
-    parlamentarEmendas.forEach((e) => {
-      if (!e.municipioNome) return;
-      const nome = e.municipioNome.toUpperCase();
-      map[nome] = (map[nome] ?? 0) + (e.valorEmpenhado ?? 0);
-    });
+    if (parlamentarDestinosFlat.length > 0) {
+      parlamentarDestinosFlat.forEach((d) => {
+        if (!d.municipio) return;
+        const nome = d.municipio.toUpperCase();
+        map[nome] = (map[nome] ?? 0) + (d.valorEmpenhado ?? 0);
+      });
+    } else {
+      parlamentarEmendas.forEach((e) => {
+        if (!e.municipioNome) return;
+        const nome = e.municipioNome.toUpperCase();
+        map[nome] = (map[nome] ?? 0) + (e.valorEmpenhado ?? 0);
+      });
+    }
     return map;
-  }, [parlamentarEmendas]);
+  }, [parlamentarDestinosFlat, parlamentarEmendas]);
 
   // Props estabilizadas para StateMap — evita recriar objeto vazio a cada render
   // enquanto resumo ainda carrega, o que causaria cascade de re-inicializações do mapa.
