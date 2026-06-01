@@ -907,48 +907,54 @@ export default function EmendasPage() {
         </div>
 
         {/* LINHA 1 — Coluna direita: Top 5 */}
-        <div className="col-span-12 md:col-span-2 space-y-4">
+        <div className="col-span-12 md:col-span-2 flex flex-col gap-4 h-[560px]">
           {view === 'brasil' ? (
             <SelecionarEstadoCard />
           ) : selectedMunicipio ? (
             /* Município selecionado → mostra top 5 parlamentares desse município */
-            <Top5ParlamentaresDoMunicipioCard
-              municipioNome={selectedMunicipio.nome}
-              parlamentares={top5ParlamentaresDoMunicipio}
-              loading={loadingMunicipio}
-              onPick={(p) => {
-                setSelectedParlamentar({
-                  cpf: p.cpf, idPortal: p.idPortal, nome: p.nome,
-                  nomeUrna: null, partido: p.partido, uf: selectedUf,
-                  cargo: p.cargo,
-                });
-              }}
-            />
+            <div className="flex-1 min-h-0">
+              <Top5ParlamentaresDoMunicipioCard
+                municipioNome={selectedMunicipio.nome}
+                parlamentares={top5ParlamentaresDoMunicipio}
+                loading={loadingMunicipio}
+                onPick={(p) => {
+                  setSelectedParlamentar({
+                    cpf: p.cpf, idPortal: p.idPortal, nome: p.nome,
+                    nomeUrna: null, partido: p.partido, uf: selectedUf,
+                    cargo: p.cargo,
+                  });
+                }}
+              />
+            </div>
           ) : (
-            <Top5MunicipiosCard
-              resumo={resumo}
-              loading={loadingResumo}
-              onClick={(m) => handleMunicipioClick(m.codigoIbge, m.nome)}
-              escopoParlamentar={
-                selectedParlamentar
-                  ? { nome: selectedParlamentar.nome, municipios: parlamentarTop5PorDestino }
-                  : null
-              }
-            />
+            <div className="flex-1 min-h-0">
+              <Top5MunicipiosCard
+                resumo={resumo}
+                loading={loadingResumo}
+                onClick={(m) => handleMunicipioClick(m.codigoIbge, m.nome)}
+                escopoParlamentar={
+                  selectedParlamentar
+                    ? { nome: selectedParlamentar.nome, municipios: parlamentarTop5PorDestino }
+                    : null
+                }
+              />
+            </div>
           )}
 
           {/* Top 5 parlamentares do estado (quando não há município selecionado) */}
           {!selectedMunicipio && (
-            <Top5ParlamentaresEstadoCard
-              topResumo={resumo?.parlamentares ?? []}
-              onPick={(p) =>
-                setSelectedParlamentar({
-                  cpf: p.cpf, idPortal: p.idPortal, nome: p.nome,
-                  nomeUrna: null, partido: p.partido, uf: selectedUf,
-                  cargo: p.cargo as ParlamentarCargo,
-                })
-              }
-            />
+            <div className="flex-1 min-h-0">
+              <Top5ParlamentaresEstadoCard
+                topResumo={resumo?.parlamentares ?? []}
+                onPick={(p) =>
+                  setSelectedParlamentar({
+                    cpf: p.cpf, idPortal: p.idPortal, nome: p.nome,
+                    nomeUrna: null, partido: p.partido, uf: selectedUf,
+                    cargo: p.cargo as ParlamentarCargo,
+                  })
+                }
+              />
+            </div>
           )}
         </div>
 
@@ -1278,15 +1284,15 @@ function Top5ParlamentaresDoMunicipioCard({
 }) {
   return (
     <div
-      className="rounded-2xl p-4"
+      className="rounded-2xl p-4 h-full flex flex-col"
       style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Top 5 Parlamentares</p>
-      <p className="text-[10px] text-amber-300/80 mb-2 truncate" title={municipioNome}>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1 flex-shrink-0">Top 5 Parlamentares</p>
+      <p className="text-[10px] text-amber-300/80 mb-2 truncate flex-shrink-0" title={municipioNome}>
         que mais enviaram para {municipioNome}
       </p>
       {loading && (
-        <div className="py-6 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center">
           <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
         </div>
       )}
@@ -1294,7 +1300,7 @@ function Top5ParlamentaresDoMunicipioCard({
         <p className="text-xs text-slate-500 text-center py-4">Sem dados disponíveis</p>
       )}
       {!loading && parlamentares.length > 0 && (
-        <ol className="space-y-2">
+        <ol className="flex-1 overflow-y-auto space-y-2 pr-0.5">
           {parlamentares.map((p, i) => (
             <li key={p.idPortal}>
               <button
@@ -1325,11 +1331,11 @@ function Top5ParlamentaresEstadoCard({
   if (topResumo.length === 0) return null;
   return (
     <div
-      className="rounded-2xl p-4"
+      className="rounded-2xl p-4 h-full flex flex-col"
       style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">Top 5 Parlamentares</p>
-      <div className="space-y-1.5">
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3 flex-shrink-0">Top 5 Parlamentares</p>
+      <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5">
         {topResumo.slice(0, 5).map((p) => (
           <button
             key={p.idPortal}
@@ -1369,21 +1375,21 @@ function Top5MunicipiosCard({
 
   return (
     <div
-      className="rounded-2xl p-4"
+      className="rounded-2xl p-4 h-full flex flex-col"
       style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1 flex-shrink-0">
         Top 5 Municípios
       </p>
       {isParlamentar && (
-        <p className="text-[10px] text-amber-300/80 mb-2 truncate" title={escopoParlamentar.nome}>
+        <p className="text-[10px] text-amber-300/80 mb-2 truncate flex-shrink-0" title={escopoParlamentar.nome}>
           beneficiados por {escopoParlamentar.nome}
         </p>
       )}
-      {!isParlamentar && <div className="mb-2" />}
+      {!isParlamentar && <div className="mb-2 flex-shrink-0" />}
 
       {loading && !isParlamentar && (
-        <div className="py-6 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center">
           <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
         </div>
       )}
@@ -1395,7 +1401,7 @@ function Top5MunicipiosCard({
         </p>
       )}
       {top.length > 0 && (
-        <ol className="space-y-2">
+        <ol className="flex-1 overflow-y-auto space-y-2 pr-0.5">
           {top.map((m, i) => (
             <li key={m.codigoIbge}>
               <button
