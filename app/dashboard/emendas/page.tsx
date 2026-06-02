@@ -644,11 +644,26 @@ export default function EmendasPage() {
     return m;
   }, [parlamentarHistorico, ano]);
 
-  // Interseção: emendas do parlamentar filtradas pelo município selecionado
+  // Interseção: emendas do parlamentar filtradas pelo município selecionado.
+  // Para emendas federais o codigoIbge está nos documentos (parlamentarDestinosFlat),
+  // não na emenda raiz — cruza os dois para não retornar vazio.
   const parlamentarMunicipioEmendas = useMemo(() => {
     if (!selectedParlamentar || !selectedMunicipio) return [];
+
+    if (parlamentarDestinosFlat.length > 0) {
+      const emendasNoMunicipio = new Set(
+        parlamentarDestinosFlat
+          .filter((d) => d.codigoIbge === selectedMunicipio.codigo)
+          .map((d) => d.codigoEmenda),
+      );
+      if (emendasNoMunicipio.size > 0) {
+        return parlamentarEmendas.filter((e) => emendasNoMunicipio.has(e.idPortal));
+      }
+    }
+
+    // Fallback: codigoIbge direto (emendas estaduais importadas)
     return parlamentarEmendas.filter((e) => e.codigoIbge === selectedMunicipio.codigo);
-  }, [selectedParlamentar, selectedMunicipio, parlamentarEmendas]);
+  }, [selectedParlamentar, selectedMunicipio, parlamentarEmendas, parlamentarDestinosFlat]);
 
   const parlamentarMunicipioAreasAtual = useMemo<{ area: EmendaArea; total: number }[]>(() => {
     const m = new Map<EmendaArea, number>();
