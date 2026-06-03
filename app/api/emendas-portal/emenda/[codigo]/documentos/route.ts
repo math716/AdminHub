@@ -34,8 +34,14 @@ export async function GET(request: NextRequest, { params }: { params: { codigo: 
         numero: true,
         tipo: true,
         esfera: true,
+        uf: true,
         valorEmpenhado: true,
         valorPago: true,
+        objeto: true,
+        municipioNome: true,
+        codigoIbge: true,
+        beneficiario: true,
+        funcao: true,
       },
     });
 
@@ -113,13 +119,19 @@ export async function GET(request: NextRequest, { params }: { params: { codigo: 
 
     return NextResponse.json({
       emenda: {
-        codigoEmenda: emenda.idPortal,
-        ano: emenda.ano,
-        numero: emenda.numero,
-        tipo: emenda.tipo,
-        esfera: emenda.esfera,
+        codigoEmenda:  emenda.idPortal,
+        ano:           emenda.ano,
+        numero:        emenda.numero,
+        tipo:          emenda.tipo,
+        esfera:        emenda.esfera,
+        uf:            emenda.uf,
         valorEmpenhado: emenda.valorEmpenhado,
-        valorPago: emenda.valorPago,
+        valorPago:     emenda.valorPago,
+        objeto:        emenda.objeto,
+        municipioNome: emenda.municipioNome,
+        codigoIbge:    emenda.codigoIbge,
+        beneficiario:  emenda.beneficiario,
+        funcao:        emenda.funcao,
       },
       documentos,
       breakdown: {

@@ -50,7 +50,13 @@ interface FaseBreakdown {
 }
 
 interface ApiResponse {
-  emenda: { codigoEmenda: string; ano: number; numero: string | null; tipo: string | null; esfera: string; valorEmpenhado: number; valorPago: number } | null;
+  emenda: {
+    codigoEmenda: string; ano: number; numero: string | null; tipo: string | null;
+    esfera: string; uf: string | null;
+    valorEmpenhado: number; valorPago: number;
+    objeto: string | null; municipioNome: string | null; codigoIbge: string | null;
+    beneficiario: string | null; funcao: string | null;
+  } | null;
   documentos: DocumentoApi[];
   breakdown: { favorecidos: FavorecidoBreakdown[]; fases: FaseBreakdown[] };
   pendingEnrich: boolean;
@@ -218,12 +224,65 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
               </div>
             )}
 
-            {/* Pendente enrich */}
-            {data && data.pendingEnrich && !data.notFound && (
+            {/* Pendente enrich — estadual: exibe dados disponíveis */}
+            {data && data.pendingEnrich && !data.notFound && data.emenda?.esfera === 'ESTADUAL' && (
+              <div className="space-y-4">
+                {/* Cards de valor */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg p-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                    <p className="text-[10px] uppercase font-semibold text-amber-400">Empenhado</p>
+                    <p className="text-base font-bold text-white mt-0.5">{formatBRL(data.emenda.valorEmpenhado)}</p>
+                  </div>
+                  <div className="rounded-lg p-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                    <p className="text-[10px] uppercase font-semibold text-emerald-400">Pago</p>
+                    <p className="text-base font-bold text-white mt-0.5">{formatBRL(data.emenda.valorPago)}</p>
+                  </div>
+                </div>
+
+                {/* Município */}
+                <div className="rounded-lg p-3 flex items-start gap-2" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <MapPin className="h-3.5 w-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Município Beneficiado</p>
+                    {data.emenda.municipioNome ? (
+                      <p className="text-sm text-white">{data.emenda.municipioNome} · {data.emenda.uf}</p>
+                    ) : (
+                      <p className="text-xs text-slate-500 italic">
+                        Município beneficiado não informado no Portal de Transparência Estadual do {data.emenda.uf ?? 'estado'}.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Objeto / descrição */}
+                {data.emenda.objeto && (
+                  <div className="rounded-lg p-3" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <p className="text-[10px] uppercase font-semibold text-slate-400 mb-1.5">Objeto da Emenda</p>
+                    <p className="text-xs text-slate-300 leading-relaxed">{data.emenda.objeto}</p>
+                  </div>
+                )}
+
+                {/* Órgão executor */}
+                {data.emenda.funcao && (
+                  <div className="rounded-lg p-3 flex items-start gap-2" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <Building2 className="h-3.5 w-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Órgão Executor</p>
+                      <p className="text-xs text-slate-300">{data.emenda.funcao}</p>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-slate-600 text-center">
+                  Dados detalhados por documento não disponibilizados no portal estadual.
+                </p>
+              </div>
+            )}
+
+            {/* Pendente enrich — federal */}
+            {data && data.pendingEnrich && !data.notFound && data.emenda?.esfera !== 'ESTADUAL' && (
               <div className="rounded-lg p-6 text-sm text-slate-400 bg-slate-900/40 border border-white/5 text-center">
-                {data.emenda?.esfera === 'ESTADUAL'
-                  ? 'Os dados detalhados desta emenda não são disponibilizados no portal estadual.'
-                  : 'Os dados detalhados desta emenda ainda não estão disponíveis.'}
+                Os dados detalhados desta emenda ainda não estão disponíveis.
               </div>
             )}
 
