@@ -937,6 +937,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         // 2. Recluster: agrupa itens próximos (em pixels) numa única bolha
         const reclusterVoteLabels = () => {
           labelsGroup.clearLayers();
+          if (map.getZoom() < 9) return; // só exibe labels quando zoom suficiente
           const THRESHOLD = 40; // px — aumentar = agrupa mais agressivamente
           const items = labelItems.map(item => ({
             ...item,

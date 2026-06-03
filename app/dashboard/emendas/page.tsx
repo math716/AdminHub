@@ -1433,7 +1433,7 @@ function Top5MunicipiosCard({
             : 'Sem dados disponíveis'}
         </p>
       )}
-      {top.length > 0 && (
+      {!loading && top.length > 0 && (
         <ol className="flex-1 overflow-y-auto space-y-2 pr-0.5">
           {top.map((m, i) => (
             <li key={m.codigoIbge}>

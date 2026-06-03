@@ -154,13 +154,13 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
             <div className="flex items-center gap-2 px-3 mb-2">
               <span
                 className="text-[10px] font-bold uppercase tracking-[0.2em]"
-                style={{ color: 'rgba(201,162,39,0.65)' }}
+                style={{ color: '#c9a227' }}
               >
                 {sec.section}
               </span>
               <span
                 className="flex-1 h-px"
-                style={{ background: 'linear-gradient(90deg, rgba(201,162,39,0.25), transparent)' }}
+                style={{ background: 'linear-gradient(90deg, rgba(201,162,39,0.45), transparent)' }}
               />
             </div>
 
@@ -180,7 +180,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                     }}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group',
-                      isActive ? 'text-white' : 'text-white/60 hover:text-white/95'
+                      isActive ? 'text-white' : 'text-slate-200 hover:text-white'
                     )}
                     style={
                       isActive
@@ -205,9 +205,9 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                               border: '1px solid rgba(201,162,39,0.35)',
                             }
                           : {
-                              background: 'rgba(255,255,255,0.05)',
-                              color: 'inherit',
-                              border: '1px solid rgba(255,255,255,0.06)',
+                              background: 'rgba(201,162,39,0.08)',
+                              color: 'rgba(201,162,39,0.75)',
+                              border: '1px solid rgba(201,162,39,0.18)',
                             }
                       }
                     >
@@ -231,7 +231,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                         className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
                         style={{
                           background:
-                            'linear-gradient(90deg, rgba(201,162,39,0.06) 0%, rgba(255,255,255,0.03) 100%)',
+                            'linear-gradient(90deg, rgba(201,162,39,0.10) 0%, rgba(255,255,255,0.03) 100%)',
                         }}
                       />
                     )}
@@ -281,14 +281,15 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
 
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 text-white/60 hover:text-white rounded-lg transition-all duration-200 group"
+          className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:text-white rounded-lg transition-all duration-200 group"
           style={{ borderLeft: '3px solid transparent' }}
         >
           <span
             className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200 group-hover:scale-[1.04]"
             style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(201,162,39,0.08)',
+              color: 'rgba(201,162,39,0.75)',
+              border: '1px solid rgba(201,162,39,0.18)',
             }}
           >
             <LogOut className="h-4 w-4" />
