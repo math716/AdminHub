@@ -68,8 +68,14 @@ def normalizar_nome(s):
     return ' '.join(w.capitalize() if i == 0 or w not in stop else w for i, w in enumerate(words))
 
 def to_float(v):
+    """Valores do PI estão em formato decimal US: '90000.00' ou '300000.00'.
+    Não remover o ponto — ele é separador decimal, não de milhar."""
     if not v: return 0.0
-    s = str(v).strip().replace('.','').replace(',','.')
+    s = str(v).strip()
+    # Formato BR com vírgula decimal: '90.000,00'
+    if ',' in s:
+        s = s.replace('.', '').replace(',', '.')
+    # Formato US com ponto decimal: '90000.00' — usar direto
     try: return float(s)
     except: return 0.0
 

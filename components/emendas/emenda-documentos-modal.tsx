@@ -240,19 +240,25 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                 </div>
 
                 {/* Município */}
-                <div className="rounded-lg p-3 flex items-start gap-2" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <MapPin className="h-3.5 w-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Município Beneficiado</p>
-                    {data.emenda.municipioNome ? (
+                {data.emenda.municipioNome ? (
+                  <div className="rounded-lg p-3 flex items-start gap-2" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <MapPin className="h-3.5 w-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Município Beneficiado</p>
                       <p className="text-sm text-white">{data.emenda.municipioNome} · {data.emenda.uf}</p>
-                    ) : (
-                      <p className="text-xs text-slate-500 italic">
-                        Município beneficiado não informado no Portal de Transparência Estadual do {data.emenda.uf ?? 'estado'}.
-                      </p>
-                    )}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="rounded-lg p-3 flex items-start gap-2" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                    <MapPin className="h-3.5 w-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] uppercase font-semibold text-amber-400 mb-0.5">Município Beneficiado</p>
+                      <p className="text-xs text-amber-200/70">
+                        O Portal de Transparência do estado {data.emenda.uf ? `(${data.emenda.uf})` : ''} não disponibiliza a informação de município beneficiado para estas emendas.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Objeto / descrição */}
                 {data.emenda.objeto && (
