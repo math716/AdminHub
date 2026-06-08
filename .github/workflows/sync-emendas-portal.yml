@@ -1,0 +1,75 @@
+name: Sync Emendas — Portal da Transparência (API)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ano:
+        description: 'Ano a sincronizar'
+        required: true
+        default: '2026'
+        type: string
+      from_pagina:
+        description: 'Página inicial (default 1 — use para retomar sync interrompido)'
+        required: false
+        default: '1'
+        type: string
+      max_paginas:
+        description: 'Número máximo de páginas (default 5000)'
+        required: false
+        default: '5000'
+        type: string
+      delay_ms:
+        description: 'Delay entre páginas em ms (default 700 — respeita rate limit da chave free)'
+        required: false
+        default: '700'
+        type: string
+
+jobs:
+  sync:
+    name: Sync emendas ${{ github.event.inputs.ano }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Sincronizar emendas
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PORTAL_TRANSPARENCIA_API_KEY: ${{ secrets.PORTAL_TRANSPARENCIA_API_KEY }}
+        run: |
+          npx tsx --require dotenv/config scripts/sync-emendas-portal.ts \
+            --ano ${{ github.event.inputs.ano }} \
+            --from-pagina ${{ github.event.inputs.from_pagina || '1' }} \
+            --max-paginas ${{ github.event.inputs.max_paginas || '5000' }} \
+            --delay-ms ${{ github.event.inputs.delay_ms || '700' }}
+
+      - name: Reclassificar senadores
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx scripts/sync-senadores.ts
+
+      - name: Reclassificar areas
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx scripts/reclassificar-areas.ts
+
+      - name: Resumo
+        if: always()
+        run: |
+          echo "## Sync emendas Portal — ano ${{ github.event.inputs.ano }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Páginas:** ${{ github.event.inputs.from_pagina || '1' }} → ${{ github.event.inputs.max_paginas || '5000' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horário:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
