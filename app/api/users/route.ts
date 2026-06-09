@@ -15,13 +15,13 @@ export async function GET() {
     const userRole = (session.user as any)?.role;
     const gabineteId = (session.user as any)?.gabineteId;
     
-    if (userRole !== 'CHEFE' && userRole !== 'ADMIN') {
+    if (userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
     }
 
-    // ADMIN vê todos; CHEFE vê apenas o próprio gabinete
+    // SUPER_ADMIN e ADMIN veem todos; CHEFE vê apenas o próprio gabinete
     const users = await prisma.user.findMany({
-      where: userRole === 'ADMIN' ? {} : { gabineteId },
+      where: (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') ? {} : { gabineteId },
       select: {
         id: true,
         email: true,

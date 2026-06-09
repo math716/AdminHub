@@ -17,7 +17,7 @@ export async function GET() {
   const userRole    = (session.user as any)?.role;
   const gabineteId  = (session.user as any)?.gabineteId;
 
-  if (userRole !== 'ADMIN' && userRole !== 'CHEFE') {
+  if (userRole !== 'ADMIN' && userRole !== 'CHEFE' && userRole !== 'SUPER_ADMIN') {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
   }
 
@@ -61,7 +61,7 @@ export async function POST() {
   const userRole   = (session.user as any)?.role;
   const gabineteId = (session.user as any)?.gabineteId;
 
-  if (userRole !== 'ADMIN' && userRole !== 'CHEFE') {
+  if (userRole !== 'ADMIN' && userRole !== 'CHEFE' && userRole !== 'SUPER_ADMIN') {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
   }
 
@@ -95,7 +95,7 @@ export async function DELETE(request: NextRequest) {
   const userRole   = (session.user as any)?.role;
   const gabineteId = (session.user as any)?.gabineteId;
 
-  if (userRole !== 'ADMIN' && userRole !== 'CHEFE') {
+  if (userRole !== 'ADMIN' && userRole !== 'CHEFE' && userRole !== 'SUPER_ADMIN') {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
   }
 

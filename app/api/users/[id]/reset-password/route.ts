@@ -38,7 +38,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     const userRole     = (session.user as any)?.role;
     const sessionUserId = (session.user as any)?.id;
 
-    if (userRole !== 'ADMIN') {
+    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Apenas ADMIN pode resetar senhas' }, { status: 403 });
     }
     if (params.id === sessionUserId) {

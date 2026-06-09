@@ -20,7 +20,7 @@ export async function POST(
     const userRole = (session.user as any)?.role;
     const gabineteId = (session.user as any)?.gabineteId;
 
-    if (userRole !== 'CHEFE' && userRole !== 'ADMIN') {
+    if (userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
     }
 
