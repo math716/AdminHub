@@ -35,6 +35,11 @@ export async function PATCH(
     });
     if (!target) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
 
+    // SUPER_ADMIN nunca pode ser alterado por ninguém via API
+    if (target.role === 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Este usuário não pode ser alterado' }, { status: 403 });
+    }
+
     // CHEFE só pode mexer em usuários do próprio gabinete
     if (sessionRole === 'CHEFE' && target.gabineteId !== sessionGabineteId) {
       return NextResponse.json({ error: 'Você só pode alterar usuários do seu gabinete' }, { status: 403 });
