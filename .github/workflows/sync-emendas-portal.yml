@@ -58,11 +58,13 @@ jobs:
             --delay-ms ${{ github.event.inputs.delay_ms || '700' }}
 
       - name: Reclassificar senadores
+        continue-on-error: true
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx tsx scripts/sync-senadores.ts
 
       - name: Reclassificar areas
+        continue-on-error: true
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx tsx scripts/reclassificar-areas.ts

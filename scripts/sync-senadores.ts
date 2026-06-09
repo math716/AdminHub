@@ -57,38 +57,49 @@ function normalize(s: string): string {
     .trim();
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function baixarLegislatura(num: number): Promise<SenadorOficial[]> {
   const url = `https://legis.senado.leg.br/dadosabertos/senador/lista/legislatura/${num}`;
-  const res = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!res.ok) {
-    console.warn(`  [aviso] legislatura ${num}: HTTP ${res.status}`);
-    return [];
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    try {
+      const res = await fetch(url, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!res.ok) {
+        console.warn(`  [aviso] legislatura ${num}: HTTP ${res.status}`);
+        return [];
+      }
+      const data = await res.json();
+      const parlamentares = data?.ListaParlamentarLegislatura?.Parlamentares?.Parlamentar ?? [];
+      const lista: SenadorOficial[] = [];
+
+      for (const p of parlamentares) {
+        const ident = p?.IdentificacaoParlamentar;
+        if (!ident) continue;
+        const nomeParlamentar = String(ident?.NomeParlamentar ?? '').trim();
+        const nomeCompleto    = String(ident?.NomeCompletoParlamentar ?? '').trim();
+        if (!nomeParlamentar && !nomeCompleto) continue;
+        const mandatos = p?.Mandatos?.Mandato;
+        const primeiroMandato = Array.isArray(mandatos) ? mandatos[0] : mandatos;
+        const uf = primeiroMandato?.UfParlamentar ?? null;
+        lista.push({
+          codigo:         String(ident.CodigoParlamentar ?? ''),
+          nomeParlamentar,
+          nomeCompleto,
+          uf,
+          variantes:      [nomeParlamentar, nomeCompleto].filter(Boolean),
+        });
+      }
+      return lista;
+    } catch (e: any) {
+      console.warn(`  [aviso] legislatura ${num} tentativa ${tentativa}/3: ${e.message}`);
+      if (tentativa < 3) await sleep(5000 * tentativa);
+    }
   }
-  const data = await res.json();
-  const parlamentares = data?.ListaParlamentarLegislatura?.Parlamentares?.Parlamentar ?? [];
-  const lista: SenadorOficial[] = [];
-
-  for (const p of parlamentares) {
-    const ident = p?.IdentificacaoParlamentar;
-    if (!ident) continue;
-    const nomeParlamentar = String(ident?.NomeParlamentar ?? '').trim();
-    const nomeCompleto    = String(ident?.NomeCompletoParlamentar ?? '').trim();
-    if (!nomeParlamentar && !nomeCompleto) continue;
-
-    // UF pode vir em Mandatos[0].UfParlamentar
-    const mandatos = p?.Mandatos?.Mandato;
-    const primeiroMandato = Array.isArray(mandatos) ? mandatos[0] : mandatos;
-    const uf = primeiroMandato?.UfParlamentar ?? null;
-
-    lista.push({
-      codigo:         String(ident.CodigoParlamentar ?? ''),
-      nomeParlamentar,
-      nomeCompleto,
-      uf,
-      variantes:      [nomeParlamentar, nomeCompleto].filter(Boolean),
-    });
-  }
-  return lista;
+  console.warn(`  [aviso] legislatura ${num}: falhou após 3 tentativas, pulando.`);
+  return [];
 }
 
 async function main() {
