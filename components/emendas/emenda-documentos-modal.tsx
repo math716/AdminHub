@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Building2, FileText, ExternalLink, Clock, MapPin } from 'lucide-react';
+import { X, Loader2, Building2, FileText, ExternalLink, Clock, MapPin, Info } from 'lucide-react';
 import { formatBRL } from '@/lib/portal-transparencia';
 
 interface DocumentoApi {
@@ -309,6 +309,39 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
             {/* Conteúdo */}
             {data && !data.pendingEnrich && !data.notFound && !data.semExecucaoNoEstado && (
               <div className="space-y-5">
+                {/* Valor total da emenda (fonte: sync — sempre o total real) */}
+                {data.emenda && (data.emenda.valorEmpenhado > 0 || data.emenda.valorPago > 0) && (() => {
+                  const totalDocsEmp = fasesFiltradas.reduce((s, f) =>
+                    f.fase.toLowerCase().includes('empenho') ? s + f.total : s, 0);
+                  const isPartial = totalDocsEmp > 0 && totalDocsEmp < data.emenda!.valorEmpenhado * 0.98;
+                  return (
+                    <section>
+                      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">
+                        Valor Total da Emenda
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-lg p-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                          <p className="text-[10px] uppercase font-semibold text-amber-400">Total Empenhado</p>
+                          <p className="text-base font-bold text-white mt-0.5">{formatBRL(data.emenda!.valorEmpenhado)}</p>
+                        </div>
+                        <div className="rounded-lg p-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                          <p className="text-[10px] uppercase font-semibold text-emerald-400">Total Pago</p>
+                          <p className="text-base font-bold text-white mt-0.5">{formatBRL(data.emenda!.valorPago)}</p>
+                        </div>
+                      </div>
+                      {isPartial && (
+                        <div className="mt-2 rounded-lg px-3 py-2 flex items-start gap-2" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                          <Info className="h-3.5 w-3.5 text-blue-400 mt-0.5 flex-shrink-0" />
+                          <p className="text-[11px] text-blue-200/80 leading-relaxed">
+                            Esta emenda é distribuída para múltiplos municípios. Os documentos abaixo representam{' '}
+                            <span className="font-semibold text-blue-200">{formatBRL(totalDocsEmp)}</span> do total empenhado.
+                          </p>
+                        </div>
+                      )}
+                    </section>
+                  );
+                })()}
+
                 {/* Breakdown por fase */}
                 {fasesFiltradas.length > 0 && (
                   <section>
