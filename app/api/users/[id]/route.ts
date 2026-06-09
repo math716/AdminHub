@@ -21,7 +21,7 @@ export async function PATCH(
     const sessionUserId     = (session.user as any)?.id;
     const sessionGabineteId = (session.user as any)?.gabineteId;
 
-    if (sessionRole !== 'ADMIN' && sessionRole !== 'CHEFE') {
+    if (sessionRole !== 'ADMIN' && sessionRole !== 'CHEFE' && sessionRole !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
     }
 
@@ -51,8 +51,8 @@ export async function PATCH(
     const data: { role?: UserRole; permissions?: string[] } = {};
 
     if (role !== undefined) {
-      // Apenas ADMIN pode mudar role
-      if (sessionRole !== 'ADMIN') {
+      // Apenas ADMIN e SUPER_ADMIN podem mudar role
+      if (sessionRole !== 'ADMIN' && sessionRole !== 'SUPER_ADMIN') {
         return NextResponse.json({ error: 'Apenas administradores podem alterar o cargo' }, { status: 403 });
       }
       if (!VALID_ROLES.includes(role)) {
