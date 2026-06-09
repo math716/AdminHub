@@ -13,6 +13,7 @@ datasource db {
 
 // ============== ENUMS ==============
 enum UserRole {
+  SUPER_ADMIN
   ADMIN
   AGENTE_POLITICO
   CHEFE

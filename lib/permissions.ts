@@ -1,4 +1,5 @@
 export type Role =
+  | 'SUPER_ADMIN'
   | 'ADMIN'
   | 'AGENTE_POLITICO'
   | 'CHEFE'
@@ -7,6 +8,7 @@ export type Role =
   | 'VISUALIZADOR';
 
 export const ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN:     'Super Admin',
   ADMIN:           'Administrador',
   AGENTE_POLITICO: 'Agente Político',
   CHEFE:           'Chefe de Gabinete',
@@ -14,6 +16,10 @@ export const ROLE_LABELS: Record<string, string> = {
   ANALISTA:        'Analista',
   VISUALIZADOR:    'Visualizador',
 };
+
+export function isSuperAdmin(role?: string | null): boolean {
+  return role === 'SUPER_ADMIN';
+}
 
 export function isAdmin(role?: string | null): boolean {
   return role === 'ADMIN';
@@ -40,7 +46,7 @@ export function canManageContent(role?: string | null): boolean {
 }
 
 export function hasFullAccess(role?: string | null): boolean {
-  return role === 'ADMIN' || role === 'AGENTE_POLITICO';
+  return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'AGENTE_POLITICO';
 }
 
 export function getRoleLabel(role: string): string {

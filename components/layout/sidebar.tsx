@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Landmark,
+  Upload,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminGabineteSwitcher } from '@/components/admin-gabinete-switcher';
@@ -61,6 +62,12 @@ const navigation: { section: string; items: NavItem[] }[] = [
     items: [
       { name: 'Usuários',      href: '/dashboard/usuarios'     , icon: Users,    roles: ['ADMIN', 'CHEFE']                    },
       { name: 'Configurações', href: '/dashboard/configuracoes', icon: Settings, roles: ['ADMIN', 'AGENTE_POLITICO', 'CHEFE'] },
+    ],
+  },
+  {
+    section: 'Desenvolvimento',
+    items: [
+      { name: 'Importação de Dados', href: '/dashboard/importacao', icon: Upload, roles: ['SUPER_ADMIN'] },
     ],
   },
 ];
