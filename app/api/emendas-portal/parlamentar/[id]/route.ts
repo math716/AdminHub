@@ -17,7 +17,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     // Filtro opcional de UF — quando dashboard está no contexto de um estado,
     // limita resultados àquele estado pra os totais refletirem a "fatia" do
     // parlamentar naquele UF, não o total nacional dele.
-    const uf = request.nextUrl.searchParams.get('uf')?.toUpperCase() || undefined;
+    const uf     = request.nextUrl.searchParams.get('uf')?.toUpperCase() || undefined;
+    const esfera = request.nextUrl.searchParams.get('esfera')?.toUpperCase() || undefined;
 
     // id pode ser: CPF (11 dígitos), idPortal (= nome no nosso caso), ou o nome direto
     const isCpf = /^\d{11}$/.test(id);
@@ -34,8 +35,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       const rows = await prisma.emendaParlamentar.findMany({
         where: {
           parlamentarId: parlamentar.id,
-          ...(ano ? { ano } : {}),
-          ...(uf  ? { uf  } : {}),
+          ...(ano    ? { ano }    : {}),
+          ...(uf     ? { uf }     : {}),
+          ...(esfera ? { esfera } : {}),
         },
         select: {
           id: true,
@@ -56,6 +58,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           parlamentarId: parlamentar.id,
           ...(ano ? { ano } : {}),
           ...(uf  ? { uf  } : {}),
+          // TransferenciaPix não tem campo esfera — filtra só se FEDERAL (PI são federais)
+          ...(esfera === 'ESTADUAL' ? { id: 'none' } : {}),
         },
         select: {
           idPortal: true, ano: true, mes: true, dataReferencia: true, valor: true,

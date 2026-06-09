@@ -60,8 +60,8 @@ const navigation: { section: string; items: NavItem[] }[] = [
   {
     section: 'Administração',
     items: [
-      { name: 'Usuários',      href: '/dashboard/usuarios'     , icon: Users,    roles: ['ADMIN', 'CHEFE']                    },
-      { name: 'Configurações', href: '/dashboard/configuracoes', icon: Settings, roles: ['ADMIN', 'AGENTE_POLITICO', 'CHEFE'] },
+      { name: 'Usuários',      href: '/dashboard/usuarios'     , icon: Users,    roles: ['SUPER_ADMIN', 'ADMIN', 'CHEFE']                    },
+      { name: 'Configurações', href: '/dashboard/configuracoes', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'AGENTE_POLITICO', 'CHEFE'] },
     ],
   },
   {

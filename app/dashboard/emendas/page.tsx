@@ -317,10 +317,11 @@ export default function EmendasPage() {
     const ctrl = new AbortController();
     setLoadingParlamentar(true);
     const id = selectedParlamentar.cpf ?? selectedParlamentar.idPortal;
-    const ufParam = selectedUf ? `&uf=${selectedUf}` : '';
+    const ufParam     = selectedUf ? `&uf=${selectedUf}` : '';
+    const esferaParam = esfera !== 'TODAS' ? `&esfera=${esfera}` : '';
     Promise.all([
-      fetch(`/api/emendas-portal/parlamentar/${id}?ano=${ano}${ufParam}`, { signal: ctrl.signal }).then((r) => r.json()),
-      fetch(`/api/emendas-portal/parlamentar/${id}/destinos?ano=${ano}${ufParam}`, { signal: ctrl.signal }).then((r) => r.json()),
+      fetch(`/api/emendas-portal/parlamentar/${id}?ano=${ano}${ufParam}${esferaParam}`, { signal: ctrl.signal }).then((r) => r.json()),
+      fetch(`/api/emendas-portal/parlamentar/${id}/destinos?ano=${ano}${ufParam}${esferaParam}`, { signal: ctrl.signal }).then((r) => r.json()),
     ])
       .then(([data, destData]) => {
         setParlamentarEmendas(Array.isArray(data?.emendas) ? data.emendas : []);
@@ -332,7 +333,7 @@ export default function EmendasPage() {
       })
       .finally(() => setLoadingParlamentar(false));
     return () => ctrl.abort();
-  }, [selectedParlamentar, ano, selectedUf]);
+  }, [selectedParlamentar, ano, selectedUf, esfera]);
 
   // Favoritos (parlamentares salvos)
   const [favorites, setFavorites] = useState<{ id: string; candidateName: string; ano: number; uf: string | null; cargo: string }[]>([]);
@@ -1009,6 +1010,21 @@ export default function EmendasPage() {
                   : 'Emendas por Município'}
               </div>
             </div>
+
+            {/* Overlay de carregamento quando esfera muda */}
+            {loadingResumo && (
+              <div
+                className="absolute inset-0 z-[500] flex items-center justify-center"
+                style={{ background: 'rgba(4,17,31,0.65)', backdropFilter: 'blur(3px)' }}
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="h-10 w-10 animate-spin" style={{ color: '#4a9ede' }} />
+                  <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                    Carregando dados…
+                  </span>
+                </div>
+              </div>
+            )}
 
             {view === 'brasil' && (
               <BrazilMap onStateClick={handleStateClick} darkMode />

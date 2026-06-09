@@ -23,8 +23,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     const { id } = params;
     const sp = request.nextUrl.searchParams;
-    const ano = sp.get('ano') ? parseInt(sp.get('ano')!, 10) : undefined;
-    const uf  = sp.get('uf') ?? undefined;
+    const ano    = sp.get('ano') ? parseInt(sp.get('ano')!, 10) : undefined;
+    const uf     = sp.get('uf') ?? undefined;
+    const esfera = sp.get('esfera')?.toUpperCase() || undefined;
 
     // Localiza o parlamentar pelo CPF ou idPortal
     const parlamentar = await prisma.parlamentar.findFirst({
@@ -44,8 +45,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const emendas = await prisma.emendaParlamentar.findMany({
       where: {
         parlamentarId: parlamentar.id,
-        ...(ano ? { ano } : {}),
-        ...(uf  ? { uf }  : {}),
+        ...(ano    ? { ano }    : {}),
+        ...(uf     ? { uf }     : {}),
+        ...(esfera ? { esfera } : {}),
       },
       select: {
         id: true,
