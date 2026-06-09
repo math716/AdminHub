@@ -271,7 +271,7 @@ export default function UsuariosPage() {
 
   // ── redirect ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (status === 'authenticated' && userRole !== 'CHEFE' && userRole !== 'ADMIN') {
+    if (status === 'authenticated' && userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
       router.replace('/dashboard');
     }
   }, [status, userRole, router]);
@@ -290,7 +290,7 @@ export default function UsuariosPage() {
   }, []);
 
   useEffect(() => {
-    if (userRole === 'CHEFE' || userRole === 'ADMIN') fetchUsers();
+    if (userRole === 'CHEFE' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') fetchUsers();
   }, [userRole, fetchUsers]);
 
   // ── helpers ───────────────────────────────────────────────────────────────
@@ -447,7 +447,7 @@ export default function UsuariosPage() {
   const { gabineteGroups, noGabinete } = useMemo(() => {
     // Parte dos gabinetes (inclui os sem usuários) para ADMIN;
     // para CHEFE usa apenas os gabinetes presentes nos usuários retornados.
-    const base = userRole === 'ADMIN' ? gabinetes : [];
+    const base = (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') ? gabinetes : [];
     const map = new Map<string, GabineteGroup>(
       base.map(g => [g.id, { id: g.id, nome: g.nome, users: [] }])
     );
@@ -481,7 +481,7 @@ export default function UsuariosPage() {
       </div>
     );
   }
-  if (userRole !== 'CHEFE' && userRole !== 'ADMIN') return null;
+  if (userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') return null;
 
   const pendingUsers  = users.filter(u => !u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN');
   const approvedUsers = users.filter(u => u.approved  || u.role === 'ADMIN' || u.role === 'SUPER_ADMIN');
@@ -520,18 +520,18 @@ export default function UsuariosPage() {
         actions={
           <div className="relative flex-shrink-0">
           <button
-            onClick={() => userRole === 'ADMIN' ? setShowInviteForm(f => !f) : handleGenerateInvite('ASSESSOR')}
+            onClick={() => (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') ? setShowInviteForm(f => !f) : handleGenerateInvite('ASSESSOR')}
             disabled={generatingInvite}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg,#c9a227,#e6b83a)', color: '#04111f' }}
           >
             {generatingInvite ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
             Gerar Convite
-            {userRole === 'ADMIN' && <ChevronDown className="w-3.5 h-3.5" />}
+            {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && <ChevronDown className="w-3.5 h-3.5" />}
           </button>
 
           <AnimatePresence>
-            {showInviteForm && userRole === 'ADMIN' && (
+            {showInviteForm && (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
               <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                 className="absolute right-0 mt-1 z-20 rounded-xl overflow-hidden shadow-xl"
                 style={{ background: '#071d36', border: '1px solid rgba(201,162,39,0.2)', minWidth: 200 }}>
