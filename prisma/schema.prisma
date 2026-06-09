@@ -133,6 +133,7 @@ model User {
   agendaEvents  AgendaEvent[]     @relation("AgendaCreatedBy")
   contatos      Contato[]         @relation("ContatoCreatedBy")
   favorites     Favorite[]
+  anotacoesEmenda EmendaAnotacao[]
   projecoes     ProjecaoCampanha[]
   accounts      Account[]
   sessions      Session[]
@@ -630,6 +631,8 @@ model EmendaParlamentar {
   // cron de enrich a partir de /despesas/documentos/{cod}.
   documentos        EmendaDocumento[]
 
+  anotacoes         EmendaAnotacao[]
+
   fetchedAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
@@ -741,4 +744,21 @@ model TransferenciaPix {
   @@index([emendaIdPortal])
   @@index([uf, ano])
   @@map("transferencias_pix")
+}
+
+model EmendaAnotacao {
+  id        String   @id @default(cuid())
+  userId    String
+  emendaId  String
+  texto     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emenda EmendaParlamentar @relation(fields: [emendaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, emendaId])
+  @@index([userId])
+  @@index([emendaId])
+  @@map("emendas_anotacoes")
 }

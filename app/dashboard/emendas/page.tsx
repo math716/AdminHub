@@ -19,6 +19,7 @@ import {
   Globe,
   X,
   Calendar,
+  Star,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ESTADOS_BRASIL } from '@/lib/types';
@@ -180,6 +181,9 @@ export default function EmendasPage() {
   // Ano
   const [ano, setAno] = useState<number>(ANO_PADRAO);
 
+  // Filtro de esfera
+  const [esfera, setEsfera] = useState<'TODAS' | 'FEDERAL' | 'ESTADUAL'>('TODAS');
+
   // Dados do estado
   const [resumo, setResumo] = useState<ResumoEstado | null>(null);
   const [loadingResumo, setLoadingResumo] = useState(false);
@@ -209,8 +213,9 @@ export default function EmendasPage() {
   }, [status, canAccess, router]);
 
   // ----- Resumo do estado (top municípios, totais por área etc) -----
-  const fetchResumo = useCallback(async (uf: string, year: number, signal?: AbortSignal): Promise<ResumoEstado | null> => {
-    const res = await fetch(`/api/emendas-portal/resumo?uf=${uf}&ano=${year}`, { signal });
+  const fetchResumo = useCallback(async (uf: string, year: number, signal?: AbortSignal, esferaParam?: string): Promise<ResumoEstado | null> => {
+    const esq = esferaParam && esferaParam !== 'TODAS' ? `&esfera=${esferaParam}` : '';
+    const res = await fetch(`/api/emendas-portal/resumo?uf=${uf}&ano=${year}${esq}`, { signal });
     if (!res.ok) return null;
     return res.json();
   }, []);
@@ -219,7 +224,7 @@ export default function EmendasPage() {
     if (view !== 'estado' || !selectedUf) return;
     const ctrl = new AbortController();
     setLoadingResumo(true);
-    Promise.all([fetchResumo(selectedUf, ano, ctrl.signal), fetchResumo(selectedUf, ano - 1, ctrl.signal)])
+    Promise.all([fetchResumo(selectedUf, ano, ctrl.signal, esfera), fetchResumo(selectedUf, ano - 1, ctrl.signal)])
       .then(([atual, anterior]) => {
         setResumo(atual);
         setResumoAnterior(anterior);
@@ -229,7 +234,7 @@ export default function EmendasPage() {
       })
       .finally(() => setLoadingResumo(false));
     return () => ctrl.abort();
-  }, [view, selectedUf, ano, fetchResumo]);
+  }, [view, selectedUf, ano, esfera, fetchResumo]);
 
   // ----- Stats + emendas do município selecionado -----
   useEffect(() => {
@@ -243,7 +248,7 @@ export default function EmendasPage() {
     setLoadingMunicipio(true);
     Promise.all([
       fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/stats?ano=${ano}`, { signal: ctrl.signal }).then((r) => r.json()),
-      fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/emendas?uf=${selectedUf}&ano=${ano}`, { signal: ctrl.signal }).then((r) => r.json()),
+      fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/emendas?uf=${selectedUf}&ano=${ano}${esfera !== 'TODAS' ? `&esfera=${esfera}` : ''}`, { signal: ctrl.signal }).then((r) => r.json()),
       // Emendas do ano anterior — pra alimentar o card de comparativo
       // quando município está selecionado.
       fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/emendas?uf=${selectedUf}&ano=${ano - 1}`, { signal: ctrl.signal }).then((r) => r.json()),
@@ -258,7 +263,7 @@ export default function EmendasPage() {
       })
       .finally(() => setLoadingMunicipio(false));
     return () => ctrl.abort();
-  }, [selectedMunicipio, ano, selectedUf]);
+  }, [selectedMunicipio, ano, esfera, selectedUf]);
 
   // ----- Autocomplete parlamentar -----
   // Filtra LOCALMENTE em resumo.parlamentares (lista já carregada do estado).
@@ -329,6 +334,16 @@ export default function EmendasPage() {
     return () => ctrl.abort();
   }, [selectedParlamentar, ano, selectedUf]);
 
+  // Favoritos (parlamentares salvos)
+  const [favorites, setFavorites] = useState<{ id: string; candidateName: string; ano: number; uf: string | null; cargo: string }[]>([]);
+  const [savingFavorite, setSavingFavorite] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/favorites').then((r) => r.json()).then((data) => {
+      if (Array.isArray(data)) setFavorites(data);
+    }).catch(() => {});
+  }, []);
+
   // Histórico completo do parlamentar (todos os anos) — também filtrado por UF
   // pro gráfico "Valor por Ano" refletir o estado em foco.
   const [parlamentarHistorico, setParlamentarHistorico] = useState<PortalEmenda[]>([]);
@@ -348,6 +363,65 @@ export default function EmendasPage() {
       });
     return () => ctrl.abort();
   }, [selectedParlamentar, selectedUf]);
+
+  // ----- Favoritos -----
+  const isSavedParlamentar = selectedParlamentar
+    ? favorites.some((f) => f.candidateName === selectedParlamentar.nome && f.ano === ano && f.uf === selectedUf)
+    : false;
+
+  const savedParlamentaresDoEstado = favorites.filter((f) => f.uf === selectedUf && f.ano === ano);
+
+  const handleToggleFavorite = useCallback(async () => {
+    if (!selectedParlamentar) return;
+    setSavingFavorite(true);
+    const existing = favorites.find((f) => f.candidateName === selectedParlamentar.nome && f.ano === ano && f.uf === selectedUf);
+    try {
+      if (existing) {
+        await fetch(`/api/favorites/${existing.id}`, { method: 'DELETE' });
+        setFavorites((prev) => prev.filter((f) => f.id !== existing.id));
+      } else {
+        const res = await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ candidateName: selectedParlamentar.nome, ano, cargo: selectedParlamentar.cargo, uf: selectedUf }),
+        });
+        const data = await res.json();
+        if (data?.id) setFavorites((prev) => [...prev, data]);
+      }
+    } catch (e) {
+      console.error('Erro ao salvar favorito:', e);
+    } finally {
+      setSavingFavorite(false);
+    }
+  }, [selectedParlamentar, favorites, ano, selectedUf]);
+
+  const handleSelectFavorito = useCallback((fav: { candidateName: string; cargo: string }) => {
+    const fromResumo = resumo?.parlamentares.find(
+      (p) => (p.nomeUrna ?? p.nome).toLowerCase() === fav.candidateName.toLowerCase() ||
+             p.nome.toLowerCase() === fav.candidateName.toLowerCase(),
+    );
+    if (fromResumo) {
+      setSelectedParlamentar({
+        cpf: fromResumo.cpf,
+        idPortal: fromResumo.idPortal,
+        nome: fromResumo.nomeUrna ?? fromResumo.nome,
+        nomeUrna: fromResumo.nomeUrna ?? null,
+        partido: fromResumo.partido,
+        uf: selectedUf,
+        cargo: fromResumo.cargo as ParlamentarCargo,
+      });
+    } else {
+      setSelectedParlamentar({
+        cpf: null,
+        idPortal: fav.candidateName,
+        nome: fav.candidateName,
+        nomeUrna: null,
+        partido: null,
+        uf: selectedUf,
+        cargo: fav.cargo as ParlamentarCargo,
+      });
+    }
+  }, [resumo, selectedUf]);
 
   // ----- Handlers -----
   const handleStateClick = useCallback((uf: string, name: string) => {
@@ -737,6 +811,22 @@ export default function EmendasPage() {
       {view === 'estado' && (
         <div className="relative">
           <div className="flex items-center gap-2">
+            {/* Toggle de esfera */}
+            <div className="flex rounded-xl overflow-hidden flex-shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+              {(['TODAS', 'FEDERAL', 'ESTADUAL'] as const).map((e) => (
+                <button
+                  key={e}
+                  onClick={() => setEsfera(e)}
+                  className="px-3 py-2.5 text-xs font-medium transition-colors"
+                  style={esfera === e
+                    ? { background: 'rgba(201,162,39,0.15)', color: '#e8c660' }
+                    : { color: 'rgb(148,163,184)' }}
+                >
+                  {e === 'TODAS' ? 'Todas' : e === 'FEDERAL' ? 'Federal' : 'Estadual'}
+                </button>
+              ))}
+            </div>
+            {/* Input de busca */}
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
@@ -748,16 +838,40 @@ export default function EmendasPage() {
             </div>
             {selectedParlamentar && (
               <div
-                className="flex items-center gap-2 px-3 py-2 rounded-xl flex-shrink-0"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl flex-shrink-0"
                 style={{ background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.3)' }}
               >
-                <span className="text-xs text-white font-semibold truncate max-w-[180px]">{selectedParlamentar.nome}</span>
+                <span className="text-xs text-white font-semibold truncate max-w-[160px]">{selectedParlamentar.nome}</span>
+                <button
+                  onClick={handleToggleFavorite}
+                  disabled={savingFavorite}
+                  title={isSavedParlamentar ? 'Remover dos favoritos' : 'Salvar parlamentar'}
+                  className="transition-colors disabled:opacity-50 ml-0.5"
+                >
+                  <Star className={`w-3.5 h-3.5 ${isSavedParlamentar ? 'fill-amber-400 text-amber-400' : 'text-slate-400 hover:text-amber-400'}`} />
+                </button>
                 <button onClick={() => setSelectedParlamentar(null)} className="text-slate-400 hover:text-white">
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             )}
           </div>
+          {/* Chips de parlamentares salvos */}
+          {savedParlamentaresDoEstado.length > 0 && !selectedParlamentar && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {savedParlamentaresDoEstado.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => handleSelectFavorito(f)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors"
+                  style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)', color: '#e8c660' }}
+                >
+                  <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                  {f.candidateName}
+                </button>
+              ))}
+            </div>
+          )}
           {parlamentarQuery.length >= 2 && parlamentarResults.length > 0 && (
             <div
               className="absolute top-full left-0 right-0 mt-1 z-[500] rounded-xl overflow-hidden"

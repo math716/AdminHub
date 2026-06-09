@@ -15,10 +15,12 @@ export async function GET(request: NextRequest, { params }: { params: { codigo: 
     const uf = request.nextUrl.searchParams.get('uf') ?? '';
     const anoRaw = request.nextUrl.searchParams.get('ano');
     const ano = anoRaw ? parseInt(anoRaw, 10) : undefined;
+    const esferaRaw = request.nextUrl.searchParams.get('esfera');
+    const esfera = esferaRaw === 'FEDERAL' || esferaRaw === 'ESTADUAL' ? esferaRaw : null;
 
     // 1) Banco
     const noBanco = await prisma.emendaParlamentar.findMany({
-      where: { codigoIbge, ...(ano ? { ano } : {}) },
+      where: { codigoIbge, ...(ano ? { ano } : {}), ...(esfera ? { esfera } : {}) },
       select: {
         id: true,
         idPortal: true, ano: true, numero: true, tipo: true, funcao: true,

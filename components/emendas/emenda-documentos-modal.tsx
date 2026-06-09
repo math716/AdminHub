@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Building2, FileText, ExternalLink, Clock, MapPin, Info } from 'lucide-react';
+import { X, Loader2, Building2, FileText, ExternalLink, Clock, MapPin, Info, Pencil, Check } from 'lucide-react';
 import { formatBRL } from '@/lib/portal-transparencia';
 
 interface DocumentoApi {
@@ -102,6 +102,45 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+
+  // Anotações do usuário
+  const [anotacao, setAnotacao] = useState('');
+  const [anotacaoSalva, setAnotacaoSalva] = useState('');
+  const [savingAnotacao, setSavingAnotacao] = useState(false);
+  const [anotacaoSalvaAt, setAnotacaoSalvaAt] = useState<Date | null>(null);
+  useEffect(() => {
+    if (!codigoEmenda) return;
+    setAnotacao('');
+    setAnotacaoSalva('');
+    setAnotacaoSalvaAt(null);
+    fetch(`/api/emendas-portal/emenda/${encodeURIComponent(codigoEmenda)}/anotacao`)
+      .then((r) => r.json())
+      .then((d) => {
+        setAnotacao(d.texto ?? '');
+        setAnotacaoSalva(d.texto ?? '');
+        if (d.updatedAt) setAnotacaoSalvaAt(new Date(d.updatedAt));
+      })
+      .catch(() => {});
+  }, [codigoEmenda]);
+
+  const handleSaveAnotacao = async () => {
+    if (!codigoEmenda || savingAnotacao) return;
+    setSavingAnotacao(true);
+    try {
+      const res = await fetch(`/api/emendas-portal/emenda/${encodeURIComponent(codigoEmenda)}/anotacao`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto: anotacao }),
+      });
+      const d = await res.json();
+      setAnotacaoSalva(anotacao);
+      setAnotacaoSalvaAt(d.updatedAt ? new Date(d.updatedAt) : new Date());
+    } catch {
+      // silencioso
+    } finally {
+      setSavingAnotacao(false);
+    }
+  };
 
   // Quando há filtroFavorecido, restringe docs/favorecidos/fases ao favorecido clicado
   const docsFiltrados = useMemo(() => {
@@ -282,6 +321,15 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                 <p className="text-[10px] text-slate-600 text-center">
                   Dados detalhados por documento não disponibilizados no portal estadual.
                 </p>
+
+                <AnotacaoSection
+                  anotacao={anotacao}
+                  anotacaoSalva={anotacaoSalva}
+                  savingAnotacao={savingAnotacao}
+                  anotacaoSalvaAt={anotacaoSalvaAt}
+                  onChange={setAnotacao}
+                  onSave={handleSaveAnotacao}
+                />
               </div>
             )}
 
@@ -459,6 +507,16 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                   </div>
                 </section>
 
+                {/* Anotações */}
+                <AnotacaoSection
+                  anotacao={anotacao}
+                  anotacaoSalva={anotacaoSalva}
+                  savingAnotacao={savingAnotacao}
+                  anotacaoSalvaAt={anotacaoSalvaAt}
+                  onChange={setAnotacao}
+                  onSave={handleSaveAnotacao}
+                />
+
                 {/* Link Portal */}
                 {data.emenda && (
                   <div className="pt-2 border-t border-white/5">
@@ -479,5 +537,61 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function AnotacaoSection({
+  anotacao,
+  anotacaoSalva,
+  savingAnotacao,
+  anotacaoSalvaAt,
+  onChange,
+  onSave,
+}: {
+  anotacao: string;
+  anotacaoSalva: string;
+  savingAnotacao: boolean;
+  anotacaoSalvaAt: Date | null;
+  onChange: (v: string) => void;
+  onSave: () => void;
+}) {
+  const alterado = anotacao !== anotacaoSalva;
+  return (
+    <section className="border-t border-white/5 pt-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <Pencil className="h-3 w-3 text-slate-400" />
+          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+            Anotações
+          </p>
+        </div>
+        {anotacaoSalvaAt && !alterado && (
+          <span className="text-[10px] text-slate-600 flex items-center gap-1">
+            <Check className="h-2.5 w-2.5 text-emerald-500" />
+            Salvo {anotacaoSalvaAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
+      </div>
+      <textarea
+        value={anotacao}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Adicione notas internas sobre esta emenda…"
+        rows={3}
+        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 outline-none focus:border-amber-500/40 transition-colors resize-none"
+      />
+      {alterado && (
+        <div className="flex justify-end mt-1.5">
+          <button
+            onClick={onSave}
+            disabled={savingAnotacao}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+            style={{ background: 'rgba(201,162,39,0.15)', color: '#e8c660', border: '1px solid rgba(201,162,39,0.3)' }}
+          >
+            {savingAnotacao ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+            Salvar anotação
+          </button>
+        </div>
+      )}
+    </section>
   );
 }

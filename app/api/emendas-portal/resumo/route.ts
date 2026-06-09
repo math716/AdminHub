@@ -40,6 +40,8 @@ export async function GET(request: NextRequest) {
     const uf = (request.nextUrl.searchParams.get('uf') ?? '').toUpperCase();
     const anoRaw = request.nextUrl.searchParams.get('ano');
     const ano = anoRaw ? parseInt(anoRaw, 10) : new Date().getFullYear();
+    const esferaRaw = request.nextUrl.searchParams.get('esfera'); // 'FEDERAL' | 'ESTADUAL' | null
+    const esfera = esferaRaw === 'FEDERAL' || esferaRaw === 'ESTADUAL' ? esferaRaw : null;
     if (!uf) return NextResponse.json({ error: 'uf é obrigatório' }, { status: 400 });
 
     // ── 1) Tenta banco ─────────────────────────────────────────────────
@@ -48,7 +50,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (totalNoBanco > 0) {
-      return await resumoDoBanco(uf, ano);
+      return await resumoDoBanco(uf, ano, esfera);
     }
 
     // ── 2) Fallback: Portal ao vivo ────────────────────────────────────
@@ -62,11 +64,12 @@ export async function GET(request: NextRequest) {
 // ─────────────────────────────────────────────────────────────────────────
 // Resumo a partir do banco (instantâneo)
 // ─────────────────────────────────────────────────────────────────────────
-async function resumoDoBanco(uf: string, ano: number) {
+async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTADUAL' | null = null) {
   // Carregamos os campos mínimos pra agregar em memória.
   // 5k-50k registros por UF/ano é trivial pro Postgres.
+  const where = esfera ? { uf, ano, esfera } : { uf, ano };
   const emendas = await prisma.emendaParlamentar.findMany({
-    where: { uf, ano },
+    where,
     select: {
       id: true,
       area: true,
@@ -179,6 +182,7 @@ async function resumoDoBanco(uf: string, ano: number) {
   return NextResponse.json({
     uf,
     ano,
+    esfera: esfera ?? 'TODAS',
     totalEmpenhado,
     totalPago,
     totalMunicipalizado,
