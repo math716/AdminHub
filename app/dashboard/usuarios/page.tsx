@@ -138,13 +138,25 @@ function RoleBadge({ role }: { role: string }) {
 function RoleSelect({ userId, current, onChanged }: { userId: string; current: string; onChanged: (role: string) => void }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [dropPos, setDropPos] = useState<{ top: number; right: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
   const roles = ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR'];
+
+  const openDrop = () => {
+    if (!btnRef.current) return;
+    const r = btnRef.current.getBoundingClientRect();
+    setDropPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+    setOpen(true);
+  };
 
   useEffect(() => {
     if (!open) return;
     const handle = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (
+        btnRef.current && !btnRef.current.contains(e.target as Node) &&
+        dropRef.current  && !dropRef.current.contains(e.target as Node)
+      ) setOpen(false);
     };
     document.addEventListener('mousedown', handle);
     return () => document.removeEventListener('mousedown', handle);
@@ -165,8 +177,8 @@ function RoleSelect({ userId, current, onChanged }: { userId: string; current: s
 
   const s = ROLE_STYLE[current] ?? ROLE_STYLE.ASSESSOR;
   return (
-    <div className="relative" ref={ref}>
-      <button onClick={() => setOpen(o => !o)} disabled={saving}
+    <>
+      <button ref={btnRef} onClick={openDrop} disabled={saving}
         className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-all hover:opacity-80 disabled:opacity-50"
         style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
         {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
@@ -174,10 +186,19 @@ function RoleSelect({ userId, current, onChanged }: { userId: string; current: s
         <ChevronDown className="w-3 h-3" />
       </button>
       <AnimatePresence>
-        {open && (
-          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-            className="absolute right-0 mt-1 z-20 rounded-xl overflow-hidden shadow-xl"
-            style={{ background: '#071d36', border: '1px solid rgba(201,162,39,0.2)', minWidth: 170 }}>
+        {open && dropPos && (
+          <motion.div
+            ref={dropRef}
+            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+            className="fixed z-[9999] rounded-xl overflow-hidden shadow-xl"
+            style={{
+              top: dropPos.top,
+              right: dropPos.right,
+              background: '#071d36',
+              border: '1px solid rgba(201,162,39,0.2)',
+              minWidth: 170,
+            }}
+          >
             {roles.map(r => (
               <button key={r} onClick={() => change(r)}
                 className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/5 flex items-center gap-2"
@@ -190,7 +211,7 @@ function RoleSelect({ userId, current, onChanged }: { userId: string; current: s
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }
 
