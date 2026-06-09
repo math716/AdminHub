@@ -85,7 +85,7 @@ function PermissionsChecklist({
 // ---------------------------------------------------------------------------
 // Tipos
 // ---------------------------------------------------------------------------
-type UserRoleKey = 'ADMIN' | 'AGENTE_POLITICO' | 'CHEFE' | 'ASSESSOR' | 'ANALISTA' | 'VISUALIZADOR';
+type UserRoleKey = 'SUPER_ADMIN' | 'ADMIN' | 'AGENTE_POLITICO' | 'CHEFE' | 'ASSESSOR' | 'ANALISTA' | 'VISUALIZADOR';
 
 interface UserData {
   id: string;
@@ -108,6 +108,7 @@ interface GabineteGroup {
 // Helpers visuais
 // ---------------------------------------------------------------------------
 const ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN:     'Administrador',
   ADMIN:           'Administrador',
   AGENTE_POLITICO: 'Agente Político',
   CHEFE:           'Chefe de Gabinete',
@@ -117,6 +118,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> = {
+  SUPER_ADMIN:     { bg: 'rgba(201,162,39,0.12)',  color: '#c9a227',  border: 'rgba(201,162,39,0.3)'  },
   ADMIN:           { bg: 'rgba(201,162,39,0.12)',  color: '#c9a227',  border: 'rgba(201,162,39,0.3)'  },
   AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: '#c084fc',  border: 'rgba(168,85,247,0.3)'  },
   CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)'  },
@@ -481,8 +483,8 @@ export default function UsuariosPage() {
   }
   if (userRole !== 'CHEFE' && userRole !== 'ADMIN') return null;
 
-  const pendingUsers  = users.filter(u => !u.approved && u.role !== 'ADMIN');
-  const approvedUsers = users.filter(u => u.approved  || u.role === 'ADMIN');
+  const pendingUsers  = users.filter(u => !u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN');
+  const approvedUsers = users.filter(u => u.approved  || u.role === 'ADMIN' || u.role === 'SUPER_ADMIN');
   const cardStyle     = { background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' };
 
   // ── render ────────────────────────────────────────────────────────────────
@@ -615,8 +617,8 @@ export default function UsuariosPage() {
           <AnimatePresence initial={false}>
             {filteredGroups.map((group, gi) => {
               const isOpen   = expandedGabs.has(group.id);
-              const pending  = group.users.filter(u => !u.approved && u.role !== 'ADMIN');
-              const approved = group.users.filter(u => u.approved  || u.role === 'ADMIN');
+              const pending  = group.users.filter(u => !u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN');
+              const approved = group.users.filter(u => u.approved  || u.role === 'ADMIN' || u.role === 'SUPER_ADMIN');
 
               return (
                 <motion.div key={group.id}
@@ -686,13 +688,13 @@ export default function UsuariosPage() {
                             {[...pending, ...approved].map((u) => (
                               <div key={u.id}
                                 className="flex items-center justify-between px-5 py-3.5 gap-3 transition-all hover:bg-white/[0.02]"
-                                style={!u.approved && u.role !== 'ADMIN'
+                                style={!u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN'
                                   ? { background: 'rgba(245,158,11,0.04)' } : {}}>
 
                                 <div className="flex items-center gap-3 min-w-0">
                                   {/* Avatar */}
                                   <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-                                    style={u.approved || u.role === 'ADMIN'
+                                    style={u.approved || u.role === 'ADMIN' || u.role === 'SUPER_ADMIN'
                                       ? { background: 'linear-gradient(135deg,#1b3a5c,#2a5580)', color: '#7dd3fc' }
                                       : { background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b' }}>
                                     {u.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('')}
@@ -704,7 +706,7 @@ export default function UsuariosPage() {
                                       {u.id === sessionUserId && (
                                         <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(201,162,39,0.15)', color: '#c9a227' }}>você</span>
                                       )}
-                                      {!u.approved && u.role !== 'ADMIN' && (
+                                      {!u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN' && (
                                         <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
                                           style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>
                                           Pendente
@@ -724,7 +726,7 @@ export default function UsuariosPage() {
                                   }
 
                                   {/* Aprovar (se pendente) */}
-                                  {!u.approved && u.role !== 'ADMIN' && (
+                                  {!u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN' && (
                                     <button onClick={() => openApproveModal(u)} disabled={actionId === u.id}
                                       title="Aprovar usuário"
                                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80 disabled:opacity-50"
