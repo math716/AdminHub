@@ -228,6 +228,27 @@ export default function EmendasPage() {
       .then(([atual, anterior]) => {
         setResumo(atual);
         setResumoAnterior(anterior);
+        // Auto-seleciona favorito pendente (navegação entre estados)
+        const pf = pendingFavoritoRef.current;
+        if (pf && pf.uf === selectedUf && pf.ano === ano && atual?.parlamentares) {
+          pendingFavoritoRef.current = null;
+          const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+          const found = atual.parlamentares.find(
+            (p) => normalizar(p.nomeUrna ?? p.nome) === normalizar(pf.candidateName) ||
+                   normalizar(p.nome) === normalizar(pf.candidateName),
+          );
+          if (found) {
+            setSelectedParlamentar({
+              cpf: found.cpf,
+              idPortal: found.idPortal,
+              nome: found.nomeUrna ?? found.nome,
+              nomeUrna: found.nomeUrna ?? null,
+              partido: found.partido,
+              uf: pf.uf,
+              cargo: found.cargo as ParlamentarCargo,
+            });
+          }
+        }
       })
       .catch((e: any) => {
         if (e?.name !== 'AbortError') console.error('Erro ao buscar resumo:', e);
@@ -338,6 +359,7 @@ export default function EmendasPage() {
   // Favoritos (parlamentares salvos)
   const [favorites, setFavorites] = useState<{ id: string; candidateName: string; ano: number; uf: string | null; cargo: string }[]>([]);
   const [savingFavorite, setSavingFavorite] = useState(false);
+  const pendingFavoritoRef = useRef<{ candidateName: string; cargo: string; uf: string; ano: number } | null>(null);
 
   useEffect(() => {
     fetch('/api/favorites?tipo=EMENDAS').then((r) => r.json()).then((data) => {
@@ -423,6 +445,29 @@ export default function EmendasPage() {
       });
     }
   }, [resumo, selectedUf]);
+
+  const handleClickEmendaFavorito = useCallback((fav: { id: string; candidateName: string; ano: number; uf: string | null; cargo: string }) => {
+    const favUf = fav.uf ?? selectedUf;
+    const favAno = fav.ano;
+    const sameSate = favUf === selectedUf && view === 'estado';
+    const sameYear = favAno === ano;
+
+    if (sameSate && sameYear) {
+      handleSelectFavorito({ candidateName: fav.candidateName, cargo: fav.cargo });
+      return;
+    }
+
+    // Precisa navegar para o estado/ano correto; registra pendência
+    pendingFavoritoRef.current = { candidateName: fav.candidateName, cargo: fav.cargo, uf: favUf, ano: favAno };
+    if (!sameYear) setAno(favAno);
+    if (!sameSate) {
+      const estado = ESTADOS_BRASIL.find((e) => e.sigla === favUf);
+      setSelectedUf(favUf);
+      setSelectedStateName(estado?.nome ?? favUf);
+      setView('estado');
+      setSelectedMunicipio(null);
+    }
+  }, [selectedUf, view, ano, handleSelectFavorito]);
 
   // ----- Handlers -----
   const handleStateClick = useCallback((uf: string, name: string) => {
@@ -807,6 +852,53 @@ export default function EmendasPage() {
           </div>
         }
       />
+
+      {/* Painel de favoritos de emendas */}
+      {favorites.length > 0 && (
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(201,162,39,0.18)' }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#e8c660' }}>
+              Favoritos — Emendas
+            </span>
+            <span className="text-xs text-slate-500 ml-auto">{favorites.length} parlamentar{favorites.length !== 1 ? 'es' : ''}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {favorites.map((fav) => (
+              <div
+                key={fav.id}
+                className="flex items-center gap-1.5 rounded-lg text-xs"
+                style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)' }}
+              >
+                <button
+                  onClick={() => handleClickEmendaFavorito(fav)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 transition-opacity hover:opacity-80"
+                  style={{ color: '#e8c660' }}
+                >
+                  <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400 flex-shrink-0" />
+                  <span className="font-medium">{fav.candidateName}</span>
+                  <span className="text-slate-500">{fav.uf} · {fav.ano}</span>
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await fetch(`/api/favorites/${fav.id}`, { method: 'DELETE' });
+                      setFavorites((prev) => prev.filter((f) => f.id !== fav.id));
+                    } catch {}
+                  }}
+                  title="Remover dos favoritos"
+                  className="pr-2 text-slate-600 hover:text-red-400 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Barra de pesquisa de parlamentar — abaixo do título, visível quando há estado selecionado */}
       {view === 'estado' && (

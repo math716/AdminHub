@@ -1471,20 +1471,31 @@ export default function MapaPage() {
               <CardContent>
                 <div className="space-y-2">
                   {favorites?.map?.((fav) => (
-                    <button
+                    <div
                       key={fav?.id}
-                      onClick={() => handleFavoriteClick(fav)}
-                      className="w-full text-left p-3 rounded-xl transition-colors"
-                      style={{
-                        background: 'rgba(12,42,79,0.5)',
-                        border: '1px solid rgba(201,162,39,0.18)',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(12,42,79,0.8)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(12,42,79,0.5)')}
+                      className="flex items-center gap-2 p-3 rounded-xl transition-colors"
+                      style={{ background: 'rgba(12,42,79,0.5)', border: '1px solid rgba(201,162,39,0.18)' }}
                     >
-                      <p className="font-semibold text-white text-sm">{fav?.candidateName}</p>
-                      <p className="text-xs text-slate-400">{fav?.ano} - {fav?.uf}</p>
-                    </button>
+                      <button
+                        onClick={() => handleFavoriteClick(fav)}
+                        className="flex-1 text-left min-w-0"
+                      >
+                        <p className="font-semibold text-white text-sm truncate">{fav?.candidateName}</p>
+                        <p className="text-xs text-slate-400">{fav?.ano} - {fav?.uf}</p>
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await fetch(`/api/favorites/${fav.id}`, { method: 'DELETE' });
+                            setFavorites((prev) => prev.filter((f) => f.id !== fav.id));
+                          } catch {}
+                        }}
+                        title="Remover dos favoritos"
+                        className="flex-shrink-0 text-slate-500 hover:text-red-400 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </CardContent>
