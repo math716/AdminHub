@@ -2,13 +2,13 @@ name: Import Emendas PR (Power BI)
 
 on:
   schedule:
-    - cron: '0 6 * * 1'   # toda segunda-feira às 06h UTC
+    - cron: '0 6 * * 1'   # toda segunda-feira às 06h UTC (apenas 2026)
   workflow_dispatch:
     inputs:
       anos:
         description: 'Anos a extrair (separados por vírgula, ex: 2024,2025,2026)'
         required: false
-        default: '2020,2021,2022,2023,2024,2025,2026'
+        default: '2021,2022,2023,2024,2025,2026'
         type: string
       apenas_extrair:
         description: 'Apenas extrair CSV, sem importar no banco'
@@ -40,9 +40,10 @@ jobs:
       - name: Criar diretórios de saída
         run: mkdir -p data/estados/powerbi_pr_raw
 
-      - name: Extrair dados do Power BI (todos os anos)
+      - name: Extrair dados do Power BI
         run: |
-          ANOS="${{ github.event.inputs.anos || '2020,2021,2022,2023,2024,2025,2026' }}"
+          ANOS="${{ github.event.inputs.anos || '2021,2022,2023,2024,2025,2026' }}"
+          echo "Anos a extrair: $ANOS"
           python scripts/scrape-powerbi-pr.py --anos "$ANOS"
 
       - name: Listar arquivos gerados
@@ -62,6 +63,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           ANOS="${{ github.event.inputs.anos || '2021,2022,2023,2024,2025,2026' }}"
+          echo "Anos a importar: $ANOS"
           python scripts/import-emendas-pr.py --anos "$ANOS"
 
       - name: Resumo final
