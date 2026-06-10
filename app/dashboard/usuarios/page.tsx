@@ -720,7 +720,7 @@ export default function UsuariosPage() {
                                 {/* Ações */}
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                   {/* Cargo */}
-                                  {u.id !== sessionUserId
+                                  {u.id !== sessionUserId && u.role !== 'SUPER_ADMIN'
                                     ? <RoleSelect userId={u.id} current={u.role} onChanged={(r) => handleRoleChange(u.id, r)} />
                                     : <RoleBadge role={u.role} />
                                   }
@@ -826,7 +826,7 @@ export default function UsuariosPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            {u.id !== sessionUserId
+                            {u.id !== sessionUserId && u.role !== 'SUPER_ADMIN'
                               ? <RoleSelect userId={u.id} current={u.role} onChanged={(r) => handleRoleChange(u.id, r)} />
                               : <RoleBadge role={u.role} />
                             }

@@ -31,12 +31,18 @@ export async function PATCH(
 
     const target = await prisma.user.findUnique({
       where: { id: params.id },
-      select: { id: true, gabineteId: true, role: true },
+      select: { id: true, gabineteId: true, role: true, email: true },
     });
     if (!target) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
 
     // SUPER_ADMIN nunca pode ser alterado por ninguém via API
     if (target.role === 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Este usuário não pode ser alterado' }, { status: 403 });
+    }
+
+    // Email protegido: independente do role atual, este usuário nunca pode ser alterado
+    const PROTECTED_EMAIL = process.env.SUPER_ADMIN_EMAIL ?? 'matheuseuclides716@gmail.com';
+    if (target.email === PROTECTED_EMAIL) {
       return NextResponse.json({ error: 'Este usuário não pode ser alterado' }, { status: 403 });
     }
 
