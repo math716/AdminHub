@@ -3698,7 +3698,7 @@ export default function MapaCampanhaPage() {
       {/* Edit Municipality Modal */}
       <Modal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => { setShowModal(false); setSelectedMapMunicipio(null); }}
         title={selectedMunicipio?.nome && isDfZona(selectedMunicipio.nome) ? `Editar Metas - Zona ${getZonaNumber(selectedMunicipio.nome)}` : selectedMunicipio?.nome && isDfRegiao(selectedMunicipio.nome) ? `Editar Metas - ${getRegiaoNome(selectedMunicipio.nome)}` : selectedMunicipio?.nome && isSpDistrito(selectedMunicipio.nome) ? `Editar Metas - ${getDistritoNome(selectedMunicipio.nome)}` : selectedMunicipio?.nome && isRjBairro(selectedMunicipio.nome) ? `Editar Metas - ${getRjBairroNome(selectedMunicipio.nome)}` : selectedMunicipio?.nome && isCeBairro(selectedMunicipio.nome) ? `Editar Metas - ${getCeBairroNome(selectedMunicipio.nome)}` : selectedMunicipio?.nome && isMunBairro(selectedMunicipio.nome) ? `Editar Metas - ${getMunBairroNome(selectedMunicipio.nome)}` : `Editar Metas - ${selectedMunicipio?.nome}`}
         size="lg"
         dark

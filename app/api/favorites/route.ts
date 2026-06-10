@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -17,8 +17,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Usuário não identificado' }, { status: 400 });
     }
 
+    const tipo = request.nextUrl.searchParams.get('tipo') ?? 'ELEITORAL';
+
     const favorites = await prisma.favorite.findMany({
-      where: { userId },
+      where: { userId, tipo },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { candidateName, ano, cargo, uf } = body ?? {};
+    const { candidateName, ano, cargo, uf, tipo } = body ?? {};
 
     if (!candidateName || !ano || !uf) {
       return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 });
@@ -54,7 +56,8 @@ export async function POST(request: NextRequest) {
         candidateName: candidateName ?? '',
         ano: parseInt(ano) || 2022,
         cargo: cargo ?? null,
-        uf: uf ?? ''
+        uf: uf ?? '',
+        tipo: tipo ?? 'ELEITORAL',
       }
     });
 

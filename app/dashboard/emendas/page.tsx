@@ -292,7 +292,7 @@ export default function EmendasPage() {
     }
 
     const matches = pool
-      .filter((p) => normalizar(p.nome).includes(qNorm))
+      .filter((p) => normalizar(p.nome).includes(qNorm) && p.cargo !== 'VEREADOR')
       .slice(0, 20)
       .map<PortalParlamentar>((p) => ({
         cpf:      p.cpf,
@@ -340,7 +340,7 @@ export default function EmendasPage() {
   const [savingFavorite, setSavingFavorite] = useState(false);
 
   useEffect(() => {
-    fetch('/api/favorites').then((r) => r.json()).then((data) => {
+    fetch('/api/favorites?tipo=EMENDAS').then((r) => r.json()).then((data) => {
       if (Array.isArray(data)) setFavorites(data);
     }).catch(() => {});
   }, []);
@@ -384,7 +384,7 @@ export default function EmendasPage() {
         const res = await fetch('/api/favorites', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ candidateName: selectedParlamentar.nome, ano, cargo: selectedParlamentar.cargo, uf: selectedUf }),
+          body: JSON.stringify({ candidateName: selectedParlamentar.nome, ano, cargo: selectedParlamentar.cargo, uf: selectedUf, tipo: 'EMENDAS' }),
         });
         const data = await res.json();
         if (data?.id) setFavorites((prev) => [...prev, data]);

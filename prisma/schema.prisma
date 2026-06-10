@@ -276,12 +276,13 @@ model Favorite {
   ano           Int
   cargo         String?
   uf            String
+  tipo          String   @default("ELEITORAL")
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt     DateTime @default(now())
 
-  @@unique([userId, candidateName, ano, uf])
+  @@unique([userId, candidateName, ano, uf, tipo])
   @@index([userId])
   @@map("favorites")
 }
