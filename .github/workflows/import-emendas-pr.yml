@@ -1,0 +1,94 @@
+name: Import Emendas PR (Power BI)
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # toda segunda-feira às 06h UTC
+  workflow_dispatch:
+    inputs:
+      anos:
+        description: 'Anos a extrair (separados por vírgula, ex: 2024,2025,2026)'
+        required: false
+        default: '2020,2021,2022,2023,2024,2025,2026'
+        type: string
+      apenas_extrair:
+        description: 'Apenas extrair CSV, sem importar no banco'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+jobs:
+  extract-and-import:
+    name: Extrair Power BI → Importar banco
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências Python
+        run: pip install requests
+
+      - name: Criar diretórios de saída
+        run: mkdir -p data/estados/powerbi_pr_raw
+
+      - name: Extrair dados do Power BI (todos os anos)
+        run: |
+          ANOS="${{ github.event.inputs.anos || '2020,2021,2022,2023,2024,2025,2026' }}"
+          python scripts/scrape-powerbi-pr.py --anos "$ANOS"
+
+      - name: Listar arquivos gerados
+        run: |
+          echo "## Arquivos CSV gerados:" >> $GITHUB_STEP_SUMMARY
+          ls -lh data/estados/emendas_PR_*.csv 2>/dev/null \
+            | awk '{print "- **"$9"** ("$5")"}' >> $GITHUB_STEP_SUMMARY || echo "Nenhum CSV gerado" >> $GITHUB_STEP_SUMMARY
+          wc -l data/estados/emendas_PR_*.csv 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+
+      - name: Setup Node.js 20
+        if: ${{ github.event.inputs.apenas_extrair != 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependências Node
+        if: ${{ github.event.inputs.apenas_extrair != 'true' }}
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        if: ${{ github.event.inputs.apenas_extrair != 'true' }}
+        run: npx prisma generate
+
+      - name: Importar CSVs no banco
+        if: ${{ github.event.inputs.apenas_extrair != 'true' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          ANOS="${{ github.event.inputs.anos || '2020,2021,2022,2023,2024,2025,2026' }}"
+          IFS=',' read -ra LISTA <<< "$ANOS"
+          for ANO in "${LISTA[@]}"; do
+            ANO=$(echo "$ANO" | tr -d ' ')
+            CSV="data/estados/emendas_PR_${ANO}.csv"
+            if [ -f "$CSV" ]; then
+              echo "=== Importando $CSV ==="
+              npx tsx scripts/import-emendas-pr.ts --file "$CSV" --ano "$ANO"
+            else
+              echo "Arquivo $CSV não encontrado, pulando."
+            fi
+          done
+
+      - name: Resumo final
+        if: always()
+        run: |
+          echo "## Import Emendas PR concluído" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horário:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Anos:** ${{ github.event.inputs.anos || '2020-2026' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Apenas extração:** ${{ github.event.inputs.apenas_extrair || 'false' }}" >> $GITHUB_STEP_SUMMARY

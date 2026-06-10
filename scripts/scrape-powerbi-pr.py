@@ -1,143 +1,298 @@
 """
-Extrai dados do relatório Power BI de emendas parlamentares PR.
+Extrai dados de emendas parlamentares do PR via API direta do Power BI.
 
-Estratégia:
-  1. Abre o relatório num browser Chromium via Playwright (visível para você acompanhar)
-  2. Intercepta todas as chamadas à API interna do Power BI (querydata / executeSemanticQuery)
-  3. Salva cada resposta JSON em data/estados/powerbi_pr_raw/
-  4. Após capturar o layout inicial, tenta trocar o filtro de ano para 2021–2026
-     e capturar os dados de cada período
+Não precisa de browser/Playwright — usa as credenciais públicas do relatório.
 
 Pré-requisitos:
-  pip install playwright
-  python -m playwright install chromium
+  pip install requests
 
 Uso:
   python scripts/scrape-powerbi-pr.py
 
-Os arquivos JSON ficam em data/estados/powerbi_pr_raw/.
-Depois rode  python scripts/parse-powerbi-pr.py  para converter em CSV.
+Saída:
+  data/estados/powerbi_pr_raw/*.json   (páginas brutas)
+  data/estados/emendas_PR_powerbi.csv  (consolidado final)
 """
 
-import asyncio, json, os, re, sys, time
+import requests, json, csv, sys, time, argparse
 from pathlib import Path
-from playwright.async_api import async_playwright, Response
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-URL     = ('https://app.powerbi.com/view?r='
-           'eyJrIjoiN2UzN2UyMTQtODgxMC00N2NiLWE1NzQtZjFkYmZkZWQ0YzVmIiwidCI6ImY3'
-           'MGEwYWY2LWRhMGYtNDViZS1iN2VkLTlmOGMxYjI0YmZkZiIsImMiOjR9')
+# ── Argumentos CLI ────────────────────────────────────────────────────────────
+parser = argparse.ArgumentParser(description='Extrai emendas PR do Power BI')
+parser.add_argument('--anos', default='', help='Anos separados por vírgula (ex: 2024,2025). Vazio = todos.')
+ARGS = parser.parse_args()
 
-OUT_DIR = Path(__file__).parent.parent / 'data' / 'estados' / 'powerbi_pr_raw'
-OUT_DIR.mkdir(parents=True, exist_ok=True)
+# ── Credenciais capturadas do DevTools ────────────────────────────────────────
+RESOURCE_KEY = "7a5c4f7a-8c02-4434-aa1a-9f373c26fea0"
+MODEL_ID      = 6960064
+BASE_URL      = "https://wabi-brazil-south-b-primary-api.analysis.windows.net"
 
-# Padrões de URL que carregam dados reais
-DATA_PATTERNS = [
-    'querydata',
-    'executeSemanticQuery',
-    'modelsAndExploration',
-    'conceptualschema',
-    'datamodel',
+HEADERS = {
+    "X-PowerBI-ResourceKey": RESOURCE_KEY,
+    "Content-Type": "application/json;charset=UTF-8",
+    "Accept": "application/json, text/plain, */*",
+    "Origin": "https://app.powerbi.com",
+    "Referer": "https://app.powerbi.com/",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+}
+
+RAW_DIR  = Path(__file__).parent.parent / "data" / "estados" / "powerbi_pr_raw"
+DATA_DIR = Path(__file__).parent.parent / "data" / "estados"
+RAW_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+ANOS_DISPONIVEIS = [2020, 2021, 2022, 2023, 2024, 2025, 2026]
+
+PAGE_SIZE = 500   # linhas por requisição (máximo aceito pelo Power BI)
+
+# ── Schema descoberto via model.json ─────────────────────────────────────────
+# Tabela principal e colunas extraídas dos visualContainers do relatório
+TABELA = "Emendas"
+COLUNAS = [
+    "Nome do Autor da Emenda",
+    "Código da Emenda",
+    "Ano da Emenda",
+    "Valor Pago",
+    "Favorecido",
+    "UF Favorecido",
+    "Código UG",
+    "Código Documento",
+    "Código Unidade Orçamentária",
+    "Órgão",
+    "Órgão Superior",
+    "Tipo de Emendas B-C-I",
+    "Categoria Econômica",
+    "Categoria CONCATENADA",
+    "Fontes de Recursos GOV",
+    "Programa CONCATENADA",
+    "Ação CONCATENADA",
+    "Função CONCATENADA",
+    "SubFunção CONCATENADA",
+    "Grupo de Despes CONCATENADA",
+    "Modalidade de Aplicação CONCATENADA",
+    "Elemento Despesa CONCATENADA",
+    "Transferencias SIM NAO",
+    "Possui convênio?",
+    "CO",
 ]
 
-captured: list[dict] = []
 
-async def handle_response(response: Response):
-    """Intercepta respostas da API do Power BI e salva."""
-    url = response.url
-    if not any(p in url for p in DATA_PATTERNS):
-        return
+# ── 2. Consulta paginada ───────────────────────────────────────────────────────
+
+def build_query(table: str, columns: list[str], ano: int | None = None, restart_tokens: list | None = None) -> dict:
+    """Monta payload para POST /querydata com paginação e filtro opcional de ano."""
+    from_clause  = [{"Name": "t", "Entity": table, "Type": 0}]
+    select_clause = [
+        {
+            "Column": {
+                "Expression": {"SourceRef": {"Source": "t"}},
+                "Property": col,
+            },
+            "Name": f"t.{col}",
+        }
+        for col in columns
+    ]
+    projections = list(range(len(columns)))
+
+    query: dict = {
+        "Version": 2,
+        "From": from_clause,
+        "Select": select_clause,
+    }
+
+    # Filtro de ano via coluna "Ano da Emenda"
+    if ano:
+        query["Where"] = [
+            {
+                "Condition": {
+                    "Comparison": {
+                        "ComparisonKind": 0,   # Equal
+                        "Left": {
+                            "Column": {
+                                "Expression": {"SourceRef": {"Source": "t"}},
+                                "Property": "Ano da Emenda",
+                            }
+                        },
+                        "Right": {"Literal": {"Value": f"{ano}L"}},
+                    }
+                }
+            }
+        ]
+
+    binding: dict = {
+        "Primary": {"Groupings": [{"Projections": projections}]},
+        "DataReduction": {
+            "DataVolume": 4,
+            "Primary": {"Window": {"Count": PAGE_SIZE}},
+        },
+        "Version": 1,
+    }
+    if restart_tokens:
+        binding["DataReduction"]["Primary"]["Window"]["RestartTokens"] = restart_tokens
+
+    return {
+        "version": "1.0.0",
+        "cancelQueries": [],
+        "modelId": MODEL_ID,
+        "queries": [
+            {
+                "Query": {
+                    "Commands": [
+                        {
+                            "SemanticQueryDataShapeCommand": {
+                                "Query": query,
+                                "Binding": binding,
+                            }
+                        }
+                    ]
+                },
+                "QueryId": "",
+            }
+        ],
+    }
+
+
+def parse_dsr(body: dict, columns: list[str]) -> tuple[list[dict], list | None]:
+    """
+    Extrai linhas do formato DSR do Power BI.
+    Retorna (linhas, restart_tokens_para_proxima_pagina).
+    """
+    rows: list[dict] = []
+    restart_tokens = None
+
     try:
-        ct = response.headers.get('content-type', '')
-        if 'json' not in ct:
-            return
-        body = await response.json()
-        ts   = int(time.time() * 1000)
-        slug = re.sub(r'[^a-z0-9]', '_', url.split('/')[-1].split('?')[0].lower())[:40]
-        fname = OUT_DIR / f'{ts}_{slug}.json'
-        fname.write_text(json.dumps(body, ensure_ascii=False, indent=2), encoding='utf-8')
-        captured.append({'url': url, 'file': str(fname)})
-        print(f'  [capturado] {fname.name}  ({url[:80]})')
-    except Exception as e:
-        pass  # respostas binárias ou sem JSON — ignora
+        ds = body["results"][0]["result"]["data"]["dsr"]["DS"]
+    except (KeyError, IndexError, TypeError):
+        return rows, None
 
-
-async def main():
-    print(f'Salvando em: {OUT_DIR}')
-    print('Abrindo browser... (NÃO feche a janela durante a captura)\n')
-
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=False,          # visível para acompanhar
-            args=['--start-maximized'],
-        )
-        ctx  = await browser.new_context(viewport={'width': 1600, 'height': 900})
-        page = await ctx.new_page()
-        page.on('response', handle_response)
-
-        print(f'[1/4] Carregando relatório: {URL[:60]}...')
-        await page.goto(URL, timeout=60_000)
-        await page.wait_for_timeout(8_000)   # aguarda o relatório renderizar
-
-        print(f'[2/4] Captura inicial: {len(captured)} respostas.')
-
-        # ── Tenta localizar e interagir com filtro de ano ──────────────────────
-        # Power BI filtros costumam ser <div> ou <button> com texto de ano
-        anos = [2021, 2022, 2023, 2024, 2025, 2026]
-        print('[3/4] Procurando filtro de ano no relatório...')
-
-        for ano in anos:
-            print(f'  → tentando selecionar ano {ano}...')
-            antes = len(captured)
-
-            # Estratégia 1: clica em elemento com o texto do ano
-            try:
-                loc = page.locator(f'text="{ano}"').first
-                if await loc.is_visible(timeout=2000):
-                    await loc.click()
-                    await page.wait_for_timeout(4_000)
-                    print(f'     clicou em "{ano}" — +{len(captured)-antes} respostas capturadas')
+    for dataset in ds:
+        for ph in dataset.get("PH", []):
+            for dm_key in ("DM0", "DM1", "DM2"):
+                dm = ph.get(dm_key)
+                if not dm:
                     continue
-            except Exception:
-                pass
 
-            # Estratégia 2: procura slicer/dropdown com o ano
-            try:
-                loc2 = page.locator(f'[aria-label*="{ano}"], [title*="{ano}"]').first
-                if await loc2.is_visible(timeout=1500):
-                    await loc2.click()
-                    await page.wait_for_timeout(4_000)
-                    print(f'     clicou via aria-label "{ano}" — +{len(captured)-antes} respostas')
-                    continue
-            except Exception:
-                pass
+                current_cols: list[str] = []
+                prev_values: dict = {}   # carry-forward para valores omitidos
 
-            print(f'     ano {ano} não encontrado automaticamente')
+                for item in dm:
+                    # Schema de colunas (aparece na 1ª linha ou quando muda)
+                    if "S" in item:
+                        current_cols = [c.get("N", f"col{i}") for i, c in enumerate(item["S"])]
+                        prev_values  = {}
 
-        print(f'\n[4/4] Total de respostas capturadas: {len(captured)}')
+                    # Dados da linha
+                    if "C" in item and current_cols:
+                        vals = item["C"]
+                        row  = dict(prev_values)
+                        for ci, val in enumerate(vals):
+                            if ci < len(current_cols):
+                                col_name = current_cols[ci]
+                                if isinstance(val, dict):
+                                    val = val.get("Value", val.get("value", val))
+                                row[col_name] = val
+                                prev_values[col_name] = val
+                        # Mapeia nomes internos → nomes de coluna reais
+                        mapped = {}
+                        for i, col in enumerate(current_cols):
+                            mapped[columns[i] if i < len(columns) else col] = row.get(col, "")
+                        rows.append(mapped)
 
-        if not captured:
-            print('\n⚠  Nenhum dado capturado automaticamente.')
-            print('   O relatório pode precisar de interação manual.')
-            print('   Interaja com os filtros/visuais na janela aberta,')
-            print('   que cada clique vai capturar mais dados automaticamente.')
-            print('   Pressione ENTER aqui quando terminar de explorar o relatório.')
-            input()
-        else:
-            print('\nAguardando 5s para capturar dados finais...')
-            await page.wait_for_timeout(5_000)
+        # Restart token para próxima página
+        rt = dataset.get("RT")
+        if rt:
+            restart_tokens = rt
 
-        await browser.close()
-
-    # ── Relatório final ────────────────────────────────────────────────────────
-    print(f'\n=== Arquivos salvos em {OUT_DIR} ===')
-    for item in captured:
-        print(f'  {Path(item["file"]).name}')
-
-    print(f'\nTotal: {len(captured)} arquivos JSON.')
-    print('Execute agora:  python scripts/parse-powerbi-pr.py')
+    return rows, restart_tokens
 
 
-if __name__ == '__main__':
-    asyncio.run(main())
+def fetch_table(table: str, columns: list[str], ano: int | None = None) -> list[dict]:
+    """Busca todas as linhas de uma tabela, paginando automaticamente."""
+    url     = f"{BASE_URL}/public/reports/querydata?synchronous=true"
+    all_rows: list[dict] = []
+    restart_tokens = None
+    page = 0
+    slug = f"{table.replace(' ','_')}_ano{ano}" if ano else table.replace(' ','_')
+
+    while True:
+        page += 1
+        payload = build_query(table, columns, ano=ano, restart_tokens=restart_tokens)
+        print(f"    página {page}… ", end="", flush=True)
+
+        r = requests.post(url, headers=HEADERS, json=payload, timeout=60)
+        if not r.ok:
+            print(f"ERRO {r.status_code}: {r.text[:200]}")
+            break
+
+        body = r.json()
+
+        # Salva JSON bruto para diagnóstico
+        fname = RAW_DIR / f"{slug}__p{page:03d}.json"
+        fname.write_text(json.dumps(body, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        rows, restart_tokens = parse_dsr(body, columns)
+        all_rows.extend(rows)
+        print(f"{len(rows)} linhas  (total: {len(all_rows)})")
+
+        if not rows or not restart_tokens:
+            break
+
+        time.sleep(0.3)   # respeita o servidor
+
+    return all_rows
+
+
+# ── 3. Main ────────────────────────────────────────────────────────────────────
+
+def main():
+    print("=" * 60)
+    print("Extrator Power BI — Emendas Parlamentares PR")
+    print("=" * 60)
+
+    # Determina quais anos processar
+    if ARGS.anos.strip():
+        anos = [int(a.strip()) for a in ARGS.anos.split(',') if a.strip().isdigit()]
+    else:
+        anos = ANOS_DISPONIVEIS
+
+    print(f"\nTabela  : '{TABELA}'")
+    print(f"Colunas : {len(COLUNAS)}")
+    print(f"Anos    : {anos}\n")
+
+    csvs_gerados = []
+
+    for ano in anos:
+        print(f"\n{'='*50}")
+        print(f"  ANO {ano}")
+        print(f"{'='*50}")
+
+        rows = fetch_table(TABELA, COLUNAS, ano=ano)
+
+        if not rows:
+            print(f"  ⚠  Nenhuma linha para {ano}.")
+            continue
+
+        out_csv = DATA_DIR / f"emendas_PR_{ano}.csv"
+        all_cols = list(rows[0].keys())
+        with open(out_csv, "w", encoding="utf-8-sig", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=all_cols, extrasaction="ignore")
+            w.writeheader()
+            w.writerows(rows)
+
+        print(f"  ✅  {len(rows)} linhas → {out_csv.name}")
+        csvs_gerados.append((out_csv, len(rows)))
+
+    print(f"\n{'='*60}")
+    print(f"CONCLUÍDO — {len(csvs_gerados)} arquivo(s) gerado(s):")
+    for path, n in csvs_gerados:
+        print(f"  {path.name}  ({n} linhas)")
+
+
+if __name__ == "__main__":
+    main()
