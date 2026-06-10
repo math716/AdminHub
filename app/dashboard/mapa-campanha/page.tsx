@@ -418,6 +418,7 @@ export default function MapaCampanhaPage() {
   const [electoralData, setElectoralData] = useState<ElectoralData | null>(null);
   const [projecao, setProjecao] = useState<Projecao | null>(null);
   const [projecoesSalvas, setProjecoesSalvas] = useState<Projecao[]>([]);
+  const [formCollapsed, setFormCollapsed] = useState(false);
 
   // Cenário and filter states
   const [cenarioAtivo, setCenarioAtivo] = useState<CenarioType>('possivel');
@@ -879,6 +880,7 @@ export default function MapaCampanhaPage() {
   // Função para carregar dados do candidato após seleção
   const loadCandidatoData = async (data: any) => {
     setElectoralData(data);
+    setFormCollapsed(true);
     setShowCandidatoModal(false);
     
     // Limpar dados anteriores
@@ -2320,94 +2322,128 @@ export default function MapaCampanhaPage() {
         transition={{ delay: 0.1 }}
       >
         <Card className="mb-6" style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(201,162,39,0.2)', backdropFilter: 'blur(8px)' }}>
-          <CardContent className="p-5 space-y-5">
+          <CardContent className="p-5">
 
-            {/* Cabeçalho do card */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Search className="h-4 w-4" style={{ color: '#c9a227' }} />
-                <span className="text-sm font-semibold tracking-wide" style={{ color: '#c9a227' }}>
-                  Buscar Candidato
-                </span>
-              </div>
-              <Button
-                onClick={() => setShowNovoCandidatoModal(true)}
-                variant="outline"
-                className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 whitespace-nowrap text-sm h-8 px-3"
-              >
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
-                Novo Candidato
-              </Button>
-            </div>
-
-            {/* Bloco 1 — identificação do candidato */}
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
-                  NOME DO CANDIDATO
-                </label>
-                <Input
-                  placeholder="Ex: João Silva, Tarcísio, Lula…"
-                  value={candidateName}
-                  onChange={(e) => setCandidateName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && searchCandidate()}
-                  className="bg-slate-700/60 border-slate-600 text-white placeholder:text-slate-500"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
-                    ANO DA ELEIÇÃO
-                  </label>
-                  <Select
-                    value={ano}
-                    onChange={(e) => setAno(e.target.value)}
-                    options={anosOptions}
-                  />
+            {/* Modo colapsado: resumo + botão editar */}
+            {formCollapsed && electoralData ? (
+              <div className="flex items-center gap-4 flex-wrap">
+                <Search className="h-4 w-4 flex-shrink-0" style={{ color: '#c9a227' }} />
+                <div className="flex-1 min-w-0 flex items-center gap-3 flex-wrap">
+                  <span className="text-white font-semibold truncate">{candidateName || electoralData.nome}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(201,162,39,0.12)', color: '#e8c660', border: '1px solid rgba(201,162,39,0.25)' }}>
+                    {ESTADOS_BRASIL.find(e => e.sigla === uf)?.nome ?? uf}
+                  </span>
+                  <span className="text-xs text-slate-400">{ano} → {anoProjecao}</span>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
-                    ESTADO
-                  </label>
-                  <Select
-                    value={uf}
-                    onChange={(e) => setUf(e.target.value)}
-                    options={estadosOptions}
-                  />
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    onClick={() => setFormCollapsed(false)}
+                    variant="outline"
+                    className="border-slate-600 text-slate-300 hover:bg-slate-700 text-xs h-8 px-3"
+                  >
+                    <Pencil className="h-3 w-3 mr-1.5" />
+                    Editar busca
+                  </Button>
+                  <Button
+                    onClick={() => setShowNovoCandidatoModal(true)}
+                    variant="outline"
+                    className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 whitespace-nowrap text-xs h-8 px-3"
+                  >
+                    <Plus className="h-3 w-3 mr-1.5" />
+                    Novo Candidato
+                  </Button>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-5">
+                {/* Cabeçalho do card */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4" style={{ color: '#c9a227' }} />
+                    <span className="text-sm font-semibold tracking-wide" style={{ color: '#c9a227' }}>
+                      Buscar Candidato
+                    </span>
+                  </div>
+                  <Button
+                    onClick={() => setShowNovoCandidatoModal(true)}
+                    variant="outline"
+                    className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 whitespace-nowrap text-sm h-8 px-3"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    Novo Candidato
+                  </Button>
+                </div>
 
-            {/* Divisor — Projeção */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
-              <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>
-                Projeção
-              </span>
-              <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
-            </div>
+                {/* Bloco 1 — identificação do candidato */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
+                      NOME DO CANDIDATO
+                    </label>
+                    <Input
+                      placeholder="Ex: João Silva, Tarcísio, Lula…"
+                      value={candidateName}
+                      onChange={(e) => setCandidateName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && searchCandidate()}
+                      className="bg-slate-700/60 border-slate-600 text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
+                        ANO DA ELEIÇÃO
+                      </label>
+                      <Select
+                        value={ano}
+                        onChange={(e) => setAno(e.target.value)}
+                        options={anosOptions}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
+                        ESTADO
+                      </label>
+                      <Select
+                        value={uf}
+                        onChange={(e) => setUf(e.target.value)}
+                        options={estadosOptions}
+                      />
+                    </div>
+                  </div>
+                </div>
 
-            {/* Bloco 2 — configuração de projeção + botão buscar */}
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
-                  ANO ALVO DA PROJEÇÃO
-                </label>
-                <Select
-                  value={anoProjecao}
-                  onChange={(e) => setAnoProjecao(e.target.value)}
-                  options={anosProjecaoOptions}
-                />
+                {/* Divisor — Projeção */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+                  <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>
+                    Projeção
+                  </span>
+                  <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+                </div>
+
+                {/* Bloco 2 — configuração de projeção + botão buscar */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
+                      ANO ALVO DA PROJEÇÃO
+                    </label>
+                    <Select
+                      value={anoProjecao}
+                      onChange={(e) => setAnoProjecao(e.target.value)}
+                      options={anosProjecaoOptions}
+                    />
+                  </div>
+                  <Button
+                    onClick={() => searchCandidate()}
+                    loading={loading}
+                    className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 font-semibold"
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Buscar Candidato
+                  </Button>
+                </div>
               </div>
-              <Button
-                onClick={() => searchCandidate()}
-                loading={loading}
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 font-semibold"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                Buscar Candidato
-              </Button>
-            </div>
+            )}
 
           </CardContent>
         </Card>
@@ -4603,6 +4639,7 @@ export default function MapaCampanhaPage() {
                         totalVotos: munBase.reduce((acc: number, m: ProjecaoMunicipio) => acc + m.votosBase, 0),
                         uf: proj.uf
                       });
+                      setFormCollapsed(true);
                       setSelectedDfZona(null);
                       if (proj.id) loadParcerias(proj.id);
                       const cargoSalvo = (proj.cargo ?? '').toUpperCase();
