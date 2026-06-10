@@ -239,15 +239,13 @@ def main():
     # Carrega mapa IBGE dos municípios do PR
     print('Carregando municípios do PR…')
     cur.execute("""
-        SELECT UPPER(UNACCENT(nome)), "codigoIbge"
-        FROM municipios
-        WHERE uf = 'PR'
+        SELECT DISTINCT ON (UPPER(TRIM(nome)))
+               UPPER(TRIM(nome)) AS nome_upper, "codigoIbge"
+          FROM municipio_stats
+         WHERE uf = 'PR'
+         ORDER BY UPPER(TRIM(nome))
     """)
-    ibge_map = {row[0]: row[1] for row in cur.fetchall()}
-    # Fallback sem UNACCENT (se extensão não disponível)
-    if not ibge_map:
-        cur.execute('SELECT nome, "codigoIbge" FROM municipios WHERE uf = %s', ('PR',))
-        ibge_map = {sem_acento(r[0].upper()): r[1] for r in cur.fetchall()}
+    ibge_map = {sem_acento(row[0]): row[1] for row in cur.fetchall()}
     ibge_sorted = sorted(ibge_map.keys(), key=len, reverse=True)
     print(f'  {len(ibge_map)} municípios carregados.')
 
