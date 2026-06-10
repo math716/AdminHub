@@ -161,48 +161,80 @@ def build_query(table: str, columns: list[str], ano: int | None = None, restart_
 def parse_dsr(body: dict, columns: list[str]) -> tuple[list[dict], list | None]:
     """
     Extrai linhas do formato DSR do Power BI.
+
+    Lida com:
+    - ValueDicts: colunas de texto são armazenadas como índice num dicionário
+    - R bitmask: indica quais colunas repetir da linha anterior (carry-forward)
+    - Paginação via RestartTokens
+
     Retorna (linhas, restart_tokens_para_proxima_pagina).
     """
     rows: list[dict] = []
     restart_tokens = None
 
     try:
-        ds = body["results"][0]["result"]["data"]["dsr"]["DS"]
+        ds_list = body["results"][0]["result"]["data"]["dsr"]["DS"]
     except (KeyError, IndexError, TypeError):
         return rows, None
 
-    for dataset in ds:
+    for dataset in ds_list:
+        value_dicts: dict = dataset.get("ValueDicts", {})
+
         for ph in dataset.get("PH", []):
             for dm_key in ("DM0", "DM1", "DM2"):
                 dm = ph.get(dm_key)
                 if not dm:
                     continue
 
-                current_cols: list[str] = []
-                prev_values: dict = {}   # carry-forward para valores omitidos
+                # Schema: lista de {N, T, DN?}
+                schema: list[dict] = []
+                # Linha anterior (para carry-forward)
+                prev_raw: list = []
 
                 for item in dm:
-                    # Schema de colunas (aparece na 1ª linha ou quando muda)
+                    # Atualiza schema quando presente
                     if "S" in item:
-                        current_cols = [c.get("N", f"col{i}") for i, c in enumerate(item["S"])]
-                        prev_values  = {}
+                        schema = item["S"]
+                        prev_raw = []
 
-                    # Dados da linha
-                    if "C" in item and current_cols:
-                        vals = item["C"]
-                        row  = dict(prev_values)
-                        for ci, val in enumerate(vals):
-                            if ci < len(current_cols):
-                                col_name = current_cols[ci]
-                                if isinstance(val, dict):
-                                    val = val.get("Value", val.get("value", val))
-                                row[col_name] = val
-                                prev_values[col_name] = val
-                        # Mapeia nomes internos → nomes de coluna reais
-                        mapped = {}
-                        for i, col in enumerate(current_cols):
-                            mapped[columns[i] if i < len(columns) else col] = row.get(col, "")
-                        rows.append(mapped)
+                    if not schema or "C" not in item:
+                        continue
+
+                    num_cols = len(schema)
+                    r_mask   = item.get("R", 0)
+                    c_vals   = item["C"]
+
+                    # Expande C usando o bitmask R:
+                    # bit i = 1 → coluna i repete da linha anterior
+                    raw: list = []
+                    c_idx = 0
+                    for col_i in range(num_cols):
+                        if r_mask & (1 << col_i):
+                            # carry-forward
+                            raw.append(prev_raw[col_i] if col_i < len(prev_raw) else None)
+                        else:
+                            raw.append(c_vals[c_idx] if c_idx < len(c_vals) else None)
+                            c_idx += 1
+
+                    prev_raw = raw
+
+                    # Resolve índices de ValueDicts para strings reais
+                    resolved: list = []
+                    for col_i, val in enumerate(raw):
+                        dn = schema[col_i].get("DN") if col_i < len(schema) else None
+                        if dn and dn in value_dicts and isinstance(val, int):
+                            d = value_dicts[dn]
+                            val = d[val] if 0 <= val < len(d) else val
+                        elif isinstance(val, dict):
+                            val = val.get("Value", val.get("value", val))
+                        resolved.append(val)
+
+                    # Mapeia G0,G1… → nomes reais das colunas
+                    row: dict = {}
+                    for col_i, val in enumerate(resolved):
+                        col_name = columns[col_i] if col_i < len(columns) else f"col{col_i}"
+                        row[col_name] = val if val is not None else ""
+                    rows.append(row)
 
         # Restart token para próxima página
         rt = dataset.get("RT")
