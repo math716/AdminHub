@@ -12,13 +12,16 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
+    const userRole   = (session.user as any)?.role as string | undefined;
     const gabineteId = (session.user as any)?.gabineteId as string | undefined;
-    if (!gabineteId) {
+
+    // SUPER_ADMIN sem gabinete selecionado: retorna stats globais (todos os gabinetes)
+    if (!gabineteId && userRole !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Usuário sem gabinete associado' }, { status: 403 });
     }
 
-    // Todas as queries filtradas pelo gabinete do usuário autenticado
-    const scope = { gabineteId };
+    // Filtra por gabinete — SUPER_ADMIN sem gabinete vê tudo
+    const scope = gabineteId ? { gabineteId } : {};
 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
