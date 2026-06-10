@@ -102,36 +102,100 @@ def cuid_like() -> str:
     return 'c' + ts + rand
 
 # ── Extração de município do campo Favorecido ─────────────────────────────────
-_RE_PREF  = re.compile(r'PREFEITURA\s+(?:MUNICIPAL\s+)?(?:DE\s+)?(.+)', re.IGNORECASE)
-_RE_FUNDO = re.compile(r'FUNDO\s+MUNICIPAL\s+(?:DE\s+)?(?:\w+\s+)*?(?:DE\s+)?(.+)', re.IGNORECASE)
-_RE_CAMARA = re.compile(r'CAMARA\s+(?:MUNICIPAL\s+)?(?:DE\s+)?(.+)', re.IGNORECASE)
 
-def extrair_municipio(favorecido: str, ibge_map: dict) -> tuple:
-    """Tenta inferir município e código IBGE a partir do campo Favorecido."""
+# Padrões explícitos: captura o que vem após a preposição de/do/da
+_PADROES_EXPLICITOS = [
+    # Entidades municipais diretas
+    re.compile(r'PREFEITURA\s+(?:MUNICIPAL\s+)?(?:DE\s+|DO\s+|DA\s+)?(.+)',        re.I),
+    re.compile(r'CAMARA\s+(?:MUNICIPAL\s+)?(?:DE\s+|DO\s+|DA\s+)?(.+)',            re.I),
+    re.compile(r'FUNDO\s+MUNICIPAL\s+(?:DE\s+\w+\s+)?(?:DE\s+|DO\s+|DA\s+)(.+)',  re.I),
+    # Entidades com cidade no nome após DE/DO/DA
+    re.compile(r'UNIVERSIDADE\s+.{0,40}?\s+(?:DE\s+|DO\s+|DA\s+)([A-ZÁÉÍÓÚÃÕÂÊÔÇÀ][A-ZÁÉÍÓÚÃÕÂÊÔÇÀ\s]{2,40}?)(?:\s*[-–/]|\s*$)', re.I),
+    re.compile(r'HOSPITAL\s+.{0,40}?\s+(?:DE\s+|DO\s+|DA\s+)([A-ZÁÉÍÓÚÃÕÂÊÔÇÀ][A-ZÁÉÍÓÚÃÕÂÊÔÇÀ\s]{2,40}?)(?:\s*[-–/]|\s*$)',     re.I),
+    re.compile(r'INSTITUTO\s+.{0,40}?\s+(?:DE\s+|DO\s+|DA\s+)([A-ZÁÉÍÓÚÃÕÂÊÔÇÀ][A-ZÁÉÍÓÚÃÕÂÊÔÇÀ\s]{2,40}?)(?:\s*[-–/]|\s*$)',    re.I),
+    re.compile(r'FACULDADE\s+.{0,40}?\s+(?:DE\s+|DO\s+|DA\s+)([A-ZÁÉÍÓÚÃÕÂÊÔÇÀ][A-ZÁÉÍÓÚÃÕÂÊÔÇÀ\s]{2,40}?)(?:\s*[-–/]|\s*$)',   re.I),
+    re.compile(r'COLEGIO\s+.{0,40}?\s+(?:DE\s+|DO\s+|DA\s+)([A-ZÁÉÍÓÚÃÕÂÊÔÇÀ][A-ZÁÉÍÓÚÃÕÂÊÔÇÀ\s]{2,40}?)(?:\s*[-–/]|\s*$)',     re.I),
+    re.compile(r'ESCOLA\s+.{0,40}?\s+(?:DE\s+|DO\s+|DA\s+)([A-ZÁÉÍÓÚÃÕÂÊÔÇÀ][A-ZÁÉÍÓÚÃÕÂÊÔÇÀ\s]{2,40}?)(?:\s*[-–/]|\s*$)',      re.I),
+    re.compile(r'SECRETARIA\s+.{0,40}?\s+(?:DE\s+|DO\s+|DA\s+)([A-ZÁÉÍÓÚÃÕÂÊÔÇÀ][A-ZÁÉÍÓÚÃÕÂÊÔÇÀ\s]{2,40}?)(?:\s*[-–/]|\s*$)',  re.I),
+    re.compile(r'FUNDACAO\s+.{0,40}?\s+(?:DE\s+|DO\s+|DA\s+)([A-ZÁÉÍÓÚÃÕÂÊÔÇÀ][A-ZÁÉÍÓÚÃÕÂÊÔÇÀ\s]{2,40}?)(?:\s*[-–/]|\s*$)',   re.I),
+    re.compile(r'ASSOCIACAO\s+.{0,40}?\s+(?:DE\s+|DO\s+|DA\s+)([A-ZÁÉÍÓÚÃÕÂÊÔÇÀ][A-ZÁÉÍÓÚÃÕÂÊÔÇÀ\s]{2,40}?)(?:\s*[-–/]|\s*$)', re.I),
+    re.compile(r'SANTA CASA\s+.{0,20}?\s+(?:DE\s+|DO\s+|DA\s+)([A-ZÁÉÍÓÚÃÕÂÊÔÇÀ][A-ZÁÉÍÓÚÃÕÂÊÔÇÀ\s]{2,40}?)(?:\s*[-–/]|\s*$)', re.I),
+]
+
+# Palavras-chave que indicam beneficiário estadual/federal (sem município específico)
+_ESTADUAL_KEYWORDS = {
+    'ESTADO DO PARANA', 'ESTADO DO PR', 'GOVERNO DO PARANA',
+    'PARANA EDIFICACOES', 'PARANACIDADE', 'PARANAEDUCACAO',
+    'SANEPAR', 'COPEL', 'COHAPAR', 'EMATER',
+    'FUNDO ESTADUAL', 'SECRETARIA ESTADUAL', 'SECRETARIA DE ESTADO',
+    'MINISTERIO', 'FUNDO NACIONAL', 'GOVERNO FEDERAL',
+    'UNIVERSIDADE FEDERAL DO PARANA', 'UFPR',
+}
+
+
+def _busca_em_ibge(candidato: str, ibge_map: dict):
+    """Tenta encontrar candidato no mapa IBGE — exato, depois por prefixo."""
+    key = sem_acento(candidato.upper().strip())
+    if key in ibge_map:
+        return normalizar_nome(candidato.lower()), ibge_map[key]
+    # Remove sufixos comuns que podem ter escapado
+    key = re.sub(r'\s*(DO\s+PARANA|DE\s+PARANA|PR|PARANA)\s*$', '', key).strip()
+    if key in ibge_map:
+        return normalizar_nome(key.lower()), ibge_map[key]
+    # Prefixo decrescente (3 → 2 → 1 palavra)
+    palavras = key.split()
+    for n in range(min(4, len(palavras)), 0, -1):
+        pfx = ' '.join(palavras[:n])
+        if len(pfx) < 4:
+            continue
+        matches = [(k, v) for k, v in ibge_map.items() if k == pfx]
+        if len(matches) == 1:
+            nome, cod = matches[0]
+            return normalizar_nome(nome.lower()), cod
+    return None, None
+
+
+def extrair_municipio(favorecido: str, ibge_map: dict, ibge_sorted: list | None = None) -> tuple:
+    """
+    Tenta inferir município e código IBGE a partir do campo Favorecido.
+
+    Estratégias (em ordem):
+    1. Padrões explícitos (Prefeitura de X, Universidade de X, Hospital de X…)
+    2. Varredura: procura qualquer nome de município do PR dentro do texto
+    """
     if not favorecido:
         return None, None
-    fav = favorecido.strip().upper()
 
-    for pat in [_RE_PREF, _RE_FUNDO, _RE_CAMARA]:
-        m = pat.match(fav)
+    fav_upper = sem_acento(favorecido.strip().upper())
+
+    # Ignora beneficiários claramente estaduais/federais
+    for kw in _ESTADUAL_KEYWORDS:
+        if sem_acento(kw) in fav_upper:
+            return None, None
+
+    # ── Estratégia 1: padrões explícitos ──────────────────────────────────────
+    for pat in _PADROES_EXPLICITOS:
+        m = pat.search(favorecido)
         if not m:
             continue
         candidato = m.group(1).strip().rstrip('.,- ')
-        # Remove sufixos de fundos: "... SAUDE DE CURITIBA" → "CURITIBA"
-        candidato = re.sub(
-            r'\s+(?:SAUDE|SAÚDE|EDUCACAO|EDUCAÇÃO|SOCIAL|ASSISTENCIA|ASSISTÊNCIA|DO\s+PARANA|DO\s+PR)\s*$',
-            '', candidato, flags=re.IGNORECASE
-        ).strip()
-        key = sem_acento(candidato)
-        if key in ibge_map:
-            return normalizar_nome(candidato.lower()), ibge_map[key]
-        # Busca prefixo
-        palavras = key.split()
-        for n in range(min(3, len(palavras)), 0, -1):
-            pfx = ' '.join(palavras[:n])
-            for k, cod in ibge_map.items():
-                if k.startswith(pfx):
-                    return normalizar_nome(candidato.lower()), cod
+        nome, cod = _busca_em_ibge(candidato, ibge_map)
+        if cod:
+            return nome, cod
+
+    # ── Estratégia 2: varredura por nome de município no texto ─────────────────
+    # Ordena por comprimento decrescente para preferir nomes mais longos
+    # (ex: "PONTA GROSSA" antes de "GROSSA")
+    if ibge_sorted is None:
+        ibge_sorted = sorted(ibge_map.keys(), key=len, reverse=True)
+
+    for mun_key in ibge_sorted:
+        if len(mun_key) < 4:
+            continue
+        # Busca o nome do município como palavra completa no texto
+        pattern = r'(?<![A-Z])' + re.escape(mun_key) + r'(?![A-Z])'
+        if re.search(pattern, fav_upper):
+            return normalizar_nome(mun_key.lower()), ibge_map[mun_key]
 
     return None, None
 
@@ -184,6 +248,7 @@ def main():
     if not ibge_map:
         cur.execute('SELECT nome, "codigoIbge" FROM municipios WHERE uf = %s', ('PR',))
         ibge_map = {sem_acento(r[0].upper()): r[1] for r in cur.fetchall()}
+    ibge_sorted = sorted(ibge_map.keys(), key=len, reverse=True)
     print(f'  {len(ibge_map)} municípios carregados.')
 
     total_inseridos = 0
@@ -227,7 +292,7 @@ def main():
             id_portal = f'PR{ano_emenda}_{cod_doc}' if cod_doc else f'PR{ano_emenda}_{cod_emenda}_{cuid_like()[:8]}'
 
             # Município: tenta inferir do Favorecido
-            mun_nome, mun_ibge = extrair_municipio(favorecido, ibge_map)
+            mun_nome, mun_ibge = extrair_municipio(favorecido, ibge_map, ibge_sorted)
             # Se UF do favorecido for PR mas não identificou município, usa PR como UF
             cod_uf = uf_fav if uf_fav else 'PR'
 

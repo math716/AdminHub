@@ -351,9 +351,10 @@ def main():
                 conn.commit(); inseridas += len(batch); break
             except psycopg2.OperationalError:
                 tentativas += 1
-                if tentativas > 3: raise
+                if tentativas > 5: raise
                 try: conn.close()
                 except: pass
+                import time; time.sleep(5 * tentativas)
                 conn, cur = reconectar()
         print(f'  {inseridas}/{total} ({inseridas*100//total}%)...', end='\r', flush=True)
 
