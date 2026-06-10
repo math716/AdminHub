@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
         if (!user || !isValid) {
           throw new Error('Credenciais inválidas');
         }
-        if (!user.approved && user.role !== 'CHEFE' && user.role !== 'ADMIN') {
+        if (!user.approved && user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
           throw new Error('Cadastro pendente de aprovação');
         }
         return {
@@ -78,7 +78,7 @@ export const authOptions: NextAuthOptions = {
           // Troca de gabinete: apenas ADMIN pode. Para qualquer outro role o
           // pedido é silenciosamente ignorado — não confiamos só na UI esconder
           // o switcher porque o cliente pode chamar update() diretamente.
-          if (token.role === 'ADMIN') {
+          if (token.role === 'ADMIN' || token.role === 'SUPER_ADMIN') {
             token.gabineteId  = s.gabineteId  ?? null;
             token.gabineteNome = s.gabineteNome ?? null;
           }
