@@ -75,9 +75,9 @@ const L = {
   accentGrad:   'linear-gradient(135deg, #1d6fd8 0%, #3b9af8 100%)',
   accentSoft:   'rgba(29,111,216,0.08)',
   accentBorder: 'rgba(29,111,216,0.14)',
-  bg:           '#ffffff',           // fundo branco
+  bg:           '#dbeafe',           // blue-100 — fundo azul-claro
   bgCard:       '#ffffff',
-  activeItemBg: '#eff6ff',           // blue-50 — azul-claro selecionado
+  activeItemBg: '#ffffff',           // branco ao selecionar
   activeIconBg: 'rgba(29,111,216,0.13)',
   border:       'rgba(29,111,216,0.12)',
   text:         '#0f172a',
@@ -202,6 +202,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                         ? {
                             background: L.activeItemBg,
                             borderLeft: `3px solid ${L.accent}`,
+                            boxShadow: '0 2px 8px rgba(29,111,216,0.15)',
                           }
                         : {
                             borderLeft: '3px solid transparent',
