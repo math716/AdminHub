@@ -42,6 +42,9 @@ public/data/tse/secao/
 # (importados pelo script scripts/import-portal-csv.ts pro banco)
 data/portal-csv-imports/
 
+# CSVs de estados baixados localmente para importação
+data/estados/
+
 # Prisma
 prisma/migrations/dev.db
 *.db
