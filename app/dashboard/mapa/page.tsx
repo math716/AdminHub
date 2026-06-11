@@ -1059,55 +1059,75 @@ export default function MapaPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Sidebar */}
-        <div className="lg:col-span-1 space-y-4">
+        <div className="lg:col-span-1 h-[750px] overflow-y-auto scrollbar-dark space-y-3">
           {/* Search */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Search className="h-5 w-5 text-[#4a9ede]" />
-                Buscar Candidato
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div
+            className="rounded-xl p-4 space-y-3"
+            style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.15)' }}
+          >
+            {/* Header */}
+            <div className="flex items-center gap-2 pb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.25)' }}>
+                <Search className="h-3.5 w-3.5 text-[#4a9ede]" />
+              </div>
+              <span className="text-sm font-semibold text-white">Buscar Candidato</span>
+            </div>
+
+            <div className="space-y-0.5">
+              <p className="text-[11px] uppercase tracking-wider font-medium" style={{ color: '#4a7a9b' }}>Nome</p>
               <Input
-                label="Nome do Candidato"
                 placeholder="Ex: João Silva"
                 value={candidateName}
                 onChange={(e) => setCandidateName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
+            </div>
+
+            <div className="space-y-0.5">
+              <p className="text-[11px] uppercase tracking-wider font-medium" style={{ color: '#4a7a9b' }}>Eleição</p>
               <Select
-                label="Ano da Eleição"
                 value={ano}
                 onChange={(e) => setAno(e.target.value)}
                 options={anoOptions}
               />
-              <div>
-                <p className="text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>País</p>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
-                  style={{ background: 'rgba(74,158,222,0.08)', border: '1px solid rgba(74,158,222,0.2)' }}>
-                  <Globe className="h-4 w-4 flex-shrink-0" style={{ color: '#4a9ede' }} />
-                  <span className="text-sm font-medium text-white">🇧🇷 Brasil</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-0.5">
+                <p className="text-[11px] uppercase tracking-wider font-medium" style={{ color: '#4a7a9b' }}>País</p>
+                <div className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <Globe className="h-3.5 w-3.5 flex-shrink-0" style={{ color: '#4a9ede' }} />
+                  <span className="text-white font-medium text-xs">🇧🇷 Brasil</span>
                 </div>
               </div>
-              <Select
-                label="Estado"
-                value={searchEstado}
-                onChange={(e) => setSearchEstado(e.target.value)}
-                options={[
-                  { value: '', label: 'Nenhum — busca nacional' },
-                  ...(ESTADOS_BRASIL?.map?.((e) => ({ value: e?.sigla ?? '', label: e?.nome ?? '' })) ?? []),
-                ]}
-              />
-              {searchError && <p className="text-sm text-red-500">{searchError}</p>}
-              <Button className="w-full" onClick={handleSearch} loading={searching}>
-                <Search className="h-5 w-5 mr-2" />
-                Buscar
-              </Button>
-            </CardContent>
-          </Card>
+              <div className="space-y-0.5">
+                <p className="text-[11px] uppercase tracking-wider font-medium" style={{ color: '#4a7a9b' }}>Estado</p>
+                <Select
+                  value={searchEstado}
+                  onChange={(e) => setSearchEstado(e.target.value)}
+                  options={[
+                    { value: '', label: 'Todos' },
+                    ...(ESTADOS_BRASIL?.map?.((e) => ({ value: e?.sigla ?? '', label: e?.sigla ?? '' })) ?? []),
+                  ]}
+                />
+              </div>
+            </div>
+
+            {searchError && (
+              <p className="text-xs text-red-400 flex items-center gap-1">
+                <span>⚠</span> {searchError}
+              </p>
+            )}
+
+            <Button className="w-full" onClick={handleSearch} loading={searching}>
+              <Search className="h-4 w-4 mr-2" />
+              Buscar
+            </Button>
+          </div>
 
           {/* Lista de Candidatos Homônimos */}
           <AnimatePresence>
@@ -1505,8 +1525,8 @@ export default function MapaPage() {
 
         {/* Mapa principal */}
         <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[#0d1b2a]' : 'lg:col-span-3'}>
-          <Card className={mapFullscreen ? 'h-full rounded-none border-0' : 'h-[750px]'}>
-            <CardContent className="h-full p-4 relative">
+          <Card noPadding className={mapFullscreen ? 'h-full rounded-none border-0' : 'h-[750px]'}>
+            <CardContent className="h-full p-1.5 relative">
               {/* Botão tela cheia */}
               <button
                 onClick={() => setMapFullscreen(f => !f)}
