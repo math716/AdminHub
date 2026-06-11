@@ -74,17 +74,19 @@ const L = {
   accentLight:  '#3b82f6',
   accentGrad:   'linear-gradient(135deg, #1d6fd8 0%, #3b9af8 100%)',
   accentSoft:   'rgba(29,111,216,0.08)',
-  accentBorder: 'rgba(29,111,216,0.18)',
-  bg:           '#dce8fb',           // fundo azul-suave
+  accentBorder: 'rgba(29,111,216,0.14)',
+  bg:           '#ffffff',           // fundo branco
   bgCard:       '#ffffff',
-  border:       'rgba(29,111,216,0.14)',
+  activeItemBg: '#eff6ff',           // blue-50 — azul-claro selecionado
+  activeIconBg: 'rgba(29,111,216,0.13)',
+  border:       'rgba(29,111,216,0.12)',
   text:         '#0f172a',
   textSub:      '#334155',
   textMuted:    '#94a3b8',
   sectionLabel: '#1d6fd8',
-  sectionLine:  'linear-gradient(90deg, rgba(29,111,216,0.45), transparent)',
-  shadow:       '0 24px 60px -8px rgba(29,111,216,0.22), 0 4px 20px -4px rgba(0,0,0,0.06)',
-  cardShadow:   '0 2px 10px rgba(29,111,216,0.14)',
+  sectionLine:  'linear-gradient(90deg, rgba(29,111,216,0.40), transparent)',
+  shadow:       '0 24px 60px -8px rgba(29,111,216,0.18), 0 4px 20px -4px rgba(0,0,0,0.06)',
+  cardShadow:   '0 2px 10px rgba(29,111,216,0.10)',
 } as const;
 
 interface SidebarProps {
@@ -198,8 +200,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                     style={
                       isActive
                         ? {
-                            background: L.bgCard,
-                            boxShadow: L.cardShadow,
+                            background: L.activeItemBg,
                             borderLeft: `3px solid ${L.accent}`,
                           }
                         : {
@@ -212,8 +213,8 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                       className="flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0 transition-all duration-200"
                       style={
                         isActive
-                          ? { background: L.accentGrad, color: '#fff' }
-                          : { background: 'rgba(15,23,42,0.06)', color: L.textMuted }
+                          ? { background: L.activeIconBg, color: L.accent }
+                          : { background: 'rgba(15,23,42,0.05)', color: L.textMuted }
                       }
                     >
                       {Icon && <Icon className="h-3.5 w-3.5" />}
