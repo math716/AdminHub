@@ -20,7 +20,7 @@ export default withAuth(
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
-    if (token && !token.approved && token.role !== 'ADMIN') {
+    if (token && !token.approved && token.role !== 'ADMIN' && token.role !== 'SUPER_ADMIN') {
       if (!pathname.startsWith('/aguardando-aprovacao')) {
         return NextResponse.redirect(new URL('/aguardando-aprovacao', req.url));
       }

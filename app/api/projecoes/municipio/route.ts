@@ -12,7 +12,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const user = session.user as any;
-    if (user.role !== 'CHEFE' && user.role !== 'ADMIN') {
+    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest) {
 
     const isOwner        = projecao.userId === user.id;
     const isSameGabinete = projecao.user?.gabineteId === user.gabineteId;
-    const isAdmin        = user.role === 'ADMIN';
+    const isAdmin        = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
 
     if (!isOwner && !(isSameGabinete && user.role === 'CHEFE') && !isAdmin) {
       return NextResponse.json({ error: 'Projeção não encontrada' }, { status: 404 });
