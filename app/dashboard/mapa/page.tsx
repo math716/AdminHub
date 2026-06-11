@@ -1098,10 +1098,10 @@ export default function MapaPage() {
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-0.5">
                 <p className="text-[11px] uppercase tracking-wider font-medium" style={{ color: '#4a7a9b' }}>País</p>
-                <div className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm"
+                <div className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-sm"
                   style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <Globe className="h-3.5 w-3.5 flex-shrink-0" style={{ color: '#4a9ede' }} />
-                  <span className="text-white font-medium text-xs">🇧🇷 Brasil</span>
+                  <span className="text-white font-medium text-xs">Brasil</span>
                 </div>
               </div>
               <div className="space-y-0.5">
