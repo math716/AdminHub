@@ -1505,7 +1505,7 @@ export default function MapaPage() {
 
         {/* Mapa principal */}
         <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[#0d1b2a]' : 'lg:col-span-3'}>
-          <Card className={mapFullscreen ? 'h-full rounded-none border-0' : 'h-[600px]'}>
+          <Card className={mapFullscreen ? 'h-full rounded-none border-0' : 'h-[750px]'}>
             <CardContent className="h-full p-4 relative">
               {/* Botão tela cheia */}
               <button
