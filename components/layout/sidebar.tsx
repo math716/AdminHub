@@ -69,20 +69,23 @@ const navigation: { section: string; items: NavItem[] }[] = [
   },
 ];
 
-// ── Paleta índigo/graphite ──────────────────────────────────────────────────
-const I = {
-  accent:      '#3b82f6',        // blue-500
-  accentLight: '#60a5fa',        // blue-400
-  accentSoft:  'rgba(59,130,246,0.18)',
-  accentGlow:  'rgba(59,130,246,0.35)',
-  accentBorder:'rgba(59,130,246,0.28)',
-  accentLabel: 'rgba(147,197,253,0.85)', // blue-300
-  bg:          '#080e1a',
-  bgCard:      'rgba(255,255,255,0.035)',
-  border:      'rgba(255,255,255,0.07)',
-  text:        'rgba(255,255,255,0.82)',
-  textMuted:   'rgba(255,255,255,0.38)',
-  sectionLine: 'linear-gradient(90deg, rgba(59,130,246,0.55), transparent)',
+// ── Paleta clara / branco-azulada ───────────────────────────────────────────
+const L = {
+  accent:       '#1d6fd8',                          // blue-600 profundo
+  accentLight:  '#3b82f6',                          // blue-500
+  accentSoft:   'rgba(29,111,216,0.09)',
+  accentBorder: 'rgba(29,111,216,0.18)',
+  accentLabel:  '#3b82f6',
+  bg:           '#f0f4fc',                          // azul-gelo suave
+  bgTop:        '#ffffff',
+  bgCard:       'rgba(29,111,216,0.06)',
+  border:       'rgba(29,111,216,0.12)',
+  borderStrong: 'rgba(29,111,216,0.22)',
+  text:         '#0f172a',                          // slate-900
+  textSub:      '#475569',                          // slate-500
+  textMuted:    '#94a3b8',                          // slate-400
+  sectionLine:  'linear-gradient(90deg, rgba(29,111,216,0.35), transparent)',
+  shadow:       '0 20px 50px -8px rgba(29,111,216,0.18), 0 4px 16px -4px rgba(0,0,0,0.08)',
 } as const;
 
 interface SidebarProps {
@@ -122,37 +125,41 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
 
   const NavContent = () => (
     <>
-      {/* ── Logo / header — NÃO MODIFICADO ───────────────────────────── */}
-      <div className="flex flex-col items-center px-4 pt-4 pb-4" style={{ borderBottom: `1px solid ${I.border}` }}>
-        <img src="/logo.png" alt="AdminHub" className="w-44 h-auto object-contain drop-shadow-lg" />
-        <p className="mt-1 text-xs font-bold tracking-[0.22em] uppercase select-none text-white">
+      {/* ── Logo / header ────────────────────────────────────────────── */}
+      <div
+        className="flex flex-col items-center px-4 pt-5 pb-4"
+        style={{ borderBottom: `1px solid ${L.border}`, background: L.bgTop }}
+      >
+        <img src="/logo.png" alt="AdminHub" className="w-40 h-auto object-contain drop-shadow-md" />
+        <p className="mt-1 text-xs font-bold tracking-[0.22em] uppercase select-none"
+          style={{ color: L.accent }}>
           AdminHub
         </p>
 
         {isAdmin && (
           gabineteNome ? (
             <div className="w-full mt-3 rounded-xl px-3 py-2.5 flex items-center gap-2.5"
-              style={{ background: I.accentSoft, border: `1px solid ${I.accentBorder}` }}>
+              style={{ background: L.accentSoft, border: `1px solid ${L.accentBorder}` }}>
               <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(99,102,241,0.2)' }}>
-                <Building2 className="w-3.5 h-3.5" style={{ color: I.accentLight }} />
+                style={{ background: 'rgba(29,111,216,0.12)' }}>
+                <Building2 className="w-3.5 h-3.5" style={{ color: L.accent }} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white text-xs font-semibold truncate leading-tight">{gabineteNome}</p>
-                <p className="text-[10px] mt-0.5 leading-tight" style={{ color: I.textMuted }}>
+                <p className="text-xs font-semibold truncate leading-tight" style={{ color: L.text }}>{gabineteNome}</p>
+                <p className="text-[10px] mt-0.5 leading-tight" style={{ color: L.textMuted }}>
                   Administrador
                 </p>
               </div>
               <button onClick={() => setSwitcherOpen(true)}
                 title="Trocar gabinete"
-                className="flex-shrink-0 p-1 rounded-lg transition-all hover:bg-white/10"
-                style={{ color: I.accentLight }}>
+                className="flex-shrink-0 p-1 rounded-lg transition-all hover:bg-blue-50"
+                style={{ color: L.accent }}>
                 <ArrowLeftRight className="w-3 h-3" />
               </button>
             </div>
           ) : (
             <span className="mt-3 px-3 py-0.5 rounded-full text-xs font-semibold tracking-wide"
-              style={{ background: I.accentSoft, color: I.accentLight, border: `1px solid ${I.accentBorder}` }}>
+              style={{ background: L.accentSoft, color: L.accent, border: `1px solid ${L.accentBorder}` }}>
               Administrador
             </span>
           )
@@ -165,11 +172,11 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           <div key={sec.section}>
             {/* Section label */}
             <div className="flex items-center gap-2 px-2 mb-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em]"
-                style={{ color: I.accentLabel }}>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em]"
+                style={{ color: L.accentLabel }}>
                 {sec.section}
               </span>
-              <span className="flex-1 h-px" style={{ background: I.sectionLine }} />
+              <span className="flex-1 h-px" style={{ background: L.sectionLine }} />
             </div>
 
             <div className="space-y-0.5">
@@ -186,12 +193,12 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                     onClick={() => {
                       if (typeof window !== 'undefined' && window.innerWidth < 1024) onToggle?.();
                     }}
-                    className="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-200 relative group"
+                    className="flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all duration-200 relative group"
                     style={
                       isActive
                         ? {
-                            background: I.accentSoft,
-                            borderLeft: `2px solid ${I.accent}`,
+                            background: `rgba(29,111,216,0.12)`,
+                            borderLeft: `2px solid ${L.accent}`,
                           }
                         : {
                             borderLeft: '2px solid transparent',
@@ -200,17 +207,16 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                   >
                     {/* Icon box */}
                     <span
-                      className="flex items-center justify-center w-7 h-7 rounded-md flex-shrink-0 transition-all duration-200"
+                      className="flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0 transition-all duration-200"
                       style={
                         isActive
                           ? {
-                              background: 'rgba(99,102,241,0.28)',
-                              color: I.accentLight,
-                              boxShadow: `0 0 12px rgba(99,102,241,0.3)`,
+                              background: `rgba(29,111,216,0.18)`,
+                              color: L.accent,
                             }
                           : {
-                              background: I.bgCard,
-                              color: I.textMuted,
+                              background: 'rgba(15,23,42,0.05)',
+                              color: L.textMuted,
                             }
                       }
                     >
@@ -219,8 +225,8 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
 
                     {/* Label */}
                     <span
-                      className="font-medium text-sm"
-                      style={{ color: isActive ? '#fff' : I.text }}
+                      className="font-semibold text-sm"
+                      style={{ color: isActive ? L.accent : L.text }}
                     >
                       {item?.name}
                     </span>
@@ -229,14 +235,14 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                     {isActive && (
                       <span
                         className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
-                        style={{ background: I.accent, boxShadow: `0 0 6px ${I.accentGlow}` }}
+                        style={{ background: L.accent }}
                       />
                     )}
 
                     {/* Hover overlay */}
                     {!isActive && (
-                      <span className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none"
-                        style={{ background: 'rgba(255,255,255,0.04)' }} />
+                      <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none"
+                        style={{ background: 'rgba(29,111,216,0.05)' }} />
                     )}
                   </Link>
                 );
@@ -247,25 +253,25 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
       </nav>
 
       {/* ── Footer ───────────────────────────────────────────────────── */}
-      <div className="p-3 space-y-1" style={{ borderTop: `1px solid ${I.border}` }}>
+      <div className="p-3 space-y-1" style={{ borderTop: `1px solid ${L.border}` }}>
         {/* User pill */}
         <div
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-          style={{ background: I.bgCard, border: `1px solid ${I.border}` }}
+          style={{ background: L.accentSoft, border: `1px solid ${L.accentBorder}` }}
         >
           <span
             className="flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold flex-shrink-0"
             style={{
-              background: `linear-gradient(135deg, ${I.accent}, ${I.accentLight})`,
+              background: `linear-gradient(135deg, ${L.accent}, ${L.accentLight})`,
               color: '#fff',
-              boxShadow: `0 0 0 2px ${I.bg}, 0 0 0 3px ${I.accentBorder}`,
+              boxShadow: `0 0 0 2px #fff, 0 0 0 3px ${L.accentBorder}`,
             }}
           >
             {initials || '?'}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-semibold truncate leading-tight">{userName}</p>
-            <p className="text-[11px] truncate leading-tight mt-0.5" style={{ color: I.accentLabel }}>
+            <p className="text-sm font-bold truncate leading-tight" style={{ color: L.text }}>{userName}</p>
+            <p className="text-[11px] truncate leading-tight mt-0.5" style={{ color: L.accent }}>
               {ROLE_LABELS[userRole] ?? 'Assessor'}
             </p>
           </div>
@@ -274,16 +280,16 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
         {/* Sign out */}
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group"
-          style={{ color: I.textMuted }}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group"
+          style={{ color: L.textSub }}
         >
           <span
-            className="flex items-center justify-center w-7 h-7 rounded-md flex-shrink-0 transition-colors duration-200 group-hover:bg-red-500/15"
-            style={{ background: I.bgCard }}
+            className="flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0 transition-colors duration-200 group-hover:bg-red-50"
+            style={{ background: 'rgba(15,23,42,0.05)' }}
           >
-            <LogOut className="h-3.5 w-3.5 group-hover:text-red-400 transition-colors" />
+            <LogOut className="h-3.5 w-3.5 group-hover:text-red-500 transition-colors" />
           </span>
-          <span className="font-medium text-sm group-hover:text-white transition-colors">Sair</span>
+          <span className="font-semibold text-sm group-hover:text-red-500 transition-colors">Sair</span>
         </button>
       </div>
     </>
@@ -300,7 +306,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
             exit={{ opacity: 0 }}
             onClick={onToggle}
             className="lg:hidden fixed inset-0 z-40"
-            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)' }}
+            style={{ background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(4px)' }}
           />
         )}
       </AnimatePresence>
@@ -316,24 +322,16 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           left: 12,
           width: 256,
           borderRadius: 18,
-          background: `linear-gradient(170deg, #0b1120 0%, ${I.bg} 100%)`,
-          border: `1px solid ${I.accentBorder}`,
-          boxShadow: `0 24px 60px -12px rgba(0,0,0,0.7), 0 0 40px rgba(99,102,241,0.08)`,
+          background: `linear-gradient(180deg, ${L.bgTop} 0%, ${L.bg} 100%)`,
+          border: `1px solid ${L.borderStrong}`,
+          boxShadow: L.shadow,
           pointerEvents: open ? 'auto' : 'none',
         }}
       >
-        {/* Fio índigo no topo */}
+        {/* Fio azul no topo */}
         <span
-          className="absolute top-0 left-0 right-0 h-[1.5px] pointer-events-none"
-          style={{ background: `linear-gradient(90deg, transparent, ${I.accent}, transparent)` }}
-        />
-        {/* Glow interno */}
-        <span
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(ellipse at 50% -10%, rgba(99,102,241,0.09) 0%, transparent 65%)`,
-            borderRadius: 18,
-          }}
+          className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
+          style={{ background: `linear-gradient(90deg, transparent, ${L.accent}, transparent)` }}
         />
         <NavContent />
       </motion.aside>
@@ -348,12 +346,12 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           transition={{ type: 'spring', damping: 24, stiffness: 220 }}
           className="fixed top-1/2 -translate-y-1/2 w-6 h-12 flex items-center justify-center z-50 transition-opacity hover:opacity-100"
           style={{
-            background: '#0e1021',
-            border: `1px solid ${I.accentBorder}`,
+            background: '#fff',
+            border: `1px solid ${L.accentBorder}`,
             borderRadius: 8,
-            color: I.accentLight,
-            opacity: 0.9,
-            boxShadow: `0 4px 16px rgba(0,0,0,0.5), 0 0 12px rgba(99,102,241,0.15)`,
+            color: L.accent,
+            opacity: 0.95,
+            boxShadow: `0 4px 12px rgba(29,111,216,0.2)`,
           }}
         >
           {open ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
