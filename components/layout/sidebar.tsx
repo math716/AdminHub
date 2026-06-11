@@ -31,10 +31,7 @@ type NavItem = {
   name: string;
   href: string;
   icon: any;
-  // Quando definido, item aparece somente se hasPermission(user, permission) for true.
   permission?: Permission;
-  // Quando definido, item aparece somente se o role do usuário estiver na lista.
-  // Usado para itens administrativos que não dependem do sistema de permissões.
   roles?: string[];
 };
 
@@ -72,13 +69,29 @@ const navigation: { section: string; items: NavItem[] }[] = [
   },
 ];
 
+// ── Paleta índigo/graphite ──────────────────────────────────────────────────
+const I = {
+  accent:      '#6366f1',        // indigo-500
+  accentLight: '#818cf8',        // indigo-400
+  accentSoft:  'rgba(99,102,241,0.18)',
+  accentGlow:  'rgba(99,102,241,0.35)',
+  accentBorder:'rgba(99,102,241,0.28)',
+  accentLabel: 'rgba(165,180,252,0.85)', // indigo-300
+  bg:          '#0c0e1a',
+  bgCard:      'rgba(255,255,255,0.035)',
+  border:      'rgba(255,255,255,0.07)',
+  text:        'rgba(255,255,255,0.82)',
+  textMuted:   'rgba(255,255,255,0.38)',
+  sectionLine: 'linear-gradient(90deg, rgba(99,102,241,0.55), transparent)',
+} as const;
+
 interface SidebarProps {
   open?: boolean;
   onToggle?: () => void;
 }
 
 export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
-  const [switcherOpen,  setSwitcherOpen]  = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const pathname = usePathname();
   const { data: session } = useSession() || {};
   const userRole        = (session?.user as any)?.role    || 'ASSESSOR';
@@ -93,14 +106,12 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
       items: (sec.items ?? []).filter((it) => {
         if (it?.roles) return it.roles.includes(userRole);
         if (it?.permission) return hasPermission({ role: userRole, permissions: userPermissions }, it.permission);
-        return true; // sem restrição (ex.: Dashboard)
+        return true;
       }),
     }))
     .filter((sec) => sec.items.length > 0);
 
-  const handleSignOut = () => {
-    signOut({ callbackUrl: '/login' });
-  };
+  const handleSignOut = () => signOut({ callbackUrl: '/login' });
 
   const initials = userName
     .split(' ')
@@ -111,64 +122,54 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
 
   const NavContent = () => (
     <>
-      {/* Logo / header */}
-      <div className="flex flex-col items-center px-4 pt-4 pb-4 border-b border-white/10">
-
-        {/* Ícone */}
+      {/* ── Logo / header — NÃO MODIFICADO ───────────────────────────── */}
+      <div className="flex flex-col items-center px-4 pt-4 pb-4" style={{ borderBottom: `1px solid ${I.border}` }}>
         <img src="/logo.png" alt="AdminHub" className="w-44 h-auto object-contain drop-shadow-lg" />
-
-        {/* Nome do sistema — branco */}
         <p className="mt-1 text-xs font-bold tracking-[0.22em] uppercase select-none text-white">
           AdminHub
         </p>
 
-        {/* Bloco de gabinete — apenas ADMIN (para trocar de gabinete) */}
         {isAdmin && (
           gabineteNome ? (
             <div className="w-full mt-3 rounded-xl px-3 py-2.5 flex items-center gap-2.5"
-              style={{ background: 'rgba(74,158,222,0.07)', border: '1px solid rgba(74,158,222,0.15)' }}>
+              style={{ background: I.accentSoft, border: `1px solid ${I.accentBorder}` }}>
               <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(74,158,222,0.15)' }}>
-                <Building2 className="w-3.5 h-3.5" style={{ color: '#4a9ede' }} />
+                style={{ background: 'rgba(99,102,241,0.2)' }}>
+                <Building2 className="w-3.5 h-3.5" style={{ color: I.accentLight }} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-white text-xs font-semibold truncate leading-tight">{gabineteNome}</p>
-                <p className="text-[10px] mt-0.5 leading-tight" style={{ color: 'rgba(255,255,255,0.38)' }}>
+                <p className="text-[10px] mt-0.5 leading-tight" style={{ color: I.textMuted }}>
                   Administrador
                 </p>
               </div>
               <button onClick={() => setSwitcherOpen(true)}
                 title="Trocar gabinete"
                 className="flex-shrink-0 p-1 rounded-lg transition-all hover:bg-white/10"
-                style={{ color: 'rgba(74,158,222,0.6)' }}>
+                style={{ color: I.accentLight }}>
                 <ArrowLeftRight className="w-3 h-3" />
               </button>
             </div>
           ) : (
             <span className="mt-3 px-3 py-0.5 rounded-full text-xs font-semibold tracking-wide"
-              style={{ background: 'rgba(201,162,39,0.12)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.25)' }}>
+              style={{ background: I.accentSoft, color: I.accentLight, border: `1px solid ${I.accentBorder}` }}>
               Administrador
             </span>
           )
         )}
       </div>
 
-      {/* Navigation */}
-      <nav className="sidebar-nav flex-1 px-3 py-4 overflow-y-auto">
-        {filteredSections.map((sec, secIdx) => (
-          <div key={sec.section} className={cn(secIdx > 0 && 'mt-5')}>
+      {/* ── Navigation ───────────────────────────────────────────────── */}
+      <nav className="sidebar-nav flex-1 px-3 py-4 overflow-y-auto space-y-5">
+        {filteredSections.map((sec) => (
+          <div key={sec.section}>
             {/* Section label */}
-            <div className="flex items-center gap-2 px-3 mb-2">
-              <span
-                className="text-[10px] font-bold uppercase tracking-[0.2em]"
-                style={{ color: '#c9a227' }}
-              >
+            <div className="flex items-center gap-2 px-2 mb-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em]"
+                style={{ color: I.accentLabel }}>
                 {sec.section}
               </span>
-              <span
-                className="flex-1 h-px"
-                style={{ background: 'linear-gradient(90deg, rgba(201,162,39,0.45), transparent)' }}
-              />
+              <span className="flex-1 h-px" style={{ background: I.sectionLine }} />
             </div>
 
             <div className="space-y-0.5">
@@ -177,70 +178,65 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                   pathname === item?.href ||
                   (item?.href !== '/dashboard' && pathname?.startsWith?.(`${item?.href}/`));
                 const Icon = item?.icon;
+
                 return (
                   <Link
                     key={item?.name}
                     href={item?.href ?? '#'}
                     onClick={() => {
-                      // Auto-recolhe o sidebar em telas pequenas ao navegar
                       if (typeof window !== 'undefined' && window.innerWidth < 1024) onToggle?.();
                     }}
-                    className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group',
-                      isActive ? 'text-white' : 'text-slate-200 hover:text-white'
-                    )}
+                    className="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-200 relative group"
                     style={
                       isActive
                         ? {
-                            background:
-                              'linear-gradient(90deg, rgba(201,162,39,0.18) 0%, rgba(201,162,39,0.04) 100%)',
-                            borderLeft: '3px solid #c9a227',
-                            boxShadow: 'inset 0 0 0 1px rgba(201,162,39,0.10)',
+                            background: I.accentSoft,
+                            borderLeft: `2px solid ${I.accent}`,
                           }
-                        : { borderLeft: '3px solid transparent' }
+                        : {
+                            borderLeft: '2px solid transparent',
+                          }
                     }
                   >
+                    {/* Icon box */}
                     <span
-                      className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200 group-hover:scale-[1.04]"
+                      className="flex items-center justify-center w-7 h-7 rounded-md flex-shrink-0 transition-all duration-200"
                       style={
                         isActive
                           ? {
-                              background: 'rgba(201,162,39,0.22)',
-                              color: '#c9a227',
-                              boxShadow:
-                                'inset 0 0 10px rgba(201,162,39,0.18), 0 0 12px rgba(201,162,39,0.25)',
-                              border: '1px solid rgba(201,162,39,0.35)',
+                              background: 'rgba(99,102,241,0.28)',
+                              color: I.accentLight,
+                              boxShadow: `0 0 12px rgba(99,102,241,0.3)`,
                             }
                           : {
-                              background: 'rgba(201,162,39,0.08)',
-                              color: 'rgba(201,162,39,0.75)',
-                              border: '1px solid rgba(201,162,39,0.18)',
+                              background: I.bgCard,
+                              color: I.textMuted,
                             }
                       }
                     >
-                      {Icon && <Icon className="h-4 w-4" />}
+                      {Icon && <Icon className="h-3.5 w-3.5" />}
                     </span>
-                    <span className="font-medium text-sm tracking-wide">{item?.name}</span>
 
-                    {/* Indicador à direita no item ativo */}
+                    {/* Label */}
+                    <span
+                      className="font-medium text-sm"
+                      style={{ color: isActive ? '#fff' : I.text }}
+                    >
+                      {item?.name}
+                    </span>
+
+                    {/* Dot indicator */}
                     {isActive && (
                       <span
                         className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
-                        style={{
-                          background: '#c9a227',
-                          boxShadow: '0 0 8px rgba(201,162,39,0.7)',
-                        }}
+                        style={{ background: I.accent, boxShadow: `0 0 6px ${I.accentGlow}` }}
                       />
                     )}
 
+                    {/* Hover overlay */}
                     {!isActive && (
-                      <span
-                        className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-                        style={{
-                          background:
-                            'linear-gradient(90deg, rgba(201,162,39,0.10) 0%, rgba(255,255,255,0.03) 100%)',
-                        }}
-                      />
+                      <span className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none"
+                        style={{ background: 'rgba(255,255,255,0.04)' }} />
                     )}
                   </Link>
                 );
@@ -250,58 +246,44 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="relative p-3">
-        {/* Divider dourado decorativo */}
+      {/* ── Footer ───────────────────────────────────────────────────── */}
+      <div className="p-3 space-y-1" style={{ borderTop: `1px solid ${I.border}` }}>
+        {/* User pill */}
         <div
-          className="absolute left-3 right-3 top-0 h-px"
-          style={{ background: 'linear-gradient(90deg, transparent, rgba(201,162,39,0.4), transparent)' }}
-        />
-
-        <div
-          className="flex items-center gap-3 px-2.5 py-2.5 mb-2 rounded-xl"
-          style={{
-            background: 'linear-gradient(135deg, rgba(201,162,39,0.08) 0%, rgba(255,255,255,0.03) 100%)',
-            border: '1px solid rgba(201,162,39,0.18)',
-          }}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+          style={{ background: I.bgCard, border: `1px solid ${I.border}` }}
         >
           <span
-            className="flex items-center justify-center w-9 h-9 rounded-full text-sm font-bold flex-shrink-0"
+            className="flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold flex-shrink-0"
             style={{
-              background: 'linear-gradient(135deg, #c9a227, #e6b83a)',
-              color: '#04111f',
-              boxShadow: '0 0 0 2px rgba(7,29,54,1), 0 0 0 3px rgba(201,162,39,0.5), 0 0 10px rgba(201,162,39,0.3)',
+              background: `linear-gradient(135deg, ${I.accent}, ${I.accentLight})`,
+              color: '#fff',
+              boxShadow: `0 0 0 2px ${I.bg}, 0 0 0 3px ${I.accentBorder}`,
             }}
           >
             {initials || '?'}
           </span>
           <div className="flex-1 min-w-0">
             <p className="text-white text-sm font-semibold truncate leading-tight">{userName}</p>
-            <p
-              className="text-[11px] truncate leading-tight mt-0.5 tracking-wide"
-              style={{ color: 'rgba(201,162,39,0.85)' }}
-            >
+            <p className="text-[11px] truncate leading-tight mt-0.5" style={{ color: I.accentLabel }}>
               {ROLE_LABELS[userRole] ?? 'Assessor'}
             </p>
           </div>
         </div>
 
+        {/* Sign out */}
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:text-white rounded-lg transition-all duration-200 group"
-          style={{ borderLeft: '3px solid transparent' }}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group"
+          style={{ color: I.textMuted }}
         >
           <span
-            className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200 group-hover:scale-[1.04]"
-            style={{
-              background: 'rgba(201,162,39,0.08)',
-              color: 'rgba(201,162,39,0.75)',
-              border: '1px solid rgba(201,162,39,0.18)',
-            }}
+            className="flex items-center justify-center w-7 h-7 rounded-md flex-shrink-0 transition-colors duration-200 group-hover:bg-red-500/15"
+            style={{ background: I.bgCard }}
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5 group-hover:text-red-400 transition-colors" />
           </span>
-          <span className="font-medium text-sm tracking-wide">Sair</span>
+          <span className="font-medium text-sm group-hover:text-white transition-colors">Sair</span>
         </button>
       </div>
     </>
@@ -309,7 +291,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
 
   return (
     <>
-      {/* Backdrop overlay — somente em mobile/tablet quando o sidebar esta aberto */}
+      {/* Backdrop overlay — mobile */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -318,48 +300,45 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
             exit={{ opacity: 0 }}
             onClick={onToggle}
             className="lg:hidden fixed inset-0 z-40"
-            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)' }}
+            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)' }}
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar — painel flutuante em todos os tamanhos */}
+      {/* Sidebar */}
       <motion.aside
-        animate={{
-          x: open ? 0 : -280,
-          opacity: open ? 1 : 0,
-        }}
+        animate={{ x: open ? 0 : -280, opacity: open ? 1 : 0 }}
         transition={{ type: 'spring', damping: 24, stiffness: 220 }}
-        className="flex flex-col fixed gradient-primary overflow-hidden z-50"
+        className="flex flex-col fixed overflow-hidden z-50"
         style={{
           top: 12,
           bottom: 12,
           left: 12,
           width: 256,
-          borderRadius: 20,
-          border: '1px solid rgba(201,162,39,0.18)',
-          boxShadow:
-            '0 20px 50px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), 0 0 35px rgba(201,162,39,0.08)',
+          borderRadius: 18,
+          background: `linear-gradient(170deg, #0e1021 0%, ${I.bg} 100%)`,
+          border: `1px solid ${I.accentBorder}`,
+          boxShadow: `0 24px 60px -12px rgba(0,0,0,0.7), 0 0 40px rgba(99,102,241,0.08)`,
           pointerEvents: open ? 'auto' : 'none',
         }}
       >
-        {/* Fio dourado no topo */}
+        {/* Fio índigo no topo */}
         <span
-          className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
-          style={{ background: 'linear-gradient(90deg, transparent, rgba(201,162,39,0.6), transparent)' }}
+          className="absolute top-0 left-0 right-0 h-[1.5px] pointer-events-none"
+          style={{ background: `linear-gradient(90deg, transparent, ${I.accent}, transparent)` }}
         />
-        {/* Glow interno sutil para destacar do fundo */}
+        {/* Glow interno */}
         <span
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'radial-gradient(circle at 50% 0%, rgba(201,162,39,0.06), transparent 60%)',
-            borderRadius: 20,
+            background: `radial-gradient(ellipse at 50% -10%, rgba(99,102,241,0.09) 0%, transparent 65%)`,
+            borderRadius: 18,
           }}
         />
         <NavContent />
       </motion.aside>
 
-      {/* Botão de toggle — chevron, funciona em todos os tamanhos */}
+      {/* Toggle button */}
       {onToggle && (
         <motion.button
           onClick={onToggle}
@@ -367,21 +346,21 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           title={open ? 'Recolher menu' : 'Abrir menu'}
           animate={{ left: open ? 256 : 8 }}
           transition={{ type: 'spring', damping: 24, stiffness: 220 }}
-          className="fixed top-1/2 -translate-y-1/2 w-7 h-14 flex items-center justify-center z-50 hover:opacity-100 transition-opacity"
+          className="fixed top-1/2 -translate-y-1/2 w-6 h-12 flex items-center justify-center z-50 transition-opacity hover:opacity-100"
           style={{
-            background: 'linear-gradient(135deg, #143764 0%, #0d2c52 100%)',
-            border: '1px solid rgba(201,162,39,0.3)',
-            borderRadius: 10,
-            color: '#c9a227',
-            opacity: 0.95,
-            boxShadow: '0 4px 16px rgba(0,0,0,0.5), 0 0 18px rgba(201,162,39,0.12)',
+            background: '#0e1021',
+            border: `1px solid ${I.accentBorder}`,
+            borderRadius: 8,
+            color: I.accentLight,
+            opacity: 0.9,
+            boxShadow: `0 4px 16px rgba(0,0,0,0.5), 0 0 12px rgba(99,102,241,0.15)`,
           }}
         >
-          {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          {open ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         </motion.button>
       )}
 
-      {/* Switcher de gabinete (ADMIN) */}
+      {/* Switcher de gabinete */}
       <AdminGabineteSwitcher
         open={switcherOpen}
         onClose={() => setSwitcherOpen(false)}
