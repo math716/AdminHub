@@ -71,18 +71,18 @@ const navigation: { section: string; items: NavItem[] }[] = [
 
 // ── Paleta índigo/graphite ──────────────────────────────────────────────────
 const I = {
-  accent:      '#6366f1',        // indigo-500
-  accentLight: '#818cf8',        // indigo-400
-  accentSoft:  'rgba(99,102,241,0.18)',
-  accentGlow:  'rgba(99,102,241,0.35)',
-  accentBorder:'rgba(99,102,241,0.28)',
-  accentLabel: 'rgba(165,180,252,0.85)', // indigo-300
-  bg:          '#0c0e1a',
+  accent:      '#3b82f6',        // blue-500
+  accentLight: '#60a5fa',        // blue-400
+  accentSoft:  'rgba(59,130,246,0.18)',
+  accentGlow:  'rgba(59,130,246,0.35)',
+  accentBorder:'rgba(59,130,246,0.28)',
+  accentLabel: 'rgba(147,197,253,0.85)', // blue-300
+  bg:          '#080e1a',
   bgCard:      'rgba(255,255,255,0.035)',
   border:      'rgba(255,255,255,0.07)',
   text:        'rgba(255,255,255,0.82)',
   textMuted:   'rgba(255,255,255,0.38)',
-  sectionLine: 'linear-gradient(90deg, rgba(99,102,241,0.55), transparent)',
+  sectionLine: 'linear-gradient(90deg, rgba(59,130,246,0.55), transparent)',
 } as const;
 
 interface SidebarProps {
@@ -316,7 +316,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           left: 12,
           width: 256,
           borderRadius: 18,
-          background: `linear-gradient(170deg, #0e1021 0%, ${I.bg} 100%)`,
+          background: `linear-gradient(170deg, #0b1120 0%, ${I.bg} 100%)`,
           border: `1px solid ${I.accentBorder}`,
           boxShadow: `0 24px 60px -12px rgba(0,0,0,0.7), 0 0 40px rgba(99,102,241,0.08)`,
           pointerEvents: open ? 'auto' : 'none',
