@@ -362,10 +362,12 @@ export default function EmendasPage() {
   const pendingFavoritoRef = useRef<{ candidateName: string; cargo: string; uf: string; ano: number } | null>(null);
 
   useEffect(() => {
-    fetch('/api/favorites?tipo=EMENDAS').then((r) => r.json()).then((data) => {
-      if (Array.isArray(data)) setFavorites(data);
-    }).catch(() => {});
-  }, []);
+    if (!canAccess) return;
+    fetch('/api/favorites?tipo=EMENDAS')
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((data) => { if (Array.isArray(data)) setFavorites(data); })
+      .catch(() => {});
+  }, [canAccess]);
 
   // Histórico completo do parlamentar (todos os anos) — também filtrado por UF
   // pro gráfico "Valor por Ano" refletir o estado em foco.
@@ -408,8 +410,13 @@ export default function EmendasPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ candidateName: selectedParlamentar.nome, ano, cargo: selectedParlamentar.cargo, uf: selectedUf, tipo: 'EMENDAS' }),
         });
-        const data = await res.json();
-        if (data?.id) setFavorites((prev) => [...prev, data]);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.error('Erro ao favoritar:', err?.error ?? res.status);
+        } else {
+          const data = await res.json();
+          if (data?.id) setFavorites((prev) => [...prev, data]);
+        }
       }
     } catch (e) {
       console.error('Erro ao salvar favorito:', e);
