@@ -16,6 +16,7 @@ import {
   TrendingDown,
   Trophy,
   ChevronRight,
+  ChevronDown,
   Globe,
   X,
   Calendar,
@@ -359,7 +360,20 @@ export default function EmendasPage() {
   // Favoritos (parlamentares salvos)
   const [favorites, setFavorites] = useState<{ id: string; candidateName: string; ano: number; uf: string | null; cargo: string }[]>([]);
   const [savingFavorite, setSavingFavorite] = useState(false);
+  const [showFavDropdown, setShowFavDropdown] = useState(false);
+  const favDropRef = useRef<HTMLDivElement>(null);
   const pendingFavoritoRef = useRef<{ candidateName: string; cargo: string; uf: string; ano: number } | null>(null);
+
+  useEffect(() => {
+    if (!showFavDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (favDropRef.current && !favDropRef.current.contains(e.target as Node)) {
+        setShowFavDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showFavDropdown]);
 
   useEffect(() => {
     if (!canAccess) return;
@@ -849,7 +863,75 @@ export default function EmendasPage() {
         title="Mapa de Emendas"
         subtitle="Visão geral das emendas por estado, município e parlamentar"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Botão de favoritos com dropdown */}
+            <div className="relative" ref={favDropRef}>
+              <button
+                onClick={() => setShowFavDropdown((v) => !v)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm transition-colors"
+                style={{
+                  background: favorites.length > 0 ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${favorites.length > 0 ? 'rgba(201,162,39,0.35)' : 'rgba(255,255,255,0.1)'}`,
+                  color: favorites.length > 0 ? '#e8c660' : '#64748b',
+                }}
+              >
+                <Star className={`w-4 h-4 ${favorites.length > 0 ? 'fill-amber-400 text-amber-400' : ''}`} />
+                <span className="text-xs font-medium">Favoritos</span>
+                {favorites.length > 0 && (
+                  <span
+                    className="text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center"
+                    style={{ background: '#c9a227', color: '#07121e' }}
+                  >
+                    {favorites.length}
+                  </span>
+                )}
+                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showFavDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {showFavDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 z-50 w-72 rounded-xl shadow-2xl py-1"
+                    style={{ background: 'rgb(7,20,38)', border: '1px solid rgba(201,162,39,0.25)' }}
+                  >
+                    {favorites.length === 0 ? (
+                      <p className="px-4 py-5 text-center text-xs text-slate-500">Nenhum parlamentar favoritado</p>
+                    ) : (
+                      favorites.map((fav) => (
+                        <div key={fav.id} className="flex items-center gap-1 px-1">
+                          <button
+                            onClick={() => { handleClickEmendaFavorito(fav); setShowFavDropdown(false); }}
+                            className="flex-1 flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-colors hover:bg-white/5 text-left"
+                            style={{ color: '#e8c660' }}
+                          >
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400 flex-shrink-0" />
+                            <span className="font-medium flex-1 truncate">{fav.candidateName}</span>
+                            <span className="text-slate-500 flex-shrink-0">{fav.uf} · {fav.ano}</span>
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await fetch(`/api/favorites/${fav.id}`, { method: 'DELETE' });
+                                setFavorites((prev) => prev.filter((f) => f.id !== fav.id));
+                              } catch {}
+                            }}
+                            title="Remover dos favoritos"
+                            className="p-1.5 mr-1 rounded text-slate-600 hover:text-red-400 transition-colors flex-shrink-0"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <span className="text-xs uppercase tracking-widest text-slate-400">Ano selecionado</span>
             <Select
               value={String(ano)}
@@ -859,53 +941,6 @@ export default function EmendasPage() {
           </div>
         }
       />
-
-      {/* Painel de favoritos de emendas */}
-      {favorites.length > 0 && (
-        <div
-          className="rounded-xl px-4 py-3"
-          style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(201,162,39,0.18)' }}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#e8c660' }}>
-              Favoritos — Emendas
-            </span>
-            <span className="text-xs text-slate-500 ml-auto">{favorites.length} parlamentar{favorites.length !== 1 ? 'es' : ''}</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {favorites.map((fav) => (
-              <div
-                key={fav.id}
-                className="flex items-center gap-1.5 rounded-lg text-xs"
-                style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)' }}
-              >
-                <button
-                  onClick={() => handleClickEmendaFavorito(fav)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 transition-opacity hover:opacity-80"
-                  style={{ color: '#e8c660' }}
-                >
-                  <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400 flex-shrink-0" />
-                  <span className="font-medium">{fav.candidateName}</span>
-                  <span className="text-slate-500">{fav.uf} · {fav.ano}</span>
-                </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      await fetch(`/api/favorites/${fav.id}`, { method: 'DELETE' });
-                      setFavorites((prev) => prev.filter((f) => f.id !== fav.id));
-                    } catch {}
-                  }}
-                  title="Remover dos favoritos"
-                  className="pr-2 text-slate-600 hover:text-red-400 transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Barra de pesquisa de parlamentar — abaixo do título, visível quando há estado selecionado */}
       {view === 'estado' && (
