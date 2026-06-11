@@ -75,10 +75,10 @@ const L = {
   accentGrad:   'linear-gradient(135deg, #1d6fd8 0%, #3b9af8 100%)',
   accentSoft:   'rgba(29,111,216,0.08)',
   accentBorder: 'rgba(29,111,216,0.14)',
-  bg:           '#dbeafe',           // blue-100 — fundo azul-claro
+  bg:           '#bfdbfe',           // blue-200 — fundo azul um pouco mais escuro
   bgCard:       '#ffffff',
   activeItemBg: '#ffffff',           // branco ao selecionar
-  activeIconBg: 'rgba(29,111,216,0.13)',
+  activeIconBg: '#bfdbfe',           // azul-claro no ícone ativo
   border:       'rgba(29,111,216,0.12)',
   text:         '#0f172a',
   textSub:      '#334155',
