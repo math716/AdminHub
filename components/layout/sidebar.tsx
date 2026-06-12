@@ -146,7 +146,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
             </div>
           ) : (
             <span className="mt-3 px-3 py-0.5 rounded-full text-xs font-semibold tracking-wide"
-              style={{ background: 'rgba(201,162,39,0.12)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.25)' }}>
+              style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede', border: '1px solid rgba(74,158,222,0.25)' }}>
               Administrador
             </span>
           )
@@ -161,13 +161,13 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
             <div className="flex items-center gap-2 px-3 mb-2">
               <span
                 className="text-[10px] font-bold uppercase tracking-[0.2em]"
-                style={{ color: '#c9a227' }}
+                style={{ color: '#4a9ede' }}
               >
                 {sec.section}
               </span>
               <span
                 className="flex-1 h-px"
-                style={{ background: 'linear-gradient(90deg, rgba(201,162,39,0.45), transparent)' }}
+                style={{ background: 'linear-gradient(90deg, rgba(74,158,222,0.45), transparent)' }}
               />
             </div>
 
@@ -193,9 +193,9 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                       isActive
                         ? {
                             background:
-                              'linear-gradient(90deg, rgba(201,162,39,0.18) 0%, rgba(201,162,39,0.04) 100%)',
-                            borderLeft: '3px solid #c9a227',
-                            boxShadow: 'inset 0 0 0 1px rgba(201,162,39,0.10)',
+                              'linear-gradient(90deg, rgba(74,158,222,0.18) 0%, rgba(74,158,222,0.04) 100%)',
+                            borderLeft: '3px solid #4a9ede',
+                            boxShadow: 'inset 0 0 0 1px rgba(74,158,222,0.10)',
                           }
                         : { borderLeft: '3px solid transparent' }
                     }
@@ -205,16 +205,16 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                       style={
                         isActive
                           ? {
-                              background: 'rgba(201,162,39,0.22)',
-                              color: '#c9a227',
+                              background: 'rgba(74,158,222,0.22)',
+                              color: '#4a9ede',
                               boxShadow:
-                                'inset 0 0 10px rgba(201,162,39,0.18), 0 0 12px rgba(201,162,39,0.25)',
-                              border: '1px solid rgba(201,162,39,0.35)',
+                                'inset 0 0 10px rgba(74,158,222,0.18), 0 0 12px rgba(74,158,222,0.25)',
+                              border: '1px solid rgba(74,158,222,0.35)',
                             }
                           : {
-                              background: 'rgba(201,162,39,0.08)',
-                              color: 'rgba(201,162,39,0.75)',
-                              border: '1px solid rgba(201,162,39,0.18)',
+                              background: 'rgba(74,158,222,0.08)',
+                              color: 'rgba(74,158,222,0.75)',
+                              border: '1px solid rgba(74,158,222,0.18)',
                             }
                       }
                     >
@@ -227,8 +227,8 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                       <span
                         className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
                         style={{
-                          background: '#c9a227',
-                          boxShadow: '0 0 8px rgba(201,162,39,0.7)',
+                          background: '#4a9ede',
+                          boxShadow: '0 0 8px rgba(74,158,222,0.7)',
                         }}
                       />
                     )}
@@ -238,7 +238,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                         className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
                         style={{
                           background:
-                            'linear-gradient(90deg, rgba(201,162,39,0.10) 0%, rgba(255,255,255,0.03) 100%)',
+                            'linear-gradient(90deg, rgba(74,158,222,0.10) 0%, rgba(255,255,255,0.03) 100%)',
                         }}
                       />
                     )}
@@ -255,22 +255,22 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
         {/* Divider dourado decorativo */}
         <div
           className="absolute left-3 right-3 top-0 h-px"
-          style={{ background: 'linear-gradient(90deg, transparent, rgba(201,162,39,0.4), transparent)' }}
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(74,158,222,0.4), transparent)' }}
         />
 
         <div
           className="flex items-center gap-3 px-2.5 py-2.5 mb-2 rounded-xl"
           style={{
-            background: 'linear-gradient(135deg, rgba(201,162,39,0.08) 0%, rgba(255,255,255,0.03) 100%)',
-            border: '1px solid rgba(201,162,39,0.18)',
+            background: 'linear-gradient(135deg, rgba(74,158,222,0.08) 0%, rgba(255,255,255,0.03) 100%)',
+            border: '1px solid rgba(74,158,222,0.18)',
           }}
         >
           <span
             className="flex items-center justify-center w-9 h-9 rounded-full text-sm font-bold flex-shrink-0"
             style={{
-              background: 'linear-gradient(135deg, #c9a227, #e6b83a)',
-              color: '#04111f',
-              boxShadow: '0 0 0 2px rgba(7,29,54,1), 0 0 0 3px rgba(201,162,39,0.5), 0 0 10px rgba(201,162,39,0.3)',
+              background: 'linear-gradient(135deg, #4a9ede, #7dc8f7)',
+              color: '#fff',
+              boxShadow: '0 0 0 2px rgba(7,29,54,1), 0 0 0 3px rgba(74,158,222,0.5), 0 0 10px rgba(74,158,222,0.3)',
             }}
           >
             {initials || '?'}
@@ -279,7 +279,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
             <p className="text-white text-sm font-semibold truncate leading-tight">{userName}</p>
             <p
               className="text-[11px] truncate leading-tight mt-0.5 tracking-wide"
-              style={{ color: 'rgba(201,162,39,0.85)' }}
+              style={{ color: 'rgba(74,158,222,0.85)' }}
             >
               {ROLE_LABELS[userRole] ?? 'Assessor'}
             </p>
@@ -294,9 +294,9 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           <span
             className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200 group-hover:scale-[1.04]"
             style={{
-              background: 'rgba(201,162,39,0.08)',
-              color: 'rgba(201,162,39,0.75)',
-              border: '1px solid rgba(201,162,39,0.18)',
+              background: 'rgba(74,158,222,0.08)',
+              color: 'rgba(74,158,222,0.75)',
+              border: '1px solid rgba(74,158,222,0.18)',
             }}
           >
             <LogOut className="h-4 w-4" />
@@ -337,22 +337,22 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           left: 12,
           width: 256,
           borderRadius: 20,
-          border: '1px solid rgba(201,162,39,0.18)',
+          border: '1px solid rgba(74,158,222,0.18)',
           boxShadow:
-            '0 20px 50px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), 0 0 35px rgba(201,162,39,0.08)',
+            '0 20px 50px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), 0 0 35px rgba(74,158,222,0.08)',
           pointerEvents: open ? 'auto' : 'none',
         }}
       >
         {/* Fio dourado no topo */}
         <span
           className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
-          style={{ background: 'linear-gradient(90deg, transparent, rgba(201,162,39,0.6), transparent)' }}
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(74,158,222,0.6), transparent)' }}
         />
         {/* Glow interno sutil para destacar do fundo */}
         <span
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'radial-gradient(circle at 50% 0%, rgba(201,162,39,0.06), transparent 60%)',
+            background: 'radial-gradient(circle at 50% 0%, rgba(74,158,222,0.06), transparent 60%)',
             borderRadius: 20,
           }}
         />
@@ -370,11 +370,11 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           className="fixed top-1/2 -translate-y-1/2 w-7 h-14 flex items-center justify-center z-50 hover:opacity-100 transition-opacity"
           style={{
             background: 'linear-gradient(135deg, #143764 0%, #0d2c52 100%)',
-            border: '1px solid rgba(201,162,39,0.3)',
+            border: '1px solid rgba(74,158,222,0.3)',
             borderRadius: 10,
-            color: '#c9a227',
+            color: '#4a9ede',
             opacity: 0.95,
-            boxShadow: '0 4px 16px rgba(0,0,0,0.5), 0 0 18px rgba(201,162,39,0.12)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.5), 0 0 18px rgba(74,158,222,0.12)',
           }}
         >
           {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
