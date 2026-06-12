@@ -9,6 +9,7 @@ import {
   Link2, Copy, CheckCheck, Search, KeyRound, Trash2, SlidersHorizontal,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ALL_PERMISSIONS,
@@ -248,6 +249,8 @@ export default function UsuariosPage() {
   // ── excluir gabinete ──────────────────────────────────────────────────────
   const [showDeleteGabModal, setShowDeleteGabModal] = useState(false);
   const [deleteGabTarget,    setDeleteGabTarget]    = useState<{ id: string; nome: string; userCount: number } | null>(null);
+
+  const [confirmReject, setConfirmReject] = useState<{ userId: string; name: string } | null>(null);
   const [deletingGab,        setDeletingGab]        = useState(false);
 
   // ── aprovação com permissões ──────────────────────────────────────────────
@@ -366,7 +369,13 @@ export default function UsuariosPage() {
   };
 
   const handleReject = async (userId: string, name: string) => {
-    if (!confirm(`Remover "${name}"? Esta ação não pode ser desfeita.`)) return;
+    setConfirmReject({ userId, name });
+  };
+
+  const doReject = async () => {
+    if (!confirmReject) return;
+    const { userId } = confirmReject;
+    setConfirmReject(null);
     setActionId(userId);
     try {
       const res = await fetch(`/api/users/${userId}/reject`, { method: 'POST' });
@@ -376,6 +385,8 @@ export default function UsuariosPage() {
       } else { showToast('err', 'Erro ao remover usuário.'); }
     } finally { setActionId(null); }
   };
+
+  // fim doReject
 
   const handleRoleChange = (userId: string, newRole: string) => {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole as UserData['role'] } : u));
@@ -1180,6 +1191,15 @@ export default function UsuariosPage() {
         )}
       </AnimatePresence>
 
+      <ConfirmDialog
+        open={!!confirmReject}
+        title={`Remover "${confirmReject?.name}"?`}
+        message="Esta ação excluirá permanentemente a conta do usuário do sistema. Não poderá ser desfeita."
+        confirmLabel="Sim, remover"
+        variant="danger"
+        onConfirm={doReject}
+        onCancel={() => setConfirmReject(null)}
+      />
     </div>
   );
 }

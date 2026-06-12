@@ -12,6 +12,7 @@ import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { PageHeader } from '@/components/ui/page-header';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toast } from 'sonner';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
@@ -428,6 +429,8 @@ export default function MapaCampanhaPage() {
   const [parcerias, setParcerias] = useState<Parceria[]>([]);
   const [parceriasStats, setParceriasStats] = useState<ParceriasStats | null>(null);
   const [showParceriaModal, setShowParceriaModal] = useState(false);
+  const [confirmRemoveMun, setConfirmRemoveMun] = useState<string | null>(null);
+  const [confirmDeleteParceria, setConfirmDeleteParceria] = useState<string | null>(null);
   const [includeParcerias, setIncludeParcerias] = useState(true); // Toggle para simulação
   const [selectedParceria, setSelectedParceria] = useState<Parceria | null>(null);
   const [parceriaForm, setParceriaForm] = useState<Partial<Parceria>>({
@@ -1267,7 +1270,13 @@ export default function MapaCampanhaPage() {
 
   const removeMunicipio = (municipio: string) => {
     if (!projecao) return;
-    if (!confirm(`Remover ${municipio} da projeção?`)) return;
+    setConfirmRemoveMun(municipio);
+  };
+
+  const doRemoveMunicipio = () => {
+    if (!confirmRemoveMun) return;
+    const municipio = confirmRemoveMun;
+    setConfirmRemoveMun(null);
     const munKey = normMunKey(municipio);
     setProjecao(prev => {
       if (!prev) return prev;
@@ -1493,8 +1502,12 @@ export default function MapaCampanhaPage() {
   };
 
   // Deletar parceria
-  const deleteParceria = async (id: string) => {
-    if (!confirm('Remover esta parceria?')) return;
+  const deleteParceria = (id: string) => setConfirmDeleteParceria(id);
+
+  const doDeleteParceria = async () => {
+    if (!confirmDeleteParceria) return;
+    const id = confirmDeleteParceria;
+    setConfirmDeleteParceria(null);
     try {
       const res = await fetch(`/api/parcerias?id=${id}`, { method: 'DELETE' });
       if (res.ok && projecao?.id) {
@@ -5003,6 +5016,26 @@ export default function MapaCampanhaPage() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        open={!!confirmRemoveMun}
+        title={`Remover ${confirmRemoveMun}?`}
+        message="Este município será removido da projeção de campanha."
+        confirmLabel="Sim, remover"
+        variant="danger"
+        onConfirm={doRemoveMunicipio}
+        onCancel={() => setConfirmRemoveMun(null)}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDeleteParceria}
+        title="Remover parceria?"
+        message="Esta parceria será excluída permanentemente da projeção."
+        confirmLabel="Sim, remover"
+        variant="danger"
+        onConfirm={doDeleteParceria}
+        onCancel={() => setConfirmDeleteParceria(null)}
+      />
     </div>
   );
 }

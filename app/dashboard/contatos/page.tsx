@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/ui/page-header';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { LoadingState } from '@/components/ui/loading-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { ContatoMapItem } from '@/components/maps/contatos-municipio-map';
@@ -169,6 +170,7 @@ export default function ContatosPage() {
   const [resolvedCoords, setResolvedCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   // ── Modal CSV ──
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importStep, setImportStep] = useState<1 | 2 | 3>(1);
   const [detectedCols, setDetectedCols] = useState<DetectedColumns>({ nome: '', numero: '', email: '', endereco: '' });
@@ -568,8 +570,12 @@ export default function ContatosPage() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Remover este contato?')) return;
+  const handleDelete = (id: string) => setConfirmDeleteId(id);
+
+  const doDelete = async () => {
+    if (!confirmDeleteId) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
     try { await fetch(`/api/contacts/${id}`, { method: 'DELETE' }); setContatos(prev => prev.filter(c => c.id !== id)); }
     catch { toast.error('Erro ao remover contato.'); }
   };
@@ -1354,6 +1360,16 @@ export default function ContatosPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="Remover contato?"
+        message="Este contato será excluído permanentemente. Esta ação não pode ser desfeita."
+        confirmLabel="Sim, remover"
+        variant="danger"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

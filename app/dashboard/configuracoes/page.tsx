@@ -9,6 +9,7 @@ import {
   Loader2, CheckCircle2, AlertCircle, Trash2, QrCode,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 type WaStatus = 'loading' | 'not_configured' | 'disconnected' | 'connecting' | 'connected';
 
@@ -31,6 +32,7 @@ export default function ConfiguracoesPage() {
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
 
   const canAccess = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || userRole === 'AGENTE_POLITICO' || userRole === 'CHEFE';
@@ -100,7 +102,11 @@ export default function ConfiguracoesPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Desconectar o WhatsApp deste gabinete? Será necessário escanear o QR novamente.')) return;
+    setConfirmDisconnect(true);
+  };
+
+  const doDisconnect = async () => {
+    setConfirmDisconnect(false);
     setDeleting(true);
     try {
       await fetch('/api/whatsapp/instance', { method: 'DELETE' });
@@ -274,6 +280,16 @@ export default function ConfiguracoesPage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDisconnect}
+        title="Desconectar WhatsApp?"
+        message="Será necessário escanear o QR Code novamente para reconectar o WhatsApp a este gabinete."
+        confirmLabel="Sim, desconectar"
+        variant="danger"
+        onConfirm={doDisconnect}
+        onCancel={() => setConfirmDisconnect(false)}
+      />
     </div>
   );
 }

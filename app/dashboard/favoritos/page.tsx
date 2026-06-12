@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
 import { Star, Trash2, MapPin, Calendar, ArrowRight } from 'lucide-react';
@@ -31,6 +32,7 @@ export default function FavoritosPage() {
   const canAccess = hasPermission({ role: userRole, permissions: userPermissions }, PERMISSIONS.MAPA_ELEITORAL);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'authenticated' && !canAccess) {
@@ -57,14 +59,15 @@ export default function FavoritosPage() {
     }
   }, [canAccess]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Remover este candidato dos favoritos?')) return;
+  const handleDelete = (id: string) => setConfirmDeleteId(id);
 
+  const doDelete = async () => {
+    if (!confirmDeleteId) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
     try {
       const res = await fetch(`/api/favorites/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setFavorites(favorites?.filter?.(f => f?.id !== id) ?? []);
-      }
+      if (res.ok) setFavorites(favorites?.filter?.(f => f?.id !== id) ?? []);
     } catch (error) {
       console.error('Error deleting favorite:', error);
     }
@@ -180,6 +183,16 @@ export default function FavoritosPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="Remover favorito?"
+        message="Este candidato será removido da sua lista de favoritos."
+        confirmLabel="Sim, remover"
+        variant="danger"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

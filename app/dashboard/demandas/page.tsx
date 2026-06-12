@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
 import { PageHeader } from '@/components/ui/page-header';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StatCard } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
@@ -73,6 +74,7 @@ export default function DemandasPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingDemand, setEditingDemand] = useState<Demand | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -209,14 +211,15 @@ export default function DemandasPage() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta demanda?')) return;
+  const handleDelete = (id: string) => setConfirmDeleteId(id);
 
+  const doDelete = async () => {
+    if (!confirmDeleteId) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
     try {
       const res = await fetch(`/api/demands/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchDemands();
-      }
+      if (res.ok) fetchDemands();
     } catch (error) {
       console.error('Error deleting demand:', error);
     }
@@ -794,6 +797,16 @@ export default function DemandasPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="Excluir demanda?"
+        message="Esta demanda será removida permanentemente. Esta ação não pode ser desfeita."
+        confirmLabel="Sim, excluir"
+        variant="danger"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }
