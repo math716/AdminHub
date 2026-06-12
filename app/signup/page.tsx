@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Mail, Lock, User, Building2, Briefcase, Plus, Shield,
-  ChevronRight, Loader2, BarChart3, Users, MapPin, ChevronDown, Check,
+  ChevronRight, Loader2, BarChart3, Users, MapPin, ChevronDown, Check, Landmark,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,6 +14,7 @@ const FEATURES = [
   { icon: BarChart3, label: 'Mapa Eleitoral com dados do TSE' },
   { icon: Users,     label: 'Gestão de Demandas e Contatos' },
   { icon: MapPin,    label: 'Projeção de Campanha por Município' },
+  { icon: Landmark,  label: 'Emendas Parlamentares Federais e Estaduais' },
 ];
 
 interface Gabinete {
