@@ -87,7 +87,7 @@ export async function GET() {
       timeline:      timeline      ?? [],
       lastResolvedDate: lastResolvedDate ?? null,
     }, {
-      headers: { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=120' },
+      headers: { 'Cache-Control': 'no-store' },
     });
   } catch (error) {
     console.error('Dashboard stats error:', error);
