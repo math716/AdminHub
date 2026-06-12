@@ -97,6 +97,7 @@ interface UserData {
   permissions: string[];
   createdAt: string;
   gabinete?: { id: string; nome: string };
+  pendingGabineteNome?: string | null;
 }
 
 interface GabineteGroup {
@@ -314,6 +315,7 @@ export default function UsuariosPage() {
   };
 
   const approveUser = async (userId: string, perms?: string[]) => {
+    const targetUser = users.find(u => u.id === userId);
     setActionId(userId);
     try {
       const res = await fetch(`/api/users/${userId}/approve`, {
@@ -322,9 +324,14 @@ export default function UsuariosPage() {
         body: JSON.stringify(perms !== undefined ? { permissions: perms } : {}),
       });
       if (res.ok) {
-        setUsers(prev => prev.map(u =>
-          u.id === userId ? { ...u, approved: true, permissions: perms ?? u.permissions } : u,
-        ));
+        if (targetUser?.pendingGabineteNome) {
+          // Gabinete was created server-side — full refresh to get updated gabinete data
+          await fetchUsers();
+        } else {
+          setUsers(prev => prev.map(u =>
+            u.id === userId ? { ...u, approved: true, permissions: perms ?? u.permissions } : u,
+          ));
+        }
         showToast('ok', 'Usuário aprovado. E-mail de confirmação enviado.');
         setShowApproveModal(false);
         setApproveTarget(null);
@@ -455,7 +462,7 @@ export default function UsuariosPage() {
   };
 
   // ── gabinete groups ───────────────────────────────────────────────────────
-  const { gabineteGroups, noGabinete } = useMemo(() => {
+  const { gabineteGroups, noGabinete, pendingGabineteGroups } = useMemo(() => {
     // Parte dos gabinetes (inclui os sem usuários) para ADMIN;
     // para CHEFE usa apenas os gabinetes presentes nos usuários retornados.
     const base = (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') ? gabinetes : [];
@@ -463,14 +470,20 @@ export default function UsuariosPage() {
       base.map(g => [g.id, { id: g.id, nome: g.nome, users: [] }])
     );
     const sem: UserData[] = [];
+    const pendingMap = new Map<string, { nome: string; users: UserData[] }>();
     users.forEach(u => {
       if (u.gabinete) {
         if (!map.has(u.gabinete.id)) map.set(u.gabinete.id, { id: u.gabinete.id, nome: u.gabinete.nome, users: [] });
         map.get(u.gabinete.id)!.users.push(u);
+      } else if (u.pendingGabineteNome) {
+        if (!pendingMap.has(u.pendingGabineteNome))
+          pendingMap.set(u.pendingGabineteNome, { nome: u.pendingGabineteNome, users: [] });
+        pendingMap.get(u.pendingGabineteNome)!.users.push(u);
       } else { sem.push(u); }
     });
     const groups = Array.from(map.values()).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-    return { gabineteGroups: groups, noGabinete: sem };
+    const pendingGroups = Array.from(pendingMap.values()).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    return { gabineteGroups: groups, noGabinete: sem, pendingGabineteGroups: pendingGroups };
   }, [users, gabinetes, userRole]);
 
   const filteredGroups = useMemo(() => {
@@ -789,6 +802,91 @@ export default function UsuariosPage() {
             })}
           </AnimatePresence>
 
+          {/* Gabinetes aguardando aprovação da criação */}
+          {pendingGabineteGroups.length > 0 && !searchGabinete && pendingGabineteGroups.map((pg, pgi) => (
+            <motion.div key={`pending-${pg.nome}`}
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: pgi * 0.04 }}
+              className="rounded-2xl overflow-hidden"
+              style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(245,158,11,0.3)' }}>
+
+              {/* Header */}
+              <button className="w-full flex items-center justify-between px-5 py-4 transition-all hover:bg-white/[0.02] text-left"
+                onClick={() => toggleGabinete(`__pending__${pg.nome}`)}>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }}>
+                    <Building2 className="w-[18px] h-[18px]" style={{ color: '#f59e0b' }} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-white font-semibold text-sm">{pg.nome}</p>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold tracking-wide"
+                        style={{ background: 'rgba(245,158,11,0.18)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.35)' }}>
+                        AGUARDANDO APROVAÇÃO
+                      </span>
+                    </div>
+                    <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                      {pg.users.length} usuário{pg.users.length !== 1 ? 's' : ''} · gabinete será criado após aprovação
+                    </p>
+                  </div>
+                </div>
+                {expandedGabs.has(`__pending__${pg.nome}`)
+                  ? <ChevronUp  className="w-4 h-4 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.3)' }} />
+                  : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.3)' }} />
+                }
+              </button>
+
+              <AnimatePresence initial={false}>
+                {expandedGabs.has(`__pending__${pg.nome}`) && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} style={{ overflow: 'hidden' }}>
+                    <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)', borderTop: '1px solid rgba(245,158,11,0.12)' }}>
+                      {pg.users.map(u => (
+                        <div key={u.id}
+                          className="flex items-center justify-between px-5 py-3.5 gap-3 transition-all hover:bg-white/[0.02]"
+                          style={{ background: 'rgba(245,158,11,0.03)' }}>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+                              style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b' }}>
+                              {u.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('')}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="text-white text-sm font-medium truncate">{u.name}</p>
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
+                                  style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>
+                                  Pendente
+                                </span>
+                              </div>
+                              <p className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{u.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <RoleBadge role={u.role} />
+                            <button onClick={() => openApproveModal(u)} disabled={actionId === u.id}
+                              title="Aprovar usuário e criar gabinete"
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80 disabled:opacity-50"
+                              style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}>
+                              {actionId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                              Aprovar
+                            </button>
+                            <button onClick={() => handleReject(u.id, u.name)} disabled={actionId === u.id}
+                              title="Recusar solicitação"
+                              className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
+                              style={{ color: 'rgba(255,255,255,0.3)' }}>
+                              {actionId === u.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ))}
+
           {/* Seção sem gabinete (ADMINs sem vínculo) */}
           {noGabinete.length > 0 && !searchGabinete && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -1050,6 +1148,16 @@ export default function UsuariosPage() {
                   </p>
                 </div>
               </div>
+
+              {approveTarget.pendingGabineteNome && (
+                <div className="flex items-center gap-2 rounded-xl px-3 py-2.5"
+                  style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                  <Building2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#f59e0b' }} />
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                    O gabinete <span style={{ color: '#f59e0b', fontWeight: 600 }}>"{approveTarget.pendingGabineteNome}"</span> será criado automaticamente.
+                  </p>
+                </div>
+              )}
 
               <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
                 Selecione quais áreas este usuário poderá acessar:

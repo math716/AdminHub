@@ -122,6 +122,7 @@ model User {
   approved           Boolean  @default(false)
   mustChangePassword Boolean  @default(false)
   permissions        String[] @default([])
+  pendingGabineteNome String?
 
   gabineteId String?
   gabinete   Gabinete? @relation(fields: [gabineteId], references: [id], onDelete: SetNull)

@@ -30,6 +30,7 @@ export async function GET() {
         approved: true,
         permissions: true,
         createdAt: true,
+        pendingGabineteNome: true,
         gabinete: {
           select: {
             id: true,

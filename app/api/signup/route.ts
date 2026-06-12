@@ -88,12 +88,13 @@ export async function POST(request: NextRequest) {
 
     let finalGabineteId = gabineteId;
 
-    // Se está criando um novo gabinete (apenas CHEFE pode fazer isso)
+    // CHEFE criando novo gabinete — gabinete só é criado após aprovação do ADMIN
     if (novoGabinete && role === 'CHEFE') {
-      const existingGabinete = await prisma.gabinete.findUnique({
-        where: { nome: novoGabinete.trim() }
-      });
+      const nomeNormalizado = novoGabinete.trim();
 
+      const existingGabinete = await prisma.gabinete.findUnique({
+        where: { nome: nomeNormalizado }
+      });
       if (existingGabinete) {
         return NextResponse.json(
           { error: 'Já existe um gabinete com este nome' },
@@ -101,13 +102,51 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const gabinete = await prisma.gabinete.create({
-        data: { nome: novoGabinete.trim() }
+      // Verifica existência de ADMIN aprovado (bootstrap: primeiro usuário do sistema)
+      const adminExistente = await prisma.user.findFirst({
+        where: { role: 'ADMIN', approved: true },
+        select: { id: true },
       });
-      finalGabineteId = gabinete.id;
+      const isBootstrap = !adminExistente && userCount === 0;
+
+      if (isBootstrap) {
+        // Bootstrap: cria gabinete e usuário ADMIN aprovado imediatamente
+        const gabinete = await prisma.gabinete.create({
+          data: { nome: nomeNormalizado }
+        });
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = await prisma.user.create({
+          data: { email, password: hashedPassword, name, role: 'ADMIN', gabineteId: gabinete.id, approved: true }
+        });
+        return NextResponse.json({
+          message: 'Bem-vindo ao AdminHub! Sua conta foi criada como Administrador.',
+          user: { id: user.id, email: user.email, name: user.name, role: user.role, approved: user.approved, gabinete: gabinete.nome },
+          isFirstUser: true
+        });
+      }
+
+      // Caso normal: usuário fica pendente, gabinete ainda NÃO é criado
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await prisma.user.create({
+        data: {
+          email, password: hashedPassword, name,
+          role: 'CHEFE',
+          gabineteId: null,
+          approved: false,
+          pendingGabineteNome: nomeNormalizado,
+        }
+      });
+
+      notifyAdmin(user.name, user.email, user.role, nomeNormalizado);
+
+      return NextResponse.json({
+        message: `Cadastro realizado! Aguarde a aprovação do Administrador para criar o gabinete "${nomeNormalizado}".`,
+        user: { id: user.id, email: user.email, name: user.name, role: user.role, approved: user.approved },
+        isFirstUser: false
+      });
     }
 
-    // Se é ASSESSOR ou CHEFE de gabinete existente, precisa ter gabineteId
+    // CHEFE ou ASSESSOR entrando em gabinete existente — precisa de gabineteId
     if (!finalGabineteId) {
       return NextResponse.json(
         { error: 'Selecione um gabinete ou crie um novo' },
@@ -115,86 +154,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar se o gabinete existe
     const gabinete = await prisma.gabinete.findUnique({
       where: { id: finalGabineteId }
     });
-
     if (!gabinete) {
-      return NextResponse.json(
-        { error: 'Gabinete não encontrado' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 400 });
     }
 
-    // CHEFE sempre requer aprovação do ADMIN, exceto o primeiro usuário do sistema (bootstrap)
+    // CHEFE entrando em gabinete existente — aguarda aprovação do ADMIN
     if (role === 'CHEFE') {
-      // Verifica existência de ADMIN aprovado — mais seguro que contar todos os usuários
       const adminExistente = await prisma.user.findFirst({
         where: { role: 'ADMIN', approved: true },
         select: { id: true },
       });
       const isBootstrap = !adminExistente && userCount === 0;
-
       const hashedPassword = await bcrypt.hash(password, 10);
-
       const user = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name,
-          role: isBootstrap ? 'ADMIN' : 'CHEFE',
-          gabineteId: finalGabineteId,
-          approved: isBootstrap,
-        }
+        data: { email, password: hashedPassword, name, role: isBootstrap ? 'ADMIN' : 'CHEFE', gabineteId: finalGabineteId, approved: isBootstrap }
       });
-
-      if (!isBootstrap) {
-        notifyAdmin(user.name, user.email, user.role, gabinete.nome);
-      }
-
+      if (!isBootstrap) notifyAdmin(user.name, user.email, user.role, gabinete.nome);
       return NextResponse.json({
         message: isBootstrap
-          ? `Bem-vindo ao AdminHub! Sua conta foi criada como Administrador.`
-          : `Cadastro realizado! Aguarde a aprovação do Administrador.`,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          approved: user.approved,
-          gabinete: gabinete.nome
-        },
+          ? 'Bem-vindo ao AdminHub! Sua conta foi criada como Administrador.'
+          : 'Cadastro realizado! Aguarde a aprovação do Administrador.',
+        user: { id: user.id, email: user.email, name: user.name, role: user.role, approved: user.approved, gabinete: gabinete.nome },
         isFirstUser: isBootstrap
       });
     }
 
-    // Para ASSESSOR, sempre precisa de aprovação
+    // ASSESSOR — aguarda aprovação
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name,
-        role: 'ASSESSOR',
-        gabineteId: finalGabineteId,
-        approved: false
-      }
+      data: { email, password: hashedPassword, name, role: 'ASSESSOR', gabineteId: finalGabineteId, approved: false }
     });
 
     notifyAdmin(user.name, user.email, user.role, gabinete.nome);
 
     return NextResponse.json({
       message: `Cadastro realizado! Aguarde a aprovação do Chefe de Gabinete do ${gabinete.nome}.`,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        approved: user.approved,
-        gabinete: gabinete.nome
-      },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, approved: user.approved, gabinete: gabinete.nome },
       isFirstUser: false
     });
   } catch (error) {

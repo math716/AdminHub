@@ -85,7 +85,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
   const userPermissions = (session?.user as any)?.permissions ?? [];
   const userName        = session?.user?.name             || 'Usuário';
   const gabineteNome    = (session?.user as any)?.gabineteNome;
-  const isAdmin         = userRole === 'ADMIN';
+  const isAdmin         = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 
   const filteredSections = (navigation ?? [])
     .map((sec) => ({
@@ -122,10 +122,12 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           AdminHub
         </p>
 
-        {/* Bloco de gabinete — apenas ADMIN (para trocar de gabinete) */}
+        {/* Bloco de gabinete — apenas ADMIN/SUPER_ADMIN (para trocar de gabinete) */}
         {isAdmin && (
           gabineteNome ? (
-            <div className="w-full mt-3 rounded-xl px-3 py-2.5 flex items-center gap-2.5"
+            <button onClick={() => setSwitcherOpen(true)}
+              title="Trocar gabinete"
+              className="w-full mt-3 rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-all hover:bg-white/[0.04] text-left"
               style={{ background: 'rgba(74,158,222,0.07)', border: '1px solid rgba(74,158,222,0.15)' }}>
               <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
                 style={{ background: 'rgba(74,158,222,0.15)' }}>
@@ -134,21 +136,28 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
               <div className="flex-1 min-w-0">
                 <p className="text-white text-xs font-semibold truncate leading-tight">{gabineteNome}</p>
                 <p className="text-[10px] mt-0.5 leading-tight" style={{ color: 'rgba(255,255,255,0.38)' }}>
-                  Administrador
+                  Clique para trocar
                 </p>
               </div>
-              <button onClick={() => setSwitcherOpen(true)}
-                title="Trocar gabinete"
-                className="flex-shrink-0 p-1 rounded-lg transition-all hover:bg-white/10"
-                style={{ color: 'rgba(74,158,222,0.6)' }}>
-                <ArrowLeftRight className="w-3 h-3" />
-              </button>
-            </div>
+              <ArrowLeftRight className="w-3 h-3 flex-shrink-0" style={{ color: 'rgba(74,158,222,0.6)' }} />
+            </button>
           ) : (
-            <span className="mt-3 px-3 py-0.5 rounded-full text-xs font-semibold tracking-wide"
-              style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede', border: '1px solid rgba(74,158,222,0.25)' }}>
-              Administrador
-            </span>
+            <button onClick={() => setSwitcherOpen(true)}
+              title="Selecionar gabinete"
+              className="w-full mt-3 rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-all hover:bg-white/[0.04] text-left"
+              style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)' }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(245,158,11,0.12)' }}>
+                <Building2 className="w-3.5 h-3.5" style={{ color: '#f59e0b' }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold leading-tight" style={{ color: '#f59e0b' }}>Selecionar Gabinete</p>
+                <p className="text-[10px] mt-0.5 leading-tight" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  Nenhum gabinete ativo
+                </p>
+              </div>
+              <ChevronRight className="w-3 h-3 flex-shrink-0" style={{ color: 'rgba(245,158,11,0.5)' }} />
+            </button>
           )
         )}
       </div>

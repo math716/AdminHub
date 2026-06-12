@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Shield, ChevronRight, Loader2, BarChart3, Users, MapPin } from 'lucide-react';
+import { Mail, Lock, Shield, ChevronRight, Loader2, BarChart3, Users, MapPin, Landmark } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const FEATURES = [
   { icon: BarChart3, label: 'Mapa Eleitoral com dados do TSE' },
   { icon: Users,     label: 'Gestão de Demandas e Contatos' },
   { icon: MapPin,    label: 'Projeção de Campanha por Município' },
+  { icon: Landmark,  label: 'Emendas Parlamentares Federais e Estaduais' },
 ];
 
 export default function LoginPage() {

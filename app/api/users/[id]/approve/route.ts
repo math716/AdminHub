@@ -54,14 +54,28 @@ export async function POST(
       // sem body — segue sem mexer em permissions
     }
 
-    const data: { approved: boolean; permissions?: string[] } = { approved: true };
+    const updateData: { approved: boolean; permissions?: string[]; gabineteId?: string; pendingGabineteNome?: null } = { approved: true };
     if (permissions !== undefined && !hasFullAccess(userToApprove.role)) {
-      data.permissions = permissions;
+      updateData.permissions = permissions;
+    }
+
+    // Se o usuário tem um gabinete pendente de criação, criar agora
+    if (userToApprove.pendingGabineteNome) {
+      const nomeGab = userToApprove.pendingGabineteNome;
+
+      // Verifica se já não foi criado por outra aprovação simultânea
+      let gabinete = await prisma.gabinete.findUnique({ where: { nome: nomeGab } });
+      if (!gabinete) {
+        gabinete = await prisma.gabinete.create({ data: { nome: nomeGab } });
+      }
+
+      updateData.gabineteId = gabinete.id;
+      updateData.pendingGabineteNome = null; // limpa o campo pendente
     }
 
     const user = await prisma.user.update({
       where: { id: params?.id ?? '' },
-      data,
+      data: updateData,
     });
 
     // Notificar o usuário aprovado por e-mail
