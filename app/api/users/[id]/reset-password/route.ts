@@ -39,7 +39,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     const sessionUserId = (session.user as any)?.id;
 
     if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Apenas ADMIN pode resetar senhas' }, { status: 403 });
+      return NextResponse.json({ error: 'Apenas Administrador pode resetar senhas' }, { status: 403 });
     }
     if (params.id === sessionUserId) {
       return NextResponse.json({ error: 'Use as configurações da sua conta para alterar sua própria senha' }, { status: 400 });

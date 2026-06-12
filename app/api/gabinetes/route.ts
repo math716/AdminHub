@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
       }
       const role = (session.user as any)?.role;
-      if (role !== 'ADMIN') {
+      if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
         return NextResponse.json({ error: 'Apenas administradores podem criar gabinetes' }, { status: 403 });
       }
     }

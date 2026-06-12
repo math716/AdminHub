@@ -14,8 +14,8 @@ export async function DELETE(
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const userRole = (session.user as any)?.role;
-    if (userRole !== 'ADMIN') {
-      return NextResponse.json({ error: 'Apenas ADMIN pode excluir gabinetes' }, { status: 403 });
+    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Apenas Administrador pode excluir gabinetes' }, { status: 403 });
     }
 
     const gabinete = await prisma.gabinete.findUnique({ where: { id: params.id } });
