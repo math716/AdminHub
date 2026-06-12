@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Mail, Lock, User, Building2, Briefcase, Plus, Shield,
-  ChevronRight, Loader2, BarChart3, Users, MapPin,
+  ChevronRight, Loader2, BarChart3, Users, MapPin, ChevronDown, Check,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const FEATURES = [
   { icon: BarChart3, label: 'Mapa Eleitoral com dados do TSE' },
@@ -87,48 +87,96 @@ function StyledInput({
   );
 }
 
-function StyledSelect({
-  value,
-  onChange,
-  children,
-  disabled,
-  icon,
+interface DropdownOption { value: string; label: string }
+
+function CustomDropdown({
+  value, onChange, options, placeholder, icon, disabled,
 }: {
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  children: React.ReactNode;
-  disabled?: boolean;
+  onChange: (val: string) => void;
+  options: DropdownOption[];
+  placeholder: string;
   icon: React.ReactNode;
+  disabled?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   return (
-    <div style={{ position: 'relative' }}>
-      <span
-        style={{
-          position: 'absolute', left: '0.875rem', top: '50%',
-          transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none',
-          display: 'flex', alignItems: 'center',
-        }}
-      >
-        {icon}
-      </span>
-      <select
-        value={value}
-        onChange={onChange}
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
         disabled={disabled}
-        style={{ ...inputBase, paddingRight: '2rem', cursor: disabled ? 'not-allowed' : 'pointer' }}
-        onFocus={e => {
-          e.target.style.borderColor = '#0c2a4f';
-          e.target.style.boxShadow = '0 0 0 3px rgba(12,42,79,0.10)';
-          e.target.style.background = '#fff';
-        }}
-        onBlur={e => {
-          e.target.style.borderColor = '#e5e7eb';
-          e.target.style.boxShadow = 'none';
-          e.target.style.background = '#f9fafb';
+        onClick={() => !disabled && setOpen(v => !v)}
+        style={{
+          ...inputBase,
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
+          paddingLeft: '2.5rem', paddingRight: '2.5rem',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          textAlign: 'left',
+          borderColor: open ? '#0c2a4f' : '#e5e7eb',
+          boxShadow: open ? '0 0 0 3px rgba(12,42,79,0.10)' : 'none',
+          background: open ? '#fff' : '#f9fafb',
+          opacity: disabled ? 0.6 : 1,
         }}
       >
-        {children}
-      </select>
+        <span style={{ position: 'absolute', left: '0.875rem', color: '#9ca3af', display: 'flex', alignItems: 'center' }}>
+          {icon}
+        </span>
+        <span style={{ flex: 1, color: selected ? '#111827' : '#9ca3af', fontSize: '0.875rem' }}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <span style={{ position: 'absolute', right: '0.875rem', color: '#9ca3af', display: 'flex', alignItems: 'center', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          <ChevronDown size={15} />
+        </span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 50,
+              background: '#fff', borderRadius: '0.75rem', overflow: 'hidden',
+              border: '1.5px solid #e5e7eb',
+              boxShadow: '0 8px 30px rgba(4,17,31,0.12), 0 2px 8px rgba(4,17,31,0.06)',
+            }}
+          >
+            {options.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '0.65rem 1rem', fontSize: '0.875rem', textAlign: 'left',
+                  background: opt.value === value ? '#f0f4f9' : 'transparent',
+                  color: opt.value === value ? '#0c2a4f' : '#374151',
+                  fontWeight: opt.value === value ? 600 : 400,
+                  border: 'none', cursor: 'pointer', transition: 'background 0.1s',
+                }}
+                onMouseEnter={e => { if (opt.value !== value) (e.currentTarget as HTMLButtonElement).style.background = '#f9fafb'; }}
+                onMouseLeave={e => { if (opt.value !== value) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              >
+                {opt.label}
+                {opt.value === value && <Check size={14} style={{ color: '#0c2a4f', flexShrink: 0 }} />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -375,21 +423,58 @@ export default function SignupPage() {
                 </motion.div>
               )}
 
-              {/* Função */}
+              {/* Função — cards de seleção */}
               <div>
                 <FieldLabel icon={<Briefcase size={15} />}>Função</FieldLabel>
-                <StyledSelect
-                  value={role}
-                  onChange={e => {
-                    setRole(e.target.value);
-                    if (e.target.value === 'ASSESSOR') setCriarNovo(false);
-                  }}
-                  icon={<Briefcase size={15} />}
-                >
-                  <option value="">Selecione sua função</option>
-                  <option value="CHEFE">Chefe de Gabinete</option>
-                  <option value="ASSESSOR">Assessor</option>
-                </StyledSelect>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+                  {[
+                    { value: 'CHEFE',    label: 'Chefe de Gabinete', icon: Building2, desc: 'Gerencia o gabinete' },
+                    { value: 'ASSESSOR', label: 'Assessor',          icon: User,      desc: 'Membro da equipe'   },
+                  ].map(({ value: v, label, icon: Icon, desc }) => {
+                    const active = role === v;
+                    return (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => { setRole(v); if (v === 'ASSESSOR') setCriarNovo(false); }}
+                        style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                          gap: '0.375rem', padding: '0.875rem', borderRadius: '0.875rem',
+                          border: active ? '2px solid #0c2a4f' : '1.5px solid #e5e7eb',
+                          background: active ? '#f0f4f9' : '#f9fafb',
+                          cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left',
+                          boxShadow: active ? '0 0 0 3px rgba(12,42,79,0.08)' : 'none',
+                          position: 'relative',
+                        }}
+                      >
+                        <span style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: 32, height: 32, borderRadius: '0.5rem',
+                          background: active ? '#0c2a4f' : '#e5e7eb',
+                          color: active ? '#fff' : '#9ca3af',
+                          transition: 'all 0.15s',
+                        }}>
+                          <Icon size={15} />
+                        </span>
+                        <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: active ? '#0c2a4f' : '#374151' }}>
+                          {label}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: active ? '#4a6fa5' : '#9ca3af' }}>
+                          {desc}
+                        </span>
+                        {active && (
+                          <span style={{
+                            position: 'absolute', top: '0.5rem', right: '0.5rem',
+                            width: 18, height: 18, borderRadius: '50%',
+                            background: '#0c2a4f', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <Check size={11} color="#fff" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Gabinete */}
@@ -398,19 +483,14 @@ export default function SignupPage() {
                   <FieldLabel icon={<Building2 size={15} />}>Gabinete</FieldLabel>
                   {!criarNovo ? (
                     <>
-                      <StyledSelect
+                      <CustomDropdown
                         value={gabineteId}
-                        onChange={e => setGabineteId(e.target.value)}
-                        disabled={loadingGabs}
+                        onChange={val => setGabineteId(val)}
+                        placeholder={loadingGabs ? 'Carregando...' : 'Selecione um gabinete'}
                         icon={<Building2 size={15} />}
-                      >
-                        <option value="">
-                          {loadingGabs ? 'Carregando...' : 'Selecione um gabinete'}
-                        </option>
-                        {gabinetes.map(g => (
-                          <option key={g.id} value={g.id}>{g.nome}</option>
-                        ))}
-                      </StyledSelect>
+                        disabled={loadingGabs}
+                        options={gabinetes.map(g => ({ value: g.id, label: g.nome }))}
+                      />
                       {role === 'CHEFE' && (
                         <button
                           type="button"
