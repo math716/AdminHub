@@ -40,7 +40,7 @@ interface DashboardStats {
 }
 
 export default function DashboardPage() {
-  const { data: session } = useSession() || {};
+  const { data: session, status: sessionStatus } = useSession() || {};
   const userRole   = (session?.user as any)?.role       || 'ASSESSOR';
   const gabineteId = (session?.user as any)?.gabineteId as string | undefined;
   const gabineteName = (session?.user as any)?.gabineteName || 'AdminHub';
@@ -48,8 +48,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Aguarda sessão autenticada para garantir que gabineteId já está resolvido
+    if (sessionStatus !== 'authenticated') return;
     const fetchStats = async () => {
       setLoading(true);
+      setStats(null);
       try {
         const res = await fetch('/api/dashboard/stats', { cache: 'no-store' });
         if (res.ok) {
@@ -63,7 +66,7 @@ export default function DashboardPage() {
       }
     };
     fetchStats();
-  }, [gabineteId]);
+  }, [sessionStatus, gabineteId]);
 
   // Calculate percentages
   const resolvedPercent = stats?.total ? Math.round((stats.resolvidas / stats.total) * 100) : 0;
