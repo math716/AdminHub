@@ -40,18 +40,18 @@ type NavItem = {
 
 const navigation: { section: string; items: NavItem[] }[] = [
   {
-    section: 'Principal',
+    section: 'Gabinete',
     items: [
       { name: 'Dashboard',        href: '/dashboard'              , icon: LayoutDashboard },
       { name: 'Mapa do Gabinete', href: '/dashboard/mapa-demandas', icon: MapPin,       permission: PERMISSIONS.MAPA_GABINETE },
       { name: 'Contatos',         href: '/dashboard/contatos'     , icon: BookUser,     permission: PERMISSIONS.CONTATOS      },
       { name: 'Agenda',           href: '/dashboard/agenda'       , icon: CalendarDays, permission: PERMISSIONS.AGENDA        },
+      { name: 'Demandas',         href: '/dashboard/demandas'     , icon: FileText,     permission: PERMISSIONS.DEMANDAS      },
     ],
   },
   {
-    section: 'Operação',
+    section: 'Dados Políticos',
     items: [
-      { name: 'Demandas',            href: '/dashboard/demandas'     , icon: FileText, permission: PERMISSIONS.DEMANDAS         },
       { name: 'Projeto de Campanha', href: '/dashboard/mapa-campanha', icon: Target,   permission: PERMISSIONS.PROJETO_CAMPANHA },
       { name: 'Mapa Eleitoral',      href: '/dashboard/mapa'         , icon: Map,      permission: PERMISSIONS.MAPA_ELEITORAL   },
       { name: 'Emendas',             href: '/dashboard/emendas'      , icon: Landmark, permission: PERMISSIONS.EMENDAS_MAPA     },
