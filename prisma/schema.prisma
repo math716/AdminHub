@@ -125,7 +125,7 @@ model User {
   pendingGabineteNome String?
 
   gabineteId String?
-  gabinete   Gabinete? @relation(fields: [gabineteId], references: [id], onDelete: SetNull)
+  gabinete   Gabinete? @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
