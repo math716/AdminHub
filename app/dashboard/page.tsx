@@ -2,7 +2,6 @@
 
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card } from '@/components/ui/card';
 import {
@@ -18,7 +17,6 @@ import {
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { STATUS_COLORS, PRIORITY_COLORS, PRIORITY_LABELS, STATUS_LABELS } from '@/lib/types';
-import { ROLE_LABELS } from '@/lib/permissions';
 import { DemandPriority, DemandStatus } from '@prisma/client';
 
 const Donut3DChart = dynamic(() => import('@/components/charts/donut-3d-chart'), { ssr: false });
@@ -43,7 +41,6 @@ export default function DashboardPage() {
   const { data: session, status: sessionStatus } = useSession() || {};
   const userRole   = (session?.user as any)?.role       || 'ASSESSOR';
   const gabineteId = (session?.user as any)?.gabineteId as string | undefined;
-  const gabineteName = (session?.user as any)?.gabineteName || 'AdminHub';
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -117,14 +114,6 @@ export default function DashboardPage() {
         icon={LayoutDashboard}
         title="Dashboard"
         subtitle="Visão geral do gabinete"
-        actions={
-          <div className="text-right">
-            <p className="text-sm" style={{ color: '#6b7280' }}>{gabineteName}</p>
-            <Badge variant={userRole === 'ADMIN' ? 'danger' : userRole === 'AGENTE_POLITICO' ? 'warning' : userRole === 'CHEFE' ? 'success' : 'info'}>
-              {ROLE_LABELS[userRole] ?? 'Usuário'}
-            </Badge>
-          </div>
-        }
       />
 
       {/* Gradient Cards Row */}
