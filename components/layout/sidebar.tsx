@@ -17,14 +17,14 @@ import {
   BookUser,
   Settings,
   Building2,
-  ArrowLeftRight,
+
   ChevronLeft,
   ChevronRight,
   Landmark,
   Upload,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AdminGabineteSwitcher } from '@/components/admin-gabinete-switcher';
+
 import { PERMISSIONS, type Permission, hasPermission, ROLE_LABELS } from '@/lib/permissions';
 
 type NavItem = {
@@ -57,7 +57,7 @@ const navigation: { section: string; items: NavItem[] }[] = [
   {
     section: 'Administração',
     items: [
-      { name: 'Usuários',               href: '/dashboard/usuarios'        , icon: Users,    roles: ['SUPER_ADMIN', 'ADMIN', 'AGENTE_POLITICO', 'CHEFE']                    },
+      { name: 'Usuários',               href: '/dashboard/usuarios'        , icon: Users,    roles: ['AGENTE_POLITICO', 'CHEFE']                    },
       { name: 'Adm. de Gabinetes',      href: '/dashboard/admin/gabinetes' , icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN']                                               },
       { name: 'Configurações',          href: '/dashboard/configuracoes'   , icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'AGENTE_POLITICO', 'CHEFE'] },
     ],
@@ -76,7 +76,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
-  const [switcherOpen, setSwitcherOpen] = useState(false);
+
   const pathname = usePathname();
   const { data: session } = useSession() || {};
   const userRole        = (session?.user as any)?.role    || 'ASSESSOR';
@@ -118,51 +118,6 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           AdminHub
         </p>
 
-        {/* Gabinete switcher — somente ADMIN / SUPER_ADMIN */}
-        {isAdmin && (
-          gabineteNome ? (
-            <button onClick={() => setSwitcherOpen(true)}
-              title="Trocar gabinete"
-              className="w-full mt-3 rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-all text-left"
-              style={{
-                background: 'rgba(255,255,255,0.55)',
-                border: '1px solid rgba(74,158,222,0.22)',
-                boxShadow: '0 1px 6px rgba(74,158,222,0.08)',
-              }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.2)' }}>
-                <Building2 className="w-3.5 h-3.5" style={{ color: '#4a9ede' }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold truncate leading-tight" style={{ color: '#1b3a5e' }}>{gabineteNome}</p>
-                <p className="text-[10px] mt-0.5 leading-tight" style={{ color: 'rgba(74,158,222,0.7)' }}>
-                  Clique para trocar
-                </p>
-              </div>
-              <ArrowLeftRight className="w-3 h-3 flex-shrink-0" style={{ color: 'rgba(74,158,222,0.5)' }} />
-            </button>
-          ) : (
-            <button onClick={() => setSwitcherOpen(true)}
-              title="Selecionar gabinete"
-              className="w-full mt-3 rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-all text-left"
-              style={{
-                background: 'rgba(245,158,11,0.06)',
-                border: '1px solid rgba(245,158,11,0.25)',
-              }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(245,158,11,0.1)' }}>
-                <Building2 className="w-3.5 h-3.5" style={{ color: '#d97706' }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold leading-tight" style={{ color: '#b45309' }}>Selecionar Gabinete</p>
-                <p className="text-[10px] mt-0.5 leading-tight" style={{ color: 'rgba(100,116,139,0.7)' }}>
-                  Nenhum gabinete ativo
-                </p>
-              </div>
-              <ChevronRight className="w-3 h-3 flex-shrink-0" style={{ color: 'rgba(217,119,6,0.5)' }} />
-            </button>
-          )
-        )}
       </div>
 
       {/* ── Navigation ──────────────────────────────────────────────────── */}
@@ -369,11 +324,6 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
         </motion.button>
       )}
 
-      {/* Modal de troca de gabinete */}
-      <AdminGabineteSwitcher
-        open={switcherOpen}
-        onClose={() => setSwitcherOpen(false)}
-      />
     </>
   );
 }
