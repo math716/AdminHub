@@ -46,7 +46,7 @@ export function canManageContent(role?: string | null): boolean {
 }
 
 export function hasFullAccess(role?: string | null): boolean {
-  return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'AGENTE_POLITICO';
+  return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'AGENTE_POLITICO' || role === 'CHEFE';
 }
 
 export function getRoleLabel(role: string): string {
@@ -104,21 +104,14 @@ interface PermissionContext {
   permissions?: string[] | null;
 }
 
-// Permissões concedidas automaticamente por role, independente do array do banco.
-const ROLE_DEFAULT_PERMISSIONS: Partial<Record<string, Permission[]>> = {
-  CHEFE: [PERMISSIONS.EMENDAS_MAPA],
-};
-
-// ADMIN e AGENTE_POLITICO sempre têm todas as permissões. O escopo de gabinete
-// do AGENTE_POLITICO é aplicado nas queries (via gabineteId), não aqui.
-// Demais roles dependem do array permissions[] do banco + defaults acima.
+// ADMIN, AGENTE_POLITICO e CHEFE sempre têm todas as permissões. O escopo de gabinete
+// é aplicado nas queries (via gabineteId), não aqui.
+// Demais roles dependem do array permissions[] do banco.
 export function hasPermission(
   user: PermissionContext | null | undefined,
   permission: Permission,
 ): boolean {
   if (!user?.role) return false;
   if (hasFullAccess(user.role)) return true;
-  const roleDefaults = ROLE_DEFAULT_PERMISSIONS[user.role] ?? [];
-  if (roleDefaults.includes(permission)) return true;
   return Array.isArray(user.permissions) && user.permissions.includes(permission);
 }
