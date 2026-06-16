@@ -4,7 +4,6 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
-import { AdminGabineteSwitcher } from '@/components/admin-gabinete-switcher';
 
 export default function DashboardLayout({
   children,
@@ -17,8 +16,6 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const userRole    = (session?.user as any)?.role;
-  const gabineteId  = (session?.user as any)?.gabineteId;
-  const needsGabinete = mounted && status === 'authenticated' && userRole === 'ADMIN' && !gabineteId;
 
   useEffect(() => {
     setMounted(true);
@@ -94,8 +91,6 @@ export default function DashboardLayout({
         </div>
       </main>
 
-      {/* ADMIN sem gabinete selecionado — bloqueia navegação até escolher */}
-      {needsGabinete && <AdminGabineteSwitcher required />}
     </div>
   );
 }
