@@ -75,13 +75,15 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
-function RoleSelect({ userId, current, onChanged }: { userId: string; current: string; onChanged: (role: string) => void }) {
+function RoleSelect({ userId, current, sessionRole, onChanged }: { userId: string; current: string; sessionRole: string; onChanged: (role: string) => void }) {
   const [open, setOpen]     = useState(false);
   const [saving, setSaving] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; right: number } | null>(null);
   const btnRef  = useRef<HTMLButtonElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
-  const roles   = ['AGENTE_POLITICO', 'CHEFE', 'ASSESSOR', 'ANALISTA', 'VISUALIZADOR'];
+  const roles   = sessionRole === 'SUPER_ADMIN'
+    ? ['SUPER_ADMIN', 'ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR']
+    : ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR'];
 
   const openDrop = () => {
     if (!btnRef.current) return;
@@ -710,8 +712,8 @@ export default function AdminGabinetesPage() {
 
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                   {u.role !== 'SUPER_ADMIN'
-                                    ? <RoleSelect userId={u.id} current={u.role} onChanged={r => handleRoleChange(u.id, r)} />
-                                    : <RoleBadge role={u.role} />
+                                    ? <RoleSelect userId={u.id} current={u.role} sessionRole={role} onChanged={r => handleRoleChange(u.id, r)} />
+                                    : <RoleBadge role={role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'ADMIN'} />
                                   }
                                   {/* Aprovar */}
                                   {!u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN' && (
