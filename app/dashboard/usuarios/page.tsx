@@ -275,7 +275,7 @@ export default function UsuariosPage() {
 
   // ── redirect ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (status === 'authenticated' && userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
+    if (status === 'authenticated' && userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'AGENTE_POLITICO') {
       router.replace('/dashboard');
     }
   }, [status, userRole, router]);
@@ -294,7 +294,7 @@ export default function UsuariosPage() {
   }, []);
 
   useEffect(() => {
-    if (userRole === 'CHEFE' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') fetchUsers();
+    if (userRole === 'CHEFE' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'AGENTE_POLITICO') fetchUsers();
   }, [userRole, fetchUsers]);
 
   // ── helpers ───────────────────────────────────────────────────────────────
