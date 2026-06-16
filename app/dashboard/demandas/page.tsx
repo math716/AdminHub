@@ -449,7 +449,6 @@ export default function DemandasPage() {
                   style={{
                     background: '#ffffff',
                     border: '1px solid #e5eaf3',
-                    ,
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = `${catColor}55`;
