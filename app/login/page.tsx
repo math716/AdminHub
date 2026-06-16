@@ -301,17 +301,6 @@ export default function LoginPage() {
               <div className="flex-1 h-px" style={{ background: '#f0f0f0' }} />
             </div>
 
-            {/* Cadastro */}
-            <p className="text-center text-sm" style={{ color: '#6b7280' }}>
-              Não tem acesso?{' '}
-              <Link
-                href="/signup"
-                className="font-semibold hover:underline"
-                style={{ color: '#0c2a4f' }}
-              >
-                Solicitar cadastro
-              </Link>
-            </p>
           </motion.div>
 
           {/* Nota de segurança */}
