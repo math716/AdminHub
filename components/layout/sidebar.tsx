@@ -57,8 +57,9 @@ const navigation: { section: string; items: NavItem[] }[] = [
   {
     section: 'Administração',
     items: [
-      { name: 'Usuários',      href: '/dashboard/usuarios'     , icon: Users,    roles: ['SUPER_ADMIN', 'ADMIN', 'CHEFE']                    },
-      { name: 'Configurações', href: '/dashboard/configuracoes', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'AGENTE_POLITICO', 'CHEFE'] },
+      { name: 'Usuários',               href: '/dashboard/usuarios'        , icon: Users,    roles: ['SUPER_ADMIN', 'ADMIN', 'AGENTE_POLITICO', 'CHEFE']                    },
+      { name: 'Adm. de Gabinetes',      href: '/dashboard/admin/gabinetes' , icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN']                                               },
+      { name: 'Configurações',          href: '/dashboard/configuracoes'   , icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'AGENTE_POLITICO', 'CHEFE'] },
     ],
   },
   {

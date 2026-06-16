@@ -400,7 +400,7 @@ export default function UsuariosPage() {
     showToast('ok', `Perfil alterado para ${ROLE_LABELS[newRole] ?? newRole}.`);
   };
 
-  const handleGenerateInvite = async (role: 'ASSESSOR' | 'CHEFE' | 'AGENTE_POLITICO' = 'ASSESSOR') => {
+  const handleGenerateInvite = async (role: 'ASSESSOR' | 'CHEFE' = 'ASSESSOR') => {
     setGeneratingInvite(true);
     setShowInviteForm(false);
     try {
@@ -505,7 +505,7 @@ export default function UsuariosPage() {
       </div>
     );
   }
-  if (userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') return null;
+  if (userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'AGENTE_POLITICO') return null;
 
   const pendingUsers  = users.filter(u => !u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN');
   const approvedUsers = users.filter(u => u.approved  || u.role === 'ADMIN' || u.role === 'SUPER_ADMIN');
@@ -544,35 +544,26 @@ export default function UsuariosPage() {
         actions={
           <div className="relative flex-shrink-0">
           <button
-            onClick={() => (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') ? setShowInviteForm(f => !f) : handleGenerateInvite('ASSESSOR')}
+            onClick={() => (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'AGENTE_POLITICO') ? setShowInviteForm(f => !f) : handleGenerateInvite('ASSESSOR')}
             disabled={generatingInvite}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg,#c9a227,#e6b83a)', color: '#04111f' }}
           >
             {generatingInvite ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
             Gerar Convite
-            {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && <ChevronDown className="w-3.5 h-3.5" />}
+            {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'AGENTE_POLITICO') && <ChevronDown className="w-3.5 h-3.5" />}
           </button>
 
           <AnimatePresence>
-            {showInviteForm && (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
+            {showInviteForm && (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'AGENTE_POLITICO') && (
               <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                 className="absolute right-0 mt-1 z-20 rounded-xl overflow-hidden shadow-xl"
                 style={{ background: '#071d36', border: '1px solid rgba(201,162,39,0.2)', minWidth: 200 }}>
                 <p className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>Tipo de convite</p>
-                {(['ASSESSOR', 'CHEFE', 'AGENTE_POLITICO'] as const).map(r => {
-                  const labelColor =
-                    r === 'AGENTE_POLITICO' ? '#c084fc' :
-                    r === 'CHEFE'           ? '#4a9ede' :
-                                              '#4ade80';
-                  const label =
-                    r === 'AGENTE_POLITICO' ? 'Agente Político' :
-                    r === 'CHEFE'           ? 'Chefe de Gabinete' :
-                                              'Assessor';
-                  const desc =
-                    r === 'AGENTE_POLITICO' ? 'Deputado, Senador, Prefeito… acesso total ao gabinete' :
-                    r === 'CHEFE'           ? 'Conta pré-aprovada pelo Admin' :
-                                              'Requer aprovação do Chefe';
+                {(['CHEFE', 'ASSESSOR'] as const).map(r => {
+                  const labelColor = r === 'CHEFE' ? '#4a9ede' : '#4ade80';
+                  const label      = r === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor';
+                  const desc       = r === 'CHEFE' ? 'Conta pré-aprovada automaticamente' : 'Requer aprovação do Chefe';
                   return (
                     <button key={r} onClick={() => handleGenerateInvite(r)}
                       className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/5"
@@ -996,7 +987,7 @@ export default function UsuariosPage() {
                   fontWeight: 600,
                 }}>
                   {ROLE_LABELS[inviteRoleResult] ?? 'Assessor'}</span>.
-                {inviteRoleResult === 'CHEFE' || inviteRoleResult === 'AGENTE_POLITICO'
+                {inviteRoleResult === 'CHEFE'
                   ? ' A conta será pré-aprovada automaticamente.'
                   : ' Requer aprovação após o cadastro.'}
                 {' '}Expira em <span style={{ color: '#e6b83a' }}>7 dias</span>.

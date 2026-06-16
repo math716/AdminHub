@@ -749,6 +749,37 @@ model TransferenciaPix {
   @@map("transferencias_pix")
 }
 
+/// Link de convite para criação de novo gabinete (multi-uso, expira em 1h)
+model GabineteConviteLink {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdById String
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@map("gabinete_convite_links")
+}
+
+/// Solicitação pendente de criação de gabinete + agente político
+model SolicitacaoGabinete {
+  id              String   @id @default(cuid())
+  gabineteNome    String
+  userName        String
+  userEmail       String
+  userPassword    String
+  status          String   @default("PENDENTE")  // PENDENTE | APROVADA | RECUSADA
+  motivoRecusa    String?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("solicitacoes_gabinete")
+}
+
 model EmendaAnotacao {
   id        String   @id @default(cuid())
   userId    String

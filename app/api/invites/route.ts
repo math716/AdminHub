@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   const userRole = (session.user as any)?.role;
   const sessionGabineteId = (session.user as any)?.gabineteId;
 
-  if (userRole !== 'ADMIN' && userRole !== 'CHEFE' && userRole !== 'SUPER_ADMIN') {
+  if (userRole !== 'ADMIN' && userRole !== 'CHEFE' && userRole !== 'SUPER_ADMIN' && userRole !== 'AGENTE_POLITICO') {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
   }
 
@@ -26,12 +26,16 @@ export async function POST(request: NextRequest) {
 
   if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
     if (body.gabineteId) targetGabineteId = body.gabineteId;
-    if (body.role === 'CHEFE' || body.role === 'AGENTE_POLITICO') {
-      inviteRole = body.role;
-    }
+    // ADMIN só pode convidar CHEFE ou ASSESSOR pelo fluxo normal de Usuários
+    if (body.role === 'CHEFE') inviteRole = 'CHEFE';
   } else {
-    // CHEFE só pode convidar ASSESSORs para o próprio gabinete
-    inviteRole = 'ASSESSOR';
+    // AGENTE_POLITICO pode convidar CHEFE (se não existir) ou ASSESSOR
+    // CHEFE só pode convidar ASSESSOR para o próprio gabinete
+    if ((userRole === 'AGENTE_POLITICO') && body.role === 'CHEFE') {
+      inviteRole = 'CHEFE';
+    } else {
+      inviteRole = 'ASSESSOR';
+    }
   }
 
   if (!targetGabineteId) {
@@ -40,6 +44,16 @@ export async function POST(request: NextRequest) {
 
   const gabinete = await prisma.gabinete.findUnique({ where: { id: targetGabineteId } });
   if (!gabinete) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 404 });
+
+  // Bloquear segundo CHEFE no mesmo gabinete
+  if (inviteRole === 'CHEFE') {
+    const chefeExistente = await prisma.user.findFirst({
+      where: { gabineteId: targetGabineteId, role: 'CHEFE' },
+    });
+    if (chefeExistente) {
+      return NextResponse.json({ error: 'Este gabinete já possui um Chefe de Gabinete cadastrado' }, { status: 400 });
+    }
+  }
 
   const token = jwt.sign(
     { gabineteId: targetGabineteId, gabineteNome: gabinete.nome, role: inviteRole },
