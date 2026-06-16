@@ -15,12 +15,12 @@ interface GradientCardProps {
   delay?: number;
 }
 
-const palette: Record<string, { color: string; bg: string; glow: string }> = {
-  teal:   { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)',  glow: 'rgba(59,130,246,0.07)'  },
-  purple: { color: '#10b981', bg: 'rgba(16,185,129,0.12)',  glow: 'rgba(16,185,129,0.07)'  },
-  pink:   { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  glow: 'rgba(245,158,11,0.07)'  },
-  blue:   { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)',  glow: 'rgba(59,130,246,0.07)'  },
-  orange: { color: '#f97316', bg: 'rgba(249,115,22,0.12)',  glow: 'rgba(249,115,22,0.07)'  },
+const palette: Record<string, { accent: string; iconBg: string; iconBorder: string; chartColor: string }> = {
+  teal:   { accent: '#2563eb', iconBg: '#eff6ff', iconBorder: '#bfdbfe', chartColor: '#3b82f6' },
+  purple: { accent: '#059669', iconBg: '#ecfdf5', iconBorder: '#6ee7b7', chartColor: '#10b981' },
+  pink:   { accent: '#d97706', iconBg: '#fffbeb', iconBorder: '#fde68a', chartColor: '#f59e0b' },
+  blue:   { accent: '#2563eb', iconBg: '#eff6ff', iconBorder: '#bfdbfe', chartColor: '#3b82f6' },
+  orange: { accent: '#ea580c', iconBg: '#fff7ed', iconBorder: '#fdba74', chartColor: '#f97316' },
 };
 
 export default function GradientCard({
@@ -30,51 +30,39 @@ export default function GradientCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ delay, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       style={{
-        position: 'relative',
-        overflow: 'hidden',
-        borderRadius: 16,
-        padding: '20px 20px 18px',
-        background: 'rgba(255,255,255,0.028)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        borderLeft: `3px solid ${p.color}`,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.06)',
-        backdropFilter: 'blur(8px)',
+        background: '#ffffff',
+        border: '1px solid #e5eaf3',
+        borderTop: `3px solid ${p.accent}`,
+        borderRadius: 14,
+        padding: '20px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)',
       }}
     >
-      {/* Ambient glow from accent */}
-      <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: `linear-gradient(105deg, ${p.glow} 0%, transparent 45%)`,
-      }} />
-
-      {/* Header row */}
-      <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <p style={{
-          color: 'rgba(255,255,255,0.38)', fontSize: 11, fontWeight: 600,
-          letterSpacing: '0.09em', textTransform: 'uppercase', lineHeight: 1,
+          color: '#6b7280', fontSize: 11, fontWeight: 600,
+          letterSpacing: '0.07em', textTransform: 'uppercase',
         }}>
           {title}
         </p>
         {Icon && (
           <div style={{
-            padding: '8px', borderRadius: 10,
-            background: p.bg,
-            border: `1px solid ${p.color}22`,
-            flexShrink: 0,
+            padding: 9, borderRadius: 10,
+            background: p.iconBg, border: `1px solid ${p.iconBorder}`,
           }}>
-            <Icon style={{ width: 17, height: 17, color: p.color }} />
+            <Icon style={{ width: 17, height: 17, color: p.accent }} />
           </div>
         )}
       </div>
 
       {/* Value */}
       <p style={{
-        position: 'relative',
-        color: '#f1f5f9', fontSize: 34, fontWeight: 700,
+        color: '#111827', fontSize: 34, fontWeight: 700,
         letterSpacing: '-0.03em', lineHeight: 1, marginBottom: 10,
       }}>
         {value}
@@ -82,17 +70,17 @@ export default function GradientCard({
 
       {/* Subtitle */}
       {subtitle && (
-        <div style={{ position: 'relative', marginBottom: chart ? 14 : 0 }}>
-          <span style={{ color: 'rgba(255,255,255,0.28)', fontSize: 11 }}>{subtitle} </span>
+        <div style={{ marginBottom: chart ? 14 : 0 }}>
+          <span style={{ color: '#9ca3af', fontSize: 11 }}>{subtitle} </span>
           {subtitleValue !== undefined && subtitleValue !== '' && (
-            <span style={{ color: 'rgba(255,255,255,0.62)', fontWeight: 600, fontSize: 12 }}>{subtitleValue}</span>
+            <span style={{ color: '#374151', fontWeight: 600, fontSize: 12 }}>{subtitleValue}</span>
           )}
         </div>
       )}
 
-      {/* Mini chart */}
+      {/* Chart slot — passa chartColor via data attribute para o componente pai injetar */}
       {chart && (
-        <div style={{ position: 'relative', height: 52 }}>
+        <div style={{ height: 52, marginTop: 4 }} data-chart-color={p.chartColor}>
           {chart}
         </div>
       )}
