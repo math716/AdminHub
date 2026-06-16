@@ -35,7 +35,7 @@ export default function ConfiguracoesPage() {
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
 
-  const canAccess = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || userRole === 'AGENTE_POLITICO' || userRole === 'CHEFE';
+  const canAccess = userRole === 'AGENTE_POLITICO' || userRole === 'CHEFE';
 
   useEffect(() => {
     if (status === 'authenticated' && !canAccess) {

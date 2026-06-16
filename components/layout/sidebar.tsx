@@ -59,7 +59,7 @@ const navigation: { section: string; items: NavItem[] }[] = [
     items: [
       { name: 'Usuários',               href: '/dashboard/usuarios'        , icon: Users,    roles: ['AGENTE_POLITICO', 'CHEFE']                    },
       { name: 'Adm. de Gabinetes',      href: '/dashboard/admin/gabinetes' , icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN']                                               },
-      { name: 'Configurações',          href: '/dashboard/configuracoes'   , icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'AGENTE_POLITICO', 'CHEFE'] },
+      { name: 'Configurações',          href: '/dashboard/configuracoes'   , icon: Settings, roles: ['AGENTE_POLITICO', 'CHEFE'] },
     ],
   },
   {
