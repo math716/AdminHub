@@ -7,7 +7,7 @@ import {
   Building2, Link2, Copy, CheckCheck, Clock, CheckCircle2,
   XCircle, AlertCircle, Loader2, RefreshCw, ChevronDown, ChevronUp,
   User, Mail, Calendar, Trash2, UserX, Check, X,
-  SlidersHorizontal, KeyRound, Search, Shield,
+  SlidersHorizontal, KeyRound, Search, Shield, RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,6 +32,12 @@ interface UserData {
 }
 
 interface GabineteGroup { id: string; nome: string; users: UserData[] }
+
+interface UsuarioExcluido {
+  id: string; name: string; email: string; role: string;
+  deletedAt: string; deletedByName: string | null;
+  gabinete?: { id: string; nome: string };
+}
 
 interface Solicitacao {
   id: string; gabineteNome: string; userName: string; userEmail: string;
@@ -307,7 +313,9 @@ export default function AdminGabinetesPage() {
   const [linkExpiry,     setLinkExpiry]     = useState('');
   const [copiado,        setCopiado]        = useState(false);
   const [filtro,         setFiltro]         = useState<'TODAS'|'PENDENTE'|'APROVADA'|'RECUSADA'>('PENDENTE');
-  const [deletingUserId, setDeletingUserId] = useState<string|null>(null);
+  const [deletingUserId,   setDeletingUserId]   = useState<string|null>(null);
+  const [excluidos,        setExcluidos]        = useState<UsuarioExcluido[]>([]);
+  const [acaoExcluidoId,   setAcaoExcluidoId]   = useState<string|null>(null);
 
   // ── dados de usuários/gabinetes ──────────────────────────────────────────────
   const [allUsers,    setAllUsers]    = useState<UserData[]>([]);
@@ -346,14 +354,16 @@ export default function AdminGabinetesPage() {
   const carregarTudo = useCallback(async () => {
     setLoadingSol(true);
     try {
-      const [resSol, resUsers, resGabs] = await Promise.all([
+      const [resSol, resUsers, resGabs, resExcluidos] = await Promise.all([
         fetch('/api/admin/solicitacoes-gabinete', { cache: 'no-store' }),
         fetch('/api/users', { cache: 'no-store' }),
         fetch('/api/gabinetes', { cache: 'no-store' }),
+        fetch('/api/admin/usuarios-excluidos', { cache: 'no-store' }),
       ]);
-      if (resSol.ok)   { const d = await resSol.json();   setSolicitacoes(d.solicitacoes ?? []); }
-      if (resUsers.ok) { const d = await resUsers.json();  setAllUsers(d ?? []); }
-      if (resGabs.ok)  { const d = await resGabs.json();   setGabinetes(d ?? []); }
+      if (resSol.ok)      { const d = await resSol.json();      setSolicitacoes(d.solicitacoes ?? []); }
+      if (resUsers.ok)    { const d = await resUsers.json();     setAllUsers(d ?? []); }
+      if (resGabs.ok)     { const d = await resGabs.json();      setGabinetes(d ?? []); }
+      if (resExcluidos.ok){ const d = await resExcluidos.json(); setExcluidos(d ?? []); }
     } finally { setLoadingSol(false); }
   }, []);
 
@@ -475,6 +485,29 @@ export default function AdminGabinetesPage() {
       else { const d = await res.json(); toast.error(d.error || 'Erro ao excluir'); }
     } catch { toast.error('Erro de conexão'); }
     finally { setDeletingUserId(null); }
+  };
+
+  const acaoExcluido = async (userId: string, acao: 'RESTAURAR' | 'EXCLUIR') => {
+    setAcaoExcluidoId(userId);
+    try {
+      const res = await fetch(`/api/admin/usuarios-excluidos/${userId}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ acao }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setExcluidos(prev => prev.filter(u => u.id !== userId));
+        if (acao === 'RESTAURAR') {
+          toast.success('Usuário restaurado com sucesso.');
+          carregarTudo();
+        } else {
+          toast.success('Usuário excluído definitivamente.');
+        }
+      } else {
+        toast.error(data.error || 'Erro ao processar ação');
+      }
+    } catch { toast.error('Erro de conexão'); }
+    finally { setAcaoExcluidoId(null); }
   };
 
   const togglePerm = (set: Set<string>, setter: (s: Set<string>) => void, p: string) => {
@@ -806,6 +839,69 @@ export default function AdminGabinetesPage() {
                 </button>
               </div>
             ))}
+          </div>
+        </>
+      )}
+
+      {/* ── Exclusões Pendentes de Revisão ───────────────────────────────────── */}
+      {excluidos.length > 0 && (
+        <>
+          <div className="flex items-center gap-3 pt-2">
+            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+            <div className="flex items-center gap-2">
+              <Trash2 size={14} style={{ color: '#f87171' }} />
+              <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.35)' }}>EXCLUSÕES PENDENTES DE REVISÃO</span>
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
+                {excluidos.length}
+              </span>
+            </div>
+            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {excluidos.map(u => {
+              const dt = new Date(u.deletedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+              const isActing = acaoExcluidoId === u.id;
+              return (
+                <div key={u.id} style={{ background: 'rgba(7,29,54,0.75)', borderRadius: '0.875rem', border: '1px solid rgba(239,68,68,0.2)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', flexWrap: 'wrap' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.75rem', fontWeight: 700, color: '#f87171' }}>
+                    {u.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0' }}>{u.name}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Mail size={11} /> {u.email}
+                      </span>
+                      {u.gabinete && (
+                        <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <Building2 size={11} /> {u.gabinete.nome}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '0.7rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Calendar size={11} /> Removido por <strong>{u.deletedByName ?? 'desconhecido'}</strong> em {dt}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                    <button
+                      onClick={() => acaoExcluido(u.id, 'RESTAURAR')} disabled={isActing}
+                      title="Restaurar usuário"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.875rem', borderRadius: '0.65rem', border: '1px solid rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.1)', color: '#4ade80', fontSize: '0.78rem', fontWeight: 600, cursor: isActing ? 'not-allowed' : 'pointer' }}>
+                      {isActing ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
+                      Restaurar
+                    </button>
+                    <button
+                      onClick={() => acaoExcluido(u.id, 'EXCLUIR')} disabled={isActing}
+                      title="Excluir definitivamente"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.875rem', borderRadius: '0.65rem', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#f87171', fontSize: '0.78rem', fontWeight: 600, cursor: isActing ? 'not-allowed' : 'pointer' }}>
+                      {isActing ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </>
       )}

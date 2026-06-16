@@ -20,8 +20,11 @@ export async function GET() {
     }
 
     // SUPER_ADMIN e ADMIN veem todos; demais veem apenas o próprio gabinete
+    // Exclui usuários com soft delete pendente
     const users = await prisma.user.findMany({
-      where: (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') ? {} : { gabineteId },
+      where: (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN')
+        ? { deletedAt: null }
+        : { gabineteId, deletedAt: null },
       select: {
         id: true,
         email: true,
