@@ -111,15 +111,19 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 relative">
-      {/* Grade sutil de fundo */}
+      {/* Grid de fundo */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)',
-          backgroundSize: '48px 48px',
+            'linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
+          maskImage: 'radial-gradient(ellipse 80% 80% at 50% 0%, black 40%, transparent 100%)',
         }}
       />
+      {/* Glow no topo */}
+      <div className="fixed inset-0 pointer-events-none z-0"
+        style={{ background: 'radial-gradient(ellipse 60% 40% at 50% -10%, rgba(74,158,222,0.06) 0%, transparent 70%)' }} />
 
       <PageHeader
         icon={LayoutDashboard}
@@ -191,15 +195,17 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="backdrop-blur-sm rounded-2xl p-5"
-          style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
+          style={{ background: 'rgba(255,255,255,0.028)', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="h-5 w-5" style={{ color: '#c9a227' }} />
-            <h3 className="text-white font-semibold">Demandas por Status</h3>
+          <div className="flex items-center gap-2.5 mb-5">
+            <div style={{ padding: 7, borderRadius: 9, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)' }}>
+              <BarChart3 className="h-4 w-4" style={{ color: '#3b82f6' }} />
+            </div>
+            <h3 className="font-semibold text-sm" style={{ color: 'rgba(255,255,255,0.85)' }}>Demandas por Status</h3>
           </div>
           <div className="h-[280px]">
-            <Donut3DChart 
-              data={statusDonutData} 
+            <Donut3DChart
+              data={statusDonutData}
               centerValue={stats?.total ?? 0}
               centerLabel="Total"
             />
@@ -212,11 +218,13 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
           className="backdrop-blur-sm rounded-2xl p-5"
-          style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
+          style={{ background: 'rgba(255,255,255,0.028)', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="h-5 w-5" style={{ color: '#c9a227' }} />
-            <h3 className="text-white font-semibold">Demandas por Prioridade</h3>
+          <div className="flex items-center gap-2.5 mb-5">
+            <div style={{ padding: 7, borderRadius: 9, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.2)' }}>
+              <AlertTriangle className="h-4 w-4" style={{ color: '#f59e0b' }} />
+            </div>
+            <h3 className="font-semibold text-sm" style={{ color: 'rgba(255,255,255,0.85)' }}>Demandas por Prioridade</h3>
           </div>
           <div className="h-[280px]">
             <Donut3DChart
@@ -236,16 +244,18 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
           className="backdrop-blur-sm rounded-2xl p-5"
-          style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
+          style={{ background: 'rgba(255,255,255,0.028)', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <FileText className="h-5 w-5" style={{ color: '#c9a227' }} />
-            <h3 className="text-white font-semibold">Demandas Recentes</h3>
+          <div className="flex items-center gap-2.5 mb-5">
+            <div style={{ padding: 7, borderRadius: 9, background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <FileText className="h-4 w-4" style={{ color: '#10b981' }} />
+            </div>
+            <h3 className="font-semibold text-sm" style={{ color: 'rgba(255,255,255,0.85)' }}>Demandas Recentes</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-xs border-b" style={{ color: '#8fa3bf', borderColor: 'rgba(30,74,128,0.5)' }}>
+                <tr className="text-left text-xs border-b" style={{ color: 'rgba(255,255,255,0.3)', borderColor: 'rgba(255,255,255,0.07)' }}>
                   <th className="pb-3 font-medium">Título</th>
                   <th className="pb-3 font-medium">Status</th>
                   <th className="pb-3 font-medium">Prioridade</th>
@@ -253,7 +263,7 @@ export default function DashboardPage() {
               </thead>
               <tbody>
                 {stats?.recentDemands?.slice(0, 5)?.map((demand: any, index: number) => (
-                  <tr key={demand.id || index} className="last:border-0" style={{ borderBottom: '1px solid rgba(30,74,128,0.3)' }}>
+                  <tr key={demand.id || index} className="last:border-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <td className="py-3 text-white text-sm">
                       <div className="flex items-center gap-2">
                         <div 
@@ -304,11 +314,13 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
           className="backdrop-blur-sm rounded-2xl p-5"
-          style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
+          style={{ background: 'rgba(255,255,255,0.028)', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="h-5 w-5" style={{ color: '#c9a227' }} />
-            <h3 className="text-white font-semibold">Demandas por Categoria</h3>
+          <div className="flex items-center gap-2.5 mb-5">
+            <div style={{ padding: 7, borderRadius: 9, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)' }}>
+              <BarChart3 className="h-4 w-4" style={{ color: '#8b5cf6' }} />
+            </div>
+            <h3 className="font-semibold text-sm" style={{ color: 'rgba(255,255,255,0.85)' }}>Demandas por Categoria</h3>
           </div>
           <div className="h-[280px]">
             <DemandsByCategoryChart data={stats?.byCategory} darkMode={true} />
@@ -322,11 +334,13 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
         className="relative z-10 backdrop-blur-sm rounded-2xl p-5"
-        style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
+        style={{ background: 'rgba(255,255,255,0.028)', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
       >
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="h-5 w-5" style={{ color: '#c9a227' }} />
-          <h3 className="text-white font-semibold">Evolução de Demandas</h3>
+        <div className="flex items-center gap-2.5 mb-5">
+          <div style={{ padding: 7, borderRadius: 9, background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.2)' }}>
+            <TrendingUp className="h-4 w-4" style={{ color: '#4a9ede' }} />
+          </div>
+          <h3 className="font-semibold text-sm" style={{ color: 'rgba(255,255,255,0.85)' }}>Evolução de Demandas</h3>
         </div>
         <div className="h-[250px]">
           <DemandsTimelineChart data={stats?.timeline} darkMode={true} />

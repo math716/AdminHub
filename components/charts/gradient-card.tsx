@@ -15,71 +15,84 @@ interface GradientCardProps {
   delay?: number;
 }
 
-const gradients = {
-  teal: 'from-teal-500 via-cyan-600 to-teal-700',
-  purple: 'from-purple-500 via-violet-600 to-purple-700',
-  pink: 'from-pink-500 via-rose-500 to-pink-600',
-  blue: 'from-blue-500 via-indigo-600 to-blue-700',
-  orange: 'from-orange-500 via-amber-500 to-orange-600',
-};
-
-const iconBgColors = {
-  teal: 'bg-teal-400/30',
-  purple: 'bg-purple-400/30',
-  pink: 'bg-pink-400/30',
-  blue: 'bg-blue-400/30',
-  orange: 'bg-orange-400/30',
+const palette: Record<string, { color: string; bg: string; glow: string }> = {
+  teal:   { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)',  glow: 'rgba(59,130,246,0.07)'  },
+  purple: { color: '#10b981', bg: 'rgba(16,185,129,0.12)',  glow: 'rgba(16,185,129,0.07)'  },
+  pink:   { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  glow: 'rgba(245,158,11,0.07)'  },
+  blue:   { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)',  glow: 'rgba(59,130,246,0.07)'  },
+  orange: { color: '#f97316', bg: 'rgba(249,115,22,0.12)',  glow: 'rgba(249,115,22,0.07)'  },
 };
 
 export default function GradientCard({
-  title,
-  value,
-  subtitle,
-  subtitleValue,
-  icon: Icon,
-  gradient,
-  chart,
-  delay = 0,
+  title, value, subtitle, subtitleValue, icon: Icon, gradient, chart, delay = 0,
 }: GradientCardProps) {
+  const p = palette[gradient] ?? palette.blue;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradients[gradient]} p-5 shadow-lg shadow-black/20`}
+      transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: 16,
+        padding: '20px 20px 18px',
+        background: 'rgba(255,255,255,0.028)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderLeft: `3px solid ${p.color}`,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.06)',
+        backdropFilter: 'blur(8px)',
+      }}
     >
-      {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          <circle cx="80" cy="20" r="40" fill="currentColor" />
-        </svg>
-      </div>
+      {/* Ambient glow from accent */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: `linear-gradient(105deg, ${p.glow} 0%, transparent 45%)`,
+      }} />
 
-      <div className="relative z-10 flex justify-between items-start">
-        <div className="flex-1">
-          <h3 className="text-white/80 text-sm font-medium mb-1">{title}</h3>
-          <p className="text-white text-2xl font-bold tracking-tight">{value}</p>
-          
-          {subtitle && (
-            <div className="mt-3">
-              <p className="text-white/70 text-xs">{subtitle}</p>
-              {subtitleValue && (
-                <p className="text-white font-semibold text-sm">{subtitleValue}</p>
-              )}
-            </div>
-          )}
-        </div>
-
+      {/* Header row */}
+      <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <p style={{
+          color: 'rgba(255,255,255,0.38)', fontSize: 11, fontWeight: 600,
+          letterSpacing: '0.09em', textTransform: 'uppercase', lineHeight: 1,
+        }}>
+          {title}
+        </p>
         {Icon && (
-          <div className={`p-2.5 rounded-xl ${iconBgColors[gradient]}`}>
-            <Icon className="h-6 w-6 text-white" />
+          <div style={{
+            padding: '8px', borderRadius: 10,
+            background: p.bg,
+            border: `1px solid ${p.color}22`,
+            flexShrink: 0,
+          }}>
+            <Icon style={{ width: 17, height: 17, color: p.color }} />
           </div>
         )}
       </div>
 
-      {/* Mini chart area */}
+      {/* Value */}
+      <p style={{
+        position: 'relative',
+        color: '#f1f5f9', fontSize: 34, fontWeight: 700,
+        letterSpacing: '-0.03em', lineHeight: 1, marginBottom: 10,
+      }}>
+        {value}
+      </p>
+
+      {/* Subtitle */}
+      {subtitle && (
+        <div style={{ position: 'relative', marginBottom: chart ? 14 : 0 }}>
+          <span style={{ color: 'rgba(255,255,255,0.28)', fontSize: 11 }}>{subtitle} </span>
+          {subtitleValue !== undefined && subtitleValue !== '' && (
+            <span style={{ color: 'rgba(255,255,255,0.62)', fontWeight: 600, fontSize: 12 }}>{subtitleValue}</span>
+          )}
+        </div>
+      )}
+
+      {/* Mini chart */}
       {chart && (
-        <div className="relative z-10 mt-4 h-16">
+        <div style={{ position: 'relative', height: 52 }}>
           {chart}
         </div>
       )}
