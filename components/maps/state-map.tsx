@@ -581,6 +581,8 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
 
       // Cleanup anterior
       cleanupMap();
+      municipioSelectedLayerRef.current = null;
+      selectedMunicipioRef.current = null;
 
       if (!mapRef.current) {
         isInitializingRef.current = false;

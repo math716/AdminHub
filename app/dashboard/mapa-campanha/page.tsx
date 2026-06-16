@@ -1494,6 +1494,10 @@ export default function MapaCampanhaPage() {
           ativa: true
         });
         toast.success('Parceria salva com sucesso!');
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData?.error || 'Erro ao salvar parceria');
+        console.error('Erro ao salvar parceria:', res.status, errData);
       }
     } catch (error) {
       console.error('Erro ao salvar parceria:', error);
