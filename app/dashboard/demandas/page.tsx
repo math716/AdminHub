@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
@@ -447,16 +447,16 @@ export default function DemandasPage() {
                   onClick={() => handleEdit(demand)}
                   className="relative cursor-pointer rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(7,29,54,0.85) 0%, rgba(7,29,54,0.65) 100%)',
-                    border: '1px solid rgba(201,162,39,0.15)',
-                    backdropFilter: 'blur(10px)',
+                    background: '#ffffff',
+                    border: '1px solid #e5eaf3',
+                    ,
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = `${catColor}55`;
                     e.currentTarget.style.boxShadow = `0 10px 30px -10px ${catColor}40`;
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(201,162,39,0.15)';
+                    e.currentTarget.style.borderColor = '#f3f4f6';
                     e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
@@ -509,7 +509,7 @@ export default function DemandasPage() {
                                   />
                                 )}
                               </span>
-                              <h3 className="font-semibold text-white truncate text-[15px] capitalize">
+                              <h3 className="font-semibold text-gray-800 truncate text-[15px] capitalize">
                                 {demand?.title}
                               </h3>
                               {isHighPriority && (
@@ -612,7 +612,7 @@ export default function DemandasPage() {
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
               placeholder="Descreva a demanda em uma linha"
-              className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500"
+              className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-800 text-sm outline-none focus:border-sky-500"
             />
           </div>
 
@@ -625,7 +625,7 @@ export default function DemandasPage() {
                 onChange={(e) => setFormData({ ...formData, solicitante: e.target.value })}
                 required
                 placeholder="Nome completo"
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500"
+                className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-800 text-sm outline-none focus:border-sky-500"
               />
             </div>
             <div>
@@ -634,7 +634,7 @@ export default function DemandasPage() {
                 value={formData.contato}
                 onChange={(e) => setFormData({ ...formData, contato: e.target.value })}
                 placeholder="Telefone ou email"
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500"
+                className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-800 text-sm outline-none focus:border-sky-500"
               />
             </div>
           </div>
@@ -667,7 +667,7 @@ export default function DemandasPage() {
                 value={formData.bairro}
                 onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
                 placeholder="Bairro"
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500"
+                className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-800 text-sm outline-none focus:border-sky-500"
               />
             </div>
           </div>
@@ -680,7 +680,7 @@ export default function DemandasPage() {
                 value={formData.endereco}
                 onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
                 placeholder="Rua, número, bairro"
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500"
+                className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-800 text-sm outline-none focus:border-sky-500"
               />
               <button
                 type="button"
@@ -738,7 +738,7 @@ export default function DemandasPage() {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Detalhes da demanda..."
-              className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500 resize-none"
+              className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-800 text-sm outline-none focus:border-sky-500 resize-none"
             />
           </div>
 
@@ -749,7 +749,7 @@ export default function DemandasPage() {
               <button
                 type="button"
                 onClick={() => fotoInputRef.current?.click()}
-                className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-gray-300 hover:bg-white/10"
+                className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-gray-300 hover:bg-gray-100"
               >
                 <Camera className="w-4 h-4" />
                 {formData.foto ? 'Trocar foto' : 'Adicionar foto'}
@@ -773,7 +773,7 @@ export default function DemandasPage() {
               rows={3}
               value={formData.observations}
               onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-              className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500 resize-none"
+              className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-800 text-sm outline-none focus:border-sky-500 resize-none"
             />
           </div>
 
@@ -810,3 +810,6 @@ export default function DemandasPage() {
     </div>
   );
 }
+
+
+

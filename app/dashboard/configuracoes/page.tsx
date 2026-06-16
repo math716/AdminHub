@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
@@ -127,7 +127,7 @@ export default function ConfiguracoesPage() {
   if (status === 'loading') return null;
   if (!canAccess) return null;
 
-  const cardStyle = { background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' };
+  const cardStyle = { background: '#ffffff', border: '1px solid #e5eaf3' };
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -155,14 +155,14 @@ export default function ConfiguracoesPage() {
 
       {/* WhatsApp Section */}
       <div className="rounded-2xl overflow-hidden" style={cardStyle}>
-        <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f3f4f6' }}>
           <div className="flex items-center gap-2">
             <Smartphone className="w-4 h-4" style={{ color: '#25d366' }} />
-            <h2 className="font-semibold text-sm text-white">WhatsApp</h2>
+            <h2 className="font-semibold text-sm text-gray-800">WhatsApp</h2>
           </div>
           <button onClick={handleRefresh} disabled={refreshing}
-            className="p-1.5 rounded-lg transition-all hover:bg-white/5 disabled:opacity-40"
-            style={{ color: 'rgba(255,255,255,0.4)' }}>
+            className="p-1.5 rounded-lg transition-all hover:bg-gray-100 disabled:opacity-40"
+            style={{ color: '#9ca3af' }}>
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
@@ -172,11 +172,11 @@ export default function ConfiguracoesPage() {
           {waStatus === 'not_configured' && (
             <div className="text-center py-6">
               <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <WifiOff className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.3)' }} />
+                style={{ background: '#f8fafc', border: '1px solid #e5eaf3' }}>
+                <WifiOff className="w-6 h-6" style={{ color: '#9ca3af' }} />
               </div>
-              <p className="text-white font-medium mb-1">Evolution API não configurada</p>
-              <p className="text-xs mb-4" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              <p className="text-gray-800 font-medium mb-1">Evolution API não configurada</p>
+              <p className="text-xs mb-4" style={{ color: '#9ca3af' }}>
                 O servidor de WhatsApp ainda não está instalado. Siga o guia de instalação.
               </p>
               <span className="text-xs px-3 py-1.5 rounded-full" style={{ background: 'rgba(239,68,68,0.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.2)' }}>
@@ -202,15 +202,15 @@ export default function ConfiguracoesPage() {
                   <Wifi className="w-5 h-5" style={{ color: '#25d366' }} />
                 </div>
                 <div>
-                  <p className="text-white font-semibold text-sm">WhatsApp Conectado</p>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                  <p className="text-gray-800 font-semibold text-sm">WhatsApp Conectado</p>
+                  <p className="text-xs" style={{ color: '#6b7280' }}>
                     Instância: <span style={{ color: '#c9a227' }}>{instanceData?.instanceName}</span>
                   </p>
                 </div>
                 <CheckCircle2 className="w-5 h-5 ml-auto flex-shrink-0" style={{ color: '#4ade80' }} />
               </div>
 
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              <p className="text-xs" style={{ color: '#9ca3af' }}>
                 O número conectado será usado para disparar mensagens para os contatos do gabinete.
                 Não desconecte o WhatsApp no celular para manter o serviço ativo.
               </p>
@@ -231,13 +231,13 @@ export default function ConfiguracoesPage() {
                 // Sem QR code — mostrar apenas o botão, sem spinner
                 <div className="text-center py-4">
                   <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                    style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)' }}>
+                    style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid #e5eaf3' }}>
                     <QrCode className="w-6 h-6" style={{ color: '#c9a227' }} />
                   </div>
-                  <p className="text-white font-medium mb-1">
+                  <p className="text-gray-800 font-medium mb-1">
                     {instanceData?.instanceName ? 'WhatsApp desconectado' : 'Nenhum número conectado'}
                   </p>
-                  <p className="text-xs mb-4" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  <p className="text-xs mb-4" style={{ color: '#9ca3af' }}>
                     Clique abaixo para gerar o QR Code e conectar o WhatsApp do gabinete.
                   </p>
                   <button onClick={handleCreate} disabled={creating}
@@ -251,7 +251,7 @@ export default function ConfiguracoesPage() {
                 // QR code disponível — mostrar para escanear
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 p-3 rounded-xl"
-                    style={{ background: 'rgba(201,162,39,0.07)', border: '1px solid rgba(201,162,39,0.2)' }}>
+                    style={{ background: 'rgba(201,162,39,0.07)', border: '1px solid #e5eaf3' }}>
                     <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#c9a227' }} />
                     <p className="text-xs" style={{ color: '#e6b83a' }}>
                       Abra o WhatsApp no celular → Dispositivos conectados → Conectar dispositivo → Escaneie o QR Code
@@ -262,7 +262,7 @@ export default function ConfiguracoesPage() {
                     <div className="p-3 rounded-2xl bg-white">
                       <img src={qrCode} alt="QR Code WhatsApp" className="w-52 h-52 object-contain" />
                     </div>
-                    <p className="text-xs flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                    <p className="text-xs flex items-center gap-1.5" style={{ color: '#9ca3af' }}>
                       <RefreshCw className="w-3 h-3 animate-spin" />
                       Aguardando escaneamento… (atualiza automaticamente)
                     </p>
@@ -270,7 +270,7 @@ export default function ConfiguracoesPage() {
 
                   <button onClick={handleCreate} disabled={creating}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80 disabled:opacity-50"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }}>
+                    style={{ background: '#f8fafc', border: '1px solid #e5eaf3', color: '#9ca3af' }}>
                     {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                     Gerar novo QR Code
                   </button>
@@ -293,3 +293,8 @@ export default function ConfiguracoesPage() {
     </div>
   );
 }
+
+
+
+
+

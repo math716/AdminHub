@@ -2319,7 +2319,7 @@ export default function MapaCampanhaPage() {
   };
 
   return (
-    <div className="min-h-screen p-3 md:p-6" style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 50%, #0c2a4f 100%)' }}>
+    <div className="min-h-screen p-3 md:p-6">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -2338,7 +2338,7 @@ export default function MapaCampanhaPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <Card className="mb-6" style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(201,162,39,0.2)', backdropFilter: 'blur(8px)' }}>
+        <Card className="mb-6" style={{ background: '#ffffff', border: '1px solid rgba(201,162,39,0.2)',  }}>
           <CardContent className="p-5">
 
             {/* Modo colapsado: resumo + botão editar */}
@@ -2477,7 +2477,7 @@ export default function MapaCampanhaPage() {
           >
             <div
               className="flex items-center gap-5 px-5 py-3 rounded-2xl flex-wrap"
-              style={{ background: 'rgba(7,29,54,0.65)', border: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(8px)' }}
+              style={{ background: '#ffffff', border: '1px solid rgba(255,255,255,0.07)',  }}
             >
               {/* Nome + cargo */}
               {(() => {
@@ -2527,7 +2527,7 @@ export default function MapaCampanhaPage() {
             transition={{ delay: 0.15 }}
             className="mb-6"
           >
-            <Card style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <Card style={{ background: '#ffffff', border: '1px solid rgba(255,255,255,0.07)' }}>
               <CardContent className="px-4 py-1.5">
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Cenário</span>
@@ -2572,7 +2572,7 @@ export default function MapaCampanhaPage() {
             className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6"
           >
             {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
-            <Card style={{ background: 'rgba(7,29,54,0.8)', border: filtroTipo !== 'todos' ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
+            <Card style={{ background: '#ffffff', border: filtroTipo !== 'todos' ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -2589,7 +2589,7 @@ export default function MapaCampanhaPage() {
             </Card>
             )}
 
-            <Card style={{ background: 'rgba(7,29,54,0.8)', borderLeft: `3px solid`, borderLeftColor: cenarioConfig[cenarioAtivo].border.replace('border-',''), border: '1px solid rgba(255,255,255,0.07)' }} className={`border-l-4 ${cenarioConfig[cenarioAtivo].border}`}>
+            <Card style={{ background: '#ffffff', borderLeft: `3px solid`, borderLeftColor: cenarioConfig[cenarioAtivo].border.replace('border-',''), border: '1px solid rgba(255,255,255,0.07)' }} className={`border-l-4 ${cenarioConfig[cenarioAtivo].border}`}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -2608,7 +2608,7 @@ export default function MapaCampanhaPage() {
             </Card>
 
             {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
-            <Card style={{ background: 'rgba(7,29,54,0.8)', border: filtroTipo !== 'todos' ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
+            <Card style={{ background: '#ffffff', border: filtroTipo !== 'todos' ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -2631,7 +2631,7 @@ export default function MapaCampanhaPage() {
             </Card>
             )}
 
-            <Card style={{ background: 'rgba(7,29,54,0.8)', border: filtroTipo !== 'todos' ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
+            <Card style={{ background: '#ffffff', border: filtroTipo !== 'todos' ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -4484,7 +4484,7 @@ export default function MapaCampanhaPage() {
               onClick={criarNovoCandidato}
               disabled={!novoCandidatoNome.trim() || ((novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') && !novoCandidatoMunicipio)}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, #071d36 0%, #0c2a4f 60%, #1e4a80 100%)', border: '1px solid rgba(201,162,39,0.3)', boxShadow: '0 4px 16px rgba(7,29,54,0.5)' }}
+              style={{ background: 'linear-gradient(135deg, #2563eb, #3b82f6)', border: 'none', boxShadow: '0 4px 16px rgba(37,99,235,0.3)' }}
               onMouseEnter={e => { const ok = novoCandidatoNome.trim() && (!(novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') || novoCandidatoMunicipio); if (ok) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.15)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)'; }}
             >

@@ -38,9 +38,9 @@ export function EmptyState({
           <Icon className="h-6 w-6" style={{ color: '#c9a227' }} />
         </div>
       )}
-      <p className="text-white font-semibold">{title}</p>
+      <p className="font-semibold" style={{ color: '#111827' }}>{title}</p>
       {description && (
-        <p className="text-slate-400 text-sm mt-1 max-w-md mx-auto">{description}</p>
+        <p className="text-sm mt-1 max-w-md mx-auto" style={{ color: '#6b7280' }}>{description}</p>
       )}
       {action && <div className="mt-5 flex justify-center">{action}</div>}
     </Card>

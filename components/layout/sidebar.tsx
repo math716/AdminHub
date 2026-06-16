@@ -134,7 +134,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                       color: '#ffffff',
                     } : {
                       borderLeft: '3px solid transparent',
-                      color: 'rgba(255,255,255,0.55)',
+                      color: 'rgba(255,255,255,0.78)',
                     }}
                   >
                     <span
