@@ -4071,7 +4071,7 @@ export default function MapaCampanhaPage() {
             {/* Buttons */}
             <div className="flex gap-2 pt-2">
               <Button
-                onClick={() => setShowModal(false)}
+                onClick={() => { setShowModal(false); setSelectedMapMunicipio(null); }}
                 variant="outline"
                 className="flex-1 border-slate-600 text-slate-300"
               >
@@ -4091,6 +4091,7 @@ export default function MapaCampanhaPage() {
                     dobradaObservacoesTemp
                   );
                   setShowModal(false);
+                  setSelectedMapMunicipio(null);
                 }}
                 className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500"
               >
