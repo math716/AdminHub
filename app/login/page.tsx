@@ -294,12 +294,6 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Divisor */}
-            <div className="flex items-center gap-3 my-6">
-              <div className="flex-1 h-px" style={{ background: '#f0f0f0' }} />
-              <span className="text-xs" style={{ color: '#d1d5db' }}>ou</span>
-              <div className="flex-1 h-px" style={{ background: '#f0f0f0' }} />
-            </div>
 
           </motion.div>
 
