@@ -20,7 +20,7 @@ export async function POST(
     const userRole = (session.user as any)?.role;
     const gabineteId = (session.user as any)?.gabineteId;
 
-    if (userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
+    if (userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'AGENTE_POLITICO') {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
     }
 
@@ -32,8 +32,8 @@ export async function POST(
       return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
 
-    // CHEFE só pode aprovar usuários do próprio gabinete; ADMIN pode aprovar qualquer um
-    if (userRole === 'CHEFE' && userToApprove.gabineteId !== gabineteId) {
+    // CHEFE e AGENTE_POLITICO só podem aprovar usuários do próprio gabinete
+    if ((userRole === 'CHEFE' || userRole === 'AGENTE_POLITICO') && userToApprove.gabineteId !== gabineteId) {
       return NextResponse.json({ error: 'Você só pode aprovar usuários do seu gabinete' }, { status: 403 });
     }
 
