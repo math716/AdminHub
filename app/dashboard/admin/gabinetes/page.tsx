@@ -6,9 +6,24 @@ import { useRouter } from 'next/navigation';
 import {
   Building2, Link2, Copy, CheckCheck, Clock, CheckCircle2,
   XCircle, AlertCircle, Loader2, RefreshCw, ChevronDown, ChevronUp,
-  User, Mail, Calendar,
+  User, Mail, Calendar, Trash2, UserX,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+interface UsuarioSemGabinete {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  approved: boolean;
+  createdAt: string;
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN: 'Super Admin', ADMIN: 'Administrador',
+  AGENTE_POLITICO: 'Agente Político', CHEFE: 'Chefe de Gabinete',
+  ASSESSOR: 'Assessor', ANALISTA: 'Analista', VISUALIZADOR: 'Visualizador',
+};
 
 interface Solicitacao {
   id: string;
@@ -167,13 +182,15 @@ export default function AdminGabinetesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
-  const [loadingSol,   setLoadingSol]   = useState(true);
-  const [gerandoLink,  setGerandoLink]  = useState(false);
-  const [linkGerado,   setLinkGerado]   = useState('');
-  const [linkExpiry,   setLinkExpiry]   = useState('');
-  const [copiado,      setCopiado]      = useState(false);
-  const [filtro,       setFiltro]       = useState<'TODAS' | 'PENDENTE' | 'APROVADA' | 'RECUSADA'>('PENDENTE');
+  const [solicitacoes,    setSolicitacoes]    = useState<Solicitacao[]>([]);
+  const [loadingSol,      setLoadingSol]      = useState(true);
+  const [gerandoLink,     setGerandoLink]     = useState(false);
+  const [linkGerado,      setLinkGerado]      = useState('');
+  const [linkExpiry,      setLinkExpiry]      = useState('');
+  const [copiado,         setCopiado]         = useState(false);
+  const [filtro,          setFiltro]          = useState<'TODAS' | 'PENDENTE' | 'APROVADA' | 'RECUSADA'>('PENDENTE');
+  const [semGabinete,     setSemGabinete]     = useState<UsuarioSemGabinete[]>([]);
+  const [deletingUserId,  setDeletingUserId]  = useState<string | null>(null);
 
   const role = (session?.user as any)?.role;
 
@@ -185,15 +202,41 @@ export default function AdminGabinetesPage() {
   const carregarSolicitacoes = useCallback(async () => {
     setLoadingSol(true);
     try {
-      const res = await fetch('/api/admin/solicitacoes-gabinete', { cache: 'no-store' });
-      const data = await res.json();
-      if (res.ok) setSolicitacoes(data.solicitacoes);
+      const [resSol, resUsers] = await Promise.all([
+        fetch('/api/admin/solicitacoes-gabinete', { cache: 'no-store' }),
+        fetch('/api/users', { cache: 'no-store' }),
+      ]);
+      const dataSol   = await resSol.json();
+      const dataUsers = await resUsers.json();
+      if (resSol.ok)   setSolicitacoes(dataSol.solicitacoes);
+      if (resUsers.ok) setSemGabinete(
+        (dataUsers as any[]).filter((u: any) => !u.gabinete && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN')
+      );
     } finally {
       setLoadingSol(false);
     }
   }, []);
 
   useEffect(() => { if (status === 'authenticated') carregarSolicitacoes(); }, [status, carregarSolicitacoes]);
+
+  async function deletarUsuario(userId: string, userName: string) {
+    if (!confirm(`Excluir o usuário "${userName}"? Esta ação não pode ser desfeita.`)) return;
+    setDeletingUserId(userId);
+    try {
+      const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSemGabinete(prev => prev.filter(u => u.id !== userId));
+        toast.success(`Usuário "${userName}" excluído.`);
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Erro ao excluir usuário');
+      }
+    } catch {
+      toast.error('Erro de conexão');
+    } finally {
+      setDeletingUserId(null);
+    }
+  }
 
   async function gerarLink() {
     setGerandoLink(true);
@@ -358,6 +401,59 @@ export default function AdminGabinetesPage() {
             <SolicitacaoCard key={sol.id} sol={sol} onAcao={carregarSolicitacoes} />
           ))}
         </div>
+      )}
+
+      {/* ── Usuários Sem Gabinete ───────────────────────────────────────── */}
+      {semGabinete.length > 0 && (
+        <>
+          <div className="flex items-center gap-3 pt-2">
+            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+            <div className="flex items-center gap-2">
+              <UserX size={14} style={{ color: '#f87171' }} />
+              <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                USUÁRIOS SEM GABINETE
+              </span>
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
+                {semGabinete.length}
+              </span>
+            </div>
+            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {semGabinete.map(u => (
+              <div key={u.id} style={{ background: 'rgba(7,29,54,0.75)', borderRadius: '0.875rem', border: '1px solid rgba(239,68,68,0.15)', padding: '0.875rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <User size={16} style={{ color: '#f87171' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0' }}>{u.name}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.73rem', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <Mail size={11} /> {u.email}
+                    </span>
+                    <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.5rem', borderRadius: '999px', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      {ROLE_LABELS[u.role] ?? u.role}
+                    </span>
+                    {!u.approved && (
+                      <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.5rem', borderRadius: '999px', background: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' }}>
+                        Não aprovado
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => deletarUsuario(u.id, u.name)}
+                  disabled={deletingUserId === u.id}
+                  title="Excluir usuário"
+                  style={{ padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.08)', color: '#f87171', cursor: deletingUserId === u.id ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}
+                >
+                  {deletingUserId === u.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

@@ -95,3 +95,43 @@ export async function PATCH(
     return NextResponse.json({ error: 'Erro ao atualizar usuário' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+
+    const sessionRole   = (session.user as any)?.role;
+    const sessionUserId = (session.user as any)?.id;
+
+    if (sessionRole !== 'ADMIN' && sessionRole !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
+    }
+    if (params.id === sessionUserId) {
+      return NextResponse.json({ error: 'Você não pode excluir a própria conta' }, { status: 400 });
+    }
+
+    const target = await prisma.user.findUnique({
+      where: { id: params.id },
+      select: { role: true, email: true },
+    });
+    if (!target) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+
+    if (target.role === 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Este usuário não pode ser excluído' }, { status: 403 });
+    }
+    const PROTECTED_EMAIL = process.env.SUPER_ADMIN_EMAIL ?? 'matheuseuclides716@gmail.com';
+    if (target.email === PROTECTED_EMAIL) {
+      return NextResponse.json({ error: 'Este usuário não pode ser excluído' }, { status: 403 });
+    }
+
+    await prisma.user.delete({ where: { id: params.id } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    return NextResponse.json({ error: 'Erro ao excluir usuário' }, { status: 500 });
+  }
+}
