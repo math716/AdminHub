@@ -1,15 +1,30 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
-  LayoutDashboard, Map, FileText, Users, LogOut, Target,
-  MapPin, CalendarDays, BookUser, Settings, Building2,
-  ChevronLeft, ChevronRight, Landmark, Upload,
+  LayoutDashboard,
+  Map,
+  FileText,
+  Users,
+  LogOut,
+  Target,
+  MapPin,
+  CalendarDays,
+  BookUser,
+  Settings,
+  Building2,
+
+  ChevronLeft,
+  ChevronRight,
+  Landmark,
+  Upload,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
 import { PERMISSIONS, type Permission, hasPermission, ROLE_LABELS } from '@/lib/permissions';
 
 type NavItem = {
@@ -24,27 +39,27 @@ const navigation: { section: string; items: NavItem[] }[] = [
   {
     section: 'Gabinete',
     items: [
-      { name: 'Dashboard',        href: '/dashboard',               icon: LayoutDashboard },
-      { name: 'Demandas',         href: '/dashboard/demandas',      icon: FileText,      permission: PERMISSIONS.DEMANDAS      },
-      { name: 'Agenda',           href: '/dashboard/agenda',        icon: CalendarDays,  permission: PERMISSIONS.AGENDA        },
-      { name: 'Contatos',         href: '/dashboard/contatos',      icon: BookUser,      permission: PERMISSIONS.CONTATOS      },
-      { name: 'Mapa do Gabinete', href: '/dashboard/mapa-demandas', icon: MapPin,        permission: PERMISSIONS.MAPA_GABINETE },
+      { name: 'Dashboard',        href: '/dashboard'              , icon: LayoutDashboard },
+      { name: 'Demandas',         href: '/dashboard/demandas'     , icon: FileText,     permission: PERMISSIONS.DEMANDAS      },
+      { name: 'Agenda',           href: '/dashboard/agenda'       , icon: CalendarDays, permission: PERMISSIONS.AGENDA        },
+      { name: 'Contatos',         href: '/dashboard/contatos'     , icon: BookUser,     permission: PERMISSIONS.CONTATOS      },
+      { name: 'Mapa do Gabinete', href: '/dashboard/mapa-demandas', icon: MapPin,       permission: PERMISSIONS.MAPA_GABINETE },
     ],
   },
   {
     section: 'Dados Políticos',
     items: [
-      { name: 'Mapa Eleitoral',        href: '/dashboard/mapa',          icon: Map,      permission: PERMISSIONS.MAPA_ELEITORAL   },
-      { name: 'Projeto de Campanha',   href: '/dashboard/mapa-campanha', icon: Target,   permission: PERMISSIONS.PROJETO_CAMPANHA },
-      { name: 'Emendas Parlamentares', href: '/dashboard/emendas',       icon: Landmark, permission: PERMISSIONS.EMENDAS_MAPA     },
+      { name: 'Mapa Eleitoral',         href: '/dashboard/mapa'         , icon: Map,      permission: PERMISSIONS.MAPA_ELEITORAL   },
+      { name: 'Projeto de Campanha',    href: '/dashboard/mapa-campanha', icon: Target,   permission: PERMISSIONS.PROJETO_CAMPANHA },
+      { name: 'Emendas Parlamentares',  href: '/dashboard/emendas'      , icon: Landmark, permission: PERMISSIONS.EMENDAS_MAPA     },
     ],
   },
   {
     section: 'Administração',
     items: [
-      { name: 'Usuários',          href: '/dashboard/usuarios',         icon: Users,    roles: ['AGENTE_POLITICO', 'CHEFE']  },
-      { name: 'Adm. de Gabinetes', href: '/dashboard/admin/gabinetes',  icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN']     },
-      { name: 'Configurações',     href: '/dashboard/configuracoes',    icon: Settings, roles: ['AGENTE_POLITICO', 'CHEFE']  },
+      { name: 'Usuários',               href: '/dashboard/usuarios'        , icon: Users,    roles: ['AGENTE_POLITICO', 'CHEFE']                    },
+      { name: 'Adm. de Gabinetes',      href: '/dashboard/admin/gabinetes' , icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN']                                               },
+      { name: 'Configurações',          href: '/dashboard/configuracoes'   , icon: Settings, roles: ['AGENTE_POLITICO', 'CHEFE'] },
     ],
   },
   {
@@ -61,18 +76,21 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
+
   const pathname = usePathname();
   const { data: session } = useSession() || {};
   const userRole        = (session?.user as any)?.role    || 'ASSESSOR';
   const userPermissions = (session?.user as any)?.permissions ?? [];
   const userName        = session?.user?.name             || 'Usuário';
+  const gabineteNome    = (session?.user as any)?.gabineteNome;
+  const isAdmin         = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 
-  const filteredSections = navigation
+  const filteredSections = (navigation ?? [])
     .map((sec) => ({
       ...sec,
-      items: sec.items.filter((it) => {
-        if (it.roles)      return it.roles.includes(userRole);
-        if (it.permission) return hasPermission({ role: userRole, permissions: userPermissions }, it.permission);
+      items: (sec.items ?? []).filter((it) => {
+        if (it?.roles) return it.roles.includes(userRole);
+        if (it?.permission) return hasPermission({ role: userRole, permissions: userPermissions }, it.permission);
         return true;
       }),
     }))
@@ -87,82 +105,89 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
     .map((w: string) => w[0].toUpperCase())
     .join('');
 
-  // ── Sidebar interior ────────────────────────────────────────────────────
   const NavContent = () => (
     <>
-      {/* Logo */}
-      <div className="flex flex-col items-center px-4 pt-5 pb-4"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-        <img src="/logo.png" alt="AdminHub" className="w-40 h-auto object-contain" />
-        <p className="mt-1.5 text-[10px] font-bold tracking-[0.24em] uppercase select-none"
-          style={{ color: 'rgba(255,255,255,0.3)' }}>
+      {/* ── Logo / header ───────────────────────────────────────────────── */}
+      <div className="flex flex-col items-center px-4 pt-4 pb-4"
+        style={{ borderBottom: '1px solid rgba(74,158,222,0.13)' }}>
+
+        <img src="/logo.png" alt="AdminHub" className="w-44 h-auto object-contain drop-shadow-md" />
+
+        <p className="mt-1 text-xs font-bold tracking-[0.22em] uppercase select-none"
+          style={{ color: '#1b3a5e' }}>
           AdminHub
         </p>
+
       </div>
 
-      {/* Nav */}
+      {/* ── Navigation ──────────────────────────────────────────────────── */}
       <nav className="sidebar-nav flex-1 px-3 py-4 overflow-y-auto">
         {filteredSections.map((sec, secIdx) => (
           <div key={sec.section} className={cn(secIdx > 0 && 'mt-5')}>
+            {/* Section label */}
             <div className="flex items-center gap-2 px-3 mb-2">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em]"
-                style={{ color: 'rgba(255,255,255,0.28)' }}>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em]"
+                style={{ color: '#c9a227' }}>
                 {sec.section}
               </span>
               <span className="flex-1 h-px"
-                style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.1), transparent)' }} />
+                style={{ background: 'linear-gradient(90deg, rgba(201,162,39,0.45), transparent)' }} />
             </div>
 
             <div className="space-y-0.5">
               {sec.items.map((item) => {
                 const isActive =
-                  pathname === item.href ||
-                  (item.href !== '/dashboard' && pathname?.startsWith?.(`${item.href}/`));
-                const Icon = item.icon;
-
+                  pathname === item?.href ||
+                  (item?.href !== '/dashboard' && pathname?.startsWith?.(`${item?.href}/`));
+                const Icon = item?.icon;
                 return (
                   <Link
-                    key={item.name}
-                    href={item.href}
+                    key={item?.name}
+                    href={item?.href ?? '#'}
                     onClick={() => {
                       if (typeof window !== 'undefined' && window.innerWidth < 1024) onToggle?.();
                     }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative group"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group"
                     style={isActive ? {
-                      background: 'rgba(59,130,246,0.14)',
-                      borderLeft: '3px solid #3b82f6',
-                      color: '#ffffff',
+                      background: 'rgba(255,255,255,0.72)',
+                      borderLeft: '3px solid #4a9ede',
+                      boxShadow: '0 2px 10px rgba(74,158,222,0.1), inset 0 0 0 1px rgba(74,158,222,0.07)',
+                      color: '#0d2f52',
                     } : {
                       borderLeft: '3px solid transparent',
-                      color: 'rgba(255,255,255,0.78)',
+                      color: '#2c4f7c',
                     }}
                   >
                     <span
-                      className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-150 group-hover:scale-[1.04]"
+                      className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200 group-hover:scale-[1.04]"
                       style={isActive ? {
-                        background: 'rgba(59,130,246,0.22)',
-                        color: '#60a5fa',
-                        border: '1px solid rgba(59,130,246,0.32)',
+                        background: 'rgba(74,158,222,0.16)',
+                        color: '#4a9ede',
+                        boxShadow: 'inset 0 0 10px rgba(74,158,222,0.12), 0 0 10px rgba(74,158,222,0.18)',
+                        border: '1px solid rgba(74,158,222,0.28)',
                       } : {
-                        background: 'rgba(255,255,255,0.06)',
-                        color: 'rgba(255,255,255,0.38)',
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        background: 'rgba(74,158,222,0.07)',
+                        color: '#4a9ede',
+                        border: '1px solid rgba(74,158,222,0.14)',
                       }}
                     >
                       {Icon && <Icon className="h-4 w-4" />}
                     </span>
 
-                    <span className="font-medium text-sm">{item.name}</span>
+                    <span className="font-medium text-sm tracking-wide">{item?.name}</span>
 
+                    {/* Indicador dourado no item ativo */}
                     {isActive && (
-                      <span className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
-                        style={{ background: '#3b82f6', boxShadow: '0 0 8px rgba(59,130,246,0.8)' }} />
+                      <span
+                        className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
+                        style={{ background: '#c9a227', boxShadow: '0 0 7px rgba(201,162,39,0.6)' }}
+                      />
                     )}
 
                     {!isActive && (
                       <span
-                        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none"
-                        style={{ background: 'rgba(255,255,255,0.04)' }}
+                        className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                        style={{ background: 'linear-gradient(90deg, rgba(74,158,222,0.07) 0%, rgba(74,158,222,0.01) 100%)' }}
                       />
                     )}
                   </Link>
@@ -173,24 +198,35 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
         ))}
       </nav>
 
-      {/* Footer */}
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
       <div className="relative p-3">
-        <div className="absolute left-4 right-4 top-0 h-px"
-          style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }} />
+        {/* Divisor sutil */}
+        <div
+          className="absolute left-3 right-3 top-0 h-px"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(74,158,222,0.3), rgba(201,162,39,0.18), transparent)' }}
+        />
 
-        <div className="flex items-center gap-3 px-3 py-3 mb-2 rounded-xl"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)' }}>
-          <span className="flex items-center justify-center w-9 h-9 rounded-full text-sm font-bold flex-shrink-0"
+        {/* Card do usuário */}
+        <div
+          className="flex items-center gap-3 px-2.5 py-2.5 mb-2 rounded-xl"
+          style={{
+            background: 'rgba(255,255,255,0.5)',
+            border: '1px solid rgba(74,158,222,0.16)',
+          }}
+        >
+          <span
+            className="flex items-center justify-center w-9 h-9 rounded-full text-sm font-bold flex-shrink-0"
             style={{
-              background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+              background: 'linear-gradient(135deg, #4a9ede, #7dc8f7)',
               color: '#fff',
-              boxShadow: '0 0 0 2px rgba(59,130,246,0.25)',
-            }}>
+              boxShadow: '0 0 0 2px rgba(236,244,253,1), 0 0 0 3px rgba(74,158,222,0.35), 0 0 10px rgba(74,158,222,0.2)',
+            }}
+          >
             {initials || '?'}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate leading-tight" style={{ color: '#f1f5f9' }}>{userName}</p>
-            <p className="text-[11px] truncate leading-tight mt-0.5 font-medium" style={{ color: '#60a5fa' }}>
+            <p className="text-sm font-semibold truncate leading-tight" style={{ color: '#1b3a5e' }}>{userName}</p>
+            <p className="text-[11px] truncate leading-tight mt-0.5 tracking-wide" style={{ color: '#4a9ede' }}>
               {ROLE_LABELS[userRole] ?? 'Assessor'}
             </p>
           </div>
@@ -198,18 +234,20 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
 
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group"
-          style={{ borderLeft: '3px solid transparent', color: 'rgba(255,255,255,0.38)' }}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group"
+          style={{ borderLeft: '3px solid transparent', color: '#64748b' }}
         >
-          <span className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-150 group-hover:scale-[1.04]"
+          <span
+            className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200 group-hover:scale-[1.04]"
             style={{
-              background: 'rgba(255,255,255,0.05)',
-              color: 'rgba(255,255,255,0.3)',
-              border: '1px solid rgba(255,255,255,0.07)',
-            }}>
+              background: 'rgba(74,158,222,0.07)',
+              color: 'rgba(74,158,222,0.55)',
+              border: '1px solid rgba(74,158,222,0.13)',
+            }}
+          >
             <LogOut className="h-4 w-4" />
           </span>
-          <span className="font-medium text-sm group-hover:text-white/60 transition-colors">Sair</span>
+          <span className="font-medium text-sm tracking-wide">Sair</span>
         </button>
       </div>
     </>
@@ -226,7 +264,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
             exit={{ opacity: 0 }}
             onClick={onToggle}
             className="lg:hidden fixed inset-0 z-40"
-            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+            style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }}
           />
         )}
       </AnimatePresence>
@@ -237,22 +275,34 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
         transition={{ type: 'spring', damping: 24, stiffness: 220 }}
         className="flex flex-col fixed overflow-hidden z-50"
         style={{
-          top: 12, bottom: 12, left: 12, width: 256,
-          borderRadius: 18,
-          background: 'linear-gradient(180deg, #111827 0%, #0f1724 100%)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04)',
+          top: 12,
+          bottom: 12,
+          left: 12,
+          width: 256,
+          borderRadius: 20,
+          background: 'linear-gradient(165deg, #d6e8f7 0%, #eaf3fc 45%, #ddeaf7 100%)',
+          border: '1px solid rgba(74,158,222,0.22)',
+          boxShadow: '0 20px 50px -12px rgba(20,50,90,0.16), 0 0 0 1px rgba(255,255,255,0.75), 0 4px 24px rgba(74,158,222,0.09)',
           pointerEvents: open ? 'auto' : 'none',
         }}
       >
-        {/* Fio azul no topo */}
-        <span className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
-          style={{ background: 'linear-gradient(90deg, transparent, rgba(59,130,246,0.7), rgba(96,165,250,0.4), transparent)' }} />
-
+        {/* Fio bicolor no topo */}
+        <span
+          className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(74,158,222,0.55), rgba(201,162,39,0.4), transparent)' }}
+        />
+        {/* Brilho interno suave */}
+        <span
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.45), transparent 65%)',
+            borderRadius: 20,
+          }}
+        />
         <NavContent />
       </motion.aside>
 
-      {/* Botão toggle */}
+      {/* Botão de toggle */}
       {onToggle && (
         <motion.button
           onClick={onToggle}
@@ -260,20 +310,20 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           title={open ? 'Recolher menu' : 'Abrir menu'}
           animate={{ left: open ? 256 : 8 }}
           transition={{ type: 'spring', damping: 24, stiffness: 220 }}
-          className="fixed top-1/2 -translate-y-1/2 w-7 h-14 flex items-center justify-center z-50 transition-opacity hover:opacity-100"
+          className="fixed top-1/2 -translate-y-1/2 w-7 h-14 flex items-center justify-center z-50 hover:opacity-100 transition-opacity"
           style={{
-            background: 'rgba(17,24,39,0.85)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(59,130,246,0.2)',
+            background: 'linear-gradient(135deg, #dce9f7 0%, #cde2f5 100%)',
+            border: '1px solid rgba(74,158,222,0.3)',
             borderRadius: 10,
-            color: '#60a5fa',
-            opacity: 0.9,
-            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+            color: '#4a9ede',
+            opacity: 0.95,
+            boxShadow: '0 4px 14px rgba(20,50,90,0.12), 0 0 0 1px rgba(255,255,255,0.65)',
           }}
         >
           {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </motion.button>
       )}
+
     </>
   );
 }

@@ -15,72 +15,71 @@ interface GradientCardProps {
   delay?: number;
 }
 
-const palette: Record<string, { accent: string; iconBg: string; iconBorder: string; chartColor: string }> = {
-  teal:   { accent: '#2563eb', iconBg: '#eff6ff', iconBorder: '#bfdbfe', chartColor: '#3b82f6' },
-  purple: { accent: '#059669', iconBg: '#ecfdf5', iconBorder: '#6ee7b7', chartColor: '#10b981' },
-  pink:   { accent: '#d97706', iconBg: '#fffbeb', iconBorder: '#fde68a', chartColor: '#f59e0b' },
-  blue:   { accent: '#2563eb', iconBg: '#eff6ff', iconBorder: '#bfdbfe', chartColor: '#3b82f6' },
-  orange: { accent: '#ea580c', iconBg: '#fff7ed', iconBorder: '#fdba74', chartColor: '#f97316' },
+const gradients = {
+  teal: 'from-teal-500 via-cyan-600 to-teal-700',
+  purple: 'from-purple-500 via-violet-600 to-purple-700',
+  pink: 'from-pink-500 via-rose-500 to-pink-600',
+  blue: 'from-blue-500 via-indigo-600 to-blue-700',
+  orange: 'from-orange-500 via-amber-500 to-orange-600',
+};
+
+const iconBgColors = {
+  teal: 'bg-teal-400/30',
+  purple: 'bg-purple-400/30',
+  pink: 'bg-pink-400/30',
+  blue: 'bg-blue-400/30',
+  orange: 'bg-orange-400/30',
 };
 
 export default function GradientCard({
-  title, value, subtitle, subtitleValue, icon: Icon, gradient, chart, delay = 0,
+  title,
+  value,
+  subtitle,
+  subtitleValue,
+  icon: Icon,
+  gradient,
+  chart,
+  delay = 0,
 }: GradientCardProps) {
-  const p = palette[gradient] ?? palette.blue;
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      style={{
-        background: '#ffffff',
-        border: '1px solid #e5eaf3',
-        borderTop: `3px solid ${p.accent}`,
-        borderRadius: 14,
-        padding: '20px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)',
-      }}
+      transition={{ delay }}
+      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradients[gradient]} p-5 shadow-lg shadow-black/20`}
     >
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-        <p style={{
-          color: '#6b7280', fontSize: 11, fontWeight: 600,
-          letterSpacing: '0.07em', textTransform: 'uppercase',
-        }}>
-          {title}
-        </p>
+      {/* Background decoration */}
+      <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <circle cx="80" cy="20" r="40" fill="currentColor" />
+        </svg>
+      </div>
+
+      <div className="relative z-10 flex justify-between items-start">
+        <div className="flex-1">
+          <h3 className="text-white/80 text-sm font-medium mb-1">{title}</h3>
+          <p className="text-white text-2xl font-bold tracking-tight">{value}</p>
+          
+          {subtitle && (
+            <div className="mt-3">
+              <p className="text-white/70 text-xs">{subtitle}</p>
+              {subtitleValue && (
+                <p className="text-white font-semibold text-sm">{subtitleValue}</p>
+              )}
+            </div>
+          )}
+        </div>
+
         {Icon && (
-          <div style={{
-            padding: 9, borderRadius: 10,
-            background: p.iconBg, border: `1px solid ${p.iconBorder}`,
-          }}>
-            <Icon style={{ width: 17, height: 17, color: p.accent }} />
+          <div className={`p-2.5 rounded-xl ${iconBgColors[gradient]}`}>
+            <Icon className="h-6 w-6 text-white" />
           </div>
         )}
       </div>
 
-      {/* Value */}
-      <p style={{
-        color: '#111827', fontSize: 34, fontWeight: 700,
-        letterSpacing: '-0.03em', lineHeight: 1, marginBottom: 10,
-      }}>
-        {value}
-      </p>
-
-      {/* Subtitle */}
-      {subtitle && (
-        <div style={{ marginBottom: chart ? 14 : 0 }}>
-          <span style={{ color: '#9ca3af', fontSize: 11 }}>{subtitle} </span>
-          {subtitleValue !== undefined && subtitleValue !== '' && (
-            <span style={{ color: '#374151', fontWeight: 600, fontSize: 12 }}>{subtitleValue}</span>
-          )}
-        </div>
-      )}
-
-      {/* Chart slot — passa chartColor via data attribute para o componente pai injetar */}
+      {/* Mini chart area */}
       {chart && (
-        <div style={{ height: 52, marginTop: 4 }} data-chart-color={p.chartColor}>
+        <div className="relative z-10 mt-4 h-16">
           {chart}
         </div>
       )}

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
@@ -343,8 +343,8 @@ export default function ImportacaoPage() {
           onDrop={onDrop}
           className="rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer transition-all"
           style={{
-            border: `2px dashed ${dragging ? '#c9a227' : '#e5eaf3'}`,
-            background: dragging ? 'rgba(201,162,39,0.05)' : '#f8fafc',
+            border: `2px dashed ${dragging ? 'rgba(201,162,39,0.6)' : 'rgba(255,255,255,0.1)'}`,
+            background: dragging ? 'rgba(201,162,39,0.05)' : 'rgba(7,29,54,0.4)',
           }}
           onClick={() => document.getElementById('file-input')?.click()}
         >
@@ -352,9 +352,9 @@ export default function ImportacaoPage() {
           {stage === 'parsing' ? (
             <Loader2 className="w-10 h-10 animate-spin text-amber-400 mb-3" />
           ) : (
-            <Upload className="w-10 h-10 mb-3" style={{ color: dragging ? '#c9a227' : '#9ca3af' }} />
+            <Upload className="w-10 h-10 mb-3" style={{ color: dragging ? '#e8c660' : 'rgba(255,255,255,0.25)' }} />
           )}
-          <p className="text-gray-800 font-semibold text-base">
+          <p className="text-white font-semibold text-base">
             {stage === 'parsing' ? 'Lendo arquivo…' : 'Arraste o arquivo aqui ou clique para selecionar'}
           </p>
           <p className="text-slate-500 text-sm mt-1">CSV ou XLSX — máx. ~50 MB</p>
@@ -371,11 +371,11 @@ export default function ImportacaoPage() {
         <div className="space-y-5">
           {/* Cabeçalho do arquivo */}
           <div className="flex items-center justify-between rounded-xl px-4 py-3"
-            style={{ background: '#f8fafc', border: '1px solid #e5eaf3' }}>
+            style={{ background: 'rgba(7,29,54,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div className="flex items-center gap-3">
-              <FileText className="w-5 h-5 text-amber-600" />
+              <FileText className="w-5 h-5 text-amber-300" />
               <div>
-                <p className="text-gray-800 text-sm font-semibold">{fileName}</p>
+                <p className="text-white text-sm font-semibold">{fileName}</p>
                 <p className="text-slate-400 text-xs">{rawRows.length.toLocaleString('pt-BR')} linhas · {headers.length} colunas</p>
               </div>
               {isPortalFed && (
@@ -385,7 +385,7 @@ export default function ImportacaoPage() {
                 </span>
               )}
             </div>
-            <button onClick={reset} className="text-slate-400 hover:text-gray-600 p-1">
+            <button onClick={reset} className="text-slate-400 hover:text-white p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -397,7 +397,7 @@ export default function ImportacaoPage() {
               <select
                 value={uf}
                 onChange={(e) => setUf(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-amber-400"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
               >
                 <option value="">Selecione…</option>
                 {ESTADOS_BRASIL.map((e) => (
@@ -413,20 +413,20 @@ export default function ImportacaoPage() {
                 value={ano}
                 onChange={(e) => setAno(parseInt(e.target.value, 10))}
                 min={2000} max={2099}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-amber-400"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
               />
               <p className="text-[10px] text-slate-600 mt-1">Usado quando a coluna Ano não está mapeada</p>
             </div>
             <div>
               <label className="block text-xs text-slate-400 mb-1.5 uppercase tracking-wider">Esfera</label>
-              <div className="flex rounded-xl overflow-hidden" style={{ border: '1px solid #e5eaf3' }}>
+              <div className="flex rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
                 {(['FEDERAL', 'ESTADUAL'] as const).map((e) => (
                   <button
                     key={e}
                     onClick={() => setEsfera(e)}
                     className="flex-1 py-2.5 text-sm font-medium transition-colors"
                     style={esfera === e
-                      ? { background: '#f3f4f6', color: '#e8c660' }
+                      ? { background: 'rgba(201,162,39,0.15)', color: '#e8c660' }
                       : { color: 'rgb(148,163,184)' }}
                   >
                     {e === 'FEDERAL' ? 'Federal' : 'Estadual'}
@@ -437,10 +437,10 @@ export default function ImportacaoPage() {
           </div>
 
           {/* Mapeamento de colunas */}
-          <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #e5eaf3' }}>
-            <div className="px-4 py-3 flex items-center gap-2" style={{ background: '#f1f5f9' }}>
-              <Table2 className="w-4 h-4 text-amber-600" />
-              <p className="text-sm font-semibold text-gray-800">Mapeamento de colunas</p>
+          <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="px-4 py-3 flex items-center gap-2" style={{ background: 'rgba(7,29,54,0.8)' }}>
+              <Table2 className="w-4 h-4 text-amber-300" />
+              <p className="text-sm font-semibold text-white">Mapeamento de colunas</p>
               {isPortalFed && (
                 <span className="ml-auto text-[11px] text-slate-500 flex items-center gap-1">
                   <Info className="w-3 h-3" />
@@ -451,9 +451,9 @@ export default function ImportacaoPage() {
             <div className="divide-y divide-white/5">
               {STANDARD_FIELDS.map((field) => (
                 <div key={field.key} className="flex items-center gap-3 px-4 py-2.5"
-                  style={{ background: '#ffffff' }}>
+                  style={{ background: 'rgba(7,29,54,0.4)' }}>
                   <div className="w-56 flex-shrink-0">
-                    <span className="text-xs text-gray-700">{field.label}</span>
+                    <span className="text-xs text-white">{field.label}</span>
                     {field.required && <span className="text-red-400 ml-0.5">*</span>}
                     {field.hint && <p className="text-[10px] text-slate-600">{field.hint}</p>}
                   </div>
@@ -461,7 +461,7 @@ export default function ImportacaoPage() {
                   <select
                     value={mapping[field.key] ?? ''}
                     onChange={(e) => setMapping((prev) => ({ ...prev, [field.key]: e.target.value || undefined }))}
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 outline-none focus:border-amber-400"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50"
                   >
                     <option value="">(não mapear)</option>
                     {headers.map((h) => <option key={h} value={h}>{h}</option>)}
@@ -488,8 +488,8 @@ export default function ImportacaoPage() {
           )}
 
           {!requiredMapped && (
-            <div className="rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-amber-600"
-              style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid #e5eaf3' }}>
+            <div className="rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-amber-300"
+              style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)' }}>
               <Info className="w-4 h-4 flex-shrink-0" />
               Mapeie os campos obrigatórios (<span className="text-red-400">*</span>) antes de importar.
             </div>
@@ -500,7 +500,7 @@ export default function ImportacaoPage() {
               onClick={handleImport}
               disabled={!requiredMapped || !uf || !ano || stage === 'importing'}
               className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: 'rgba(201,162,39,0.2)', color: '#e8c660', border: '1px solid #e5eaf3' }}
+              style={{ background: 'rgba(201,162,39,0.2)', color: '#e8c660', border: '1px solid rgba(201,162,39,0.4)' }}
             >
               {stage === 'importing' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               {stage === 'importing' ? `Importando… ${progress}%` : `Importar ${rawRows.length.toLocaleString('pt-BR')} registros`}
@@ -521,11 +521,11 @@ export default function ImportacaoPage() {
       {stage === 'done' && importResult && (
         <div className="space-y-4">
           <div className="rounded-2xl p-6"
-            style={{ background: '#f8fafc', border: '1px solid #e5eaf3' }}>
+            style={{ background: 'rgba(7,29,54,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div className="flex items-center gap-3 mb-4">
               <CheckCircle className="w-7 h-7 text-emerald-400" />
               <div>
-                <p className="text-gray-800 font-bold text-lg">Importação concluída!</p>
+                <p className="text-white font-bold text-lg">Importação concluída!</p>
                 <p className="text-slate-400 text-sm">{fileName} · {importResult.total.toLocaleString('pt-BR')} linhas processadas</p>
               </div>
             </div>
@@ -541,8 +541,8 @@ export default function ImportacaoPage() {
               </div>
             )}
           </div>
-          <button onClick={reset} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-slate-300 hover:text-gray-700 transition-colors"
-            style={{ border: '1px solid #e5eaf3' }}>
+          <button onClick={reset} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-slate-300 hover:text-white transition-colors"
+            style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
             <RefreshCw className="w-4 h-4" /> Importar outro arquivo
           </button>
         </div>
@@ -558,15 +558,15 @@ function PreviewTable({ headers, rows }: { headers: string[]; rows: Record<strin
   if (rows.length === 0) return null;
   const visibleCols = headers.slice(0, 8);
   return (
-    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e5eaf3' }}>
+    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
       <p className="px-4 py-2 text-[10px] uppercase tracking-widest text-slate-500 font-semibold"
-        style={{ background: '#f1f5f9' }}>
+        style={{ background: 'rgba(7,29,54,0.8)' }}>
         Prévia — primeiras 5 linhas {headers.length > 8 && `(${headers.length - 8} colunas ocultas)`}
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr style={{ background: '#f8fafc' }}>
+            <tr style={{ background: 'rgba(7,29,54,0.6)' }}>
               {visibleCols.map((h) => (
                 <th key={h} className="px-3 py-2 text-left text-slate-400 font-semibold whitespace-nowrap border-b border-white/5">
                   {h.length > 20 ? h.slice(0, 18) + '…' : h}
@@ -576,7 +576,7 @@ function PreviewTable({ headers, rows }: { headers: string[]; rows: Record<strin
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i} style={{ background: i % 2 === 0 ? '#f8fafc' : '#ffffff' }}>
+              <tr key={i} style={{ background: i % 2 === 0 ? 'rgba(7,29,54,0.3)' : 'rgba(7,29,54,0.1)' }}>
                 {visibleCols.map((h) => (
                   <td key={h} className="px-3 py-1.5 text-slate-300 whitespace-nowrap max-w-[140px] truncate">
                     {row[h] || '—'}
@@ -600,8 +600,3 @@ function StatBox({ label, value, color }: { label: string; value: number; color:
     </div>
   );
 }
-
-
-
-
-

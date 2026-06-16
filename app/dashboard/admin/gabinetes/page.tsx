@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
@@ -60,8 +60,8 @@ const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> 
   AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: '#c084fc',  border: 'rgba(168,85,247,0.3)'  },
   CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)'  },
   ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: '#4ade80',  border: 'rgba(34,197,94,0.25)'  },
-  ANALISTA:        { bg: '#f1f5f9', color: '#64748b',  border: '#e5eaf3' },
-  VISUALIZADOR:    { bg: '#f1f5f9', color: '#64748b',  border: '#e5eaf3' },
+  ANALISTA:        { bg: 'rgba(255,255,255,0.06)', color: '#cbd5e1',  border: 'rgba(255,255,255,0.12)' },
+  VISUALIZADOR:    { bg: 'rgba(255,255,255,0.06)', color: '#94a3b8',  border: 'rgba(255,255,255,0.12)' },
 };
 
 type Accent = { solid: string; bgLight: string; borderLight: string };
@@ -139,11 +139,11 @@ function RoleSelect({ userId, current, sessionRole, onChanged }: { userId: strin
           <motion.div ref={dropRef}
             initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
             className="fixed z-[9999] rounded-xl overflow-hidden shadow-xl"
-            style={{ top: dropPos.top, right: dropPos.right, background: '#ffffff', border: '1px solid #e5eaf3', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', minWidth: 170 }}>
+            style={{ top: dropPos.top, right: dropPos.right, background: '#071d36', border: '1px solid rgba(201,162,39,0.2)', minWidth: 170 }}>
             {roles.map(r => (
               <button key={r} onClick={() => change(r)}
-                className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-gray-100 flex items-center gap-2"
-                style={{ color: r === current ? '#c9a227' : '#374151' }}>
+                className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/5 flex items-center gap-2"
+                style={{ color: r === current ? '#c9a227' : 'rgba(255,255,255,0.7)' }}>
                 {r === current && <Check className="w-3 h-3 flex-shrink-0" style={{ color: '#c9a227' }} />}
                 {r !== current && <span className="w-3" />}
                 {ROLE_LABELS[r]}
@@ -168,14 +168,14 @@ function PermissionsChecklist({ selected, onToggle, onSelectAll, onClear, accent
           return (
             <button key={p} type="button" onClick={() => onToggle(p)}
               className="w-full text-left flex items-center justify-between px-4 py-3 rounded-xl transition-all"
-              style={{ background: checked ? accent.bgLight : '#f8fafc', border: `1px solid ${checked ? accent.borderLight : '#e5eaf3'}` }}>
-              <span className="text-sm font-medium" style={{ color: checked ? '#374151' : '#374151' }}>
+              style={{ background: checked ? accent.bgLight : 'rgba(255,255,255,0.02)', border: `1px solid ${checked ? accent.borderLight : 'rgba(255,255,255,0.08)'}` }}>
+              <span className="text-sm font-medium" style={{ color: checked ? '#fff' : 'rgba(255,255,255,0.75)' }}>
                 {PERMISSION_LABELS[p as Permission]}
               </span>
               <span className="flex items-center justify-center w-5 h-5 rounded-md flex-shrink-0 transition-all"
                 style={checked
                   ? { background: accent.solid, color: '#fff', boxShadow: `0 0 8px ${accent.borderLight}` }
-                  : { background: 'transparent', border: '1.5px solid #d1d5db' }}>
+                  : { background: 'transparent', border: '1.5px solid rgba(255,255,255,0.2)' }}>
                 {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
               </span>
             </button>
@@ -184,7 +184,7 @@ function PermissionsChecklist({ selected, onToggle, onSelectAll, onClear, accent
       </div>
       <div className="flex items-center justify-between text-[11px] pt-1">
         <button type="button" onClick={onSelectAll} className="font-semibold hover:opacity-80" style={{ color: accent.solid }}>Marcar todas</button>
-        <button type="button" onClick={onClear} className="hover:opacity-80" style={{ color: '#6b7280' }}>Limpar</button>
+        <button type="button" onClick={onClear} className="hover:opacity-80" style={{ color: 'rgba(255,255,255,0.45)' }}>Limpar</button>
       </div>
     </>
   );
@@ -192,7 +192,7 @@ function PermissionsChecklist({ selected, onToggle, onSelectAll, onClear, accent
 
 function StatusBadge({ status }: { status: Solicitacao['status'] }) {
   const map = {
-    PENDENTE: { label: 'Pendente', color: '#e6b83a', bg: '#f3f4f6', border: 'rgba(201,162,39,0.3)', icon: <Clock size={12} /> },
+    PENDENTE: { label: 'Pendente', color: '#e6b83a', bg: 'rgba(201,162,39,0.15)', border: 'rgba(201,162,39,0.3)', icon: <Clock size={12} /> },
     APROVADA: { label: 'Aprovada', color: '#4ade80', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.25)', icon: <CheckCircle2 size={12} /> },
     RECUSADA: { label: 'Recusada', color: '#f87171', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.25)', icon: <XCircle size={12} /> },
   };
@@ -227,7 +227,7 @@ function SolicitacaoCard({ sol, onAcao }: { sol: Solicitacao; onAcao: () => void
   const dt = new Date(sol.createdAt).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
   return (
-    <div style={{ background:'#ffffff', borderRadius:'0.875rem', border:'1px solid #e5eaf3', overflow:'hidden' }}>
+    <div style={{ background:'rgba(7,29,54,0.75)', borderRadius:'0.875rem', border:'1px solid rgba(201,162,39,0.13)', overflow:'hidden' }}>
       <div style={{ padding:'1rem 1.25rem', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', userSelect:'none' }}
         onClick={() => setExpanded(v => !v)}>
         <div style={{ display:'flex', alignItems:'center', gap:'0.85rem' }}>
@@ -235,27 +235,27 @@ function SolicitacaoCard({ sol, onAcao }: { sol: Solicitacao; onAcao: () => void
             <Building2 size={18} color="#c9a227" />
           </div>
           <div>
-            <p style={{ margin:0, fontWeight:700, fontSize:'0.9rem', color:'#111827' }}>{sol.gabineteNome}</p>
-            <p style={{ margin:0, fontSize:'0.75rem', color:'#9ca3af', marginTop:'0.1rem' }}>{sol.userName} · {sol.userEmail}</p>
+            <p style={{ margin:0, fontWeight:700, fontSize:'0.9rem', color:'#e2e8f0' }}>{sol.gabineteNome}</p>
+            <p style={{ margin:0, fontSize:'0.75rem', color:'rgba(255,255,255,0.4)', marginTop:'0.1rem' }}>{sol.userName} · {sol.userEmail}</p>
           </div>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'0.75rem' }}>
           <StatusBadge status={sol.status} />
-          {expanded ? <ChevronUp size={15} color="#9ca3af" /> : <ChevronDown size={15} color="#9ca3af" />}
+          {expanded ? <ChevronUp size={15} color="rgba(255,255,255,0.3)" /> : <ChevronDown size={15} color="rgba(255,255,255,0.3)" />}
         </div>
       </div>
 
       {expanded && (
-        <div style={{ borderTop:'1px solid #f3f4f6', padding:'1rem 1.25rem', background:'#f1f5f9' }}>
+        <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'1rem 1.25rem', background:'rgba(0,0,0,0.15)' }}>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.65rem', marginBottom:'1rem' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', fontSize:'0.8rem', color:'#6b7280' }}>
-              <User size={13} color="#9ca3af" /><span>{sol.userName}</span>
+            <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', fontSize:'0.8rem', color:'rgba(255,255,255,0.6)' }}>
+              <User size={13} color="rgba(255,255,255,0.3)" /><span>{sol.userName}</span>
             </div>
-            <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', fontSize:'0.8rem', color:'#6b7280' }}>
-              <Mail size={13} color="#9ca3af" /><span>{sol.userEmail}</span>
+            <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', fontSize:'0.8rem', color:'rgba(255,255,255,0.6)' }}>
+              <Mail size={13} color="rgba(255,255,255,0.3)" /><span>{sol.userEmail}</span>
             </div>
-            <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', fontSize:'0.8rem', color:'#6b7280' }}>
-              <Calendar size={13} color="#9ca3af" /><span>{dt}</span>
+            <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', fontSize:'0.8rem', color:'rgba(255,255,255,0.45)' }}>
+              <Calendar size={13} color="rgba(255,255,255,0.3)" /><span>{dt}</span>
             </div>
             {sol.motivoRecusa && (
               <div style={{ display:'flex', alignItems:'flex-start', gap:'0.5rem', fontSize:'0.8rem', color:'#f87171', gridColumn:'1/-1' }}>
@@ -270,7 +270,7 @@ function SolicitacaoCard({ sol, onAcao }: { sol: Solicitacao; onAcao: () => void
               {showRecusa && (
                 <textarea placeholder="Motivo da recusa (opcional)" value={motivoRecusa}
                   onChange={e => setMotivoRecusa(e.target.value)} rows={2}
-                  style={{ width:'100%', padding:'0.6rem 0.85rem', borderRadius:'0.65rem', border:'1px solid #e5eaf3', background:'#f3f4f6', fontSize:'0.8rem', resize:'vertical', outline:'none', boxSizing:'border-box', fontFamily:'inherit', color:'#111827' }} />
+                  style={{ width:'100%', padding:'0.6rem 0.85rem', borderRadius:'0.65rem', border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.06)', fontSize:'0.8rem', resize:'vertical', outline:'none', boxSizing:'border-box', fontFamily:'inherit', color:'#e2e8f0' }} />
               )}
               <div style={{ display:'flex', gap:'0.6rem' }}>
                 <button onClick={() => agir('APROVAR')} disabled={loading}
@@ -283,7 +283,7 @@ function SolicitacaoCard({ sol, onAcao }: { sol: Solicitacao; onAcao: () => void
                 </button>
                 {showRecusa && (
                   <button onClick={() => { setShowRecusa(false); setMotivoRecusa(''); }}
-                    style={{ padding:'0.55rem 0.85rem', borderRadius:'0.65rem', border:'1px solid #e5eaf3', cursor:'pointer', fontSize:'0.78rem', color:'#6b7280', background:'transparent' }}>
+                    style={{ padding:'0.55rem 0.85rem', borderRadius:'0.65rem', border:'1px solid rgba(255,255,255,0.1)', cursor:'pointer', fontSize:'0.78rem', color:'rgba(255,255,255,0.45)', background:'transparent' }}>
                     Cancelar
                   </button>
                 )}
@@ -546,7 +546,7 @@ export default function AdminGabinetesPage() {
   const filterBtn = (label: string, value: typeof filtro) => (
     <button key={value} onClick={() => setFiltro(value)}
       className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-      style={{ border:'1px solid', borderColor:filtro===value?'#c9a227':'#e5eaf3', background:filtro===value?'#f3f4f6':'transparent', color:filtro===value?'#c9a227':'#6b7280', cursor:'pointer' }}>
+      style={{ border:'1px solid', borderColor:filtro===value?'rgba(201,162,39,0.5)':'rgba(255,255,255,0.1)', background:filtro===value?'rgba(201,162,39,0.15)':'transparent', color:filtro===value?'#c9a227':'rgba(255,255,255,0.45)', cursor:'pointer' }}>
       {label}
     </button>
   );
@@ -561,26 +561,26 @@ export default function AdminGabinetesPage() {
             <Building2 className="w-5 h-5" style={{ color:'#c9a227' }} />
           </div>
           <div>
-            <h1 className="text-lg font-bold" style={{ color:'#111827' }}>Administração de Gabinetes</h1>
-            <p className="text-xs" style={{ color:'#9ca3af' }}>Gerencie gabinetes, solicitações e usuários</p>
+            <h1 className="text-lg font-bold" style={{ color:'#e2e8f0' }}>Administração de Gabinetes</h1>
+            <p className="text-xs" style={{ color:'rgba(255,255,255,0.4)' }}>Gerencie gabinetes, solicitações e usuários</p>
           </div>
         </div>
         <button onClick={carregarTudo}
           className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all"
-          style={{ border:'1px solid #e5eaf3', background:'#f8fafc', color:'#6b7280', cursor:'pointer' }}>
+          style={{ border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.04)', color:'rgba(255,255,255,0.6)', cursor:'pointer' }}>
           <RefreshCw size={13} /> Atualizar
         </button>
       </div>
 
       {/* ── Card Gerar Link ───────────────────────────────────────────────────── */}
-      <div className="rounded-2xl p-5" style={{ background:'#f8fafc', border:'1px solid #e5eaf3' }}>
+      <div className="rounded-2xl p-5" style={{ background:'rgba(7,29,54,0.8)', border:'1px solid rgba(201,162,39,0.2)' }}>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <Link2 size={16} style={{ color:'#c9a227' }} />
-              <h2 className="text-sm font-bold" style={{ color:'#111827' }}>Link de Convite para Novo Gabinete</h2>
+              <h2 className="text-sm font-bold" style={{ color:'#e2e8f0' }}>Link de Convite para Novo Gabinete</h2>
             </div>
-            <p className="text-xs" style={{ color:'#6b7280', maxWidth:520 }}>
+            <p className="text-xs" style={{ color:'rgba(255,255,255,0.45)', maxWidth:520 }}>
               Gere um link válido por <strong style={{ color:'#c9a227' }}>1 hora</strong> e envie para o Agente Político.
             </p>
           </div>
@@ -593,13 +593,13 @@ export default function AdminGabinetesPage() {
         </div>
 
         {linkGerado && (
-          <div className="mt-4 flex items-center gap-3 flex-wrap rounded-xl p-3" style={{ background:'#f8fafc', border:'1px solid #e5eaf3' }}>
-            <code className="flex-1 text-xs break-all" style={{ color:'#6b7280', fontFamily:'monospace', minWidth:0 }}>{linkGerado}</code>
+          <div className="mt-4 flex items-center gap-3 flex-wrap rounded-xl p-3" style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}>
+            <code className="flex-1 text-xs break-all" style={{ color:'rgba(255,255,255,0.6)', fontFamily:'monospace', minWidth:0 }}>{linkGerado}</code>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-[10px]" style={{ color:'#9ca3af' }}>expira às {linkExpiry}</span>
+              <span className="text-[10px]" style={{ color:'rgba(255,255,255,0.3)' }}>expira às {linkExpiry}</span>
               <button onClick={copiarLink}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                style={{ background:copiado?'rgba(34,197,94,0.15)':'#f3f4f6', color:copiado?'#4ade80':'#c9a227', border:copiado?'1px solid rgba(34,197,94,0.3)':'1px solid rgba(201,162,39,0.3)', cursor:'pointer' }}>
+                style={{ background:copiado?'rgba(34,197,94,0.15)':'rgba(201,162,39,0.15)', color:copiado?'#4ade80':'#c9a227', border:copiado?'1px solid rgba(34,197,94,0.3)':'1px solid rgba(201,162,39,0.3)', cursor:'pointer' }}>
                 {copiado ? <><CheckCheck size={12}/> Copiado</> : <><Copy size={12}/> Copiar</>}
               </button>
             </div>
@@ -609,10 +609,10 @@ export default function AdminGabinetesPage() {
 
       {/* ── Solicitações ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-sm font-bold" style={{ color:'#111827' }}>
+        <h2 className="text-sm font-bold" style={{ color:'#e2e8f0' }}>
           Solicitações de Cadastro
           {pendentes > 0 && (
-            <span className="ml-2 px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background:'#f3f4f6', color:'#c9a227', border:'1px solid rgba(201,162,39,0.3)' }}>
+            <span className="ml-2 px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background:'rgba(201,162,39,0.15)', color:'#c9a227', border:'1px solid rgba(201,162,39,0.3)' }}>
               {pendentes} pendente{pendentes>1?'s':''}
             </span>
           )}
@@ -626,14 +626,14 @@ export default function AdminGabinetesPage() {
       </div>
 
       {loadingSol ? (
-        <div className="flex flex-col items-center justify-center py-12" style={{ color:'#9ca3af' }}>
+        <div className="flex flex-col items-center justify-center py-12" style={{ color:'rgba(255,255,255,0.3)' }}>
           <Loader2 size={28} className="animate-spin mb-3" style={{ color:'#c9a227' }} />
           <p className="text-sm">Carregando...</p>
         </div>
       ) : filtradas.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 rounded-2xl" style={{ background:'#f8fafc', border:'1px solid #f3f4f6' }}>
-          <Building2 size={32} style={{ color:'#d1d5db', marginBottom:'0.75rem' }} />
-          <p className="text-sm font-semibold" style={{ color:'#9ca3af' }}>
+        <div className="flex flex-col items-center justify-center py-12 rounded-2xl" style={{ background:'rgba(7,29,54,0.5)', border:'1px solid rgba(255,255,255,0.06)' }}>
+          <Building2 size={32} style={{ color:'rgba(255,255,255,0.1)', marginBottom:'0.75rem' }} />
+          <p className="text-sm font-semibold" style={{ color:'rgba(255,255,255,0.4)' }}>
             Nenhuma solicitação {filtro !== 'TODAS' ? filtro.toLowerCase() : ''}
           </p>
         </div>
@@ -647,25 +647,25 @@ export default function AdminGabinetesPage() {
       {!loadingSol && gabineteGroups.length > 0 && (
         <>
           <div className="flex items-center gap-3 pt-2">
-            <div className="flex-1 h-px" style={{ background:'#f3f4f6' }} />
+            <div className="flex-1 h-px" style={{ background:'rgba(255,255,255,0.06)' }} />
             <div className="flex items-center gap-2">
               <Building2 size={14} style={{ color:'#4a9ede' }} />
-              <span className="text-xs font-semibold" style={{ color:'#9ca3af' }}>GABINETES ATIVOS</span>
+              <span className="text-xs font-semibold" style={{ color:'rgba(255,255,255,0.35)' }}>GABINETES ATIVOS</span>
               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background:'rgba(74,158,222,0.15)', color:'#4a9ede', border:'1px solid rgba(74,158,222,0.25)' }}>
                 {gabineteGroups.length}
               </span>
             </div>
-            <div className="flex-1 h-px" style={{ background:'#f3f4f6' }} />
+            <div className="flex-1 h-px" style={{ background:'rgba(255,255,255,0.06)' }} />
           </div>
 
           {/* Busca */}
           {gabineteGroups.length > 3 && (
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color:'#9ca3af' }} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color:'rgba(255,255,255,0.3)' }} />
               <input value={searchGabinete} onChange={e => setSearchGabinete(e.target.value)}
                 placeholder="Buscar gabinete..."
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-gray-800 outline-none"
-                style={{ background:'#ffffff', border:'1px solid #e5eaf3' }} />
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white outline-none"
+                style={{ background:'rgba(7,29,54,0.75)', border:'1px solid rgba(255,255,255,0.08)' }} />
             </div>
           )}
 
@@ -679,7 +679,7 @@ export default function AdminGabinetesPage() {
                 <motion.div key={group.id}
                   initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} transition={{ delay: gi * 0.04 }}
                   className="rounded-2xl overflow-hidden"
-                  style={{ background:'#f8fafc', border:'1px solid rgba(74,158,222,0.15)' }}>
+                  style={{ background:'rgba(7,29,54,0.8)', border:'1px solid rgba(74,158,222,0.15)' }}>
 
                   {/* Header */}
                   <button className="w-full flex items-center px-5 py-4 gap-2 text-left transition-all hover:bg-white/[0.02]"
@@ -689,9 +689,9 @@ export default function AdminGabinetesPage() {
                       <Building2 className="w-[18px] h-[18px]" style={{ color:'#4a9ede' }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-gray-800 font-semibold text-sm">{group.nome}</p>
+                      <p className="text-white font-semibold text-sm">{group.nome}</p>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="text-[11px]" style={{ color:'#9ca3af' }}>
+                        <span className="text-[11px]" style={{ color:'rgba(255,255,255,0.4)' }}>
                           {group.users.length} usuário{group.users.length !== 1 ? 's' : ''}
                         </span>
                         {pending.length > 0 && (
@@ -703,8 +703,8 @@ export default function AdminGabinetesPage() {
                       </div>
                     </div>
                     {isOpen
-                      ? <ChevronUp  className="w-4 h-4 flex-shrink-0" style={{ color:'#9ca3af' }} />
-                      : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color:'#9ca3af' }} />
+                      ? <ChevronUp  className="w-4 h-4 flex-shrink-0" style={{ color:'rgba(255,255,255,0.3)' }} />
+                      : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color:'rgba(255,255,255,0.3)' }} />
                     }
                   </button>
 
@@ -714,11 +714,11 @@ export default function AdminGabinetesPage() {
                       <motion.div initial={{ height:0, opacity:0 }} animate={{ height:'auto', opacity:1 }}
                         exit={{ height:0, opacity:0 }} transition={{ duration:0.2 }} style={{ overflow:'hidden' }}>
                         {group.users.length === 0 ? (
-                          <div className="px-5 py-6 text-center text-xs" style={{ color:'#9ca3af', borderTop:'1px solid #f3f4f6' }}>
+                          <div className="px-5 py-6 text-center text-xs" style={{ color:'rgba(255,255,255,0.25)', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
                             Nenhum usuário neste gabinete
                           </div>
                         ) : (
-                          <div className="divide-y" style={{ borderColor:'rgba(255,255,255,0.05)', borderTop:'1px solid #f3f4f6' }}>
+                          <div className="divide-y" style={{ borderColor:'rgba(255,255,255,0.05)', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
                             {[...pending, ...approved].map(u => (
                               <div key={u.id}
                                 className="flex items-center justify-between px-5 py-3.5 gap-3 transition-all hover:bg-white/[0.02]"
@@ -733,13 +733,13 @@ export default function AdminGabinetesPage() {
                                   </div>
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <p className="text-gray-700 text-sm font-medium truncate">{u.name}</p>
+                                      <p className="text-white text-sm font-medium truncate">{u.name}</p>
                                       {!u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN' && (
                                         <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
                                           style={{ background:'rgba(245,158,11,0.15)', color:'#f59e0b' }}>Pendente</span>
                                       )}
                                     </div>
-                                    <p className="text-[11px] truncate" style={{ color:'#9ca3af' }}>{u.email}</p>
+                                    <p className="text-[11px] truncate" style={{ color:'rgba(255,255,255,0.35)' }}>{u.email}</p>
                                   </div>
                                 </div>
 
@@ -760,14 +760,14 @@ export default function AdminGabinetesPage() {
                                   {u.approved && !hasFullAccess(u.role) && (
                                     <button onClick={() => openEditPermsModal(u)} title="Editar permissões"
                                       className="p-1.5 rounded-lg transition-all hover:bg-purple-500/10"
-                                      style={{ color:'#9ca3af' }}>
+                                      style={{ color:'rgba(255,255,255,0.3)' }}>
                                       <SlidersHorizontal className="w-3.5 h-3.5" />
                                     </button>
                                   )}
                                   {/* Reset senha */}
                                   <button onClick={() => openResetModal(u.id, u.name)} title="Resetar senha"
                                     className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
-                                    style={{ color:'#9ca3af' }}>
+                                    style={{ color:'rgba(255,255,255,0.3)' }}>
                                     <KeyRound className="w-3.5 h-3.5" />
                                   </button>
                                   {/* Remover */}
@@ -776,7 +776,7 @@ export default function AdminGabinetesPage() {
                                       disabled={actionId === u.id}
                                       title="Remover usuário"
                                       className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
-                                      style={{ color:'#9ca3af' }}>
+                                      style={{ color:'rgba(255,255,255,0.3)' }}>
                                       {actionId === u.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
                                     </button>
                                   )}
@@ -799,30 +799,30 @@ export default function AdminGabinetesPage() {
       {semGabinete.length > 0 && (
         <>
           <div className="flex items-center gap-3 pt-2">
-            <div className="flex-1 h-px" style={{ background:'#f3f4f6' }} />
+            <div className="flex-1 h-px" style={{ background:'rgba(255,255,255,0.06)' }} />
             <div className="flex items-center gap-2">
               <UserX size={14} style={{ color:'#f87171' }} />
-              <span className="text-xs font-semibold" style={{ color:'#9ca3af' }}>USUÁRIOS SEM GABINETE</span>
+              <span className="text-xs font-semibold" style={{ color:'rgba(255,255,255,0.35)' }}>USUÁRIOS SEM GABINETE</span>
               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background:'rgba(239,68,68,0.15)', color:'#f87171', border:'1px solid rgba(239,68,68,0.25)' }}>
                 {semGabinete.length}
               </span>
             </div>
-            <div className="flex-1 h-px" style={{ background:'#f3f4f6' }} />
+            <div className="flex-1 h-px" style={{ background:'rgba(255,255,255,0.06)' }} />
           </div>
 
           <div className="flex flex-col gap-2">
             {semGabinete.map(u => (
-              <div key={u.id} style={{ background:'#ffffff', borderRadius:'0.875rem', border:'1px solid rgba(239,68,68,0.15)', padding:'0.875rem 1.25rem', display:'flex', alignItems:'center', gap:'0.875rem' }}>
+              <div key={u.id} style={{ background:'rgba(7,29,54,0.75)', borderRadius:'0.875rem', border:'1px solid rgba(239,68,68,0.15)', padding:'0.875rem 1.25rem', display:'flex', alignItems:'center', gap:'0.875rem' }}>
                 <div style={{ width:36, height:36, borderRadius:'50%', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                   <User size={16} style={{ color:'#f87171' }} />
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ margin:0, fontWeight:600, fontSize:'0.875rem', color:'#111827' }}>{u.name}</p>
+                  <p style={{ margin:0, fontWeight:600, fontSize:'0.875rem', color:'#e2e8f0' }}>{u.name}</p>
                   <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginTop:'0.2rem', flexWrap:'wrap' }}>
-                    <span style={{ fontSize:'0.73rem', color:'#9ca3af', display:'flex', alignItems:'center', gap:'0.3rem' }}>
+                    <span style={{ fontSize:'0.73rem', color:'rgba(255,255,255,0.4)', display:'flex', alignItems:'center', gap:'0.3rem' }}>
                       <Mail size={11}/> {u.email}
                     </span>
-                    <span style={{ fontSize:'0.7rem', padding:'0.1rem 0.5rem', borderRadius:'999px', background:'#f3f4f6', color:'#9ca3af', border:'1px solid #e5eaf3' }}>
+                    <span style={{ fontSize:'0.7rem', padding:'0.1rem 0.5rem', borderRadius:'999px', background:'rgba(255,255,255,0.06)', color:'rgba(255,255,255,0.35)', border:'1px solid rgba(255,255,255,0.08)' }}>
                       {ROLE_LABELS[u.role] ?? u.role}
                     </span>
                     {!u.approved && (
@@ -847,15 +847,15 @@ export default function AdminGabinetesPage() {
       {excluidos.length > 0 && (
         <>
           <div className="flex items-center gap-3 pt-2">
-            <div className="flex-1 h-px" style={{ background: '#f8fafc' }} />
+            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
             <div className="flex items-center gap-2">
               <Trash2 size={14} style={{ color: '#f87171' }} />
-              <span className="text-xs font-semibold" style={{ color: '#9ca3af' }}>EXCLUSÕES PENDENTES DE REVISÃO</span>
+              <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.35)' }}>EXCLUSÕES PENDENTES DE REVISÃO</span>
               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
                 {excluidos.length}
               </span>
             </div>
-            <div className="flex-1 h-px" style={{ background: '#f8fafc' }} />
+            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -863,18 +863,18 @@ export default function AdminGabinetesPage() {
               const dt = new Date(u.deletedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
               const isActing = acaoExcluidoId === u.id;
               return (
-                <div key={u.id} style={{ background: '#ffffff', borderRadius: '0.875rem', border: '1px solid rgba(239,68,68,0.2)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', flexWrap: 'wrap' }}>
+                <div key={u.id} style={{ background: 'rgba(7,29,54,0.75)', borderRadius: '0.875rem', border: '1px solid rgba(239,68,68,0.2)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', flexWrap: 'wrap' }}>
                   <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.75rem', fontWeight: 700, color: '#f87171' }}>
                     {u.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#111827' }}>{u.name}</p>
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0' }}>{u.name}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                         <Mail size={11} /> {u.email}
                       </span>
                       {u.gabinete && (
-                        <span style={{ fontSize: '0.7rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                           <Building2 size={11} /> {u.gabinete.nome}
                         </span>
                       )}
@@ -917,18 +917,18 @@ export default function AdminGabinetesPage() {
             onClick={e => { if (e.target===e.currentTarget && actionId!==approveTarget.id) setShowApproveModal(false); }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
               className="w-full max-w-md rounded-2xl p-6 space-y-4"
-              style={{ background:'#ffffff', border:'1px solid rgba(34,197,94,0.25)' }}>
+              style={{ background:'#071d36', border:'1px solid rgba(34,197,94,0.25)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(34,197,94,0.12)', border:'1px solid rgba(34,197,94,0.3)' }}>
                   <Check className="w-5 h-5" style={{ color:'#4ade80' }} />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-gray-800 font-semibold text-sm">Aprovar usuário</h3>
-                  <p className="text-xs mt-0.5 truncate" style={{ color:'#9ca3af' }}>{approveTarget.name}</p>
+                  <h3 className="text-white font-semibold text-sm">Aprovar usuário</h3>
+                  <p className="text-xs mt-0.5 truncate" style={{ color:'rgba(255,255,255,0.4)' }}>{approveTarget.name}</p>
                 </div>
               </div>
-              <p className="text-xs" style={{ color:'#6b7280' }}>Selecione quais áreas este usuário poderá acessar:</p>
+              <p className="text-xs" style={{ color:'rgba(255,255,255,0.5)' }}>Selecione quais áreas este usuário poderá acessar:</p>
               <PermissionsChecklist selected={approvePerms}
                 onToggle={p => togglePerm(approvePerms, setApprovePerms, p)}
                 onSelectAll={() => setApprovePerms(new Set(ALL_PERMISSIONS))}
@@ -936,8 +936,8 @@ export default function AdminGabinetesPage() {
                 accent={ACCENT_EMERALD} />
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setShowApproveModal(false)} disabled={actionId===approveTarget.id}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-gray-100 disabled:opacity-50"
-                  style={{ color:'#9ca3af', border:'1px solid #e5eaf3' }}>Cancelar</button>
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+                  style={{ color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
                 <button onClick={() => doApprove(approveTarget.id, Array.from(approvePerms))} disabled={actionId===approveTarget.id}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{ background:'linear-gradient(135deg,#16a34a,#22c55e)', color:'#04111f' }}>
@@ -961,15 +961,15 @@ export default function AdminGabinetesPage() {
             onClick={e => { if (e.target===e.currentTarget && !savingPerms) setShowEditPermsModal(false); }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
               className="w-full max-w-md rounded-2xl p-6 space-y-4"
-              style={{ background:'#ffffff', border:'1px solid rgba(168,85,247,0.25)' }}>
+              style={{ background:'#071d36', border:'1px solid rgba(168,85,247,0.25)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.3)' }}>
                   <SlidersHorizontal className="w-5 h-5" style={{ color:'#c084fc' }} />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-gray-800 font-semibold text-sm">Editar permissões</h3>
-                  <p className="text-xs mt-0.5 truncate" style={{ color:'#9ca3af' }}>{editPermsTarget.name}</p>
+                  <h3 className="text-white font-semibold text-sm">Editar permissões</h3>
+                  <p className="text-xs mt-0.5 truncate" style={{ color:'rgba(255,255,255,0.4)' }}>{editPermsTarget.name}</p>
                 </div>
               </div>
               <PermissionsChecklist selected={editPerms}
@@ -979,8 +979,8 @@ export default function AdminGabinetesPage() {
                 accent={ACCENT_PURPLE} />
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setShowEditPermsModal(false)} disabled={savingPerms}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-gray-100 disabled:opacity-50"
-                  style={{ color:'#9ca3af', border:'1px solid #e5eaf3' }}>Cancelar</button>
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+                  style={{ color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
                 <button onClick={doEditPerms} disabled={savingPerms}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{ background:'linear-gradient(135deg,#9333ea,#a855f7)', color:'#fff' }}>
@@ -1004,27 +1004,27 @@ export default function AdminGabinetesPage() {
             onClick={e => { if (e.target===e.currentTarget && !resettingPwd) { setShowResetModal(false); setResetResult(''); } }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
               className="w-full max-w-sm rounded-2xl p-6 space-y-4"
-              style={{ background:'#ffffff', border:'1px solid rgba(245,158,11,0.25)' }}>
+              style={{ background:'#071d36', border:'1px solid rgba(245,158,11,0.25)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)' }}>
                   <KeyRound className="w-5 h-5" style={{ color:'#f59e0b' }} />
                 </div>
                 <div>
-                  <h3 className="text-gray-800 font-semibold text-sm">Resetar Senha</h3>
-                  <p className="text-xs mt-0.5" style={{ color:'#9ca3af' }}>{resetTargetName}</p>
+                  <h3 className="text-white font-semibold text-sm">Resetar Senha</h3>
+                  <p className="text-xs mt-0.5" style={{ color:'rgba(255,255,255,0.4)' }}>{resetTargetName}</p>
                 </div>
               </div>
 
               {!resetResult && (
                 <>
-                  <p className="text-sm" style={{ color:'#6b7280' }}>
+                  <p className="text-sm" style={{ color:'rgba(255,255,255,0.55)' }}>
                     Uma <strong style={{ color:'#f59e0b' }}>senha temporária</strong> será gerada e a senha atual substituída.
                   </p>
                   <div className="flex gap-3 pt-1">
                     <button onClick={() => setShowResetModal(false)} disabled={resettingPwd}
-                      className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-gray-100 disabled:opacity-50"
-                      style={{ color:'#9ca3af', border:'1px solid #e5eaf3' }}>Cancelar</button>
+                      className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+                      style={{ color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
                     <button onClick={doReset} disabled={resettingPwd}
                       className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                       style={{ background:'linear-gradient(135deg,#d97706,#f59e0b)', color:'#04111f' }}>
@@ -1040,14 +1040,14 @@ export default function AdminGabinetesPage() {
                   {resetResult === '__EMAIL_SENT__' ? (
                     <div className="rounded-xl p-4 text-center space-y-2" style={{ background:'rgba(34,197,94,0.07)', border:'1px solid rgba(34,197,94,0.2)' }}>
                       <p className="text-sm font-semibold" style={{ color:'#4ade80' }}>Senha redefinida!</p>
-                      <p className="text-xs" style={{ color:'#6b7280' }}>Senha temporária enviada por e-mail.</p>
+                      <p className="text-xs" style={{ color:'rgba(255,255,255,0.55)' }}>Senha temporária enviada por e-mail.</p>
                     </div>
                   ) : (
                     <>
                       <div className="rounded-xl p-4 text-center space-y-2" style={{ background:'rgba(34,197,94,0.07)', border:'1px solid rgba(34,197,94,0.2)' }}>
-                        <p className="text-xs" style={{ color:'#6b7280' }}>Senha temporária gerada</p>
+                        <p className="text-xs" style={{ color:'rgba(255,255,255,0.45)' }}>Senha temporária gerada</p>
                         <p className="text-2xl font-bold tracking-[0.2em] select-all" style={{ color:'#4ade80', fontFamily:'monospace' }}>{resetResult}</p>
-                        <p className="text-[10px]" style={{ color:'#9ca3af' }}>Clique para selecionar</p>
+                        <p className="text-[10px]" style={{ color:'rgba(255,255,255,0.3)' }}>Clique para selecionar</p>
                       </div>
                       <button onClick={() => { navigator.clipboard.writeText(resetResult); setCopiedPwd(true); setTimeout(() => setCopiedPwd(false), 2500); }}
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
@@ -1057,14 +1057,14 @@ export default function AdminGabinetesPage() {
                         {copiedPwd ? <CheckCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                         {copiedPwd ? 'Copiado!' : 'Copiar Senha'}
                       </button>
-                      <p className="text-[11px] text-center" style={{ color:'#9ca3af' }}>
+                      <p className="text-[11px] text-center" style={{ color:'rgba(255,255,255,0.3)' }}>
                         ⚠️ Esta senha não será exibida novamente
                       </p>
                     </>
                   )}
                   <button onClick={() => { setShowResetModal(false); setResetResult(''); }}
-                    className="w-full py-2 rounded-xl text-sm font-medium transition-all hover:bg-gray-100"
-                    style={{ color:'#9ca3af', border:'1px solid #e5eaf3' }}>Fechar</button>
+                    className="w-full py-2 rounded-xl text-sm font-medium transition-all hover:bg-white/5"
+                    style={{ color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.08)' }}>Fechar</button>
                 </>
               )}
             </motion.div>
@@ -1083,24 +1083,24 @@ export default function AdminGabinetesPage() {
             onClick={e => { if (e.target===e.currentTarget && !deletingReject) setConfirmReject(null); }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
               className="w-full max-w-sm rounded-2xl p-6 space-y-4"
-              style={{ background:'#ffffff', border:'1px solid rgba(239,68,68,0.25)' }}>
+              style={{ background:'#071d36', border:'1px solid rgba(239,68,68,0.25)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.3)' }}>
                   <Trash2 className="w-5 h-5" style={{ color:'#f87171' }} />
                 </div>
                 <div>
-                  <h3 className="text-gray-800 font-semibold text-sm">Remover usuário</h3>
-                  <p className="text-xs mt-0.5" style={{ color:'#9ca3af' }}>{confirmReject.name}</p>
+                  <h3 className="text-white font-semibold text-sm">Remover usuário</h3>
+                  <p className="text-xs mt-0.5" style={{ color:'rgba(255,255,255,0.4)' }}>{confirmReject.name}</p>
                 </div>
               </div>
-              <p className="text-sm" style={{ color:'#6b7280' }}>
+              <p className="text-sm" style={{ color:'rgba(255,255,255,0.55)' }}>
                 Esta ação excluirá permanentemente a conta do usuário. Não pode ser desfeita.
               </p>
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setConfirmReject(null)} disabled={deletingReject}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-gray-100 disabled:opacity-50"
-                  style={{ color:'#9ca3af', border:'1px solid #e5eaf3' }}>Cancelar</button>
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+                  style={{ color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
                 <button onClick={doReject} disabled={deletingReject}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{ background:'linear-gradient(135deg,#dc2626,#ef4444)', color:'#fff' }}>
@@ -1116,10 +1116,3 @@ export default function AdminGabinetesPage() {
     </div>
   );
 }
-
-
-
-
-
-
-

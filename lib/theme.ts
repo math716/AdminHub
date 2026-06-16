@@ -24,28 +24,26 @@ export const brand = {
 // Surface — fundos de painel/card
 // ──────────────────────────────────────────────────────────
 export const surface = {
-  /** Painel padrão — branco com sombra sutil */
+  /** Painel padrão (rgba(7,29,54,0.75) + border gold 15%) */
   panel: {
-    background: '#ffffff',
-    border:     '1px solid #e5eaf3',
-    backdropFilter: 'none',
-    boxShadow:  '0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)',
+    background: 'rgba(7,29,54,0.75)',
+    border:     '1px solid rgba(201,162,39,0.15)',
+    backdropFilter: 'blur(8px)',
   },
-  /** Painel destacado — branco com sombra mais forte */
+  /** Painel destacado (mais opaco, borda gold mais forte) */
   raised: {
-    background: '#ffffff',
-    border:     '1px solid #e5eaf3',
-    backdropFilter: 'none',
-    boxShadow:  '0 2px 8px rgba(0,0,0,0.07), 0 8px 24px rgba(0,0,0,0.05)',
+    background: 'rgba(7,29,54,0.85)',
+    border:     '1px solid rgba(201,162,39,0.22)',
+    backdropFilter: 'blur(10px)',
   },
-  /** Subcard/região interna */
+  /** Subcard/região interna (mais sutil, sem ouro) */
   subtle: {
-    background: '#f8fafc',
-    border:     '1px solid #f1f5f9',
+    background: 'rgba(255,255,255,0.04)',
+    border:     '1px solid rgba(255,255,255,0.07)',
   },
   /** Hover de item de lista */
   hover: {
-    background: '#f8fafc',
+    background: 'rgba(255,255,255,0.05)',
   },
 } as const;
 
@@ -65,10 +63,10 @@ export const border = {
 // Text — hierarquia tipográfica
 // ──────────────────────────────────────────────────────────
 export const text = {
-  primary:   '#111827',
-  secondary: '#374151',
-  tertiary:  '#6b7280',
-  muted:     '#9ca3af',
+  primary:   '#FFFFFF',
+  secondary: 'rgba(255,255,255,0.70)',
+  tertiary:  'rgba(255,255,255,0.50)',
+  muted:     'rgba(255,255,255,0.32)',
   gold:      brand.gold,
   info:      brand.info,
 } as const;

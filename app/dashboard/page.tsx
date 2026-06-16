@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card } from '@/components/ui/card';
 import {
@@ -17,6 +18,7 @@ import {
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { STATUS_COLORS, PRIORITY_COLORS, PRIORITY_LABELS, STATUS_LABELS } from '@/lib/types';
+import { ROLE_LABELS } from '@/lib/permissions';
 import { DemandPriority, DemandStatus } from '@prisma/client';
 
 const Donut3DChart = dynamic(() => import('@/components/charts/donut-3d-chart'), { ssr: false });
@@ -41,6 +43,7 @@ export default function DashboardPage() {
   const { data: session, status: sessionStatus } = useSession() || {};
   const userRole   = (session?.user as any)?.role       || 'ASSESSOR';
   const gabineteId = (session?.user as any)?.gabineteId as string | undefined;
+  const gabineteName = (session?.user as any)?.gabineteName || 'AdminHub';
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -108,12 +111,28 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 relative">
-      {/* Sem overlay — fundo já é claro */}
+      {/* Grade sutil de fundo */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
+        }}
+      />
 
       <PageHeader
         icon={LayoutDashboard}
         title="Dashboard"
         subtitle="Visão geral do gabinete"
+        actions={
+          <div className="text-right">
+            <p className="text-sm text-slate-400">{gabineteName}</p>
+            <Badge variant={userRole === 'ADMIN' ? 'danger' : userRole === 'AGENTE_POLITICO' ? 'warning' : userRole === 'CHEFE' ? 'success' : 'info'}>
+              {ROLE_LABELS[userRole] ?? 'Usuário'}
+            </Badge>
+          </div>
+        }
       />
 
       {/* Gradient Cards Row */}
@@ -125,7 +144,7 @@ export default function DashboardPage() {
           subtitleValue={bestCategory ? bestCategory[0] : 'N/A'}
           icon={FileText}
           gradient="teal"
-          chart={<MiniLineChart data={miniChartTotal} color="#3b82f6" />}
+          chart={<MiniLineChart data={miniChartTotal} color="#fff" />}
           delay={0.1}
         />
 
@@ -136,7 +155,7 @@ export default function DashboardPage() {
           subtitleValue={stats?.lastResolvedDate ?? 'Nenhuma ainda'}
           icon={CheckCircle}
           gradient="purple"
-          chart={<MiniLineChart data={miniChartResolved} color="#10b981" />}
+          chart={<MiniLineChart data={miniChartResolved} color="#fff" />}
           delay={0.2}
         />
 
@@ -149,12 +168,12 @@ export default function DashboardPage() {
           gradient="pink"
           chart={
             <div className="flex flex-col justify-end h-full gap-2 pb-1">
-              <div className="flex h-2 rounded-full overflow-hidden" style={{ background: '#f3f4f6' }}>
-                <div title="Resolvidas" style={{ width: `${resolvedPercent}%`, background: '#d97706' }} />
-                <div title="Em Andamento" style={{ width: `${emAndamentoPercent}%`, background: '#fbbf24' }} />
-                <div title="Pendentes" style={{ width: `${pendingPercent}%`, background: '#fde68a' }} />
+              <div className="flex h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
+                <div title="Resolvidas" style={{ width: `${resolvedPercent}%`, background: 'rgba(255,255,255,0.9)' }} />
+                <div title="Em Andamento" style={{ width: `${emAndamentoPercent}%`, background: 'rgba(255,255,255,0.5)' }} />
+                <div title="Pendentes" style={{ width: `${pendingPercent}%`, background: 'rgba(255,255,255,0.25)' }} />
               </div>
-              <div className="flex justify-between text-[10px] font-medium" style={{ color: '#6b7280' }}>
+              <div className="flex justify-between text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>
                 <span>{stats?.resolvidas ?? 0} resolvidas</span>
                 <span>{(stats?.pendentes ?? 0) + (stats?.emAndamento ?? 0)} em aberto</span>
               </div>
@@ -172,17 +191,15 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="backdrop-blur-sm rounded-2xl p-5"
-          style={{ background: '#ffffff', border: '1px solid #e5eaf3', boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)' }}
+          style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
         >
-          <div className="flex items-center gap-2.5 mb-5">
-            <div style={{ padding: 7, borderRadius: 9, background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)' }}>
-              <BarChart3 className="h-4 w-4" style={{ color: '#3b82f6' }} />
-            </div>
-            <h3 className="font-semibold text-sm" style={{ color: '#111827' }}>Demandas por Status</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart3 className="h-5 w-5" style={{ color: '#c9a227' }} />
+            <h3 className="text-white font-semibold">Demandas por Status</h3>
           </div>
           <div className="h-[280px]">
-            <Donut3DChart
-              data={statusDonutData}
+            <Donut3DChart 
+              data={statusDonutData} 
               centerValue={stats?.total ?? 0}
               centerLabel="Total"
             />
@@ -195,13 +212,11 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
           className="backdrop-blur-sm rounded-2xl p-5"
-          style={{ background: '#ffffff', border: '1px solid #e5eaf3', boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)' }}
+          style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
         >
-          <div className="flex items-center gap-2.5 mb-5">
-            <div style={{ padding: 7, borderRadius: 9, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.2)' }}>
-              <AlertTriangle className="h-4 w-4" style={{ color: '#f59e0b' }} />
-            </div>
-            <h3 className="font-semibold text-sm" style={{ color: '#111827' }}>Demandas por Prioridade</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle className="h-5 w-5" style={{ color: '#c9a227' }} />
+            <h3 className="text-white font-semibold">Demandas por Prioridade</h3>
           </div>
           <div className="h-[280px]">
             <Donut3DChart
@@ -221,18 +236,16 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
           className="backdrop-blur-sm rounded-2xl p-5"
-          style={{ background: '#ffffff', border: '1px solid #e5eaf3', boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)' }}
+          style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
         >
-          <div className="flex items-center gap-2.5 mb-5">
-            <div style={{ padding: 7, borderRadius: 9, background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <FileText className="h-4 w-4" style={{ color: '#10b981' }} />
-            </div>
-            <h3 className="font-semibold text-sm" style={{ color: '#111827' }}>Demandas Recentes</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="h-5 w-5" style={{ color: '#c9a227' }} />
+            <h3 className="text-white font-semibold">Demandas Recentes</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-xs border-b" style={{ color: '#9ca3af', borderColor: '#f3f4f6' }}>
+                <tr className="text-left text-xs border-b" style={{ color: '#8fa3bf', borderColor: 'rgba(30,74,128,0.5)' }}>
                   <th className="pb-3 font-medium">Título</th>
                   <th className="pb-3 font-medium">Status</th>
                   <th className="pb-3 font-medium">Prioridade</th>
@@ -240,8 +253,8 @@ export default function DashboardPage() {
               </thead>
               <tbody>
                 {stats?.recentDemands?.slice(0, 5)?.map((demand: any, index: number) => (
-                  <tr key={demand.id || index} className="last:border-0" style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td className="py-3 text-sm" style={{ color: '#111827' }}>
+                  <tr key={demand.id || index} className="last:border-0" style={{ borderBottom: '1px solid rgba(30,74,128,0.3)' }}>
+                    <td className="py-3 text-white text-sm">
                       <div className="flex items-center gap-2">
                         <div 
                           className="w-2 h-2 rounded-full"
@@ -291,13 +304,11 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
           className="backdrop-blur-sm rounded-2xl p-5"
-          style={{ background: '#ffffff', border: '1px solid #e5eaf3', boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)' }}
+          style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
         >
-          <div className="flex items-center gap-2.5 mb-5">
-            <div style={{ padding: 7, borderRadius: 9, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)' }}>
-              <BarChart3 className="h-4 w-4" style={{ color: '#8b5cf6' }} />
-            </div>
-            <h3 className="font-semibold text-sm" style={{ color: '#111827' }}>Demandas por Categoria</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart3 className="h-5 w-5" style={{ color: '#c9a227' }} />
+            <h3 className="text-white font-semibold">Demandas por Categoria</h3>
           </div>
           <div className="h-[280px]">
             <DemandsByCategoryChart data={stats?.byCategory} darkMode={true} />
@@ -311,13 +322,11 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
         className="relative z-10 backdrop-blur-sm rounded-2xl p-5"
-        style={{ background: '#ffffff', border: '1px solid #e5eaf3', boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)' }}
+        style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
       >
-        <div className="flex items-center gap-2.5 mb-5">
-          <div style={{ padding: 7, borderRadius: 9, background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.2)' }}>
-            <TrendingUp className="h-4 w-4" style={{ color: '#4a9ede' }} />
-          </div>
-          <h3 className="font-semibold text-sm" style={{ color: '#111827' }}>Evolução de Demandas</h3>
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp className="h-5 w-5" style={{ color: '#c9a227' }} />
+          <h3 className="text-white font-semibold">Evolução de Demandas</h3>
         </div>
         <div className="h-[250px]">
           <DemandsTimelineChart data={stats?.timeline} darkMode={true} />

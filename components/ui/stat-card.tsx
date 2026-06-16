@@ -53,10 +53,9 @@ export function StatCard({
         className
       )}
       style={{
-        background: '#ffffff',
-        border: `1px solid #e5eaf3`,
-        borderTop: `3px solid ${color}`,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)',
+        background: `linear-gradient(135deg, ${tint} 0%, rgba(7,29,54,0.75) 70%)`,
+        border: `1px solid ${border}`,
+        backdropFilter: 'blur(8px)',
       }}
     >
       <div className="flex items-center justify-between gap-3">
@@ -67,7 +66,7 @@ export function StatCard({
           >
             {label}
           </p>
-          <p className="text-2xl sm:text-3xl font-bold mt-1 tabular-nums leading-none" style={{ color: '#111827' }}>
+          <p className="text-2xl sm:text-3xl font-bold text-white mt-1 tabular-nums leading-none">
             {value}
           </p>
         </div>

@@ -56,9 +56,9 @@ export function PageHeader({
           </div>
         )}
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight truncate" style={{ color: '#111827' }}>{title}</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight truncate">{title}</h1>
           {subtitle && (
-            <p className="text-sm mt-0.5" style={{ color: '#6b7280' }}>{subtitle}</p>
+            <p className="text-slate-400 text-sm mt-0.5">{subtitle}</p>
           )}
         </div>
       </div>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSession } from 'next-auth/react';
@@ -26,7 +26,7 @@ import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 const BrazilMap = dynamic(() => import('@/components/maps/brazil-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: '#f8fafc' }}>
+    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'rgba(7,29,54,0.5)' }}>
       <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
     </div>
   ),
@@ -35,7 +35,7 @@ const BrazilMap = dynamic(() => import('@/components/maps/brazil-map'), {
 const StateMap = dynamic(() => import('@/components/maps/state-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: '#f8fafc' }}>
+    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'rgba(7,29,54,0.5)' }}>
       <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
     </div>
   ),
@@ -44,7 +44,7 @@ const StateMap = dynamic(() => import('@/components/maps/state-map'), {
 const ContatosBairrosMap = dynamic(() => import('@/components/maps/contatos-bairros-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: '#f8fafc' }}>
+    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'rgba(7,29,54,0.5)' }}>
       <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
     </div>
   ),
@@ -629,8 +629,8 @@ export default function ContatosPage() {
     );
   }, [contatos, search]);
 
-  const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none transition-all';
-  const inputStyle = { background: '#f8fafc', border: '1px solid #e5eaf3' };
+  const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none transition-all';
+  const inputStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' };
 
   if (status === 'loading') return (
     <div className="flex items-center justify-center h-screen">
@@ -664,13 +664,13 @@ export default function ContatosPage() {
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 p-1 rounded-xl w-fit"
-        style={{ background: '#f1f5f9', border: '1px solid #e5eaf3' }}>
+        style={{ background: 'rgba(4,17,31,0.6)', border: '1px solid rgba(255,255,255,0.07)' }}>
         {([['lista', List, 'Lista'], ['mapa', MapIcon, 'Mapa']] as const).map(([tab, Icon, label]) => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
             style={activeTab === tab
-              ? { background: '#f3f4f6', color: '#c9a227', border: '1px solid #e5eaf3' }
-              : { color: '#6b7280', border: '1px solid transparent' }
+              ? { background: 'rgba(201,162,39,0.15)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.3)' }
+              : { color: 'rgba(255,255,255,0.45)', border: '1px solid transparent' }
             }>
             <Icon className="w-4 h-4" />{label}
           </button>
@@ -682,10 +682,10 @@ export default function ContatosPage() {
         <>
           {/* Search */}
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#9ca3af' }} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'rgba(255,255,255,0.35)' }} />
             <input type="text" placeholder="Buscar por nome, número, email..."
               value={search} onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-gray-800 placeholder-gray-400 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-white placeholder-white/20 outline-none transition-all"
               style={inputStyle} />
           </div>
 
@@ -712,9 +712,9 @@ export default function ContatosPage() {
                     whileHover={{ y: -2 }}
                     className="rounded-2xl relative overflow-hidden transition-all"
                     style={{
-                      background: '#ffffff',
-                      border: '1px solid #e5eaf3',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.05)',
+                      background: 'linear-gradient(135deg, rgba(7,29,54,0.85) 0%, rgba(4,17,31,0.95) 100%)',
+                      border: '1px solid rgba(201,162,39,0.18)',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
                     }}>
                     {/* Accent stripe lateral dourada */}
                     <div className="absolute left-0 top-0 bottom-0 w-[3px]"
@@ -732,7 +732,7 @@ export default function ContatosPage() {
                           {initials}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-800 text-[15px] leading-tight truncate" title={c.nome}>
+                          <h3 className="font-semibold text-white text-[15px] leading-tight truncate" title={c.nome}>
                             {c.nome}
                           </h3>
                           <div className="flex items-center gap-1.5 mt-1">
@@ -794,13 +794,13 @@ export default function ContatosPage() {
                           </button>
                           <button onClick={() => handleEdit(c)}
                             className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-yellow-500/15"
-                            style={{ color: 'rgba(201,162,39,0.85)', border: '1px solid #e5eaf3' }}
+                            style={{ color: 'rgba(201,162,39,0.85)', border: '1px solid rgba(201,162,39,0.2)' }}
                             title="Editar contato">
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button onClick={() => handleDelete(c.id)}
                             className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-red-500/15"
-                            style={{ color: '#6b7280', border: '1px solid #e5eaf3' }}
+                            style={{ color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.08)' }}
                             title="Excluir contato">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -820,10 +820,10 @@ export default function ContatosPage() {
         <>
           {/* Breadcrumb */}
           <div className="flex items-center gap-1 text-sm rounded-xl px-4 py-2.5 w-fit flex-wrap"
-            style={{ background: '#ffffff', border: '1px solid #e5eaf3' }}>
+            style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(201,162,39,0.13)' }}>
             <button onClick={view === 'brasil' ? undefined : goBack}
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
-              style={view === 'brasil' ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 } : { color: '#6b7280', cursor: 'pointer' }}>
+              style={view === 'brasil' ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 } : { color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>
               <Globe className="h-3.5 w-3.5" /> Brasil
             </button>
             <ChevronRight className="h-3.5 w-3.5" style={{ color: 'rgba(255,255,255,0.2)' }} />
@@ -834,7 +834,7 @@ export default function ContatosPage() {
               </span>
             ) : view === 'municipio' ? (
               <button onClick={goBack} className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
-                style={{ color: '#6b7280' }}>
+                style={{ color: 'rgba(255,255,255,0.55)' }}>
                 <Layers className="h-3.5 w-3.5" /> {selectedStateName}
               </button>
             ) : (
@@ -863,29 +863,29 @@ export default function ContatosPage() {
             {/* Sidebar */}
             <div className="space-y-3">
               {/* Stats */}
-              <div className="rounded-xl p-4" style={{ background: '#ffffff', border: '1px solid #e5eaf3' }}>
-                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#9ca3af' }}>
+              <div className="rounded-xl p-4" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' }}>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
                   {view === 'municipio' ? navMunicipio?.nome : view === 'estado' ? selectedStateName : 'Visão Geral'}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid #e5eaf3' }}>
+                  <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.15)' }}>
                     <p className="text-lg font-bold" style={{ color: '#c9a227' }}>
                       {view === 'municipio'
                         ? Object.values(bairroContacts).reduce((a, b) => a + b.length, 0)
                         : view === 'estado' ? stateContactIds.size : contatos.length}
                     </p>
-                    <p className="text-[10px] uppercase tracking-wide" style={{ color: '#9ca3af' }}>
+                    <p className="text-[10px] uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>
                       {view === 'municipio' ? 'neste município' : view === 'estado' ? 'neste estado' : 'total'}
                     </p>
                   </div>
                   <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)' }}>
                     <p className="text-lg font-bold" style={{ color: '#4ade80' }}>{selectedIds.size}</p>
-                    <p className="text-[10px] uppercase tracking-wide" style={{ color: '#9ca3af' }}>selecionados</p>
+                    <p className="text-[10px] uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>selecionados</p>
                   </div>
                 </div>
                 {selectedIds.size > 0 && (
                   <button onClick={clearAll} className="mt-2 w-full text-xs text-center py-1 rounded-lg transition-all hover:opacity-70"
-                    style={{ color: '#9ca3af', border: '1px solid #e5eaf3' }}>
+                    style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
                     Limpar seleção
                   </button>
                 )}
@@ -894,29 +894,29 @@ export default function ContatosPage() {
 
               {/* Search + contacts list */}
               {view !== 'brasil' && (
-                <div className="rounded-xl overflow-hidden" style={{ background: '#ffffff', border: '1px solid #e5eaf3' }}>
-                  <div className="p-2.5" style={{ borderBottom: '1px solid #f3f4f6' }}>
+                <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' }}>
+                  <div className="p-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="flex items-center gap-2 rounded-lg px-2.5 py-2"
-                      style={{ background: '#f8fafc', border: '1px solid #e5eaf3' }}>
-                      <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: '#9ca3af' }} />
+                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.35)' }} />
                       <input value={mapSearch} onChange={e => setMapSearch(e.target.value)}
                         placeholder="Buscar contatos..."
-                        className="flex-1 bg-transparent text-gray-800 text-xs outline-none placeholder-gray-400" />
+                        className="flex-1 bg-transparent text-white text-xs outline-none placeholder-white/20" />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                     <button onClick={selectAll} className="flex items-center gap-1 text-xs transition-all hover:opacity-70" style={{ color: '#4a9ede' }}>
                       <UserCheck className="h-3.5 w-3.5" /> Todos
                     </button>
                     {selectedIds.size > 0 && (
-                      <button onClick={clearAll} className="flex items-center gap-1 text-xs" style={{ color: '#9ca3af' }}>
+                      <button onClick={clearAll} className="flex items-center gap-1 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
                         <UserX className="h-3.5 w-3.5" /> Limpar
                       </button>
                     )}
                   </div>
                   <div className="max-h-48 overflow-y-auto divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
                     {mapSidebarContacts.length === 0 ? (
-                      <p className="text-xs text-center py-5" style={{ color: '#9ca3af' }}>
+                      <p className="text-xs text-center py-5" style={{ color: 'rgba(255,255,255,0.3)' }}>
                         {(pipLoading || bairroLoading) ? 'Calculando...' : 'Nenhum contato geolocado aqui'}
                       </p>
                     ) : mapSidebarContacts.map(c => {
@@ -929,8 +929,8 @@ export default function ContatosPage() {
                             {sel && <Check className="h-3 w-3 text-[#04111f]" strokeWidth={3} />}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-gray-700 text-xs font-medium truncate">{c.nome}</p>
-                            <p className="text-xs truncate" style={{ color: '#9ca3af' }}>{c.numero}</p>
+                            <p className="text-white text-xs font-medium truncate">{c.nome}</p>
+                            <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.numero}</p>
                           </div>
                         </button>
                       );
@@ -950,11 +950,11 @@ export default function ContatosPage() {
 
             {/* Map */}
             <div className="lg:col-span-3">
-              <div className="rounded-2xl overflow-hidden relative" style={{ height: 560, background: '#f8fafc', border: '1px solid #e5eaf3' }}>
+              <div className="rounded-2xl overflow-hidden relative" style={{ height: 560, background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(201,162,39,0.13)' }}>
                 {(pipLoading || bairroLoading) && (
                   <div className="absolute inset-0 flex items-center justify-center z-10 rounded-2xl" style={{ background: 'rgba(4,17,31,0.6)' }}>
                     <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: '#4a9ede' }} />
-                    <span className="text-sm" style={{ color: '#6b7280' }}>Calculando...</span>
+                    <span className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>Calculando...</span>
                   </div>
                 )}
 
@@ -972,14 +972,14 @@ export default function ContatosPage() {
                       exit={{ opacity: 0, scale: 0.9, y: -8 }}
                       transition={{ duration: 0.15 }}
                       className="absolute top-4 left-1/2 -translate-x-1/2 z-20 rounded-2xl shadow-2xl overflow-hidden"
-                      style={{ background: '#ffffff', border: '1px solid #e5eaf3', minWidth: 260, backdropFilter: 'blur(12px)' }}
+                      style={{ background: 'rgba(4,17,31,0.95)', border: '1px solid rgba(201,162,39,0.35)', minWidth: 260, backdropFilter: 'blur(12px)' }}
                       onClick={e => e.stopPropagation()}>
-                      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                         <div className="flex items-center gap-2">
                           {popup.type === 'estado' ? <Layers className="h-3.5 w-3.5" style={{ color: '#c9a227' }} /> : <Building2 className="h-3.5 w-3.5" style={{ color: '#c9a227' }} />}
-                          <span className="text-sm font-semibold text-gray-800">{popup.nome}</span>
+                          <span className="text-sm font-semibold text-white">{popup.nome}</span>
                         </div>
-                        <button onClick={() => setPopup(null)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-all" style={{ color: '#9ca3af' }}>
+                        <button onClick={() => setPopup(null)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.4)' }}>
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -1033,7 +1033,7 @@ export default function ContatosPage() {
                   {view === 'municipio' && navMunicipio && !bairroLoading && (!munHasBairros || bairroFeatures.length === 0) && (
                     <div className="h-full flex flex-col items-center justify-center gap-3">
                       <Building2 className="h-12 w-12 opacity-20" style={{ color: '#4a9ede' }} />
-                      <p className="text-sm" style={{ color: '#9ca3af' }}>Dados de bairros não disponíveis para {navMunicipio.nome}</p>
+                      <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Dados de bairros não disponíveis para {navMunicipio.nome}</p>
                     </div>
                   )}
                 </div>
@@ -1049,37 +1049,37 @@ export default function ContatosPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-md rounded-2xl shadow-2xl"
-              style={{ background: '#ffffff', border: '1px solid #e5eaf3' }}>
-              <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #f3f4f6' }}>
+              style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(201,162,39,0.25)' }}>
+              <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(201,162,39,0.15)' }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#f3f4f6', border: '1px solid #e5eaf3' }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}>
                     <Users className="w-4 h-4" style={{ color: '#c9a227' }} />
                   </div>
-                  <h2 className="text-gray-800 font-semibold">{editingContact ? 'Editar Contato' : 'Novo Contato'}</h2>
+                  <h2 className="text-white font-semibold">{editingContact ? 'Editar Contato' : 'Novo Contato'}</h2>
                 </div>
-                <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-gray-100" style={{ color: '#6b7280' }}>
+                <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10" style={{ color: 'rgba(255,255,255,0.5)' }}>
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: '#9ca3af' }}>Nome Completo *</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(255,255,255,0.4)' }}>Nome Completo *</label>
                   <input className={inputClass} style={inputStyle} placeholder="Ex: João da Silva" value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 flex items-center gap-1.5" style={{ color: '#9ca3af' }}>
+                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
                     <WhatsAppIcon className="w-3.5 h-3.5 text-green-400" /> WhatsApp *
                   </label>
                   <input className={inputClass} style={inputStyle} placeholder="(61) 99999-0000" value={form.numero} onChange={e => setForm(f => ({ ...f, numero: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: '#9ca3af' }}>Email</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(255,255,255,0.4)' }}>Email</label>
                   <input type="email" className={inputClass} style={inputStyle} placeholder="joao@email.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: '#9ca3af' }}>Endereço</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(255,255,255,0.4)' }}>Endereço</label>
                   <div className="flex gap-2">
-                    <input className="flex-1 rounded-xl px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none" style={inputStyle}
+                    <input className="flex-1 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none" style={inputStyle}
                       placeholder="Rua, número, cidade-UF" value={form.endereco}
                       onChange={e => { setForm(f => ({ ...f, endereco: e.target.value })); setResolvedCoords(null); }} />
                     <button onClick={() => geocodeEndereco(form.endereco)} disabled={!form.endereco.trim() || geoLoading}
@@ -1102,8 +1102,8 @@ export default function ContatosPage() {
               </div>
               <div className="flex gap-3 px-6 py-4" style={{ borderTop: '1px solid rgba(201,162,39,0.15)' }}>
                 <button onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:text-gray-600"
-                  style={{ border: '1px solid #e5eaf3', color: '#6b7280' }}>Cancelar</button>
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:text-white"
+                  style={{ border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>Cancelar</button>
                 <button onClick={handleSave} disabled={saving}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
                   style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}>
@@ -1122,28 +1122,28 @@ export default function ContatosPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-lg rounded-2xl shadow-2xl"
-              style={{ background: '#ffffff', border: '1px solid #e5eaf3' }}>
-              <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #f3f4f6' }}>
+              style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(201,162,39,0.25)' }}>
+              <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(201,162,39,0.15)' }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#f3f4f6', border: '1px solid #e5eaf3' }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}>
                     <FileUp className="w-4 h-4" style={{ color: '#c9a227' }} />
                   </div>
-                  <h2 className="text-gray-800 font-semibold">Importar via CSV</h2>
+                  <h2 className="text-white font-semibold">Importar via CSV</h2>
                 </div>
-                <button onClick={resetImport} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-gray-100" style={{ color: '#6b7280' }}>
+                <button onClick={resetImport} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10" style={{ color: 'rgba(255,255,255,0.5)' }}>
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="p-6">
                 {importStep === 1 && (
                   <div className="space-y-4">
-                    <p className="text-sm" style={{ color: '#6b7280' }}>Selecione um arquivo <strong className="text-gray-800">.csv</strong> exportado do Google Forms ou de qualquer planilha.</p>
+                    <p className="text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>Selecione um arquivo <strong className="text-white">.csv</strong> exportado do Google Forms ou de qualquer planilha.</p>
                     <label className="flex flex-col items-center justify-center gap-3 rounded-xl p-8 cursor-pointer transition-all hover:opacity-80"
-                      style={{ border: '2px dashed #e5eaf3', background: '#f8fafc' }}>
-                      <Upload className="w-10 h-10" style={{ color: '#9ca3af' }} />
+                      style={{ border: '2px dashed rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.03)' }}>
+                      <Upload className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.3)' }} />
                       <div className="text-center">
-                        <p className="text-sm text-gray-700">Clique para selecionar</p>
-                        <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>Formato .csv</p>
+                        <p className="text-sm text-white">Clique para selecionar</p>
+                        <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>Formato .csv</p>
                       </div>
                       <input type="file" accept=".csv,text/csv" onChange={handleCsvFile} className="hidden" />
                     </label>
@@ -1157,8 +1157,8 @@ export default function ContatosPage() {
 
                 {importStep === 2 && (
                   <div className="space-y-4">
-                    <div className="rounded-xl p-3 space-y-2" style={{ background: '#f8fafc' }}>
-                      <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#9ca3af' }}>Colunas detectadas</p>
+                    <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                      <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>Colunas detectadas</p>
                       <div className="flex flex-wrap gap-2">
                         {[['Nome', detectedCols.nome, '#c9a227'], ['WhatsApp', detectedCols.numero, '#4ade80'], ...(detectedCols.email ? [['Email', detectedCols.email, '#4a9ede']] : []), ...(detectedCols.endereco ? [['Endereço', detectedCols.endereco, '#fb923c']] : [])].map(([label, val, color]) => (
                           <span key={label as string} className="text-xs px-2.5 py-1 rounded-full" style={{ background: `${color}18`, color: color as string, border: `1px solid ${color}33` }}>
@@ -1167,22 +1167,22 @@ export default function ContatosPage() {
                         ))}
                       </div>
                     </div>
-                    <p className="text-sm" style={{ color: '#6b7280' }}>
-                      <span className="text-gray-800 font-semibold">{csvPreview.length}</span> de {totalRows} linhas serão importadas
+                    <p className="text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                      <span className="text-white font-semibold">{csvPreview.length}</span> de {totalRows} linhas serão importadas
                     </p>
                     <div className="max-h-52 overflow-y-auto space-y-1.5">
                       {csvPreview.slice(0, 50).map((c, i) => (
-                        <div key={i} className="rounded-lg px-3 py-2 flex items-center gap-3" style={{ background: '#f8fafc' }}>
-                          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#f3f4f6' }}>
+                        <div key={i} className="rounded-lg px-3 py-2 flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,162,39,0.15)' }}>
                             <User className="w-3.5 h-3.5" style={{ color: '#c9a227' }} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-gray-700 text-sm font-medium truncate">{c.nome}</p>
-                            <p className="text-xs truncate" style={{ color: '#9ca3af' }}>{c.numero}{c.endereco ? ` · ${c.endereco}` : ''}</p>
+                            <p className="text-white text-sm font-medium truncate">{c.nome}</p>
+                            <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.numero}{c.endereco ? ` · ${c.endereco}` : ''}</p>
                           </div>
                         </div>
                       ))}
-                      {csvPreview.length > 50 && <p className="text-xs text-center py-2" style={{ color: '#9ca3af' }}>... e mais {csvPreview.length - 50}</p>}
+                      {csvPreview.length > 50 && <p className="text-xs text-center py-2" style={{ color: 'rgba(255,255,255,0.3)' }}>... e mais {csvPreview.length - 50}</p>}
                     </div>
                     {detectedCols.endereco && (
                       <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs" style={{ background: 'rgba(74,158,222,0.07)', border: '1px solid rgba(74,158,222,0.15)', color: '#4a9ede' }}>
@@ -1197,7 +1197,7 @@ export default function ContatosPage() {
                     <div className="flex gap-3">
                       <button onClick={() => setImportStep(1)} disabled={importing}
                         className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-40"
-                        style={{ border: '1px solid #e5eaf3', color: '#6b7280' }}>Voltar</button>
+                        style={{ border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>Voltar</button>
                       <button onClick={handleImport} disabled={importing}
                         className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
                         style={{ background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}>
@@ -1213,7 +1213,7 @@ export default function ContatosPage() {
                       <CheckCircle2 className="w-8 h-8" style={{ color: '#4ade80' }} />
                     </div>
                     <div className="text-center space-y-1">
-                      <p className="text-gray-800 font-bold text-lg">{importResult.imported} contato{importResult.imported !== 1 ? 's' : ''} importado{importResult.imported !== 1 ? 's' : ''}!</p>
+                      <p className="text-white font-bold text-lg">{importResult.imported} contato{importResult.imported !== 1 ? 's' : ''} importado{importResult.imported !== 1 ? 's' : ''}!</p>
                       {importResult.geocodificados > 0 && (
                         <p className="text-sm flex items-center justify-center gap-1" style={{ color: '#4a9ede' }}>
                           <MapPin className="w-3.5 h-3.5" /> {importResult.geocodificados} endereço{importResult.geocodificados !== 1 ? 's' : ''} localizado{importResult.geocodificados !== 1 ? 's' : ''} no mapa
@@ -1236,24 +1236,24 @@ export default function ContatosPage() {
       {showMsg && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
           <div className="w-full max-w-lg rounded-2xl shadow-2xl max-h-[90vh] flex flex-col"
-            style={{ background: '#ffffff', border: '1px solid #e5eaf3' }}>
+            style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(201,162,39,0.25)' }}>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid #f3f4f6' }}>
+            <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(201,162,39,0.15)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(37,211,102,0.15)', border: '1px solid rgba(37,211,102,0.3)' }}>
                   <WhatsAppIcon className="h-4 w-4" style={{ color: '#25d366' }} />
                 </div>
                 <div>
-                  <h2 className="text-gray-800 font-semibold">Disparar Mensagem</h2>
-                  <p className="text-xs" style={{ color: '#9ca3af' }}>
+                  <h2 className="text-white font-semibold">Disparar Mensagem</h2>
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
                     {selectedIds.size} contato{selectedIds.size !== 1 ? 's' : ''} selecionado{selectedIds.size !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
               <button onClick={() => { setShowMsg(false); setSendStatus({}); setSendErrors({}); }}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-gray-100"
-                style={{ color: '#6b7280' }}>
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10"
+                style={{ color: 'rgba(255,255,255,0.5)' }}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1261,20 +1261,20 @@ export default function ContatosPage() {
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
               {/* Message textarea */}
               <div>
-                <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: '#9ca3af' }}>Mensagem</label>
+                <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(255,255,255,0.4)' }}>Mensagem</label>
                 <textarea value={msgText} onChange={e => setMsgText(e.target.value)} rows={4}
                   placeholder="Digite a mensagem..."
                   disabled={sendingApi}
-                  className="w-full rounded-xl px-4 py-3 text-gray-800 text-sm outline-none resize-none placeholder-gray-400 disabled:opacity-50"
-                  style={{ background: '#f8fafc', border: '1px solid #e5eaf3' }} />
-                <p className="text-[10px] mt-1" style={{ color: '#9ca3af' }}>
+                  className="w-full rounded-xl px-4 py-3 text-white text-sm outline-none resize-none placeholder-white/20 disabled:opacity-50"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.25)' }}>
                   {msgText.length} caracteres
                 </p>
               </div>
 
               {/* Contacts list with status */}
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#9ca3af' }}>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
                   Contatos selecionados
                 </p>
                 <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
@@ -1282,13 +1282,13 @@ export default function ContatosPage() {
                     const st = sendStatus[c.id];
                     return (
                       <div key={c.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-                        style={{ background: '#f8fafc', border: '1px solid rgba(255,255,255,0.07)' }}>
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#f3f4f6' }}>
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,162,39,0.15)' }}>
                           <Phone className="h-3.5 w-3.5" style={{ color: '#c9a227' }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-gray-700 text-xs font-medium truncate">{c.nome}</p>
-                          <p className="text-xs" style={{ color: '#9ca3af' }}>{c.numero}</p>
+                          <p className="text-white text-xs font-medium truncate">{c.nome}</p>
+                          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.numero}</p>
                           {st === 'err' && sendErrors[c.id] && (
                             <p className="text-[10px] mt-0.5" style={{ color: '#fca5a5' }}>{sendErrors[c.id]}</p>
                           )}
@@ -1318,7 +1318,7 @@ export default function ContatosPage() {
               {/* Summary after send */}
               {!sendingApi && Object.keys(sendStatus).length > 0 && (
                 <div className="rounded-xl px-4 py-3 text-xs flex items-center gap-3"
-                  style={{ background: '#f8fafc', border: '1px solid #e5eaf3' }}>
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <span style={{ color: '#4ade80' }}>
                     ✓ {Object.values(sendStatus).filter(s => s === 'ok').length} enviado{Object.values(sendStatus).filter(s => s === 'ok').length !== 1 ? 's' : ''}
                   </span>
@@ -1343,7 +1343,7 @@ export default function ContatosPage() {
               <div className="flex items-center gap-2">
                 <button onClick={() => { setShowMsg(false); setSendStatus({}); setSendErrors({}); }}
                   className="px-4 py-2 text-sm font-medium transition-all hover:text-white rounded-xl"
-                  style={{ color: '#9ca3af' }}>
+                  style={{ color: 'rgba(255,255,255,0.4)' }}>
                   Fechar
                 </button>
                 <button
@@ -1373,6 +1373,3 @@ export default function ContatosPage() {
     </div>
   );
 }
-
-
-

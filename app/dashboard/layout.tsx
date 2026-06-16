@@ -59,32 +59,20 @@ export default function DashboardLayout({
   if (!mounted || status === 'loading') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center"
-        style={{ background: '#f1f5f9' }}>
-        <div className="flex flex-col items-center gap-6">
-          <div style={{ position: 'relative' }}>
-            <div style={{
-              position: 'absolute', inset: -24,
-              background: 'radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 70%)',
-              borderRadius: '50%',
-            }} />
-            <img
-              src="/logo.png"
-              alt="AdminHub"
-              className="w-40 h-auto object-contain"
-              style={{ position: 'relative', filter: 'drop-shadow(0 4px 12px rgba(37,99,235,0.15))' }}
-            />
+        style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 55%, #0c2a4f 100%)' }}>
+        <div className="flex flex-col items-center gap-5">
+          <img
+            src="/logo.png"
+            alt="AdminHub"
+            className="w-48 h-auto object-contain drop-shadow-2xl"
+            style={{ filter: 'drop-shadow(0 0 24px rgba(201,162,39,0.25))' }}
+          />
+          <div className="flex items-center gap-2.5">
+            <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#c9a227', animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#c9a227', animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#c9a227', animationDelay: '300ms' }} />
           </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {[0, 120, 240].map(d => (
-              <span key={d} className="animate-bounce" style={{
-                display: 'block', width: 5, height: 5, borderRadius: '50%',
-                background: '#3b82f6', animationDelay: `${d}ms`,
-              }} />
-            ))}
-          </div>
-          <p style={{ color: '#9ca3af', fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-            Carregando
-          </p>
+          <p className="text-xs tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.3)' }}>Carregando</p>
         </div>
       </div>
     );
@@ -95,7 +83,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#f1f5f9' }}>
+    <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 55%, #0c2a4f 100%)' }}>
       <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)} />
       <main className={`transition-[padding] duration-300 ease-out ${sidebarOpen ? 'lg:pl-72' : 'lg:px-12'}`}>
         <div className="p-4 lg:p-8 pt-16 lg:pt-8 landscape-content">
