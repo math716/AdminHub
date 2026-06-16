@@ -563,7 +563,7 @@ export default function UsuariosPage() {
                 {(['CHEFE', 'ASSESSOR'] as const).map(r => {
                   const labelColor = r === 'CHEFE' ? '#4a9ede' : '#4ade80';
                   const label      = r === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor';
-                  const desc       = r === 'CHEFE' ? 'Requer aprovação do Agente Político' : 'Requer aprovação do Agente Político';
+                  const desc       = r === 'CHEFE' ? 'Acesso imediato após criar a conta' : 'Requer aprovação do Agente Político';
                   return (
                     <button key={r} onClick={() => handleGenerateInvite(r)}
                       className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/5"
@@ -988,7 +988,7 @@ export default function UsuariosPage() {
                 }}>
                   {ROLE_LABELS[inviteRoleResult] ?? 'Assessor'}</span>.
                 {inviteRoleResult === 'CHEFE'
-                  ? ' Requer aprovação do Agente Político.'
+                  ? ' Acesso imediato após o cadastro.'
                   : ' Requer aprovação após o cadastro.'}
                 {' '}Expira em <span style={{ color: '#e6b83a' }}>7 dias</span>.
               </p>
