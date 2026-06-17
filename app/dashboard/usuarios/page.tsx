@@ -139,13 +139,33 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
-function RoleSelect({ userId, current, onChanged }: { userId: string; current: string; onChanged: (role: string) => void }) {
+function RoleSelect({
+  userId,
+  current,
+  sessionRole,
+  chefeExists = false,
+  onChanged,
+  onError,
+}: {
+  userId: string;
+  current: string;
+  sessionRole: string;
+  chefeExists?: boolean;
+  onChanged: (role: string) => void;
+  onError?: (msg: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; right: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
-  const roles = ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR'];
+
+  const roles = (() => {
+    if (sessionRole === 'SUPER_ADMIN') return ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR'];
+    if (sessionRole === 'ADMIN')       return ['AGENTE_POLITICO', 'CHEFE', 'ASSESSOR'];
+    if (sessionRole === 'AGENTE_POLITICO') return ['CHEFE', 'ASSESSOR'];
+    return ['ASSESSOR'];
+  })();
 
   const openDrop = () => {
     if (!btnRef.current) return;
@@ -168,6 +188,11 @@ function RoleSelect({ userId, current, onChanged }: { userId: string; current: s
 
   const change = async (role: string) => {
     if (role === current) { setOpen(false); return; }
+    if (role === 'CHEFE' && chefeExists) {
+      onError?.('Já existe um Chefe de Gabinete neste gabinete. Remova o acesso do atual antes de atribuir um novo.');
+      setOpen(false);
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch(`/api/users/${userId}`, {
@@ -176,6 +201,10 @@ function RoleSelect({ userId, current, onChanged }: { userId: string; current: s
         body: JSON.stringify({ role }),
       });
       if (res.ok) onChanged(role);
+      else {
+        const data = await res.json().catch(() => ({}));
+        onError?.(data.error || 'Erro ao alterar cargo.');
+      }
     } finally { setSaving(false); setOpen(false); }
   };
 
@@ -736,7 +765,14 @@ export default function UsuariosPage() {
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                   {/* Cargo */}
                                   {u.id !== sessionUserId && u.role !== 'SUPER_ADMIN'
-                                    ? <RoleSelect userId={u.id} current={u.role} onChanged={(r) => handleRoleChange(u.id, r)} />
+                                    ? <RoleSelect
+                                        userId={u.id}
+                                        current={u.role}
+                                        sessionRole={userRole}
+                                        chefeExists={group.users.some(gu => gu.role === 'CHEFE' && gu.id !== u.id)}
+                                        onChanged={(r) => handleRoleChange(u.id, r)}
+                                        onError={(msg) => showToast('err', msg)}
+                                      />
                                     : <RoleBadge role={u.role} />
                                   }
 
@@ -927,7 +963,13 @@ export default function UsuariosPage() {
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             {u.id !== sessionUserId && u.role !== 'SUPER_ADMIN'
-                              ? <RoleSelect userId={u.id} current={u.role} onChanged={(r) => handleRoleChange(u.id, r)} />
+                              ? <RoleSelect
+                                  userId={u.id}
+                                  current={u.role}
+                                  sessionRole={userRole}
+                                  onChanged={(r) => handleRoleChange(u.id, r)}
+                                  onError={(msg) => showToast('err', msg)}
+                                />
                               : <RoleBadge role={u.role} />
                             }
                             {u.id !== sessionUserId && (
