@@ -208,6 +208,10 @@ function RoleSelect({
     } finally { setSaving(false); setOpen(false); }
   };
 
+  if (roles.length === 0 || (roles.length === 1 && roles[0] === current)) {
+    return <RoleBadge role={current} />;
+  }
+
   const s = ROLE_STYLE[current] ?? ROLE_STYLE.ASSESSOR;
   return (
     <>
@@ -526,6 +530,17 @@ export default function UsuariosPage() {
   const toggleGabinete = (id: string) =>
     setExpandedGabs(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
+  // Auto-expand for gabinete managers (they only have one gabinete)
+  useEffect(() => {
+    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && gabineteGroups.length > 0) {
+      setExpandedGabs(prev => {
+        const s = new Set(prev);
+        gabineteGroups.forEach(g => s.add(g.id));
+        return s;
+      });
+    }
+  }, [gabineteGroups, userRole]);
+
   // ── loading / guard ───────────────────────────────────────────────────────
   if (status === 'loading' || loading) {
     return (
@@ -539,6 +554,7 @@ export default function UsuariosPage() {
   const pendingUsers  = users.filter(u => !u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN');
   const approvedUsers = users.filter(u => u.approved  || u.role === 'ADMIN' || u.role === 'SUPER_ADMIN');
   const cardStyle     = { background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' };
+  const isAdmin       = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 
   // ── render ────────────────────────────────────────────────────────────────
   return (
@@ -615,7 +631,8 @@ export default function UsuariosPage() {
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="space-y-4">
 
-          {/* Stats */}
+          {/* Stats — apenas para admins */}
+          {isAdmin && (
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: 'Gabinetes',  value: gabineteGroups.length, color: '#4a9ede',  icon: Building2 },
@@ -635,8 +652,10 @@ export default function UsuariosPage() {
               </div>
             ))}
           </div>
+          )}
 
-          {/* Busca */}
+          {/* Busca — apenas para admins */}
+          {isAdmin && (
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'rgba(255,255,255,0.3)' }} />
             <input
@@ -647,6 +666,7 @@ export default function UsuariosPage() {
               style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(255,255,255,0.08)' }}
             />
           </div>
+          )}
 
           {/* Cards de Gabinetes */}
           {filteredGroups.length === 0 && (
@@ -698,12 +718,14 @@ export default function UsuariosPage() {
 
                     {/* Ações do gabinete */}
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      {isAdmin && (
                       <button onClick={() => openDeleteGabModal(group)}
                         title="Excluir gabinete"
                         className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
                         style={{ color: 'rgba(255,255,255,0.25)' }}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
+                      )}
                       <button onClick={() => toggleGabinete(group.id)}
                         className="p-1.5 rounded-lg transition-all hover:bg-white/5"
                         style={{ color: 'rgba(255,255,255,0.3)' }}>
