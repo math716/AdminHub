@@ -39,6 +39,14 @@ interface UsuarioExcluido {
   gabinete?: { id: string; nome: string };
 }
 
+interface GabineteExcluido {
+  id: string;
+  nome: string;
+  deletedAt: string;
+  deletedByName: string | null;
+  _count: { users: number; demands: number; contatos: number };
+}
+
 interface Solicitacao {
   id: string; gabineteNome: string; userName: string; userEmail: string;
   status: 'PENDENTE' | 'APROVADA' | 'RECUSADA';
@@ -313,9 +321,11 @@ export default function AdminGabinetesPage() {
   const [linkExpiry,     setLinkExpiry]     = useState('');
   const [copiado,        setCopiado]        = useState(false);
   const [filtro,         setFiltro]         = useState<'TODAS'|'PENDENTE'|'APROVADA'|'RECUSADA'>('PENDENTE');
-  const [deletingUserId,   setDeletingUserId]   = useState<string|null>(null);
-  const [excluidos,        setExcluidos]        = useState<UsuarioExcluido[]>([]);
-  const [acaoExcluidoId,   setAcaoExcluidoId]   = useState<string|null>(null);
+  const [deletingUserId,     setDeletingUserId]     = useState<string|null>(null);
+  const [excluidos,          setExcluidos]          = useState<UsuarioExcluido[]>([]);
+  const [acaoExcluidoId,     setAcaoExcluidoId]     = useState<string|null>(null);
+  const [gabExcluidos,       setGabExcluidos]       = useState<GabineteExcluido[]>([]);
+  const [acaoGabExcluidoId,  setAcaoGabExcluidoId]  = useState<string|null>(null);
 
   // ── dados de usuários/gabinetes ──────────────────────────────────────────────
   const [allUsers,    setAllUsers]    = useState<UserData[]>([]);
@@ -357,16 +367,18 @@ export default function AdminGabinetesPage() {
   const carregarTudo = useCallback(async () => {
     setLoadingSol(true);
     try {
-      const [resSol, resUsers, resGabs, resExcluidos] = await Promise.all([
+      const [resSol, resUsers, resGabs, resExcluidos, resGabExcluidos] = await Promise.all([
         fetch('/api/admin/solicitacoes-gabinete', { cache: 'no-store' }),
         fetch('/api/users', { cache: 'no-store' }),
         fetch('/api/gabinetes', { cache: 'no-store' }),
         fetch('/api/admin/usuarios-excluidos', { cache: 'no-store' }),
+        fetch('/api/admin/gabinetes-excluidos', { cache: 'no-store' }),
       ]);
-      if (resSol.ok)      { const d = await resSol.json();      setSolicitacoes(d.solicitacoes ?? []); }
-      if (resUsers.ok)    { const d = await resUsers.json();     setAllUsers(d ?? []); }
-      if (resGabs.ok)     { const d = await resGabs.json();      setGabinetes(d ?? []); }
-      if (resExcluidos.ok){ const d = await resExcluidos.json(); setExcluidos(d ?? []); }
+      if (resSol.ok)           { const d = await resSol.json();           setSolicitacoes(d.solicitacoes ?? []); }
+      if (resUsers.ok)         { const d = await resUsers.json();          setAllUsers(d ?? []); }
+      if (resGabs.ok)          { const d = await resGabs.json();           setGabinetes(d ?? []); }
+      if (resExcluidos.ok)     { const d = await resExcluidos.json();      setExcluidos(d ?? []); }
+      if (resGabExcluidos.ok)  { const d = await resGabExcluidos.json();   setGabExcluidos(d ?? []); }
     } finally { setLoadingSol(false); }
   }, []);
 
@@ -506,15 +518,37 @@ export default function AdminGabinetesPage() {
       const res  = await fetch(`/api/gabinetes/${confirmDeleteGab.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (res.ok) {
-        setGabinetes(prev => prev.filter(g => g.id !== confirmDeleteGab.id));
-        setAllUsers(prev => prev.filter(u => u.gabinete?.id !== confirmDeleteGab.id));
-        toast.success(`Gabinete "${confirmDeleteGab.nome}" excluído.`);
+        toast.success(`Gabinete "${confirmDeleteGab.nome}" movido para a lixeira.`);
         setConfirmDeleteGab(null);
+        carregarTudo();
       } else {
         toast.error(data.error || 'Erro ao excluir gabinete');
       }
     } catch { toast.error('Erro de conexão'); }
     finally { setDeletingGab(false); }
+  };
+
+  const acaoGabExcluido = async (gabId: string, acao: 'RESTAURAR' | 'EXCLUIR') => {
+    setAcaoGabExcluidoId(gabId);
+    try {
+      const res = await fetch(`/api/admin/gabinetes-excluidos/${gabId}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ acao }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setGabExcluidos(prev => prev.filter(g => g.id !== gabId));
+        if (acao === 'RESTAURAR') {
+          toast.success('Gabinete restaurado com sucesso.');
+          carregarTudo();
+        } else {
+          toast.success('Gabinete excluído definitivamente.');
+        }
+      } else {
+        toast.error(data.error || 'Erro ao processar ação');
+      }
+    } catch { toast.error('Erro de conexão'); }
+    finally { setAcaoGabExcluidoId(null); }
   };
 
   const deletarUsuarioSemGabinete = async (userId: string, userName: string) => {
@@ -964,6 +998,76 @@ export default function AdminGabinetesPage() {
         </>
       )}
 
+      {/* ── Gabinetes Excluídos (Lixeira) ───────────────────────────────────── */}
+      {gabExcluidos.length > 0 && (
+        <>
+          <div className="flex items-center gap-3 pt-2">
+            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+            <div className="flex items-center gap-2">
+              <Trash2 size={14} style={{ color: '#f87171' }} />
+              <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.35)' }}>LIXEIRA DE GABINETES</span>
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
+                {gabExcluidos.length}
+              </span>
+            </div>
+            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+          </div>
+          <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.3)', marginTop: '-0.25rem' }}>
+            Gabinetes são excluídos permanentemente após <strong style={{ color: '#f59e0b' }}>90 dias</strong> na lixeira
+          </p>
+
+          <div className="flex flex-col gap-2">
+            {gabExcluidos.map(g => {
+              const dt = new Date(g.deletedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+              const expiry = new Date(g.deletedAt);
+              expiry.setDate(expiry.getDate() + 90);
+              const daysLeft = Math.max(0, Math.ceil((expiry.getTime() - Date.now()) / 86400000));
+              const isActing = acaoGabExcluidoId === g.id;
+              return (
+                <div key={g.id} style={{ background: 'rgba(7,29,54,0.75)', borderRadius: '0.875rem', border: '1px solid rgba(239,68,68,0.2)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', flexWrap: 'wrap' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: '0.65rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Building2 size={18} style={{ color: '#f87171' }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: '#e2e8f0' }}>{g.nome}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <User size={11} /> {g._count.users} usuário{g._count.users !== 1 ? 's' : ''}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)' }}>
+                        {g._count.demands} demanda{g._count.demands !== 1 ? 's' : ''} · {g._count.contatos} contato{g._count.contatos !== 1 ? 's' : ''}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Calendar size={11} /> Excluído em {dt} por {g.deletedByName ?? 'Admin'}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.5rem', borderRadius: '999px', background: daysLeft <= 10 ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.12)', color: daysLeft <= 10 ? '#f87171' : '#f59e0b', border: `1px solid ${daysLeft <= 10 ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'}` }}>
+                        {daysLeft} dia{daysLeft !== 1 ? 's' : ''} restante{daysLeft !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                    <button
+                      onClick={() => acaoGabExcluido(g.id, 'RESTAURAR')} disabled={isActing}
+                      title="Restaurar gabinete"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.875rem', borderRadius: '0.65rem', border: '1px solid rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.1)', color: '#4ade80', fontSize: '0.78rem', fontWeight: 600, cursor: isActing ? 'not-allowed' : 'pointer' }}>
+                      {isActing ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
+                      Restaurar
+                    </button>
+                    <button
+                      onClick={() => acaoGabExcluido(g.id, 'EXCLUIR')} disabled={isActing}
+                      title="Excluir permanentemente"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.875rem', borderRadius: '0.65rem', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#f87171', fontSize: '0.78rem', fontWeight: 600, cursor: isActing ? 'not-allowed' : 'pointer' }}>
+                      {isActing ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
       {/* ══════════════════════════════════════════════════════════════════════
           MODAL: Aprovar com permissões
       ══════════════════════════════════════════════════════════════════════ */}
@@ -1153,9 +1257,11 @@ export default function AdminGabinetesPage() {
                 </div>
               </div>
               <p className="text-sm" style={{ color:'rgba(255,255,255,0.55)' }}>
-                Isso excluirá <strong style={{ color:'#f87171' }}>permanentemente</strong> o gabinete e todos os seus{' '}
-                <strong style={{ color:'#f87171' }}>{confirmDeleteGab.users.length} usuário{confirmDeleteGab.users.length !== 1 ? 's' : ''}</strong>,
-                demandas, agenda e contatos vinculados. Esta ação não pode ser desfeita.
+                O gabinete <strong style={{ color:'#e2e8f0' }}>{confirmDeleteGab.nome}</strong> será movido para a lixeira.
+                Você terá <strong style={{ color:'#f59e0b' }}>90 dias</strong> para restaurá-lo.
+                Após esse prazo, o gabinete e todos os seus{' '}
+                <strong style={{ color:'rgba(255,255,255,0.75)' }}>{confirmDeleteGab.users.length} usuário{confirmDeleteGab.users.length !== 1 ? 's' : ''}</strong>,
+                demandas, agenda e contatos serão excluídos permanentemente.
               </p>
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setConfirmDeleteGab(null)} disabled={deletingGab}
@@ -1165,7 +1271,7 @@ export default function AdminGabinetesPage() {
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{ background:'linear-gradient(135deg,#dc2626,#ef4444)', color:'#fff' }}>
                   {deletingGab ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                  {deletingGab ? 'Excluindo...' : 'Sim, excluir'}
+                  {deletingGab ? 'Movendo...' : 'Mover para lixeira'}
                 </button>
               </div>
             </motion.div>

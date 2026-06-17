@@ -86,7 +86,7 @@ export default function DashboardLayout({
     <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 55%, #0c2a4f 100%)' }}>
       <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)} />
       <main className={`transition-[padding] duration-300 ease-out ${sidebarOpen ? 'lg:pl-72' : 'lg:px-12'}`}>
-        <div className="p-4 lg:p-8 pt-16 lg:pt-8 landscape-content">
+        <div className="p-4 lg:p-8 landscape-content">
           {children}
         </div>
       </main>

@@ -7,7 +7,7 @@ import { prisma } from '@/lib/db';
 export async function GET() {
   try {
     const gabinetes = await prisma.gabinete.findMany({
-      where: { ativo: true },
+      where: { ativo: true, deletedAt: null },
       select: {
         id: true,
         nome: true,
