@@ -1012,7 +1012,7 @@ export default function AdminGabinetesPage() {
             </div>
             <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
           </div>
-          <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.3)', marginTop: '-0.25rem' }}>
+          <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.3)', marginTop: '0.35rem' }}>
             Gabinetes são excluídos permanentemente após <strong style={{ color: '#f59e0b' }}>90 dias</strong> na lixeira
           </p>
 
