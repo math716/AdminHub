@@ -328,6 +328,9 @@ export default function AdminGabinetesPage() {
   const [confirmReject,    setConfirmReject]     = useState<{ userId: string; name: string }|null>(null);
   const [deletingReject,   setDeletingReject]    = useState(false);
 
+  const [confirmDeleteGab, setConfirmDeleteGab] = useState<GabineteGroup | null>(null);
+  const [deletingGab,      setDeletingGab]      = useState(false);
+
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [approveTarget,    setApproveTarget]    = useState<UserData|null>(null);
   const [approvePerms,     setApprovePerms]     = useState<Set<string>>(new Set());
@@ -474,6 +477,24 @@ export default function AdminGabinetesPage() {
       if (res.ok) { setAllUsers(prev => prev.filter(u => u.id !== userId)); toast.success('Usuário removido.'); }
       else { const d = await res.json(); toast.error(d.error || 'Erro ao remover'); }
     } finally { setDeletingReject(false); }
+  };
+
+  const doDeleteGabinete = async () => {
+    if (!confirmDeleteGab) return;
+    setDeletingGab(true);
+    try {
+      const res  = await fetch(`/api/gabinetes/${confirmDeleteGab.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        setGabinetes(prev => prev.filter(g => g.id !== confirmDeleteGab.id));
+        setAllUsers(prev => prev.filter(u => u.gabinete?.id !== confirmDeleteGab.id));
+        toast.success(`Gabinete "${confirmDeleteGab.nome}" excluído.`);
+        setConfirmDeleteGab(null);
+      } else {
+        toast.error(data.error || 'Erro ao excluir gabinete');
+      }
+    } catch { toast.error('Erro de conexão'); }
+    finally { setDeletingGab(false); }
   };
 
   const deletarUsuarioSemGabinete = async (userId: string, userName: string) => {
@@ -682,31 +703,42 @@ export default function AdminGabinetesPage() {
                   style={{ background:'rgba(7,29,54,0.8)', border:'1px solid rgba(74,158,222,0.15)' }}>
 
                   {/* Header */}
-                  <button className="w-full flex items-center px-5 py-4 gap-2 text-left transition-all hover:bg-white/[0.02]"
-                    onClick={() => toggleGab(group.id)}>
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background:'rgba(74,158,222,0.15)', border:'1px solid rgba(74,158,222,0.3)' }}>
-                      <Building2 className="w-[18px] h-[18px]" style={{ color:'#4a9ede' }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-semibold text-sm">{group.nome}</p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="text-[11px]" style={{ color:'rgba(255,255,255,0.4)' }}>
-                          {group.users.length} usuário{group.users.length !== 1 ? 's' : ''}
-                        </span>
-                        {pending.length > 0 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                            style={{ background:'rgba(245,158,11,0.15)', color:'#f59e0b', border:'1px solid rgba(245,158,11,0.25)' }}>
-                            {pending.length} pendente{pending.length !== 1 ? 's' : ''}
-                          </span>
-                        )}
+                  <div className="flex items-center px-5 py-4 gap-2">
+                    <button className="flex-1 flex items-center gap-3 text-left transition-all hover:opacity-80"
+                      onClick={() => toggleGab(group.id)}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background:'rgba(74,158,222,0.15)', border:'1px solid rgba(74,158,222,0.3)' }}>
+                        <Building2 className="w-[18px] h-[18px]" style={{ color:'#4a9ede' }} />
                       </div>
+                      <div className="min-w-0">
+                        <p className="text-white font-semibold text-sm">{group.nome}</p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <span className="text-[11px]" style={{ color:'rgba(255,255,255,0.4)' }}>
+                            {group.users.length} usuário{group.users.length !== 1 ? 's' : ''}
+                          </span>
+                          {pending.length > 0 && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                              style={{ background:'rgba(245,158,11,0.15)', color:'#f59e0b', border:'1px solid rgba(245,158,11,0.25)' }}>
+                              {pending.length} pendente{pending.length !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button onClick={() => setConfirmDeleteGab(group)}
+                        title="Excluir gabinete"
+                        className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
+                        style={{ color:'rgba(255,255,255,0.25)' }}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => toggleGab(group.id)}
+                        className="p-1.5 rounded-lg transition-all hover:bg-white/5"
+                        style={{ color:'rgba(255,255,255,0.3)' }}>
+                        {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
                     </div>
-                    {isOpen
-                      ? <ChevronUp  className="w-4 h-4 flex-shrink-0" style={{ color:'rgba(255,255,255,0.3)' }} />
-                      : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color:'rgba(255,255,255,0.3)' }} />
-                    }
-                  </button>
+                  </div>
 
                   {/* Corpo */}
                   <AnimatePresence initial={false}>
@@ -1067,6 +1099,49 @@ export default function AdminGabinetesPage() {
                     style={{ color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.08)' }}>Fechar</button>
                 </>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL: Excluir Gabinete
+      ══════════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {confirmDeleteGab && (
+          <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background:'rgba(0,0,0,0.65)', backdropFilter:'blur(4px)' }}
+            onClick={e => { if (e.target===e.currentTarget && !deletingGab) setConfirmDeleteGab(null); }}>
+            <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
+              className="w-full max-w-sm rounded-2xl p-6 space-y-4"
+              style={{ background:'#071d36', border:'1px solid rgba(239,68,68,0.25)' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.3)' }}>
+                  <Trash2 className="w-5 h-5" style={{ color:'#f87171' }} />
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold text-sm">Excluir Gabinete</h3>
+                  <p className="text-xs mt-0.5" style={{ color:'rgba(255,255,255,0.4)' }}>{confirmDeleteGab.nome}</p>
+                </div>
+              </div>
+              <p className="text-sm" style={{ color:'rgba(255,255,255,0.55)' }}>
+                Isso excluirá <strong style={{ color:'#f87171' }}>permanentemente</strong> o gabinete e todos os seus{' '}
+                <strong style={{ color:'#f87171' }}>{confirmDeleteGab.users.length} usuário{confirmDeleteGab.users.length !== 1 ? 's' : ''}</strong>,
+                demandas, agenda e contatos vinculados. Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setConfirmDeleteGab(null)} disabled={deletingGab}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+                  style={{ color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
+                <button onClick={doDeleteGabinete} disabled={deletingGab}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ background:'linear-gradient(135deg,#dc2626,#ef4444)', color:'#fff' }}>
+                  {deletingGab ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  {deletingGab ? 'Excluindo...' : 'Sim, excluir'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
