@@ -278,6 +278,7 @@ export default function UsuariosPage() {
   const [copied,           setCopied]           = useState(false);
 
   const [searchGabinete,  setSearchGabinete]  = useState('');
+  const [searchMember,    setSearchMember]    = useState('');
   const [expandedGabs,    setExpandedGabs]    = useState<Set<string>>(new Set());
 
   // ── excluir gabinete ──────────────────────────────────────────────────────
@@ -581,10 +582,14 @@ export default function UsuariosPage() {
         icon={Users}
         title="Gerenciar Usuários"
         subtitle={
-          <>
-            {approvedUsers.length} ativo{approvedUsers.length !== 1 ? 's' : ''}
-            {pendingUsers.length > 0 && ` · ${pendingUsers.length} aguardando aprovação`}
-          </>
+          isAdmin ? (
+            <>
+              {approvedUsers.length} ativo{approvedUsers.length !== 1 ? 's' : ''}
+              {pendingUsers.length > 0 && ` · ${pendingUsers.length} aguardando aprovação`}
+            </>
+          ) : (
+            <>{gabineteGroups[0]?.nome ?? 'Meu Gabinete'}</>
+          )
         }
         actions={
           <div className="relative flex-shrink-0">
@@ -631,8 +636,8 @@ export default function UsuariosPage() {
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="space-y-4">
 
-          {/* Stats — apenas para admins */}
-          {isAdmin && (
+          {/* Stats */}
+          {isAdmin ? (
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: 'Gabinetes',  value: gabineteGroups.length, color: '#4a9ede',  icon: Building2 },
@@ -652,16 +657,46 @@ export default function UsuariosPage() {
               </div>
             ))}
           </div>
+          ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Membros Ativos',       value: approvedUsers.length, color: '#4a9ede', icon: Users },
+              { label: 'Aguardando Aprovação', value: pendingUsers.length,  color: '#f59e0b', icon: Clock },
+            ].map(stat => (
+              <div key={stat.label} className="rounded-xl px-4 py-4 flex items-center gap-4"
+                style={{ background: 'rgba(7,29,54,0.75)', border: `1px solid ${stat.color}22` }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: `${stat.color}18`, border: `1px solid ${stat.color}30` }}>
+                  <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
+                </div>
+                <div>
+                  <p className="text-white font-bold text-2xl leading-none">{stat.value}</p>
+                  <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>{stat.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
           )}
 
-          {/* Busca — apenas para admins */}
-          {isAdmin && (
+          {/* Busca */}
+          {isAdmin ? (
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'rgba(255,255,255,0.3)' }} />
             <input
               value={searchGabinete}
               onChange={e => setSearchGabinete(e.target.value)}
               placeholder="Buscar gabinete pelo nome..."
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-slate-600 outline-none focus:ring-1"
+              style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(255,255,255,0.08)' }}
+            />
+          </div>
+          ) : (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'rgba(255,255,255,0.3)' }} />
+            <input
+              value={searchMember}
+              onChange={e => setSearchMember(e.target.value)}
+              placeholder="Buscar membro pelo nome ou e-mail..."
               className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-slate-600 outline-none focus:ring-1"
               style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(255,255,255,0.08)' }}
             />
@@ -751,7 +786,15 @@ export default function UsuariosPage() {
                         ) : (
                           <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                             {/* Pendentes primeiro */}
-                            {[...pending, ...approved].map((u) => (
+                            {[...pending, ...approved]
+                              .filter(u => {
+                                if (!searchMember.trim()) return true;
+                                const q = searchMember.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+                                const name  = u.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+                                const email = u.email.toLowerCase();
+                                return name.includes(q) || email.includes(searchMember.toLowerCase());
+                              })
+                              .map((u) => (
                               <div key={u.id}
                                 className="flex items-center justify-between px-5 py-3.5 gap-3 transition-all hover:bg-white/[0.02]"
                                 style={!u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN'
