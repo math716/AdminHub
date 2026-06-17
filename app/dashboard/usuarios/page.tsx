@@ -592,7 +592,7 @@ export default function UsuariosPage() {
                 {(['CHEFE', 'ASSESSOR'] as const).map(r => {
                   const labelColor = r === 'CHEFE' ? '#4a9ede' : '#4ade80';
                   const label      = r === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor';
-                  const desc       = r === 'CHEFE' ? 'Acesso imediato após criar a conta' : 'Requer aprovação do Agente Político';
+                  const desc       = r === 'CHEFE' ? 'Acesso imediato após criar a conta' : 'Requer aprovação do Agente Político ou Chefe de Gabinete';
                   return (
                     <button key={r} onClick={() => handleGenerateInvite(r)}
                       className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/5"

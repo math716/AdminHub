@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   // Bloquear segundo CHEFE no mesmo gabinete
   if (inviteRole === 'CHEFE') {
     const chefeExistente = await prisma.user.findFirst({
-      where: { gabineteId: targetGabineteId, role: 'CHEFE' },
+      where: { gabineteId: targetGabineteId, role: 'CHEFE', deletedAt: null },
     });
     if (chefeExistente) {
       return NextResponse.json({ error: 'Este gabinete já possui um Chefe de Gabinete cadastrado' }, { status: 400 });
