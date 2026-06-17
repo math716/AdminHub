@@ -7,7 +7,7 @@ import {
   Building2, Link2, Copy, CheckCheck, Clock, CheckCircle2,
   XCircle, AlertCircle, Loader2, RefreshCw, ChevronDown, ChevronUp,
   User, Mail, Calendar, Trash2, UserX, Check, X,
-  SlidersHorizontal, KeyRound, Search, Shield, RotateCcw,
+  SlidersHorizontal, KeyRound, Search, Shield, RotateCcw, Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -479,6 +479,26 @@ export default function AdminGabinetesPage() {
     } finally { setDeletingReject(false); }
   };
 
+  const exportarGabinete = async (group: GabineteGroup) => {
+    try {
+      toast.info(`Exportando dados de "${group.nome}"...`);
+      const res = await fetch(`/api/gabinetes/${group.id}/export`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Erro ao exportar');
+        return;
+      }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `${group.nome}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Arquivo exportado com sucesso!');
+    } catch { toast.error('Erro ao exportar dados'); }
+  };
+
   const doDeleteGabinete = async () => {
     if (!confirmDeleteGab) return;
     setDeletingGab(true);
@@ -726,6 +746,12 @@ export default function AdminGabinetesPage() {
                       </div>
                     </button>
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      <button onClick={() => exportarGabinete(group)}
+                        title="Exportar dados do gabinete (.xlsx)"
+                        className="p-1.5 rounded-lg transition-all hover:bg-blue-500/10"
+                        style={{ color:'rgba(255,255,255,0.25)' }}>
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
                       <button onClick={() => setConfirmDeleteGab(group)}
                         title="Excluir gabinete"
                         className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
