@@ -112,13 +112,13 @@ export default function RegistroGabinetePage() {
 
         {/* Brilhos decorativos */}
         <div className="absolute -top-40 -left-40 w-[480px] h-[480px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(201,162,39,0.12), transparent 70%)' }} />
+          style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.12), transparent 70%)' }} />
         <div className="absolute -bottom-48 -right-24 w-[420px] h-[420px] rounded-full pointer-events-none"
           style={{ background: 'radial-gradient(circle, rgba(30,74,128,0.35), transparent 70%)' }} />
 
         {/* Linha dourada */}
         <div className="absolute left-0 top-0 bottom-0 w-[3px]"
-          style={{ background: 'linear-gradient(to bottom, transparent, #c9a227 30%, #c9a227 70%, transparent)' }} />
+          style={{ background: 'linear-gradient(to bottom, transparent, #2563EB 30%, #2563EB 70%, transparent)' }} />
 
         {/* Logo topo */}
         <div className="relative z-10 px-12 pt-12 flex items-center gap-3">
@@ -131,16 +131,16 @@ export default function RegistroGabinetePage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }}>
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-7"
-              style={{ background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.35)' }}>
-              <Shield className="w-3.5 h-3.5" style={{ color: '#c9a227' }} />
-              <span className="text-xs font-semibold tracking-wide" style={{ color: '#c9a227' }}>
+              style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.35)' }}>
+              <Shield className="w-3.5 h-3.5" style={{ color: '#2563EB' }} />
+              <span className="text-xs font-semibold tracking-wide" style={{ color: '#2563EB' }}>
                 PLATAFORMA OFICIAL · ACESSO RESTRITO
               </span>
             </div>
 
             <h1 className="text-[2.4rem] font-extrabold text-white leading-tight mb-4">
               Sistema de Gestão<br />
-              <span style={{ color: '#c9a227' }}>de Gabinete Político</span>
+              <span style={{ color: '#2563EB' }}>de Gabinete Político</span>
             </h1>
             <p className="text-gray-400 text-[0.95rem] leading-relaxed mb-10 max-w-xs">
               Plataforma integrada para gestão de demandas, análise eleitoral e organização do gabinete.
@@ -152,8 +152,8 @@ export default function RegistroGabinetePage() {
                 <motion.div key={i} initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 + i * 0.12 }} className="flex items-center gap-3.5">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)' }}>
-                    <Icon className="w-4 h-4" style={{ color: '#c9a227' }} />
+                    style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.3)' }}>
+                    <Icon className="w-4 h-4" style={{ color: '#2563EB' }} />
                   </div>
                   <span className="text-gray-300 text-sm">{label}</span>
                 </motion.div>

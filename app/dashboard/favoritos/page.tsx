@@ -132,12 +132,12 @@ export default function FavoritosPage() {
                       <div
                         className="p-2.5 rounded-lg flex-shrink-0"
                         style={{
-                          background: 'rgba(201,162,39,0.15)',
-                          border: '1px solid rgba(201,162,39,0.35)',
-                          boxShadow: 'inset 0 0 10px rgba(201,162,39,0.10)',
+                          background: 'rgba(37,99,235,0.15)',
+                          border: '1px solid rgba(37,99,235,0.35)',
+                          boxShadow: 'inset 0 0 10px rgba(37,99,235,0.10)',
                         }}
                       >
-                        <Star className="h-5 w-5" style={{ color: '#c9a227' }} fill="#c9a227" />
+                        <Star className="h-5 w-5" style={{ color: '#2563EB' }} fill="#2563EB" />
                       </div>
                       <div className="min-w-0">
                         <h3 className="font-semibold text-white truncate">{fav?.candidateName}</h3>
@@ -166,7 +166,7 @@ export default function FavoritosPage() {
 
                   <div
                     className="mt-4 pt-4"
-                    style={{ borderTop: '1px solid rgba(201,162,39,0.18)' }}
+                    style={{ borderTop: '1px solid rgba(37,99,235,0.18)' }}
                   >
                     <Link
                       href={`/dashboard/mapa?candidato=${encodeURIComponent(fav?.candidateName ?? '')}&ano=${fav?.ano}&uf=${fav?.uf}`}

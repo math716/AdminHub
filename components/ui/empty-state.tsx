@@ -31,11 +31,11 @@ export function EmptyState({
         <div
           className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
           style={{
-            background: 'rgba(201,162,39,0.10)',
-            border: '1px solid rgba(201,162,39,0.22)',
+            background: 'rgba(37,99,235,0.10)',
+            border: '1px solid rgba(37,99,235,0.22)',
           }}
         >
-          <Icon className="h-6 w-6" style={{ color: '#c9a227' }} />
+          <Icon className="h-6 w-6" style={{ color: '#2563EB' }} />
         </div>
       )}
       <p className="text-white font-semibold">{title}</p>

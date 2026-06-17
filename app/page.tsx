@@ -30,12 +30,12 @@ export default function HomePage() {
           src="/logo.png"
           alt="AdminHub"
           className="w-48 h-auto object-contain drop-shadow-2xl"
-          style={{ filter: 'drop-shadow(0 0 24px rgba(201,162,39,0.25))' }}
+          style={{ filter: 'drop-shadow(0 0 24px rgba(37,99,235,0.25))' }}
         />
         <div className="flex items-center gap-2.5">
-          <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#c9a227', animationDelay: '0ms' }} />
-          <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#c9a227', animationDelay: '150ms' }} />
-          <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#c9a227', animationDelay: '300ms' }} />
+          <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#2563EB', animationDelay: '0ms' }} />
+          <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#2563EB', animationDelay: '150ms' }} />
+          <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#2563EB', animationDelay: '300ms' }} />
         </div>
         <p className="text-xs tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.3)' }}>Carregando</p>
       </motion.div>

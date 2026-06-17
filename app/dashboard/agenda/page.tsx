@@ -74,7 +74,7 @@ const TIPO_LABELS: Record<string, string> = {
   REUNIAO: 'Reunião', VISITA: 'Visita', EVENTO: 'Evento', COMPROMISSO: 'Compromisso',
 };
 const TIPO_COLORS: Record<string, string> = {
-  REUNIAO: '#c9a227', VISITA: '#22c55e', EVENTO: '#818cf8', COMPROMISSO: '#fb923c',
+  REUNIAO: '#2563EB', VISITA: '#22c55e', EVENTO: '#818cf8', COMPROMISSO: '#fb923c',
 };
 const EMPTY_FORM = {
   titulo: '', descricao: '', data: '', dataFim: '', hora: '09:00', horaFim: '',
@@ -86,7 +86,7 @@ const EMPTY_FORM = {
 // Ícone por tipo de evento
 // ---------------------------------------------------------------------------
 function TipoIcon({ tipo, size = 16 }: { tipo: string; size?: number }) {
-  const color = TIPO_COLORS[tipo] ?? '#c9a227';
+  const color = TIPO_COLORS[tipo] ?? '#2563EB';
   const s = { width: size, height: size, color, flexShrink: 0 };
   if (tipo === 'REUNIAO')     return <Users style={s} />;
   if (tipo === 'VISITA')      return <MapPin style={s} />;
@@ -96,7 +96,7 @@ function TipoIcon({ tipo, size = 16 }: { tipo: string; size?: number }) {
 }
 
 function TipoIconBox({ tipo, box = 32, icon = 16 }: { tipo: string; box?: number; icon?: number }) {
-  const color = TIPO_COLORS[tipo] ?? '#c9a227';
+  const color = TIPO_COLORS[tipo] ?? '#2563EB';
   return (
     <span
       className="flex items-center justify-center flex-shrink-0 rounded-xl"
@@ -293,12 +293,12 @@ export default function AgendaPage() {
 
   const inputCls = "mt-1 w-full rounded-lg px-3 py-2 text-white text-sm outline-none transition-all"
     + " placeholder-white/20"
-    + " focus:border-[#c9a227]/60";
+    + " focus:border-[#2563EB]/60";
 
   if (status === 'loading') {
     return (
       <div className="h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 50%, #0c2a4f 100%)' }}>
-        <Loader2 className="w-10 h-10 animate-spin" style={{ color: '#c9a227' }} />
+        <Loader2 className="w-10 h-10 animate-spin" style={{ color: '#2563EB' }} />
       </div>
     );
   }
@@ -313,7 +313,7 @@ export default function AgendaPage() {
           <button
             onClick={() => { setEditEvent(null); setForm({ ...EMPTY_FORM }); setFormError(''); setShowModal(true); }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}
+            style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}
           >
             <Plus className="w-4 h-4" />
             Novo Evento
@@ -347,7 +347,7 @@ export default function AgendaPage() {
         {/* ── Calendário ── */}
         <div
           className="lg:col-span-2 rounded-2xl overflow-hidden"
-          style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(201,162,39,0.15)', backdropFilter: 'blur(8px)' }}
+          style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(37,99,235,0.15)', backdropFilter: 'blur(8px)' }}
         >
           {/* Navegação do mês */}
           <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
@@ -360,13 +360,13 @@ export default function AgendaPage() {
             <div className="flex items-center gap-3">
               <h2 className="text-white font-bold text-lg tracking-wide">
                 {MESES[viewMonth]}{' '}
-                <span style={{ color: '#c9a227' }}>{viewYear}</span>
+                <span style={{ color: '#2563EB' }}>{viewYear}</span>
               </h2>
               {(viewMonth !== today.getMonth() || viewYear !== today.getFullYear()) && (
                 <button
                   onClick={goToday}
                   className="text-xs px-2.5 py-1 rounded-full font-medium transition-all hover:opacity-80"
-                  style={{ background: 'rgba(201,162,39,0.15)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.25)' }}
+                  style={{ background: 'rgba(37,99,235,0.15)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.25)' }}
                 >
                   Hoje
                 </button>
@@ -384,7 +384,7 @@ export default function AgendaPage() {
           <div className="grid grid-cols-7" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             {DIAS_SEMANA.map((d, i) => (
               <div key={d} className="text-center py-2.5 text-xs font-semibold uppercase tracking-widest"
-                style={{ color: i === 0 || i === 6 ? 'rgba(201,162,39,0.6)' : 'rgba(255,255,255,0.3)' }}>
+                style={{ color: i === 0 || i === 6 ? 'rgba(37,99,235,0.6)' : 'rgba(255,255,255,0.3)' }}>
                 {d}
               </div>
             ))}
@@ -393,7 +393,7 @@ export default function AgendaPage() {
           {/* Células do calendário */}
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-7 h-7 animate-spin" style={{ color: '#c9a227' }} />
+              <Loader2 className="w-7 h-7 animate-spin" style={{ color: '#2563EB' }} />
             </div>
           ) : (
             <div className="grid grid-cols-7">
@@ -420,28 +420,28 @@ export default function AgendaPage() {
                       borderBottom: '1px solid rgba(255,255,255,0.04)',
                       borderRight: '1px solid rgba(255,255,255,0.04)',
                       background: isSel
-                        ? 'rgba(201,162,39,0.08)'
+                        ? 'rgba(37,99,235,0.08)'
                         : isWeekend ? 'rgba(255,255,255,0.012)' : 'transparent',
                     }}
                     onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isSel ? 'rgba(201,162,39,0.08)' : isWeekend ? 'rgba(255,255,255,0.012)' : 'transparent'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isSel ? 'rgba(37,99,235,0.08)' : isWeekend ? 'rgba(255,255,255,0.012)' : 'transparent'; }}
                   >
                     <div className="flex items-start justify-between mb-1">
                       <span
                         className="text-sm font-semibold w-6 h-6 flex items-center justify-center rounded-full"
                         style={isTod
-                          ? { background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f', fontWeight: 800 }
+                          ? { background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f', fontWeight: 800 }
                           : feriado
                             ? { color: '#f87171' }
                             : isWeekend
-                              ? { color: 'rgba(201,162,39,0.5)' }
+                              ? { color: 'rgba(37,99,235,0.5)' }
                               : { color: 'rgba(255,255,255,0.75)' }
                         }
                       >
                         {day}
                       </span>
                       {isSel && !isTod && (
-                        <span className="w-1.5 h-1.5 rounded-full mt-2 mr-0.5" style={{ background: '#c9a227' }} />
+                        <span className="w-1.5 h-1.5 rounded-full mt-2 mr-0.5" style={{ background: '#2563EB' }} />
                       )}
                     </div>
                     <div className="space-y-0.5 overflow-hidden">
@@ -454,9 +454,9 @@ export default function AgendaPage() {
                           onClick={(ev) => { ev.stopPropagation(); openEdit(e); }}
                           className="text-[10px] truncate rounded px-1 py-0.5 cursor-pointer leading-tight transition-opacity hover:opacity-70"
                           style={{
-                            background: (e.cor ?? TIPO_COLORS[e.tipo] ?? '#c9a227') + '22',
-                            color: e.cor ?? TIPO_COLORS[e.tipo] ?? '#c9a227',
-                            borderLeft: `2px solid ${e.cor ?? TIPO_COLORS[e.tipo] ?? '#c9a227'}`,
+                            background: (e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB') + '22',
+                            color: e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB',
+                            borderLeft: `2px solid ${e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB'}`,
                           }}
                         >
                           {new Date(e.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} {e.titulo}
@@ -481,7 +481,7 @@ export default function AgendaPage() {
           {/* Briefing do Dia */}
           <div
             className="rounded-2xl overflow-hidden"
-            style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(201,162,39,0.2)', backdropFilter: 'blur(8px)' }}
+            style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}
           >
             <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               <div>
@@ -504,7 +504,7 @@ export default function AgendaPage() {
               <button
                 onClick={() => openNewOnDay(selectedDay ?? today.getDate())}
                 className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:opacity-80"
-                style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)', color: '#c9a227' }}>
+                style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)', color: '#2563EB' }}>
                 <Plus className="w-4 h-4" />
               </button>
             </div>
@@ -516,7 +516,7 @@ export default function AgendaPage() {
                 </div>
               ) : (
                 (selectedDay ? dayEvents : todayEvents).map((e, idx) => {
-                  const color = e.cor ?? TIPO_COLORS[e.tipo] ?? '#c9a227';
+                  const color = e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB';
                   return (
                     <button key={e.id} onClick={() => openEdit(e)}
                       className="w-full text-left px-4 py-3 transition-all hover:bg-white/5">
@@ -554,10 +554,10 @@ export default function AgendaPage() {
           {/* Próximos Compromissos */}
           <div
             className="rounded-2xl overflow-hidden"
-            style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(201,162,39,0.15)', backdropFilter: 'blur(8px)' }}
+            style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(37,99,235,0.15)', backdropFilter: 'blur(8px)' }}
           >
             <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              <TrendingUp className="w-3.5 h-3.5" style={{ color: '#c9a227' }} />
+              <TrendingUp className="w-3.5 h-3.5" style={{ color: '#2563EB' }} />
               <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>
                 Próximos Compromissos
               </p>
@@ -566,7 +566,7 @@ export default function AgendaPage() {
               {upcomingEvents.length === 0 ? (
                 <p className="text-sm px-4 py-5 text-center" style={{ color: 'rgba(255,255,255,0.3)' }}>Nenhum evento futuro</p>
               ) : upcomingEvents.map((e) => {
-                const color = e.cor ?? TIPO_COLORS[e.tipo] ?? '#c9a227';
+                const color = e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB';
                 return (
                   <button key={e.id} onClick={() => openEdit(e)}
                     className="w-full text-left px-4 py-3 transition-all hover:bg-white/5 group">
@@ -615,12 +615,12 @@ export default function AgendaPage() {
             className="w-full max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[95vh] md:max-h-[90vh] flex flex-col"
             style={{
               background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)',
-              border: '1px solid rgba(201,162,39,0.25)',
+              border: '1px solid rgba(37,99,235,0.25)',
             }}
           >
             {/* Cabeçalho do modal */}
             <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
-              style={{ borderBottom: '1px solid rgba(201,162,39,0.15)' }}>
+              style={{ borderBottom: '1px solid rgba(37,99,235,0.15)' }}>
               <div className="flex items-center gap-3">
                 <TipoIconBox tipo={form.tipo} box={32} icon={15} />
                 <h2 className="text-white font-semibold">
@@ -663,12 +663,12 @@ export default function AgendaPage() {
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Cor</label>
                   <div className="mt-1 flex items-center gap-2">
                     <input type="color"
-                      value={form.cor || TIPO_COLORS[form.tipo] || '#c9a227'}
+                      value={form.cor || TIPO_COLORS[form.tipo] || '#2563EB'}
                       onChange={(e) => setForm((f) => ({ ...f, cor: e.target.value }))}
                       className="w-10 h-9 rounded-lg cursor-pointer border"
                       style={{ background: 'transparent', borderColor: 'rgba(255,255,255,0.1)' }}
                     />
-                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{form.cor || TIPO_COLORS[form.tipo] || '#c9a227'}</span>
+                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{form.cor || TIPO_COLORS[form.tipo] || '#2563EB'}</span>
                   </div>
                 </div>
               </div>
@@ -736,7 +736,7 @@ export default function AgendaPage() {
                   />
                   <button onClick={geocodeFormAddress} disabled={geoLoading}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-all hover:opacity-80"
-                    style={{ background: 'rgba(201,162,39,0.2)', border: '1px solid rgba(201,162,39,0.3)', color: '#c9a227' }}>
+                    style={{ background: 'rgba(37,99,235,0.2)', border: '1px solid rgba(37,99,235,0.3)', color: '#2563EB' }}>
                     {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                   </button>
                 </div>
@@ -772,7 +772,7 @@ export default function AgendaPage() {
 
             {/* Rodapé do modal */}
             <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
-              style={{ borderTop: '1px solid rgba(201,162,39,0.15)' }}>
+              style={{ borderTop: '1px solid rgba(37,99,235,0.15)' }}>
               <div>
                 {editEvent && (
                   <button onClick={handleDelete} disabled={deleting}
@@ -791,7 +791,7 @@ export default function AgendaPage() {
                 </button>
                 <button onClick={handleSave} disabled={saving}
                   className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}>
+                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}>
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                   {editEvent ? 'Atualizar' : 'Salvar Evento'}
                 </button>

@@ -21,14 +21,14 @@ export function SectionDivider({ label, trailing, className }: SectionDividerPro
     <div className={cn('flex items-center gap-3', className)}>
       <span
         className="text-[10px] font-bold uppercase tracking-[0.2em] flex-shrink-0"
-        style={{ color: 'rgba(201,162,39,0.75)' }}
+        style={{ color: 'rgba(37,99,235,0.75)' }}
       >
         {label}
       </span>
       <span
         className="flex-1 h-px"
         style={{
-          background: 'linear-gradient(90deg, rgba(201,162,39,0.3), transparent)',
+          background: 'linear-gradient(90deg, rgba(37,99,235,0.3), transparent)',
         }}
       />
       {trailing && <span className="flex-shrink-0">{trailing}</span>}

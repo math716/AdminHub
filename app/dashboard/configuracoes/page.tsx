@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from 'next-themes';
 import {
   Settings, Smartphone, Wifi, WifiOff, RefreshCw,
   Loader2, CheckCircle2, AlertCircle, Trash2, QrCode,
+  Sun, Moon, Palette,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -127,7 +129,7 @@ export default function ConfiguracoesPage() {
   if (status === 'loading') return null;
   if (!canAccess) return null;
 
-  const cardStyle = { background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' };
+  const cardStyle = { background: 'var(--bg-card)', border: '1px solid var(--border-default)' };
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -152,6 +154,9 @@ export default function ConfiguracoesPage() {
         title="Configurações"
         subtitle="Configurações do gabinete"
       />
+
+      {/* Aparência Section */}
+      <AparenciaCard />
 
       {/* WhatsApp Section */}
       <div className="rounded-2xl overflow-hidden" style={cardStyle}>
@@ -188,7 +193,7 @@ export default function ConfiguracoesPage() {
           {/* LOADING */}
           {waStatus === 'loading' && (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#c9a227' }} />
+              <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-cobalt)' }} />
             </div>
           )}
 
@@ -204,7 +209,7 @@ export default function ConfiguracoesPage() {
                 <div>
                   <p className="text-white font-semibold text-sm">WhatsApp Conectado</p>
                   <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                    Instância: <span style={{ color: '#c9a227' }}>{instanceData?.instanceName}</span>
+                    Instância: <span style={{ color: 'var(--brand-cobalt)' }}>{instanceData?.instanceName}</span>
                   </p>
                 </div>
                 <CheckCircle2 className="w-5 h-5 ml-auto flex-shrink-0" style={{ color: '#4ade80' }} />
@@ -231,8 +236,8 @@ export default function ConfiguracoesPage() {
                 // Sem QR code — mostrar apenas o botão, sem spinner
                 <div className="text-center py-4">
                   <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                    style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)' }}>
-                    <QrCode className="w-6 h-6" style={{ color: '#c9a227' }} />
+                    style={{ background: 'var(--brand-cobalt-soft)', border: '1px solid rgba(37,99,235,0.25)' }}>
+                    <QrCode className="w-6 h-6" style={{ color: 'var(--brand-cobalt)' }} />
                   </div>
                   <p className="text-white font-medium mb-1">
                     {instanceData?.instanceName ? 'WhatsApp desconectado' : 'Nenhum número conectado'}
@@ -251,9 +256,9 @@ export default function ConfiguracoesPage() {
                 // QR code disponível — mostrar para escanear
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 p-3 rounded-xl"
-                    style={{ background: 'rgba(201,162,39,0.07)', border: '1px solid rgba(201,162,39,0.2)' }}>
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#c9a227' }} />
-                    <p className="text-xs" style={{ color: '#e6b83a' }}>
+                    style={{ background: 'var(--brand-cobalt-soft)', border: '1px solid rgba(37,99,235,0.25)' }}>
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--brand-cobalt)' }} />
+                    <p className="text-xs" style={{ color: 'var(--brand-cobalt-text)' }}>
                       Abra o WhatsApp no celular → Dispositivos conectados → Conectar dispositivo → Escaneie o QR Code
                     </p>
                   </div>
@@ -290,6 +295,118 @@ export default function ConfiguracoesPage() {
         onConfirm={doDisconnect}
         onCancel={() => setConfirmDisconnect(false)}
       />
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────
+// Card de aparência — toggle dark/light
+// ──────────────────────────────────────────────────────────
+function AparenciaCard() {
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  const current = mounted ? (theme === 'system' ? resolvedTheme : theme) ?? 'dark' : 'dark';
+
+  const choose = async (next: 'light' | 'dark') => {
+    if (next === current) return;
+    setSaving(true);
+    setTheme(next);
+    try {
+      await fetch('/api/users/me/theme', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: next }),
+      });
+    } catch {
+      // segue só no localStorage
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
+    >
+      <div
+        className="px-5 py-4 flex items-center justify-between"
+        style={{ borderBottom: '1px solid var(--border-subtle)' }}
+      >
+        <div className="flex items-center gap-2">
+          <Palette className="w-4 h-4" style={{ color: 'var(--brand-cobalt)' }} />
+          <h2 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Aparência</h2>
+        </div>
+        {saving && (
+          <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'var(--text-tertiary)' }} />
+        )}
+      </div>
+
+      <div className="p-5">
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+          Escolha o tema da plataforma. Sua preferência sincroniza entre dispositivos.
+        </p>
+
+        <div className="grid grid-cols-2 gap-3 max-w-md">
+          <button
+            type="button"
+            onClick={() => choose('light')}
+            className="flex items-center gap-3 p-4 rounded-xl text-left transition-colors"
+            style={{
+              background: current === 'light' ? 'var(--brand-cobalt-soft)' : 'var(--bg-card-subtle)',
+              border: `1px solid ${current === 'light' ? 'var(--brand-cobalt)' : 'var(--border-default)'}`,
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: '#F5F7FA', border: '1px solid #E2E8F0' }}
+            >
+              <Sun className="w-5 h-5" style={{ color: '#D97706' }} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold" style={{
+                color: current === 'light' ? 'var(--brand-cobalt-text)' : 'var(--text-primary)',
+              }}>
+                Claro
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                Fundo branco
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => choose('dark')}
+            className="flex items-center gap-3 p-4 rounded-xl text-left transition-colors"
+            style={{
+              background: current === 'dark' ? 'var(--brand-cobalt-soft)' : 'var(--bg-card-subtle)',
+              border: `1px solid ${current === 'dark' ? 'var(--brand-cobalt)' : 'var(--border-default)'}`,
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: '#0F2240', border: '1px solid rgba(148,163,184,0.18)' }}
+            >
+              <Moon className="w-5 h-5" style={{ color: '#60A5FA' }} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold" style={{
+                color: current === 'dark' ? 'var(--brand-cobalt-text)' : 'var(--text-primary)',
+              }}>
+                Escuro
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                Fundo navy
+              </p>
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

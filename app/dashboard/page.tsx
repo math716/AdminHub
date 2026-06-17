@@ -191,10 +191,10 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="backdrop-blur-sm rounded-2xl p-5"
-          style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
+          style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.18)' }}
         >
           <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="h-5 w-5" style={{ color: '#c9a227' }} />
+            <BarChart3 className="h-5 w-5" style={{ color: '#2563EB' }} />
             <h3 className="text-white font-semibold">Demandas por Status</h3>
           </div>
           <div className="h-[280px]">
@@ -212,10 +212,10 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
           className="backdrop-blur-sm rounded-2xl p-5"
-          style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
+          style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.18)' }}
         >
           <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="h-5 w-5" style={{ color: '#c9a227' }} />
+            <AlertTriangle className="h-5 w-5" style={{ color: '#2563EB' }} />
             <h3 className="text-white font-semibold">Demandas por Prioridade</h3>
           </div>
           <div className="h-[280px]">
@@ -236,10 +236,10 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
           className="backdrop-blur-sm rounded-2xl p-5"
-          style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
+          style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.18)' }}
         >
           <div className="flex items-center gap-2 mb-4">
-            <FileText className="h-5 w-5" style={{ color: '#c9a227' }} />
+            <FileText className="h-5 w-5" style={{ color: '#2563EB' }} />
             <h3 className="text-white font-semibold">Demandas Recentes</h3>
           </div>
           <div className="overflow-x-auto">
@@ -304,10 +304,10 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
           className="backdrop-blur-sm rounded-2xl p-5"
-          style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
+          style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.18)' }}
         >
           <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="h-5 w-5" style={{ color: '#c9a227' }} />
+            <BarChart3 className="h-5 w-5" style={{ color: '#2563EB' }} />
             <h3 className="text-white font-semibold">Demandas por Categoria</h3>
           </div>
           <div className="h-[280px]">
@@ -322,10 +322,10 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
         className="relative z-10 backdrop-blur-sm rounded-2xl p-5"
-        style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.18)' }}
+        style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.18)' }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="h-5 w-5" style={{ color: '#c9a227' }} />
+          <TrendingUp className="h-5 w-5" style={{ color: '#2563EB' }} />
           <h3 className="text-white font-semibold">Evolução de Demandas</h3>
         </div>
         <div className="h-[250px]">

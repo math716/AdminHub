@@ -127,6 +127,7 @@ model User {
   mustChangePassword Boolean  @default(false)
   permissions        String[] @default([])
   pendingGabineteNome String?
+  theme              String   @default("dark")  // "light" | "dark"
 
   gabineteId String?
   gabinete   Gabinete? @relation(fields: [gabineteId], references: [id], onDelete: Cascade)

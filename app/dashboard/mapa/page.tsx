@@ -990,7 +990,7 @@ export default function MapaPage() {
 
         {/* Breadcrumb hierárquico */}
         <div className="flex items-center gap-1 text-sm rounded-xl px-4 py-2.5 w-fit flex-wrap"
-          style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(201,162,39,0.13)' }}>
+          style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(37,99,235,0.13)' }}>
           {/* Brasil */}
           <button
             onClick={() => { setView('brasil'); setSelectedUf(''); setSelectedMunicipio(null); setSelectedBairro(null); setLocaisPorZona([]); }}
@@ -1032,7 +1032,7 @@ export default function MapaPage() {
               onClick={() => { setSelectedBairro(null); }}
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
               style={!selectedBairro
-                ? { background: 'rgba(201,162,39,0.12)', color: '#c9a227', fontWeight: 600 }
+                ? { background: 'rgba(37,99,235,0.12)', color: '#2563EB', fontWeight: 600 }
                 : { color: 'rgba(255,255,255,0.4)' }}
             >
               <Building2 className="h-3.5 w-3.5" />
@@ -1166,7 +1166,7 @@ export default function MapaPage() {
                               )}
                             </div>
                             <div className="text-right">
-                              <p className="text-sm font-bold text-[#c9961a]">{c.totalVotos?.toLocaleString('pt-BR')}</p>
+                              <p className="text-sm font-bold text-[#1D4ED8]">{c.totalVotos?.toLocaleString('pt-BR')}</p>
                               <p className="text-xs text-slate-400">votos</p>
                             </div>
                           </div>
@@ -1219,8 +1219,8 @@ export default function MapaPage() {
                       </div>
                     )}
                     <div className="flex items-center gap-2 pt-2 border-t">
-                      <Vote className="h-4 w-4 text-[#c9961a]" />
-                      <span className="text-lg font-bold text-[#c9961a]">
+                      <Vote className="h-4 w-4 text-[#1D4ED8]" />
+                      <span className="text-lg font-bold text-[#1D4ED8]">
                         {electoralData?.totalVotos?.toLocaleString?.('pt-BR')} votos
                       </span>
                     </div>
@@ -1494,7 +1494,7 @@ export default function MapaPage() {
                     <div
                       key={fav?.id}
                       className="flex items-center gap-2 p-3 rounded-xl transition-colors"
-                      style={{ background: 'rgba(12,42,79,0.5)', border: '1px solid rgba(201,162,39,0.18)' }}
+                      style={{ background: 'rgba(12,42,79,0.5)', border: '1px solid rgba(37,99,235,0.18)' }}
                     >
                       <button
                         onClick={() => handleFavoriteClick(fav)}
@@ -1538,7 +1538,7 @@ export default function MapaPage() {
               {/* Overlay de carregamento: cobre o mapa enquanto busca votos (BR→estado) */}
               {loadingVotes && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center rounded-xl"
-                     style={{ background: 'rgba(7,29,54,0.85)' }}>
+                     style={{ background: 'var(--bg-card-raised)' }}>
                   <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
                 </div>
               )}

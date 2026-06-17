@@ -40,6 +40,7 @@ export const authOptions: NextAuthOptions = {
           gabineteNome: user.gabinete?.nome,
           mustChangePassword: user.mustChangePassword,
           permissions: user.permissions ?? [],
+          theme: (user as any).theme ?? 'dark',
         };
       }
     })
@@ -71,6 +72,7 @@ export const authOptions: NextAuthOptions = {
         token.gabineteNome = (user as any).gabineteNome;
         token.mustChangePassword = (user as any).mustChangePassword;
         token.permissions = (user as any).permissions ?? [];
+        token.theme = (user as any).theme ?? 'dark';
       }
       if (trigger === 'update') {
         const s = session as any ?? {};
@@ -106,6 +108,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).gabineteNome = token.gabineteNome;
         (session.user as any).mustChangePassword = token.mustChangePassword;
         (session.user as any).permissions = token.permissions ?? [];
+        (session.user as any).theme = token.theme ?? 'dark';
       }
       return session;
     }

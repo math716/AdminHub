@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
+import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
 
 export default function DashboardLayout({
   children,
@@ -15,8 +16,6 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const userRole    = (session?.user as any)?.role;
-
   useEffect(() => {
     setMounted(true);
     if (typeof window === 'undefined') return;
@@ -24,7 +23,6 @@ export default function DashboardLayout({
     if (stored !== null) {
       setSidebarOpen(stored === '1');
     } else {
-      // Primeira visita: aberto no desktop, fechado no mobile/tablet
       setSidebarOpen(window.innerWidth >= 1024);
     }
   }, []);
@@ -33,9 +31,6 @@ export default function DashboardLayout({
     if (!mounted) return;
     window.localStorage.setItem('sidebar-open', sidebarOpen ? '1' : '0');
 
-    // Dispara window.resize durante e ao final da animacao do sidebar.
-    // Necessario para mapas Leaflet, ResponsiveContainer do recharts e qualquer
-    // componente que dimensiona com base na largura do parent recalcularem o tamanho.
     const intervalId = window.setInterval(() => {
       window.dispatchEvent(new Event('resize'));
     }, 50);
@@ -58,21 +53,24 @@ export default function DashboardLayout({
 
   if (!mounted || status === 'loading') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center"
-        style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 55%, #0c2a4f 100%)' }}>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center"
+        style={{ background: '#0F2240' }}
+      >
         <div className="flex flex-col items-center gap-5">
           <img
             src="/logo.png"
             alt="AdminHub"
-            className="w-48 h-auto object-contain drop-shadow-2xl"
-            style={{ filter: 'drop-shadow(0 0 24px rgba(201,162,39,0.25))' }}
+            className="w-32 h-auto object-contain"
           />
-          <div className="flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#c9a227', animationDelay: '0ms' }} />
-            <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#c9a227', animationDelay: '150ms' }} />
-            <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#c9a227', animationDelay: '300ms' }} />
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#60A5FA', animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#60A5FA', animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#60A5FA', animationDelay: '300ms' }} />
           </div>
-          <p className="text-xs tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.3)' }}>Carregando</p>
+          <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            Carregando
+          </p>
         </div>
       </div>
     );
@@ -83,14 +81,16 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 55%, #0c2a4f 100%)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}>
       <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)} />
-      <main className={`transition-[padding] duration-300 ease-out ${sidebarOpen ? 'lg:pl-72' : 'lg:px-12'}`}>
-        <div className="p-4 lg:p-8 landscape-content">
+      <main className={`transition-[padding] duration-300 ease-out ${sidebarOpen ? 'lg:pl-[260px]' : 'lg:pl-6'}`}>
+        <div className="p-4 lg:p-8 landscape-content relative">
+          <div className="absolute top-4 right-4 lg:top-6 lg:right-8 z-30">
+            <ThemeToggleButton />
+          </div>
           {children}
         </div>
       </main>
-
     </div>
   );
 }

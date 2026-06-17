@@ -9,11 +9,13 @@ interface StatCardProps {
   label: string;
   value: React.ReactNode;
   icon?: LucideIcon;
-  /** Cor temática — pinta label, ícone, borda, glow. */
+  /** Cor temática — pinta ícone, label de delta, barra esquerda. Use hex/rgb. */
   color: string;
   /** Delay da animação de entrada. */
   delay?: number;
-  /** Linha gradient fina no rodapé. Default true. */
+  /** Barra colorida na esquerda. Default true. */
+  leftAccent?: boolean;
+  /** @deprecated use leftAccent — mantido por retrocompat. */
   bottomAccent?: boolean;
   className?: string;
   onClick?: () => void;
@@ -22,10 +24,10 @@ interface StatCardProps {
 /**
  * Card de KPI padronizado.
  *
- * Visual: linha gradient na cor temática no rodapé, label na cor com glow,
- * valor grande em branco, box do ícone tingido. Hover sutil em scale.
+ * Visual flat: surface sólida, barra colorida na esquerda na cor da categoria,
+ * label em uppercase pequeno, valor grande tabular-nums, ícone sutil à direita.
  *
- * Usado em Demandas, Agenda, Configurações etc — qualquer faixa de métricas.
+ * Substitui o antigo card com glass-blur + gradient interno.
  */
 export function StatCard({
   label,
@@ -33,56 +35,58 @@ export function StatCard({
   icon: Icon,
   color,
   delay = 0,
-  bottomAccent = true,
+  leftAccent = true,
+  bottomAccent,
   className,
   onClick,
 }: StatCardProps) {
-  const tint = `${color}1A`;   // 10% alpha
-  const border = `${color}40`; // 25% alpha
+  // Se a chamada antiga passou bottomAccent=false, respeita
+  const showAccent = bottomAccent !== undefined ? bottomAccent : leftAccent;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      whileHover={{ y: -2 }}
+      transition={{ delay, duration: 0.25 }}
       onClick={onClick}
       className={cn(
-        'relative overflow-hidden rounded-xl p-4',
-        onClick && 'cursor-pointer',
+        'relative overflow-hidden rounded-xl p-4 transition-colors duration-150',
+        onClick && 'cursor-pointer hover:[border-color:var(--border-strong)]',
         className
       )}
       style={{
-        background: `linear-gradient(135deg, ${tint} 0%, rgba(7,29,54,0.75) 70%)`,
-        border: `1px solid ${border}`,
-        backdropFilter: 'blur(8px)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-default)',
       }}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p
-            className="text-[11px] uppercase tracking-widest font-semibold truncate"
-            style={{ color, textShadow: `0 0 12px ${color}55` }}
+            className="text-[11px] uppercase tracking-[0.08em] font-semibold truncate"
+            style={{ color: 'var(--text-tertiary)' }}
           >
             {label}
           </p>
-          <p className="text-2xl sm:text-3xl font-bold text-white mt-1 tabular-nums leading-none">
+          <p
+            className="text-2xl sm:text-[28px] font-semibold mt-1 tabular-nums leading-none"
+            style={{ color: 'var(--text-primary)' }}
+          >
             {value}
           </p>
         </div>
         {Icon && (
           <div
             className="p-2.5 rounded-lg flex-shrink-0"
-            style={{ background: tint, border: `1px solid ${border}` }}
+            style={{ background: `${color}1A`, color }}
           >
-            <Icon className="h-5 w-5" style={{ color }} />
+            <Icon className="h-5 w-5" />
           </div>
         )}
       </div>
-      {bottomAccent && (
+      {showAccent && (
         <div
-          className="absolute left-0 right-0 bottom-0 h-[2px]"
-          style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }}
+          className="absolute left-0 top-0 bottom-0 w-[3px]"
+          style={{ background: color }}
         />
       )}
     </motion.div>

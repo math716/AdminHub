@@ -120,8 +120,8 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> = {
-  SUPER_ADMIN:     { bg: 'rgba(201,162,39,0.12)',  color: '#c9a227',  border: 'rgba(201,162,39,0.3)'  },
-  ADMIN:           { bg: 'rgba(201,162,39,0.12)',  color: '#c9a227',  border: 'rgba(201,162,39,0.3)'  },
+  SUPER_ADMIN:     { bg: 'rgba(37,99,235,0.12)',  color: '#2563EB',  border: 'rgba(37,99,235,0.3)'  },
+  ADMIN:           { bg: 'rgba(37,99,235,0.12)',  color: '#2563EB',  border: 'rgba(37,99,235,0.3)'  },
   AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: '#c084fc',  border: 'rgba(168,85,247,0.3)'  },
   CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)'  },
   ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: '#4ade80',  border: 'rgba(34,197,94,0.25)'  },
@@ -232,15 +232,15 @@ function RoleSelect({
               top: dropPos.top,
               right: dropPos.right,
               background: '#071d36',
-              border: '1px solid rgba(201,162,39,0.2)',
+              border: '1px solid rgba(37,99,235,0.2)',
               minWidth: 170,
             }}
           >
             {roles.map(r => (
               <button key={r} onClick={() => change(r)}
                 className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/5 flex items-center gap-2"
-                style={{ color: r === current ? '#c9a227' : 'rgba(255,255,255,0.7)' }}>
-                {r === current && <Check className="w-3 h-3 flex-shrink-0" style={{ color: '#c9a227' }} />}
+                style={{ color: r === current ? '#2563EB' : 'rgba(255,255,255,0.7)' }}>
+                {r === current && <Check className="w-3 h-3 flex-shrink-0" style={{ color: '#2563EB' }} />}
                 {r !== current && <span className="w-3" />}
                 {ROLE_LABELS[r]}
               </button>
@@ -546,7 +546,7 @@ export default function UsuariosPage() {
   if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-7 h-7 animate-spin" style={{ color: '#c9a227' }} />
+        <Loader2 className="w-7 h-7 animate-spin" style={{ color: '#2563EB' }} />
       </div>
     );
   }
@@ -554,7 +554,7 @@ export default function UsuariosPage() {
 
   const pendingUsers  = users.filter(u => !u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN');
   const approvedUsers = users.filter(u => u.approved  || u.role === 'ADMIN' || u.role === 'SUPER_ADMIN');
-  const cardStyle     = { background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' };
+  const cardStyle     = { background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.13)' };
   const isAdmin       = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 
   // ── render ────────────────────────────────────────────────────────────────
@@ -597,7 +597,7 @@ export default function UsuariosPage() {
             onClick={() => (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'AGENTE_POLITICO') ? setShowInviteForm(f => !f) : handleGenerateInvite('ASSESSOR')}
             disabled={generatingInvite}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#c9a227,#e6b83a)', color: '#04111f' }}
+            style={{ background: 'linear-gradient(135deg,#2563EB,#3B82F6)', color: '#04111f' }}
           >
             {generatingInvite ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
             Gerar Convite
@@ -608,7 +608,7 @@ export default function UsuariosPage() {
             {showInviteForm && (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'AGENTE_POLITICO') && (
               <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                 className="absolute right-0 mt-1 z-20 rounded-xl overflow-hidden shadow-xl"
-                style={{ background: '#071d36', border: '1px solid rgba(201,162,39,0.2)', minWidth: 200 }}>
+                style={{ background: '#071d36', border: '1px solid rgba(37,99,235,0.2)', minWidth: 200 }}>
                 <p className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>Tipo de convite</p>
                 {(['CHEFE', 'ASSESSOR'] as const).map(r => {
                   const labelColor = r === 'CHEFE' ? '#4a9ede' : '#4ade80';
@@ -641,11 +641,11 @@ export default function UsuariosPage() {
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: 'Gabinetes',  value: gabineteGroups.length, color: '#4a9ede',  icon: Building2 },
-              { label: 'Usuários',   value: users.length,          color: '#c9a227',  icon: Users    },
+              { label: 'Usuários',   value: users.length,          color: '#2563EB',  icon: Users    },
               { label: 'Pendentes',  value: pendingUsers.length,   color: '#f59e0b',  icon: Clock    },
             ].map(stat => (
               <div key={stat.label} className="rounded-xl px-4 py-3 flex items-center gap-3"
-                style={{ background: 'rgba(7,29,54,0.75)', border: `1px solid ${stat.color}22` }}>
+                style={{ background: 'var(--bg-card)', border: `1px solid ${stat.color}22` }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{ background: `${stat.color}18` }}>
                   <stat.icon className="w-4 h-4" style={{ color: stat.color }} />
@@ -664,7 +664,7 @@ export default function UsuariosPage() {
               { label: 'Aguardando Aprovação', value: pendingUsers.length,  color: '#f59e0b', icon: Clock },
             ].map(stat => (
               <div key={stat.label} className="rounded-xl px-4 py-4 flex items-center gap-4"
-                style={{ background: 'rgba(7,29,54,0.75)', border: `1px solid ${stat.color}22` }}>
+                style={{ background: 'var(--bg-card)', border: `1px solid ${stat.color}22` }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: `${stat.color}18`, border: `1px solid ${stat.color}30` }}>
                   <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
@@ -687,7 +687,7 @@ export default function UsuariosPage() {
               onChange={e => setSearchGabinete(e.target.value)}
               placeholder="Buscar gabinete pelo nome..."
               className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-slate-600 outline-none focus:ring-1"
-              style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(255,255,255,0.08)' }}
+              style={{ background: 'var(--bg-card)', border: '1px solid rgba(255,255,255,0.08)' }}
             />
           </div>
           ) : (
@@ -698,7 +698,7 @@ export default function UsuariosPage() {
               onChange={e => setSearchMember(e.target.value)}
               placeholder="Buscar membro pelo nome ou e-mail..."
               className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-slate-600 outline-none focus:ring-1"
-              style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(255,255,255,0.08)' }}
+              style={{ background: 'var(--bg-card)', border: '1px solid rgba(255,255,255,0.08)' }}
             />
           </div>
           )}
@@ -813,7 +813,7 @@ export default function UsuariosPage() {
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                       <p className="text-white text-sm font-medium truncate">{u.name}</p>
                                       {u.id === sessionUserId && (
-                                        <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(201,162,39,0.15)', color: '#c9a227' }}>você</span>
+                                        <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(37,99,235,0.15)', color: '#2563EB' }}>você</span>
                                       )}
                                       {!u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN' && (
                                         <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
@@ -983,13 +983,13 @@ export default function UsuariosPage() {
           {noGabinete.length > 0 && !searchGabinete && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               className="rounded-2xl overflow-hidden"
-              style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(201,162,39,0.15)' }}>
+              style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(37,99,235,0.15)' }}>
               <button className="w-full flex items-center justify-between px-5 py-4 transition-all hover:bg-white/[0.02] text-left"
                 onClick={() => toggleGabinete('__no_gabinete__')}>
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)' }}>
-                    <Shield className="w-[18px] h-[18px]" style={{ color: '#c9a227' }} />
+                    style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.25)' }}>
+                    <Shield className="w-[18px] h-[18px]" style={{ color: '#2563EB' }} />
                   </div>
                   <div>
                     <p className="text-white font-semibold text-sm">Administradores do Sistema</p>
@@ -1013,14 +1013,14 @@ export default function UsuariosPage() {
                         <div key={u.id} className="flex items-center justify-between px-5 py-3.5 gap-3 transition-all hover:bg-white/[0.02]">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-                              style={{ background: 'linear-gradient(135deg,#c9a227,#e6b83a)', color: '#04111f' }}>
+                              style={{ background: 'linear-gradient(135deg,#2563EB,#3B82F6)', color: '#04111f' }}>
                               {u.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('')}
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
                                 <p className="text-white text-sm font-medium truncate">{u.name}</p>
                                 {u.id === sessionUserId && (
-                                  <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(201,162,39,0.15)', color: '#c9a227' }}>você</span>
+                                  <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(37,99,235,0.15)', color: '#2563EB' }}>você</span>
                                 )}
                               </div>
                               <p className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{u.email}</p>
@@ -1074,15 +1074,15 @@ export default function UsuariosPage() {
             onClick={e => { if (e.target === e.currentTarget) setShowInviteModal(false); }}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               className="w-full max-w-md rounded-2xl p-6"
-              style={{ background: '#071d36', border: '1px solid rgba(201,162,39,0.25)' }}>
+              style={{ background: '#071d36', border: '1px solid rgba(37,99,235,0.25)' }}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)' }}>
-                  <Link2 className="w-4 h-4" style={{ color: '#c9a227' }} />
+                  style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.3)' }}>
+                  <Link2 className="w-4 h-4" style={{ color: '#2563EB' }} />
                 </div>
                 <div>
                   <h3 className="text-white font-semibold text-sm">Link de Convite</h3>
-                  {inviteGabinete && <p className="text-xs" style={{ color: '#c9a227' }}>{inviteGabinete}</p>}
+                  {inviteGabinete && <p className="text-xs" style={{ color: '#2563EB' }}>{inviteGabinete}</p>}
                 </div>
               </div>
               <p className="text-xs mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
@@ -1097,7 +1097,7 @@ export default function UsuariosPage() {
                 {inviteRoleResult === 'CHEFE'
                   ? ' Acesso imediato após o cadastro.'
                   : ' Requer aprovação após o cadastro.'}
-                {' '}Expira em <span style={{ color: '#e6b83a' }}>7 dias</span>.
+                {' '}Expira em <span style={{ color: '#3B82F6' }}>7 dias</span>.
               </p>
               <div className="flex items-center gap-2 rounded-xl p-3 mb-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <p className="text-xs flex-1 break-all" style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'monospace' }}>{inviteUrl}</p>
@@ -1105,7 +1105,7 @@ export default function UsuariosPage() {
                   className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                   style={copied
                     ? { background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)' }
-                    : { background: 'rgba(201,162,39,0.12)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.3)' }}>
+                    : { background: 'rgba(37,99,235,0.12)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.3)' }}>
                   {copied ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   {copied ? 'Copiado!' : 'Copiar'}
                 </button>
@@ -1198,7 +1198,7 @@ export default function UsuariosPage() {
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
                         style={copiedPwd
                           ? { background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)' }
-                          : { background: 'rgba(201,162,39,0.12)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.3)' }}>
+                          : { background: 'rgba(37,99,235,0.12)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.3)' }}>
                         {copiedPwd ? <CheckCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                         {copiedPwd ? 'Copiado!' : 'Copiar Senha'}
                       </button>

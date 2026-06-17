@@ -343,8 +343,8 @@ export default function ImportacaoPage() {
           onDrop={onDrop}
           className="rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer transition-all"
           style={{
-            border: `2px dashed ${dragging ? 'rgba(201,162,39,0.6)' : 'rgba(255,255,255,0.1)'}`,
-            background: dragging ? 'rgba(201,162,39,0.05)' : 'rgba(7,29,54,0.4)',
+            border: `2px dashed ${dragging ? 'rgba(37,99,235,0.6)' : 'rgba(255,255,255,0.1)'}`,
+            background: dragging ? 'rgba(37,99,235,0.05)' : 'rgba(7,29,54,0.4)',
           }}
           onClick={() => document.getElementById('file-input')?.click()}
         >
@@ -426,7 +426,7 @@ export default function ImportacaoPage() {
                     onClick={() => setEsfera(e)}
                     className="flex-1 py-2.5 text-sm font-medium transition-colors"
                     style={esfera === e
-                      ? { background: 'rgba(201,162,39,0.15)', color: '#e8c660' }
+                      ? { background: 'rgba(37,99,235,0.15)', color: '#e8c660' }
                       : { color: 'rgb(148,163,184)' }}
                   >
                     {e === 'FEDERAL' ? 'Federal' : 'Estadual'}
@@ -489,7 +489,7 @@ export default function ImportacaoPage() {
 
           {!requiredMapped && (
             <div className="rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-amber-300"
-              style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)' }}>
+              style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)' }}>
               <Info className="w-4 h-4 flex-shrink-0" />
               Mapeie os campos obrigatórios (<span className="text-red-400">*</span>) antes de importar.
             </div>
@@ -500,7 +500,7 @@ export default function ImportacaoPage() {
               onClick={handleImport}
               disabled={!requiredMapped || !uf || !ano || stage === 'importing'}
               className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: 'rgba(201,162,39,0.2)', color: '#e8c660', border: '1px solid rgba(201,162,39,0.4)' }}
+              style={{ background: 'rgba(37,99,235,0.2)', color: '#e8c660', border: '1px solid rgba(37,99,235,0.4)' }}
             >
               {stage === 'importing' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               {stage === 'importing' ? `Importando… ${progress}%` : `Importar ${rawRows.length.toLocaleString('pt-BR')} registros`}
@@ -509,7 +509,7 @@ export default function ImportacaoPage() {
               <div className="flex-1 h-2 rounded-full overflow-hidden bg-white/10">
                 <div
                   className="h-full rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%`, background: '#c9a227' }}
+                  style={{ width: `${progress}%`, background: '#2563EB' }}
                 />
               </div>
             )}

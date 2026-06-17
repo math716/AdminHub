@@ -68,19 +68,19 @@ export default function DefinirSenhaPage() {
         {/* Logo / ícone */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}>
-            <ShieldCheck className="w-8 h-8" style={{ color: '#c9a227' }} />
+            style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)' }}>
+            <ShieldCheck className="w-8 h-8" style={{ color: '#2563EB' }} />
           </div>
           <h1 className="text-white font-bold text-2xl tracking-tight">Definir Nova Senha</h1>
           {userName && (
             <p className="mt-1 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
-              Olá, <span style={{ color: '#c9a227' }}>{userName}</span>. Por segurança, defina uma senha pessoal antes de continuar.
+              Olá, <span style={{ color: '#2563EB' }}>{userName}</span>. Por segurança, defina uma senha pessoal antes de continuar.
             </p>
           )}
         </div>
 
         <div className="rounded-2xl p-8 space-y-5"
-          style={{ background: 'rgba(7,29,54,0.85)', border: '1px solid rgba(201,162,39,0.15)', backdropFilter: 'blur(12px)' }}>
+          style={{ background: 'var(--bg-card-raised)', border: '1px solid rgba(37,99,235,0.15)', backdropFilter: 'blur(12px)' }}>
 
           {done ? (
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
@@ -172,7 +172,7 @@ export default function DefinirSenhaPage() {
 
               <button type="submit" disabled={loading}
                 className="w-full py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
-                style={{ background: 'linear-gradient(135deg,#c9a227,#e6b83a)', color: '#04111f' }}>
+                style={{ background: 'linear-gradient(135deg,#2563EB,#3B82F6)', color: '#04111f' }}>
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                 {loading ? 'Salvando...' : 'Definir Nova Senha'}
               </button>

@@ -63,8 +63,8 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> = {
-  SUPER_ADMIN:     { bg: 'rgba(201,162,39,0.12)',  color: '#c9a227',  border: 'rgba(201,162,39,0.3)'  },
-  ADMIN:           { bg: 'rgba(201,162,39,0.12)',  color: '#c9a227',  border: 'rgba(201,162,39,0.3)'  },
+  SUPER_ADMIN:     { bg: 'rgba(37,99,235,0.12)',  color: '#2563EB',  border: 'rgba(37,99,235,0.3)'  },
+  ADMIN:           { bg: 'rgba(37,99,235,0.12)',  color: '#2563EB',  border: 'rgba(37,99,235,0.3)'  },
   AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: '#c084fc',  border: 'rgba(168,85,247,0.3)'  },
   CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)'  },
   ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: '#4ade80',  border: 'rgba(34,197,94,0.25)'  },
@@ -147,12 +147,12 @@ function RoleSelect({ userId, current, sessionRole, onChanged }: { userId: strin
           <motion.div ref={dropRef}
             initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
             className="fixed z-[9999] rounded-xl overflow-hidden shadow-xl"
-            style={{ top: dropPos.top, right: dropPos.right, background: '#071d36', border: '1px solid rgba(201,162,39,0.2)', minWidth: 170 }}>
+            style={{ top: dropPos.top, right: dropPos.right, background: '#071d36', border: '1px solid rgba(37,99,235,0.2)', minWidth: 170 }}>
             {roles.map(r => (
               <button key={r} onClick={() => change(r)}
                 className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/5 flex items-center gap-2"
-                style={{ color: r === current ? '#c9a227' : 'rgba(255,255,255,0.7)' }}>
-                {r === current && <Check className="w-3 h-3 flex-shrink-0" style={{ color: '#c9a227' }} />}
+                style={{ color: r === current ? '#2563EB' : 'rgba(255,255,255,0.7)' }}>
+                {r === current && <Check className="w-3 h-3 flex-shrink-0" style={{ color: '#2563EB' }} />}
                 {r !== current && <span className="w-3" />}
                 {ROLE_LABELS[r]}
               </button>
@@ -200,7 +200,7 @@ function PermissionsChecklist({ selected, onToggle, onSelectAll, onClear, accent
 
 function StatusBadge({ status }: { status: Solicitacao['status'] }) {
   const map = {
-    PENDENTE: { label: 'Pendente', color: '#e6b83a', bg: 'rgba(201,162,39,0.15)', border: 'rgba(201,162,39,0.3)', icon: <Clock size={12} /> },
+    PENDENTE: { label: 'Pendente', color: '#3B82F6', bg: 'rgba(37,99,235,0.15)', border: 'rgba(37,99,235,0.3)', icon: <Clock size={12} /> },
     APROVADA: { label: 'Aprovada', color: '#4ade80', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.25)', icon: <CheckCircle2 size={12} /> },
     RECUSADA: { label: 'Recusada', color: '#f87171', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.25)', icon: <XCircle size={12} /> },
   };
@@ -235,12 +235,12 @@ function SolicitacaoCard({ sol, onAcao }: { sol: Solicitacao; onAcao: () => void
   const dt = new Date(sol.createdAt).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
   return (
-    <div style={{ background:'rgba(7,29,54,0.75)', borderRadius:'0.875rem', border:'1px solid rgba(201,162,39,0.13)', overflow:'hidden' }}>
+    <div style={{ background:'var(--bg-card)', borderRadius:'0.875rem', border:'1px solid rgba(37,99,235,0.13)', overflow:'hidden' }}>
       <div style={{ padding:'1rem 1.25rem', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', userSelect:'none' }}
         onClick={() => setExpanded(v => !v)}>
         <div style={{ display:'flex', alignItems:'center', gap:'0.85rem' }}>
-          <div style={{ width:38, height:38, borderRadius:'0.65rem', background:'rgba(201,162,39,0.12)', border:'1px solid rgba(201,162,39,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <Building2 size={18} color="#c9a227" />
+          <div style={{ width:38, height:38, borderRadius:'0.65rem', background:'rgba(37,99,235,0.12)', border:'1px solid rgba(37,99,235,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <Building2 size={18} color="#2563EB" />
           </div>
           <div>
             <p style={{ margin:0, fontWeight:700, fontSize:'0.9rem', color:'#e2e8f0' }}>{sol.gabineteNome}</p>
@@ -615,13 +615,13 @@ export default function AdminGabinetesPage() {
   const pendentes = solicitacoes.filter(s => s.status === 'PENDENTE').length;
 
   if (status === 'loading') {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="w-7 h-7 animate-spin" style={{ color:'#c9a227' }} /></div>;
+    return <div className="flex items-center justify-center h-64"><Loader2 className="w-7 h-7 animate-spin" style={{ color:'#2563EB' }} /></div>;
   }
 
   const filterBtn = (label: string, value: typeof filtro) => (
     <button key={value} onClick={() => setFiltro(value)}
       className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-      style={{ border:'1px solid', borderColor:filtro===value?'rgba(201,162,39,0.5)':'rgba(255,255,255,0.1)', background:filtro===value?'rgba(201,162,39,0.15)':'transparent', color:filtro===value?'#c9a227':'rgba(255,255,255,0.45)', cursor:'pointer' }}>
+      style={{ border:'1px solid', borderColor:filtro===value?'rgba(37,99,235,0.5)':'rgba(255,255,255,0.1)', background:filtro===value?'rgba(37,99,235,0.15)':'transparent', color:filtro===value?'#2563EB':'rgba(255,255,255,0.45)', cursor:'pointer' }}>
       {label}
     </button>
   );
@@ -632,8 +632,8 @@ export default function AdminGabinetesPage() {
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background:'rgba(201,162,39,0.12)', border:'1px solid rgba(201,162,39,0.25)' }}>
-            <Building2 className="w-5 h-5" style={{ color:'#c9a227' }} />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background:'rgba(37,99,235,0.12)', border:'1px solid rgba(37,99,235,0.25)' }}>
+            <Building2 className="w-5 h-5" style={{ color:'#2563EB' }} />
           </div>
           <div>
             <h1 className="text-lg font-bold" style={{ color:'#e2e8f0' }}>Administração de Gabinetes</h1>
@@ -648,20 +648,20 @@ export default function AdminGabinetesPage() {
       </div>
 
       {/* ── Card Gerar Link ───────────────────────────────────────────────────── */}
-      <div className="rounded-2xl p-5" style={{ background:'rgba(7,29,54,0.8)', border:'1px solid rgba(201,162,39,0.2)' }}>
+      <div className="rounded-2xl p-5" style={{ background:'rgba(7,29,54,0.8)', border:'1px solid rgba(37,99,235,0.2)' }}>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <Link2 size={16} style={{ color:'#c9a227' }} />
+              <Link2 size={16} style={{ color:'#2563EB' }} />
               <h2 className="text-sm font-bold" style={{ color:'#e2e8f0' }}>Link de Convite para Novo Gabinete</h2>
             </div>
             <p className="text-xs" style={{ color:'rgba(255,255,255,0.45)', maxWidth:520 }}>
-              Gere um link válido por <strong style={{ color:'#c9a227' }}>1 hora</strong> e envie para o Agente Político.
+              Gere um link válido por <strong style={{ color:'#2563EB' }}>1 hora</strong> e envie para o Agente Político.
             </p>
           </div>
           <button onClick={gerarLink} disabled={gerandoLink}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-90 disabled:opacity-50 flex-shrink-0"
-            style={{ background:'linear-gradient(135deg,#c9a227,#e6b83a)', color:'#04111f', border:'none', cursor:gerandoLink?'not-allowed':'pointer' }}>
+            style={{ background:'linear-gradient(135deg,#2563EB,#3B82F6)', color:'#04111f', border:'none', cursor:gerandoLink?'not-allowed':'pointer' }}>
             {gerandoLink ? <Loader2 size={15} className="animate-spin" /> : <Link2 size={15} />}
             {gerandoLink ? 'Gerando...' : 'Gerar Link'}
           </button>
@@ -674,7 +674,7 @@ export default function AdminGabinetesPage() {
               <span className="text-[10px]" style={{ color:'rgba(255,255,255,0.3)' }}>expira às {linkExpiry}</span>
               <button onClick={copiarLink}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                style={{ background:copiado?'rgba(34,197,94,0.15)':'rgba(201,162,39,0.15)', color:copiado?'#4ade80':'#c9a227', border:copiado?'1px solid rgba(34,197,94,0.3)':'1px solid rgba(201,162,39,0.3)', cursor:'pointer' }}>
+                style={{ background:copiado?'rgba(34,197,94,0.15)':'rgba(37,99,235,0.15)', color:copiado?'#4ade80':'#2563EB', border:copiado?'1px solid rgba(34,197,94,0.3)':'1px solid rgba(37,99,235,0.3)', cursor:'pointer' }}>
                 {copiado ? <><CheckCheck size={12}/> Copiado</> : <><Copy size={12}/> Copiar</>}
               </button>
             </div>
@@ -687,7 +687,7 @@ export default function AdminGabinetesPage() {
         <h2 className="text-sm font-bold" style={{ color:'#e2e8f0' }}>
           Solicitações de Cadastro
           {pendentes > 0 && (
-            <span className="ml-2 px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background:'rgba(201,162,39,0.15)', color:'#c9a227', border:'1px solid rgba(201,162,39,0.3)' }}>
+            <span className="ml-2 px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background:'rgba(37,99,235,0.15)', color:'#2563EB', border:'1px solid rgba(37,99,235,0.3)' }}>
               {pendentes} pendente{pendentes>1?'s':''}
             </span>
           )}
@@ -702,7 +702,7 @@ export default function AdminGabinetesPage() {
 
       {loadingSol ? (
         <div className="flex flex-col items-center justify-center py-12" style={{ color:'rgba(255,255,255,0.3)' }}>
-          <Loader2 size={28} className="animate-spin mb-3" style={{ color:'#c9a227' }} />
+          <Loader2 size={28} className="animate-spin mb-3" style={{ color:'#2563EB' }} />
           <p className="text-sm">Carregando...</p>
         </div>
       ) : filtradas.length === 0 ? (
@@ -740,7 +740,7 @@ export default function AdminGabinetesPage() {
               <input value={searchGabinete} onChange={e => setSearchGabinete(e.target.value)}
                 placeholder="Buscar gabinete..."
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white outline-none"
-                style={{ background:'rgba(7,29,54,0.75)', border:'1px solid rgba(255,255,255,0.08)' }} />
+                style={{ background:'var(--bg-card)', border:'1px solid rgba(255,255,255,0.08)' }} />
             </div>
           )}
 
@@ -904,7 +904,7 @@ export default function AdminGabinetesPage() {
 
           <div className="flex flex-col gap-2">
             {semGabinete.map(u => (
-              <div key={u.id} style={{ background:'rgba(7,29,54,0.75)', borderRadius:'0.875rem', border:'1px solid rgba(239,68,68,0.15)', padding:'0.875rem 1.25rem', display:'flex', alignItems:'center', gap:'0.875rem' }}>
+              <div key={u.id} style={{ background:'var(--bg-card)', borderRadius:'0.875rem', border:'1px solid rgba(239,68,68,0.15)', padding:'0.875rem 1.25rem', display:'flex', alignItems:'center', gap:'0.875rem' }}>
                 <div style={{ width:36, height:36, borderRadius:'50%', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                   <User size={16} style={{ color:'#f87171' }} />
                 </div>
@@ -955,7 +955,7 @@ export default function AdminGabinetesPage() {
               const dt = new Date(u.deletedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
               const isActing = acaoExcluidoId === u.id;
               return (
-                <div key={u.id} style={{ background: 'rgba(7,29,54,0.75)', borderRadius: '0.875rem', border: '1px solid rgba(239,68,68,0.2)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', flexWrap: 'wrap' }}>
+                <div key={u.id} style={{ background: 'var(--bg-card)', borderRadius: '0.875rem', border: '1px solid rgba(239,68,68,0.2)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', flexWrap: 'wrap' }}>
                   <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.75rem', fontWeight: 700, color: '#f87171' }}>
                     {u.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')}
                   </div>
@@ -1024,7 +1024,7 @@ export default function AdminGabinetesPage() {
               const daysLeft = Math.max(0, Math.ceil((expiry.getTime() - Date.now()) / 86400000));
               const isActing = acaoGabExcluidoId === g.id;
               return (
-                <div key={g.id} style={{ background: 'rgba(7,29,54,0.75)', borderRadius: '0.875rem', border: '1px solid rgba(239,68,68,0.2)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', flexWrap: 'wrap' }}>
+                <div key={g.id} style={{ background: 'var(--bg-card)', borderRadius: '0.875rem', border: '1px solid rgba(239,68,68,0.2)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', flexWrap: 'wrap' }}>
                   <div style={{ width: 38, height: 38, borderRadius: '0.65rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Building2 size={18} style={{ color: '#f87171' }} />
                   </div>
@@ -1215,7 +1215,7 @@ export default function AdminGabinetesPage() {
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
                         style={copiedPwd
                           ? { background:'rgba(34,197,94,0.15)', color:'#4ade80', border:'1px solid rgba(34,197,94,0.3)' }
-                          : { background:'rgba(201,162,39,0.12)', color:'#c9a227', border:'1px solid rgba(201,162,39,0.3)' }}>
+                          : { background:'rgba(37,99,235,0.12)', color:'#2563EB', border:'1px solid rgba(37,99,235,0.3)' }}>
                         {copiedPwd ? <CheckCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                         {copiedPwd ? 'Copiado!' : 'Copiar Senha'}
                       </button>

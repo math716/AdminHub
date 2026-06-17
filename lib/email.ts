@@ -37,9 +37,9 @@ export async function sendAdminApprovalEmail({
     to,
     subject: `[AdminHub] Novo cadastro aguardando aprovação — ${userName}`,
     html: `
-      <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;background:#071d36;border-radius:12px;overflow:hidden;border:1px solid rgba(201,162,39,0.3)">
-        <div style="background:linear-gradient(135deg,#071d36,#0c2a4f);padding:28px 32px;border-bottom:1px solid rgba(201,162,39,0.2)">
-          <h2 style="margin:0;color:#c9a227;font-size:20px">AdminHub — Novo Cadastro</h2>
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;background:#071d36;border-radius:12px;overflow:hidden;border:1px solid rgba(37,99,235,0.3)">
+        <div style="background:linear-gradient(135deg,#071d36,#0c2a4f);padding:28px 32px;border-bottom:1px solid rgba(37,99,235,0.2)">
+          <h2 style="margin:0;color:#2563EB;font-size:20px">AdminHub — Novo Cadastro</h2>
           <p style="margin:6px 0 0;color:rgba(255,255,255,0.5);font-size:13px">Aguardando sua aprovação</p>
         </div>
         <div style="padding:28px 32px;color:#fff">
@@ -49,11 +49,11 @@ export async function sendAdminApprovalEmail({
           <table style="width:100%;border-collapse:collapse;font-size:14px">
             <tr><td style="padding:8px 0;color:rgba(255,255,255,0.45);width:120px">Nome</td><td style="padding:8px 0;color:#fff;font-weight:600">${userName}</td></tr>
             <tr><td style="padding:8px 0;color:rgba(255,255,255,0.45)">E-mail</td><td style="padding:8px 0;color:#4a9ede">${userEmail}</td></tr>
-            <tr><td style="padding:8px 0;color:rgba(255,255,255,0.45)">Perfil</td><td style="padding:8px 0;color:#c9a227">${roleLabel[userRole] ?? userRole}</td></tr>
+            <tr><td style="padding:8px 0;color:rgba(255,255,255,0.45)">Perfil</td><td style="padding:8px 0;color:#2563EB">${roleLabel[userRole] ?? userRole}</td></tr>
             <tr><td style="padding:8px 0;color:rgba(255,255,255,0.45)">Gabinete</td><td style="padding:8px 0;color:#fff">${gabineteNome}</td></tr>
           </table>
           <div style="margin-top:28px">
-            <a href="${approveUrl}" style="display:inline-block;background:linear-gradient(135deg,#c9a227,#e6b83a);color:#04111f;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px">
+            <a href="${approveUrl}" style="display:inline-block;background:linear-gradient(135deg,#2563EB,#3B82F6);color:#04111f;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px">
               Acessar gerenciamento de usuários
             </a>
           </div>
@@ -85,9 +85,9 @@ export async function sendPasswordResetEmail({
       to: userEmail,
       subject: '[AdminHub] Sua senha foi redefinida',
       html: `
-        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;background:#071d36;border-radius:12px;overflow:hidden;border:1px solid rgba(201,162,39,0.3)">
-          <div style="background:linear-gradient(135deg,#071d36,#0c2a4f);padding:28px 32px;border-bottom:1px solid rgba(201,162,39,0.2)">
-            <h2 style="margin:0;color:#c9a227;font-size:20px">AdminHub — Redefinição de Senha</h2>
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;background:#071d36;border-radius:12px;overflow:hidden;border:1px solid rgba(37,99,235,0.3)">
+          <div style="background:linear-gradient(135deg,#071d36,#0c2a4f);padding:28px 32px;border-bottom:1px solid rgba(37,99,235,0.2)">
+            <h2 style="margin:0;color:#2563EB;font-size:20px">AdminHub — Redefinição de Senha</h2>
           </div>
           <div style="padding:28px 32px;color:#fff">
             <p style="margin:0 0 16px;color:rgba(255,255,255,0.7);font-size:14px">
@@ -99,7 +99,7 @@ export async function sendPasswordResetEmail({
             <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(74,158,222,0.3);border-radius:8px;padding:16px;text-align:center;margin:20px 0">
               <span style="font-size:22px;font-weight:700;color:#4a9ede;letter-spacing:2px;font-family:monospace">${tempPassword}</span>
             </div>
-            <a href="${loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#c9a227,#e6b83a);color:#04111f;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px">
+            <a href="${loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#2563EB,#3B82F6);color:#04111f;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px">
               Acessar o AdminHub
             </a>
             <p style="margin-top:20px;color:rgba(255,255,255,0.3);font-size:12px">
@@ -131,9 +131,9 @@ export async function sendUserApprovedEmail({
     to: userEmail,
     subject: `[AdminHub] Cadastro aprovado — Bem-vindo(a), ${userName}!`,
     html: `
-      <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;background:#071d36;border-radius:12px;overflow:hidden;border:1px solid rgba(201,162,39,0.3)">
-        <div style="background:linear-gradient(135deg,#071d36,#0c2a4f);padding:28px 32px;border-bottom:1px solid rgba(201,162,39,0.2)">
-          <h2 style="margin:0;color:#c9a227;font-size:20px">AdminHub — Cadastro Aprovado</h2>
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;background:#071d36;border-radius:12px;overflow:hidden;border:1px solid rgba(37,99,235,0.3)">
+        <div style="background:linear-gradient(135deg,#071d36,#0c2a4f);padding:28px 32px;border-bottom:1px solid rgba(37,99,235,0.2)">
+          <h2 style="margin:0;color:#2563EB;font-size:20px">AdminHub — Cadastro Aprovado</h2>
         </div>
         <div style="padding:28px 32px;color:#fff">
           <p style="margin:0 0 16px;color:rgba(255,255,255,0.7);font-size:14px">
@@ -142,7 +142,7 @@ export async function sendUserApprovedEmail({
           <p style="margin:0 0 24px;color:rgba(255,255,255,0.7);font-size:14px">
             Seu cadastro foi aprovado. Você já pode acessar o sistema.
           </p>
-          <a href="${loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#c9a227,#e6b83a);color:#04111f;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px">
+          <a href="${loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#2563EB,#3B82F6);color:#04111f;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px">
             Acessar o AdminHub
           </a>
         </div>

@@ -117,7 +117,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
     geoLayer.eachLayer((l: any) => {
       if (l === targetLayer) {
         geoLayer.resetStyle(l);  // restaura cor da faixa
-        l.setStyle({ weight: 3, color: '#c9a227', opacity: 1 });  // borda dourada de destaque
+        l.setStyle({ weight: 3, color: '#2563EB', opacity: 1 });  // borda dourada de destaque
       } else {
         l.setStyle({
           fillColor:   '#15355c',
@@ -787,7 +787,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
               geoLayer.eachLayer((l: any) => {
                 if (l === layer) {
                   geoLayer.resetStyle(l);
-                  l.setStyle({ weight: 3, color: '#c9a227', opacity: 1 });
+                  l.setStyle({ weight: 3, color: '#2563EB', opacity: 1 });
                 } else {
                   l.setStyle({
                     fillColor:   '#15355c',
@@ -869,16 +869,16 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
               padding: 10px 14px;
               background: linear-gradient(160deg, #071d36 0%, #0c2a4f 100%);
               border-radius: 10px;
-              border: 1px solid rgba(201,162,39,0.35);
+              border: 1px solid rgba(37,99,235,0.35);
               min-width: 150px;
               box-shadow: 0 4px 20px rgba(0,0,0,0.45);
             ">
               <strong style="color:#fff;font-size:13px;display:block;margin-bottom:4px;letter-spacing:0.02em;">${nome}</strong>
               ${votos !== undefined
-                ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#c9a227;font-weight:600;">${votos.toLocaleString('pt-BR')} <span style="color:rgba(255,255,255,0.5);font-weight:400;">${valueLabel}</span></span>`
+                ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#2563EB;font-weight:600;">${votos.toLocaleString('pt-BR')} <span style="color:rgba(255,255,255,0.5);font-weight:400;">${valueLabel}</span></span>`
                 : '<span style="color:rgba(255,255,255,0.3);font-size:11px;">Sem dados</span>'
               }
-              ${!disableSubdivisaoRef.current ? `<div style="margin-top:7px;padding-top:5px;border-top:1px solid rgba(201,162,39,0.15);"><span style="color:rgba(255,255,255,0.35);font-size:10px;">📍 Clique para ver bairros</span></div>` : ''}
+              ${!disableSubdivisaoRef.current ? `<div style="margin-top:7px;padding-top:5px;border-top:1px solid rgba(37,99,235,0.15);"><span style="color:rgba(255,255,255,0.35);font-size:10px;">📍 Clique para ver bairros</span></div>` : ''}
             </div>`,
             { sticky: true, direction: 'top', offset: [0, -12], opacity: 1, className: 'municipio-tooltip' }
           );
@@ -1058,7 +1058,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       {/* Overlay de re-inicialização (troca de candidato no mesmo estado) */}
       {isReinitializing && (
         <div className="absolute inset-0 z-[9999] flex items-center justify-center rounded-xl"
-             style={{ background: 'rgba(7,29,54,0.85)' }}>
+             style={{ background: 'var(--bg-card-raised)' }}>
           <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
         </div>
       )}

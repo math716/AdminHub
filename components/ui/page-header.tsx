@@ -2,13 +2,12 @@
 
 import * as React from 'react';
 import { LucideIcon } from 'lucide-react';
-import { brand } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
-  /** Ícone do lado esquerdo (lucide). Se omitido, não renderiza box. */
+  /** Ícone do lado esquerdo (lucide). Se omitido, não renderiza. */
   icon?: LucideIcon;
-  /** Cor do ícone — default gold da marca. */
+  /** Cor do ícone — default cobalto. */
   iconColor?: string;
   title: string;
   subtitle?: React.ReactNode;
@@ -20,16 +19,12 @@ interface PageHeaderProps {
 /**
  * Cabeçalho padronizado para todas as páginas do dashboard.
  *
- * - h1 sempre `text-2xl font-bold tracking-tight`
- * - Subtítulo sempre `text-slate-400 text-sm`
- * - Ícone (opcional) em box gold com borda
- * - Actions alinhadas à direita
- *
- * Use em vez de inventar header novo em cada página.
+ * Visual flat: kicker em ardósia, h1 em peso 500/600, sem caixa colorida ao redor
+ * do ícone — só o ícone na cor escolhida ao lado do título.
  */
 export function PageHeader({
   icon: Icon,
-  iconColor = brand.gold,
+  iconColor = 'var(--brand-cobalt)',
   title,
   subtitle,
   actions,
@@ -42,23 +37,29 @@ export function PageHeader({
         className
       )}
     >
-      <div className="flex items-center gap-3 md:gap-4 min-w-0">
+      <div className="flex items-center gap-3 min-w-0">
         {Icon && (
           <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{
-              background: `${iconColor}26`,
-              border: `1px solid ${iconColor}55`,
-              boxShadow: `inset 0 0 12px ${iconColor}1A`,
+              background: 'var(--brand-cobalt-soft)',
+              color: iconColor,
             }}
           >
-            <Icon className="w-5 h-5" style={{ color: iconColor }} />
+            <Icon className="w-5 h-5" />
           </div>
         )}
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-white tracking-tight truncate">{title}</h1>
+          <h1
+            className="text-2xl font-semibold tracking-tight truncate"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {title}
+          </h1>
           {subtitle && (
-            <p className="text-slate-400 text-sm mt-0.5">{subtitle}</p>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+              {subtitle}
+            </p>
           )}
         </div>
       </div>

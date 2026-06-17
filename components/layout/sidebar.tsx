@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
@@ -17,7 +16,6 @@ import {
   BookUser,
   Settings,
   Building2,
-
   ChevronLeft,
   ChevronRight,
   Landmark,
@@ -58,7 +56,7 @@ const navigation: { section: string; items: NavItem[] }[] = [
     section: 'Administração',
     items: [
       { name: 'Usuários',               href: '/dashboard/usuarios'        , icon: Users,    roles: ['AGENTE_POLITICO', 'CHEFE']                    },
-      { name: 'Adm. de Gabinetes',      href: '/dashboard/admin/gabinetes' , icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN']                                               },
+      { name: 'Adm. de Gabinetes',      href: '/dashboard/admin/gabinetes' , icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN']                       },
       { name: 'Configurações',          href: '/dashboard/configuracoes'   , icon: Settings, roles: ['AGENTE_POLITICO', 'CHEFE'] },
     ],
   },
@@ -82,8 +80,6 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
   const userRole        = (session?.user as any)?.role    || 'ASSESSOR';
   const userPermissions = (session?.user as any)?.permissions ?? [];
   const userName        = session?.user?.name             || 'Usuário';
-  const gabineteNome    = (session?.user as any)?.gabineteNome;
-  const isAdmin         = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 
   const filteredSections = (navigation ?? [])
     .map((sec) => ({
@@ -108,30 +104,36 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
   const NavContent = () => (
     <>
       {/* ── Logo / header ───────────────────────────────────────────────── */}
-      <div className="flex flex-col items-center px-4 pt-4 pb-4"
-        style={{ borderBottom: '1px solid rgba(74,158,222,0.13)' }}>
-
-        <img src="/logo.png" alt="AdminHub" className="w-44 h-auto object-contain drop-shadow-md" />
-
-        <p className="mt-1 text-xs font-bold tracking-[0.22em] uppercase select-none"
-          style={{ color: '#1b3a5e' }}>
-          AdminHub
-        </p>
-
+      <div
+        className="flex items-center gap-3 px-5 pt-5 pb-4"
+        style={{ borderBottom: '1px solid rgba(148,163,184,0.12)' }}
+      >
+        <img
+          src="/logo.png"
+          alt="AdminHub"
+          className="w-10 h-10 object-contain flex-shrink-0"
+        />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-white leading-tight tracking-tight">
+            AdminHub
+          </p>
+          <p className="text-[11px] leading-tight mt-0.5" style={{ color: '#64748B' }}>
+            Plataforma de gabinete
+          </p>
+        </div>
       </div>
 
       {/* ── Navigation ──────────────────────────────────────────────────── */}
       <nav className="sidebar-nav flex-1 px-3 py-4 overflow-y-auto">
         {filteredSections.map((sec, secIdx) => (
           <div key={sec.section} className={cn(secIdx > 0 && 'mt-5')}>
-            {/* Section label */}
-            <div className="flex items-center gap-2 px-3 mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em]"
-                style={{ color: '#c9a227' }}>
+            <div className="px-3 mb-2">
+              <span
+                className="text-[10px] font-semibold uppercase tracking-[0.12em]"
+                style={{ color: '#64748B' }}
+              >
                 {sec.section}
               </span>
-              <span className="flex-1 h-px"
-                style={{ background: 'linear-gradient(90deg, rgba(201,162,39,0.45), transparent)' }} />
             </div>
 
             <div className="space-y-0.5">
@@ -147,47 +149,24 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                     onClick={() => {
                       if (typeof window !== 'undefined' && window.innerWidth < 1024) onToggle?.();
                     }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative group"
+                    className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors duration-150 relative group"
                     style={isActive ? {
-                      background: 'rgba(255,255,255,0.72)',
-                      borderLeft: '3px solid #4a9ede',
-                      boxShadow: '0 2px 10px rgba(74,158,222,0.1), inset 0 0 0 1px rgba(74,158,222,0.07)',
-                      color: '#0d2f52',
+                      background: 'rgba(37,99,235,0.18)',
+                      color: '#FFFFFF',
                     } : {
-                      borderLeft: '3px solid transparent',
-                      color: '#2c4f7c',
+                      color: '#94A3B8',
                     }}
                   >
-                    <span
-                      className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200 group-hover:scale-[1.04]"
-                      style={isActive ? {
-                        background: 'rgba(74,158,222,0.16)',
-                        color: '#4a9ede',
-                        boxShadow: 'inset 0 0 10px rgba(74,158,222,0.12), 0 0 10px rgba(74,158,222,0.18)',
-                        border: '1px solid rgba(74,158,222,0.28)',
-                      } : {
-                        background: 'rgba(74,158,222,0.07)',
-                        color: '#4a9ede',
-                        border: '1px solid rgba(74,158,222,0.14)',
-                      }}
-                    >
-                      {Icon && <Icon className="h-4 w-4" />}
-                    </span>
+                    <Icon
+                      className="h-4 w-4 flex-shrink-0"
+                      style={{ color: isActive ? '#60A5FA' : '#94A3B8' }}
+                    />
+                    <span className="text-[13px] font-medium tracking-wide">{item?.name}</span>
 
-                    <span className="font-medium text-sm tracking-wide">{item?.name}</span>
-
-                    {/* Indicador dourado no item ativo */}
                     {isActive && (
                       <span
                         className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
-                        style={{ background: '#c9a227', boxShadow: '0 0 7px rgba(201,162,39,0.6)' }}
-                      />
-                    )}
-
-                    {!isActive && (
-                      <span
-                        className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-                        style={{ background: 'linear-gradient(90deg, rgba(74,158,222,0.07) 0%, rgba(74,158,222,0.01) 100%)' }}
+                        style={{ background: '#22D3EE' }}
                       />
                     )}
                   </Link>
@@ -199,34 +178,28 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
       </nav>
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <div className="relative p-3">
-        {/* Divisor sutil */}
+      <div className="p-3 relative">
         <div
           className="absolute left-3 right-3 top-0 h-px"
-          style={{ background: 'linear-gradient(90deg, transparent, rgba(74,158,222,0.3), rgba(201,162,39,0.18), transparent)' }}
+          style={{ background: 'rgba(148,163,184,0.10)' }}
         />
 
-        {/* Card do usuário */}
         <div
-          className="flex items-center gap-3 px-2.5 py-2.5 mb-2 rounded-xl"
+          className="flex items-center gap-3 px-2.5 py-2.5 mb-2 rounded-lg"
           style={{
-            background: 'rgba(255,255,255,0.5)',
-            border: '1px solid rgba(74,158,222,0.16)',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(148,163,184,0.10)',
           }}
         >
           <span
-            className="flex items-center justify-center w-9 h-9 rounded-full text-sm font-bold flex-shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, #4a9ede, #7dc8f7)',
-              color: '#fff',
-              boxShadow: '0 0 0 2px rgba(236,244,253,1), 0 0 0 3px rgba(74,158,222,0.35), 0 0 10px rgba(74,158,222,0.2)',
-            }}
+            className="flex items-center justify-center w-9 h-9 rounded-full text-xs font-semibold flex-shrink-0"
+            style={{ background: '#2563EB', color: '#FFFFFF' }}
           >
             {initials || '?'}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate leading-tight" style={{ color: '#1b3a5e' }}>{userName}</p>
-            <p className="text-[11px] truncate leading-tight mt-0.5 tracking-wide" style={{ color: '#4a9ede' }}>
+            <p className="text-sm font-semibold truncate leading-tight text-white">{userName}</p>
+            <p className="text-[11px] truncate leading-tight mt-0.5" style={{ color: '#94A3B8' }}>
               {ROLE_LABELS[userRole] ?? 'Assessor'}
             </p>
           </div>
@@ -234,20 +207,11 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
 
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group"
-          style={{ borderLeft: '3px solid transparent', color: '#64748b' }}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors duration-150 group"
+          style={{ color: '#94A3B8' }}
         >
-          <span
-            className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 transition-all duration-200 group-hover:scale-[1.04]"
-            style={{
-              background: 'rgba(74,158,222,0.07)',
-              color: 'rgba(74,158,222,0.55)',
-              border: '1px solid rgba(74,158,222,0.13)',
-            }}
-          >
-            <LogOut className="h-4 w-4" />
-          </span>
-          <span className="font-medium text-sm tracking-wide">Sair</span>
+          <LogOut className="h-4 w-4 flex-shrink-0" />
+          <span className="text-[13px] font-medium tracking-wide">Sair</span>
         </button>
       </div>
     </>
@@ -255,7 +219,6 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
 
   return (
     <>
-      {/* Backdrop mobile */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -264,66 +227,51 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
             exit={{ opacity: 0 }}
             onClick={onToggle}
             className="lg:hidden fixed inset-0 z-40"
-            style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }}
+            style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)' }}
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
       <motion.aside
         animate={{ x: open ? 0 : -280, opacity: open ? 1 : 0 }}
-        transition={{ type: 'spring', damping: 24, stiffness: 220 }}
+        transition={{ type: 'spring', damping: 26, stiffness: 240 }}
         className="flex flex-col fixed overflow-hidden z-50"
         style={{
-          top: 12,
-          bottom: 12,
-          left: 12,
-          width: 256,
-          borderRadius: 20,
-          background: 'linear-gradient(165deg, #d6e8f7 0%, #eaf3fc 45%, #ddeaf7 100%)',
-          border: '1px solid rgba(74,158,222,0.22)',
-          boxShadow: '0 20px 50px -12px rgba(20,50,90,0.16), 0 0 0 1px rgba(255,255,255,0.75), 0 4px 24px rgba(74,158,222,0.09)',
+          top: 0,
+          bottom: 0,
+          left: 0,
+          width: 260,
+          background: '#0F2240',
+          borderRight: '1px solid rgba(148,163,184,0.10)',
           pointerEvents: open ? 'auto' : 'none',
         }}
       >
-        {/* Fio bicolor no topo */}
         <span
-          className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
-          style={{ background: 'linear-gradient(90deg, transparent, rgba(74,158,222,0.55), rgba(201,162,39,0.4), transparent)' }}
-        />
-        {/* Brilho interno suave */}
-        <span
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.45), transparent 65%)',
-            borderRadius: 20,
-          }}
+          className="absolute top-0 left-0 right-0 h-px pointer-events-none"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(96,165,250,0.45), transparent)' }}
         />
         <NavContent />
       </motion.aside>
 
-      {/* Botão de toggle */}
       {onToggle && (
         <motion.button
           onClick={onToggle}
           aria-label={open ? 'Recolher sidebar' : 'Abrir sidebar'}
           title={open ? 'Recolher menu' : 'Abrir menu'}
-          animate={{ left: open ? 256 : 8 }}
-          transition={{ type: 'spring', damping: 24, stiffness: 220 }}
-          className="fixed top-1/2 -translate-y-1/2 w-7 h-14 flex items-center justify-center z-50 hover:opacity-100 transition-opacity"
+          animate={{ left: open ? 260 : 8 }}
+          transition={{ type: 'spring', damping: 26, stiffness: 240 }}
+          className="fixed top-1/2 -translate-y-1/2 w-6 h-12 flex items-center justify-center z-50 transition-colors"
           style={{
-            background: 'linear-gradient(135deg, #dce9f7 0%, #cde2f5 100%)',
-            border: '1px solid rgba(74,158,222,0.3)',
-            borderRadius: 10,
-            color: '#4a9ede',
-            opacity: 0.95,
-            boxShadow: '0 4px 14px rgba(20,50,90,0.12), 0 0 0 1px rgba(255,255,255,0.65)',
+            background: '#0F2240',
+            border: '1px solid rgba(148,163,184,0.18)',
+            borderLeft: 'none',
+            borderRadius: '0 8px 8px 0',
+            color: '#60A5FA',
           }}
         >
-          {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          {open ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         </motion.button>
       )}
-
     </>
   );
 }

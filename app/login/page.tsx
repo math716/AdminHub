@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Shield, ChevronRight, Loader2, BarChart3, Users, MapPin, Landmark } from 'lucide-react';
+import { Mail, Lock, Shield, ChevronRight, Loader2, BarChart3, Users, MapPin, Landmark, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const FEATURES = [
@@ -37,172 +37,168 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+    <div className="min-h-screen flex">
 
-      {/* ── Painel esquerdo: Branding ─────────────────────────────────────── */}
+      {/* ── Painel esquerdo: Branding (navy fixo) ─────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, x: -30 }}
+        initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.5 }}
         className="hidden lg:flex flex-col justify-between w-[46%] relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 45%, #0c2a4f 100%)' }}
+        style={{ background: '#0F2240' }}
       >
         {/* Grade sutil */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)',
+              'linear-gradient(rgba(148,163,184,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px)',
             backgroundSize: '48px 48px',
           }}
         />
 
-        {/* Brilhos decorativos */}
+        {/* Glow sutil cobalto (sem dourado) */}
         <div
-          className="absolute -top-40 -left-40 w-[480px] h-[480px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(201,162,39,0.12), transparent 70%)' }}
+          className="absolute -top-32 -left-32 w-[420px] h-[420px] rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.16), transparent 70%)' }}
         />
         <div
-          className="absolute -bottom-48 -right-24 w-[420px] h-[420px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(30,74,128,0.35), transparent 70%)' }}
+          className="absolute -bottom-40 -right-20 w-[360px] h-[360px] rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(34,211,238,0.10), transparent 70%)' }}
         />
 
-        {/* Linha dourada decorativa */}
+        {/* Linha cobalto */}
         <div
-          className="absolute left-0 top-0 bottom-0 w-[3px]"
-          style={{ background: 'linear-gradient(to bottom, transparent, #c9a227 30%, #c9a227 70%, transparent)' }}
+          className="absolute left-0 top-0 bottom-0 w-[2px]"
+          style={{ background: 'linear-gradient(to bottom, transparent, #2563EB 30%, #2563EB 70%, transparent)' }}
         />
 
         {/* Logo topo */}
         <div className="relative z-10 px-12 pt-12 flex items-center gap-3">
-          <img src="/logo.png" alt="AdminHub" style={{ width: 150, height: 150, objectFit: 'contain' }} />
-          <span className="text-white font-light text-xl tracking-widest uppercase">AdminHub</span>
+          <img src="/logo.png" alt="AdminHub" style={{ width: 64, height: 64, objectFit: 'contain' }} />
+          <span className="text-white font-semibold text-lg tracking-tight">AdminHub</span>
         </div>
 
         {/* Conteúdo central */}
         <div className="relative z-10 px-12 pb-2">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
+            transition={{ delay: 0.15, duration: 0.5 }}
           >
-            {/* Badge */}
             <div
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-7"
               style={{
-                background: 'rgba(201,162,39,0.12)',
-                border: '1px solid rgba(201,162,39,0.35)',
+                background: 'rgba(37,99,235,0.14)',
+                border: '1px solid rgba(96,165,250,0.32)',
               }}
             >
-              <Shield className="w-3.5 h-3.5" style={{ color: '#c9a227' }} />
-              <span className="text-xs font-semibold tracking-wide" style={{ color: '#c9a227' }}>
+              <Shield className="w-3.5 h-3.5" style={{ color: '#60A5FA' }} />
+              <span className="text-xs font-semibold tracking-wide" style={{ color: '#93C5FD' }}>
                 PLATAFORMA OFICIAL · ACESSO RESTRITO
               </span>
             </div>
 
-            <h1 className="text-[2.4rem] font-extrabold text-white leading-tight mb-4">
+            <h1 className="text-[2.4rem] font-semibold text-white leading-tight mb-4 tracking-tight">
               Sistema de Gestão<br />
-              <span style={{ color: '#c9a227' }}>de Gabinete Político</span>
+              <span style={{ color: '#60A5FA' }}>de Gabinete Político</span>
             </h1>
-            <p className="text-gray-400 text-[0.95rem] leading-relaxed mb-10 max-w-xs">
+            <p className="text-[0.95rem] leading-relaxed mb-10 max-w-sm" style={{ color: '#94A3B8' }}>
               Plataforma integrada para gestão de demandas, análise eleitoral e organização do gabinete.
             </p>
 
-            {/* Features */}
             <div className="space-y-4">
               {FEATURES.map(({ icon: Icon, label }, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, x: -16 }}
+                  initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + i * 0.12 }}
+                  transition={{ delay: 0.35 + i * 0.10 }}
                   className="flex items-center gap-3.5"
                 >
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                     style={{
-                      background: 'rgba(201,162,39,0.12)',
-                      border: '1px solid rgba(201,162,39,0.3)',
+                      background: 'rgba(37,99,235,0.14)',
+                      border: '1px solid rgba(96,165,250,0.26)',
                     }}
                   >
-                    <Icon className="w-4 h-4" style={{ color: '#c9a227' }} />
+                    <Icon className="w-4 h-4" style={{ color: '#60A5FA' }} />
                   </div>
-                  <span className="text-gray-300 text-sm">{label}</span>
+                  <span className="text-sm" style={{ color: '#CBD5E1' }}>{label}</span>
                 </motion.div>
               ))}
             </div>
           </motion.div>
         </div>
 
-        {/* Rodapé */}
         <div className="relative z-10 px-12 pb-10">
-          <div className="h-px mb-6" style={{ background: 'rgba(255,255,255,0.07)' }} />
-          <p className="text-gray-600 text-xs">© 2025 AdminHub · Todos os direitos reservados</p>
+          <div className="h-px mb-6" style={{ background: 'rgba(148,163,184,0.10)' }} />
+          <p className="text-xs" style={{ color: '#64748B' }}>© 2025 AdminHub · Todos os direitos reservados</p>
         </div>
       </motion.div>
 
-      {/* ── Painel direito: Formulário ────────────────────────────────────── */}
+      {/* ── Painel direito: Formulário (tema-aware) ───────────────────────── */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
         className="flex-1 flex items-center justify-center p-8"
-        style={{ background: '#f0f4f9' }}
+        style={{ background: 'var(--bg-page)' }}
       >
         <div className="w-full max-w-[400px]">
 
-          {/* Logo mobile */}
           <div className="lg:hidden flex flex-col items-center mb-10">
             <img src="/logo.png" alt="AdminHub" className="w-16 h-16 object-contain mb-3" />
-            <h2 className="text-xl font-bold" style={{ color: '#04111f' }}>AdminHub</h2>
+            <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>AdminHub</h2>
           </div>
 
-          {/* Card do formulário */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.55 }}
+            transition={{ delay: 0.12, duration: 0.45 }}
             className="rounded-2xl p-8"
             style={{
-              background: '#ffffff',
-              boxShadow: '0 8px 40px rgba(4,17,31,0.10), 0 1px 3px rgba(4,17,31,0.06)',
-              border: '1px solid rgba(4,17,31,0.06)',
+              background: 'var(--bg-card)',
+              boxShadow: 'var(--shadow-raised)',
+              border: '1px solid var(--border-default)',
             }}
           >
-            {/* Título */}
             <div className="mb-7">
-              <h2 className="text-[1.5rem] font-bold mb-1" style={{ color: '#04111f' }}>
+              <h2 className="text-2xl font-semibold mb-1 tracking-tight" style={{ color: 'var(--text-primary)' }}>
                 Bem-vindo de volta
               </h2>
-              <p className="text-sm" style={{ color: '#6b7280' }}>
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 Faça login para acessar a plataforma
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
 
-              {/* Erro */}
               {error && (
                 <motion.div
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-3 p-4 rounded-xl text-sm"
-                  style={{ background: '#fff1f1', border: '1px solid #fca5a5', color: '#b91c1c' }}
+                  className="flex items-start gap-3 p-3.5 rounded-lg text-sm"
+                  style={{
+                    background: 'var(--danger-soft)',
+                    border: '1px solid var(--danger)',
+                    color: 'var(--danger)',
+                  }}
                 >
-                  <div className="w-4 h-4 rounded-full mt-0.5 flex-shrink-0" style={{ background: '#dc2626' }} />
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                   {error}
                 </motion.div>
               )}
 
-              {/* E-mail */}
               <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: '#374151' }}>
+                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
                   E-mail institucional
                 </label>
                 <div className="relative">
                   <Mail
                     className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                    style={{ color: '#9ca3af' }}
+                    style={{ color: 'var(--text-muted)' }}
                   />
                   <input
                     type="email"
@@ -210,31 +206,32 @@ export default function LoginPage() {
                     onChange={e => setEmail(e.target.value)}
                     placeholder="seu@email.com"
                     required
-                    className="w-full pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-all"
-                    style={{ background: '#f9fafb', border: '1.5px solid #e5e7eb', color: '#111827' }}
+                    className="w-full pl-10 pr-4 py-3 rounded-lg text-sm outline-none transition-all"
+                    style={{
+                      background: 'var(--bg-card-subtle)',
+                      border: '1px solid var(--border-default)',
+                      color: 'var(--text-primary)',
+                    }}
                     onFocus={e => {
-                      e.target.style.borderColor = '#0c2a4f';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(12,42,79,0.10)';
-                      e.target.style.background = '#fff';
+                      e.target.style.borderColor = 'var(--brand-cobalt)';
+                      e.target.style.boxShadow = '0 0 0 3px var(--focus-ring)';
                     }}
                     onBlur={e => {
-                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.borderColor = 'var(--border-default)';
                       e.target.style.boxShadow = 'none';
-                      e.target.style.background = '#f9fafb';
                     }}
                   />
                 </div>
               </div>
 
-              {/* Senha */}
               <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: '#374151' }}>
+                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
                   Senha
                 </label>
                 <div className="relative">
                   <Lock
                     className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                    style={{ color: '#9ca3af' }}
+                    style={{ color: 'var(--text-muted)' }}
                   />
                   <input
                     type="password"
@@ -242,42 +239,34 @@ export default function LoginPage() {
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••••"
                     required
-                    className="w-full pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-all"
-                    style={{ background: '#f9fafb', border: '1.5px solid #e5e7eb', color: '#111827' }}
+                    className="w-full pl-10 pr-4 py-3 rounded-lg text-sm outline-none transition-all"
+                    style={{
+                      background: 'var(--bg-card-subtle)',
+                      border: '1px solid var(--border-default)',
+                      color: 'var(--text-primary)',
+                    }}
                     onFocus={e => {
-                      e.target.style.borderColor = '#0c2a4f';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(12,42,79,0.10)';
-                      e.target.style.background = '#fff';
+                      e.target.style.borderColor = 'var(--brand-cobalt)';
+                      e.target.style.boxShadow = '0 0 0 3px var(--focus-ring)';
                     }}
                     onBlur={e => {
-                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.borderColor = 'var(--border-default)';
                       e.target.style.boxShadow = 'none';
-                      e.target.style.background = '#f9fafb';
                     }}
                   />
                 </div>
               </div>
 
-              {/* Botão */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                className="w-full py-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-colors hover:brightness-110 active:brightness-95"
                 style={{
-                  background: loading
-                    ? '#6b7280'
-                    : 'linear-gradient(135deg, #071d36 0%, #0c2a4f 60%, #1e4a80 100%)',
-                  color: '#fff',
+                  background: loading ? 'var(--text-muted)' : 'var(--brand-cobalt)',
+                  color: '#FFFFFF',
                   border: 'none',
                   cursor: loading ? 'not-allowed' : 'pointer',
-                  boxShadow: loading ? 'none' : '0 4px 18px rgba(7,29,54,0.35)',
-                  letterSpacing: '0.02em',
-                }}
-                onMouseEnter={e => {
-                  if (!loading) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.12)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)';
+                  letterSpacing: '0.01em',
                 }}
               >
                 {loading ? (
@@ -294,20 +283,14 @@ export default function LoginPage() {
               </button>
             </form>
 
-
-          </motion.div>
-
-          {/* Nota de segurança */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="flex items-center justify-center gap-2 mt-6"
-          >
-            <Shield className="w-3.5 h-3.5" style={{ color: '#9ca3af' }} />
-            <span className="text-xs" style={{ color: '#9ca3af' }}>
-              Conexão criptografada · Acesso restrito ao gabinete
-            </span>
+            <div className="mt-7 pt-5 text-center" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                Não tem conta?{' '}
+                <Link href="/registro-gabinete" className="font-semibold" style={{ color: 'var(--brand-cobalt)' }}>
+                  Solicitar acesso
+                </Link>
+              </p>
+            </div>
           </motion.div>
         </div>
       </motion.div>

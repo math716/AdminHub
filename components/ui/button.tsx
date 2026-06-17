@@ -11,29 +11,46 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', loading, children, disabled, ...props }, ref) => {
+  ({ className, variant = 'primary', size = 'md', loading, children, disabled, style, ...props }, ref) => {
     const baseStyles =
-      'inline-flex items-center justify-center gap-2 font-semibold rounded-xl tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
-
-    const variants = {
-      primary:   'bg-[#1a5fa8] hover:bg-[#145494] text-white focus:ring-[#1a5fa8]/60',
-      secondary: 'bg-emerald-700 hover:bg-emerald-800 text-white focus:ring-emerald-600',
-      outline:   'border-2 border-[#4a9ede]/60 text-[#4a9ede] hover:bg-[#4a9ede]/10 focus:ring-[#4a9ede]/40',
-      ghost:     'text-[#4a9ede] hover:bg-white/8 focus:ring-[#4a9ede]/40',
-      danger:    'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
-    };
+      'inline-flex items-center justify-center gap-2 font-medium rounded-lg tracking-wide transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-transparent disabled:opacity-50 disabled:cursor-not-allowed';
 
     const sizes = {
-      sm: 'px-3.5 py-1.5 text-xs',
-      md: 'px-5 py-2.5 text-sm',
-      lg: 'px-7 py-3 text-sm',
+      sm: 'px-3 py-1.5 text-xs',
+      md: 'px-4 py-2.5 text-sm',
+      lg: 'px-6 py-3 text-sm',
+    };
+
+    const variantStyles: Record<NonNullable<ButtonProps['variant']>, React.CSSProperties> = {
+      primary: {
+        background: 'var(--brand-cobalt)',
+        color: '#FFFFFF',
+      },
+      secondary: {
+        background: 'var(--success)',
+        color: '#FFFFFF',
+      },
+      outline: {
+        background: 'transparent',
+        border: '1px solid var(--brand-cobalt)',
+        color: 'var(--brand-cobalt)',
+      },
+      ghost: {
+        background: 'transparent',
+        color: 'var(--brand-cobalt-text)',
+      },
+      danger: {
+        background: 'var(--danger)',
+        color: '#FFFFFF',
+      },
     };
 
     return (
       <button
-        className={cn(baseStyles, variants[variant], sizes[size], className)}
+        className={cn(baseStyles, sizes[size], 'hover:brightness-110 active:brightness-95', className)}
         ref={ref}
         disabled={disabled || loading}
+        style={{ ...variantStyles[variant], ...style }}
         {...props}
       >
         {loading && <Loader2 className="h-4 w-4 animate-spin" />}

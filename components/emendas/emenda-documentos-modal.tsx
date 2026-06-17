@@ -585,7 +585,7 @@ function AnotacaoSection({
             onClick={onSave}
             disabled={savingAnotacao}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-            style={{ background: 'rgba(201,162,39,0.15)', color: '#e8c660', border: '1px solid rgba(201,162,39,0.3)' }}
+            style={{ background: 'rgba(37,99,235,0.15)', color: '#e8c660', border: '1px solid rgba(37,99,235,0.3)' }}
           >
             {savingAnotacao ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
             Salvar anotação

@@ -121,21 +121,21 @@ export default function InviteSignupPage() {
       {/* Left branding panel */}
       <div className="hidden lg:flex" style={{ width: '42%', background: panelBg, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '3rem' }}>
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} style={{ maxWidth: 360 }}>
-          <img src="/logo.png" alt="AdminHub" style={{ width: 140, marginBottom: '2.5rem', filter: 'drop-shadow(0 0 24px rgba(201,162,39,0.3))' }} />
+          <img src="/logo.png" alt="AdminHub" style={{ width: 140, marginBottom: '2.5rem', filter: 'drop-shadow(0 0 24px rgba(37,99,235,0.3))' }} />
           <h2 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem', lineHeight: 1.3 }}>
             Você foi convidado
           </h2>
           {gabineteNome && (
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', marginBottom: '2rem' }}>
-              como <span style={{ color: '#e6b83a', fontWeight: 600 }}>{inviteRole === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor'}</span> do{' '}
-              <span style={{ color: '#e6b83a', fontWeight: 600 }}>{gabineteNome}</span>
+              como <span style={{ color: '#3B82F6', fontWeight: 600 }}>{inviteRole === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor'}</span> do{' '}
+              <span style={{ color: '#3B82F6', fontWeight: 600 }}>{gabineteNome}</span>
             </p>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {FEATURES.map(({ icon: Icon, label }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-                <div style={{ width: 36, height: 36, borderRadius: '0.625rem', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon size={16} color="#c9a227" />
+                <div style={{ width: 36, height: 36, borderRadius: '0.625rem', background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon size={16} color="#2563EB" />
                 </div>
                 <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.875rem' }}>{label}</span>
               </div>
@@ -150,7 +150,7 @@ export default function InviteSignupPage() {
 
           {/* Mobile logo */}
           <div className="flex lg:hidden justify-center mb-6">
-            <img src="/logo.png" alt="AdminHub" style={{ width: 96, filter: 'drop-shadow(0 0 8px rgba(201,162,39,0.2))' }} />
+            <img src="/logo.png" alt="AdminHub" style={{ width: 96, filter: 'drop-shadow(0 0 8px rgba(37,99,235,0.2))' }} />
           </div>
 
           {/* Invalid token */}
@@ -168,7 +168,7 @@ export default function InviteSignupPage() {
           {/* Loading token validation */}
           {tokenValid === null && (
             <div style={{ textAlign: 'center', paddingTop: '3rem' }}>
-              <Loader2 size={28} color="#c9a227" style={{ margin: '0 auto', animation: 'spin 1s linear infinite' }} />
+              <Loader2 size={28} color="#2563EB" style={{ margin: '0 auto', animation: 'spin 1s linear infinite' }} />
               <p style={{ color: '#6b7280', marginTop: '1rem', fontSize: '0.875rem' }}>Validando convite…</p>
             </div>
           )}
@@ -198,8 +198,8 @@ export default function InviteSignupPage() {
                 <h1 style={{ fontWeight: 700, fontSize: '1.5rem', color: '#111827', marginBottom: '0.375rem' }}>Criar conta</h1>
                 {gabineteNome && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    <Building2 size={14} color="#c9a227" />
-                    <span style={{ color: '#c9a227', fontSize: '0.8125rem', fontWeight: 600 }}>{gabineteNome}</span>
+                    <Building2 size={14} color="#2563EB" />
+                    <span style={{ color: '#2563EB', fontSize: '0.8125rem', fontWeight: 600 }}>{gabineteNome}</span>
                     <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>· {inviteRole === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor'}</span>
                   </div>
                 )}

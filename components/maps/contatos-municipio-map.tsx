@@ -21,7 +21,7 @@ interface Props {
   onDistritoSelect?: (nome: string, ids: string[]) => void;
 }
 
-const GOLD = '#c9a227';
+const GOLD = '#2563EB';
 const BLUE = '#4a9ede';
 const DARK = '#071d36';
 
@@ -83,7 +83,7 @@ export default function ContatosMunicipioMap({
 
   const makeIcon = useCallback((L: any, selected: boolean) => {
     const color = selected ? GOLD : BLUE;
-    const ring  = selected ? '#e6b83a' : '#1a5fa8';
+    const ring  = selected ? '#3B82F6' : '#1a5fa8';
     return L.divIcon({
       html: `<div style="
         width:28px;height:28px;border-radius:50%;
@@ -136,8 +136,8 @@ export default function ContatosMunicipioMap({
           icon: makeIcon(L, selectedIds.has(c.id)),
         });
         marker.bindTooltip(`
-          <div style="background:${DARK};border:1px solid rgba(201,162,39,0.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;min-width:140px">
-            <strong style="color:#c9a227">${c.nome}</strong><br>
+          <div style="background:${DARK};border:1px solid rgba(37,99,235,0.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;min-width:140px">
+            <strong style="color:#2563EB">${c.nome}</strong><br>
             <span style="color:rgba(255,255,255,0.6)">${c.numero}</span>
             ${c.endereco ? `<br><span style="color:rgba(255,255,255,0.4);font-size:11px">${c.endereco}</span>` : ''}
           </div>
@@ -187,8 +187,8 @@ export default function ContatosMunicipioMap({
       if (existingIds.has(c.id)) return;
       const marker = L.marker([c.lat, c.lng], { icon: makeIcon(L, selectedIds.has(c.id)) });
       marker.bindTooltip(`
-        <div style="background:${DARK};border:1px solid rgba(201,162,39,0.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;min-width:140px">
-          <strong style="color:#c9a227">${c.nome}</strong><br>
+        <div style="background:${DARK};border:1px solid rgba(37,99,235,0.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;min-width:140px">
+          <strong style="color:#2563EB">${c.nome}</strong><br>
           <span style="color:rgba(255,255,255,0.6)">${c.numero}</span>
           ${c.endereco ? `<br><span style="color:rgba(255,255,255,0.4);font-size:11px">${c.endereco}</span>` : ''}
         </div>

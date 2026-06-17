@@ -55,7 +55,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', dark = fa
             )}
             style={dark ? {
               background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)',
-              border: '1px solid rgba(201,162,39,0.2)',
+              border: '1px solid rgba(37,99,235,0.2)',
               boxShadow: '0 25px 60px rgba(4,17,31,0.7)'
             } : { background: '#fff', border: '1px solid #e5e7eb' }}
           >

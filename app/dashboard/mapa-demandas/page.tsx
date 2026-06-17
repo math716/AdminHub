@@ -380,9 +380,9 @@ export default function MapaDemandasPage() {
         <div className="flex items-center gap-3">
           <div
             className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.35)' }}
+            style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.35)' }}
           >
-            <MapPin className="w-5 h-5" style={{ color: '#c9a227' }} />
+            <MapPin className="w-5 h-5" style={{ color: '#2563EB' }} />
           </div>
           <div>
             <h1 className="text-white font-bold text-lg leading-tight tracking-tight">Mapa do Gabinete</h1>

@@ -634,7 +634,7 @@ export default function ContatosPage() {
 
   if (status === 'loading') return (
     <div className="flex items-center justify-center h-screen">
-      <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#c9a227' }} />
+      <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#2563EB' }} />
     </div>
   );
 
@@ -655,7 +655,7 @@ export default function ContatosPage() {
             </button>
             <button onClick={() => { setShowModal(true); setForm({ ...EMPTY_FORM }); setResolvedCoords(null); setSaveError(''); setEditingContact(null); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}>
+              style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}>
               <Plus className="w-4 h-4" /> Novo Contato
             </button>
           </div>
@@ -669,7 +669,7 @@ export default function ContatosPage() {
           <button key={tab} onClick={() => setActiveTab(tab)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
             style={activeTab === tab
-              ? { background: 'rgba(201,162,39,0.15)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.3)' }
+              ? { background: 'rgba(37,99,235,0.15)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.3)' }
               : { color: 'rgba(255,255,255,0.45)', border: '1px solid transparent' }
             }>
             <Icon className="w-4 h-4" />{label}
@@ -713,21 +713,21 @@ export default function ContatosPage() {
                     className="rounded-2xl relative overflow-hidden transition-all"
                     style={{
                       background: 'linear-gradient(135deg, rgba(7,29,54,0.85) 0%, rgba(4,17,31,0.95) 100%)',
-                      border: '1px solid rgba(201,162,39,0.18)',
+                      border: '1px solid rgba(37,99,235,0.18)',
                       boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
                     }}>
                     {/* Accent stripe lateral dourada */}
                     <div className="absolute left-0 top-0 bottom-0 w-[3px]"
-                      style={{ background: 'linear-gradient(180deg, #c9a227 0%, rgba(201,162,39,0.2) 100%)' }} />
+                      style={{ background: 'linear-gradient(180deg, #2563EB 0%, rgba(37,99,235,0.2) 100%)' }} />
 
                     <div className="p-5 pl-6 flex flex-col gap-4">
                       {/* Header: avatar + nome + status */}
                       <div className="flex items-start gap-3">
                         <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-base tracking-wide"
                           style={{
-                            background: 'linear-gradient(135deg, #c9a227 0%, #8a6f1a 100%)',
+                            background: 'linear-gradient(135deg, #2563EB 0%, #8a6f1a 100%)',
                             color: '#04111f',
-                            boxShadow: '0 2px 8px rgba(201,162,39,0.25)',
+                            boxShadow: '0 2px 8px rgba(37,99,235,0.25)',
                           }}>
                           {initials}
                         </div>
@@ -747,7 +747,7 @@ export default function ContatosPage() {
                       </div>
 
                       {/* Divisor sutil */}
-                      <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,162,39,0.18), transparent)' }} />
+                      <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(37,99,235,0.18), transparent)' }} />
 
                       {/* Informações */}
                       <div className="flex flex-col gap-2.5">
@@ -763,7 +763,7 @@ export default function ContatosPage() {
                         )}
                         {c.endereco && (
                           <div className="flex items-start gap-2.5 text-[13px]">
-                            <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#c9a227' }} />
+                            <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#2563EB' }} />
                             <span className="leading-snug" style={{ color: 'rgba(255,255,255,0.7)' }}>{c.endereco}</span>
                           </div>
                         )}
@@ -777,7 +777,7 @@ export default function ContatosPage() {
                             onClick={() => handleReGeocode(c.id, c.endereco!)}
                             disabled={reGeocodingId === c.id}
                             className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg font-medium transition-all hover:opacity-80 disabled:opacity-50"
-                            style={{ background: 'rgba(201,162,39,0.1)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.22)' }}>
+                            style={{ background: 'rgba(37,99,235,0.1)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.22)' }}>
                             {reGeocodingId === c.id
                               ? <Loader2 className="w-3 h-3 animate-spin" />
                               : <MapPin className="w-3 h-3" />}
@@ -794,7 +794,7 @@ export default function ContatosPage() {
                           </button>
                           <button onClick={() => handleEdit(c)}
                             className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-yellow-500/15"
-                            style={{ color: 'rgba(201,162,39,0.85)', border: '1px solid rgba(201,162,39,0.2)' }}
+                            style={{ color: 'rgba(37,99,235,0.85)', border: '1px solid rgba(37,99,235,0.2)' }}
                             title="Editar contato">
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
@@ -820,7 +820,7 @@ export default function ContatosPage() {
         <>
           {/* Breadcrumb */}
           <div className="flex items-center gap-1 text-sm rounded-xl px-4 py-2.5 w-fit flex-wrap"
-            style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(201,162,39,0.13)' }}>
+            style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(37,99,235,0.13)' }}>
             <button onClick={view === 'brasil' ? undefined : goBack}
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
               style={view === 'brasil' ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 } : { color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>
@@ -863,13 +863,13 @@ export default function ContatosPage() {
             {/* Sidebar */}
             <div className="space-y-3">
               {/* Stats */}
-              <div className="rounded-xl p-4" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' }}>
+              <div className="rounded-xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.13)' }}>
                 <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
                   {view === 'municipio' ? navMunicipio?.nome : view === 'estado' ? selectedStateName : 'Visão Geral'}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.15)' }}>
-                    <p className="text-lg font-bold" style={{ color: '#c9a227' }}>
+                  <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.15)' }}>
+                    <p className="text-lg font-bold" style={{ color: '#2563EB' }}>
                       {view === 'municipio'
                         ? Object.values(bairroContacts).reduce((a, b) => a + b.length, 0)
                         : view === 'estado' ? stateContactIds.size : contatos.length}
@@ -894,7 +894,7 @@ export default function ContatosPage() {
 
               {/* Search + contacts list */}
               {view !== 'brasil' && (
-                <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(7,29,54,0.75)', border: '1px solid rgba(201,162,39,0.13)' }}>
+                <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.13)' }}>
                   <div className="p-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="flex items-center gap-2 rounded-lg px-2.5 py-2"
                       style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -925,7 +925,7 @@ export default function ContatosPage() {
                         <button key={c.id} onClick={() => toggleContact(c.id)}
                           className="w-full text-left px-3 py-2.5 transition-all hover:bg-white/5 flex items-center gap-2.5">
                           <span className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-all"
-                            style={sel ? { background: '#c9a227' } : { border: '1px solid rgba(255,255,255,0.2)' }}>
+                            style={sel ? { background: '#2563EB' } : { border: '1px solid rgba(255,255,255,0.2)' }}>
                             {sel && <Check className="h-3 w-3 text-[#04111f]" strokeWidth={3} />}
                           </span>
                           <div className="flex-1 min-w-0">
@@ -942,7 +942,7 @@ export default function ContatosPage() {
               {selectedIds.size > 0 && (
                 <button onClick={() => setShowMsg(true)}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}>
+                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}>
                   <MessageSquare className="h-4 w-4" /> Disparar mensagem ({selectedIds.size})
                 </button>
               )}
@@ -950,7 +950,7 @@ export default function ContatosPage() {
 
             {/* Map */}
             <div className="lg:col-span-3">
-              <div className="rounded-2xl overflow-hidden relative" style={{ height: 560, background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(201,162,39,0.13)' }}>
+              <div className="rounded-2xl overflow-hidden relative" style={{ height: 560, background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(37,99,235,0.13)' }}>
                 {(pipLoading || bairroLoading) && (
                   <div className="absolute inset-0 flex items-center justify-center z-10 rounded-2xl" style={{ background: 'rgba(4,17,31,0.6)' }}>
                     <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: '#4a9ede' }} />
@@ -972,11 +972,11 @@ export default function ContatosPage() {
                       exit={{ opacity: 0, scale: 0.9, y: -8 }}
                       transition={{ duration: 0.15 }}
                       className="absolute top-4 left-1/2 -translate-x-1/2 z-20 rounded-2xl shadow-2xl overflow-hidden"
-                      style={{ background: 'rgba(4,17,31,0.95)', border: '1px solid rgba(201,162,39,0.35)', minWidth: 260, backdropFilter: 'blur(12px)' }}
+                      style={{ background: 'rgba(4,17,31,0.95)', border: '1px solid rgba(37,99,235,0.35)', minWidth: 260, backdropFilter: 'blur(12px)' }}
                       onClick={e => e.stopPropagation()}>
                       <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                         <div className="flex items-center gap-2">
-                          {popup.type === 'estado' ? <Layers className="h-3.5 w-3.5" style={{ color: '#c9a227' }} /> : <Building2 className="h-3.5 w-3.5" style={{ color: '#c9a227' }} />}
+                          {popup.type === 'estado' ? <Layers className="h-3.5 w-3.5" style={{ color: '#2563EB' }} /> : <Building2 className="h-3.5 w-3.5" style={{ color: '#2563EB' }} />}
                           <span className="text-sm font-semibold text-white">{popup.nome}</span>
                         </div>
                         <button onClick={() => setPopup(null)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.4)' }}>
@@ -1049,11 +1049,11 @@ export default function ContatosPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-md rounded-2xl shadow-2xl"
-              style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(201,162,39,0.25)' }}>
-              <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(201,162,39,0.15)' }}>
+              style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(37,99,235,0.25)' }}>
+              <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(37,99,235,0.15)' }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}>
-                    <Users className="w-4 h-4" style={{ color: '#c9a227' }} />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)' }}>
+                    <Users className="w-4 h-4" style={{ color: '#2563EB' }} />
                   </div>
                   <h2 className="text-white font-semibold">{editingContact ? 'Editar Contato' : 'Novo Contato'}</h2>
                 </div>
@@ -1100,13 +1100,13 @@ export default function ContatosPage() {
                   </div>
                 )}
               </div>
-              <div className="flex gap-3 px-6 py-4" style={{ borderTop: '1px solid rgba(201,162,39,0.15)' }}>
+              <div className="flex gap-3 px-6 py-4" style={{ borderTop: '1px solid rgba(37,99,235,0.15)' }}>
                 <button onClick={() => setShowModal(false)}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:text-white"
                   style={{ border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>Cancelar</button>
                 <button onClick={handleSave} disabled={saving}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}>
+                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}>
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : editingContact ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                   {editingContact ? 'Salvar alterações' : 'Salvar'}
                 </button>
@@ -1122,11 +1122,11 @@ export default function ContatosPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-lg rounded-2xl shadow-2xl"
-              style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(201,162,39,0.25)' }}>
-              <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(201,162,39,0.15)' }}>
+              style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(37,99,235,0.25)' }}>
+              <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(37,99,235,0.15)' }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)' }}>
-                    <FileUp className="w-4 h-4" style={{ color: '#c9a227' }} />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)' }}>
+                    <FileUp className="w-4 h-4" style={{ color: '#2563EB' }} />
                   </div>
                   <h2 className="text-white font-semibold">Importar via CSV</h2>
                 </div>
@@ -1160,7 +1160,7 @@ export default function ContatosPage() {
                     <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
                       <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>Colunas detectadas</p>
                       <div className="flex flex-wrap gap-2">
-                        {[['Nome', detectedCols.nome, '#c9a227'], ['WhatsApp', detectedCols.numero, '#4ade80'], ...(detectedCols.email ? [['Email', detectedCols.email, '#4a9ede']] : []), ...(detectedCols.endereco ? [['Endereço', detectedCols.endereco, '#fb923c']] : [])].map(([label, val, color]) => (
+                        {[['Nome', detectedCols.nome, '#2563EB'], ['WhatsApp', detectedCols.numero, '#4ade80'], ...(detectedCols.email ? [['Email', detectedCols.email, '#4a9ede']] : []), ...(detectedCols.endereco ? [['Endereço', detectedCols.endereco, '#fb923c']] : [])].map(([label, val, color]) => (
                           <span key={label as string} className="text-xs px-2.5 py-1 rounded-full" style={{ background: `${color}18`, color: color as string, border: `1px solid ${color}33` }}>
                             {label as string} → {val as string}
                           </span>
@@ -1173,8 +1173,8 @@ export default function ContatosPage() {
                     <div className="max-h-52 overflow-y-auto space-y-1.5">
                       {csvPreview.slice(0, 50).map((c, i) => (
                         <div key={i} className="rounded-lg px-3 py-2 flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,162,39,0.15)' }}>
-                            <User className="w-3.5 h-3.5" style={{ color: '#c9a227' }} />
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(37,99,235,0.15)' }}>
+                            <User className="w-3.5 h-3.5" style={{ color: '#2563EB' }} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-white text-sm font-medium truncate">{c.nome}</p>
@@ -1223,7 +1223,7 @@ export default function ContatosPage() {
                     </div>
                     <button onClick={resetImport}
                       className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-                      style={{ background: 'linear-gradient(135deg, #c9a227, #e6b83a)', color: '#04111f' }}>Concluir</button>
+                      style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}>Concluir</button>
                   </div>
                 )}
               </div>
@@ -1236,10 +1236,10 @@ export default function ContatosPage() {
       {showMsg && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
           <div className="w-full max-w-lg rounded-2xl shadow-2xl max-h-[90vh] flex flex-col"
-            style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(201,162,39,0.25)' }}>
+            style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(37,99,235,0.25)' }}>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(201,162,39,0.15)' }}>
+            <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(37,99,235,0.15)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(37,211,102,0.15)', border: '1px solid rgba(37,211,102,0.3)' }}>
                   <WhatsAppIcon className="h-4 w-4" style={{ color: '#25d366' }} />
@@ -1283,8 +1283,8 @@ export default function ContatosPage() {
                     return (
                       <div key={c.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
                         style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,162,39,0.15)' }}>
-                          <Phone className="h-3.5 w-3.5" style={{ color: '#c9a227' }} />
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(37,99,235,0.15)' }}>
+                          <Phone className="h-3.5 w-3.5" style={{ color: '#2563EB' }} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-white text-xs font-medium truncate">{c.nome}</p>
@@ -1303,7 +1303,7 @@ export default function ContatosPage() {
                             </a>
                           ) : null
                         ) : st === 'sending' ? (
-                          <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: '#c9a227' }} />
+                          <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: '#2563EB' }} />
                         ) : st === 'ok' ? (
                           <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: '#4ade80' }} />
                         ) : (
@@ -1332,7 +1332,7 @@ export default function ContatosPage() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between px-6 py-4 flex-shrink-0 gap-3" style={{ borderTop: '1px solid rgba(201,162,39,0.15)' }}>
+            <div className="flex items-center justify-between px-6 py-4 flex-shrink-0 gap-3" style={{ borderTop: '1px solid rgba(37,99,235,0.15)' }}>
               <button onClick={copyNumbers}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
                 style={{ background: 'rgba(74,158,222,0.1)', border: '1px solid rgba(74,158,222,0.2)', color: '#4a9ede' }}>

@@ -91,7 +91,7 @@ function ContatosBairrosMapInner({
                 .setLatLng(e.latlng)
                 .setContent(
                   `<div style="padding:8px 12px">` +
-                  `<strong style="color:#c9a227;font-size:13px">${nmBairro || 'Bairro'}</strong><br>` +
+                  `<strong style="color:#2563EB;font-size:13px">${nmBairro || 'Bairro'}</strong><br>` +
                   `<span style="color:#94a3b8;font-size:12px">${count} contato${count !== 1 ? 's' : ''}</span></div>`
                 )
                 .openOn(map);
@@ -148,7 +148,7 @@ function ContatosBairrosMapInner({
       <style>{`
         .bairro-dark-popup .leaflet-popup-content-wrapper {
           background: rgba(4,17,31,0.95) !important;
-          border: 1px solid rgba(201,162,39,0.25) !important;
+          border: 1px solid rgba(37,99,235,0.25) !important;
           border-radius: 10px !important;
           box-shadow: 0 4px 20px rgba(0,0,0,0.55) !important;
           padding: 0 !important;

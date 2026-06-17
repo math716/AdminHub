@@ -87,7 +87,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
               'group w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-sm text-white',
               'transition-all duration-150 outline-none cursor-pointer',
               'hover:bg-white/[0.09] hover:[border-color:rgba(255,255,255,0.22)]',
-              'data-[state=open]:bg-white/[0.09] data-[state=open]:[border-color:rgba(201,162,39,0.45)]',
+              'data-[state=open]:bg-white/[0.09] data-[state=open]:[border-color:rgba(37,99,235,0.45)]',
               'data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed',
             )}
             style={{
@@ -121,7 +121,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                 background: 'rgba(5,18,36,0.98)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid rgba(201,162,39,0.2)',
+                border: '1px solid rgba(37,99,235,0.2)',
                 borderRadius: '0.875rem',
                 boxShadow:
                   '0 24px 64px rgba(0,0,0,0.72), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
@@ -154,7 +154,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                     <Radix.ItemText>{opt.label}</Radix.ItemText>
 
                     <Radix.ItemIndicator className="absolute right-3 flex items-center">
-                      <Check className="h-3.5 w-3.5" style={{ color: '#c9a227' }} />
+                      <Check className="h-3.5 w-3.5" style={{ color: '#2563EB' }} />
                     </Radix.ItemIndicator>
                   </Radix.Item>
                 ))}

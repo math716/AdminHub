@@ -70,15 +70,15 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           className="w-full max-w-md rounded-2xl overflow-hidden"
-          style={{ background: '#071d36', border: '1px solid rgba(201,162,39,0.2)' }}
+          style={{ background: '#071d36', border: '1px solid rgba(37,99,235,0.2)' }}
         >
           {/* Header */}
           <div className="px-6 pt-6 pb-4">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)' }}>
-                  <Building2 className="w-4 h-4" style={{ color: '#c9a227' }} />
+                  style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.3)' }}>
+                  <Building2 className="w-4 h-4" style={{ color: '#2563EB' }} />
                 </div>
                 <div>
                   <h2 className="text-white font-bold text-base">Selecionar Gabinete</h2>
@@ -115,7 +115,7 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
             style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             {loading ? (
               <div className="py-10 flex justify-center">
-                <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#c9a227' }} />
+                <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#2563EB' }} />
               </div>
             ) : filtered.length === 0 ? (
               <div className="py-10 text-center text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>

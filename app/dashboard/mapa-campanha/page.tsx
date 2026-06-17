@@ -2338,16 +2338,16 @@ export default function MapaCampanhaPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <Card className="mb-6" style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(201,162,39,0.2)', backdropFilter: 'blur(8px)' }}>
+        <Card className="mb-6" style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}>
           <CardContent className="p-5">
 
             {/* Modo colapsado: resumo + botão editar */}
             {formCollapsed && electoralData ? (
               <div className="flex items-center gap-4 flex-wrap">
-                <Search className="h-4 w-4 flex-shrink-0" style={{ color: '#c9a227' }} />
+                <Search className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
                 <div className="flex-1 min-w-0 flex items-center gap-3 flex-wrap">
                   <span className="text-white font-semibold truncate">{candidateName || electoralData.nome}</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(201,162,39,0.12)', color: '#e8c660', border: '1px solid rgba(201,162,39,0.25)' }}>
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(37,99,235,0.12)', color: '#e8c660', border: '1px solid rgba(37,99,235,0.25)' }}>
                     {ESTADOS_BRASIL.find(e => e.sigla === uf)?.nome ?? uf}
                   </span>
                   <span className="text-xs text-slate-400">{ano} → {anoProjecao}</span>
@@ -2376,8 +2376,8 @@ export default function MapaCampanhaPage() {
                 {/* Cabeçalho do card */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4" style={{ color: '#c9a227' }} />
-                    <span className="text-sm font-semibold tracking-wide" style={{ color: '#c9a227' }}>
+                    <Search className="h-4 w-4" style={{ color: '#2563EB' }} />
+                    <span className="text-sm font-semibold tracking-wide" style={{ color: '#2563EB' }}>
                       Buscar Candidato
                     </span>
                   </div>
@@ -2515,7 +2515,7 @@ export default function MapaCampanhaPage() {
               {/* Projeção */}
               <div className="flex flex-col items-center gap-0.5">
                 <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Projeção</span>
-                <span className="text-base font-bold" style={{ color: '#c9a227' }}>{projecao.anoProjecao}</span>
+                <span className="text-base font-bold" style={{ color: '#2563EB' }}>{projecao.anoProjecao}</span>
               </div>
             </div>
           </motion.div>
@@ -2572,17 +2572,17 @@ export default function MapaCampanhaPage() {
             className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6"
           >
             {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
-            <Card style={{ background: 'rgba(7,29,54,0.8)', border: filtroTipo !== 'todos' ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
+            <Card style={{ background: 'rgba(7,29,54,0.8)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium tracking-wide mb-1" style={{ color: '#6b82a0' }}>
-                      Votos {ano} {filtroTipo !== 'todos' && <span style={{ color: '#c9a227' }}>(filtrado)</span>}
+                      Votos {ano} {filtroTipo !== 'todos' && <span style={{ color: '#2563EB' }}>(filtrado)</span>}
                     </p>
                     <p className="text-2xl font-bold text-white">{getTotalVotosBase().toLocaleString()}</p>
                   </div>
-                  <div className="p-2 rounded-lg" style={{ background: 'rgba(201,162,39,0.1)' }}>
-                    <BarChart3 className="h-5 w-5" style={{ color: '#c9a227' }} />
+                  <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                    <BarChart3 className="h-5 w-5" style={{ color: '#2563EB' }} />
                   </div>
                 </div>
               </CardContent>
@@ -2600,7 +2600,7 @@ export default function MapaCampanhaPage() {
                       {getTotalVotosMeta().toLocaleString()}
                     </p>
                   </div>
-                  <div className="p-2 rounded-lg" style={{ background: 'rgba(201,162,39,0.1)' }}>
+                  <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
                     <Target className={`h-5 w-5 ${cenarioConfig[cenarioAtivo].color}`} />
                   </div>
                 </div>
@@ -2608,7 +2608,7 @@ export default function MapaCampanhaPage() {
             </Card>
 
             {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
-            <Card style={{ background: 'rgba(7,29,54,0.8)', border: filtroTipo !== 'todos' ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
+            <Card style={{ background: 'rgba(7,29,54,0.8)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -2619,7 +2619,7 @@ export default function MapaCampanhaPage() {
                       {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
                     </p>
                   </div>
-                  <div className="p-2 rounded-lg" style={{ background: 'rgba(201,162,39,0.1)' }}>
+                  <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
                     {parseFloat(getCrescimento() as string) >= 0 ? (
                       <ArrowUp className="h-5 w-5 text-emerald-400" />
                     ) : (
@@ -2631,7 +2631,7 @@ export default function MapaCampanhaPage() {
             </Card>
             )}
 
-            <Card style={{ background: 'rgba(7,29,54,0.8)', border: filtroTipo !== 'todos' ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
+            <Card style={{ background: 'rgba(7,29,54,0.8)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -2645,8 +2645,8 @@ export default function MapaCampanhaPage() {
                       )}
                     </p>
                   </div>
-                  <div className="p-2 rounded-lg" style={{ background: 'rgba(201,162,39,0.1)' }}>
-                    <MapPin className="h-5 w-5" style={{ color: '#c9a227' }} />
+                  <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                    <MapPin className="h-5 w-5" style={{ color: '#2563EB' }} />
                   </div>
                 </div>
               </CardContent>
@@ -4324,8 +4324,8 @@ export default function MapaCampanhaPage() {
       >
         <div className="space-y-5">
           {/* Banner informativo */}
-          <div className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.25)' }}>
-            <UserCheck className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: '#c9a227' }} />
+          <div className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.25)' }}>
+            <UserCheck className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: '#2563EB' }} />
             <p className="text-sm leading-relaxed" style={{ color: '#c9b96a' }}>
               Cria uma projeção em branco para um candidato que ainda não disputou eleições.
               Os municípios e metas serão adicionados manualmente.
@@ -4334,15 +4334,15 @@ export default function MapaCampanhaPage() {
 
           {/* Nome */}
           <div>
-            <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>Nome do Candidato <span style={{ color: '#c9a227' }}>*</span></label>
+            <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>Nome do Candidato <span style={{ color: '#2563EB' }}>*</span></label>
             <input
               value={novoCandidatoNome}
               onChange={(e) => setNovoCandidatoNome(e.target.value)}
               placeholder="Nome completo"
               className="w-full rounded-xl px-3.5 py-2.5 text-sm text-white outline-none transition-all"
-              style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(201,162,39,0.2)', color: '#fff' }}
-              onFocus={e => { e.target.style.borderColor = 'rgba(201,162,39,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(201,162,39,0.08)'; }}
-              onBlur={e => { e.target.style.borderColor = 'rgba(201,162,39,0.2)'; e.target.style.boxShadow = 'none'; }}
+              style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#fff' }}
+              onFocus={e => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
+              onBlur={e => { e.target.style.borderColor = 'rgba(37,99,235,0.2)'; e.target.style.boxShadow = 'none'; }}
             />
           </div>
 
@@ -4355,18 +4355,18 @@ export default function MapaCampanhaPage() {
                 onChange={(e) => setNovoCandidatoPartido(e.target.value)}
                 placeholder="Ex: PSD, PT, MDB..."
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(201,162,39,0.2)', color: '#fff' }}
-                onFocus={e => { e.target.style.borderColor = 'rgba(201,162,39,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(201,162,39,0.08)'; }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(201,162,39,0.2)'; e.target.style.boxShadow = 'none'; }}
+                style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#fff' }}
+                onFocus={e => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
+                onBlur={e => { e.target.style.borderColor = 'rgba(37,99,235,0.2)'; e.target.style.boxShadow = 'none'; }}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>UF <span style={{ color: '#c9a227' }}>*</span></label>
+              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>UF <span style={{ color: '#2563EB' }}>*</span></label>
               <select
                 value={novoCandidatoUf}
                 onChange={(e) => setNovoCandidatoUf(e.target.value)}
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(201,162,39,0.2)', color: '#cbd5e1' }}
+                style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
               >
                 {ESTADOS_BRASIL.map((e) => (
                   <option key={e.sigla} value={e.sigla} style={{ background: '#071d36' }}>{e.sigla} — {e.nome}</option>
@@ -4378,12 +4378,12 @@ export default function MapaCampanhaPage() {
           {/* Cargo + Ano */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>Cargo <span style={{ color: '#c9a227' }}>*</span></label>
+              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>Cargo <span style={{ color: '#2563EB' }}>*</span></label>
               <select
                 value={novoCandidatoCargo}
                 onChange={(e) => setNovoCandidatoCargo(e.target.value)}
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(201,162,39,0.2)', color: '#cbd5e1' }}
+                style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
               >
                 {[
                   ['DEPUTADO_FEDERAL', 'Deputado Federal'],
@@ -4398,12 +4398,12 @@ export default function MapaCampanhaPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>Ano da Projeção <span style={{ color: '#c9a227' }}>*</span></label>
+              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>Ano da Projeção <span style={{ color: '#2563EB' }}>*</span></label>
               <select
                 value={novoCandidatoAnoProjecao}
                 onChange={(e) => setNovoCandidatoAnoProjecao(e.target.value)}
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(201,162,39,0.2)', color: '#cbd5e1' }}
+                style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
               >
                 {['2024','2026','2028','2030'].map((a) => (
                   <option key={a} value={a} style={{ background: '#071d36' }}>{a}</option>
@@ -4416,7 +4416,7 @@ export default function MapaCampanhaPage() {
           {(novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') && (
             <div>
               <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>
-                Município <span style={{ color: '#c9a227' }}>*</span>
+                Município <span style={{ color: '#2563EB' }}>*</span>
               </label>
               <div className="relative">
                 <input
@@ -4427,14 +4427,14 @@ export default function MapaCampanhaPage() {
                   }}
                   placeholder={novoCandidatoMunicipioOpcoes.length ? 'Buscar município...' : 'Carregando...'}
                   className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                  style={{ background: 'rgba(4,17,31,0.6)', border: `1.5px solid ${novoCandidatoMunicipio ? 'rgba(201,162,39,0.6)' : 'rgba(201,162,39,0.2)'}`, color: '#fff' }}
-                  onFocus={e => { e.target.style.borderColor = 'rgba(201,162,39,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(201,162,39,0.08)'; }}
-                  onBlur={e => { e.target.style.borderColor = novoCandidatoMunicipio ? 'rgba(201,162,39,0.6)' : 'rgba(201,162,39,0.2)'; e.target.style.boxShadow = 'none'; }}
+                  style={{ background: 'rgba(4,17,31,0.6)', border: `1.5px solid ${novoCandidatoMunicipio ? 'rgba(37,99,235,0.6)' : 'rgba(37,99,235,0.2)'}`, color: '#fff' }}
+                  onFocus={e => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
+                  onBlur={e => { e.target.style.borderColor = novoCandidatoMunicipio ? 'rgba(37,99,235,0.6)' : 'rgba(37,99,235,0.2)'; e.target.style.boxShadow = 'none'; }}
                 />
                 {novoCandidatoMunicipioFiltro && !novoCandidatoMunicipio && novoCandidatoMunicipioOpcoes.length > 0 && (
                   <div
                     className="absolute z-50 w-full mt-1 max-h-44 overflow-y-auto rounded-xl"
-                    style={{ background: 'rgba(4,17,31,0.98)', border: '1px solid rgba(201,162,39,0.25)', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}
+                    style={{ background: 'rgba(4,17,31,0.98)', border: '1px solid rgba(37,99,235,0.25)', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}
                   >
                     {novoCandidatoMunicipioOpcoes
                       .filter(m => m.toLowerCase().includes(novoCandidatoMunicipioFiltro.toLowerCase()))
@@ -4445,7 +4445,7 @@ export default function MapaCampanhaPage() {
                           type="button"
                           className="w-full text-left px-3.5 py-2 text-sm transition-colors"
                           style={{ color: '#cbd5e1' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(201,162,39,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff'; }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(37,99,235,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff'; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#cbd5e1'; }}
                           onMouseDown={() => {
                             setNovoCandidatoMunicipio(m);
@@ -4462,7 +4462,7 @@ export default function MapaCampanhaPage() {
                 )}
               </div>
               {novoCandidatoMunicipio && (
-                <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: '#c9a227' }}>
+                <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: '#2563EB' }}>
                   <CheckCircle className="w-3 h-3" /> {novoCandidatoMunicipio}
                 </p>
               )}
@@ -4484,7 +4484,7 @@ export default function MapaCampanhaPage() {
               onClick={criarNovoCandidato}
               disabled={!novoCandidatoNome.trim() || ((novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') && !novoCandidatoMunicipio)}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, #071d36 0%, #0c2a4f 60%, #1e4a80 100%)', border: '1px solid rgba(201,162,39,0.3)', boxShadow: '0 4px 16px rgba(7,29,54,0.5)' }}
+              style={{ background: 'linear-gradient(135deg, #071d36 0%, #0c2a4f 60%, #1e4a80 100%)', border: '1px solid rgba(37,99,235,0.3)', boxShadow: '0 4px 16px rgba(7,29,54,0.5)' }}
               onMouseEnter={e => { const ok = novoCandidatoNome.trim() && (!(novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') || novoCandidatoMunicipio); if (ok) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.15)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)'; }}
             >

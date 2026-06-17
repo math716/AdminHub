@@ -304,9 +304,9 @@ export default function DemandasPage() {
       label: 'Total',
       value: stats.total,
       icon: ListChecks,
-      color: '#C9A227',
-      tint: 'rgba(201,162,39,0.12)',
-      border: 'rgba(201,162,39,0.28)',
+      color: '#2563EB',
+      tint: 'rgba(37,99,235,0.12)',
+      border: 'rgba(37,99,235,0.28)',
     },
     {
       label: 'Pendentes',
@@ -448,7 +448,7 @@ export default function DemandasPage() {
                   className="relative cursor-pointer rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
                   style={{
                     background: 'linear-gradient(135deg, rgba(7,29,54,0.85) 0%, rgba(7,29,54,0.65) 100%)',
-                    border: '1px solid rgba(201,162,39,0.15)',
+                    border: '1px solid rgba(37,99,235,0.15)',
                     backdropFilter: 'blur(10px)',
                   }}
                   onMouseEnter={(e) => {
@@ -456,7 +456,7 @@ export default function DemandasPage() {
                     e.currentTarget.style.boxShadow = `0 10px 30px -10px ${catColor}40`;
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(201,162,39,0.15)';
+                    e.currentTarget.style.borderColor = 'rgba(37,99,235,0.15)';
                     e.currentTarget.style.boxShadow = 'none';
                   }}
                 >

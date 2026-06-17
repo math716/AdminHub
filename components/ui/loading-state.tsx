@@ -30,15 +30,15 @@ export function LoadingState({
       <div className="flex items-center gap-2">
         <span
           className="w-1.5 h-1.5 rounded-full animate-bounce"
-          style={{ background: '#c9a227', animationDelay: '0ms' }}
+          style={{ background: '#2563EB', animationDelay: '0ms' }}
         />
         <span
           className="w-1.5 h-1.5 rounded-full animate-bounce"
-          style={{ background: '#c9a227', animationDelay: '150ms' }}
+          style={{ background: '#2563EB', animationDelay: '150ms' }}
         />
         <span
           className="w-1.5 h-1.5 rounded-full animate-bounce"
-          style={{ background: '#c9a227', animationDelay: '300ms' }}
+          style={{ background: '#2563EB', animationDelay: '300ms' }}
         />
       </div>
       {label && (

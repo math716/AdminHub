@@ -849,7 +849,7 @@ export default function EmendasPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin" style={{ color: '#c9a227' }} />
+        <Loader2 className="w-10 h-10 animate-spin" style={{ color: '#2563EB' }} />
       </div>
     );
   }
@@ -870,8 +870,8 @@ export default function EmendasPage() {
                 onClick={() => setShowFavDropdown((v) => !v)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm transition-colors"
                 style={{
-                  background: favorites.length > 0 ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${favorites.length > 0 ? 'rgba(201,162,39,0.35)' : 'rgba(255,255,255,0.1)'}`,
+                  background: favorites.length > 0 ? 'rgba(37,99,235,0.12)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${favorites.length > 0 ? 'rgba(37,99,235,0.35)' : 'rgba(255,255,255,0.1)'}`,
                   color: favorites.length > 0 ? '#e8c660' : '#64748b',
                 }}
               >
@@ -880,7 +880,7 @@ export default function EmendasPage() {
                 {favorites.length > 0 && (
                   <span
                     className="text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center"
-                    style={{ background: '#c9a227', color: '#07121e' }}
+                    style={{ background: '#2563EB', color: '#07121e' }}
                   >
                     {favorites.length}
                   </span>
@@ -896,7 +896,7 @@ export default function EmendasPage() {
                     exit={{ opacity: 0, y: -6, scale: 0.97 }}
                     transition={{ duration: 0.15 }}
                     className="absolute right-0 top-full mt-2 z-50 w-72 rounded-xl shadow-2xl py-1"
-                    style={{ background: 'rgb(7,20,38)', border: '1px solid rgba(201,162,39,0.25)' }}
+                    style={{ background: 'rgb(7,20,38)', border: '1px solid rgba(37,99,235,0.25)' }}
                   >
                     {favorites.length === 0 ? (
                       <p className="px-4 py-5 text-center text-xs text-slate-500">Nenhum parlamentar favoritado</p>
@@ -954,7 +954,7 @@ export default function EmendasPage() {
                   onClick={() => setEsfera(e)}
                   className="px-3 py-2.5 text-xs font-medium transition-colors"
                   style={esfera === e
-                    ? { background: 'rgba(201,162,39,0.15)', color: '#e8c660' }
+                    ? { background: 'rgba(37,99,235,0.15)', color: '#e8c660' }
                     : { color: 'rgb(148,163,184)' }}
                 >
                   {e === 'TODAS' ? 'Todas' : e === 'FEDERAL' ? 'Federal' : 'Estadual'}
@@ -974,7 +974,7 @@ export default function EmendasPage() {
             {selectedParlamentar && (
               <div
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl flex-shrink-0"
-                style={{ background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.3)' }}
+                style={{ background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.3)' }}
               >
                 <span className="text-xs text-white font-semibold truncate max-w-[160px]">{selectedParlamentar.nome}</span>
                 <button
@@ -999,7 +999,7 @@ export default function EmendasPage() {
                   key={f.id}
                   onClick={() => handleSelectFavorito(f)}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors"
-                  style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)', color: '#e8c660' }}
+                  style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', color: '#e8c660' }}
                 >
                   <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                   {f.candidateName}
@@ -1041,7 +1041,7 @@ export default function EmendasPage() {
       {resumo?.mock && (
         <div
           className="rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs"
-          style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.25)', color: '#e8c660' }}
+          style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.25)', color: '#e8c660' }}
         >
           <span className="font-semibold">Modo demonstração:</span>
           <span className="text-slate-300">
@@ -1106,7 +1106,7 @@ export default function EmendasPage() {
             <div className="absolute top-3 left-3 right-3 z-[400] flex items-center justify-between pointer-events-none">
               <div
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl pointer-events-auto"
-                style={{ background: 'rgba(7,29,54,0.85)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(6px)' }}
+                style={{ background: 'var(--bg-card-raised)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(6px)' }}
               >
                 <button
                   onClick={view === 'estado' ? handleBackToBrasil : undefined}
@@ -1133,8 +1133,8 @@ export default function EmendasPage() {
               <div
                 className="px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-widest font-bold pointer-events-auto truncate max-w-[260px]"
                 style={{
-                  background: selectedParlamentar ? 'rgba(74,158,222,0.15)' : 'rgba(201,162,39,0.15)',
-                  border:     `1px solid ${selectedParlamentar ? 'rgba(74,158,222,0.4)' : 'rgba(201,162,39,0.3)'}`,
+                  background: selectedParlamentar ? 'rgba(74,158,222,0.15)' : 'rgba(37,99,235,0.15)',
+                  border:     `1px solid ${selectedParlamentar ? 'rgba(74,158,222,0.4)' : 'rgba(37,99,235,0.3)'}`,
                   color:      selectedParlamentar ? '#7fb8e0' : '#e8c660',
                 }}
                 title={selectedParlamentar ? `Filtrado por ${selectedParlamentar.nome}` : undefined}
@@ -1769,7 +1769,7 @@ function ParlamentarSearchCard({
 
       {selected && (
         <div className="mt-3 flex items-center gap-2 px-2.5 py-2 rounded-xl"
-          style={{ background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.25)' }}
+          style={{ background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.25)' }}
         >
           <div className="flex-1 min-w-0">
             <p className="text-xs text-white font-semibold truncate">{selected.nome}</p>
@@ -1959,9 +1959,9 @@ function ParlamentarDashboard({
         <div
           className="rounded-2xl px-5 py-3 text-right"
           style={{
-            background: 'linear-gradient(135deg, rgba(201,162,39,0.15), rgba(201,162,39,0.05))',
-            border: '1px solid rgba(201,162,39,0.35)',
-            boxShadow: 'inset 0 0 18px rgba(201,162,39,0.08)',
+            background: 'linear-gradient(135deg, rgba(37,99,235,0.15), rgba(37,99,235,0.05))',
+            border: '1px solid rgba(37,99,235,0.35)',
+            boxShadow: 'inset 0 0 18px rgba(37,99,235,0.08)',
           }}
         >
           <p className="text-[10px] uppercase tracking-widest text-amber-300 font-bold">
@@ -2058,7 +2058,7 @@ function ParlamentarDashboard({
                           style={{
                             width: `${pct}%`,
                             background: isAnoSelecionado
-                              ? 'linear-gradient(90deg, #c9a227, #e8c660)'
+                              ? 'linear-gradient(90deg, #2563EB, #e8c660)'
                               : 'linear-gradient(90deg, #4a9ede, #6cb9ed)',
                           }}
                         />
@@ -2857,8 +2857,8 @@ function DestaqueDoAnoCard({
     <div
       className="rounded-2xl px-5 py-2.5 flex items-center gap-5 flex-wrap"
       style={{
-        background: 'linear-gradient(135deg, rgba(201,162,39,0.07) 0%, rgba(7,29,54,0.6) 60%, rgba(74,158,222,0.05) 100%)',
-        border: '1px solid rgba(201,162,39,0.18)',
+        background: 'linear-gradient(135deg, rgba(37,99,235,0.07) 0%, rgba(7,29,54,0.6) 60%, rgba(74,158,222,0.05) 100%)',
+        border: '1px solid rgba(37,99,235,0.18)',
         boxShadow: '0 2px 16px rgba(0,0,0,0.25)',
       }}
     >
@@ -2899,8 +2899,8 @@ function DestaqueDoAnoCard({
           <div
             className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl flex-shrink-0"
             style={{
-              background: 'linear-gradient(135deg, rgba(201,162,39,0.08), rgba(201,162,39,0.03))',
-              border: '1px solid rgba(201,162,39,0.2)',
+              background: 'linear-gradient(135deg, rgba(37,99,235,0.08), rgba(37,99,235,0.03))',
+              border: '1px solid rgba(37,99,235,0.2)',
             }}
           >
             <div className="flex flex-col leading-tight">
@@ -2915,7 +2915,7 @@ function DestaqueDoAnoCard({
             </div>
             <div
               className="px-2 py-0.5 rounded-lg"
-              style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.25)' }}
+              style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.25)' }}
             >
               <span className="text-amber-300 font-bold text-[11px] whitespace-nowrap">{formatBRLCompact(topParlamentar.total)}</span>
             </div>

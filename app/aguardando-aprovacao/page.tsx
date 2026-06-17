@@ -58,14 +58,14 @@ export default function AguardandoAprovacaoPage() {
           src="/logo.png"
           alt="AdminHub"
           className="w-32 h-auto object-contain mx-auto mb-8"
-          style={{ filter: 'drop-shadow(0 0 18px rgba(201,162,39,0.2))' }}
+          style={{ filter: 'drop-shadow(0 0 18px rgba(37,99,235,0.2))' }}
         />
 
         <div
           className="rounded-2xl p-8"
           style={{
-            background: 'rgba(7,29,54,0.85)',
-            border: '1px solid rgba(201,162,39,0.2)',
+            background: 'var(--bg-card-raised)',
+            border: '1px solid rgba(37,99,235,0.2)',
             backdropFilter: 'blur(12px)',
           }}
         >
@@ -74,14 +74,14 @@ export default function AguardandoAprovacaoPage() {
               {/* Icon */}
               <div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
-                style={{ background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)' }}
+                style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.3)' }}
               >
-                <Clock className="w-7 h-7" style={{ color: '#c9a227' }} />
+                <Clock className="w-7 h-7" style={{ color: '#2563EB' }} />
               </div>
 
               <h1 className="text-xl font-bold text-white mb-2">Aguardando Aprovação</h1>
               <p className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                Olá, <span style={{ color: '#e6b83a' }}>{userName}</span>
+                Olá, <span style={{ color: '#3B82F6' }}>{userName}</span>
               </p>
               <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.45)' }}>
                 Seu cadastro foi recebido. O Chefe de Gabinete ou Administrador precisará aprovar seu acesso antes de você entrar no sistema.
@@ -99,7 +99,7 @@ export default function AguardandoAprovacaoPage() {
                   onClick={handleCheck}
                   disabled={checking}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-60"
-                  style={{ background: 'linear-gradient(135deg,#c9a227,#e6b83a)', color: '#04111f' }}
+                  style={{ background: 'linear-gradient(135deg,#2563EB,#3B82F6)', color: '#04111f' }}
                 >
                   {checking
                     ? <RefreshCw className="w-4 h-4 animate-spin" />
@@ -132,7 +132,7 @@ export default function AguardandoAprovacaoPage() {
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
                 className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg,#c9a227,#e6b83a)', color: '#04111f' }}
+                style={{ background: 'linear-gradient(135deg,#2563EB,#3B82F6)', color: '#04111f' }}
               >
                 Ir para o Login
               </button>
