@@ -81,7 +81,7 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
                   <Building2 className="w-4 h-4" style={{ color: '#2563EB' }} />
                 </div>
                 <div>
-                  <h2 className="text-white font-bold text-base">Selecionar Gabinete</h2>
+                  <h2 className="text-[color:var(--text-primary)] font-bold text-base">Selecionar Gabinete</h2>
                   <p className="text-xs" style={{ color: 'var(--tint-45)' }}>
                     {required ? 'Escolha um gabinete para acessar o sistema' : 'Trocar gabinete ativo'}
                   </p>
@@ -138,7 +138,7 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
                       }
                     </div>
                     <div className="min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{g.nome}</p>
+                      <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{g.nome}</p>
                       <p className="text-[11px]" style={{ color: 'var(--tint-35)' }}>
                         {g._count.users} usuário{g._count.users !== 1 ? 's' : ''}
                         {g.descricao ? ` · ${g.descricao}` : ''}

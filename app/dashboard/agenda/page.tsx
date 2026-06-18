@@ -291,8 +291,8 @@ export default function AgendaPage() {
     .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
     .slice(0, 8);
 
-  const inputCls = "mt-1 w-full rounded-lg px-3 py-2 text-white text-sm outline-none transition-all"
-    + " placeholder-[color:var(--text-muted)]"
+  const inputCls = "mt-1 w-full rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder:text-[color:var(--text-tertiary)] text-sm outline-none transition-all"
+    + " placeholder-[color:var(--text-tertiary)]"
     + " focus:border-[#2563EB]/60";
 
   if (status === 'loading') {
@@ -680,7 +680,7 @@ export default function AgendaPage() {
                   <input type="date" value={form.data}
                     onChange={(e) => setForm((f) => ({ ...f, data: e.target.value }))}
                     className={inputCls}
-                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'dark' }}
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'light dark' }}
                   />
                 </div>
                 <div>
@@ -688,7 +688,7 @@ export default function AgendaPage() {
                   <input type="time" value={form.hora}
                     onChange={(e) => setForm((f) => ({ ...f, hora: e.target.value }))}
                     className={inputCls}
-                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'dark' }}
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'light dark' }}
                   />
                 </div>
               </div>
@@ -700,7 +700,7 @@ export default function AgendaPage() {
                   <input type="date" value={form.dataFim}
                     onChange={(e) => setForm((f) => ({ ...f, dataFim: e.target.value }))}
                     className={inputCls}
-                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'dark' }}
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'light dark' }}
                   />
                 </div>
                 <div>
@@ -708,7 +708,7 @@ export default function AgendaPage() {
                   <input type="time" value={form.horaFim}
                     onChange={(e) => setForm((f) => ({ ...f, horaFim: e.target.value }))}
                     className={inputCls}
-                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'dark' }}
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'light dark' }}
                   />
                 </div>
               </div>
@@ -730,7 +730,7 @@ export default function AgendaPage() {
                 <div className="flex gap-2 mt-1">
                   <input value={form.endereco}
                     onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
-                    className="flex-1 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none transition-all placeholder-[color:var(--text-muted)]"
+                    className="flex-1 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none transition-all placeholder-[color:var(--text-tertiary)]"
                     style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
                     placeholder="Rua, número, cidade"
                   />

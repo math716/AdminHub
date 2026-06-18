@@ -629,7 +629,7 @@ export default function ContatosPage() {
     );
   }, [contatos, search]);
 
-  const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[color:var(--text-muted)] outline-none transition-all';
+  const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[color:var(--text-tertiary)] outline-none transition-all';
   const inputStyle = { background: 'var(--tint-06)', border: '1px solid var(--tint-10)' };
 
   if (status === 'loading') return (
@@ -685,7 +685,7 @@ export default function ContatosPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--tint-35)' }} />
             <input type="text" placeholder="Buscar por nome, número, email..."
               value={search} onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-[color:var(--text-primary)] placeholder-[color:var(--text-muted)] outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-[color:var(--text-primary)] placeholder-[color:var(--text-tertiary)] outline-none transition-all"
               style={inputStyle} />
           </div>
 
@@ -901,7 +901,7 @@ export default function ContatosPage() {
                       <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
                       <input value={mapSearch} onChange={e => setMapSearch(e.target.value)}
                         placeholder="Buscar contatos..."
-                        className="flex-1 bg-transparent text-[color:var(--text-primary)] text-xs outline-none placeholder-[color:var(--text-muted)]" />
+                        className="flex-1 bg-transparent text-[color:var(--text-primary)] text-xs outline-none placeholder-[color:var(--text-tertiary)]" />
                     </div>
                   </div>
                   <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid var(--tint-06)' }}>
@@ -1079,7 +1079,7 @@ export default function ContatosPage() {
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--tint-45)' }}>Endereço</label>
                   <div className="flex gap-2">
-                    <input className="flex-1 rounded-xl px-3 py-2.5 text-sm text-[color:var(--text-primary)] placeholder-[color:var(--text-muted)] outline-none" style={inputStyle}
+                    <input className="flex-1 rounded-xl px-3 py-2.5 text-sm text-[color:var(--text-primary)] placeholder-[color:var(--text-tertiary)] outline-none" style={inputStyle}
                       placeholder="Rua, número, cidade-UF" value={form.endereco}
                       onChange={e => { setForm(f => ({ ...f, endereco: e.target.value })); setResolvedCoords(null); }} />
                     <button onClick={() => geocodeEndereco(form.endereco)} disabled={!form.endereco.trim() || geoLoading}
@@ -1265,7 +1265,7 @@ export default function ContatosPage() {
                 <textarea value={msgText} onChange={e => setMsgText(e.target.value)} rows={4}
                   placeholder="Digite a mensagem..."
                   disabled={sendingApi}
-                  className="w-full rounded-xl px-4 py-3 text-[color:var(--text-primary)] text-sm outline-none resize-none placeholder-[color:var(--text-muted)] disabled:opacity-50"
+                  className="w-full rounded-xl px-4 py-3 text-[color:var(--text-primary)] text-sm outline-none resize-none placeholder-[color:var(--text-tertiary)] disabled:opacity-50"
                   style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }} />
                 <p className="text-[10px] mt-1" style={{ color: 'var(--tint-25)' }}>
                   {msgText.length} caracteres

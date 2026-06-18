@@ -28,7 +28,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             type={type}
             className={cn(
               'w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-200',
-              'placeholder:text-[color:var(--text-muted)]',
+              'placeholder:text-[color:var(--text-tertiary)]',
               icon && 'pl-10',
               error && 'border-red-500/60',
               className

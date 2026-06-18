@@ -782,7 +782,7 @@ export default function DemandasPage() {
             <button
               type="button"
               onClick={() => { setShowModal(false); setEditingDemand(null); }}
-              className="px-4 py-2 text-gray-400 hover:text-white text-sm transition-colors"
+              className="px-4 py-2 text-gray-400 hover:text-[color:var(--text-primary)] text-sm transition-colors"
             >
               Cancelar
             </button>

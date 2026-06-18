@@ -1877,7 +1877,7 @@ function PopupRow({ label, value, hint }: { label: string; value: string; hint?:
     <div className="flex items-start justify-between gap-2">
       <span className="text-slate-600 dark:text-slate-400 flex-shrink-0">{label}</span>
       <div className="text-right min-w-0">
-        <span className={value === '—' ? 'text-slate-600 dark:text-slate-500' : 'text-white font-semibold'}>{value}</span>
+        <span className={value === '—' ? 'text-slate-600 dark:text-slate-500' : 'text-[color:var(--text-primary)] font-semibold'}>{value}</span>
         {hint && <p className="text-[9px] text-slate-600 dark:text-slate-500 italic mt-0.5 leading-tight">{hint}</p>}
       </div>
     </div>
@@ -2048,7 +2048,7 @@ function ParlamentarDashboard({
                     <div key={p.ano} className="space-y-1">
                       <div className="flex items-center justify-between text-[11px]">
                         <span className={isAnoSelecionado ? 'text-amber-300 font-bold' : 'text-slate-700 dark:text-slate-300'}>{p.ano}</span>
-                        <span className={isAnoSelecionado ? 'text-amber-300 font-bold' : 'text-white font-semibold'}>
+                        <span className={isAnoSelecionado ? 'text-amber-300 font-bold' : 'text-[color:var(--text-primary)] font-semibold'}>
                           {formatBRLCompact(p.total)}
                         </span>
                       </div>

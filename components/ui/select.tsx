@@ -100,7 +100,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
           >
             <Radix.Value
               placeholder={
-                <span style={{ color: 'var(--text-muted)' }}>
+                <span style={{ color: 'var(--text-tertiary)' }}>
                   {placeholder ?? 'Selecionar…'}
                 </span>
               }

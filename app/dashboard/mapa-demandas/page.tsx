@@ -1031,7 +1031,7 @@ export default function MapaDemandasPage() {
 
             <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--tint-10)]">
               <button onClick={() => setShowNewModal(false)}
-                className="px-4 py-2 text-gray-400 hover:text-white text-sm font-medium transition-colors rounded-xl">
+                className="px-4 py-2 text-gray-400 hover:text-[color:var(--text-primary)] text-sm font-medium transition-colors rounded-xl">
                 Cancelar
               </button>
               <button onClick={handleSave} disabled={saving}
