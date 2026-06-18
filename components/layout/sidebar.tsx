@@ -93,7 +93,24 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
     }))
     .filter((sec) => sec.items.length > 0);
 
-  const handleSignOut = () => signOut({ callbackUrl: '/login' });
+  const handleSignOut = async () => {
+    // Limpa flag de sync de tema pra proxima sessao buscar do servidor
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem('theme-synced');
+    }
+    try {
+      // redirect: false evita a cadeia /api/auth/signout?callbackUrl=...
+      // que estava causando 404 do Vercel em alguns casos
+      await signOut({ redirect: false });
+    } catch (err) {
+      console.error('Erro ao deslogar:', err);
+    }
+    // Hard navigation pra garantir que cookies/state sao limpos e
+    // a URL final fica /login no mesmo host
+    if (typeof window !== 'undefined') {
+      window.location.replace(window.location.origin + '/login');
+    }
+  };
 
   const initials = userName
     .split(' ')
