@@ -2531,7 +2531,7 @@ export default function MapaCampanhaPage() {
               <CardContent className="px-4 py-1.5">
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Cenário</span>
-                  <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(4,17,31,0.5)' }}>
+                  <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'var(--bg-card-subtle)' }}>
                     {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
                       const config = cenarioConfig[cenario];
                       const Icon = config.icon;
@@ -2721,7 +2721,7 @@ export default function MapaCampanhaPage() {
             transition={{ delay: 0.3 }}
             className="flex items-center gap-3 mb-4 flex-wrap"
           >
-            <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'rgba(4,17,31,0.6)', border: '1px solid var(--tint-06)' }}>
+            <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
               {electoralData?.candidatoId && (
                 <button
                   onClick={() => setActiveTab('historico')}
@@ -4340,7 +4340,7 @@ export default function MapaCampanhaPage() {
               onChange={(e) => setNovoCandidatoNome(e.target.value)}
               placeholder="Nome completo"
               className="w-full rounded-xl px-3.5 py-2.5 text-sm text-[color:var(--text-primary)] outline-none transition-all"
-              style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#fff' }}
+              style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#fff' }}
               onFocus={e => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
               onBlur={e => { e.target.style.borderColor = 'rgba(37,99,235,0.2)'; e.target.style.boxShadow = 'none'; }}
             />
@@ -4355,7 +4355,7 @@ export default function MapaCampanhaPage() {
                 onChange={(e) => setNovoCandidatoPartido(e.target.value)}
                 placeholder="Ex: PSD, PT, MDB..."
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#fff' }}
+                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#fff' }}
                 onFocus={e => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
                 onBlur={e => { e.target.style.borderColor = 'rgba(37,99,235,0.2)'; e.target.style.boxShadow = 'none'; }}
               />
@@ -4366,7 +4366,7 @@ export default function MapaCampanhaPage() {
                 value={novoCandidatoUf}
                 onChange={(e) => setNovoCandidatoUf(e.target.value)}
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
+                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
               >
                 {ESTADOS_BRASIL.map((e) => (
                   <option key={e.sigla} value={e.sigla} style={{ background: 'var(--bg-card)' }}>{e.sigla} — {e.nome}</option>
@@ -4383,7 +4383,7 @@ export default function MapaCampanhaPage() {
                 value={novoCandidatoCargo}
                 onChange={(e) => setNovoCandidatoCargo(e.target.value)}
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
+                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
               >
                 {[
                   ['DEPUTADO_FEDERAL', 'Deputado Federal'],
@@ -4403,7 +4403,7 @@ export default function MapaCampanhaPage() {
                 value={novoCandidatoAnoProjecao}
                 onChange={(e) => setNovoCandidatoAnoProjecao(e.target.value)}
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
+                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
               >
                 {['2024','2026','2028','2030'].map((a) => (
                   <option key={a} value={a} style={{ background: 'var(--bg-card)' }}>{a}</option>
@@ -4427,7 +4427,7 @@ export default function MapaCampanhaPage() {
                   }}
                   placeholder={novoCandidatoMunicipioOpcoes.length ? 'Buscar município...' : 'Carregando...'}
                   className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                  style={{ background: 'rgba(4,17,31,0.6)', border: `1.5px solid ${novoCandidatoMunicipio ? 'rgba(37,99,235,0.6)' : 'rgba(37,99,235,0.2)'}`, color: '#fff' }}
+                  style={{ background: 'var(--bg-card)', border: `1.5px solid ${novoCandidatoMunicipio ? 'rgba(37,99,235,0.6)' : 'rgba(37,99,235,0.2)'}`, color: '#fff' }}
                   onFocus={e => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
                   onBlur={e => { e.target.style.borderColor = novoCandidatoMunicipio ? 'rgba(37,99,235,0.6)' : 'rgba(37,99,235,0.2)'; e.target.style.boxShadow = 'none'; }}
                 />

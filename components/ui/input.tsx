@@ -27,18 +27,19 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             type={type}
             className={cn(
-              'w-full px-4 py-2.5 rounded-xl text-white text-sm outline-none transition-all duration-200',
-              'placeholder:text-white/20',
+              'w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-200',
+              'placeholder:text-[color:var(--text-muted)]',
               icon && 'pl-10',
               error && 'border-red-500/60',
               className
             )}
             style={{
-              background: 'var(--tint-06)',
-              border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--tint-10)',
+              background: 'var(--bg-card-subtle)',
+              border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-default)',
+              color: 'var(--text-primary)',
             }}
-            onFocus={e => (e.currentTarget.style.borderColor = 'rgba(74,158,222,0.5)')}
-            onBlur={e => (e.currentTarget.style.borderColor = error ? 'rgba(239,68,68,0.5)' : 'var(--tint-10)')}
+            onFocus={e => (e.currentTarget.style.borderColor = 'var(--brand-cobalt)')}
+            onBlur={e => (e.currentTarget.style.borderColor = error ? 'rgba(239,68,68,0.5)' : 'var(--border-default)')}
             ref={ref}
             {...props}
           />

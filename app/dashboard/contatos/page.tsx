@@ -629,7 +629,7 @@ export default function ContatosPage() {
     );
   }, [contatos, search]);
 
-  const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none transition-all';
+  const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[color:var(--text-muted)] outline-none transition-all';
   const inputStyle = { background: 'var(--tint-06)', border: '1px solid var(--tint-10)' };
 
   if (status === 'loading') return (
@@ -649,13 +649,13 @@ export default function ContatosPage() {
         actions={
           <div className="flex items-center gap-2">
             <button onClick={() => setShowImportModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-              style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.25)', color: '#4ade80' }}>
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:brightness-110"
+              style={{ background: 'var(--success)', border: 'none', color: '#FFFFFF' }}>
               <FileUp className="w-4 h-4" /> Importar CSV
             </button>
             <button onClick={() => { setShowModal(true); setForm({ ...EMPTY_FORM }); setResolvedCoords(null); setSaveError(''); setEditingContact(null); }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:brightness-110"
+              style={{ background: 'var(--brand-cobalt)', color: '#FFFFFF' }}>
               <Plus className="w-4 h-4" /> Novo Contato
             </button>
           </div>
@@ -664,13 +664,13 @@ export default function ContatosPage() {
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 p-1 rounded-xl w-fit"
-        style={{ background: 'rgba(4,17,31,0.6)', border: '1px solid var(--tint-06)' }}>
+        style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}>
         {([['lista', List, 'Lista'], ['mapa', MapIcon, 'Mapa']] as const).map(([tab, Icon, label]) => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
             style={activeTab === tab
-              ? { background: 'rgba(37,99,235,0.15)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.3)' }
-              : { color: 'var(--tint-45)', border: '1px solid transparent' }
+              ? { background: 'var(--brand-cobalt-soft)', color: 'var(--brand-cobalt-text)', border: '1px solid var(--brand-cobalt)' }
+              : { color: 'var(--text-tertiary)', border: '1px solid transparent', background: 'transparent' }
             }>
             <Icon className="w-4 h-4" />{label}
           </button>
@@ -685,7 +685,7 @@ export default function ContatosPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--tint-35)' }} />
             <input type="text" placeholder="Buscar por nome, número, email..."
               value={search} onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-[color:var(--text-primary)] placeholder-white/20 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-[color:var(--text-primary)] placeholder-[color:var(--text-muted)] outline-none transition-all"
               style={inputStyle} />
           </div>
 
@@ -901,7 +901,7 @@ export default function ContatosPage() {
                       <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
                       <input value={mapSearch} onChange={e => setMapSearch(e.target.value)}
                         placeholder="Buscar contatos..."
-                        className="flex-1 bg-transparent text-[color:var(--text-primary)] text-xs outline-none placeholder-white/20" />
+                        className="flex-1 bg-transparent text-[color:var(--text-primary)] text-xs outline-none placeholder-[color:var(--text-muted)]" />
                     </div>
                   </div>
                   <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid var(--tint-06)' }}>
@@ -952,7 +952,7 @@ export default function ContatosPage() {
             <div className="lg:col-span-3">
               <div className="rounded-2xl overflow-hidden relative" style={{ height: 560, background: 'var(--bg-card-subtle)', border: '1px solid rgba(37,99,235,0.13)' }}>
                 {(pipLoading || bairroLoading) && (
-                  <div className="absolute inset-0 flex items-center justify-center z-10 rounded-2xl" style={{ background: 'rgba(4,17,31,0.6)' }}>
+                  <div className="absolute inset-0 flex items-center justify-center z-10 rounded-2xl" style={{ background: 'var(--bg-card)' }}>
                     <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: '#4a9ede' }} />
                     <span className="text-sm" style={{ color: 'var(--tint-65)' }}>Calculando...</span>
                   </div>
@@ -1079,7 +1079,7 @@ export default function ContatosPage() {
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--tint-45)' }}>Endereço</label>
                   <div className="flex gap-2">
-                    <input className="flex-1 rounded-xl px-3 py-2.5 text-sm text-[color:var(--text-primary)] placeholder-white/20 outline-none" style={inputStyle}
+                    <input className="flex-1 rounded-xl px-3 py-2.5 text-sm text-[color:var(--text-primary)] placeholder-[color:var(--text-muted)] outline-none" style={inputStyle}
                       placeholder="Rua, número, cidade-UF" value={form.endereco}
                       onChange={e => { setForm(f => ({ ...f, endereco: e.target.value })); setResolvedCoords(null); }} />
                     <button onClick={() => geocodeEndereco(form.endereco)} disabled={!form.endereco.trim() || geoLoading}
@@ -1265,7 +1265,7 @@ export default function ContatosPage() {
                 <textarea value={msgText} onChange={e => setMsgText(e.target.value)} rows={4}
                   placeholder="Digite a mensagem..."
                   disabled={sendingApi}
-                  className="w-full rounded-xl px-4 py-3 text-[color:var(--text-primary)] text-sm outline-none resize-none placeholder-white/20 disabled:opacity-50"
+                  className="w-full rounded-xl px-4 py-3 text-[color:var(--text-primary)] text-sm outline-none resize-none placeholder-[color:var(--text-muted)] disabled:opacity-50"
                   style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }} />
                 <p className="text-[10px] mt-1" style={{ color: 'var(--tint-25)' }}>
                   {msgText.length} caracteres

@@ -37,7 +37,7 @@ export function ConfirmDialog({
             exit={{ opacity: 0 }}
             onClick={onCancel}
             className="absolute inset-0"
-            style={{ background: 'rgba(4,17,31,0.7)', backdropFilter: 'blur(3px)' }}
+            style={{ background: 'var(--bg-card-raised)', backdropFilter: 'blur(3px)' }}
           />
 
           {/* Dialog */}
