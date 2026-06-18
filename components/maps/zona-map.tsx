@@ -149,7 +149,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
       const marker = L.circleMarker([zona.latitude, zona.longitude], {
         radius: radius,
         fillColor: color,
-        color: '#fff',
+        color: 'var(--text-primary)',
         weight: 2,
         opacity: 1,
         fillOpacity: 0.85
@@ -216,7 +216,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
       const marker = L.circleMarker([bairro.latitude, bairro.longitude], {
         radius: radius,
         fillColor: cor,
-        color: '#fff',
+        color: 'var(--text-primary)',
         weight: 3,
         opacity: 1,
         fillOpacity: 0.85
@@ -351,7 +351,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
 
   if (!isMounted) {
     return (
-      <div className="h-[500px] flex items-center justify-center bg-slate-800/50 rounded-lg">
+      <div className="h-[500px] flex items-center justify-center bg-[var(--bg-card-subtle)]/50 rounded-lg">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
       </div>
     );
@@ -359,7 +359,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
 
   if (!bounds || zonas.length === 0) {
     return (
-      <div className="h-[500px] flex items-center justify-center bg-slate-800/50 rounded-lg">
+      <div className="h-[500px] flex items-center justify-center bg-[var(--bg-card-subtle)]/50 rounded-lg">
         <p className="text-gray-400">Sem dados de localização disponíveis para este município</p>
       </div>
     );
@@ -369,14 +369,14 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
     <div className="relative">
       {/* Cabeçalho do mapa */}
       <div className="absolute top-3 left-3 right-3 z-[1000] flex items-center justify-between">
-        <div className="bg-slate-900/95 rounded-lg px-4 py-2 text-[color:var(--text-primary)]">
+        <div className="bg-[var(--bg-card)]/95 rounded-lg px-4 py-2 text-[color:var(--text-primary)]">
           <h3 className="font-bold text-sm">{municipio}</h3>
           <p className="text-xs text-gray-400">{candidato}</p>
         </div>
         
         {/* Controles de visualização */}
         <div className="flex gap-2">
-          <div className="bg-slate-900/95 rounded-lg p-1 flex">
+          <div className="bg-[var(--bg-card)]/95 rounded-lg p-1 flex">
             <button
               onClick={() => setViewMode('bairros')}
               className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
@@ -403,7 +403,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
           
           <button
             onClick={resetView}
-            className="bg-slate-900/95 rounded-lg p-2 text-gray-400 hover:text-white transition-colors"
+            className="bg-[var(--bg-card)]/95 rounded-lg p-2 text-gray-400 hover:text-white transition-colors"
             title="Resetar visualização"
           >
             <Home className="w-4 h-4" />
@@ -421,20 +421,20 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
       <div className="absolute bottom-4 right-4 z-[1000] flex flex-col gap-1">
         <button
           onClick={() => mapInstanceRef.current?.zoomIn()}
-          className="bg-slate-900/95 rounded-lg p-2 text-gray-400 hover:text-white transition-colors"
+          className="bg-[var(--bg-card)]/95 rounded-lg p-2 text-gray-400 hover:text-white transition-colors"
         >
           <ZoomIn className="w-4 h-4" />
         </button>
         <button
           onClick={() => mapInstanceRef.current?.zoomOut()}
-          className="bg-slate-900/95 rounded-lg p-2 text-gray-400 hover:text-white transition-colors"
+          className="bg-[var(--bg-card)]/95 rounded-lg p-2 text-gray-400 hover:text-white transition-colors"
         >
           <ZoomOut className="w-4 h-4" />
         </button>
       </div>
       
       {/* Legenda */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-slate-900/95 rounded-lg p-3 text-xs text-[color:var(--text-primary)]">
+      <div className="absolute bottom-4 left-4 z-[1000] bg-[var(--bg-card)]/95 rounded-lg p-3 text-xs text-[color:var(--text-primary)]">
         <div className="font-semibold mb-2">
           {viewMode === 'bairros' ? '📍 Bairros' : '🗳️ Zonas Eleitorais'}
         </div>
@@ -446,7 +446,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
           <div className="w-3 h-3 rounded-full" style={{ background: viewMode === 'bairros' ? '#6366f1' : 'hsl(0, 70%, 50%)' }} />
           <span>{viewMode === 'bairros' ? 'Menor concentração' : 'Mais votos'}</span>
         </div>
-        <div className="mt-2 pt-2 border-t border-slate-700 text-gray-400">
+        <div className="mt-2 pt-2 border-t border-[var(--border-default)] text-gray-400">
           {viewMode === 'bairros' 
             ? `${bairrosAgrupados.length} bairros encontrados`
             : `${zonas.length} zonas eleitorais`
@@ -456,7 +456,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
 
       {/* Detalhes da zona selecionada */}
       {selectedZona && (
-        <div className="absolute top-16 right-3 z-[1000] bg-slate-900/95 rounded-lg p-4 text-[color:var(--text-primary)] max-w-[320px] max-h-[400px] overflow-y-auto">
+        <div className="absolute top-16 right-3 z-[1000] bg-[var(--bg-card)]/95 rounded-lg p-4 text-[color:var(--text-primary)] max-w-[320px] max-h-[400px] overflow-y-auto">
           <div className="flex justify-between items-center mb-3">
             <h4 className="font-bold text-blue-400 text-lg">Zona {selectedZona.zona}</h4>
             <button onClick={() => setSelectedZona(null)} className="text-gray-400 hover:text-white text-xl">×</button>
@@ -465,7 +465,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
           {(() => {
             const bairros = selectedZona.bairros || [...new Set(selectedZona.locais.map(l => l.bairro).filter(Boolean))];
             return bairros.length > 0 && (
-              <div className="mb-3 pb-3 border-b border-slate-700">
+              <div className="mb-3 pb-3 border-b border-[var(--border-default)]">
                 <div className="text-xs text-gray-400 mb-2">Bairros desta zona:</div>
                 <div className="flex flex-wrap gap-1">
                   {bairros.map((bairro, idx) => (
@@ -483,7 +483,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
           <div className="text-xs text-gray-400 mb-2">Locais de votação ({selectedZona.locais.length}):</div>
           <div className="space-y-2 max-h-[180px] overflow-y-auto">
             {selectedZona.locais.map((local, idx) => (
-              <div key={idx} className="text-xs bg-slate-800/50 rounded p-2">
+              <div key={idx} className="text-xs bg-[var(--bg-card-subtle)]/50 rounded p-2">
                 <div className="font-medium text-[color:var(--text-primary)]">{local.nome}</div>
                 {local.bairro && <div className="text-amber-400 mt-0.5">📍 {local.bairro}</div>}
                 {local.endereco && <div className="text-gray-400 mt-1">{local.endereco}</div>}
@@ -495,24 +495,24 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
 
       {/* Detalhes do bairro selecionado */}
       {selectedBairro && (
-        <div className="absolute top-16 right-3 z-[1000] bg-slate-900/95 rounded-lg p-4 text-[color:var(--text-primary)] max-w-[320px] max-h-[400px] overflow-y-auto">
+        <div className="absolute top-16 right-3 z-[1000] bg-[var(--bg-card)]/95 rounded-lg p-4 text-[color:var(--text-primary)] max-w-[320px] max-h-[400px] overflow-y-auto">
           <div className="flex justify-between items-center mb-3">
             <h4 className="font-bold text-amber-400 text-lg">📍 {selectedBairro.nome}</h4>
             <button onClick={() => setSelectedBairro(null)} className="text-gray-400 hover:text-white text-xl">×</button>
           </div>
           
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+            <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-3 text-center">
               <div className="text-2xl font-bold text-green-400">{selectedBairro.votos.toLocaleString('pt-BR')}</div>
               <div className="text-xs text-gray-400">votos estimados</div>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+            <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-3 text-center">
               <div className="text-2xl font-bold text-blue-400">{selectedBairro.zonas.length}</div>
               <div className="text-xs text-gray-400">{selectedBairro.zonas.length === 1 ? 'zona' : 'zonas'}</div>
             </div>
           </div>
           
-          <div className="mb-3 pb-3 border-b border-slate-700">
+          <div className="mb-3 pb-3 border-b border-[var(--border-default)]">
             <div className="text-xs text-gray-400 mb-2">Zonas eleitorais:</div>
             <div className="flex flex-wrap gap-1">
               {selectedBairro.zonas.sort((a,b) => a-b).map((zona, idx) => (
@@ -526,7 +526,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
           <div className="text-xs text-gray-400 mb-2">Locais de votação ({selectedBairro.locais.length}):</div>
           <div className="space-y-2 max-h-[150px] overflow-y-auto">
             {selectedBairro.locais.map((local, idx) => (
-              <div key={idx} className="text-xs bg-slate-800/50 rounded p-2">
+              <div key={idx} className="text-xs bg-[var(--bg-card-subtle)]/50 rounded p-2">
                 <div className="font-medium text-[color:var(--text-primary)]">{local.nome}</div>
                 {local.endereco && <div className="text-gray-400 mt-1">{local.endereco}</div>}
               </div>

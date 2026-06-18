@@ -279,7 +279,7 @@ export default function ZonasPage() {
                     <Badge variant="default" className="text-xs">{resultado.candidato.cargo}</Badge>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 gap-2 pt-2 border-t border-slate-700">
+                <div className="grid grid-cols-1 gap-2 pt-2 border-t border-[var(--border-default)]">
                   <div className="flex items-center gap-2">
                     <Vote className="h-4 w-4 text-amber-400" />
                     <div>
@@ -343,34 +343,34 @@ export default function ZonasPage() {
                     placeholder="Filtrar município..."
                     value={filtroMunicipio}
                     onChange={(e) => setFiltroMunicipio(e.target.value)}
-                    className="bg-slate-800 border border-slate-700 text-[color:var(--text-primary)] text-sm rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:border-blue-500"
+                    className="bg-[var(--bg-card-subtle)] border border-[var(--border-default)] text-[color:var(--text-primary)] text-sm rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:border-blue-500"
                   />
                   <input
                     type="number"
                     placeholder="Nº zona"
                     value={filtroZona}
                     onChange={(e) => setFiltroZona(e.target.value)}
-                    className="bg-slate-800 border border-slate-700 text-[color:var(--text-primary)] text-sm rounded-lg px-3 py-1.5 w-24 focus:outline-none focus:border-blue-500"
+                    className="bg-[var(--bg-card-subtle)] border border-[var(--border-default)] text-[color:var(--text-primary)] text-sm rounded-lg px-3 py-1.5 w-24 focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setOrdenar(ordenar === 'votos' ? 'municipio' : 'votos')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-card-subtle)] border border-[var(--border-default)] text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
                   >
                     <ArrowUpDown className="h-3.5 w-3.5" />
                     {ordenar === 'votos' ? 'Por votos' : 'Por município'}
                   </button>
                   <button
                     onClick={expandirTodos}
-                    className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
+                    className="px-3 py-1.5 bg-[var(--bg-card-subtle)] border border-[var(--border-default)] text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
                   >
                     Expandir tudo
                   </button>
                   <button
                     onClick={recolherTodos}
-                    className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
+                    className="px-3 py-1.5 bg-[var(--bg-card-subtle)] border border-[var(--border-default)] text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
                   >
                     Recolher
                   </button>
@@ -416,12 +416,12 @@ export default function ZonasPage() {
                   return (
                     <div
                       key={mun.municipio}
-                      className="bg-slate-800/60 border border-slate-700 rounded-xl overflow-hidden"
+                      className="bg-[var(--bg-card-subtle)]/60 border border-[var(--border-default)] rounded-xl overflow-hidden"
                     >
                       {/* Header do município */}
                       <button
                         onClick={() => toggleExpand(mun.municipio)}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700/40 transition-colors text-left"
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-card-subtle)]/40 transition-colors text-left"
                       >
                         {expanded
                           ? <ChevronDown className="h-4 w-4 text-slate-600 dark:text-slate-400 flex-shrink-0" />
@@ -440,7 +440,7 @@ export default function ZonasPage() {
                             </span>
                           </div>
                           {/* Barra de progresso */}
-                          <div className="mt-1 h-1 bg-slate-700 rounded-full w-full max-w-[200px]">
+                          <div className="mt-1 h-1 bg-[var(--bg-card-subtle)] rounded-full w-full max-w-[200px]">
                             <div
                               className="h-1 bg-blue-500 rounded-full"
                               style={{ width: `${Math.min(parseFloat(pct), 100)}%` }}
@@ -458,7 +458,7 @@ export default function ZonasPage() {
 
                       {/* Zonas expandidas */}
                       {expanded && (
-                        <div className="border-t border-slate-700 px-4 py-3">
+                        <div className="border-t border-[var(--border-default)] px-4 py-3">
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                             {mun.zonas.map((zona) => {
                               const pctZona = mun.totalVotos > 0
@@ -467,7 +467,7 @@ export default function ZonasPage() {
                               return (
                                 <div
                                   key={zona.zona}
-                                  className="flex items-center gap-2 p-2 bg-slate-700/50 rounded-lg border border-slate-600 hover:border-blue-500/50 transition-colors"
+                                  className="flex items-center gap-2 p-2 bg-[var(--bg-card-subtle)]/50 rounded-lg border border-[var(--border-default)] hover:border-[var(--brand-cobalt)] transition-colors"
                                 >
                                   <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center text-[color:var(--text-primary)] text-xs font-bold flex-shrink-0">
                                     {zona.zona}
@@ -500,10 +500,10 @@ export default function ZonasPage() {
                 </button>
 
                 {verTodos && (
-                  <div className="mt-3 overflow-x-auto rounded-xl border border-slate-700">
+                  <div className="mt-3 overflow-x-auto rounded-xl border border-[var(--border-default)]">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="bg-slate-800 text-slate-600 dark:text-slate-400 text-left">
+                        <tr className="bg-[var(--bg-card-subtle)] text-slate-600 dark:text-slate-400 text-left">
                           <th className="px-4 py-2.5 font-medium">#</th>
                           <th className="px-4 py-2.5 font-medium">Município</th>
                           <th className="px-4 py-2.5 font-medium">Zona</th>
@@ -514,7 +514,7 @@ export default function ZonasPage() {
                         {resultado.zonas.map((z, i) => (
                           <tr
                             key={`${z.municipio}-${z.zona}`}
-                            className="hover:bg-slate-800/60 transition-colors"
+                            className="hover:bg-[var(--bg-card-subtle)]/60 transition-colors"
                           >
                             <td className="px-4 py-2 text-slate-600 dark:text-slate-500">{i + 1}</td>
                             <td className="px-4 py-2 text-slate-700 dark:text-slate-300">{z.municipio}</td>
@@ -530,7 +530,7 @@ export default function ZonasPage() {
                         ))}
                       </tbody>
                       <tfoot>
-                        <tr className="bg-slate-800 border-t border-slate-600">
+                        <tr className="bg-[var(--bg-card-subtle)] border-t border-[var(--border-default)]">
                           <td colSpan={3} className="px-4 py-2.5 text-slate-600 dark:text-slate-400 font-medium text-right">
                             Total
                           </td>

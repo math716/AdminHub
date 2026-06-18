@@ -221,7 +221,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           <button
             onClick={handleSignOut}
             className="flex-1 flex items-center gap-3 px-3 py-2 rounded-md transition-colors duration-150"
-            style={{ color: '#CBD5E1', background: 'var(--tint-04)', border: '1px solid rgba(148,163,184,0.10)' }}
+            style={{ color: 'var(--text-primary)', background: 'var(--tint-04)', border: '1px solid rgba(148,163,184,0.10)' }}
           >
             <LogOut className="h-4 w-4 flex-shrink-0" />
             <span className="text-[13px] font-medium tracking-wide">Sair</span>

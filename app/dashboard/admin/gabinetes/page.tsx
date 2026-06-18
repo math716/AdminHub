@@ -68,7 +68,7 @@ const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> 
   AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: '#c084fc',  border: 'rgba(168,85,247,0.3)'  },
   CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)'  },
   ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: '#4ade80',  border: 'rgba(34,197,94,0.25)'  },
-  ANALISTA:        { bg: 'var(--tint-06)', color: '#cbd5e1',  border: 'var(--tint-14)' },
+  ANALISTA:        { bg: 'var(--tint-06)', color: 'var(--text-primary)',  border: 'var(--tint-14)' },
   VISUALIZADOR:    { bg: 'var(--tint-06)', color: '#94a3b8',  border: 'var(--tint-14)' },
 };
 
@@ -182,7 +182,7 @@ function PermissionsChecklist({ selected, onToggle, onSelectAll, onClear, accent
               </span>
               <span className="flex items-center justify-center w-5 h-5 rounded-md flex-shrink-0 transition-all"
                 style={checked
-                  ? { background: accent.solid, color: '#fff', boxShadow: `0 0 8px ${accent.borderLight}` }
+                  ? { background: accent.solid, color: 'var(--text-primary)', boxShadow: `0 0 8px ${accent.borderLight}` }
                   : { background: 'transparent', border: '1.5px solid var(--tint-25)' }}>
                 {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
               </span>
@@ -243,7 +243,7 @@ function SolicitacaoCard({ sol, onAcao }: { sol: Solicitacao; onAcao: () => void
             <Building2 size={18} color="#2563EB" />
           </div>
           <div>
-            <p style={{ margin:0, fontWeight:700, fontSize:'0.9rem', color:'#e2e8f0' }}>{sol.gabineteNome}</p>
+            <p style={{ margin:0, fontWeight:700, fontSize:'0.9rem', color: 'var(--text-primary)' }}>{sol.gabineteNome}</p>
             <p style={{ margin:0, fontSize:'0.75rem', color:'var(--tint-45)', marginTop:'0.1rem' }}>{sol.userName} · {sol.userEmail}</p>
           </div>
         </div>
@@ -278,7 +278,7 @@ function SolicitacaoCard({ sol, onAcao }: { sol: Solicitacao; onAcao: () => void
               {showRecusa && (
                 <textarea placeholder="Motivo da recusa (opcional)" value={motivoRecusa}
                   onChange={e => setMotivoRecusa(e.target.value)} rows={2}
-                  style={{ width:'100%', padding:'0.6rem 0.85rem', borderRadius:'0.65rem', border:'1px solid var(--tint-14)', background:'var(--tint-06)', fontSize:'0.8rem', resize:'vertical', outline:'none', boxSizing:'border-box', fontFamily:'inherit', color:'#e2e8f0' }} />
+                  style={{ width:'100%', padding:'0.6rem 0.85rem', borderRadius:'0.65rem', border:'1px solid var(--tint-14)', background:'var(--tint-06)', fontSize:'0.8rem', resize:'vertical', outline:'none', boxSizing:'border-box', fontFamily:'inherit', color: 'var(--text-primary)' }} />
               )}
               <div style={{ display:'flex', gap:'0.6rem' }}>
                 <button onClick={() => agir('APROVAR')} disabled={loading}
@@ -636,7 +636,7 @@ export default function AdminGabinetesPage() {
             <Building2 className="w-5 h-5" style={{ color:'#2563EB' }} />
           </div>
           <div>
-            <h1 className="text-lg font-bold" style={{ color:'#e2e8f0' }}>Administração de Gabinetes</h1>
+            <h1 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Administração de Gabinetes</h1>
             <p className="text-xs" style={{ color:'var(--tint-45)' }}>Gerencie gabinetes, solicitações e usuários</p>
           </div>
         </div>
@@ -653,7 +653,7 @@ export default function AdminGabinetesPage() {
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <Link2 size={16} style={{ color:'#2563EB' }} />
-              <h2 className="text-sm font-bold" style={{ color:'#e2e8f0' }}>Link de Convite para Novo Gabinete</h2>
+              <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Link de Convite para Novo Gabinete</h2>
             </div>
             <p className="text-xs" style={{ color:'var(--tint-45)', maxWidth:520 }}>
               Gere um link válido por <strong style={{ color:'#2563EB' }}>1 hora</strong> e envie para o Agente Político.
@@ -684,7 +684,7 @@ export default function AdminGabinetesPage() {
 
       {/* ── Solicitações ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-sm font-bold" style={{ color:'#e2e8f0' }}>
+        <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
           Solicitações de Cadastro
           {pendentes > 0 && (
             <span className="ml-2 px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background:'rgba(37,99,235,0.15)', color:'#2563EB', border:'1px solid rgba(37,99,235,0.3)' }}>
@@ -909,7 +909,7 @@ export default function AdminGabinetesPage() {
                   <User size={16} style={{ color:'#f87171' }} />
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ margin:0, fontWeight:600, fontSize:'0.875rem', color:'#e2e8f0' }}>{u.name}</p>
+                  <p style={{ margin:0, fontWeight:600, fontSize:'0.875rem', color: 'var(--text-primary)' }}>{u.name}</p>
                   <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginTop:'0.2rem', flexWrap:'wrap' }}>
                     <span style={{ fontSize:'0.73rem', color:'var(--tint-45)', display:'flex', alignItems:'center', gap:'0.3rem' }}>
                       <Mail size={11}/> {u.email}
@@ -960,7 +960,7 @@ export default function AdminGabinetesPage() {
                     {u.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0' }}>{u.name}</p>
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{u.name}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.72rem', color: 'var(--tint-45)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                         <Mail size={11} /> {u.email}
@@ -1029,7 +1029,7 @@ export default function AdminGabinetesPage() {
                     <Building2 size={18} style={{ color: '#f87171' }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: '#e2e8f0' }}>{g.nome}</p>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{g.nome}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.72rem', color: 'var(--tint-45)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                         <User size={11} /> {g._count.users} usuário{g._count.users !== 1 ? 's' : ''}
@@ -1257,7 +1257,7 @@ export default function AdminGabinetesPage() {
                 </div>
               </div>
               <p className="text-sm" style={{ color:'var(--tint-55)' }}>
-                O gabinete <strong style={{ color:'#e2e8f0' }}>{confirmDeleteGab.nome}</strong> será movido para a lixeira.
+                O gabinete <strong style={{ color: 'var(--text-primary)' }}>{confirmDeleteGab.nome}</strong> será movido para a lixeira.
                 Você terá <strong style={{ color:'#f59e0b' }}>90 dias</strong> para restaurá-lo.
                 Após esse prazo, o gabinete e todos os seus{' '}
                 <strong style={{ color:'var(--tint-75)' }}>{confirmDeleteGab.users.length} usuário{confirmDeleteGab.users.length !== 1 ? 's' : ''}</strong>,

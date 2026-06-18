@@ -1350,7 +1350,7 @@ export default function ContatosPage() {
                   onClick={handleSendApi}
                   disabled={!msgText.trim() || sendingApi}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-40"
-                  style={{ background: 'linear-gradient(135deg,#128c7e,#25d366)', color: '#fff' }}>
+                  style={{ background: 'linear-gradient(135deg,#128c7e,#25d366)', color: 'var(--text-primary)' }}>
                   {sendingApi
                     ? <><Loader2 className="h-4 w-4 animate-spin" /> Enviando…</>
                     : <><Send className="h-4 w-4" /> Disparar via API</>}

@@ -245,7 +245,7 @@ export default function DashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-xs border-b" style={{ color: '#8fa3bf', borderColor: 'rgba(30,74,128,0.5)' }}>
+                <tr className="text-left text-xs border-b" style={{ color: 'var(--text-tertiary)', borderColor: 'rgba(30,74,128,0.5)' }}>
                   <th className="pb-3 font-medium">Título</th>
                   <th className="pb-3 font-medium">Status</th>
                   <th className="pb-3 font-medium">Prioridade</th>

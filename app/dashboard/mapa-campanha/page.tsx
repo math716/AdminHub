@@ -2281,7 +2281,7 @@ export default function MapaCampanhaPage() {
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-900">
+      <div className="flex items-center justify-center min-h-screen bg-[var(--bg-card)]">
         <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
       </div>
     );
@@ -2356,7 +2356,7 @@ export default function MapaCampanhaPage() {
                   <Button
                     onClick={() => setFormCollapsed(false)}
                     variant="outline"
-                    className="border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-700 text-xs h-8 px-3"
+                    className="border-[var(--border-default)] text-slate-700 dark:text-slate-300 hover:bg-[var(--bg-card-subtle)] text-xs h-8 px-3"
                   >
                     <Pencil className="h-3 w-3 mr-1.5" />
                     Editar busca
@@ -2402,7 +2402,7 @@ export default function MapaCampanhaPage() {
                       value={candidateName}
                       onChange={(e) => setCandidateName(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && searchCandidate()}
-                      className="bg-slate-700/60 border-slate-600 text-[color:var(--text-primary)] placeholder:text-slate-600 dark:text-slate-500"
+                      className="bg-[var(--bg-card-subtle)]/60 border-[var(--border-default)] text-[color:var(--text-primary)] placeholder:text-slate-600 dark:text-slate-500"
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2703,7 +2703,7 @@ export default function MapaCampanhaPage() {
                 
                 {/* Indicador quando desativado */}
                 {!includeParcerias && (
-                  <div className="mt-2 pt-2 border-t border-slate-600">
+                  <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
                     <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
                       <EyeOff className="h-3 w-3" />
                       Parcerias desativadas na simulação
@@ -2770,8 +2770,8 @@ export default function MapaCampanhaPage() {
               transition={{ delay: 0.4 }}
               className={mapFullscreen ? 'flex-1 min-w-0 relative' : 'lg:col-span-2'}
             >
-              <Card className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'bg-slate-800/50 border-slate-700 h-[600px]'}>
-                <CardHeader className={`border-b border-slate-700 py-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
+              <Card className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] h-[600px]'}>
+                <CardHeader className={`border-b border-[var(--border-default)] py-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <CardTitle className="text-[color:var(--text-primary)] flex items-center gap-2">
                       <Map className="h-5 w-5 text-cyan-500" />
@@ -2780,7 +2780,7 @@ export default function MapaCampanhaPage() {
                     <div className="flex items-center gap-2">
                       {/* Indicador de Regiões para DF */}
                       {uf === 'DF' && (
-                        <div className="flex bg-slate-700 rounded-lg p-0.5">
+                        <div className="flex bg-[var(--bg-card-subtle)] rounded-lg p-0.5">
                           <button
                             onClick={() => setDfVisualizacao('regioes')}
                             className={`px-2 py-1 text-xs rounded-md transition-all flex items-center gap-1 ${
@@ -2833,7 +2833,7 @@ export default function MapaCampanhaPage() {
                         <select
                           value={mgBairrosMunicipio}
                           onChange={e => { setMgBairrosMunicipio(e.target.value); setSelectedMgBairro(null); }}
-                          className="px-2 py-1 text-xs rounded-md text-slate-800 dark:text-slate-200 bg-slate-800 border border-slate-600"
+                          className="px-2 py-1 text-xs rounded-md text-slate-800 dark:text-slate-200 bg-[var(--bg-card-subtle)] border border-[var(--border-default)]"
                         >
                           <option value="">Selecione a cidade</option>
                           {[...MG_MUNICIPIOS_COM_BAIRROS].sort().map(c => (
@@ -2843,7 +2843,7 @@ export default function MapaCampanhaPage() {
                       )}
                       {/* Alternância de visualização para vereadores */}
                       {(electoralData.cargo ?? '').toUpperCase().includes('VEREADOR') && (bairrosInfo.length > 0 || Object.keys(votosPorZona).length > 0) && (
-                        <div className="flex bg-slate-700 rounded-lg p-0.5">
+                        <div className="flex bg-[var(--bg-card-subtle)] rounded-lg p-0.5">
                           <button
                             onClick={() => setVisualizacaoMapa('municipio')}
                             className={`px-2 py-1 text-xs rounded-md transition-all flex items-center gap-1 ${
@@ -2895,7 +2895,7 @@ export default function MapaCampanhaPage() {
                   )}
                   {/* Legenda para visualização por bairros */}
                   {visualizacaoMapa === 'bairro' && bairrosInfo.length > 0 && (
-                    <div className="mt-2 p-2 bg-slate-700/50 border border-slate-600 rounded-lg">
+                    <div className="mt-2 p-2 bg-[var(--bg-card-subtle)]/50 border border-[var(--border-default)] rounded-lg">
                       <div className="flex items-center gap-4 text-xs flex-wrap">
                         <span className="text-slate-600 dark:text-slate-400 font-medium">Legenda:</span>
                         <div className="flex items-center gap-1.5">
@@ -3072,8 +3072,8 @@ export default function MapaCampanhaPage() {
               transition={{ delay: 0.5 }}
               className={mapFullscreen ? 'w-72 flex-shrink-0 h-full border-l border-[var(--tint-10)]' : ''}
             >
-              <Card className={mapFullscreen ? 'h-full rounded-none border-0 bg-[var(--bg-card)] flex flex-col' : 'bg-slate-800/50 border-slate-700 h-[600px] flex flex-col'}>
-                <CardHeader className="border-b border-slate-700 py-3">
+              <Card className={mapFullscreen ? 'h-full rounded-none border-0 bg-[var(--bg-card)] flex flex-col' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] h-[600px] flex flex-col'}>
+                <CardHeader className="border-b border-[var(--border-default)] py-3">
                   <div className="flex items-center justify-between gap-2">
                     <CardTitle className="text-[color:var(--text-primary)] text-sm flex items-center gap-2">
                       {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c)) ? (
@@ -3122,7 +3122,7 @@ export default function MapaCampanhaPage() {
                           : "Pesquisar município..."}
                         value={searchMunicipio}
                         onChange={(e) => setSearchMunicipio(e.target.value)}
-                        className="w-full bg-slate-700 border border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg pl-9 pr-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                       />
                     </div>
                     {/* Filtros - só mostrar para view de municípios */}
@@ -3133,7 +3133,7 @@ export default function MapaCampanhaPage() {
                         className={`flex-1 min-w-[60px] px-2 py-1.5 text-xs rounded-lg transition-colors ${
                           filtroTipo === 'todos'
                             ? 'bg-slate-600 text-white'
-                            : 'bg-slate-700/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
+                            : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
                         }`}
                       >
                         Todos
@@ -3143,7 +3143,7 @@ export default function MapaCampanhaPage() {
                         className={`flex-1 min-w-[70px] px-2 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-center gap-1 ${
                           filtroTipo === 'com_dobrada'
                             ? 'bg-blue-600 text-white'
-                            : 'bg-slate-700/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
+                            : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
                         }`}
                       >
                         <Handshake className="h-3 w-3" />
@@ -3154,7 +3154,7 @@ export default function MapaCampanhaPage() {
                         className={`flex-1 min-w-[80px] px-2 py-1.5 text-xs rounded-lg transition-colors ${
                           filtroTipo === 'sem_dobrada'
                             ? 'bg-slate-500 text-white'
-                            : 'bg-slate-700/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
+                            : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
                         }`}
                       >
                         Sem Dobrada
@@ -3164,7 +3164,7 @@ export default function MapaCampanhaPage() {
                         className={`flex-1 min-w-[80px] px-2 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-center gap-1 ${
                           filtroTipo === 'parcerias'
                             ? 'bg-amber-600 text-white'
-                            : 'bg-slate-700/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
+                            : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
                         }`}
                       >
                         <Users className="h-3 w-3" />
@@ -3189,10 +3189,10 @@ export default function MapaCampanhaPage() {
                           return (
                             <div
                               key={idx}
-                              className={`p-3 hover:bg-slate-700/50 cursor-pointer transition-colors ${
+                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors ${
                                 category === 'acima' ? 'bg-emerald-900/10 border-l-2 border-emerald-500' :
                                 category === 'abaixo' ? 'bg-blue-900/10 border-l-2 border-blue-500' :
-                                'border-l-2 border-slate-600'
+                                'border-l-2 border-[var(--border-default)]'
                               }`}
                               onClick={() => handleBairroClick(bairro.bairro, bairro.votos)}
                             >
@@ -3243,7 +3243,7 @@ export default function MapaCampanhaPage() {
                         return (
                           <div
                             key={idx}
-                            className={`p-3 hover:bg-slate-700/50 cursor-pointer transition-colors group ${
+                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' :
                               mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
                             }`}
@@ -3310,7 +3310,7 @@ export default function MapaCampanhaPage() {
                         return (
                           <div
                             key={idx}
-                            className={`p-3 hover:bg-slate-700/50 cursor-pointer transition-colors group ${
+                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' :
                               mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
                             }`}
@@ -3367,7 +3367,7 @@ export default function MapaCampanhaPage() {
                         return (
                           <div
                             key={idx}
-                            className={`p-3 hover:bg-slate-700/50 cursor-pointer transition-colors group ${
+                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isSelected ? 'bg-violet-900/30 border-l-2 border-violet-400' :
                               mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
                             }`}
@@ -3412,7 +3412,7 @@ export default function MapaCampanhaPage() {
                         return (
                           <div
                             key={idx}
-                            className={`p-3 hover:bg-slate-700/50 cursor-pointer transition-colors group ${
+                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isSelected ? 'bg-emerald-900/30 border-l-2 border-emerald-400' :
                               mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
                             }`}
@@ -3457,7 +3457,7 @@ export default function MapaCampanhaPage() {
                         return (
                           <div
                             key={idx}
-                            className={`p-3 hover:bg-slate-700/50 cursor-pointer transition-colors group ${
+                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isSelected ? 'bg-orange-900/30 border-l-2 border-orange-400' :
                               mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
                             }`}
@@ -3502,7 +3502,7 @@ export default function MapaCampanhaPage() {
                         return (
                           <div
                             key={idx}
-                            className={`p-3 hover:bg-slate-700/50 cursor-pointer transition-colors group ${
+                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isSelected ? 'bg-violet-900/30 border-l-2 border-violet-400' :
                               mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
                             }`}
@@ -3561,7 +3561,7 @@ export default function MapaCampanhaPage() {
                               return (
                                 <div
                                   key={idx}
-                                  className={`p-3 hover:bg-slate-700/50 cursor-pointer transition-colors group ${
+                                  className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                                     isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' : ''
                                   }`}
                                   onClick={() => {
@@ -3604,7 +3604,7 @@ export default function MapaCampanhaPage() {
                         return (
                           <div
                             key={idx}
-                            className={`p-3 hover:bg-slate-700/50 cursor-pointer transition-colors group ${
+                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
                             }`}
                             onClick={() => handleBairroClick(bairroNome, mun.votosBase)}
@@ -3649,7 +3649,7 @@ export default function MapaCampanhaPage() {
                         return (
                           <div
                             key={idx}
-                            className={`p-3 hover:bg-slate-700/50 cursor-pointer transition-colors group ${
+                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isNew ? 'bg-emerald-900/20 border-l-2 border-emerald-500' :
                               mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
                             }`}
@@ -3759,7 +3759,7 @@ export default function MapaCampanhaPage() {
         {selectedMunicipio && (
           <div className="space-y-5">
             {/* Votos Base */}
-            <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+            <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-slate-600 dark:text-slate-400 text-sm">Votos em {ano}</p>
@@ -3789,7 +3789,7 @@ export default function MapaCampanhaPage() {
                         type="number"
                         value={metaConservadoraTemp}
                         onChange={(e) => setMetaConservadoraTemp(parseInt(e.target.value) || 0)}
-                        className="bg-slate-700 border-amber-500/50 text-[color:var(--text-primary)] text-sm"
+                        className="bg-[var(--bg-card-subtle)] border-amber-500/50 text-[color:var(--text-primary)] text-sm"
                       />
                       <p className={`text-xs mt-1 font-medium ${
                         metaConservadoraTemp > selectedMunicipio.votosBase ? 'text-emerald-400' :
@@ -3809,7 +3809,7 @@ export default function MapaCampanhaPage() {
                         type="number"
                         value={metaPossivelTemp}
                         onChange={(e) => setMetaPossivelTemp(parseInt(e.target.value) || 0)}
-                        className="bg-slate-700 border-cyan-500/50 text-[color:var(--text-primary)] text-sm"
+                        className="bg-[var(--bg-card-subtle)] border-cyan-500/50 text-[color:var(--text-primary)] text-sm"
                       />
                       <p className={`text-xs mt-1 font-medium ${
                         metaPossivelTemp > selectedMunicipio.votosBase ? 'text-emerald-400' :
@@ -3829,7 +3829,7 @@ export default function MapaCampanhaPage() {
                         type="number"
                         value={metaArrojadaTemp}
                         onChange={(e) => setMetaArrojadaTemp(parseInt(e.target.value) || 0)}
-                        className="bg-slate-700 border-emerald-500/50 text-[color:var(--text-primary)] text-sm"
+                        className="bg-[var(--bg-card-subtle)] border-emerald-500/50 text-[color:var(--text-primary)] text-sm"
                       />
                       <p className={`text-xs mt-1 font-medium ${
                         metaArrojadaTemp > selectedMunicipio.votosBase ? 'text-emerald-400' :
@@ -3850,7 +3850,7 @@ export default function MapaCampanhaPage() {
                       </h4>
                       <div className="grid grid-cols-3 gap-3 text-xs">
                         {/* Conservadora Final */}
-                        <div className="bg-slate-800/50 rounded-lg p-2 border border-amber-500/20">
+                        <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-amber-500/20">
                           <p className="text-amber-400 mb-1 font-medium">Conservadora</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
@@ -3861,14 +3861,14 @@ export default function MapaCampanhaPage() {
                               <span>+ Parcerias:</span>
                               <span>+{parceriasSum.conservadora.toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between text-[color:var(--text-primary)] font-bold border-t border-slate-600 pt-1">
+                            <div className="flex justify-between text-[color:var(--text-primary)] font-bold border-t border-[var(--border-default)] pt-1">
                               <span>= Final:</span>
                               <span>{(metaConservadoraTemp + parceriasSum.conservadora).toLocaleString()}</span>
                             </div>
                           </div>
                         </div>
                         {/* Realista Final */}
-                        <div className="bg-slate-800/50 rounded-lg p-2 border border-cyan-500/20">
+                        <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-cyan-500/20">
                           <p className="text-cyan-400 mb-1 font-medium">Realista</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
@@ -3879,14 +3879,14 @@ export default function MapaCampanhaPage() {
                               <span>+ Parcerias:</span>
                               <span>+{parceriasSum.possivel.toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between text-[color:var(--text-primary)] font-bold border-t border-slate-600 pt-1">
+                            <div className="flex justify-between text-[color:var(--text-primary)] font-bold border-t border-[var(--border-default)] pt-1">
                               <span>= Final:</span>
                               <span>{(metaPossivelTemp + parceriasSum.possivel).toLocaleString()}</span>
                             </div>
                           </div>
                         </div>
                         {/* Arrojada Final */}
-                        <div className="bg-slate-800/50 rounded-lg p-2 border border-emerald-500/20">
+                        <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-emerald-500/20">
                           <p className="text-emerald-400 mb-1 font-medium">Otimista</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
@@ -3897,7 +3897,7 @@ export default function MapaCampanhaPage() {
                               <span>+ Parcerias:</span>
                               <span>+{parceriasSum.arrojada.toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between text-[color:var(--text-primary)] font-bold border-t border-slate-600 pt-1">
+                            <div className="flex justify-between text-[color:var(--text-primary)] font-bold border-t border-[var(--border-default)] pt-1">
                               <span>= Final:</span>
                               <span>{(metaArrojadaTemp + parceriasSum.arrojada).toLocaleString()}</span>
                             </div>
@@ -3916,14 +3916,14 @@ export default function MapaCampanhaPage() {
               value={prioridadeTemp}
               onChange={(e) => setPrioridadeTemp(e.target.value)}
               options={prioridadeOptions}
-              className="bg-slate-700 border-slate-600 text-[color:var(--text-primary)]"
+              className="bg-[var(--bg-card-subtle)] border-[var(--border-default)] text-[color:var(--text-primary)]"
             />
 
             {/* Dobradinha Section */}
             <div className={`rounded-lg p-4 border transition-colors ${
               dobradaAtivaTemp 
-                ? 'bg-blue-900/30 border-blue-500/50' 
-                : 'bg-slate-700/30 border-slate-600'
+                ? 'bg-[var(--brand-cobalt-soft)] border-[var(--brand-cobalt)]' 
+                : 'bg-[var(--bg-card-subtle)]/30 border-[var(--border-default)]'
             }`}>
               <div className="flex items-center gap-3 mb-4">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -3931,7 +3931,7 @@ export default function MapaCampanhaPage() {
                     type="checkbox"
                     checked={dobradaAtivaTemp}
                     onChange={(e) => setDobradaAtivaTemp(e.target.checked)}
-                    className="w-5 h-5 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                    className="w-5 h-5 rounded border-[var(--border-default)] bg-[var(--bg-card-subtle)] text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
                   />
                   <Handshake className={`h-5 w-5 ${dobradaAtivaTemp ? 'text-blue-400' : 'text-slate-600 dark:text-slate-500'}`} />
                   <span className={`font-medium ${dobradaAtivaTemp ? 'text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}>
@@ -3948,14 +3948,14 @@ export default function MapaCampanhaPage() {
                       placeholder="Ex: Marcos Pereira"
                       value={dobradaNomeTemp}
                       onChange={(e) => setDobradaNomeTemp(e.target.value)}
-                      className="bg-slate-700 border-slate-600 text-[color:var(--text-primary)]"
+                      className="bg-[var(--bg-card-subtle)] border-[var(--border-default)] text-[color:var(--text-primary)]"
                     />
                     <Input
                       label="Partido (opcional)"
                       placeholder="Ex: REPUBLICANOS"
                       value={dobradaPartidoTemp}
                       onChange={(e) => setDobradaPartidoTemp(e.target.value)}
-                      className="bg-slate-700 border-slate-600 text-[color:var(--text-primary)]"
+                      className="bg-[var(--bg-card-subtle)] border-[var(--border-default)] text-[color:var(--text-primary)]"
                     />
                   </div>
                   <div>
@@ -3965,7 +3965,7 @@ export default function MapaCampanhaPage() {
                       value={dobradaObservacoesTemp}
                       onChange={(e) => setDobradaObservacoesTemp(e.target.value)}
                       rows={2}
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     />
                   </div>
                 </div>
@@ -3999,7 +3999,7 @@ export default function MapaCampanhaPage() {
                   {getParceriasMunicipio(selectedMunicipio.nome).map((parceria) => (
                     <div
                       key={parceria.id}
-                      className="p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-amber-500/50 transition-colors"
+                      className="p-3 bg-[var(--bg-card-subtle)]/50 rounded-lg border border-[var(--border-default)] hover:border-amber-500/50 transition-colors"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -4073,7 +4073,7 @@ export default function MapaCampanhaPage() {
               <Button
                 onClick={() => { setShowModal(false); setSelectedMapMunicipio(null); }}
                 variant="outline"
-                className="flex-1 border-slate-600 text-slate-700 dark:text-slate-300"
+                className="flex-1 border-[var(--border-default)] text-slate-700 dark:text-slate-300"
               >
                 Cancelar
               </Button>
@@ -4125,12 +4125,12 @@ export default function MapaCampanhaPage() {
                 placeholder="Digite para filtrar..."
                 value={filtroMunicipios}
                 onChange={(e) => setFiltroMunicipios(e.target.value)}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg pl-9 pr-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               />
             </div>
           </div>
 
-          <div className="max-h-40 overflow-y-auto bg-slate-700/50 rounded-lg border border-slate-600">
+          <div className="max-h-40 overflow-y-auto bg-[var(--bg-card-subtle)]/50 rounded-lg border border-[var(--border-default)]">
             {municipiosDisponiveis.length === 0 ? (
               <div className="p-4 text-center text-slate-600 dark:text-slate-400 text-sm">
                 <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
@@ -4166,7 +4166,7 @@ export default function MapaCampanhaPage() {
           </div>
 
           {novoMunicipioNome && (
-            <div className="bg-slate-700/50 rounded-lg p-3 border border-cyan-500/30">
+            <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-3 border border-cyan-500/30">
               <p className="text-cyan-400 text-sm font-medium">
                 <MapPin className="h-4 w-4 inline mr-1" />
                 Selecionado: {novoMunicipioNome}
@@ -4184,7 +4184,7 @@ export default function MapaCampanhaPage() {
                 type="number"
                 value={novoMetaConservadora}
                 onChange={(e) => setNovoMetaConservadora(parseInt(e.target.value) || 0)}
-                className="bg-slate-700 border-amber-500/50 text-[color:var(--text-primary)]"
+                className="bg-[var(--bg-card-subtle)] border-amber-500/50 text-[color:var(--text-primary)]"
               />
             </div>
             <div className="bg-cyan-900/20 rounded-lg p-3 border border-cyan-500/30">
@@ -4196,7 +4196,7 @@ export default function MapaCampanhaPage() {
                 type="number"
                 value={novoMetaPossivel}
                 onChange={(e) => setNovoMetaPossivel(parseInt(e.target.value) || 0)}
-                className="bg-slate-700 border-cyan-500/50 text-[color:var(--text-primary)]"
+                className="bg-[var(--bg-card-subtle)] border-cyan-500/50 text-[color:var(--text-primary)]"
               />
             </div>
             <div className="bg-emerald-900/20 rounded-lg p-3 border border-emerald-500/30">
@@ -4208,7 +4208,7 @@ export default function MapaCampanhaPage() {
                 type="number"
                 value={novoMetaArrojada}
                 onChange={(e) => setNovoMetaArrojada(parseInt(e.target.value) || 0)}
-                className="bg-slate-700 border-emerald-500/50 text-[color:var(--text-primary)]"
+                className="bg-[var(--bg-card-subtle)] border-emerald-500/50 text-[color:var(--text-primary)]"
               />
             </div>
           </div>
@@ -4218,14 +4218,14 @@ export default function MapaCampanhaPage() {
             value={novoMunicipioPrioridade}
             onChange={(e) => setNovoMunicipioPrioridade(e.target.value)}
             options={prioridadeOptions}
-            className="bg-slate-700 border-slate-600 text-[color:var(--text-primary)]"
+            className="bg-[var(--bg-card-subtle)] border-[var(--border-default)] text-[color:var(--text-primary)]"
           />
 
           <div className="flex gap-2 pt-2">
             <Button
               onClick={() => setShowAddModal(false)}
               variant="outline"
-              className="flex-1 border-slate-600 text-slate-700 dark:text-slate-300"
+              className="flex-1 border-[var(--border-default)] text-slate-700 dark:text-slate-300"
             >
               Cancelar
             </Button>
@@ -4260,7 +4260,7 @@ export default function MapaCampanhaPage() {
               <div
                 key={candidato.id}
                 onClick={() => selectCandidato(candidato)}
-                className="p-4 bg-slate-700/50 border border-slate-600 rounded-lg cursor-pointer hover:border-cyan-500 hover:bg-slate-700 transition-all group"
+                className="p-4 bg-[var(--bg-card-subtle)]/50 border border-[var(--border-default)] rounded-lg cursor-pointer hover:border-cyan-500 hover:bg-[var(--bg-card-subtle)] transition-all group"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -4292,7 +4292,7 @@ export default function MapaCampanhaPage() {
                   </div>
                 </div>
                 {!(candidato.cargo ?? '').toUpperCase().includes('VEREADOR') && candidato.municipioPrincipal !== 'N/A' && (
-                  <div className="mt-2 pt-2 border-t border-slate-600">
+                  <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
                     <p className="text-slate-600 dark:text-slate-500 text-xs">
                       Maior votação em: <span className="text-slate-700 dark:text-slate-300">{candidato.municipioPrincipal}</span>
                     </p>
@@ -4306,7 +4306,7 @@ export default function MapaCampanhaPage() {
             <Button
               onClick={() => setShowCandidatoModal(false)}
               variant="outline"
-              className="border-slate-600 text-slate-700 dark:text-slate-300"
+              className="border-[var(--border-default)] text-slate-700 dark:text-slate-300"
             >
               Cancelar
             </Button>
@@ -4334,13 +4334,13 @@ export default function MapaCampanhaPage() {
 
           {/* Nome */}
           <div>
-            <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>Nome do Candidato <span style={{ color: '#2563EB' }}>*</span></label>
+            <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Nome do Candidato <span style={{ color: '#2563EB' }}>*</span></label>
             <input
               value={novoCandidatoNome}
               onChange={(e) => setNovoCandidatoNome(e.target.value)}
               placeholder="Nome completo"
               className="w-full rounded-xl px-3.5 py-2.5 text-sm text-[color:var(--text-primary)] outline-none transition-all"
-              style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#fff' }}
+              style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: 'var(--text-primary)' }}
               onFocus={e => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
               onBlur={e => { e.target.style.borderColor = 'rgba(37,99,235,0.2)'; e.target.style.boxShadow = 'none'; }}
             />
@@ -4349,24 +4349,24 @@ export default function MapaCampanhaPage() {
           {/* Partido + UF */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>Partido</label>
+              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Partido</label>
               <input
                 value={novoCandidatoPartido}
                 onChange={(e) => setNovoCandidatoPartido(e.target.value)}
                 placeholder="Ex: PSD, PT, MDB..."
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#fff' }}
+                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: 'var(--text-primary)' }}
                 onFocus={e => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
                 onBlur={e => { e.target.style.borderColor = 'rgba(37,99,235,0.2)'; e.target.style.boxShadow = 'none'; }}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>UF <span style={{ color: '#2563EB' }}>*</span></label>
+              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--text-tertiary)' }}>UF <span style={{ color: '#2563EB' }}>*</span></label>
               <select
                 value={novoCandidatoUf}
                 onChange={(e) => setNovoCandidatoUf(e.target.value)}
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
+                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: 'var(--text-primary)' }}
               >
                 {ESTADOS_BRASIL.map((e) => (
                   <option key={e.sigla} value={e.sigla} style={{ background: 'var(--bg-card)' }}>{e.sigla} — {e.nome}</option>
@@ -4378,12 +4378,12 @@ export default function MapaCampanhaPage() {
           {/* Cargo + Ano */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>Cargo <span style={{ color: '#2563EB' }}>*</span></label>
+              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Cargo <span style={{ color: '#2563EB' }}>*</span></label>
               <select
                 value={novoCandidatoCargo}
                 onChange={(e) => setNovoCandidatoCargo(e.target.value)}
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
+                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: 'var(--text-primary)' }}
               >
                 {[
                   ['DEPUTADO_FEDERAL', 'Deputado Federal'],
@@ -4398,12 +4398,12 @@ export default function MapaCampanhaPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>Ano da Projeção <span style={{ color: '#2563EB' }}>*</span></label>
+              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Ano da Projeção <span style={{ color: '#2563EB' }}>*</span></label>
               <select
                 value={novoCandidatoAnoProjecao}
                 onChange={(e) => setNovoCandidatoAnoProjecao(e.target.value)}
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
+                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: 'var(--text-primary)' }}
               >
                 {['2024','2026','2028','2030'].map((a) => (
                   <option key={a} value={a} style={{ background: 'var(--bg-card)' }}>{a}</option>
@@ -4415,7 +4415,7 @@ export default function MapaCampanhaPage() {
           {/* Município — apenas para Vereador / Prefeito */}
           {(novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') && (
             <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#8fa3bf' }}>
+              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
                 Município <span style={{ color: '#2563EB' }}>*</span>
               </label>
               <div className="relative">
@@ -4427,7 +4427,7 @@ export default function MapaCampanhaPage() {
                   }}
                   placeholder={novoCandidatoMunicipioOpcoes.length ? 'Buscar município...' : 'Carregando...'}
                   className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                  style={{ background: 'var(--bg-card)', border: `1.5px solid ${novoCandidatoMunicipio ? 'rgba(37,99,235,0.6)' : 'rgba(37,99,235,0.2)'}`, color: '#fff' }}
+                  style={{ background: 'var(--bg-card)', border: `1.5px solid ${novoCandidatoMunicipio ? 'rgba(37,99,235,0.6)' : 'rgba(37,99,235,0.2)'}`, color: 'var(--text-primary)' }}
                   onFocus={e => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
                   onBlur={e => { e.target.style.borderColor = novoCandidatoMunicipio ? 'rgba(37,99,235,0.6)' : 'rgba(37,99,235,0.2)'; e.target.style.boxShadow = 'none'; }}
                 />
@@ -4444,7 +4444,7 @@ export default function MapaCampanhaPage() {
                           key={m}
                           type="button"
                           className="w-full text-left px-3.5 py-2 text-sm transition-colors"
-                          style={{ color: '#cbd5e1' }}
+                          style={{ color: 'var(--text-primary)' }}
                           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(37,99,235,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff'; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#cbd5e1'; }}
                           onMouseDown={() => {
@@ -4508,8 +4508,8 @@ export default function MapaCampanhaPage() {
               getBairroCategory(selectedBairro.votos) === 'acima'
                 ? 'bg-emerald-900/30 border-emerald-500/50'
                 : getBairroCategory(selectedBairro.votos) === 'abaixo'
-                  ? 'bg-blue-900/30 border-blue-500/50'
-                  : 'bg-slate-800/50 border-slate-600'
+                  ? 'bg-[var(--brand-cobalt-soft)] border-[var(--brand-cobalt)]'
+                  : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)]'
             }`}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -4535,7 +4535,7 @@ export default function MapaCampanhaPage() {
 
             {/* Estatísticas */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+              <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
                 <div className="flex items-center gap-2 mb-2">
                   <Vote className="h-5 w-5 text-cyan-400" />
                   <span className="text-slate-600 dark:text-slate-400 text-sm">Votos Recebidos</span>
@@ -4544,7 +4544,7 @@ export default function MapaCampanhaPage() {
                   {selectedBairro.votos.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+              <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
                 <div className="flex items-center gap-2 mb-2">
                   <Percent className="h-5 w-5 text-purple-400" />
                   <span className="text-slate-600 dark:text-slate-400 text-sm">% do Total</span>
@@ -4558,7 +4558,7 @@ export default function MapaCampanhaPage() {
             </div>
 
             {/* Metas Sugeridas */}
-            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+            <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
               <h4 className="text-[color:var(--text-primary)] font-medium mb-3 flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-emerald-400" />
                 Projeções Sugeridas para {anoProjecao}
@@ -4593,14 +4593,14 @@ export default function MapaCampanhaPage() {
 
             {/* Locais de Votação */}
             {selectedBairro.locais && selectedBairro.locais.length > 0 && (
-              <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+              <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
                 <h4 className="text-[color:var(--text-primary)] font-medium mb-3 flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-blue-400" />
                   Locais de Votação ({selectedBairro.locais.length})
                 </h4>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {selectedBairro.locais.map((local, idx) => (
-                    <div key={idx} className="p-2 bg-slate-700/50 rounded-lg text-sm">
+                    <div key={idx} className="p-2 bg-[var(--bg-card-subtle)]/50 rounded-lg text-sm">
                       <p className="text-[color:var(--text-primary)] font-medium">{local.nome}</p>
                       <p className="text-slate-600 dark:text-slate-400 text-xs">{local.endereco}</p>
                     </div>
@@ -4613,7 +4613,7 @@ export default function MapaCampanhaPage() {
               <Button
                 onClick={() => setShowBairroModal(false)}
                 variant="outline"
-                className="border-slate-600 text-slate-700 dark:text-slate-300"
+                className="border-[var(--border-default)] text-slate-700 dark:text-slate-300"
               >
                 Fechar
               </Button>
@@ -4629,7 +4629,7 @@ export default function MapaCampanhaPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)]">
             <CardHeader>
               <CardTitle className="text-[color:var(--text-primary)]">Projeções Salvas</CardTitle>
             </CardHeader>
@@ -4638,7 +4638,7 @@ export default function MapaCampanhaPage() {
                 {projecoesSalvas.map((proj) => (
                   <Card
                     key={proj.id}
-                    className="bg-slate-700/50 border-slate-600 cursor-pointer hover:border-cyan-500 transition-colors relative group"
+                    className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] cursor-pointer hover:border-cyan-500 transition-colors relative group"
                     onClick={async () => {
                       setCandidateName(proj.candidatoNome);
                       setAno(proj.anoBase.toString());
@@ -4837,7 +4837,7 @@ export default function MapaCampanhaPage() {
               value={parceriaForm.nome || ''}
               onChange={(e) => setParceriaForm(prev => ({ ...prev, nome: e.target.value }))}
               placeholder="Ex: Igreja São José, ONG Vida Nova..."
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
@@ -4847,7 +4847,7 @@ export default function MapaCampanhaPage() {
             <select
               value={parceriaForm.tipo || 'LIDERANCA'}
               onChange={(e) => setParceriaForm(prev => ({ ...prev, tipo: e.target.value as TipoParceria }))}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-[color:var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               {Object.entries(TIPO_PARCERIA_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>{label}</option>
@@ -4864,7 +4864,7 @@ export default function MapaCampanhaPage() {
                 value={parceriaForm.responsavel || ''}
                 onChange={(e) => setParceriaForm(prev => ({ ...prev, responsavel: e.target.value }))}
                 placeholder="Nome do contato"
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
             <div>
@@ -4874,7 +4874,7 @@ export default function MapaCampanhaPage() {
                 value={parceriaForm.contato || ''}
                 onChange={(e) => setParceriaForm(prev => ({ ...prev, contato: e.target.value }))}
                 placeholder="Telefone ou email"
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
@@ -4887,19 +4887,19 @@ export default function MapaCampanhaPage() {
               value={parceriaForm.impactoEstimado || 0}
               onChange={(e) => setParceriaForm(prev => ({ ...prev, impactoEstimado: parseInt(e.target.value) || 0 }))}
               min={0}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-[color:var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
           {/* Metas */}
-          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+          <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
             <h4 className="text-[color:var(--text-primary)] font-medium mb-3 flex items-center gap-2">
               <Target className="h-4 w-4 text-amber-400" />
               Metas da Parceria
             </h4>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
-                <div className="p-3 bg-slate-800 rounded-lg border border-slate-600">
+                <div className="p-3 bg-[var(--bg-card-subtle)] rounded-lg border border-[var(--border-default)]">
                   <Shield className="h-5 w-5 text-slate-600 dark:text-slate-400 mx-auto mb-1" />
                   <p className="text-slate-600 dark:text-slate-400 text-xs mb-1">Conservadora</p>
                   <input
@@ -4907,7 +4907,7 @@ export default function MapaCampanhaPage() {
                     value={parceriaForm.metaConservadora || 0}
                     onChange={(e) => setParceriaForm(prev => ({ ...prev, metaConservadora: parseInt(e.target.value) || 0 }))}
                     min={0}
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-[color:var(--text-primary)] text-center text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded px-2 py-1 text-[color:var(--text-primary)] text-center text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
                   />
                 </div>
               </div>
@@ -4920,12 +4920,12 @@ export default function MapaCampanhaPage() {
                     value={parceriaForm.metaPossivel || 0}
                     onChange={(e) => setParceriaForm(prev => ({ ...prev, metaPossivel: parseInt(e.target.value) || 0 }))}
                     min={0}
-                    className="w-full bg-slate-700 border border-amber-500/50 rounded px-2 py-1 text-[color:var(--text-primary)] text-center text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    className="w-full bg-[var(--bg-card-subtle)] border border-amber-500/50 rounded px-2 py-1 text-[color:var(--text-primary)] text-center text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
                   />
                 </div>
               </div>
               <div className="text-center">
-                <div className="p-3 bg-slate-800 rounded-lg border border-slate-600">
+                <div className="p-3 bg-[var(--bg-card-subtle)] rounded-lg border border-[var(--border-default)]">
                   <Rocket className="h-5 w-5 text-emerald-400 mx-auto mb-1" />
                   <p className="text-emerald-400 text-xs mb-1">Otimista</p>
                   <input
@@ -4933,7 +4933,7 @@ export default function MapaCampanhaPage() {
                     value={parceriaForm.metaArrojada || 0}
                     onChange={(e) => setParceriaForm(prev => ({ ...prev, metaArrojada: parseInt(e.target.value) || 0 }))}
                     min={0}
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-[color:var(--text-primary)] text-center text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded px-2 py-1 text-[color:var(--text-primary)] text-center text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
                   />
                 </div>
               </div>
@@ -4948,7 +4948,7 @@ export default function MapaCampanhaPage() {
               onChange={(e) => setParceriaForm(prev => ({ ...prev, observacoes: e.target.value }))}
               placeholder="Notas sobre a parceria..."
               rows={3}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+              className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
             />
           </div>
 
@@ -4957,7 +4957,7 @@ export default function MapaCampanhaPage() {
             <Button
               onClick={() => setShowParceriaModal(false)}
               variant="outline"
-              className="border-slate-600 text-slate-700 dark:text-slate-300"
+              className="border-[var(--border-default)] text-slate-700 dark:text-slate-300"
             >
               Cancelar
             </Button>
@@ -4995,7 +4995,7 @@ export default function MapaCampanhaPage() {
           <div className="flex gap-3 w-full pt-1">
             <Button
               variant="outline"
-              className="flex-1 border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-700"
+              className="flex-1 border-[var(--border-default)] text-slate-700 dark:text-slate-300 hover:bg-[var(--bg-card-subtle)]"
               onClick={() => { setShowDeleteModal(false); setProjecaoParaExcluir(null); }}
             >
               Cancelar

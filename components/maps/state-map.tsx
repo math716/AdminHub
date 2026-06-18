@@ -1064,8 +1064,8 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       )}
       {/* Painel de Controle */}
       {selectedMunicipio && !disableSubdivisao && (
-        <div className="absolute top-3 right-3 z-[1000] bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-700/60 p-3 shadow-2xl min-w-[140px]">
-          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-700/50">
+        <div className="absolute top-3 right-3 z-[1000] bg-[var(--bg-card)]/95 backdrop-blur-md rounded-xl border border-[var(--border-default)]/60 p-3 shadow-2xl min-w-[140px]">
+          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[var(--border-default)]/50">
             <Layers className="w-4 h-4 text-cyan-400" />
             <span className="text-xs text-gray-300 font-semibold">Camadas</span>
           </div>
@@ -1075,12 +1075,12 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
             disabled={!subdivisaoData?.hasPolygons}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all w-full mb-2 ${
               !subdivisaoData?.hasPolygons 
-                ? 'bg-slate-800/50 text-gray-500 cursor-not-allowed'
+                ? 'bg-[var(--bg-card-subtle)]/50 text-gray-500 cursor-not-allowed'
                 : showSubdivisao 
                   ? subdivisaoTipo === 'setores'
                     ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/25'
                     : 'bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-lg shadow-cyan-500/25' 
-                  : 'bg-slate-700/70 text-gray-300 hover:bg-slate-600'
+                  : 'bg-[var(--bg-card-subtle)]/70 text-gray-300 hover:bg-slate-600'
             }`}
           >
             {showSubdivisao ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -1089,7 +1089,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
 
           <button
             onClick={handleCloseSubdivisao}
-            className="w-full px-3 py-2 rounded-lg text-xs font-medium bg-slate-800/60 text-gray-400 hover:bg-slate-700 hover:text-gray-200 transition-all"
+            className="w-full px-3 py-2 rounded-lg text-xs font-medium bg-[var(--bg-card-subtle)]/60 text-gray-400 hover:bg-[var(--bg-card-subtle)] hover:text-gray-200 transition-all"
           >
             ← Voltar ao estado
           </button>
@@ -1098,7 +1098,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
 
       {/* Info do município */}
       {selectedMunicipio && !disableSubdivisao && (
-        <div className="absolute top-3 left-3 z-[1000] bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-700/60 px-4 py-3 shadow-2xl max-w-[280px]">
+        <div className="absolute top-3 left-3 z-[1000] bg-[var(--bg-card)]/95 backdrop-blur-md rounded-xl border border-[var(--border-default)]/60 px-4 py-3 shadow-2xl max-w-[280px]">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-cyan-400" />
             <span className="text-sm font-semibold text-[color:var(--text-primary)]">{selectedMunicipio}</span>
@@ -1116,7 +1116,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
               ) : subdivisaoTipo === 'setores' ? (
                 <div>
                   <span className="text-violet-400 font-medium">✓ {subdivisaoData?.total} setores censitários (IBGE)</span>
-                  <div className="flex items-start gap-1.5 mt-2 p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
+                  <div className="flex items-start gap-1.5 mt-2 p-2 bg-[var(--bg-card-subtle)]/60 rounded-lg border border-[var(--border-default)]/50">
                     <Info className="w-3 h-3 text-amber-400 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-400 leading-tight">
                       Bairros oficiais não disponíveis. Exibindo setores censitários do IBGE.
@@ -1126,7 +1126,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
               ) : subdivisaoTipo === 'bairrosTSE' ? (
                 <div>
                   <span className="text-amber-400 font-medium">✓ {subdivisaoData?.bairros?.length} locais de votação</span>
-                  <div className="flex items-start gap-1.5 mt-2 p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
+                  <div className="flex items-start gap-1.5 mt-2 p-2 bg-[var(--bg-card-subtle)]/60 rounded-lg border border-[var(--border-default)]/50">
                     <Info className="w-3 h-3 text-blue-400 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-400 leading-tight">
                       Polígonos de bairros não disponíveis para este município. Exibindo locais de votação agrupados por bairro.
@@ -1134,7 +1134,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
                   </div>
                 </div>
               ) : (
-                <div className="flex items-start gap-1.5 p-2 bg-slate-800/60 rounded-lg border border-slate-700/50">
+                <div className="flex items-start gap-1.5 p-2 bg-[var(--bg-card-subtle)]/60 rounded-lg border border-[var(--border-default)]/50">
                   <Info className="w-3 h-3 text-gray-500 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-500 leading-tight">
                     Sem dados de subdivisão disponíveis para este município.

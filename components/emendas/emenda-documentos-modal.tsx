@@ -335,21 +335,21 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
 
             {/* Pendente enrich — federal */}
             {data && data.pendingEnrich && !data.notFound && data.emenda?.esfera !== 'ESTADUAL' && (
-              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-900/40 border border-[var(--tint-06)] text-center">
+              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-[var(--bg-card)]/40 border border-[var(--tint-06)] text-center">
                 Os dados detalhados desta emenda ainda não estão disponíveis.
               </div>
             )}
 
             {/* Sem execução no estado filtrado */}
             {data && data.semExecucaoNoEstado && !data.notFound && (
-              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-900/40 border border-[var(--tint-06)] text-center">
+              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-[var(--bg-card)]/40 border border-[var(--tint-06)] text-center">
                 Esta emenda não possui execução registrada neste estado.
               </div>
             )}
 
             {/* Not found */}
             {data && data.notFound && (
-              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-900/40 border border-[var(--tint-06)]">
+              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-[var(--bg-card)]/40 border border-[var(--tint-06)]">
                 Emenda não encontrada no banco. Pode estar em fonte ao vivo ainda não persistida.
               </div>
             )}

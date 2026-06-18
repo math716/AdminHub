@@ -686,7 +686,7 @@ export default function DemandasPage() {
                 type="button"
                 onClick={geocodeFormAddress}
                 disabled={geoLoading}
-                className="flex items-center gap-1.5 px-3 py-2 bg-sky-700 hover:bg-sky-600 text-[color:var(--text-primary)] rounded-lg text-sm disabled:opacity-50 whitespace-nowrap"
+                className="flex items-center gap-1.5 px-3 py-2 bg-[var(--brand-cobalt)] hover:brightness-110 text-white rounded-lg text-sm disabled:opacity-50 whitespace-nowrap"
               >
                 {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                 Localizar
@@ -789,7 +789,7 @@ export default function DemandasPage() {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 px-5 py-2 bg-sky-600 hover:bg-sky-500 text-[color:var(--text-primary)] rounded-lg text-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2 bg-[var(--brand-cobalt)] hover:brightness-110 text-white rounded-lg text-sm disabled:opacity-50"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
               {editingDemand ? 'Salvar Alterações' : 'Criar Demanda'}

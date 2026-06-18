@@ -1996,7 +1996,7 @@ function ParlamentarDashboard({
                   className="text-[9px] px-1.5 py-0.5 rounded-md font-semibold"
                   style={{
                     background: 'var(--tint-06)',
-                    color: '#cbd5e1',
+                    color: 'var(--text-primary)',
                     border: '1px solid var(--tint-08)',
                   }}
                   title={`${t.qtd} ${t.qtd === 1 ? 'emenda' : 'emendas'}`}

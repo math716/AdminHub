@@ -247,7 +247,7 @@ export default function ConfiguracoesPage() {
                   </p>
                   <button onClick={handleCreate} disabled={creating}
                     className="flex items-center gap-2 mx-auto px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg,#128c7e,#25d366)', color: '#fff' }}>
+                    style={{ background: 'linear-gradient(135deg,#128c7e,#25d366)', color: 'var(--text-primary)' }}>
                     {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
                     {creating ? 'Gerando QR Code…' : instanceData?.instanceName ? 'Reconectar WhatsApp' : 'Gerar QR Code'}
                   </button>

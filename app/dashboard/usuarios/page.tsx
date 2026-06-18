@@ -57,7 +57,7 @@ function PermissionsChecklist({
               </span>
               <span className="flex items-center justify-center w-5 h-5 rounded-md flex-shrink-0 transition-all"
                 style={checked
-                  ? { background: accent.solid, color: '#fff', boxShadow: `0 0 8px ${accent.borderLight}` }
+                  ? { background: accent.solid, color: 'var(--text-primary)', boxShadow: `0 0 8px ${accent.borderLight}` }
                   : { background: 'transparent', border: '1.5px solid var(--tint-25)' }
                 }>
                 {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
@@ -125,7 +125,7 @@ const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> 
   AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: '#c084fc',  border: 'rgba(168,85,247,0.3)'  },
   CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)'  },
   ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: '#4ade80',  border: 'rgba(34,197,94,0.25)'  },
-  ANALISTA:        { bg: 'var(--tint-06)', color: '#cbd5e1',  border: 'var(--tint-14)' },
+  ANALISTA:        { bg: 'var(--tint-06)', color: 'var(--text-primary)',  border: 'var(--tint-14)' },
   VISUALIZADOR:    { bg: 'var(--tint-06)', color: '#94a3b8',  border: 'var(--tint-14)' },
 };
 
@@ -1330,7 +1330,7 @@ export default function UsuariosPage() {
                 </button>
                 <button onClick={confirmEditPermissions} disabled={savingPerms}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg,#9333ea,#a855f7)', color: '#fff' }}>
+                  style={{ background: 'linear-gradient(135deg,#9333ea,#a855f7)', color: 'var(--text-primary)' }}>
                   {savingPerms ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   {savingPerms ? 'Salvando...' : 'Salvar'}
                 </button>
@@ -1387,7 +1387,7 @@ export default function UsuariosPage() {
                 </button>
                 <button onClick={confirmDeleteGabinete} disabled={deletingGab}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg,#dc2626,#ef4444)', color: '#fff' }}>
+                  style={{ background: 'linear-gradient(135deg,#dc2626,#ef4444)', color: 'var(--text-primary)' }}>
                   {deletingGab ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                   {deletingGab ? 'Excluindo...' : 'Excluir'}
                 </button>

@@ -118,7 +118,7 @@ const StateMap = dynamic(() => import('@/components/maps/state-map'), {
 const MunicipioMap = dynamic(() => import('@/components/maps/municipio-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-full flex items-center justify-center bg-slate-800/50 rounded-lg">
+    <div className="h-full flex items-center justify-center bg-[var(--bg-card-subtle)]/50 rounded-lg">
       <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
     </div>
   )
@@ -1148,7 +1148,7 @@ export default function MapaPage() {
                           key={c.id}
                           onClick={() => handleSelectHomonimo(c.id)}
                           disabled={searching}
-                          className="w-full text-left p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 hover:border-cyan-500 rounded-lg transition-all disabled:opacity-50"
+                          className="w-full text-left p-3 bg-[var(--bg-card-subtle)]/50 hover:bg-[var(--bg-card-subtle)] border border-[var(--border-default)] hover:border-cyan-500 rounded-lg transition-all disabled:opacity-50"
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -1452,7 +1452,7 @@ export default function MapaPage() {
                           {zonasDoBairro.map(({ zona, votos }) => (
                             <div
                               key={zona}
-                              className="flex items-center gap-2 px-3 py-2 bg-slate-800/60 rounded-lg border border-slate-700"
+                              className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-card-subtle)]/60 rounded-lg border border-[var(--border-default)]"
                             >
                               <div className="w-8 h-8 rounded-full flex items-center justify-center text-[color:var(--text-primary)] text-xs font-bold flex-shrink-0" style={{ background: 'linear-gradient(135deg, #1a5fa8, #0f3d6e)' }}>
                                 {zona}
@@ -1557,7 +1557,7 @@ export default function MapaPage() {
                       <span className="text-amber-400 font-semibold text-sm">Distrito Federal</span>
                       {dfVisualizacao === 'zonas' && loadingZonas && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-600 dark:text-slate-400" />}
                     </div>
-                    <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
+                    <div className="flex items-center bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg p-0.5 text-xs">
                       <button
                         onClick={() => { setDfVisualizacao('bairros'); setSelectedBairro(null); }}
                         className={`px-2.5 py-1 rounded-md font-medium transition-all ${dfVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
@@ -1750,7 +1750,7 @@ export default function MapaPage() {
                     <div className="flex items-center gap-2">
                       {/* Toggle distritos/bairros — só para São Paulo */}
                       {isSaoPauloCapital && (
-                        <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
+                        <div className="flex items-center bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg p-0.5 text-xs">
                           <button
                             onClick={() => { setSpVisualizacao('distritos'); setSelectedBairro(null); }}
                             className={`px-2.5 py-1 rounded-md font-medium transition-all ${spVisualizacao === 'distritos' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
@@ -1769,7 +1769,7 @@ export default function MapaPage() {
                       )}
                       {/* Toggle bairros/zonas — só para Rio de Janeiro */}
                       {isRioDeJaneiro && (
-                        <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
+                        <div className="flex items-center bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg p-0.5 text-xs">
                           <button
                             onClick={() => { setRjVisualizacao('bairros'); setSelectedBairro(null); }}
                             className={`px-2.5 py-1 rounded-md font-medium transition-all ${rjVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
@@ -1788,7 +1788,7 @@ export default function MapaPage() {
                       )}
                       {/* Toggle bairros/zonas — só para Fortaleza (CE) */}
                       {isFortalezaCe && (
-                        <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
+                        <div className="flex items-center bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg p-0.5 text-xs">
                           <button
                             onClick={() => { setCeVisualizacao('bairros'); setSelectedBairro(null); }}
                             className={`px-2.5 py-1 rounded-md font-medium transition-all ${ceVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
@@ -1807,7 +1807,7 @@ export default function MapaPage() {
                       )}
                       {/* Toggle bairros/zonas — municípios genéricos com GeoJSON IBGE CD2022 */}
                       {isGenPoligonosMunicipio && (
-                        <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
+                        <div className="flex items-center bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg p-0.5 text-xs">
                           <button
                             onClick={() => { setGenVisualizacao('bairros'); setSelectedBairro(null); }}
                             className={`px-2.5 py-1 rounded-md font-medium transition-all ${genVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}

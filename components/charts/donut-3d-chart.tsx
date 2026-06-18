@@ -103,12 +103,12 @@ export default function Donut3DChart({
               backgroundColor: 'rgba(13, 27, 42, 0.97)',
               border: '1px solid var(--tint-14)',
               borderRadius: '10px',
-              color: '#fff',
+              color: 'var(--text-primary)',
               fontSize: '12px',
               padding: '8px 12px',
               boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
             }}
-            itemStyle={{ color: '#fff', padding: '2px 0' }}
+            itemStyle={{ color: 'var(--text-primary)', padding: '2px 0' }}
             labelStyle={{ display: 'none' }}
             separator=" "
             formatter={(value: number, name: string) => {

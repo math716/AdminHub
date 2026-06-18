@@ -56,7 +56,7 @@ export function ThemeToggleButton() {
       style={{
         background: 'var(--tint-04)',
         border: '1px solid rgba(148,163,184,0.10)',
-        color: '#CBD5E1',
+        color: 'var(--text-primary)',
       }}
     >
       {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
