@@ -88,7 +88,7 @@ let spDistritosGeoCache: any = null;
 function demandaPinSvg(color: string, dotColor: string, foto?: string, selected = false): string {
   const size = selected ? 44 : 36;
   const h = Math.round(size * 1.45);
-  const border = selected ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.4)';
+  const border = selected ? 'var(--text-primary)' : 'var(--tint-45)';
   const bw = selected ? 3 : 1.5;
 
   if (foto) {
@@ -112,20 +112,20 @@ function demandaPinSvg(color: string, dotColor: string, foto?: string, selected 
 function eventoPinSvg(color: string, selected = false): string {
   const size = selected ? 40 : 32;
   const h = Math.round(size * 1.45);
-  const border = selected ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.4)';
+  const border = selected ? 'var(--text-primary)' : 'var(--tint-45)';
   const bw = selected ? 3 : 1.5;
   return `<svg width="${size}" height="${h}" viewBox="0 0 40 58" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 3px 8px rgba(0,0,0,0.6))">
     <path d="M20 2C11.2 2 4 9.2 4 18c0 12.3 16 38 16 38S36 30.3 36 18C36 9.2 28.8 2 20 2z" fill="${color}" stroke="${border}" stroke-width="${bw}"/>
-    <path d="M13 14h14v2H13z M13 19h14v1.5H13z M13 23h10v1.5H13z" fill="rgba(255,255,255,0.9)"/>
-    <rect x="12" y="11" width="16" height="15" rx="2" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.2"/>
+    <path d="M13 14h14v2H13z M13 19h14v1.5H13z M13 23h10v1.5H13z" fill="var(--text-primary)"/>
+    <rect x="12" y="11" width="16" height="15" rx="2" fill="none" stroke="var(--tint-65)" stroke-width="1.2"/>
   </svg>`;
 }
 
 function contatoPinSvg(): string {
   return `<svg width="30" height="43" viewBox="0 0 30 43" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 3px 8px rgba(0,0,0,0.7))">
-    <path d="M15 1C7.8 1 2 6.8 2 14c0 9.8 13 28 13 28S28 23.8 28 14C28 6.8 22.2 1 15 1z" fill="#14b8a6" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
-    <circle cx="15" cy="12" r="4" fill="rgba(255,255,255,0.9)"/>
-    <path d="M8 22c0-3.9 3.1-6 7-6s7 2.1 7 6" fill="rgba(255,255,255,0.9)"/>
+    <path d="M15 1C7.8 1 2 6.8 2 14c0 9.8 13 28 13 28S28 23.8 28 14C28 6.8 22.2 1 15 1z" fill="#14b8a6" stroke="var(--tint-55)" stroke-width="1.5"/>
+    <circle cx="15" cy="12" r="4" fill="var(--text-primary)"/>
+    <path d="M8 22c0-3.9 3.1-6 7-6s7 2.1 7 6" fill="var(--text-primary)"/>
   </svg>`;
 }
 

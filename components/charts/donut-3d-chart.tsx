@@ -85,7 +85,7 @@ export default function Donut3DChart({
             outerRadius={85}
             paddingAngle={3}
             dataKey="value"
-            stroke="rgba(255,255,255,0.08)"
+            stroke="var(--tint-08)"
             strokeWidth={1}
           >
             {filteredData.map((entry, index) => (
@@ -97,11 +97,11 @@ export default function Donut3DChart({
           </Pie>
 
           <Tooltip
-            cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+            cursor={{ fill: 'var(--tint-04)' }}
             wrapperStyle={{ outline: 'none', zIndex: 50 }}
             contentStyle={{
               backgroundColor: 'rgba(13, 27, 42, 0.97)',
-              border: '1px solid rgba(255,255,255,0.12)',
+              border: '1px solid var(--tint-14)',
               borderRadius: '10px',
               color: '#fff',
               fontSize: '12px',
@@ -125,7 +125,7 @@ export default function Donut3DChart({
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center px-1">
             {centerValue !== undefined && (
-              <div className="text-sm font-bold text-white leading-tight">{centerValue}</div>
+              <div className="text-sm font-bold text-[color:var(--text-primary)] leading-tight">{centerValue}</div>
             )}
             {centerLabel && (
               <div className="text-[10px] text-gray-400 leading-tight">{centerLabel}</div>

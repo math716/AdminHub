@@ -385,8 +385,8 @@ export default function MapaDemandasPage() {
             <MapPin className="w-5 h-5" style={{ color: '#2563EB' }} />
           </div>
           <div>
-            <h1 className="text-white font-bold text-lg leading-tight tracking-tight">Mapa do Gabinete</h1>
-            <p className="text-slate-400 text-xs">
+            <h1 className="text-[color:var(--text-primary)] font-bold text-lg leading-tight tracking-tight">Mapa do Gabinete</h1>
+            <p className="text-slate-600 dark:text-slate-400 text-xs">
               {demandsWithCoords.length} demanda{demandsWithCoords.length !== 1 ? 's' : ''} no mapa
               {agendaEvents.length > 0 && ` · ${agendaEvents.length} evento${agendaEvents.length !== 1 ? 's' : ''} da agenda`}
             </p>
@@ -401,7 +401,7 @@ export default function MapaDemandasPage() {
               onChange={(e) => setGeoQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && geocode()}
               placeholder="Buscar endereço no mapa..."
-              className="bg-transparent text-white text-sm w-52 outline-none placeholder-gray-500"
+              className="bg-transparent text-[color:var(--text-primary)] text-sm w-52 outline-none placeholder-gray-500"
             />
             {geoLoading
               ? <Loader2 className="w-4 h-4 text-sky-400 animate-spin" />
@@ -415,7 +415,7 @@ export default function MapaDemandasPage() {
                     onClick={() => { setMapCenter([r.lat, r.lng]); setGeoResults([]); setGeoQuery(r.endereco); }}
                     className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-sm text-gray-300 border-b border-white/5 last:border-0"
                   >
-                    <div className="font-medium text-white truncate">{r.endereco}</div>
+                    <div className="font-medium text-[color:var(--text-primary)] truncate">{r.endereco}</div>
                     <div className="text-xs text-gray-500 truncate">{r.displayName}</div>
                   </button>
                 ))}
@@ -439,7 +439,7 @@ export default function MapaDemandasPage() {
           </button>
           <button
             onClick={() => { setShowNewModal(true); setForm({ ...EMPTY_FORM }); setSaveError(''); }}
-            className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold transition-all"
+            className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-sky-600 hover:bg-sky-500 text-[color:var(--text-primary)] rounded-xl text-sm font-semibold transition-all"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nova Demanda</span>
@@ -454,7 +454,7 @@ export default function MapaDemandasPage() {
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder="Buscar por título, solicitante..."
-            className="bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white placeholder-gray-500 outline-none w-56"
+            className="bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-[color:var(--text-primary)] placeholder-gray-500 outline-none w-56"
           />
           <Select
             value={filterStatus}
@@ -534,7 +534,7 @@ export default function MapaDemandasPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CATEGORY_COLORS[d.category as keyof typeof CATEGORY_COLORS] ?? '#9e9e9e' }} />
-                        <span className="text-white text-xs font-semibold truncate">{d.title}</span>
+                        <span className="text-[color:var(--text-primary)] text-xs font-semibold truncate">{d.title}</span>
                       </div>
                       <p className="text-gray-500 text-xs truncate">{d.solicitante}</p>
                       {d.endereco && <p className="text-gray-600 text-xs truncate mt-0.5">{d.endereco}</p>}
@@ -581,7 +581,7 @@ export default function MapaDemandasPage() {
                       className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all flex items-start gap-2.5 ${isSel ? 'bg-green-900/20 border-l-2 border-l-green-500' : ''}`}
                     >
                       <span className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-all ${isSel ? 'bg-green-500 border-green-500' : 'border-white/20 bg-white/5'}`}>
-                        {isSel && <CheckCircle className="w-2.5 h-2.5 text-white" />}
+                        {isSel && <CheckCircle className="w-2.5 h-2.5 text-[color:var(--text-primary)]" />}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
@@ -612,7 +612,7 @@ export default function MapaDemandasPage() {
                   >
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: e.cor ?? TIPO_AGENDA_COLORS[e.tipo] ?? '#6366f1' }} />
-                      <span className="text-white text-xs font-semibold truncate">{e.titulo}</span>
+                      <span className="text-[color:var(--text-primary)] text-xs font-semibold truncate">{e.titulo}</span>
                     </div>
                     <p className="text-gray-500 text-xs">{TIPO_AGENDA_LABELS[e.tipo]} · {new Date(e.data).toLocaleDateString('pt-BR')}</p>
                     {e.local && <p className="text-gray-600 text-xs truncate">{e.local}</p>}
@@ -647,7 +647,7 @@ export default function MapaDemandasPage() {
               {/* Filtros mobile */}
               <div className="px-3 py-1.5 border-b border-white/10 flex flex-col gap-1.5 flex-shrink-0">
                 <input value={searchText} onChange={(e) => setSearchText(e.target.value)}
-                  placeholder="Buscar..." className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 outline-none" />
+                  placeholder="Buscar..." className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-gray-500 outline-none" />
                 <div className="grid grid-cols-2 gap-2">
                   <Select
                     value={filterStatus}
@@ -666,7 +666,7 @@ export default function MapaDemandasPage() {
                   <button key={d.id}
                     onClick={() => { selectDemandWithFoto(d); if (d.lat && d.lng) setMapCenter([d.lat, d.lng]); setMobileSidebar(false); }}
                     className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedDemand?.id === d.id ? 'bg-sky-900/30 border-l-2 border-l-sky-400' : ''}`}>
-                    <p className="text-white text-xs font-semibold truncate mb-0.5">{d.title}</p>
+                    <p className="text-[color:var(--text-primary)] text-xs font-semibold truncate mb-0.5">{d.title}</p>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full"
                         style={{ background: (STATUS_COLORS[d.status as keyof typeof STATUS_COLORS] ?? '#9e9e9e') + '22', color: STATUS_COLORS[d.status as keyof typeof STATUS_COLORS] ?? '#9e9e9e' }}>
@@ -685,7 +685,7 @@ export default function MapaDemandasPage() {
                       <button key={e.id}
                         onClick={() => { setSelectedEvent(e); setSelectedDemand(null); if (e.lat && e.lng) setMapCenter([e.lat, e.lng]); setMobileSidebar(false); }}
                         className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedEvent?.id === e.id ? 'bg-indigo-900/30 border-l-2 border-l-indigo-400' : ''}`}>
-                        <p className="text-white text-xs font-semibold truncate">{e.titulo}</p>
+                        <p className="text-[color:var(--text-primary)] text-xs font-semibold truncate">{e.titulo}</p>
                         <p className="text-gray-500 text-[10px]">{TIPO_AGENDA_LABELS[e.tipo]} · {new Date(e.data).toLocaleDateString('pt-BR')}</p>
                       </button>
                     ))}
@@ -749,7 +749,7 @@ export default function MapaDemandasPage() {
                         {CATEGORY_LABELS[selectedDemand.category as keyof typeof CATEGORY_LABELS]}
                       </span>
                     </div>
-                    <h3 className="text-white font-bold text-sm leading-snug">{selectedDemand.title}</h3>
+                    <h3 className="text-[color:var(--text-primary)] font-bold text-sm leading-snug">{selectedDemand.title}</h3>
                   </div>
                   <button onClick={() => setSelectedDemand(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-white/10">
                     <X className="w-3.5 h-3.5" />
@@ -835,7 +835,7 @@ export default function MapaDemandasPage() {
                         {TIPO_AGENDA_LABELS[selectedEvent.tipo]}
                       </span>
                     </div>
-                    <h3 className="text-white font-bold text-sm">{selectedEvent.titulo}</h3>
+                    <h3 className="text-[color:var(--text-primary)] font-bold text-sm">{selectedEvent.titulo}</h3>
                   </div>
                   <button onClick={() => setSelectedEvent(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-white/10">
                     <X className="w-4 h-4" />
@@ -892,7 +892,7 @@ export default function MapaDemandasPage() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <Plus className="w-5 h-5 text-sky-400" />
-                <h2 className="text-white font-semibold">Nova Demanda</h2>
+                <h2 className="text-[color:var(--text-primary)] font-semibold">Nova Demanda</h2>
               </div>
               <button onClick={() => setShowNewModal(false)} className="text-gray-500 hover:text-white">
                 <X className="w-5 h-5" />
@@ -904,7 +904,7 @@ export default function MapaDemandasPage() {
               <div>
                 <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Título *</label>
                 <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                  className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-sky-500"
+                  className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
                   placeholder="Descreva a demanda em uma linha" />
               </div>
 
@@ -913,13 +913,13 @@ export default function MapaDemandasPage() {
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Solicitante *</label>
                   <input value={form.solicitante} onChange={(e) => setForm((f) => ({ ...f, solicitante: e.target.value }))}
-                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-sky-500"
+                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
                     placeholder="Nome completo" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Contato</label>
                   <input value={form.contato} onChange={(e) => setForm((f) => ({ ...f, contato: e.target.value }))}
-                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-sky-500"
+                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
                     placeholder="Telefone ou email" />
                 </div>
               </div>
@@ -929,13 +929,13 @@ export default function MapaDemandasPage() {
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Estado *</label>
                   <input value={form.estado} onChange={(e) => setForm((f) => ({ ...f, estado: e.target.value }))}
-                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-sky-500"
+                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
                     placeholder="UF (ex: SP)" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Município *</label>
                   <input value={form.municipio} onChange={(e) => setForm((f) => ({ ...f, municipio: e.target.value }))}
-                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-sky-500"
+                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
                     placeholder="Nome do município" />
                 </div>
               </div>
@@ -945,10 +945,10 @@ export default function MapaDemandasPage() {
                 <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Endereço completo</label>
                 <div className="flex gap-2 mt-1">
                   <input value={form.endereco} onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-sky-500"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
                     placeholder="Rua, número, bairro" />
                   <button onClick={geocodeFormAddress} disabled={geoLoading}
-                    className="flex items-center gap-1.5 px-4 py-2.5 bg-sky-700 hover:bg-sky-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-sky-700 hover:bg-sky-600 text-[color:var(--text-primary)] rounded-xl text-sm font-semibold disabled:opacity-50">
                     {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                     Localizar
                   </button>
@@ -996,7 +996,7 @@ export default function MapaDemandasPage() {
                 <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Descrição</label>
                 <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   rows={3}
-                  className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm outline-none focus:border-sky-500 resize-none"
+                  className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 resize-none"
                   placeholder="Detalhes da demanda..." />
               </div>
 
@@ -1035,7 +1035,7 @@ export default function MapaDemandasPage() {
                 Cancelar
               </button>
               <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
+                className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-[color:var(--text-primary)] rounded-xl text-sm font-semibold disabled:opacity-50">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                 Salvar Demanda
               </button>

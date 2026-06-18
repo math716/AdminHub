@@ -26,7 +26,7 @@ import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 const BrazilMap = dynamic(() => import('@/components/maps/brazil-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'rgba(7,29,54,0.5)' }}>
+    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'var(--bg-card-subtle)' }}>
       <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
     </div>
   ),
@@ -35,7 +35,7 @@ const BrazilMap = dynamic(() => import('@/components/maps/brazil-map'), {
 const StateMap = dynamic(() => import('@/components/maps/state-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'rgba(7,29,54,0.5)' }}>
+    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'var(--bg-card-subtle)' }}>
       <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
     </div>
   ),
@@ -44,7 +44,7 @@ const StateMap = dynamic(() => import('@/components/maps/state-map'), {
 const ContatosBairrosMap = dynamic(() => import('@/components/maps/contatos-bairros-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'rgba(7,29,54,0.5)' }}>
+    <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'var(--bg-card-subtle)' }}>
       <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
     </div>
   ),
@@ -630,7 +630,7 @@ export default function ContatosPage() {
   }, [contatos, search]);
 
   const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none transition-all';
-  const inputStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' };
+  const inputStyle = { background: 'var(--tint-06)', border: '1px solid var(--tint-10)' };
 
   if (status === 'loading') return (
     <div className="flex items-center justify-center h-screen">
@@ -664,13 +664,13 @@ export default function ContatosPage() {
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 p-1 rounded-xl w-fit"
-        style={{ background: 'rgba(4,17,31,0.6)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        style={{ background: 'rgba(4,17,31,0.6)', border: '1px solid var(--tint-06)' }}>
         {([['lista', List, 'Lista'], ['mapa', MapIcon, 'Mapa']] as const).map(([tab, Icon, label]) => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
             style={activeTab === tab
               ? { background: 'rgba(37,99,235,0.15)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.3)' }
-              : { color: 'rgba(255,255,255,0.45)', border: '1px solid transparent' }
+              : { color: 'var(--tint-45)', border: '1px solid transparent' }
             }>
             <Icon className="w-4 h-4" />{label}
           </button>
@@ -682,10 +682,10 @@ export default function ContatosPage() {
         <>
           {/* Search */}
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'rgba(255,255,255,0.35)' }} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--tint-35)' }} />
             <input type="text" placeholder="Buscar por nome, número, email..."
               value={search} onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-white placeholder-white/20 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-[color:var(--text-primary)] placeholder-white/20 outline-none transition-all"
               style={inputStyle} />
           </div>
 
@@ -712,7 +712,7 @@ export default function ContatosPage() {
                     whileHover={{ y: -2 }}
                     className="rounded-2xl relative overflow-hidden transition-all"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(7,29,54,0.85) 0%, rgba(4,17,31,0.95) 100%)',
+                      background: 'linear-gradient(135deg, var(--bg-card-raised) 0%, rgba(4,17,31,0.95) 100%)',
                       border: '1px solid rgba(37,99,235,0.18)',
                       boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
                     }}>
@@ -732,14 +732,14 @@ export default function ContatosPage() {
                           {initials}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-white text-[15px] leading-tight truncate" title={c.nome}>
+                          <h3 className="font-semibold text-[color:var(--text-primary)] text-[15px] leading-tight truncate" title={c.nome}>
                             {c.nome}
                           </h3>
                           <div className="flex items-center gap-1.5 mt-1">
                             <span className="w-1.5 h-1.5 rounded-full"
-                              style={{ background: isGeocoded ? '#4a9ede' : 'rgba(255,255,255,0.25)' }} />
+                              style={{ background: isGeocoded ? '#4a9ede' : 'var(--tint-25)' }} />
                             <span className="text-[11px] uppercase tracking-wider font-medium"
-                              style={{ color: isGeocoded ? 'rgba(74,158,222,0.85)' : 'rgba(255,255,255,0.35)' }}>
+                              style={{ color: isGeocoded ? 'rgba(74,158,222,0.85)' : 'var(--tint-35)' }}>
                               {isGeocoded ? 'Localizado' : 'Sem localização'}
                             </span>
                           </div>
@@ -753,25 +753,25 @@ export default function ContatosPage() {
                       <div className="flex flex-col gap-2.5">
                         <div className="flex items-center gap-2.5 text-[13px]">
                           <WhatsAppIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
-                          <span style={{ color: 'rgba(255,255,255,0.85)' }}>{c.numero}</span>
+                          <span style={{ color: 'var(--tint-85)' }}>{c.numero}</span>
                         </div>
                         {c.email && (
                           <div className="flex items-center gap-2.5 text-[13px]">
                             <Mail className="w-4 h-4 flex-shrink-0" style={{ color: '#4a9ede' }} />
-                            <span className="truncate" style={{ color: 'rgba(255,255,255,0.7)' }} title={c.email}>{c.email}</span>
+                            <span className="truncate" style={{ color: 'var(--tint-75)' }} title={c.email}>{c.email}</span>
                           </div>
                         )}
                         {c.endereco && (
                           <div className="flex items-start gap-2.5 text-[13px]">
                             <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#2563EB' }} />
-                            <span className="leading-snug" style={{ color: 'rgba(255,255,255,0.7)' }}>{c.endereco}</span>
+                            <span className="leading-snug" style={{ color: 'var(--tint-75)' }}>{c.endereco}</span>
                           </div>
                         )}
                       </div>
 
                       {/* Ações sempre visíveis */}
                       <div className="flex items-center justify-between gap-2 pt-3 mt-1"
-                        style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                        style={{ borderTop: '1px solid var(--tint-04)' }}>
                         {!isGeocoded && c.endereco ? (
                           <button
                             onClick={() => handleReGeocode(c.id, c.endereco!)}
@@ -800,7 +800,7 @@ export default function ContatosPage() {
                           </button>
                           <button onClick={() => handleDelete(c.id)}
                             className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-red-500/15"
-                            style={{ color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.08)' }}
+                            style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-08)' }}
                             title="Excluir contato">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -820,13 +820,13 @@ export default function ContatosPage() {
         <>
           {/* Breadcrumb */}
           <div className="flex items-center gap-1 text-sm rounded-xl px-4 py-2.5 w-fit flex-wrap"
-            style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(37,99,235,0.13)' }}>
+            style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.13)' }}>
             <button onClick={view === 'brasil' ? undefined : goBack}
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
-              style={view === 'brasil' ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 } : { color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>
+              style={view === 'brasil' ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 } : { color: 'var(--tint-55)', cursor: 'pointer' }}>
               <Globe className="h-3.5 w-3.5" /> Brasil
             </button>
-            <ChevronRight className="h-3.5 w-3.5" style={{ color: 'rgba(255,255,255,0.2)' }} />
+            <ChevronRight className="h-3.5 w-3.5" style={{ color: 'var(--tint-25)' }} />
             {view === 'estado' ? (
               <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg font-semibold"
                 style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede' }}>
@@ -834,17 +834,17 @@ export default function ContatosPage() {
               </span>
             ) : view === 'municipio' ? (
               <button onClick={goBack} className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
-                style={{ color: 'rgba(255,255,255,0.55)' }}>
+                style={{ color: 'var(--tint-55)' }}>
                 <Layers className="h-3.5 w-3.5" /> {selectedStateName}
               </button>
             ) : (
-              <span className="flex items-center gap-1.5 px-2 py-1" style={{ color: 'rgba(255,255,255,0.2)' }}>
+              <span className="flex items-center gap-1.5 px-2 py-1" style={{ color: 'var(--tint-25)' }}>
                 <Layers className="h-3.5 w-3.5" /> Estado
               </span>
             )}
             {view === 'municipio' && navMunicipio && (
               <>
-                <ChevronRight className="h-3.5 w-3.5" style={{ color: 'rgba(255,255,255,0.2)' }} />
+                <ChevronRight className="h-3.5 w-3.5" style={{ color: 'var(--tint-25)' }} />
                 <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg font-semibold"
                   style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede' }}>
                   <Building2 className="h-3.5 w-3.5" /> {navMunicipio.nome}
@@ -864,7 +864,7 @@ export default function ContatosPage() {
             <div className="space-y-3">
               {/* Stats */}
               <div className="rounded-xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.13)' }}>
-                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--tint-45)' }}>
                   {view === 'municipio' ? navMunicipio?.nome : view === 'estado' ? selectedStateName : 'Visão Geral'}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
@@ -874,18 +874,18 @@ export default function ContatosPage() {
                         ? Object.values(bairroContacts).reduce((a, b) => a + b.length, 0)
                         : view === 'estado' ? stateContactIds.size : contatos.length}
                     </p>
-                    <p className="text-[10px] uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    <p className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--tint-45)' }}>
                       {view === 'municipio' ? 'neste município' : view === 'estado' ? 'neste estado' : 'total'}
                     </p>
                   </div>
                   <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)' }}>
                     <p className="text-lg font-bold" style={{ color: '#4ade80' }}>{selectedIds.size}</p>
-                    <p className="text-[10px] uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>selecionados</p>
+                    <p className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--tint-45)' }}>selecionados</p>
                   </div>
                 </div>
                 {selectedIds.size > 0 && (
                   <button onClick={clearAll} className="mt-2 w-full text-xs text-center py-1 rounded-lg transition-all hover:opacity-70"
-                    style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-08)' }}>
                     Limpar seleção
                   </button>
                 )}
@@ -895,28 +895,28 @@ export default function ContatosPage() {
               {/* Search + contacts list */}
               {view !== 'brasil' && (
                 <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.13)' }}>
-                  <div className="p-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="p-2.5" style={{ borderBottom: '1px solid var(--tint-06)' }}>
                     <div className="flex items-center gap-2 rounded-lg px-2.5 py-2"
-                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.35)' }} />
+                      style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}>
+                      <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
                       <input value={mapSearch} onChange={e => setMapSearch(e.target.value)}
                         placeholder="Buscar contatos..."
-                        className="flex-1 bg-transparent text-white text-xs outline-none placeholder-white/20" />
+                        className="flex-1 bg-transparent text-[color:var(--text-primary)] text-xs outline-none placeholder-white/20" />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid var(--tint-06)' }}>
                     <button onClick={selectAll} className="flex items-center gap-1 text-xs transition-all hover:opacity-70" style={{ color: '#4a9ede' }}>
                       <UserCheck className="h-3.5 w-3.5" /> Todos
                     </button>
                     {selectedIds.size > 0 && (
-                      <button onClick={clearAll} className="flex items-center gap-1 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                      <button onClick={clearAll} className="flex items-center gap-1 text-xs" style={{ color: 'var(--tint-45)' }}>
                         <UserX className="h-3.5 w-3.5" /> Limpar
                       </button>
                     )}
                   </div>
-                  <div className="max-h-48 overflow-y-auto divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                  <div className="max-h-48 overflow-y-auto divide-y" style={{ borderColor: 'var(--tint-04)' }}>
                     {mapSidebarContacts.length === 0 ? (
-                      <p className="text-xs text-center py-5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                      <p className="text-xs text-center py-5" style={{ color: 'var(--tint-35)' }}>
                         {(pipLoading || bairroLoading) ? 'Calculando...' : 'Nenhum contato geolocado aqui'}
                       </p>
                     ) : mapSidebarContacts.map(c => {
@@ -925,12 +925,12 @@ export default function ContatosPage() {
                         <button key={c.id} onClick={() => toggleContact(c.id)}
                           className="w-full text-left px-3 py-2.5 transition-all hover:bg-white/5 flex items-center gap-2.5">
                           <span className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-all"
-                            style={sel ? { background: '#2563EB' } : { border: '1px solid rgba(255,255,255,0.2)' }}>
+                            style={sel ? { background: '#2563EB' } : { border: '1px solid var(--tint-25)' }}>
                             {sel && <Check className="h-3 w-3 text-[#04111f]" strokeWidth={3} />}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-white text-xs font-medium truncate">{c.nome}</p>
-                            <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.numero}</p>
+                            <p className="text-[color:var(--text-primary)] text-xs font-medium truncate">{c.nome}</p>
+                            <p className="text-xs truncate" style={{ color: 'var(--tint-45)' }}>{c.numero}</p>
                           </div>
                         </button>
                       );
@@ -950,11 +950,11 @@ export default function ContatosPage() {
 
             {/* Map */}
             <div className="lg:col-span-3">
-              <div className="rounded-2xl overflow-hidden relative" style={{ height: 560, background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(37,99,235,0.13)' }}>
+              <div className="rounded-2xl overflow-hidden relative" style={{ height: 560, background: 'var(--bg-card-subtle)', border: '1px solid rgba(37,99,235,0.13)' }}>
                 {(pipLoading || bairroLoading) && (
                   <div className="absolute inset-0 flex items-center justify-center z-10 rounded-2xl" style={{ background: 'rgba(4,17,31,0.6)' }}>
                     <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: '#4a9ede' }} />
-                    <span className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>Calculando...</span>
+                    <span className="text-sm" style={{ color: 'var(--tint-65)' }}>Calculando...</span>
                   </div>
                 )}
 
@@ -974,12 +974,12 @@ export default function ContatosPage() {
                       className="absolute top-4 left-1/2 -translate-x-1/2 z-20 rounded-2xl shadow-2xl overflow-hidden"
                       style={{ background: 'rgba(4,17,31,0.95)', border: '1px solid rgba(37,99,235,0.35)', minWidth: 260, backdropFilter: 'blur(12px)' }}
                       onClick={e => e.stopPropagation()}>
-                      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--tint-08)' }}>
                         <div className="flex items-center gap-2">
                           {popup.type === 'estado' ? <Layers className="h-3.5 w-3.5" style={{ color: '#2563EB' }} /> : <Building2 className="h-3.5 w-3.5" style={{ color: '#2563EB' }} />}
-                          <span className="text-sm font-semibold text-white">{popup.nome}</span>
+                          <span className="text-sm font-semibold text-[color:var(--text-primary)]">{popup.nome}</span>
                         </div>
-                        <button onClick={() => setPopup(null)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                        <button onClick={() => setPopup(null)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'var(--tint-45)' }}>
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -1033,7 +1033,7 @@ export default function ContatosPage() {
                   {view === 'municipio' && navMunicipio && !bairroLoading && (!munHasBairros || bairroFeatures.length === 0) && (
                     <div className="h-full flex flex-col items-center justify-center gap-3">
                       <Building2 className="h-12 w-12 opacity-20" style={{ color: '#4a9ede' }} />
-                      <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Dados de bairros não disponíveis para {navMunicipio.nome}</p>
+                      <p className="text-sm" style={{ color: 'var(--tint-45)' }}>Dados de bairros não disponíveis para {navMunicipio.nome}</p>
                     </div>
                   )}
                 </div>
@@ -1055,31 +1055,31 @@ export default function ContatosPage() {
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)' }}>
                     <Users className="w-4 h-4" style={{ color: '#2563EB' }} />
                   </div>
-                  <h2 className="text-white font-semibold">{editingContact ? 'Editar Contato' : 'Novo Contato'}</h2>
+                  <h2 className="text-[color:var(--text-primary)] font-semibold">{editingContact ? 'Editar Contato' : 'Novo Contato'}</h2>
                 </div>
-                <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10" style={{ color: 'var(--tint-55)' }}>
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(255,255,255,0.4)' }}>Nome Completo *</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--tint-45)' }}>Nome Completo *</label>
                   <input className={inputClass} style={inputStyle} placeholder="Ex: João da Silva" value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 flex items-center gap-1.5" style={{ color: 'var(--tint-45)' }}>
                     <WhatsAppIcon className="w-3.5 h-3.5 text-green-400" /> WhatsApp *
                   </label>
                   <input className={inputClass} style={inputStyle} placeholder="(61) 99999-0000" value={form.numero} onChange={e => setForm(f => ({ ...f, numero: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(255,255,255,0.4)' }}>Email</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--tint-45)' }}>Email</label>
                   <input type="email" className={inputClass} style={inputStyle} placeholder="joao@email.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(255,255,255,0.4)' }}>Endereço</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--tint-45)' }}>Endereço</label>
                   <div className="flex gap-2">
-                    <input className="flex-1 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none" style={inputStyle}
+                    <input className="flex-1 rounded-xl px-3 py-2.5 text-sm text-[color:var(--text-primary)] placeholder-white/20 outline-none" style={inputStyle}
                       placeholder="Rua, número, cidade-UF" value={form.endereco}
                       onChange={e => { setForm(f => ({ ...f, endereco: e.target.value })); setResolvedCoords(null); }} />
                     <button onClick={() => geocodeEndereco(form.endereco)} disabled={!form.endereco.trim() || geoLoading}
@@ -1103,7 +1103,7 @@ export default function ContatosPage() {
               <div className="flex gap-3 px-6 py-4" style={{ borderTop: '1px solid rgba(37,99,235,0.15)' }}>
                 <button onClick={() => setShowModal(false)}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:text-white"
-                  style={{ border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>Cancelar</button>
+                  style={{ border: '1px solid var(--tint-10)', color: 'var(--tint-55)' }}>Cancelar</button>
                 <button onClick={handleSave} disabled={saving}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
                   style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}>
@@ -1128,22 +1128,22 @@ export default function ContatosPage() {
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)' }}>
                     <FileUp className="w-4 h-4" style={{ color: '#2563EB' }} />
                   </div>
-                  <h2 className="text-white font-semibold">Importar via CSV</h2>
+                  <h2 className="text-[color:var(--text-primary)] font-semibold">Importar via CSV</h2>
                 </div>
-                <button onClick={resetImport} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                <button onClick={resetImport} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10" style={{ color: 'var(--tint-55)' }}>
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="p-6">
                 {importStep === 1 && (
                   <div className="space-y-4">
-                    <p className="text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>Selecione um arquivo <strong className="text-white">.csv</strong> exportado do Google Forms ou de qualquer planilha.</p>
+                    <p className="text-sm" style={{ color: 'var(--tint-55)' }}>Selecione um arquivo <strong className="text-[color:var(--text-primary)]">.csv</strong> exportado do Google Forms ou de qualquer planilha.</p>
                     <label className="flex flex-col items-center justify-center gap-3 rounded-xl p-8 cursor-pointer transition-all hover:opacity-80"
-                      style={{ border: '2px dashed rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.03)' }}>
-                      <Upload className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.3)' }} />
+                      style={{ border: '2px dashed var(--tint-14)', background: 'var(--tint-04)' }}>
+                      <Upload className="w-10 h-10" style={{ color: 'var(--tint-35)' }} />
                       <div className="text-center">
-                        <p className="text-sm text-white">Clique para selecionar</p>
-                        <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>Formato .csv</p>
+                        <p className="text-sm text-[color:var(--text-primary)]">Clique para selecionar</p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--tint-35)' }}>Formato .csv</p>
                       </div>
                       <input type="file" accept=".csv,text/csv" onChange={handleCsvFile} className="hidden" />
                     </label>
@@ -1157,8 +1157,8 @@ export default function ContatosPage() {
 
                 {importStep === 2 && (
                   <div className="space-y-4">
-                    <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                      <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>Colunas detectadas</p>
+                    <div className="rounded-xl p-3 space-y-2" style={{ background: 'var(--tint-04)' }}>
+                      <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--tint-35)' }}>Colunas detectadas</p>
                       <div className="flex flex-wrap gap-2">
                         {[['Nome', detectedCols.nome, '#2563EB'], ['WhatsApp', detectedCols.numero, '#4ade80'], ...(detectedCols.email ? [['Email', detectedCols.email, '#4a9ede']] : []), ...(detectedCols.endereco ? [['Endereço', detectedCols.endereco, '#fb923c']] : [])].map(([label, val, color]) => (
                           <span key={label as string} className="text-xs px-2.5 py-1 rounded-full" style={{ background: `${color}18`, color: color as string, border: `1px solid ${color}33` }}>
@@ -1167,22 +1167,22 @@ export default function ContatosPage() {
                         ))}
                       </div>
                     </div>
-                    <p className="text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                      <span className="text-white font-semibold">{csvPreview.length}</span> de {totalRows} linhas serão importadas
+                    <p className="text-sm" style={{ color: 'var(--tint-55)' }}>
+                      <span className="text-[color:var(--text-primary)] font-semibold">{csvPreview.length}</span> de {totalRows} linhas serão importadas
                     </p>
                     <div className="max-h-52 overflow-y-auto space-y-1.5">
                       {csvPreview.slice(0, 50).map((c, i) => (
-                        <div key={i} className="rounded-lg px-3 py-2 flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                        <div key={i} className="rounded-lg px-3 py-2 flex items-center gap-3" style={{ background: 'var(--tint-04)' }}>
                           <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(37,99,235,0.15)' }}>
                             <User className="w-3.5 h-3.5" style={{ color: '#2563EB' }} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-white text-sm font-medium truncate">{c.nome}</p>
-                            <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.numero}{c.endereco ? ` · ${c.endereco}` : ''}</p>
+                            <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{c.nome}</p>
+                            <p className="text-xs truncate" style={{ color: 'var(--tint-45)' }}>{c.numero}{c.endereco ? ` · ${c.endereco}` : ''}</p>
                           </div>
                         </div>
                       ))}
-                      {csvPreview.length > 50 && <p className="text-xs text-center py-2" style={{ color: 'rgba(255,255,255,0.3)' }}>... e mais {csvPreview.length - 50}</p>}
+                      {csvPreview.length > 50 && <p className="text-xs text-center py-2" style={{ color: 'var(--tint-35)' }}>... e mais {csvPreview.length - 50}</p>}
                     </div>
                     {detectedCols.endereco && (
                       <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs" style={{ background: 'rgba(74,158,222,0.07)', border: '1px solid rgba(74,158,222,0.15)', color: '#4a9ede' }}>
@@ -1197,7 +1197,7 @@ export default function ContatosPage() {
                     <div className="flex gap-3">
                       <button onClick={() => setImportStep(1)} disabled={importing}
                         className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-40"
-                        style={{ border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>Voltar</button>
+                        style={{ border: '1px solid var(--tint-10)', color: 'var(--tint-55)' }}>Voltar</button>
                       <button onClick={handleImport} disabled={importing}
                         className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
                         style={{ background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}>
@@ -1213,7 +1213,7 @@ export default function ContatosPage() {
                       <CheckCircle2 className="w-8 h-8" style={{ color: '#4ade80' }} />
                     </div>
                     <div className="text-center space-y-1">
-                      <p className="text-white font-bold text-lg">{importResult.imported} contato{importResult.imported !== 1 ? 's' : ''} importado{importResult.imported !== 1 ? 's' : ''}!</p>
+                      <p className="text-[color:var(--text-primary)] font-bold text-lg">{importResult.imported} contato{importResult.imported !== 1 ? 's' : ''} importado{importResult.imported !== 1 ? 's' : ''}!</p>
                       {importResult.geocodificados > 0 && (
                         <p className="text-sm flex items-center justify-center gap-1" style={{ color: '#4a9ede' }}>
                           <MapPin className="w-3.5 h-3.5" /> {importResult.geocodificados} endereço{importResult.geocodificados !== 1 ? 's' : ''} localizado{importResult.geocodificados !== 1 ? 's' : ''} no mapa
@@ -1245,15 +1245,15 @@ export default function ContatosPage() {
                   <WhatsAppIcon className="h-4 w-4" style={{ color: '#25d366' }} />
                 </div>
                 <div>
-                  <h2 className="text-white font-semibold">Disparar Mensagem</h2>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  <h2 className="text-[color:var(--text-primary)] font-semibold">Disparar Mensagem</h2>
+                  <p className="text-xs" style={{ color: 'var(--tint-45)' }}>
                     {selectedIds.size} contato{selectedIds.size !== 1 ? 's' : ''} selecionado{selectedIds.size !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
               <button onClick={() => { setShowMsg(false); setSendStatus({}); setSendErrors({}); }}
                 className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10"
-                style={{ color: 'rgba(255,255,255,0.5)' }}>
+                style={{ color: 'var(--tint-55)' }}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1261,20 +1261,20 @@ export default function ContatosPage() {
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
               {/* Message textarea */}
               <div>
-                <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'rgba(255,255,255,0.4)' }}>Mensagem</label>
+                <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--tint-45)' }}>Mensagem</label>
                 <textarea value={msgText} onChange={e => setMsgText(e.target.value)} rows={4}
                   placeholder="Digite a mensagem..."
                   disabled={sendingApi}
-                  className="w-full rounded-xl px-4 py-3 text-white text-sm outline-none resize-none placeholder-white/20 disabled:opacity-50"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
-                <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                  className="w-full rounded-xl px-4 py-3 text-[color:var(--text-primary)] text-sm outline-none resize-none placeholder-white/20 disabled:opacity-50"
+                  style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }} />
+                <p className="text-[10px] mt-1" style={{ color: 'var(--tint-25)' }}>
                   {msgText.length} caracteres
                 </p>
               </div>
 
               {/* Contacts list with status */}
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--tint-45)' }}>
                   Contatos selecionados
                 </p>
                 <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
@@ -1282,13 +1282,13 @@ export default function ContatosPage() {
                     const st = sendStatus[c.id];
                     return (
                       <div key={c.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-06)' }}>
                         <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(37,99,235,0.15)' }}>
                           <Phone className="h-3.5 w-3.5" style={{ color: '#2563EB' }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-white text-xs font-medium truncate">{c.nome}</p>
-                          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.numero}</p>
+                          <p className="text-[color:var(--text-primary)] text-xs font-medium truncate">{c.nome}</p>
+                          <p className="text-xs" style={{ color: 'var(--tint-45)' }}>{c.numero}</p>
                           {st === 'err' && sendErrors[c.id] && (
                             <p className="text-[10px] mt-0.5" style={{ color: '#fca5a5' }}>{sendErrors[c.id]}</p>
                           )}
@@ -1318,7 +1318,7 @@ export default function ContatosPage() {
               {/* Summary after send */}
               {!sendingApi && Object.keys(sendStatus).length > 0 && (
                 <div className="rounded-xl px-4 py-3 text-xs flex items-center gap-3"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
                   <span style={{ color: '#4ade80' }}>
                     ✓ {Object.values(sendStatus).filter(s => s === 'ok').length} enviado{Object.values(sendStatus).filter(s => s === 'ok').length !== 1 ? 's' : ''}
                   </span>
@@ -1343,7 +1343,7 @@ export default function ContatosPage() {
               <div className="flex items-center gap-2">
                 <button onClick={() => { setShowMsg(false); setSendStatus({}); setSendErrors({}); }}
                   className="px-4 py-2 text-sm font-medium transition-all hover:text-white rounded-xl"
-                  style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  style={{ color: 'var(--tint-45)' }}>
                   Fechar
                 </button>
                 <button

@@ -82,7 +82,7 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
                 </div>
                 <div>
                   <h2 className="text-white font-bold text-base">Selecionar Gabinete</h2>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  <p className="text-xs" style={{ color: 'var(--tint-45)' }}>
                     {required ? 'Escolha um gabinete para acessar o sistema' : 'Trocar gabinete ativo'}
                   </p>
                 </div>
@@ -90,7 +90,7 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
               {!required && onClose && (
                 <button onClick={onClose}
                   className="p-1.5 rounded-lg transition-all hover:bg-white/10"
-                  style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  style={{ color: 'var(--tint-45)' }}>
                   <X className="w-4 h-4" />
                 </button>
               )}
@@ -99,26 +99,26 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
             {/* Search */}
             <div className="relative mt-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                style={{ color: 'rgba(255,255,255,0.3)' }} />
+                style={{ color: 'var(--tint-35)' }} />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar gabinete..."
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-slate-600 outline-none"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}
               />
             </div>
           </div>
 
           {/* List */}
           <div className="max-h-72 overflow-y-auto px-2 pb-4"
-            style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            style={{ borderTop: '1px solid var(--tint-06)' }}>
             {loading ? (
               <div className="py-10 flex justify-center">
                 <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#2563EB' }} />
               </div>
             ) : filtered.length === 0 ? (
-              <div className="py-10 text-center text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              <div className="py-10 text-center text-sm" style={{ color: 'var(--tint-35)' }}>
                 {search ? `Nenhum resultado para "${search}"` : 'Nenhum gabinete encontrado'}
               </div>
             ) : (
@@ -139,13 +139,13 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
                     </div>
                     <div className="min-w-0">
                       <p className="text-white text-sm font-medium truncate">{g.nome}</p>
-                      <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                      <p className="text-[11px]" style={{ color: 'var(--tint-35)' }}>
                         {g._count.users} usuário{g._count.users !== 1 ? 's' : ''}
                         {g.descricao ? ` · ${g.descricao}` : ''}
                       </p>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.25)' }} />
+                  <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--tint-25)' }} />
                 </button>
               ))
             )}

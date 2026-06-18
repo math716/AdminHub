@@ -52,7 +52,7 @@ export default function DemandsByCategoryChart({ data, darkMode = false }: Props
         <Tooltip
           contentStyle={{
             backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.95)' : '#fff',
-            border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e5e7eb',
+            border: darkMode ? '1px solid var(--tint-10)' : '1px solid #e5e7eb',
             borderRadius: '8px',
             color: darkMode ? '#fff' : '#374151',
             fontSize: '12px',

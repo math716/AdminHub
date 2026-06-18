@@ -67,7 +67,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
           <label
             htmlFor={id}
             className="block text-xs font-semibold uppercase tracking-widest mb-1.5"
-            style={{ color: 'rgba(255,255,255,0.45)' }}
+            style={{ color: 'var(--tint-45)' }}
           >
             {label}
           </label>
@@ -86,15 +86,15 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             className={cn(
               'group w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-sm text-white',
               'transition-all duration-150 outline-none cursor-pointer',
-              'hover:bg-white/[0.09] hover:[border-color:rgba(255,255,255,0.22)]',
+              'hover:bg-white/[0.09] hover:[border-color:var(--tint-25)]',
               'data-[state=open]:bg-white/[0.09] data-[state=open]:[border-color:rgba(37,99,235,0.45)]',
               'data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed',
             )}
             style={{
-              background: 'rgba(255,255,255,0.06)',
+              background: 'var(--tint-06)',
               border: error
                 ? '1px solid rgba(239,68,68,0.55)'
-                : '1px solid rgba(255,255,255,0.11)',
+                : '1px solid var(--tint-10)',
             }}
           >
             <Radix.Value
@@ -124,7 +124,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                 border: '1px solid rgba(37,99,235,0.2)',
                 borderRadius: '0.875rem',
                 boxShadow:
-                  '0 24px 64px rgba(0,0,0,0.72), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
+                  '0 24px 64px rgba(0,0,0,0.72), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 var(--tint-04)',
                 transformOrigin: 'var(--radix-select-content-transform-origin)',
                 animation: 'selectSlideIn 0.15s cubic-bezier(0.16,1,0.3,1)',
               }}
@@ -135,7 +135,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             >
               <Radix.ScrollUpButton
                 className="flex items-center justify-center h-6 select-none"
-                style={{ color: 'rgba(255,255,255,0.3)' }}
+                style={{ color: 'var(--tint-35)' }}
               >
                 <ChevronDown className="h-3.5 w-3.5 rotate-180" />
               </Radix.ScrollUpButton>
@@ -162,7 +162,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
 
               <Radix.ScrollDownButton
                 className="flex items-center justify-center h-6 select-none"
-                style={{ color: 'rgba(255,255,255,0.3)' }}
+                style={{ color: 'var(--tint-35)' }}
               >
                 <ChevronDown className="h-3.5 w-3.5" />
               </Radix.ScrollDownButton>

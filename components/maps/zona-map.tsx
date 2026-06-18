@@ -161,9 +161,9 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
         : 'Não informado';
       
       marker.bindTooltip(`
-        <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px 14px; color: white; font-size: 12px; min-width: 180px;">
+        <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid var(--tint-25); border-radius: 8px; padding: 10px 14px; color: white; font-size: 12px; min-width: 180px;">
           <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; color: #60a5fa;">Zona ${zona.zona}</div>
-          <div style="margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <div style="margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--tint-10);">
             <div style="color: #9ca3af; font-size: 10px; margin-bottom: 2px;">BAIRRO(S):</div>
             <div style="color: #fbbf24; font-weight: 500;">${bairrosText}</div>
           </div>
@@ -223,7 +223,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
       });
       
       marker.bindTooltip(`
-        <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 12px 16px; color: white; font-size: 12px; min-width: 200px;">
+        <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid var(--tint-25); border-radius: 8px; padding: 12px 16px; color: white; font-size: 12px; min-width: 200px;">
           <div style="font-weight: bold; font-size: 15px; margin-bottom: 8px; color: ${cor};">📍 ${bairro.nome}</div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span style="color: #9ca3af;">Votos estimados:</span>
@@ -369,7 +369,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
     <div className="relative">
       {/* Cabeçalho do mapa */}
       <div className="absolute top-3 left-3 right-3 z-[1000] flex items-center justify-between">
-        <div className="bg-slate-900/95 rounded-lg px-4 py-2 text-white">
+        <div className="bg-slate-900/95 rounded-lg px-4 py-2 text-[color:var(--text-primary)]">
           <h3 className="font-bold text-sm">{municipio}</h3>
           <p className="text-xs text-gray-400">{candidato}</p>
         </div>
@@ -434,7 +434,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
       </div>
       
       {/* Legenda */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-slate-900/95 rounded-lg p-3 text-xs text-white">
+      <div className="absolute bottom-4 left-4 z-[1000] bg-slate-900/95 rounded-lg p-3 text-xs text-[color:var(--text-primary)]">
         <div className="font-semibold mb-2">
           {viewMode === 'bairros' ? '📍 Bairros' : '🗳️ Zonas Eleitorais'}
         </div>
@@ -456,7 +456,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
 
       {/* Detalhes da zona selecionada */}
       {selectedZona && (
-        <div className="absolute top-16 right-3 z-[1000] bg-slate-900/95 rounded-lg p-4 text-white max-w-[320px] max-h-[400px] overflow-y-auto">
+        <div className="absolute top-16 right-3 z-[1000] bg-slate-900/95 rounded-lg p-4 text-[color:var(--text-primary)] max-w-[320px] max-h-[400px] overflow-y-auto">
           <div className="flex justify-between items-center mb-3">
             <h4 className="font-bold text-blue-400 text-lg">Zona {selectedZona.zona}</h4>
             <button onClick={() => setSelectedZona(null)} className="text-gray-400 hover:text-white text-xl">×</button>
@@ -484,7 +484,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
           <div className="space-y-2 max-h-[180px] overflow-y-auto">
             {selectedZona.locais.map((local, idx) => (
               <div key={idx} className="text-xs bg-slate-800/50 rounded p-2">
-                <div className="font-medium text-white">{local.nome}</div>
+                <div className="font-medium text-[color:var(--text-primary)]">{local.nome}</div>
                 {local.bairro && <div className="text-amber-400 mt-0.5">📍 {local.bairro}</div>}
                 {local.endereco && <div className="text-gray-400 mt-1">{local.endereco}</div>}
               </div>
@@ -495,7 +495,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
 
       {/* Detalhes do bairro selecionado */}
       {selectedBairro && (
-        <div className="absolute top-16 right-3 z-[1000] bg-slate-900/95 rounded-lg p-4 text-white max-w-[320px] max-h-[400px] overflow-y-auto">
+        <div className="absolute top-16 right-3 z-[1000] bg-slate-900/95 rounded-lg p-4 text-[color:var(--text-primary)] max-w-[320px] max-h-[400px] overflow-y-auto">
           <div className="flex justify-between items-center mb-3">
             <h4 className="font-bold text-amber-400 text-lg">📍 {selectedBairro.nome}</h4>
             <button onClick={() => setSelectedBairro(null)} className="text-gray-400 hover:text-white text-xl">×</button>
@@ -527,7 +527,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
           <div className="space-y-2 max-h-[150px] overflow-y-auto">
             {selectedBairro.locais.map((local, idx) => (
               <div key={idx} className="text-xs bg-slate-800/50 rounded p-2">
-                <div className="font-medium text-white">{local.nome}</div>
+                <div className="font-medium text-[color:var(--text-primary)]">{local.nome}</div>
                 {local.endereco && <div className="text-gray-400 mt-1">{local.endereco}</div>}
               </div>
             ))}

@@ -37,7 +37,7 @@ export default function HomePage() {
           <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#2563EB', animationDelay: '150ms' }} />
           <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#2563EB', animationDelay: '300ms' }} />
         </div>
-        <p className="text-xs tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.3)' }}>Carregando</p>
+        <p className="text-xs tracking-widest uppercase" style={{ color: 'var(--tint-35)' }}>Carregando</p>
       </motion.div>
     </div>
   );

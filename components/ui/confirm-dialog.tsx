@@ -80,8 +80,8 @@ export function ConfirmDialog({
                   }
                 </span>
                 <div>
-                  <h3 className="text-white font-bold text-base leading-snug">{title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  <h3 className="text-[color:var(--text-primary)] font-bold text-base leading-snug">{title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--tint-55)' }}>
                     {message}
                   </p>
                 </div>
@@ -93,18 +93,18 @@ export function ConfirmDialog({
                   onClick={onCancel}
                   className="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150"
                   style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    color: 'rgba(255,255,255,0.7)',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'var(--tint-06)',
+                    color: 'var(--tint-75)',
+                    border: '1px solid var(--tint-10)',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--tint-10)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--tint-06)')}
                 >
                   {cancelLabel}
                 </button>
                 <button
                   onClick={onConfirm}
-                  className="px-4 py-2 rounded-lg text-sm font-bold transition-all duration-150 text-white"
+                  className="px-4 py-2 rounded-lg text-sm font-bold transition-all duration-150 text-[color:var(--text-primary)]"
                   style={
                     isDanger
                       ? { background: 'linear-gradient(135deg, #dc2626, #ef4444)', boxShadow: '0 4px 14px rgba(220,38,38,0.35)' }

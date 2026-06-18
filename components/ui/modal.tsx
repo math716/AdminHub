@@ -63,7 +63,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', dark = fa
               'sticky top-0 px-6 py-4 border-b flex items-center justify-between rounded-t-2xl',
               dark ? 'border-white/8' : 'bg-white border-gray-200'
             )}
-            style={dark ? { background: 'rgba(7,29,54,0.95)', backdropFilter: 'blur(8px)' } : {}}>
+            style={dark ? { background: 'var(--bg-card-raised)', backdropFilter: 'blur(8px)' } : {}}>
               {title && <h2 className={cn('text-lg font-bold tracking-tight', dark ? 'text-white' : 'text-gray-900')}>{title}</h2>}
               <button
                 onClick={onClose}

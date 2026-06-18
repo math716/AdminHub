@@ -228,16 +228,16 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <FileText className="h-4 w-4 text-amber-300" />
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400">
                     Detalhes da Emenda
                   </p>
                 </div>
-                <h2 className="text-lg font-bold text-white">
+                <h2 className="text-lg font-bold text-[color:var(--text-primary)]">
                   {data?.emenda?.numero ? `Emenda nº ${data.emenda.numero}` : (tituloFallback ?? `Código ${codigoEmenda}`)}
-                  {data?.emenda?.ano && <span className="text-slate-400 font-normal text-sm ml-2">({data.emenda.ano})</span>}
+                  {data?.emenda?.ano && <span className="text-slate-600 dark:text-slate-400 font-normal text-sm ml-2">({data.emenda.ano})</span>}
                 </h2>
                 {data?.emenda?.tipo && (
-                  <p className="text-xs text-slate-400 mt-0.5">{data.emenda.tipo}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{data.emenda.tipo}</p>
                 )}
               </div>
               <button
@@ -245,7 +245,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                 className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
                 aria-label="Fechar"
               >
-                <X className="h-4 w-4 text-slate-300" />
+                <X className="h-4 w-4 text-slate-700 dark:text-slate-300" />
               </button>
             </div>
 
@@ -270,21 +270,21 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-lg p-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
                     <p className="text-[10px] uppercase font-semibold text-amber-400">Empenhado</p>
-                    <p className="text-base font-bold text-white mt-0.5">{formatBRL(data.emenda.valorEmpenhado)}</p>
+                    <p className="text-base font-bold text-[color:var(--text-primary)] mt-0.5">{formatBRL(data.emenda.valorEmpenhado)}</p>
                   </div>
                   <div className="rounded-lg p-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
                     <p className="text-[10px] uppercase font-semibold text-emerald-400">Pago</p>
-                    <p className="text-base font-bold text-white mt-0.5">{formatBRL(data.emenda.valorPago)}</p>
+                    <p className="text-base font-bold text-[color:var(--text-primary)] mt-0.5">{formatBRL(data.emenda.valorPago)}</p>
                   </div>
                 </div>
 
                 {/* Município */}
                 {data.emenda.municipioNome ? (
-                  <div className="rounded-lg p-3 flex items-start gap-2" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <MapPin className="h-3.5 w-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <div className="rounded-lg p-3 flex items-start gap-2" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}>
+                    <MapPin className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Município Beneficiado</p>
-                      <p className="text-sm text-white">{data.emenda.municipioNome} · {data.emenda.uf}</p>
+                      <p className="text-[10px] uppercase font-semibold text-slate-600 dark:text-slate-400 mb-0.5">Município Beneficiado</p>
+                      <p className="text-sm text-[color:var(--text-primary)]">{data.emenda.municipioNome} · {data.emenda.uf}</p>
                     </div>
                   </div>
                 ) : (
@@ -301,19 +301,19 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
 
                 {/* Objeto / descrição */}
                 {data.emenda.objeto && (
-                  <div className="rounded-lg p-3" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <p className="text-[10px] uppercase font-semibold text-slate-400 mb-1.5">Objeto da Emenda</p>
-                    <p className="text-xs text-slate-300 leading-relaxed">{data.emenda.objeto}</p>
+                  <div className="rounded-lg p-3" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}>
+                    <p className="text-[10px] uppercase font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Objeto da Emenda</p>
+                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{data.emenda.objeto}</p>
                   </div>
                 )}
 
                 {/* Órgão executor */}
                 {data.emenda.funcao && (
-                  <div className="rounded-lg p-3 flex items-start gap-2" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <Building2 className="h-3.5 w-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <div className="rounded-lg p-3 flex items-start gap-2" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}>
+                    <Building2 className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-[10px] uppercase font-semibold text-slate-400 mb-0.5">Órgão Executor</p>
-                      <p className="text-xs text-slate-300">{data.emenda.funcao}</p>
+                      <p className="text-[10px] uppercase font-semibold text-slate-600 dark:text-slate-400 mb-0.5">Órgão Executor</p>
+                      <p className="text-xs text-slate-700 dark:text-slate-300">{data.emenda.funcao}</p>
                     </div>
                   </div>
                 )}
@@ -335,21 +335,21 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
 
             {/* Pendente enrich — federal */}
             {data && data.pendingEnrich && !data.notFound && data.emenda?.esfera !== 'ESTADUAL' && (
-              <div className="rounded-lg p-6 text-sm text-slate-400 bg-slate-900/40 border border-white/5 text-center">
+              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-900/40 border border-white/5 text-center">
                 Os dados detalhados desta emenda ainda não estão disponíveis.
               </div>
             )}
 
             {/* Sem execução no estado filtrado */}
             {data && data.semExecucaoNoEstado && !data.notFound && (
-              <div className="rounded-lg p-6 text-sm text-slate-400 bg-slate-900/40 border border-white/5 text-center">
+              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-900/40 border border-white/5 text-center">
                 Esta emenda não possui execução registrada neste estado.
               </div>
             )}
 
             {/* Not found */}
             {data && data.notFound && (
-              <div className="rounded-lg p-6 text-sm text-slate-400 bg-slate-900/40 border border-white/5">
+              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-900/40 border border-white/5">
                 Emenda não encontrada no banco. Pode estar em fonte ao vivo ainda não persistida.
               </div>
             )}
@@ -364,17 +364,17 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                   const isPartial = totalDocsEmp > 0 && totalDocsEmp < data.emenda!.valorEmpenhado * 0.98;
                   return (
                     <section>
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">
+                      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">
                         Valor Total da Emenda
                       </p>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="rounded-lg p-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
                           <p className="text-[10px] uppercase font-semibold text-amber-400">Total Empenhado</p>
-                          <p className="text-base font-bold text-white mt-0.5">{formatBRL(data.emenda!.valorEmpenhado)}</p>
+                          <p className="text-base font-bold text-[color:var(--text-primary)] mt-0.5">{formatBRL(data.emenda!.valorEmpenhado)}</p>
                         </div>
                         <div className="rounded-lg p-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
                           <p className="text-[10px] uppercase font-semibold text-emerald-400">Total Pago</p>
-                          <p className="text-base font-bold text-white mt-0.5">{formatBRL(data.emenda!.valorPago)}</p>
+                          <p className="text-base font-bold text-[color:var(--text-primary)] mt-0.5">{formatBRL(data.emenda!.valorPago)}</p>
                         </div>
                       </div>
                       {isPartial && (
@@ -393,7 +393,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                 {/* Breakdown por fase */}
                 {fasesFiltradas.length > 0 && (
                   <section>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">
                       Execução por fase
                     </p>
                     <div className="grid grid-cols-3 gap-2">
@@ -409,8 +409,8 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                           <p className="text-[10px] uppercase font-semibold" style={{ color: corFase(f.fase) }}>
                             {f.fase}
                           </p>
-                          <p className="text-base font-bold text-white mt-0.5">{formatBRL(f.total)}</p>
-                          <p className="text-[10px] text-slate-400">{f.qtd} doc{f.qtd === 1 ? '' : 's'}</p>
+                          <p className="text-base font-bold text-[color:var(--text-primary)] mt-0.5">{formatBRL(f.total)}</p>
+                          <p className="text-[10px] text-slate-600 dark:text-slate-400">{f.qtd} doc{f.qtd === 1 ? '' : 's'}</p>
                         </div>
                       ))}
                     </div>
@@ -420,7 +420,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                 {/* Favorecidos */}
                 {favorecidosFiltrados.length > 0 && (
                   <section>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">
                       {filtroFavorecido ? 'Favorecido' : `Favorecidos (${favorecidosFiltrados.length})`}
                     </p>
                     <div className="space-y-2">
@@ -428,16 +428,16 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                         <div
                           key={f.cnpj ?? f.nome}
                           className="rounded-lg p-3 flex items-start justify-between gap-3"
-                          style={{ background: 'rgba(7,29,54,0.6)', border: '1px solid rgba(255,255,255,0.05)' }}
+                          style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-04)' }}
                         >
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-0.5">
                               <Building2 className="h-3 w-3 text-cyan-300 flex-shrink-0" />
-                              <p className="text-xs font-semibold text-white truncate">{f.nome}</p>
+                              <p className="text-xs font-semibold text-[color:var(--text-primary)] truncate">{f.nome}</p>
                             </div>
-                            <p className="text-[10px] text-slate-400 font-mono">{formatCnpj(f.cnpj)}</p>
+                            <p className="text-[10px] text-slate-600 dark:text-slate-400 font-mono">{formatCnpj(f.cnpj)}</p>
                             {(f.municipio || f.uf) && (
-                              <p className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
+                              <p className="text-[10px] text-slate-600 dark:text-slate-500 mt-0.5 flex items-center gap-1">
                                 <MapPin className="h-2.5 w-2.5" />
                                 {[f.municipio, f.uf].filter(Boolean).join(' / ')}
                               </p>
@@ -445,12 +445,12 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                           </div>
                           <div className="text-right flex-shrink-0">
                             <p className="text-sm font-bold text-emerald-300 whitespace-nowrap">{formatBRL(f.total)}</p>
-                            <p className="text-[10px] text-slate-500">{f.qtdDocumentos} doc{f.qtdDocumentos === 1 ? '' : 's'}</p>
+                            <p className="text-[10px] text-slate-600 dark:text-slate-500">{f.qtdDocumentos} doc{f.qtdDocumentos === 1 ? '' : 's'}</p>
                           </div>
                         </div>
                       ))}
                       {favorecidosFiltrados.length > 10 && (
-                        <p className="text-[10px] text-slate-500 text-center">
+                        <p className="text-[10px] text-slate-600 dark:text-slate-500 text-center">
                           + {favorecidosFiltrados.length - 10} outros favorecidos
                         </p>
                       )}
@@ -460,7 +460,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
 
                 {/* Lista de documentos com observação */}
                 <section>
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">
                     Documentos ({docsFiltrados.length})
                   </p>
                   <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
@@ -468,7 +468,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                       <div
                         key={d.codigoDocumento}
                         className="rounded-lg p-2.5"
-                        style={{ background: 'rgba(7,29,54,0.4)', border: '1px solid rgba(255,255,255,0.04)' }}
+                        style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-04)' }}
                       >
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <div className="flex items-center gap-2 min-w-0">
@@ -481,24 +481,24 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                             >
                               {d.fase}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-mono truncate">
+                            <span className="text-[10px] text-slate-600 dark:text-slate-400 font-mono truncate">
                               {d.codigoDocumentoResumido ?? d.codigoDocumento}
                             </span>
-                            <span className="text-[10px] text-slate-500 whitespace-nowrap">
+                            <span className="text-[10px] text-slate-600 dark:text-slate-500 whitespace-nowrap">
                               {formatDataBR(d.data)}
                             </span>
                           </div>
-                          <span className="text-xs font-semibold text-white whitespace-nowrap">
+                          <span className="text-xs font-semibold text-[color:var(--text-primary)] whitespace-nowrap">
                             {formatBRL(d.valor)}
                           </span>
                         </div>
                         {d.observacao && (
-                          <p className="text-[10px] text-slate-300 mt-1 leading-relaxed line-clamp-3">
+                          <p className="text-[10px] text-slate-700 dark:text-slate-300 mt-1 leading-relaxed line-clamp-3">
                             {d.observacao}
                           </p>
                         )}
                         {d.orgao && (
-                          <p className="text-[10px] text-slate-500 mt-1">
+                          <p className="text-[10px] text-slate-600 dark:text-slate-500 mt-1">
                             Órgão: {d.orgao}
                           </p>
                         )}
@@ -560,8 +560,8 @@ function AnotacaoSection({
     <section className="border-t border-white/5 pt-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <Pencil className="h-3 w-3 text-slate-400" />
-          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+          <Pencil className="h-3 w-3 text-slate-600 dark:text-slate-400" />
+          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400">
             Anotações
           </p>
         </div>
@@ -577,7 +577,7 @@ function AnotacaoSection({
         onChange={(e) => onChange(e.target.value)}
         placeholder="Adicione notas internas sobre esta emenda…"
         rows={3}
-        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 outline-none focus:border-amber-500/40 transition-colors resize-none"
+        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-600 outline-none focus:border-amber-500/40 transition-colors resize-none"
       />
       {alterado && (
         <div className="flex justify-end mt-1.5">

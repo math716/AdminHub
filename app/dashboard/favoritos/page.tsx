@@ -140,13 +140,13 @@ export default function FavoritosPage() {
                         <Star className="h-5 w-5" style={{ color: '#2563EB' }} fill="#2563EB" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-semibold text-white truncate">{fav?.candidateName}</h3>
-                        <p className="text-sm text-slate-400 truncate">{fav?.cargo ?? 'Candidato'}</p>
+                        <h3 className="font-semibold text-[color:var(--text-primary)] truncate">{fav?.candidateName}</h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 truncate">{fav?.cargo ?? 'Candidato'}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => handleDelete(fav?.id)}
-                      className="ml-2 p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+                      className="ml-2 p-1.5 rounded-lg text-slate-600 dark:text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
                       aria-label="Remover favorito"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -154,12 +154,12 @@ export default function FavoritosPage() {
                   </div>
 
                   <div className="mt-4 space-y-2 flex-1">
-                    <div className="flex items-center gap-2 text-sm text-slate-300">
-                      <MapPin className="h-4 w-4 text-slate-500" />
+                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                      <MapPin className="h-4 w-4 text-slate-600 dark:text-slate-500" />
                       {getEstadoNome(fav?.uf)}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-300">
-                      <Calendar className="h-4 w-4 text-slate-500" />
+                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                      <Calendar className="h-4 w-4 text-slate-600 dark:text-slate-500" />
                       Eleição de {fav?.ano}
                     </div>
                   </div>

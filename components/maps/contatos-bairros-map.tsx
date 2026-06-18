@@ -162,12 +162,12 @@ function ContatosBairrosMapInner({
       `}</style>
       {!mapReady && (
         <div className="absolute inset-0 flex items-center justify-center z-10 rounded-xl"
-          style={{ background: 'rgba(7,29,54,0.7)' }}>
+          style={{ background: 'var(--bg-card)' }}>
           <Loader2 className="h-6 w-6 animate-spin" style={{ color: '#4a9ede' }} />
         </div>
       )}
       <div ref={containerRef} className="w-full h-full rounded-xl"
-        style={{ background: 'rgba(7,29,54,0.9)', minHeight: 400 }} />
+        style={{ background: 'var(--bg-card-raised)', minHeight: 400 }} />
     </div>
   );
 }

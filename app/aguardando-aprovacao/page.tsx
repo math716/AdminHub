@@ -79,11 +79,11 @@ export default function AguardandoAprovacaoPage() {
                 <Clock className="w-7 h-7" style={{ color: '#2563EB' }} />
               </div>
 
-              <h1 className="text-xl font-bold text-white mb-2">Aguardando Aprovação</h1>
-              <p className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              <h1 className="text-xl font-bold text-[color:var(--text-primary)] mb-2">Aguardando Aprovação</h1>
+              <p className="text-sm mb-1" style={{ color: 'var(--tint-55)' }}>
                 Olá, <span style={{ color: '#3B82F6' }}>{userName}</span>
               </p>
-              <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              <p className="text-sm mb-6" style={{ color: 'var(--tint-45)' }}>
                 Seu cadastro foi recebido. O Chefe de Gabinete ou Administrador precisará aprovar seu acesso antes de você entrar no sistema.
               </p>
 
@@ -110,7 +110,7 @@ export default function AguardandoAprovacaoPage() {
                 <button
                   onClick={() => signOut({ callbackUrl: '/login' })}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all hover:bg-white/5"
-                  style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-08)' }}
                 >
                   <LogOut className="w-4 h-4" />
                   Sair
@@ -125,8 +125,8 @@ export default function AguardandoAprovacaoPage() {
               >
                 <CheckCircle2 className="w-7 h-7" style={{ color: '#4ade80' }} />
               </div>
-              <h1 className="text-xl font-bold text-white mb-2">Acesso Aprovado!</h1>
-              <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              <h1 className="text-xl font-bold text-[color:var(--text-primary)] mb-2">Acesso Aprovado!</h1>
+              <p className="text-sm mb-6" style={{ color: 'var(--tint-55)' }}>
                 Seu cadastro foi aprovado. Faça login novamente para acessar o sistema.
               </p>
               <button

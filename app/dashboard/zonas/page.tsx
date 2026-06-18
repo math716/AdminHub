@@ -203,7 +203,7 @@ export default function ZonasPage() {
   };
 
   if (status === 'loading') {
-    return <div className="text-center py-12 text-slate-400">Carregando...</div>;
+    return <div className="text-center py-12 text-slate-600 dark:text-slate-400">Carregando...</div>;
   }
 
   if (!canAccess) return null;
@@ -272,8 +272,8 @@ export default function ZonasPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-white font-semibold">{resultado.candidato.nomeUrna}</p>
-                  <p className="text-slate-400 text-xs">{resultado.candidato.nome}</p>
+                  <p className="text-[color:var(--text-primary)] font-semibold">{resultado.candidato.nomeUrna}</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-xs">{resultado.candidato.nome}</p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     <Badge variant="info" className="text-xs">{resultado.candidato.partido}</Badge>
                     <Badge variant="default" className="text-xs">{resultado.candidato.cargo}</Badge>
@@ -286,21 +286,21 @@ export default function ZonasPage() {
                       <p className="text-amber-400 font-bold text-sm">
                         {resultado.resumo.totalVotos.toLocaleString('pt-BR')}
                       </p>
-                      <p className="text-slate-500 text-xs">votos totais</p>
+                      <p className="text-slate-600 dark:text-slate-500 text-xs">votos totais</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Layers className="h-4 w-4 text-blue-400" />
                     <div>
                       <p className="text-blue-400 font-bold text-sm">{resultado.resumo.totalZonas}</p>
-                      <p className="text-slate-500 text-xs">zonas eleitorais</p>
+                      <p className="text-slate-600 dark:text-slate-500 text-xs">zonas eleitorais</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-green-400" />
                     <div>
                       <p className="text-green-400 font-bold text-sm">{resultado.resumo.totalMunicipios}</p>
-                      <p className="text-slate-500 text-xs">municípios</p>
+                      <p className="text-slate-600 dark:text-slate-500 text-xs">municípios</p>
                     </div>
                   </div>
                 </div>
@@ -315,7 +315,7 @@ export default function ZonasPage() {
             <Card>
               <CardContent className="flex items-center justify-center py-16">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-400 mr-3" />
-                <span className="text-slate-400">Carregando zonas eleitorais...</span>
+                <span className="text-slate-600 dark:text-slate-400">Carregando zonas eleitorais...</span>
               </CardContent>
             </Card>
           )}
@@ -324,8 +324,8 @@ export default function ZonasPage() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-20 text-center">
                 <Layers className="h-16 w-16 text-slate-600 mb-4" />
-                <p className="text-slate-400 text-lg font-medium">Busque um candidato</p>
-                <p className="text-slate-500 text-sm mt-1">
+                <p className="text-slate-600 dark:text-slate-400 text-lg font-medium">Busque um candidato</p>
+                <p className="text-slate-600 dark:text-slate-500 text-sm mt-1">
                   Preencha o formulário ao lado para ver todas as zonas eleitorais com a quantidade de votos.
                 </p>
               </CardContent>
@@ -337,46 +337,46 @@ export default function ZonasPage() {
               {/* Barra de filtros e ações */}
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                  <Filter className="h-4 w-4 text-slate-400" />
+                  <Filter className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                   <input
                     type="text"
                     placeholder="Filtrar município..."
                     value={filtroMunicipio}
                     onChange={(e) => setFiltroMunicipio(e.target.value)}
-                    className="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:border-blue-500"
+                    className="bg-slate-800 border border-slate-700 text-[color:var(--text-primary)] text-sm rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:border-blue-500"
                   />
                   <input
                     type="number"
                     placeholder="Nº zona"
                     value={filtroZona}
                     onChange={(e) => setFiltroZona(e.target.value)}
-                    className="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-1.5 w-24 focus:outline-none focus:border-blue-500"
+                    className="bg-slate-800 border border-slate-700 text-[color:var(--text-primary)] text-sm rounded-lg px-3 py-1.5 w-24 focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setOrdenar(ordenar === 'votos' ? 'municipio' : 'votos')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
                   >
                     <ArrowUpDown className="h-3.5 w-3.5" />
                     {ordenar === 'votos' ? 'Por votos' : 'Por município'}
                   </button>
                   <button
                     onClick={expandirTodos}
-                    className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
+                    className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
                   >
                     Expandir tudo
                   </button>
                   <button
                     onClick={recolherTodos}
-                    className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
+                    className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
                   >
                     Recolher
                   </button>
                   <button
                     onClick={exportarCSV}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-[color:var(--text-primary)] text-sm rounded-lg transition-colors"
                   >
                     <Download className="h-3.5 w-3.5" />
                     CSV
@@ -386,7 +386,7 @@ export default function ZonasPage() {
 
               {/* Contador */}
               {(filtroMunicipio || filtroZona) && (
-                <div className="flex items-center gap-2 text-sm text-slate-400">
+                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                   <span>
                     {municipiosFiltrados.length} município(s) encontrado(s) ·{' '}
                     <span className="text-amber-400 font-semibold">
@@ -400,7 +400,7 @@ export default function ZonasPage() {
               <div className="space-y-2">
                 {municipiosFiltrados.length === 0 && (
                   <Card>
-                    <CardContent className="flex items-center justify-center py-10 text-slate-400">
+                    <CardContent className="flex items-center justify-center py-10 text-slate-600 dark:text-slate-400">
                       <AlertTriangle className="h-5 w-5 mr-2" />
                       Nenhum resultado encontrado com os filtros aplicados.
                     </CardContent>
@@ -424,18 +424,18 @@ export default function ZonasPage() {
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700/40 transition-colors text-left"
                       >
                         {expanded
-                          ? <ChevronDown className="h-4 w-4 text-slate-400 flex-shrink-0" />
-                          : <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                          ? <ChevronDown className="h-4 w-4 text-slate-600 dark:text-slate-400 flex-shrink-0" />
+                          : <ChevronRight className="h-4 w-4 text-slate-600 dark:text-slate-400 flex-shrink-0" />
                         }
 
                         <MapPin className="h-4 w-4 text-blue-400 flex-shrink-0" />
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-semibold truncate">
+                            <span className="text-[color:var(--text-primary)] font-semibold truncate">
                               {mun.municipio}
                             </span>
-                            <span className="text-slate-500 text-xs flex-shrink-0">
+                            <span className="text-slate-600 dark:text-slate-500 text-xs flex-shrink-0">
                               {mun.zonas.length} zona{mun.zonas.length !== 1 ? 's' : ''}
                             </span>
                           </div>
@@ -452,7 +452,7 @@ export default function ZonasPage() {
                           <p className="text-amber-400 font-bold text-sm">
                             {mun.totalVotos.toLocaleString('pt-BR')}
                           </p>
-                          <p className="text-slate-500 text-xs">{pct}%</p>
+                          <p className="text-slate-600 dark:text-slate-500 text-xs">{pct}%</p>
                         </div>
                       </button>
 
@@ -469,14 +469,14 @@ export default function ZonasPage() {
                                   key={zona.zona}
                                   className="flex items-center gap-2 p-2 bg-slate-700/50 rounded-lg border border-slate-600 hover:border-blue-500/50 transition-colors"
                                 >
-                                  <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                  <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center text-[color:var(--text-primary)] text-xs font-bold flex-shrink-0">
                                     {zona.zona}
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <p className="text-green-400 font-bold text-sm leading-tight">
                                       {zona.votos.toLocaleString('pt-BR')}
                                     </p>
-                                    <p className="text-slate-500 text-[10px]">{pctZona}% do mun.</p>
+                                    <p className="text-slate-600 dark:text-slate-500 text-[10px]">{pctZona}% do mun.</p>
                                   </div>
                                 </div>
                               );
@@ -493,7 +493,7 @@ export default function ZonasPage() {
               <div>
                 <button
                   onClick={() => setVerTodos(!verTodos)}
-                  className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+                  className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-white transition-colors"
                 >
                   {verTodos ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                   {verTodos ? 'Ocultar' : 'Ver'} tabela completa ({resultado.zonas.length} linhas)
@@ -503,7 +503,7 @@ export default function ZonasPage() {
                   <div className="mt-3 overflow-x-auto rounded-xl border border-slate-700">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="bg-slate-800 text-slate-400 text-left">
+                        <tr className="bg-slate-800 text-slate-600 dark:text-slate-400 text-left">
                           <th className="px-4 py-2.5 font-medium">#</th>
                           <th className="px-4 py-2.5 font-medium">Município</th>
                           <th className="px-4 py-2.5 font-medium">Zona</th>
@@ -516,8 +516,8 @@ export default function ZonasPage() {
                             key={`${z.municipio}-${z.zona}`}
                             className="hover:bg-slate-800/60 transition-colors"
                           >
-                            <td className="px-4 py-2 text-slate-500">{i + 1}</td>
-                            <td className="px-4 py-2 text-slate-300">{z.municipio}</td>
+                            <td className="px-4 py-2 text-slate-600 dark:text-slate-500">{i + 1}</td>
+                            <td className="px-4 py-2 text-slate-700 dark:text-slate-300">{z.municipio}</td>
                             <td className="px-4 py-2">
                               <span className="bg-blue-900/50 text-blue-300 text-xs font-bold px-2 py-0.5 rounded-full border border-blue-700/50">
                                 {z.zona}
@@ -531,7 +531,7 @@ export default function ZonasPage() {
                       </tbody>
                       <tfoot>
                         <tr className="bg-slate-800 border-t border-slate-600">
-                          <td colSpan={3} className="px-4 py-2.5 text-slate-400 font-medium text-right">
+                          <td colSpan={3} className="px-4 py-2.5 text-slate-600 dark:text-slate-400 font-medium text-right">
                             Total
                           </td>
                           <td className="px-4 py-2.5 text-right text-amber-400 font-bold">

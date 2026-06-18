@@ -14,13 +14,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-xs font-semibold uppercase tracking-widest mb-1.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
+          <label className="block text-xs font-semibold uppercase tracking-widest mb-1.5" style={{ color: 'var(--tint-45)' }}>
             {label}
           </label>
         )}
         <div className="relative">
           {icon && (
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none" style={{ color: 'var(--tint-45)' }}>
               {icon}
             </div>
           )}
@@ -34,11 +34,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               className
             )}
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+              background: 'var(--tint-06)',
+              border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--tint-10)',
             }}
             onFocus={e => (e.currentTarget.style.borderColor = 'rgba(74,158,222,0.5)')}
-            onBlur={e => (e.currentTarget.style.borderColor = error ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)')}
+            onBlur={e => (e.currentTarget.style.borderColor = error ? 'rgba(239,68,68,0.5)' : 'var(--tint-10)')}
             ref={ref}
             {...props}
           />

@@ -304,7 +304,7 @@ export default function AgendaPage() {
   }
 
   return (
-    <div className="space-y-5 text-white">
+    <div className="space-y-5 text-[color:var(--text-primary)]">
       <PageHeader
         icon={CalendarDays}
         title="Agenda do Gabinete"
@@ -347,18 +347,18 @@ export default function AgendaPage() {
         {/* ── Calendário ── */}
         <div
           className="lg:col-span-2 rounded-2xl overflow-hidden"
-          style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(37,99,235,0.15)', backdropFilter: 'blur(8px)' }}
+          style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.15)', backdropFilter: 'blur(8px)' }}
         >
           {/* Navegação do mês */}
-          <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--tint-06)' }}>
             <button onClick={prevMonth}
               className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:bg-white/10"
-              style={{ color: 'rgba(255,255,255,0.5)' }}>
+              style={{ color: 'var(--tint-55)' }}>
               <ChevronLeft className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-3">
-              <h2 className="text-white font-bold text-lg tracking-wide">
+              <h2 className="text-[color:var(--text-primary)] font-bold text-lg tracking-wide">
                 {MESES[viewMonth]}{' '}
                 <span style={{ color: '#2563EB' }}>{viewYear}</span>
               </h2>
@@ -375,16 +375,16 @@ export default function AgendaPage() {
 
             <button onClick={nextMonth}
               className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:bg-white/10"
-              style={{ color: 'rgba(255,255,255,0.5)' }}>
+              style={{ color: 'var(--tint-55)' }}>
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
 
           {/* Dias da semana */}
-          <div className="grid grid-cols-7" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="grid grid-cols-7" style={{ borderBottom: '1px solid var(--tint-06)' }}>
             {DIAS_SEMANA.map((d, i) => (
               <div key={d} className="text-center py-2.5 text-xs font-semibold uppercase tracking-widest"
-                style={{ color: i === 0 || i === 6 ? 'rgba(37,99,235,0.6)' : 'rgba(255,255,255,0.3)' }}>
+                style={{ color: i === 0 || i === 6 ? 'rgba(37,99,235,0.6)' : 'var(--tint-35)' }}>
                 {d}
               </div>
             ))}
@@ -400,7 +400,7 @@ export default function AgendaPage() {
               {cells.map((day, idx) => {
                 if (!day) return (
                   <div key={`empty-${idx}`} className="h-16 md:h-24"
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }} />
+                    style={{ borderBottom: '1px solid var(--tint-04)', borderRight: '1px solid var(--tint-04)' }} />
                 );
                 const dayEvs = eventsByDay.get(day) ?? [];
                 const feriado = feriados[fmtKey(day)];
@@ -417,13 +417,13 @@ export default function AgendaPage() {
                     onClick={() => setSelectedDay(isSel ? null : day)}
                     className="h-16 md:h-24 p-1 md:p-1.5 cursor-pointer transition-all group"
                     style={{
-                      borderBottom: '1px solid rgba(255,255,255,0.04)',
-                      borderRight: '1px solid rgba(255,255,255,0.04)',
+                      borderBottom: '1px solid var(--tint-04)',
+                      borderRight: '1px solid var(--tint-04)',
                       background: isSel
                         ? 'rgba(37,99,235,0.08)'
                         : isWeekend ? 'rgba(255,255,255,0.012)' : 'transparent',
                     }}
-                    onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; }}
+                    onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = 'var(--tint-04)'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isSel ? 'rgba(37,99,235,0.08)' : isWeekend ? 'rgba(255,255,255,0.012)' : 'transparent'; }}
                   >
                     <div className="flex items-start justify-between mb-1">
@@ -435,7 +435,7 @@ export default function AgendaPage() {
                             ? { color: '#f87171' }
                             : isWeekend
                               ? { color: 'rgba(37,99,235,0.5)' }
-                              : { color: 'rgba(255,255,255,0.75)' }
+                              : { color: 'var(--tint-75)' }
                         }
                       >
                         {day}
@@ -463,7 +463,7 @@ export default function AgendaPage() {
                         </div>
                       ))}
                       {dayEvs.length > (feriado ? 1 : 2) && (
-                        <div className="text-[10px] px-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                        <div className="text-[10px] px-1" style={{ color: 'var(--tint-35)' }}>
                           +{dayEvs.length - (feriado ? 1 : 2)} mais
                         </div>
                       )}
@@ -481,11 +481,11 @@ export default function AgendaPage() {
           {/* Briefing do Dia */}
           <div
             className="rounded-2xl overflow-hidden"
-            style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}
           >
-            <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--tint-06)' }}>
               <div>
-                <p className="text-white font-semibold text-sm">
+                <p className="text-[color:var(--text-primary)] font-semibold text-sm">
                   {selectedDay
                     ? `${selectedDay} de ${MESES[viewMonth]}`
                     : isCurrentMonth
@@ -496,7 +496,7 @@ export default function AgendaPage() {
                   <p className="text-xs mt-0.5" style={{ color: '#f87171' }}>{feriados[fmtKey(selectedDay)]}</p>
                 )}
                 {!selectedDay && isCurrentMonth && (
-                  <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--tint-35)' }}>
                     {todayEvents.length === 0 ? 'Dia livre' : `${todayEvents.length} evento${todayEvents.length > 1 ? 's' : ''} hoje`}
                   </p>
                 )}
@@ -508,11 +508,11 @@ export default function AgendaPage() {
                 <Plus className="w-4 h-4" />
               </button>
             </div>
-            <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+            <div className="divide-y" style={{ borderColor: 'var(--tint-04)' }}>
               {(selectedDay ? dayEvents : todayEvents).length === 0 ? (
                 <div className="px-4 py-6 text-center">
-                  <TrendingUp className="w-6 h-6 mx-auto mb-2" style={{ color: 'rgba(255,255,255,0.15)' }} />
-                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>Nenhum evento</p>
+                  <TrendingUp className="w-6 h-6 mx-auto mb-2" style={{ color: 'var(--tint-14)' }} />
+                  <p className="text-sm" style={{ color: 'var(--tint-35)' }}>Nenhum evento</p>
                 </div>
               ) : (
                 (selectedDay ? dayEvents : todayEvents).map((e, idx) => {
@@ -524,12 +524,12 @@ export default function AgendaPage() {
                         <div className="flex flex-col items-center mt-0.5">
                           <TipoIconBox tipo={e.tipo} box={28} icon={13} />
                           {idx < (selectedDay ? dayEvents : todayEvents).length - 1 && (
-                            <div className="w-px flex-1 mt-1" style={{ background: 'rgba(255,255,255,0.07)', minHeight: 12 }} />
+                            <div className="w-px flex-1 mt-1" style={{ background: 'var(--tint-06)', minHeight: 12 }} />
                           )}
                         </div>
                         <div className="flex-1 min-w-0 pb-1">
-                          <p className="text-white text-sm font-medium truncate">{e.titulo}</p>
-                          <div className="flex items-center gap-3 mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                          <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{e.titulo}</p>
+                          <div className="flex items-center gap-3 mt-0.5" style={{ color: 'var(--tint-45)' }}>
                             <span className="flex items-center gap-1 text-xs">
                               <Clock className="w-3 h-3" />
                               {new Date(e.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -554,17 +554,17 @@ export default function AgendaPage() {
           {/* Próximos Compromissos */}
           <div
             className="rounded-2xl overflow-hidden"
-            style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(37,99,235,0.15)', backdropFilter: 'blur(8px)' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.15)', backdropFilter: 'blur(8px)' }}
           >
-            <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid var(--tint-06)' }}>
               <TrendingUp className="w-3.5 h-3.5" style={{ color: '#2563EB' }} />
-              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>
                 Próximos Compromissos
               </p>
             </div>
-            <div className="divide-y max-h-72 overflow-y-auto" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+            <div className="divide-y max-h-72 overflow-y-auto" style={{ borderColor: 'var(--tint-04)' }}>
               {upcomingEvents.length === 0 ? (
-                <p className="text-sm px-4 py-5 text-center" style={{ color: 'rgba(255,255,255,0.3)' }}>Nenhum evento futuro</p>
+                <p className="text-sm px-4 py-5 text-center" style={{ color: 'var(--tint-35)' }}>Nenhum evento futuro</p>
               ) : upcomingEvents.map((e) => {
                 const color = e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB';
                 return (
@@ -573,8 +573,8 @@ export default function AgendaPage() {
                     <div className="flex items-center gap-2.5">
                       <TipoIconBox tipo={e.tipo} box={28} icon={13} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-xs font-medium truncate">{e.titulo}</p>
-                        <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                        <p className="text-[color:var(--text-primary)] text-xs font-medium truncate">{e.titulo}</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--tint-35)' }}>
                           {new Date(e.data).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
                           {' · '}
                           {new Date(e.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -591,16 +591,16 @@ export default function AgendaPage() {
           {/* Legenda de tipos */}
           <div
             className="rounded-2xl p-4"
-            style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.07)' }}
+            style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
           >
-            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--tint-35)' }}>
               Tipos de Evento
             </p>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(TIPO_LABELS).map(([k, v]) => (
                 <div key={k} className="flex items-center gap-2">
                   <TipoIconBox tipo={k} box={24} icon={12} />
-                  <span className="text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>{v}</span>
+                  <span className="text-xs" style={{ color: 'var(--tint-55)' }}>{v}</span>
                 </div>
               ))}
             </div>
@@ -623,13 +623,13 @@ export default function AgendaPage() {
               style={{ borderBottom: '1px solid rgba(37,99,235,0.15)' }}>
               <div className="flex items-center gap-3">
                 <TipoIconBox tipo={form.tipo} box={32} icon={15} />
-                <h2 className="text-white font-semibold">
+                <h2 className="text-[color:var(--text-primary)] font-semibold">
                   {editEvent ? 'Editar Evento' : 'Novo Evento'}
                 </h2>
               </div>
               <button onClick={() => { setShowModal(false); setEditEvent(null); }}
                 className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10"
-                style={{ color: 'rgba(255,255,255,0.5)' }}>
+                style={{ color: 'var(--tint-55)' }}>
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -638,12 +638,12 @@ export default function AgendaPage() {
 
               {/* Título */}
               <div>
-                <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Título *</label>
+                <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Título *</label>
                 <input
                   value={form.titulo}
                   onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))}
                   className={inputCls}
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
                   placeholder="Nome do evento"
                 />
               </div>
@@ -651,7 +651,7 @@ export default function AgendaPage() {
               {/* Tipo + Cor */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Tipo</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Tipo</label>
                   <Select
                     value={form.tipo}
                     onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value, cor: TIPO_COLORS[e.target.value] ?? '' }))}
@@ -660,15 +660,15 @@ export default function AgendaPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Cor</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Cor</label>
                   <div className="mt-1 flex items-center gap-2">
                     <input type="color"
                       value={form.cor || TIPO_COLORS[form.tipo] || '#2563EB'}
                       onChange={(e) => setForm((f) => ({ ...f, cor: e.target.value }))}
                       className="w-10 h-9 rounded-lg cursor-pointer border"
-                      style={{ background: 'transparent', borderColor: 'rgba(255,255,255,0.1)' }}
+                      style={{ background: 'transparent', borderColor: 'var(--tint-10)' }}
                     />
-                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{form.cor || TIPO_COLORS[form.tipo] || '#2563EB'}</span>
+                    <span className="text-xs" style={{ color: 'var(--tint-35)' }}>{form.cor || TIPO_COLORS[form.tipo] || '#2563EB'}</span>
                   </div>
                 </div>
               </div>
@@ -676,19 +676,19 @@ export default function AgendaPage() {
               {/* Data início + Hora */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Data *</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Data *</label>
                   <input type="date" value={form.data}
                     onChange={(e) => setForm((f) => ({ ...f, data: e.target.value }))}
                     className={inputCls}
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', colorScheme: 'dark' }}
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'dark' }}
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Hora</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Hora</label>
                   <input type="time" value={form.hora}
                     onChange={(e) => setForm((f) => ({ ...f, hora: e.target.value }))}
                     className={inputCls}
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', colorScheme: 'dark' }}
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'dark' }}
                   />
                 </div>
               </div>
@@ -696,42 +696,42 @@ export default function AgendaPage() {
               {/* Data fim + Hora fim */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Data Fim</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Data Fim</label>
                   <input type="date" value={form.dataFim}
                     onChange={(e) => setForm((f) => ({ ...f, dataFim: e.target.value }))}
                     className={inputCls}
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', colorScheme: 'dark' }}
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'dark' }}
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Hora Fim</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Hora Fim</label>
                   <input type="time" value={form.horaFim}
                     onChange={(e) => setForm((f) => ({ ...f, horaFim: e.target.value }))}
                     className={inputCls}
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', colorScheme: 'dark' }}
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'dark' }}
                   />
                 </div>
               </div>
 
               {/* Local */}
               <div>
-                <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Local / Nome do lugar</label>
+                <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Local / Nome do lugar</label>
                 <input value={form.local}
                   onChange={(e) => setForm((f) => ({ ...f, local: e.target.value }))}
                   className={inputCls}
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
                   placeholder="Ex: Câmara Municipal, Escola Estadual..."
                 />
               </div>
 
               {/* Endereço + Geocodificar */}
               <div>
-                <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Endereço (aparece no Mapa de Demandas)</label>
+                <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Endereço (aparece no Mapa de Demandas)</label>
                 <div className="flex gap-2 mt-1">
                   <input value={form.endereco}
                     onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
-                    className="flex-1 rounded-lg px-3 py-2 text-white text-sm outline-none transition-all placeholder-white/20"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                    className="flex-1 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none transition-all placeholder-white/20"
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
                     placeholder="Rua, número, cidade"
                   />
                   <button onClick={geocodeFormAddress} disabled={geoLoading}
@@ -744,19 +744,19 @@ export default function AgendaPage() {
                   <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: '#22c55e' }}>
                     <CheckCircle className="w-3 h-3" />
                     Localizado: {form.lat.toFixed(4)}, {form.lng.toFixed(4)}
-                    <span className="ml-1" style={{ color: 'rgba(255,255,255,0.3)' }}>— aparecerá no Mapa de Demandas</span>
+                    <span className="ml-1" style={{ color: 'var(--tint-35)' }}>— aparecerá no Mapa de Demandas</span>
                   </p>
                 )}
               </div>
 
               {/* Descrição */}
               <div>
-                <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Descrição</label>
+                <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Descrição</label>
                 <textarea value={form.descricao}
                   onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
                   rows={2}
                   className={inputCls + ' resize-none'}
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
                   placeholder="Observações sobre o evento..."
                 />
               </div>
@@ -786,7 +786,7 @@ export default function AgendaPage() {
               <div className="flex items-center gap-3">
                 <button onClick={() => { setShowModal(false); setEditEvent(null); }}
                   className="px-4 py-2 text-sm font-medium transition-all hover:text-white"
-                  style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  style={{ color: 'var(--tint-45)' }}>
                   Cancelar
                 </button>
                 <button onClick={handleSave} disabled={saving}

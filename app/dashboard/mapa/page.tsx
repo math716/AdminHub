@@ -100,7 +100,7 @@ const SP_ZONA_DISTRITO_MAP: Record<number, Record<string, number>> = {
 const BrazilMap = dynamic(() => import('@/components/maps/brazil-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-full flex items-center justify-center rounded-lg" style={{ background: 'rgba(7,29,54,0.5)' }}>
+    <div className="h-full flex items-center justify-center rounded-lg" style={{ background: 'var(--bg-card-subtle)' }}>
       <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
     </div>
   )
@@ -109,7 +109,7 @@ const BrazilMap = dynamic(() => import('@/components/maps/brazil-map'), {
 const StateMap = dynamic(() => import('@/components/maps/state-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-full flex items-center justify-center rounded-lg" style={{ background: 'rgba(7,29,54,0.5)' }}>
+    <div className="h-full flex items-center justify-center rounded-lg" style={{ background: 'var(--bg-card-subtle)' }}>
       <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
     </div>
   )
@@ -127,7 +127,7 @@ const MunicipioMap = dynamic(() => import('@/components/maps/municipio-map'), {
 const DfRegioesMap = dynamic(() => import('@/components/maps/df-regioes-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-full flex items-center justify-center rounded-lg" style={{ background: 'rgba(7,29,54,0.5)' }}>
+    <div className="h-full flex items-center justify-center rounded-lg" style={{ background: 'var(--bg-card-subtle)' }}>
       <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
     </div>
   )
@@ -947,7 +947,7 @@ export default function MapaPage() {
     { value: '2018', label: '2018 - Federal/Estadual' },
   ];
 
-  if (status === 'loading') return <div className="text-center py-12 text-slate-400">Carregando...</div>;
+  if (status === 'loading') return <div className="text-center py-12 text-slate-600 dark:text-slate-400">Carregando...</div>;
   if (!canAccess) return null;
 
   return (
@@ -990,20 +990,20 @@ export default function MapaPage() {
 
         {/* Breadcrumb hierárquico */}
         <div className="flex items-center gap-1 text-sm rounded-xl px-4 py-2.5 w-fit flex-wrap"
-          style={{ background: 'rgba(7,29,54,0.7)', border: '1px solid rgba(37,99,235,0.13)' }}>
+          style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.13)' }}>
           {/* Brasil */}
           <button
             onClick={() => { setView('brasil'); setSelectedUf(''); setSelectedMunicipio(null); setSelectedBairro(null); setLocaisPorZona([]); }}
             className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
             style={view === 'brasil'
               ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 }
-              : { color: 'rgba(255,255,255,0.4)' }}
+              : { color: 'var(--tint-45)' }}
           >
             <Globe className="h-3.5 w-3.5" />
             Brasil
           </button>
 
-          <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }} />
+          <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--tint-25)' }} />
 
           {/* Estado */}
           {view !== 'brasil' ? (
@@ -1012,19 +1012,19 @@ export default function MapaPage() {
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
               style={view === 'estado'
                 ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 }
-                : { color: 'rgba(255,255,255,0.4)' }}
+                : { color: 'var(--tint-45)' }}
             >
               <Layers className="h-3.5 w-3.5" />
               {selectedStateName || 'Estado'}
             </button>
           ) : (
-            <span className="flex items-center gap-1.5 px-2 py-1" style={{ color: 'rgba(255,255,255,0.2)' }}>
+            <span className="flex items-center gap-1.5 px-2 py-1" style={{ color: 'var(--tint-25)' }}>
               <Layers className="h-3.5 w-3.5" />
               Estado
             </span>
           )}
 
-          <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }} />
+          <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--tint-25)' }} />
 
           {/* Município */}
           {selectedMunicipio ? (
@@ -1033,13 +1033,13 @@ export default function MapaPage() {
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
               style={!selectedBairro
                 ? { background: 'rgba(37,99,235,0.12)', color: '#2563EB', fontWeight: 600 }
-                : { color: 'rgba(255,255,255,0.4)' }}
+                : { color: 'var(--tint-45)' }}
             >
               <Building2 className="h-3.5 w-3.5" />
               {selectedMunicipio.nome}
             </button>
           ) : (
-            <span className="flex items-center gap-1.5 px-2 py-1" style={{ color: 'rgba(255,255,255,0.2)' }}>
+            <span className="flex items-center gap-1.5 px-2 py-1" style={{ color: 'var(--tint-25)' }}>
               <Building2 className="h-3.5 w-3.5" />
               Município
             </span>
@@ -1048,7 +1048,7 @@ export default function MapaPage() {
           {/* Bairro */}
           {selectedBairro && (
             <>
-              <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }} />
+              <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--tint-25)' }} />
               <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg font-semibold"
                 style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80' }}>
                 <HomeIcon className="h-3.5 w-3.5" />
@@ -1065,15 +1065,15 @@ export default function MapaPage() {
           {/* Search */}
           <div
             className="rounded-xl p-4 space-y-3"
-            style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.15)' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.15)' }}
           >
             {/* Header */}
-            <div className="flex items-center gap-2 pb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex items-center gap-2 pb-2" style={{ borderBottom: '1px solid var(--tint-06)' }}>
               <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
                 style={{ background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.25)' }}>
                 <Search className="h-3.5 w-3.5 text-[#4a9ede]" />
               </div>
-              <span className="text-sm font-semibold text-white">Buscar Candidato</span>
+              <span className="text-sm font-semibold text-[color:var(--text-primary)]">Buscar Candidato</span>
             </div>
 
             <div className="space-y-0.5">
@@ -1099,9 +1099,9 @@ export default function MapaPage() {
               <div className="space-y-0.5">
                 <p className="text-[11px] uppercase tracking-wider font-medium" style={{ color: '#4a7a9b' }}>País</p>
                 <div className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-sm"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
                   <Globe className="h-3.5 w-3.5 flex-shrink-0" style={{ color: '#4a9ede' }} />
-                  <span className="text-white font-medium text-xs">Brasil</span>
+                  <span className="text-[color:var(--text-primary)] font-medium text-xs">Brasil</span>
                 </div>
               </div>
               <div className="space-y-0.5">
@@ -1141,7 +1141,7 @@ export default function MapaPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {mensagemHomonimos && <p className="text-sm text-slate-400 mb-3">{mensagemHomonimos}</p>}
+                    {mensagemHomonimos && <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{mensagemHomonimos}</p>}
                     <div className="max-h-[400px] overflow-y-auto scrollbar-dark space-y-2">
                       {candidatosHomonimos.map((c) => (
                         <button
@@ -1152,14 +1152,14 @@ export default function MapaPage() {
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <p className="font-semibold text-white">{c.nomeUrna}</p>
-                              <p className="text-xs text-slate-400">{c.nome}</p>
+                              <p className="font-semibold text-[color:var(--text-primary)]">{c.nomeUrna}</p>
+                              <p className="text-xs text-slate-600 dark:text-slate-400">{c.nome}</p>
                               <div className="flex flex-wrap items-center gap-1 mt-1">
                                 <Badge variant="info" className="text-xs">{c.partido}</Badge>
                                 <Badge variant="default" className="text-xs">{c.cargo}</Badge>
                               </div>
                               {c.municipioPrincipal && (
-                                <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
+                                <div className="flex items-center gap-1 mt-1 text-xs text-slate-600 dark:text-slate-400">
                                   <MapPin className="h-3 w-3" />
                                   <span>{c.municipioPrincipal}</span>
                                 </div>
@@ -1167,7 +1167,7 @@ export default function MapaPage() {
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-bold text-[#1D4ED8]">{c.totalVotos?.toLocaleString('pt-BR')}</p>
-                              <p className="text-xs text-slate-400">votos</p>
+                              <p className="text-xs text-slate-600 dark:text-slate-400">votos</p>
                             </div>
                           </div>
                         </button>
@@ -1199,22 +1199,22 @@ export default function MapaPage() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
-                      <p className="text-lg font-semibold text-white">{electoralData?.candidateName}</p>
+                      <p className="text-lg font-semibold text-[color:var(--text-primary)]">{electoralData?.candidateName}</p>
                       {electoralData?.nomeUrna && electoralData?.nomeUrna !== electoralData?.candidateName && (
-                        <p className="text-sm text-slate-400">Nome de urna: {electoralData?.nomeUrna}</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">Nome de urna: {electoralData?.nomeUrna}</p>
                       )}
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="info">{electoralData?.partido}</Badge>
                         {electoralData?.numero && <Badge variant="default">Nº {electoralData?.numero}</Badge>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                       <Calendar className="h-4 w-4" />
                       {electoralData?.ano} - {electoralData?.cargo}
                     </div>
                     {electoralData?.situacao && (
                       <div className="text-sm">
-                        <span className="text-slate-400">Situação: </span>
+                        <span className="text-slate-600 dark:text-slate-400">Situação: </span>
                         <span className="font-medium">{electoralData?.situacao}</span>
                       </div>
                     )}
@@ -1250,7 +1250,7 @@ export default function MapaPage() {
                       </span>
                       <button
                         onClick={() => setSelectedSpDistrito(null)}
-                        className="text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0"
+                        className="text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -1258,15 +1258,15 @@ export default function MapaPage() {
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="flex items-center justify-between p-2 bg-violet-500/10 rounded-lg border border-violet-500/20">
-                      <span className="text-slate-400 text-xs">Votos no distrito</span>
+                      <span className="text-slate-600 dark:text-slate-400 text-xs">Votos no distrito</span>
                       <span className="text-violet-300 font-bold">
                         {(spDistritosVotes[selectedSpDistrito] ?? 0).toLocaleString('pt-BR')}
                       </span>
                     </div>
                     {electoralData?.totalVotos && (spDistritosVotes[selectedSpDistrito] ?? 0) > 0 && (
                       <div className="flex items-center justify-between px-2 py-1">
-                        <span className="text-slate-500 text-xs">% de São Paulo</span>
-                        <span className="text-slate-300 text-xs font-medium">
+                        <span className="text-slate-600 dark:text-slate-500 text-xs">% de São Paulo</span>
+                        <span className="text-slate-700 dark:text-slate-300 text-xs font-medium">
                           {(((spDistritosVotes[selectedSpDistrito] ?? 0) / electoralData.totalVotos) * 100).toFixed(1)}%
                         </span>
                       </div>
@@ -1293,7 +1293,7 @@ export default function MapaPage() {
                       </span>
                       <button
                         onClick={() => setSelectedDfRegiao(null)}
-                        className="text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0"
+                        className="text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -1301,15 +1301,15 @@ export default function MapaPage() {
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="flex items-center justify-between p-2 bg-sky-500/10 rounded-lg border border-sky-500/20">
-                      <span className="text-slate-400 text-xs">Votos na Região</span>
+                      <span className="text-slate-600 dark:text-slate-400 text-xs">Votos na Região</span>
                       <span className="text-sky-300 font-bold">
                         {(dfRegioesVotes[selectedDfRegiao] ?? 0).toLocaleString('pt-BR')}
                       </span>
                     </div>
                     {electoralData?.totalVotos && (dfRegioesVotes[selectedDfRegiao] ?? 0) > 0 && (
                       <div className="flex items-center justify-between px-2 py-1">
-                        <span className="text-slate-500 text-xs">% do DF</span>
-                        <span className="text-slate-300 text-xs font-medium">
+                        <span className="text-slate-600 dark:text-slate-500 text-xs">% do DF</span>
+                        <span className="text-slate-700 dark:text-slate-300 text-xs font-medium">
                           {(((dfRegioesVotes[selectedDfRegiao] ?? 0) / electoralData.totalVotos) * 100).toFixed(1)}%
                         </span>
                       </div>
@@ -1336,7 +1336,7 @@ export default function MapaPage() {
                       </span>
                       <button
                         onClick={() => setSelectedRjBairro(null)}
-                        className="text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0"
+                        className="text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -1344,15 +1344,15 @@ export default function MapaPage() {
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="flex items-center justify-between p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                      <span className="text-slate-400 text-xs">Votos no bairro</span>
+                      <span className="text-slate-600 dark:text-slate-400 text-xs">Votos no bairro</span>
                       <span className="text-emerald-300 font-bold">
                         {(rjBairrosVotes[selectedRjBairro] ?? 0).toLocaleString('pt-BR')}
                       </span>
                     </div>
                     {electoralData?.totalVotos && (rjBairrosVotes[selectedRjBairro] ?? 0) > 0 && (
                       <div className="flex items-center justify-between px-2 py-1">
-                        <span className="text-slate-500 text-xs">% do Rio</span>
-                        <span className="text-slate-300 text-xs font-medium">
+                        <span className="text-slate-600 dark:text-slate-500 text-xs">% do Rio</span>
+                        <span className="text-slate-700 dark:text-slate-300 text-xs font-medium">
                           {(((rjBairrosVotes[selectedRjBairro] ?? 0) / electoralData.totalVotos) * 100).toFixed(1)}%
                         </span>
                       </div>
@@ -1379,7 +1379,7 @@ export default function MapaPage() {
                       </span>
                       <button
                         onClick={() => setSelectedCeBairro(null)}
-                        className="text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0"
+                        className="text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -1387,15 +1387,15 @@ export default function MapaPage() {
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="flex items-center justify-between p-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                      <span className="text-slate-400 text-xs">Votos no bairro</span>
+                      <span className="text-slate-600 dark:text-slate-400 text-xs">Votos no bairro</span>
                       <span className="text-orange-300 font-bold">
                         {(selectedCeVotos).toLocaleString('pt-BR')}
                       </span>
                     </div>
                     {electoralData?.totalVotos && (selectedCeVotos) > 0 && (
                       <div className="flex items-center justify-between px-2 py-1">
-                        <span className="text-slate-500 text-xs">% de Fortaleza</span>
-                        <span className="text-slate-300 text-xs font-medium">
+                        <span className="text-slate-600 dark:text-slate-500 text-xs">% de Fortaleza</span>
+                        <span className="text-slate-700 dark:text-slate-300 text-xs font-medium">
                           {(((selectedCeVotos) / electoralData.totalVotos) * 100).toFixed(1)}%
                         </span>
                       </div>
@@ -1422,7 +1422,7 @@ export default function MapaPage() {
                       </span>
                       <button
                         onClick={() => setSelectedBairro(null)}
-                        className="text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0"
+                        className="text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -1431,7 +1431,7 @@ export default function MapaPage() {
                   <CardContent className="space-y-2">
                     {/* Total de votos do bairro */}
                     <div className="flex items-center justify-between p-2 bg-green-500/10 rounded-lg border border-green-500/20">
-                      <span className="text-slate-400 text-xs">Total no bairro</span>
+                      <span className="text-slate-600 dark:text-slate-400 text-xs">Total no bairro</span>
                       <span className="text-green-400 font-bold">
                         {selectedBairroVotos.toLocaleString('pt-BR')} votos
                       </span>
@@ -1440,12 +1440,12 @@ export default function MapaPage() {
                     {/* Zonas do bairro */}
                     {loadingZonas ? (
                       <div className="flex items-center justify-center py-4">
-                        <Loader2 className="h-4 w-4 animate-spin text-slate-400 mr-2" />
-                        <span className="text-slate-400 text-xs">Carregando zonas...</span>
+                        <Loader2 className="h-4 w-4 animate-spin text-slate-600 dark:text-slate-400 mr-2" />
+                        <span className="text-slate-600 dark:text-slate-400 text-xs">Carregando zonas...</span>
                       </div>
                     ) : zonasDoBairro.length > 0 ? (
                       <>
-                        <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                        <p className="text-xs text-slate-600 dark:text-slate-500 font-medium uppercase tracking-wide">
                           Zonas eleitorais ({zonasDoBairro.length})
                         </p>
                         <div className="space-y-1.5 max-h-[240px] overflow-y-auto scrollbar-dark">
@@ -1454,14 +1454,14 @@ export default function MapaPage() {
                               key={zona}
                               className="flex items-center gap-2 px-3 py-2 bg-slate-800/60 rounded-lg border border-slate-700"
                             >
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: 'linear-gradient(135deg, #1a5fa8, #0f3d6e)' }}>
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[color:var(--text-primary)] text-xs font-bold flex-shrink-0" style={{ background: 'linear-gradient(135deg, #1a5fa8, #0f3d6e)' }}>
                                 {zona}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-slate-400 text-[10px]">Zona {zona}</p>
+                                <p className="text-slate-600 dark:text-slate-400 text-[10px]">Zona {zona}</p>
                                 <p className="text-[#4a9ede] font-bold text-sm leading-tight">
                                   {votos.toLocaleString('pt-BR')}
-                                  <span className="text-slate-500 font-normal text-[10px] ml-1">votos</span>
+                                  <span className="text-slate-600 dark:text-slate-500 font-normal text-[10px] ml-1">votos</span>
                                 </p>
                               </div>
                             </div>
@@ -1469,7 +1469,7 @@ export default function MapaPage() {
                         </div>
                       </>
                     ) : (
-                      <p className="text-slate-500 text-xs text-center py-3">
+                      <p className="text-slate-600 dark:text-slate-500 text-xs text-center py-3">
                         Sem dados de zonas para este bairro.
                       </p>
                     )}
@@ -1500,8 +1500,8 @@ export default function MapaPage() {
                         onClick={() => handleFavoriteClick(fav)}
                         className="flex-1 text-left min-w-0"
                       >
-                        <p className="font-semibold text-white text-sm truncate">{fav?.candidateName}</p>
-                        <p className="text-xs text-slate-400">{fav?.ano} - {fav?.uf}</p>
+                        <p className="font-semibold text-[color:var(--text-primary)] text-sm truncate">{fav?.candidateName}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">{fav?.ano} - {fav?.uf}</p>
                       </button>
                       <button
                         onClick={async () => {
@@ -1511,7 +1511,7 @@ export default function MapaPage() {
                           } catch {}
                         }}
                         title="Remover dos favoritos"
-                        className="flex-shrink-0 text-slate-500 hover:text-red-400 transition-colors"
+                        className="flex-shrink-0 text-slate-600 dark:text-slate-500 hover:text-red-400 transition-colors"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -1530,7 +1530,7 @@ export default function MapaPage() {
               {/* Botão tela cheia */}
               <button
                 onClick={() => setMapFullscreen(f => !f)}
-                className="absolute bottom-3 right-3 z-[1000] bg-[#0d1b2a]/90 border border-white/10 rounded-lg p-2 text-slate-300 hover:text-white hover:border-white/30 transition-all shadow-lg"
+                className="absolute bottom-3 right-3 z-[1000] bg-[#0d1b2a]/90 border border-white/10 rounded-lg p-2 text-slate-700 dark:text-slate-300 hover:text-white hover:border-white/30 transition-all shadow-lg"
                 title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
               >
                 {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -1555,12 +1555,12 @@ export default function MapaPage() {
                     <div className="flex items-center gap-2">
                       <Layers className="h-4 w-4 text-amber-400" />
                       <span className="text-amber-400 font-semibold text-sm">Distrito Federal</span>
-                      {dfVisualizacao === 'zonas' && loadingZonas && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
+                      {dfVisualizacao === 'zonas' && loadingZonas && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-600 dark:text-slate-400" />}
                     </div>
                     <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
                       <button
                         onClick={() => { setDfVisualizacao('bairros'); setSelectedBairro(null); }}
-                        className={`px-2.5 py-1 rounded-md font-medium transition-all ${dfVisualizacao === 'bairros' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                        className={`px-2.5 py-1 rounded-md font-medium transition-all ${dfVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
                         style={dfVisualizacao === 'bairros' ? { background: '#1a73e8' } : {}}
                       >
                         Bairros
@@ -1573,7 +1573,7 @@ export default function MapaPage() {
                           setBairrosData([]);
                           fetchZonasMunicipio('BRASÍLIA', undefined, 'DF');
                         }}
-                        className={`px-2.5 py-1 rounded-md font-medium transition-all ${dfVisualizacao === 'zonas' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                        className={`px-2.5 py-1 rounded-md font-medium transition-all ${dfVisualizacao === 'zonas' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
                         style={dfVisualizacao === 'zonas' ? { background: '#1a73e8' } : {}}
                       >
                         Zonas
@@ -1593,12 +1593,12 @@ export default function MapaPage() {
                           />
                         </div>
                         <div className="w-48 flex flex-col rounded-xl overflow-hidden"
-                          style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.2)' }}>
+                          style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <Layers className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
                             <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#4a9ede' }}>Regiões Admin.</span>
                             {Object.keys(dfRegioesVotes).length > 0 && (
-                              <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{Object.keys(dfRegioesVotes).length}</span>
+                              <span className="text-[10px]" style={{ color: 'var(--tint-35)' }}>{Object.keys(dfRegioesVotes).length}</span>
                             )}
                           </div>
                           <div className="flex-1 overflow-y-auto scrollbar-dark">
@@ -1618,12 +1618,12 @@ export default function MapaPage() {
                                     }}
                                   >
                                     <div className="text-[11px] font-semibold truncate"
-                                      style={{ color: selectedDfRegiao === ra ? '#7dd3fc' : 'rgba(255,255,255,0.7)' }}>
+                                      style={{ color: selectedDfRegiao === ra ? '#7dd3fc' : 'var(--tint-75)' }}>
                                       {ra}
                                     </div>
                                     <div className="font-bold text-sm leading-tight" style={{ color: '#4a9ede' }}>
                                       {(votos as number).toLocaleString('pt-BR')}
-                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>votos</span>
+                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--tint-35)' }}>votos</span>
                                     </div>
                                   </button>
                                 ))
@@ -1655,18 +1655,18 @@ export default function MapaPage() {
                           </div>
                         )}
                         <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0) ? 'flex-1' : 'w-48'}`}
-                          style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.2)' }}>
+                          style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <Layers className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
                             <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#4a9ede' }}>Zonas Eleitorais</span>
                             {locaisPorZona.length > 0 && (
-                              <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{locaisPorZona.length}</span>
+                              <span className="text-[10px]" style={{ color: 'var(--tint-35)' }}>{locaisPorZona.length}</span>
                             )}
                             {locaisPorZona.length > 0 && (
                               <button
                                 onClick={() => setZonasSortBy(s => s === 'votos' ? 'numero' : 'votos')}
                                 className="ml-auto text-[9px] px-1.5 py-0.5 rounded transition-colors"
-                                style={{ border: '1px solid rgba(74,158,222,0.25)', color: 'rgba(255,255,255,0.4)' }}
+                                style={{ border: '1px solid rgba(74,158,222,0.25)', color: 'var(--tint-45)' }}
                                 title={zonasSortBy === 'votos' ? 'Ordenar por número' : 'Ordenar por votos'}
                               >
                                 {zonasSortBy === 'votos' ? '# nº' : '↓ votos'}
@@ -1676,7 +1676,7 @@ export default function MapaPage() {
                           <div className="flex-1 overflow-y-auto scrollbar-dark">
                             {loadingZonas ? (
                               <div className="flex items-center justify-center h-full py-8">
-                                <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                                <Loader2 className="h-4 w-4 animate-spin text-slate-600 dark:text-slate-500" />
                               </div>
                             ) : locaisPorZona.length === 0 ? (
                               <p className="text-slate-600 text-xs text-center py-6 px-2">Sem dados de zonas</p>
@@ -1692,11 +1692,11 @@ export default function MapaPage() {
                                       style={{ background: 'rgba(74,158,222,0.08)', border: '1px solid rgba(74,158,222,0.2)' }}
                                       title={`Zoom na Zona ${z.zona}`}
                                     >
-                                      <div className="text-[10px] mb-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Zona {z.zona}</div>
+                                      <div className="text-[10px] mb-0.5" style={{ color: 'var(--tint-45)' }}>Zona {z.zona}</div>
                                       <div className="font-bold text-sm" style={{ color: '#4a9ede' }}>
                                         {(z.votos as number).toLocaleString('pt-BR')}
                                       </div>
-                                      <div className="text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>votos</div>
+                                      <div className="text-[9px]" style={{ color: 'var(--tint-35)' }}>votos</div>
                                     </button>
                                   ))}
                               </div>
@@ -1712,12 +1712,12 @@ export default function MapaPage() {
                                     title={`Zoom na Zona ${z.zona}`}
                                   >
                                     <div className="flex items-center justify-between gap-1">
-                                      <span className="text-[11px] font-semibold transition-colors" style={{ color: 'rgba(255,255,255,0.7)' }}>Zona {z.zona}</span>
+                                      <span className="text-[11px] font-semibold transition-colors" style={{ color: 'var(--tint-75)' }}>Zona {z.zona}</span>
                                       <MapPin className="h-2.5 w-2.5 flex-shrink-0 transition-colors" style={{ color: 'rgba(74,158,222,0.4)' }} />
                                     </div>
                                     <div className="font-bold text-sm leading-tight" style={{ color: '#4a9ede' }}>
                                       {(z.votos as number).toLocaleString('pt-BR')}
-                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>votos</span>
+                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--tint-35)' }}>votos</span>
                                     </div>
                                   </button>
                                 ))
@@ -1745,7 +1745,7 @@ export default function MapaPage() {
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-amber-400" />
                       <span className="text-amber-400 font-semibold text-sm">{selectedMunicipio.nome}</span>
-                      {loadingZonas && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
+                      {loadingZonas && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-600 dark:text-slate-400" />}
                     </div>
                     <div className="flex items-center gap-2">
                       {/* Toggle distritos/bairros — só para São Paulo */}
@@ -1753,14 +1753,14 @@ export default function MapaPage() {
                         <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
                           <button
                             onClick={() => { setSpVisualizacao('distritos'); setSelectedBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${spVisualizacao === 'distritos' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${spVisualizacao === 'distritos' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
                             style={spVisualizacao === 'distritos' ? { background: '#1a73e8' } : {}}
                           >
                             Bairros
                           </button>
                           <button
                             onClick={() => { setSpVisualizacao('bairros'); setSelectedSpDistrito(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${spVisualizacao === 'bairros' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${spVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
                             style={spVisualizacao === 'bairros' ? { background: '#1a73e8' } : {}}
                           >
                             Zonas
@@ -1772,14 +1772,14 @@ export default function MapaPage() {
                         <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
                           <button
                             onClick={() => { setRjVisualizacao('bairros'); setSelectedBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${rjVisualizacao === 'bairros' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${rjVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
                             style={rjVisualizacao === 'bairros' ? { background: '#059669' } : {}}
                           >
                             Bairros
                           </button>
                           <button
                             onClick={() => { setRjVisualizacao('zonas'); setSelectedRjBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${rjVisualizacao === 'zonas' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${rjVisualizacao === 'zonas' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
                             style={rjVisualizacao === 'zonas' ? { background: '#059669' } : {}}
                           >
                             Zonas
@@ -1791,14 +1791,14 @@ export default function MapaPage() {
                         <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
                           <button
                             onClick={() => { setCeVisualizacao('bairros'); setSelectedBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${ceVisualizacao === 'bairros' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${ceVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
                             style={ceVisualizacao === 'bairros' ? { background: '#ea580c' } : {}}
                           >
                             Bairros
                           </button>
                           <button
                             onClick={() => { setCeVisualizacao('zonas'); setSelectedCeBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${ceVisualizacao === 'zonas' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${ceVisualizacao === 'zonas' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
                             style={ceVisualizacao === 'zonas' ? { background: '#ea580c' } : {}}
                           >
                             Zonas
@@ -1810,14 +1810,14 @@ export default function MapaPage() {
                         <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
                           <button
                             onClick={() => { setGenVisualizacao('bairros'); setSelectedBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${genVisualizacao === 'bairros' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${genVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
                             style={genVisualizacao === 'bairros' ? { background: '#0284c7' } : {}}
                           >
                             Bairros
                           </button>
                           <button
                             onClick={() => { setGenVisualizacao('zonas'); setSelectedGenBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${genVisualizacao === 'zonas' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${genVisualizacao === 'zonas' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
                             style={genVisualizacao === 'zonas' ? { background: '#0284c7' } : {}}
                           >
                             Zonas
@@ -1825,7 +1825,7 @@ export default function MapaPage() {
                         </div>
                       )}
                       {selectedBairro && spVisualizacao === 'bairros' && (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-slate-600 dark:text-slate-400">
                           Clique em outro bairro ou no &times; para limpar seleção
                         </span>
                       )}
@@ -1845,12 +1845,12 @@ export default function MapaPage() {
                           />
                         </div>
                         <div className="w-48 flex flex-col rounded-xl overflow-hidden"
-                          style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.2)' }}>
+                          style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <Layers className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
                             <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#4a9ede' }}>Distritos</span>
                             {Object.keys(spDistritosVotes).length > 0 && (
-                              <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{Object.keys(spDistritosVotes).length}</span>
+                              <span className="text-[10px]" style={{ color: 'var(--tint-35)' }}>{Object.keys(spDistritosVotes).length}</span>
                             )}
                           </div>
                           <div className="flex-1 overflow-y-auto scrollbar-dark">
@@ -1870,12 +1870,12 @@ export default function MapaPage() {
                                     }}
                                   >
                                     <div className="text-[11px] font-semibold truncate"
-                                      style={{ color: selectedSpDistrito === dist ? '#7dd3fc' : 'rgba(255,255,255,0.7)' }}>
+                                      style={{ color: selectedSpDistrito === dist ? '#7dd3fc' : 'var(--tint-75)' }}>
                                       {dist}
                                     </div>
                                     <div className="font-bold text-sm leading-tight" style={{ color: '#4a9ede' }}>
                                       {(votos as number).toLocaleString('pt-BR')}
-                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>votos</span>
+                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--tint-35)' }}>votos</span>
                                     </div>
                                   </button>
                                 ))
@@ -1897,12 +1897,12 @@ export default function MapaPage() {
                           />
                         </div>
                         <div className="w-48 flex flex-col rounded-xl overflow-hidden"
-                          style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.2)' }}>
+                          style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <MapPin className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
                             <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#4a9ede' }}>Bairros</span>
                             {Object.keys(rjBairrosVotes).length > 0 && (
-                              <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{Object.keys(rjBairrosVotes).length}</span>
+                              <span className="text-[10px]" style={{ color: 'var(--tint-35)' }}>{Object.keys(rjBairrosVotes).length}</span>
                             )}
                           </div>
                           <div className="flex-1 overflow-y-auto scrollbar-dark">
@@ -1922,12 +1922,12 @@ export default function MapaPage() {
                                     }}
                                   >
                                     <div className="text-[11px] font-semibold truncate"
-                                      style={{ color: selectedRjBairro === bairro ? '#7dd3fc' : 'rgba(255,255,255,0.7)' }}>
+                                      style={{ color: selectedRjBairro === bairro ? '#7dd3fc' : 'var(--tint-75)' }}>
                                       {bairro}
                                     </div>
                                     <div className="font-bold text-sm leading-tight" style={{ color: '#4a9ede' }}>
                                       {(votos as number).toLocaleString('pt-BR')}
-                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>votos</span>
+                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--tint-35)' }}>votos</span>
                                     </div>
                                   </button>
                                 ))
@@ -1949,12 +1949,12 @@ export default function MapaPage() {
                           />
                         </div>
                         <div className="w-48 flex flex-col rounded-xl overflow-hidden"
-                          style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.2)' }}>
+                          style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <MapPin className="h-3.5 w-3.5" style={{ color: '#fb923c' }} />
                             <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#fb923c' }}>Bairros</span>
                             {Object.keys(ceBairrosVotes).length > 0 && (
-                              <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{Object.keys(ceBairrosVotes).length}</span>
+                              <span className="text-[10px]" style={{ color: 'var(--tint-35)' }}>{Object.keys(ceBairrosVotes).length}</span>
                             )}
                           </div>
                           <div className="flex-1 overflow-y-auto scrollbar-dark">
@@ -1974,12 +1974,12 @@ export default function MapaPage() {
                                     }}
                                   >
                                     <div className="text-[11px] font-semibold truncate"
-                                      style={{ color: selectedCeBairro === bairro ? '#fb923c' : 'rgba(255,255,255,0.7)' }}>
+                                      style={{ color: selectedCeBairro === bairro ? '#fb923c' : 'var(--tint-75)' }}>
                                       {bairro}
                                     </div>
                                     <div className="font-bold text-sm leading-tight" style={{ color: '#fb923c' }}>
                                       {(votos as number).toLocaleString('pt-BR')}
-                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>votos</span>
+                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--tint-35)' }}>votos</span>
                                     </div>
                                   </button>
                                 ))
@@ -2007,12 +2007,12 @@ export default function MapaPage() {
                           />
                         </div>
                         <div className="w-48 flex flex-col rounded-xl overflow-hidden"
-                          style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.2)' }}>
+                          style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <MapPin className="h-3.5 w-3.5" style={{ color: '#38bdf8' }} />
                             <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#38bdf8' }}>Bairros</span>
                             {Object.keys(genBairrosApiVotes).length > 0 && (
-                              <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{Object.keys(genBairrosApiVotes).length}</span>
+                              <span className="text-[10px]" style={{ color: 'var(--tint-35)' }}>{Object.keys(genBairrosApiVotes).length}</span>
                             )}
                           </div>
                           <div className="flex-1 overflow-y-auto scrollbar-dark">
@@ -2036,12 +2036,12 @@ export default function MapaPage() {
                                       }}
                                     >
                                       <div className="text-[11px] font-semibold truncate"
-                                        style={{ color: isSelected ? '#38bdf8' : 'rgba(255,255,255,0.7)' }}>
+                                        style={{ color: isSelected ? '#38bdf8' : 'var(--tint-75)' }}>
                                         {bairro}
                                       </div>
                                       <div className="font-bold text-sm leading-tight" style={{ color: '#38bdf8' }}>
                                         {(votos as number).toLocaleString('pt-BR')}
-                                        <span className="font-normal ml-1 text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>votos</span>
+                                        <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--tint-35)' }}>votos</span>
                                       </div>
                                     </button>
                                   );
@@ -2075,18 +2075,18 @@ export default function MapaPage() {
 
                     {/* Lista de zonas — oculta quando SP/RJ/CE/gen estão no modo bairros/distritos */}
                     {!(isSaoPauloCapital && spVisualizacao === 'distritos') && !(isRioDeJaneiro && rjVisualizacao === 'bairros') && !(isFortalezaCe && ceVisualizacao === 'bairros') && !(isGenPoligonosMunicipio && genVisualizacao === 'bairros') && <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0 && !isSaoPauloCapital && !isRioDeJaneiro) ? 'flex-1' : 'w-48'}`}
-                      style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.2)' }}>
+                      style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                       <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                         <Layers className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
                         <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#4a9ede' }}>Zonas Eleitorais</span>
                         {locaisPorZona.length > 0 && (
-                          <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{locaisPorZona.length}</span>
+                          <span className="text-[10px]" style={{ color: 'var(--tint-35)' }}>{locaisPorZona.length}</span>
                         )}
                         {locaisPorZona.length > 0 && (
                           <button
                             onClick={() => setZonasSortBy(s => s === 'votos' ? 'numero' : 'votos')}
                             className="ml-auto text-[9px] px-1.5 py-0.5 rounded transition-colors"
-                            style={{ border: '1px solid rgba(74,158,222,0.25)', color: 'rgba(255,255,255,0.4)' }}
+                            style={{ border: '1px solid rgba(74,158,222,0.25)', color: 'var(--tint-45)' }}
                             title={zonasSortBy === 'votos' ? 'Ordenar por número' : 'Ordenar por votos'}
                           >
                             {zonasSortBy === 'votos' ? '# nº' : '↓ votos'}
@@ -2096,7 +2096,7 @@ export default function MapaPage() {
                       <div className="flex-1 overflow-y-auto scrollbar-dark">
                         {loadingZonas ? (
                           <div className="flex items-center justify-center h-full py-8">
-                            <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                            <Loader2 className="h-4 w-4 animate-spin text-slate-600 dark:text-slate-500" />
                           </div>
                         ) : locaisPorZona.length === 0 ? (
                           <p className="text-slate-600 text-xs text-center py-6 px-2">Sem dados de zonas</p>
@@ -2113,11 +2113,11 @@ export default function MapaPage() {
                                   style={{ background: 'rgba(74,158,222,0.08)', border: '1px solid rgba(74,158,222,0.2)' }}
                                   title={`Zoom na Zona ${z.zona}`}
                                 >
-                                  <div className="text-[10px] mb-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Zona {z.zona}</div>
+                                  <div className="text-[10px] mb-0.5" style={{ color: 'var(--tint-45)' }}>Zona {z.zona}</div>
                                   <div className="font-bold text-sm" style={{ color: '#4a9ede' }}>
                                     {(z.votos as number).toLocaleString('pt-BR')}
                                   </div>
-                                  <div className="text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>votos</div>
+                                  <div className="text-[9px]" style={{ color: 'var(--tint-35)' }}>votos</div>
                                 </button>
                               ))}
                           </div>
@@ -2133,12 +2133,12 @@ export default function MapaPage() {
                                 title={`Zoom na Zona ${z.zona}`}
                               >
                                 <div className="flex items-center justify-between gap-1">
-                                  <span className="text-[11px] font-semibold transition-colors" style={{ color: 'rgba(255,255,255,0.7)' }}>Zona {z.zona}</span>
+                                  <span className="text-[11px] font-semibold transition-colors" style={{ color: 'var(--tint-75)' }}>Zona {z.zona}</span>
                                   <MapPin className="h-2.5 w-2.5 flex-shrink-0 transition-colors" style={{ color: 'rgba(74,158,222,0.4)' }} />
                                 </div>
                                 <div className="font-bold text-sm leading-tight" style={{ color: '#4a9ede' }}>
                                   {(z.votos as number).toLocaleString('pt-BR')}
-                                  <span className="font-normal ml-1 text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>votos</span>
+                                  <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--tint-35)' }}>votos</span>
                                 </div>
                               </button>
                             ))

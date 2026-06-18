@@ -44,7 +44,7 @@ export function LoadingState({
       {label && (
         <p
           className="text-[11px] tracking-widest uppercase"
-          style={{ color: 'rgba(255,255,255,0.32)' }}
+          style={{ color: 'var(--tint-35)' }}
         >
           {label}
         </p>

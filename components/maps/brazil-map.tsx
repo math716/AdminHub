@@ -246,7 +246,7 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false 
             html: `<div style="
               background: ${bgColor};
               color: ${textColor};
-              border: 2px solid rgba(255,255,255,0.3);
+              border: 2px solid var(--tint-35);
               border-radius: 50%;
               width: ${size}px;
               height: ${size}px;
@@ -303,7 +303,7 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false 
       >
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mb-3"></div>
-          <p className={darkMode ? 'text-slate-400' : 'text-gray-500'}>Carregando mapa...</p>
+          <p className={darkMode ? 'text-slate-600 dark:text-slate-400' : 'text-gray-500'}>Carregando mapa...</p>
         </div>
       </div>
     );

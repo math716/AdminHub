@@ -169,7 +169,7 @@ function ZonaPinsMap({ municipio, zonas, bounds, selectedZona, onZonaClick }: Zo
   if (zonas.length === 0) {
     return (
       <div className="w-full h-full bg-[#0d1b2a] rounded-xl flex items-center justify-center">
-        <span className="text-slate-400 text-sm">Nenhuma zona eleitoral encontrada para {municipio}</span>
+        <span className="text-slate-600 dark:text-slate-400 text-sm">Nenhuma zona eleitoral encontrada para {municipio}</span>
       </div>
     );
   }
@@ -180,7 +180,7 @@ function ZonaPinsMap({ municipio, zonas, bounds, selectedZona, onZonaClick }: Zo
         <span className="text-sm text-gray-400">
           {zonas.filter(z => z.latitude && z.longitude).length} zonas eleitorais em {municipio}
         </span>
-        <span className="text-xs text-slate-500">Clique em um pin para editar a projeção</span>
+        <span className="text-xs text-slate-600 dark:text-slate-500">Clique em um pin para editar a projeção</span>
       </div>
       <div
         ref={mapRef}

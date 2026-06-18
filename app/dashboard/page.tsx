@@ -127,7 +127,7 @@ export default function DashboardPage() {
         subtitle="Visão geral do gabinete"
         actions={
           <div className="text-right">
-            <p className="text-sm text-slate-400">{gabineteName}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">{gabineteName}</p>
             <Badge variant={userRole === 'ADMIN' ? 'danger' : userRole === 'AGENTE_POLITICO' ? 'warning' : userRole === 'CHEFE' ? 'success' : 'info'}>
               {ROLE_LABELS[userRole] ?? 'Usuário'}
             </Badge>
@@ -168,12 +168,12 @@ export default function DashboardPage() {
           gradient="pink"
           chart={
             <div className="flex flex-col justify-end h-full gap-2 pb-1">
-              <div className="flex h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
-                <div title="Resolvidas" style={{ width: `${resolvedPercent}%`, background: 'rgba(255,255,255,0.9)' }} />
-                <div title="Em Andamento" style={{ width: `${emAndamentoPercent}%`, background: 'rgba(255,255,255,0.5)' }} />
-                <div title="Pendentes" style={{ width: `${pendingPercent}%`, background: 'rgba(255,255,255,0.25)' }} />
+              <div className="flex h-2 rounded-full overflow-hidden" style={{ background: 'var(--tint-14)' }}>
+                <div title="Resolvidas" style={{ width: `${resolvedPercent}%`, background: 'var(--text-primary)' }} />
+                <div title="Em Andamento" style={{ width: `${emAndamentoPercent}%`, background: 'var(--tint-55)' }} />
+                <div title="Pendentes" style={{ width: `${pendingPercent}%`, background: 'var(--tint-25)' }} />
               </div>
-              <div className="flex justify-between text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>
+              <div className="flex justify-between text-[10px] font-medium" style={{ color: 'var(--tint-75)' }}>
                 <span>{stats?.resolvidas ?? 0} resolvidas</span>
                 <span>{(stats?.pendentes ?? 0) + (stats?.emAndamento ?? 0)} em aberto</span>
               </div>
@@ -195,7 +195,7 @@ export default function DashboardPage() {
         >
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="h-5 w-5" style={{ color: '#2563EB' }} />
-            <h3 className="text-white font-semibold">Demandas por Status</h3>
+            <h3 className="text-[color:var(--text-primary)] font-semibold">Demandas por Status</h3>
           </div>
           <div className="h-[280px]">
             <Donut3DChart 
@@ -216,7 +216,7 @@ export default function DashboardPage() {
         >
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="h-5 w-5" style={{ color: '#2563EB' }} />
-            <h3 className="text-white font-semibold">Demandas por Prioridade</h3>
+            <h3 className="text-[color:var(--text-primary)] font-semibold">Demandas por Prioridade</h3>
           </div>
           <div className="h-[280px]">
             <Donut3DChart
@@ -240,7 +240,7 @@ export default function DashboardPage() {
         >
           <div className="flex items-center gap-2 mb-4">
             <FileText className="h-5 w-5" style={{ color: '#2563EB' }} />
-            <h3 className="text-white font-semibold">Demandas Recentes</h3>
+            <h3 className="text-[color:var(--text-primary)] font-semibold">Demandas Recentes</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -254,7 +254,7 @@ export default function DashboardPage() {
               <tbody>
                 {stats?.recentDemands?.slice(0, 5)?.map((demand: any, index: number) => (
                   <tr key={demand.id || index} className="last:border-0" style={{ borderBottom: '1px solid rgba(30,74,128,0.3)' }}>
-                    <td className="py-3 text-white text-sm">
+                    <td className="py-3 text-[color:var(--text-primary)] text-sm">
                       <div className="flex items-center gap-2">
                         <div 
                           className="w-2 h-2 rounded-full"
@@ -308,7 +308,7 @@ export default function DashboardPage() {
         >
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="h-5 w-5" style={{ color: '#2563EB' }} />
-            <h3 className="text-white font-semibold">Demandas por Categoria</h3>
+            <h3 className="text-[color:var(--text-primary)] font-semibold">Demandas por Categoria</h3>
           </div>
           <div className="h-[280px]">
             <DemandsByCategoryChart data={stats?.byCategory} darkMode={true} />
@@ -326,7 +326,7 @@ export default function DashboardPage() {
       >
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="h-5 w-5" style={{ color: '#2563EB' }} />
-          <h3 className="text-white font-semibold">Evolução de Demandas</h3>
+          <h3 className="text-[color:var(--text-primary)] font-semibold">Evolução de Demandas</h3>
         </div>
         <div className="h-[250px]">
           <DemandsTimelineChart data={stats?.timeline} darkMode={true} />

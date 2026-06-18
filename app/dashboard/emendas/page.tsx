@@ -52,7 +52,7 @@ const StateMap = dynamic(() => import('@/components/maps/state-map'), {
 
 function MapPlaceholder() {
   return (
-    <div className="h-full flex items-center justify-center rounded-lg" style={{ background: 'rgba(7,29,54,0.5)' }}>
+    <div className="h-full flex items-center justify-center rounded-lg" style={{ background: 'var(--bg-card-subtle)' }}>
       <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
     </div>
   );
@@ -870,8 +870,8 @@ export default function EmendasPage() {
                 onClick={() => setShowFavDropdown((v) => !v)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm transition-colors"
                 style={{
-                  background: favorites.length > 0 ? 'rgba(37,99,235,0.12)' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${favorites.length > 0 ? 'rgba(37,99,235,0.35)' : 'rgba(255,255,255,0.1)'}`,
+                  background: favorites.length > 0 ? 'rgba(37,99,235,0.12)' : 'var(--tint-04)',
+                  border: `1px solid ${favorites.length > 0 ? 'rgba(37,99,235,0.35)' : 'var(--tint-10)'}`,
                   color: favorites.length > 0 ? '#e8c660' : '#64748b',
                 }}
               >
@@ -899,7 +899,7 @@ export default function EmendasPage() {
                     style={{ background: 'rgb(7,20,38)', border: '1px solid rgba(37,99,235,0.25)' }}
                   >
                     {favorites.length === 0 ? (
-                      <p className="px-4 py-5 text-center text-xs text-slate-500">Nenhum parlamentar favoritado</p>
+                      <p className="px-4 py-5 text-center text-xs text-slate-600 dark:text-slate-500">Nenhum parlamentar favoritado</p>
                     ) : (
                       favorites.map((fav) => (
                         <div key={fav.id} className="flex items-center gap-1 px-1">
@@ -910,7 +910,7 @@ export default function EmendasPage() {
                           >
                             <Star className="w-3 h-3 fill-amber-400 text-amber-400 flex-shrink-0" />
                             <span className="font-medium flex-1 truncate">{fav.candidateName}</span>
-                            <span className="text-slate-500 flex-shrink-0">{fav.uf} · {fav.ano}</span>
+                            <span className="text-slate-600 dark:text-slate-500 flex-shrink-0">{fav.uf} · {fav.ano}</span>
                           </button>
                           <button
                             onClick={async () => {
@@ -932,7 +932,7 @@ export default function EmendasPage() {
               </AnimatePresence>
             </div>
 
-            <span className="text-xs uppercase tracking-widest text-slate-400">Ano selecionado</span>
+            <span className="text-xs uppercase tracking-widest text-slate-600 dark:text-slate-400">Ano selecionado</span>
             <Select
               value={String(ano)}
               onChange={(e) => setAno(parseInt(e.target.value, 10))}
@@ -947,7 +947,7 @@ export default function EmendasPage() {
         <div className="relative">
           <div className="flex items-center gap-2">
             {/* Toggle de esfera */}
-            <div className="flex rounded-xl overflow-hidden flex-shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="flex rounded-xl overflow-hidden flex-shrink-0" style={{ border: '1px solid var(--tint-10)' }}>
               {(['TODAS', 'FEDERAL', 'ESTADUAL'] as const).map((e) => (
                 <button
                   key={e}
@@ -963,12 +963,12 @@ export default function EmendasPage() {
             </div>
             {/* Input de busca */}
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-500" />
               <input
                 value={parlamentarQuery}
                 onChange={(e) => setParlamentarQuery(e.target.value)}
                 placeholder="Pesquisar parlamentar…"
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-amber-500/50 transition-colors"
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-[color:var(--text-primary)] placeholder-slate-500 outline-none focus:border-amber-500/50 transition-colors"
               />
             </div>
             {selectedParlamentar && (
@@ -976,16 +976,16 @@ export default function EmendasPage() {
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl flex-shrink-0"
                 style={{ background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.3)' }}
               >
-                <span className="text-xs text-white font-semibold truncate max-w-[160px]">{selectedParlamentar.nome}</span>
+                <span className="text-xs text-[color:var(--text-primary)] font-semibold truncate max-w-[160px]">{selectedParlamentar.nome}</span>
                 <button
                   onClick={handleToggleFavorite}
                   disabled={savingFavorite}
                   title={isSavedParlamentar ? 'Remover dos favoritos' : 'Salvar parlamentar'}
                   className="transition-colors disabled:opacity-50 ml-0.5"
                 >
-                  <Star className={`w-3.5 h-3.5 ${isSavedParlamentar ? 'fill-amber-400 text-amber-400' : 'text-slate-400 hover:text-amber-400'}`} />
+                  <Star className={`w-3.5 h-3.5 ${isSavedParlamentar ? 'fill-amber-400 text-amber-400' : 'text-slate-600 dark:text-slate-400 hover:text-amber-400'}`} />
                 </button>
-                <button onClick={() => setSelectedParlamentar(null)} className="text-slate-400 hover:text-white">
+                <button onClick={() => setSelectedParlamentar(null)} className="text-slate-600 dark:text-slate-400 hover:text-white">
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -1010,7 +1010,7 @@ export default function EmendasPage() {
           {parlamentarQuery.length >= 2 && parlamentarResults.length > 0 && (
             <div
               className="absolute top-full left-0 right-0 mt-1 z-[500] rounded-xl overflow-hidden"
-              style={{ background: 'rgba(7,29,54,0.98)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}
+              style={{ background: 'rgba(7,29,54,0.98)', border: '1px solid var(--tint-10)', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}
             >
               {parlamentarResults.map((p) => (
                 <button
@@ -1018,8 +1018,8 @@ export default function EmendasPage() {
                   onClick={() => { setSelectedParlamentar(p); setParlamentarQuery(''); setParlamentarResults([]); }}
                   className="w-full text-left px-4 py-2.5 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
                 >
-                  <p className="text-sm text-white font-medium">{p.nome}</p>
-                  <p className="text-[11px] text-slate-400">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
+                  <p className="text-sm text-[color:var(--text-primary)] font-medium">{p.nome}</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
                 </button>
               ))}
             </div>
@@ -1044,7 +1044,7 @@ export default function EmendasPage() {
           style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.25)', color: '#e8c660' }}
         >
           <span className="font-semibold">Modo demonstração:</span>
-          <span className="text-slate-300">
+          <span className="text-slate-700 dark:text-slate-300">
             os dados exibidos são sintéticos. Configure a variável <code className="px-1.5 py-0.5 rounded bg-black/30">PORTAL_TRANSPARENCIA_API_KEY</code> para usar dados reais do Portal da Transparência.
           </span>
         </div>
@@ -1100,18 +1100,18 @@ export default function EmendasPage() {
         <div className="col-span-12 md:col-span-7">
           <div
             className="relative rounded-2xl overflow-hidden h-[560px]"
-            style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}
+            style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
           >
             {/* Header do mapa */}
             <div className="absolute top-3 left-3 right-3 z-[400] flex items-center justify-between pointer-events-none">
               <div
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl pointer-events-auto"
-                style={{ background: 'var(--bg-card-raised)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(6px)' }}
+                style={{ background: 'var(--bg-card-raised)', border: '1px solid var(--tint-10)', backdropFilter: 'blur(6px)' }}
               >
                 <button
                   onClick={view === 'estado' ? handleBackToBrasil : undefined}
                   disabled={view === 'brasil'}
-                  className="text-slate-400 hover:text-white text-xs transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-default"
+                  className="text-slate-600 dark:text-slate-400 hover:text-white text-xs transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-default"
                   title="Voltar ao Brasil"
                 >
                   <Globe className="w-3.5 h-3.5" />
@@ -1120,7 +1120,7 @@ export default function EmendasPage() {
                 {view === 'estado' && (
                   <>
                     <ChevronRight className="w-3 h-3 text-slate-600" />
-                    <span className="text-white text-xs font-medium">{selectedStateName}</span>
+                    <span className="text-[color:var(--text-primary)] text-xs font-medium">{selectedStateName}</span>
                   </>
                 )}
                 {selectedMunicipio && (
@@ -1153,7 +1153,7 @@ export default function EmendasPage() {
               >
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="h-10 w-10 animate-spin" style={{ color: '#4a9ede' }} />
-                  <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  <span className="text-sm font-medium" style={{ color: 'var(--tint-75)' }}>
                     Carregando dados…
                   </span>
                 </div>
@@ -1194,9 +1194,9 @@ export default function EmendasPage() {
             {view === 'estado' && (
               <div
                 className="absolute bottom-3 right-3 z-[400] rounded-xl px-3 py-2.5 pointer-events-none"
-                style={{ background: 'rgba(7,29,54,0.92)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(6px)' }}
+                style={{ background: 'rgba(7,29,54,0.92)', border: '1px solid var(--tint-08)', backdropFilter: 'blur(6px)' }}
               >
-                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1.5">Valor de Emendas (R$)</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-1.5">Valor de Emendas (R$)</p>
                 <LegendaCores />
               </div>
             )}
@@ -1387,9 +1387,9 @@ function ResumoGeralCard({
   return (
     <div
       className="rounded-2xl p-4"
-      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
+      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">Resumo Geral</p>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-3">Resumo Geral</p>
       <div className="space-y-3">
         <ResumoStat
           icon={<Users className="w-4 h-4" />}
@@ -1470,9 +1470,9 @@ function ResumoStat({
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">{label}</p>
-        <p className="text-white font-bold text-base truncate">{value}</p>
-        {sub && <p className="text-[10px] text-slate-500">{sub}</p>}
+        <p className="text-[10px] uppercase tracking-wider text-slate-600 dark:text-slate-500 font-semibold">{label}</p>
+        <p className="text-[color:var(--text-primary)] font-bold text-base truncate">{value}</p>
+        {sub && <p className="text-[10px] text-slate-600 dark:text-slate-500">{sub}</p>}
       </div>
     </div>
   );
@@ -1517,11 +1517,11 @@ function EmendasPorAreaCard({
   return (
     <div
       className="rounded-2xl p-4 h-full"
-      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
+      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">Emendas por Área</p>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-3">Emendas por Área</p>
       {view === 'brasil' || areas.length === 0 ? (
-        <p className="text-xs text-slate-500 text-center py-6">
+        <p className="text-xs text-slate-600 dark:text-slate-500 text-center py-6">
           {view === 'brasil' ? 'Selecione um estado no mapa' : 'Sem dados para o ano selecionado'}
         </p>
       ) : (
@@ -1542,9 +1542,9 @@ function EmendasPorAreaCard({
                 <div key={a.area} className="flex items-center justify-between text-[11px]">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: AREA_COLORS[a.area] }} />
-                    <span className="text-slate-300 truncate">{AREA_LABELS[a.area]}</span>
+                    <span className="text-slate-700 dark:text-slate-300 truncate">{AREA_LABELS[a.area]}</span>
                   </div>
-                  <span className="text-white font-semibold flex-shrink-0">{formatBRLCompact(a.total)} <span className="text-slate-500">({pct}%)</span></span>
+                  <span className="text-[color:var(--text-primary)] font-semibold flex-shrink-0">{formatBRLCompact(a.total)} <span className="text-slate-600 dark:text-slate-500">({pct}%)</span></span>
                 </div>
               );
             })}
@@ -1559,10 +1559,10 @@ function SelecionarEstadoCard() {
   return (
     <div
       className="rounded-2xl p-4"
-      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
+      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Como usar</p>
-      <ol className="text-xs text-slate-300 space-y-2 list-decimal list-inside">
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">Como usar</p>
+      <ol className="text-xs text-slate-700 dark:text-slate-300 space-y-2 list-decimal list-inside">
         <li>Clique em um estado no mapa</li>
         <li>Escolha um município (popup mostra habitantes, eleitores e tetos)</li>
         <li>Pesquise um parlamentar para ver os gráficos por área e por ano</li>
@@ -1582,19 +1582,19 @@ function Top5ParlamentaresDoMunicipioCard({
   return (
     <div
       className="rounded-2xl p-4 h-full flex flex-col"
-      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
+      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1 flex-shrink-0">Top 5 Parlamentares</p>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-1 flex-shrink-0">Top 5 Parlamentares</p>
       <p className="text-[10px] text-amber-300/80 mb-2 truncate flex-shrink-0" title={municipioNome}>
         que mais enviaram para {municipioNome}
       </p>
       {loading && (
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-slate-600 dark:text-slate-500" />
         </div>
       )}
       {!loading && parlamentares.length === 0 && (
-        <p className="text-xs text-slate-500 text-center py-4">Sem dados disponíveis</p>
+        <p className="text-xs text-slate-600 dark:text-slate-500 text-center py-4">Sem dados disponíveis</p>
       )}
       {!loading && parlamentares.length > 0 && (
         <ol className="flex-1 overflow-y-auto space-y-2 pr-0.5">
@@ -1604,10 +1604,10 @@ function Top5ParlamentaresDoMunicipioCard({
                 onClick={() => onPick(p)}
                 className="w-full flex items-center gap-2 group hover:bg-white/5 -mx-2 px-2 py-1 rounded-lg transition-colors text-left"
               >
-                <span className="text-xs font-bold text-slate-500 w-4">{i + 1}.</span>
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-500 w-4">{i + 1}.</span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-white truncate group-hover:text-amber-300 transition-colors">{p.nome}</p>
-                  <p className="text-[10px] text-slate-500">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
+                  <p className="text-xs text-[color:var(--text-primary)] truncate group-hover:text-amber-300 transition-colors">{p.nome}</p>
+                  <p className="text-[10px] text-slate-600 dark:text-slate-500">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
                 </div>
                 <span className="text-xs font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
               </button>
@@ -1629,9 +1629,9 @@ function Top5ParlamentaresEstadoCard({
   return (
     <div
       className="rounded-2xl p-4 h-full flex flex-col"
-      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
+      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3 flex-shrink-0">Top 5 Parlamentares</p>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-3 flex-shrink-0">Top 5 Parlamentares</p>
       <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5">
         {topResumo.slice(0, 5).map((p) => (
           <button
@@ -1640,8 +1640,8 @@ function Top5ParlamentaresEstadoCard({
             className="w-full flex items-center gap-2 group text-left hover:bg-white/5 -mx-1 px-1 py-1 rounded-lg transition-colors"
           >
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] text-white truncate group-hover:text-amber-300">{p.nome}</p>
-              <p className="text-[10px] text-slate-500">{CARGO_LABELS[p.cargo as ParlamentarCargo] ?? p.cargo}</p>
+              <p className="text-[11px] text-[color:var(--text-primary)] truncate group-hover:text-amber-300">{p.nome}</p>
+              <p className="text-[10px] text-slate-600 dark:text-slate-500">{CARGO_LABELS[p.cargo as ParlamentarCargo] ?? p.cargo}</p>
             </div>
             <span className="text-[11px] font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
           </button>
@@ -1673,9 +1673,9 @@ function Top5MunicipiosCard({
   return (
     <div
       className="rounded-2xl p-4 h-full flex flex-col"
-      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
+      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1 flex-shrink-0">
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-1 flex-shrink-0">
         Top 5 Municípios
       </p>
       {isParlamentar && (
@@ -1687,11 +1687,11 @@ function Top5MunicipiosCard({
 
       {loading && !isParlamentar && (
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-slate-600 dark:text-slate-500" />
         </div>
       )}
       {!loading && top.length === 0 && (
-        <p className="text-xs text-slate-500 text-center py-4">
+        <p className="text-xs text-slate-600 dark:text-slate-500 text-center py-4">
           {isParlamentar
             ? 'Nenhum município identificado (emendas em nível estadual)'
             : 'Sem dados disponíveis'}
@@ -1705,8 +1705,8 @@ function Top5MunicipiosCard({
                 onClick={() => onClick(m)}
                 className="w-full flex items-center gap-2 group hover:bg-white/5 -mx-2 px-2 py-1 rounded-lg transition-colors text-left"
               >
-                <span className="text-xs font-bold text-slate-500 w-4">{i + 1}.</span>
-                <span className="text-xs text-white truncate flex-1 group-hover:text-amber-300 transition-colors">{m.nome}</span>
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-500 w-4">{i + 1}.</span>
+                <span className="text-xs text-[color:var(--text-primary)] truncate flex-1 group-hover:text-amber-300 transition-colors">{m.nome}</span>
                 <span className="text-xs font-semibold text-cyan-300">{formatBRLCompact(m.total)}</span>
               </button>
             </li>
@@ -1733,19 +1733,19 @@ function ParlamentarSearchCard({
   return (
     <div
       className="rounded-2xl p-4"
-      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
+      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Emendas por Parlamentar</p>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">Emendas por Parlamentar</p>
 
       <div className="relative">
-        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-500" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Pesquisar parlamentar…"
-          className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-500/50"
+          className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-3 py-2 text-xs text-[color:var(--text-primary)] placeholder-slate-500 outline-none focus:border-amber-500/50"
         />
-        {searching && <Loader2 className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-slate-500" />}
+        {searching && <Loader2 className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-slate-600 dark:text-slate-500" />}
       </div>
 
       {query.length >= 2 && results.length > 0 && (
@@ -1756,8 +1756,8 @@ function ParlamentarSearchCard({
               onClick={() => onPick(p)}
               className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
             >
-              <p className="text-xs text-white font-medium truncate">{p.nome}</p>
-              <p className="text-[10px] text-slate-500">
+              <p className="text-xs text-[color:var(--text-primary)] font-medium truncate">{p.nome}</p>
+              <p className="text-[10px] text-slate-600 dark:text-slate-500">
                 {CARGO_LABELS[p.cargo]}
                 {p.partido ? ` · ${p.partido}` : ''}
                 {p.uf ? ` · ${p.uf}` : ''}
@@ -1772,12 +1772,12 @@ function ParlamentarSearchCard({
           style={{ background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.25)' }}
         >
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-white font-semibold truncate">{selected.nome}</p>
+            <p className="text-xs text-[color:var(--text-primary)] font-semibold truncate">{selected.nome}</p>
             <p className="text-[10px] text-amber-300/80">
               {CARGO_LABELS[selected.cargo]}{selected.partido ? ` · ${selected.partido}` : ''}
             </p>
           </div>
-          <button onClick={onClear} className="text-slate-500 hover:text-white p-1 rounded-lg">
+          <button onClick={onClear} className="text-slate-600 dark:text-slate-500 hover:text-white p-1 rounded-lg">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -1792,8 +1792,8 @@ function ParlamentarSearchCard({
               className="w-full flex items-center gap-2 group text-left hover:bg-white/5 -mx-1 px-1 py-1 rounded-lg transition-colors"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] text-white truncate group-hover:text-amber-300">{p.nome}</p>
-                <p className="text-[10px] text-slate-500">{CARGO_LABELS[p.cargo as ParlamentarCargo] ?? p.cargo}</p>
+                <p className="text-[11px] text-[color:var(--text-primary)] truncate group-hover:text-amber-300">{p.nome}</p>
+                <p className="text-[10px] text-slate-600 dark:text-slate-500">{CARGO_LABELS[p.cargo as ParlamentarCargo] ?? p.cargo}</p>
               </div>
               <span className="text-[11px] font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
             </button>
@@ -1832,16 +1832,16 @@ function MunicipioPopup({
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
               Município
             </span>
-            <p className="text-white font-bold text-sm mt-0.5">{municipio.nome}</p>
+            <p className="text-[color:var(--text-primary)] font-bold text-sm mt-0.5">{municipio.nome}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-0.5 rounded-lg">
+          <button onClick={onClose} className="text-slate-600 dark:text-slate-400 hover:text-white p-0.5 rounded-lg">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {loading ? (
           <div className="py-2 flex items-center justify-center">
-            <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+            <Loader2 className="w-4 h-4 animate-spin text-slate-600 dark:text-slate-500" />
           </div>
         ) : (
           <div className="space-y-1.5 text-[11px]">
@@ -1875,10 +1875,10 @@ function MunicipioPopup({
 function PopupRow({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="text-slate-400 flex-shrink-0">{label}</span>
+      <span className="text-slate-600 dark:text-slate-400 flex-shrink-0">{label}</span>
       <div className="text-right min-w-0">
-        <span className={value === '—' ? 'text-slate-500' : 'text-white font-semibold'}>{value}</span>
-        {hint && <p className="text-[9px] text-slate-500 italic mt-0.5 leading-tight">{hint}</p>}
+        <span className={value === '—' ? 'text-slate-600 dark:text-slate-500' : 'text-white font-semibold'}>{value}</span>
+        {hint && <p className="text-[9px] text-slate-600 dark:text-slate-500 italic mt-0.5 leading-tight">{hint}</p>}
       </div>
     </div>
   );
@@ -1893,7 +1893,7 @@ function LegendaCores() {
     { label: 'R$ 1 milhão – 2 milhões',       color: '#1d6fb8' },
     { label: 'R$ 500 mil – 1 milhão',         color: '#3a8ed1' },
     { label: 'Até R$ 500 mil',                color: '#7fb8e0' },
-    { label: 'Sem emendas',                   color: '#15355c', border: '1px solid rgba(255,255,255,0.18)' },
+    { label: 'Sem emendas',                   color: '#15355c', border: '1px solid var(--tint-18)' },
   ];
   return (
     <div className="space-y-1">
@@ -1903,7 +1903,7 @@ function LegendaCores() {
             className="w-3 h-3 rounded-sm flex-shrink-0"
             style={{ background: it.color, border: (it as any).border ?? 'none' }}
           />
-          <span className="text-[10px] text-slate-300">{it.label}</span>
+          <span className="text-[10px] text-slate-700 dark:text-slate-300">{it.label}</span>
         </div>
       ))}
     </div>
@@ -1944,13 +1944,13 @@ function ParlamentarDashboard({
   return (
     <div
       className="rounded-2xl p-5"
-      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
+      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
     >
       <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
         <div>
           <p className="text-[10px] uppercase tracking-widest font-bold text-amber-300">Dashboard do parlamentar</p>
-          <h2 className="text-xl text-white font-bold mt-1">{parlamentar.nome}</h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <h2 className="text-xl text-[color:var(--text-primary)] font-bold mt-1">{parlamentar.nome}</h2>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
             {CARGO_LABELS[parlamentar.cargo]}
             {parlamentar.partido ? ` · ${parlamentar.partido}` : ''}
             {parlamentar.uf ? ` · ${parlamentar.uf}` : ''}
@@ -1967,7 +1967,7 @@ function ParlamentarDashboard({
           <p className="text-[10px] uppercase tracking-widest text-amber-300 font-bold">
             Total enviado em {ano}{escopo ? ` · ${escopo}` : ''}
           </p>
-          <p className="text-2xl font-bold text-white mt-0.5">
+          <p className="text-2xl font-bold text-[color:var(--text-primary)] mt-0.5">
             {loading ? <Loader2 className="w-5 h-5 animate-spin inline" /> : formatBRLCompact(totalAno)}
           </p>
           {!loading && totalAno > 0 && (
@@ -1977,14 +1977,14 @@ function ParlamentarDashboard({
             </p>
           )}
           {!loading && (destinos.municipal > 0 || destinos.estadual > 0) && (
-            <div className="mt-2 text-[10px] text-slate-300 space-y-0.5 text-right">
+            <div className="mt-2 text-[10px] text-slate-700 dark:text-slate-300 space-y-0.5 text-right">
               <p>
-                <span className="text-cyan-300">●</span> A municípios: <span className="font-semibold text-white">{formatBRLCompact(destinos.municipal)}</span>
-                <span className="text-slate-500"> ({destinos.qtdMun})</span>
+                <span className="text-cyan-300">●</span> A municípios: <span className="font-semibold text-[color:var(--text-primary)]">{formatBRLCompact(destinos.municipal)}</span>
+                <span className="text-slate-600 dark:text-slate-500"> ({destinos.qtdMun})</span>
               </p>
               <p>
-                <span className="text-violet-400">●</span> Nível UF (sem município): <span className="font-semibold text-white">{formatBRLCompact(destinos.estadual)}</span>
-                <span className="text-slate-500"> ({destinos.qtdEst})</span>
+                <span className="text-violet-400">●</span> Nível UF (sem município): <span className="font-semibold text-[color:var(--text-primary)]">{formatBRLCompact(destinos.estadual)}</span>
+                <span className="text-slate-600 dark:text-slate-500"> ({destinos.qtdEst})</span>
               </p>
             </div>
           )}
@@ -1995,9 +1995,9 @@ function ParlamentarDashboard({
                   key={t.tipo}
                   className="text-[9px] px-1.5 py-0.5 rounded-md font-semibold"
                   style={{
-                    background: 'rgba(255,255,255,0.06)',
+                    background: 'var(--tint-06)',
                     color: '#cbd5e1',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    border: '1px solid var(--tint-08)',
                   }}
                   title={`${t.qtd} ${t.qtd === 1 ? 'emenda' : 'emendas'}`}
                 >
@@ -2011,15 +2011,15 @@ function ParlamentarDashboard({
 
       {loading ? (
         <div className="py-10 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
+          <Loader2 className="w-6 h-6 animate-spin text-slate-600 dark:text-slate-500" />
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Donut: Emendas por Área */}
-          <div className="rounded-xl p-4" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Distribuição por área</p>
+          <div className="rounded-xl p-4" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-04)' }}>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">Distribuição por área</p>
             {porArea.length === 0 ? (
-              <p className="text-xs text-slate-500 text-center py-10">Sem emendas em {ano}</p>
+              <p className="text-xs text-slate-600 dark:text-slate-500 text-center py-10">Sem emendas em {ano}</p>
             ) : (
               <>
                 <div className="h-56 relative">
@@ -2035,10 +2035,10 @@ function ParlamentarDashboard({
           </div>
 
           {/* Linha: Valor por Ano */}
-          <div className="rounded-xl p-4" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Valor por ano (histórico)</p>
+          <div className="rounded-xl p-4" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-04)' }}>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">Valor por ano (histórico)</p>
             {porAno.length === 0 ? (
-              <p className="text-xs text-slate-500 text-center py-10">Sem histórico disponível</p>
+              <p className="text-xs text-slate-600 dark:text-slate-500 text-center py-10">Sem histórico disponível</p>
             ) : (
               <div className="space-y-2 mt-2">
                 {porAno.map((p) => {
@@ -2047,7 +2047,7 @@ function ParlamentarDashboard({
                   return (
                     <div key={p.ano} className="space-y-1">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className={isAnoSelecionado ? 'text-amber-300 font-bold' : 'text-slate-300'}>{p.ano}</span>
+                        <span className={isAnoSelecionado ? 'text-amber-300 font-bold' : 'text-slate-700 dark:text-slate-300'}>{p.ano}</span>
                         <span className={isAnoSelecionado ? 'text-amber-300 font-bold' : 'text-white font-semibold'}>
                           {formatBRLCompact(p.total)}
                         </span>
@@ -2071,10 +2071,10 @@ function ParlamentarDashboard({
           </div>
 
           {/* Barras: Comparativo de todas as áreas (do ano selecionado) */}
-          <div className="rounded-xl p-4" style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Comparativo de áreas em {ano}</p>
+          <div className="rounded-xl p-4" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-04)' }}>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">Comparativo de áreas em {ano}</p>
             {porArea.length === 0 ? (
-              <p className="text-xs text-slate-500 text-center py-10">Sem dados</p>
+              <p className="text-xs text-slate-600 dark:text-slate-500 text-center py-10">Sem dados</p>
             ) : (
               <div className="space-y-2 mt-2">
                 {porArea.map((a) => {
@@ -2083,8 +2083,8 @@ function ParlamentarDashboard({
                   return (
                     <div key={a.area} className="space-y-1">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-300 truncate">{a.name}</span>
-                        <span className="text-white font-semibold">{formatBRLCompact(a.value)}</span>
+                        <span className="text-slate-700 dark:text-slate-300 truncate">{a.name}</span>
+                        <span className="text-[color:var(--text-primary)] font-semibold">{formatBRLCompact(a.value)}</span>
                       </div>
                       <div className="h-2 rounded-full bg-white/5 overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${pct}%`, background: a.color, boxShadow: `0 0 6px ${a.color}66` }} />
@@ -2229,17 +2229,17 @@ function EmendasDetalhadasCard({
   return (
     <div
       className="mt-4 rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.07)' }}
+      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
     >
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <div
         className="px-5 py-3.5 flex items-center justify-between gap-4 flex-wrap"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
+        style={{ borderBottom: '1px solid var(--tint-06)', background: 'rgba(255,255,255,0.02)' }}
       >
         <div className="flex items-center gap-3">
           <div className="w-1 h-4 rounded-full" style={{ background: 'linear-gradient(180deg,#f59e0b,#d97706)' }} />
-          <p className="text-xs font-bold text-white tracking-wide">Detalhe das Emendas</p>
-          <span className="text-[10px] text-slate-500 font-medium">{ano}</span>
+          <p className="text-xs font-bold text-[color:var(--text-primary)] tracking-wide">Detalhe das Emendas</p>
+          <span className="text-[10px] text-slate-600 dark:text-slate-500 font-medium">{ano}</span>
         </div>
         <div className="flex items-center gap-3">
           {semDadosExecucao && (
@@ -2248,21 +2248,21 @@ function EmendasDetalhadasCard({
           {semDadosPagamento && !semDadosExecucao && (
             <span className="text-[10px] text-amber-400/70 italic hidden sm:block">Sem dados de pagamento estadual</span>
           )}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full" style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
             {temFiltro && (
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
             )}
-            <span className="text-[11px] font-semibold text-white">
+            <span className="text-[11px] font-semibold text-[color:var(--text-primary)]">
               {temFiltro ? filtradoQtd : totalItens}
             </span>
-            <span className="text-[10px] text-slate-400">{labelItens}</span>
+            <span className="text-[10px] text-slate-600 dark:text-slate-400">{labelItens}</span>
             <span className="text-slate-600 text-[10px]">·</span>
             <span className="text-[11px] font-semibold text-emerald-300">{formatBRLCompact(totalValor)}</span>
           </div>
           {temFiltro && (
             <button
               onClick={limparFiltros}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium text-slate-300 hover:text-white transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium text-slate-700 dark:text-slate-300 hover:text-white transition-colors"
               style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}
             >
               <X className="w-3 h-3" /> Limpar
@@ -2272,18 +2272,18 @@ function EmendasDetalhadasCard({
       </div>
 
       {/* ── Barra de filtros ─────────────────────────────────────────────── */}
-      <div className="px-5 py-3 flex flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="px-5 py-3 flex flex-wrap gap-2" style={{ borderBottom: '1px solid var(--tint-04)' }}>
         {/* Busca */}
         <div className="relative flex-1 min-w-[180px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 dark:text-slate-500 pointer-events-none" />
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder={usandoFlat ? 'Buscar favorecido, município ou nº…' : 'Buscar município, função ou nº…'}
-            className="w-full h-9 rounded-xl pl-9 pr-3 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
+            className="w-full h-9 rounded-xl pl-9 pr-3 text-[12px] text-[color:var(--text-primary)] placeholder-slate-500 outline-none transition-all"
             style={{
-              background: busca ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.04)',
-              border: busca ? '1px solid rgba(245,158,11,0.35)' : '1px solid rgba(255,255,255,0.08)',
+              background: busca ? 'rgba(245,158,11,0.08)' : 'var(--tint-04)',
+              border: busca ? '1px solid rgba(245,158,11,0.35)' : '1px solid var(--tint-08)',
             }}
           />
         </div>
@@ -2293,17 +2293,17 @@ function EmendasDetalhadasCard({
           <select
             value={funcaoFiltro}
             onChange={(e) => setFuncaoFiltro(e.target.value)}
-            className="w-full h-9 rounded-xl px-3 pr-8 text-[12px] text-white outline-none appearance-none cursor-pointer transition-all"
+            className="w-full h-9 rounded-xl px-3 pr-8 text-[12px] text-[color:var(--text-primary)] outline-none appearance-none cursor-pointer transition-all"
             style={{
-              background: funcaoFiltro ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.04)',
-              border: funcaoFiltro ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)',
+              background: funcaoFiltro ? 'rgba(99,102,241,0.12)' : 'var(--tint-04)',
+              border: funcaoFiltro ? '1px solid rgba(99,102,241,0.4)' : '1px solid var(--tint-08)',
             }}
           >
             <option value="" style={{ background: '#0a1f3d' }}>Todas as áreas</option>
             {funcoes.map((f) => <option key={f} value={f} style={{ background: '#0a1f3d' }}>{f}</option>)}
           </select>
           <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
-            <svg className="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            <svg className="w-3 h-3 text-slate-600 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
           </div>
         </div>
 
@@ -2312,17 +2312,17 @@ function EmendasDetalhadasCard({
           <select
             value={tipoFiltro}
             onChange={(e) => setTipoFiltro(e.target.value)}
-            className="w-full h-9 rounded-xl px-3 pr-8 text-[12px] text-white outline-none appearance-none cursor-pointer transition-all"
+            className="w-full h-9 rounded-xl px-3 pr-8 text-[12px] text-[color:var(--text-primary)] outline-none appearance-none cursor-pointer transition-all"
             style={{
-              background: tipoFiltro ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
-              border: tipoFiltro ? '1px solid rgba(16,185,129,0.35)' : '1px solid rgba(255,255,255,0.08)',
+              background: tipoFiltro ? 'rgba(16,185,129,0.1)' : 'var(--tint-04)',
+              border: tipoFiltro ? '1px solid rgba(16,185,129,0.35)' : '1px solid var(--tint-08)',
             }}
           >
             <option value="" style={{ background: '#0a1f3d' }}>Todos os tipos</option>
             {tiposCurtos.map((t) => <option key={t} value={t} style={{ background: '#0a1f3d' }}>{t}</option>)}
           </select>
           <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
-            <svg className="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            <svg className="w-3 h-3 text-slate-600 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
           </div>
         </div>
 
@@ -2336,9 +2336,9 @@ function EmendasDetalhadasCard({
                 onClick={() => { setValorColuna(col); setValorMin(''); setValorMax(''); }}
                 className="h-9 px-3 text-[11px] font-semibold transition-all whitespace-nowrap"
                 style={{
-                  background: valorColuna === col ? 'rgba(74,158,222,0.2)' : 'rgba(255,255,255,0.03)',
+                  background: valorColuna === col ? 'rgba(74,158,222,0.2)' : 'var(--tint-04)',
                   color: valorColuna === col ? '#4a9ede' : '#64748b',
-                  borderRight: col === 'empenhado' ? '1px solid rgba(255,255,255,0.08)' : undefined,
+                  borderRight: col === 'empenhado' ? '1px solid var(--tint-08)' : undefined,
                 }}
               >
                 {col === 'empenhado' ? 'Empenhado' : 'Pago'}
@@ -2348,33 +2348,33 @@ function EmendasDetalhadasCard({
           {/* Faixa de valor */}
           <div className="flex items-center gap-1.5 min-w-[160px]">
             <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-medium pointer-events-none">R$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-600 dark:text-slate-500 font-medium pointer-events-none">R$</span>
               <input
                 value={valorMin}
                 onChange={(e) => setValorMin(e.target.value)}
                 placeholder="Mín"
                 type="number"
                 min={0}
-                className="w-full h-9 rounded-xl pl-7 pr-2 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
+                className="w-full h-9 rounded-xl pl-7 pr-2 text-[12px] text-[color:var(--text-primary)] placeholder-slate-500 outline-none transition-all"
                 style={{
-                  background: valorMin ? 'rgba(74,158,222,0.1)' : 'rgba(255,255,255,0.04)',
-                  border: valorMin ? '1px solid rgba(74,158,222,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                  background: valorMin ? 'rgba(74,158,222,0.1)' : 'var(--tint-04)',
+                  border: valorMin ? '1px solid rgba(74,158,222,0.35)' : '1px solid var(--tint-08)',
                 }}
               />
             </div>
             <div className="w-3 h-px bg-slate-600 flex-shrink-0" />
             <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-medium pointer-events-none">R$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-600 dark:text-slate-500 font-medium pointer-events-none">R$</span>
               <input
                 value={valorMax}
                 onChange={(e) => setValorMax(e.target.value)}
                 placeholder="Máx"
                 type="number"
                 min={0}
-                className="w-full h-9 rounded-xl pl-7 pr-2 text-[12px] text-white placeholder-slate-500 outline-none transition-all"
+                className="w-full h-9 rounded-xl pl-7 pr-2 text-[12px] text-[color:var(--text-primary)] placeholder-slate-500 outline-none transition-all"
                 style={{
-                  background: valorMax ? 'rgba(74,158,222,0.1)' : 'rgba(255,255,255,0.04)',
-                  border: valorMax ? '1px solid rgba(74,158,222,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                  background: valorMax ? 'rgba(74,158,222,0.1)' : 'var(--tint-04)',
+                  border: valorMax ? '1px solid rgba(74,158,222,0.35)' : '1px solid var(--tint-08)',
                 }}
               />
             </div>
@@ -2388,7 +2388,7 @@ function EmendasDetalhadasCard({
         {((usandoFlat && destinosFiltrados.length === 0) || (!usandoFlat && emendasFiltradas.length === 0)) && (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
             <Search className="w-5 h-5 text-slate-600" />
-            <p className="text-[12px] text-slate-500">Nenhum resultado encontrado</p>
+            <p className="text-[12px] text-slate-600 dark:text-slate-500">Nenhum resultado encontrado</p>
             {temFiltro && (
               <button onClick={limparFiltros} className="text-[11px] text-amber-400 hover:text-amber-300 mt-1 transition-colors">
                 Limpar filtros
@@ -2406,8 +2406,8 @@ function EmendasDetalhadasCard({
                   {(['Nº', 'Tipo', 'Área', 'Favorecido', 'Município', 'Empenhado', 'Pago', '%'] as const).map((h, i) => (
                     <th
                       key={h}
-                      className={`py-2.5 px-3 text-[9px] uppercase tracking-widest font-bold text-slate-500 whitespace-nowrap ${i >= 5 ? 'text-right' : 'text-left'}`}
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                      className={`py-2.5 px-3 text-[9px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500 whitespace-nowrap ${i >= 5 ? 'text-right' : 'text-left'}`}
+                      style={{ borderBottom: '1px solid var(--tint-06)' }}
                     >
                       {h}
                     </th>
@@ -2431,10 +2431,10 @@ function EmendasDetalhadasCard({
                       style={{ background: par ? 'transparent' : 'rgba(255,255,255,0.015)' }}
                       title="Clique para ver todos os documentos desta emenda"
                     >
-                      <td className="py-2.5 px-3 text-slate-500 font-mono text-[11px] whitespace-nowrap group-hover:text-slate-300 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-500 font-mono text-[11px] whitespace-nowrap group-hover:text-slate-700 dark:text-slate-300 transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {d.numeroEmenda ?? '—'}
                       </td>
-                      <td className="py-2.5 px-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span
                           title={tipo.hint}
                           className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap"
@@ -2443,29 +2443,29 @@ function EmendasDetalhadasCard({
                           {tipo.label}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-300 truncate max-w-[110px] group-hover:text-white transition-colors" title={d.funcao ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 truncate max-w-[110px] group-hover:text-white transition-colors" title={d.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {d.funcao ?? '—'}
                       </td>
-                      <td className="py-2.5 px-3 truncate max-w-[220px]" title={d.nomeFavorecido ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="py-2.5 px-3 truncate max-w-[220px]" title={d.nomeFavorecido ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span className="text-slate-200 group-hover:text-white transition-colors font-medium">
                           {d.nomeFavorecido ?? <span className="text-slate-600 italic font-normal">sem favorecido</span>}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 truncate max-w-[150px]" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="py-2.5 px-3 truncate max-w-[150px]" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {d.municipio ? (
-                          <span className="text-slate-400 group-hover:text-slate-200 transition-colors">
+                          <span className="text-slate-600 dark:text-slate-400 group-hover:text-slate-200 transition-colors">
                             {d.municipio}
                             {d.uf && <span className="text-slate-600 ml-1 text-[10px]">/ {d.uf}</span>}
                           </span>
                         ) : <span className="text-slate-600">—</span>}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-semibold text-white whitespace-nowrap group-hover:text-amber-200 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="py-2.5 px-3 text-right font-semibold text-[color:var(--text-primary)] whitespace-nowrap group-hover:text-amber-200 transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {formatBRLCompact(d.valorEmpenhado)}
                       </td>
-                      <td className="py-2.5 px-3 text-right text-emerald-400 whitespace-nowrap" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="py-2.5 px-3 text-right text-emerald-400 whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {formatBRLCompact(d.valorPago)}
                       </td>
-                      <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span
                           className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold"
                           style={{
@@ -2493,8 +2493,8 @@ function EmendasDetalhadasCard({
                   {(['Nº', 'Tipo', 'Área', 'Destino', 'Empenhado', 'Pago', '%'] as const).map((h, i) => (
                     <th
                       key={h}
-                      className={`py-2.5 px-3 text-[9px] uppercase tracking-widest font-bold text-slate-500 whitespace-nowrap ${i >= 4 ? 'text-right' : 'text-left'}`}
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                      className={`py-2.5 px-3 text-[9px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500 whitespace-nowrap ${i >= 4 ? 'text-right' : 'text-left'}`}
+                      style={{ borderBottom: '1px solid var(--tint-06)' }}
                     >
                       {h}
                     </th>
@@ -2514,17 +2514,17 @@ function EmendasDetalhadasCard({
                       style={{ background: par ? 'transparent' : 'rgba(255,255,255,0.015)' }}
                       title="Clique para ver favorecidos e breakdown por fase"
                     >
-                      <td className="py-2.5 px-3 text-slate-500 font-mono text-[11px] whitespace-nowrap group-hover:text-slate-300 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{e.numero ?? '—'}</td>
-                      <td className="py-2.5 px-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-500 font-mono text-[11px] whitespace-nowrap group-hover:text-slate-700 dark:text-slate-300 transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>{e.numero ?? '—'}</td>
+                      <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span title={tipo.hint} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap" style={{ background: `${tipo.color}18`, color: tipo.color, border: `1px solid ${tipo.color}33` }}>{tipo.label}</span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-300 truncate max-w-[140px] group-hover:text-white transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{e.funcao ?? '—'}</td>
-                      <td className="py-2.5 px-3 text-slate-200 truncate max-w-[200px] font-medium group-hover:text-white transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 truncate max-w-[140px] group-hover:text-white transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>{e.funcao ?? '—'}</td>
+                      <td className="py-2.5 px-3 text-slate-200 truncate max-w-[200px] font-medium group-hover:text-white transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {e.municipioNome ?? <span className="text-slate-600 italic font-normal">{e.objeto ?? 'sem destino'}</span>}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-semibold text-white whitespace-nowrap group-hover:text-amber-200 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatBRLCompact(e.valorEmpenhado)}</td>
-                      <td className="py-2.5 px-3 text-right text-emerald-400 whitespace-nowrap" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatBRLCompact(e.valorPago)}</td>
-                      <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="py-2.5 px-3 text-right font-semibold text-[color:var(--text-primary)] whitespace-nowrap group-hover:text-amber-200 transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>{formatBRLCompact(e.valorEmpenhado)}</td>
+                      <td className="py-2.5 px-3 text-right text-emerald-400 whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>{formatBRLCompact(e.valorPago)}</td>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: pct >= 80 ? 'rgba(16,185,129,0.12)' : pct >= 40 ? 'rgba(245,158,11,0.12)' : 'rgba(100,116,139,0.12)', color: pct >= 80 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#64748b' }}>{pct.toFixed(0)}%</span>
                       </td>
                     </tr>
@@ -2585,14 +2585,14 @@ function MunicipiosBeneficiadosCard({
   return (
     <div
       className="mt-4 rounded-xl p-4"
-      style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}
+      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-04)' }}
     >
       <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
-        <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+        <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400">
           Municípios beneficiados em {ano}
         </p>
         {porMunicipio.length > 0 && (
-          <p className="text-[10px] text-slate-500">
+          <p className="text-[10px] text-slate-600 dark:text-slate-500">
             {porMunicipio.length} {porMunicipio.length === 1 ? 'município' : 'municípios'} ·{' '}
             <span className="text-cyan-300 font-semibold">{formatBRLCompact(total)}</span>
           </p>
@@ -2600,7 +2600,7 @@ function MunicipiosBeneficiadosCard({
       </div>
 
       {porMunicipio.length === 0 ? (
-        <p className="text-xs text-slate-500 text-center py-6">
+        <p className="text-xs text-slate-600 dark:text-slate-500 text-center py-6">
           Nenhuma emenda com município identificado em {ano}.
           <br />
           <span className="text-slate-600 text-[10px]">
@@ -2617,18 +2617,18 @@ function MunicipiosBeneficiadosCard({
                 disabled={!onClick}
                 className="w-full text-left px-3 py-2.5 rounded-xl transition-colors group disabled:cursor-default"
                 style={{
-                  background: 'rgba(7,29,54,0.55)',
-                  border: '1px solid rgba(255,255,255,0.04)',
+                  background: 'var(--bg-card-subtle)',
+                  border: '1px solid var(--tint-04)',
                 }}
               >
                 <div className="flex items-center justify-between gap-3 mb-1.5">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="text-[10px] font-bold text-slate-500 w-5 flex-shrink-0">{i + 1}.</span>
-                    <span className="text-white text-sm font-semibold truncate group-hover:text-amber-300 transition-colors">
+                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-500 w-5 flex-shrink-0">{i + 1}.</span>
+                    <span className="text-[color:var(--text-primary)] text-sm font-semibold truncate group-hover:text-amber-300 transition-colors">
                       {m.nome}
                     </span>
                     {m.uf && (
-                      <span className="text-[10px] text-slate-500 flex-shrink-0">/ {m.uf}</span>
+                      <span className="text-[10px] text-slate-600 dark:text-slate-500 flex-shrink-0">/ {m.uf}</span>
                     )}
                   </div>
                   <span className="text-cyan-300 font-bold text-sm whitespace-nowrap">
@@ -2649,7 +2649,7 @@ function MunicipiosBeneficiadosCard({
                     >
                       <span className="w-1.5 h-1.5 rounded-full" style={{ background: AREA_COLORS[area] }} />
                       {AREA_LABELS[area]}
-                      <span className="text-white/70 font-semibold">{formatBRLCompact(valor)}</span>
+                      <span className="text-[color:var(--text-primary)]/70 font-semibold">{formatBRLCompact(valor)}</span>
                     </span>
                   ))}
                 </div>
@@ -2691,7 +2691,7 @@ function MunicipiosPixCard({
     <div
       className="mt-4 rounded-xl p-4"
       style={{
-        background: 'linear-gradient(135deg, rgba(168,85,247,0.06), rgba(7,29,54,0.5))',
+        background: 'linear-gradient(135deg, rgba(168,85,247,0.06), var(--bg-card-subtle))',
         border: '1px solid rgba(168,85,247,0.25)',
       }}
     >
@@ -2703,17 +2703,17 @@ function MunicipiosPixCard({
           >
             Pix
           </span>
-          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400">
             Municípios que receberam Pix em {ano}
           </p>
         </div>
-        <p className="text-[10px] text-slate-500">
+        <p className="text-[10px] text-slate-600 dark:text-slate-500">
           {pixPorMunicipio.length} {pixPorMunicipio.length === 1 ? 'município' : 'municípios'} ·{' '}
           <span className="text-violet-300 font-semibold">{formatBRLCompact(pixTotal)}</span>
         </p>
       </div>
 
-      <p className="text-[10px] text-slate-500 italic mb-3 leading-snug">
+      <p className="text-[10px] text-slate-600 dark:text-slate-500 italic mb-3 leading-snug">
         Transferências Especiais (EC 105/2019) — destinos reais dos repasses Pix do parlamentar
         quando a emenda original foi cadastrada só a nível UF.
       </p>
@@ -2726,23 +2726,23 @@ function MunicipiosPixCard({
             disabled={!onClick}
             className="w-full text-left px-3 py-2.5 rounded-xl transition-colors group disabled:cursor-default"
             style={{
-              background: 'rgba(7,29,54,0.55)',
-              border: '1px solid rgba(255,255,255,0.04)',
+              background: 'var(--bg-card-subtle)',
+              border: '1px solid var(--tint-04)',
             }}
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span className="text-[10px] font-bold text-slate-500 w-5 flex-shrink-0">{i + 1}.</span>
-                <span className="text-white text-sm font-semibold truncate group-hover:text-violet-300 transition-colors">
+                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-500 w-5 flex-shrink-0">{i + 1}.</span>
+                <span className="text-[color:var(--text-primary)] text-sm font-semibold truncate group-hover:text-violet-300 transition-colors">
                   {m.nome}
                 </span>
                 {m.uf && (
-                  <span className="text-[10px] text-slate-500 flex-shrink-0">/ {m.uf}</span>
+                  <span className="text-[10px] text-slate-600 dark:text-slate-500 flex-shrink-0">/ {m.uf}</span>
                 )}
               </div>
               <div className="text-right flex-shrink-0">
                 <p className="text-violet-300 font-bold text-sm whitespace-nowrap">{formatBRLCompact(m.total)}</p>
-                <p className="text-[10px] text-slate-500">
+                <p className="text-[10px] text-slate-600 dark:text-slate-500">
                   {m.qtd} {m.qtd === 1 ? 'transferência' : 'transferências'}
                 </p>
               </div>
@@ -2798,13 +2798,13 @@ function ComparativoAreasCard({
   return (
     <div
       className="rounded-2xl p-5"
-      style={{ background: 'rgba(7,29,54,0.55)', border: '1px solid rgba(255,255,255,0.06)' }}
+      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
     >
       <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
-        <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+        <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400">
           Comparativo por Área
         </p>
-        <p className="text-[10px] text-slate-500">
+        <p className="text-[10px] text-slate-600 dark:text-slate-500">
           {ano} vs. {ano - 1}
         </p>
       </div>
@@ -2817,7 +2817,7 @@ function ComparativoAreasCard({
             <div
               key={area}
               className="rounded-xl p-3.5"
-              style={{ background: 'rgba(7,29,54,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}
+              style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-04)' }}
               title={area === 'OUTROS' ? 'Soma de Assistência Social, Transporte, Cultura, Esporte e outras áreas que não são Saúde, Educação ou Segurança' : undefined}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -2828,14 +2828,14 @@ function ComparativoAreasCard({
                   {label}
                 </span>
               </div>
-              <p className="text-white font-bold text-lg">{formatBRLCompact(atual)}</p>
+              <p className="text-[color:var(--text-primary)] font-bold text-lg">{formatBRLCompact(atual)}</p>
               <div className="flex items-center gap-1.5 text-[11px] mt-1">
                 <span className={isUp ? 'text-emerald-400' : 'text-rose-400'}>
                   {isUp ? <TrendingUp className="w-3 h-3 inline -mt-0.5" /> : <TrendingDown className="w-3 h-3 inline -mt-0.5" />}
                   {' '}
                   {delta > 0 ? '+' : ''}{delta.toFixed(1)}%
                 </span>
-                <span className="text-slate-500">vs {ano - 1}</span>
+                <span className="text-slate-600 dark:text-slate-500">vs {ano - 1}</span>
               </div>
             </div>
           );
@@ -2857,7 +2857,7 @@ function DestaqueDoAnoCard({
     <div
       className="rounded-2xl px-5 py-2.5 flex items-center gap-5 flex-wrap"
       style={{
-        background: 'linear-gradient(135deg, rgba(37,99,235,0.07) 0%, rgba(7,29,54,0.6) 60%, rgba(74,158,222,0.05) 100%)',
+        background: 'linear-gradient(135deg, rgba(37,99,235,0.07) 0%, var(--bg-card) 60%, rgba(74,158,222,0.05) 100%)',
         border: '1px solid rgba(37,99,235,0.18)',
         boxShadow: '0 2px 16px rgba(0,0,0,0.25)',
       }}
@@ -2871,7 +2871,7 @@ function DestaqueDoAnoCard({
       </div>
 
       {/* Divider */}
-      <div className="w-px h-6 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)' }} />
+      <div className="w-px h-6 flex-shrink-0" style={{ background: 'var(--tint-08)' }} />
 
       <div className="flex items-center gap-3 flex-wrap flex-1">
         {/* Top município */}
@@ -2884,7 +2884,7 @@ function DestaqueDoAnoCard({
         >
           <div className="flex flex-col leading-tight">
             <span className="text-[8px] uppercase tracking-widest font-semibold text-cyan-400/60">Município</span>
-            <span className="text-white font-bold text-[13px] truncate max-w-[150px] leading-tight">{municipio.nome}</span>
+            <span className="text-[color:var(--text-primary)] font-bold text-[13px] truncate max-w-[150px] leading-tight">{municipio.nome}</span>
           </div>
           <div
             className="px-2 py-0.5 rounded-lg"
@@ -2906,8 +2906,8 @@ function DestaqueDoAnoCard({
             <div className="flex flex-col leading-tight">
               <span className="text-[8px] uppercase tracking-widest font-semibold text-amber-300/60">Parlamentar</span>
               <div className="flex items-center gap-1.5">
-                <span className="text-white font-bold text-[13px] truncate max-w-[180px] leading-tight">{topParlamentar.nome}</span>
-                <span className="text-[9px] text-slate-500 whitespace-nowrap hidden sm:block">
+                <span className="text-[color:var(--text-primary)] font-bold text-[13px] truncate max-w-[180px] leading-tight">{topParlamentar.nome}</span>
+                <span className="text-[9px] text-slate-600 dark:text-slate-500 whitespace-nowrap hidden sm:block">
                   {CARGO_LABELS[topParlamentar.cargo as ParlamentarCargo] ?? topParlamentar.cargo}
                   {topParlamentar.partido ? ` · ${topParlamentar.partido}` : ''}
                 </span>

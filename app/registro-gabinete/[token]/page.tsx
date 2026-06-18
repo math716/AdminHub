@@ -123,7 +123,7 @@ export default function RegistroGabinetePage() {
         {/* Logo topo */}
         <div className="relative z-10 px-12 pt-12 flex items-center gap-3">
           <img src="/logo.png" alt="AdminHub" style={{ width: 150, height: 150, objectFit: 'contain' }} />
-          <span className="text-white font-light text-xl tracking-widest uppercase">AdminHub</span>
+          <span className="text-[color:var(--text-primary)] font-light text-xl tracking-widest uppercase">AdminHub</span>
         </div>
 
         {/* Conteúdo central */}
@@ -138,7 +138,7 @@ export default function RegistroGabinetePage() {
               </span>
             </div>
 
-            <h1 className="text-[2.4rem] font-extrabold text-white leading-tight mb-4">
+            <h1 className="text-[2.4rem] font-extrabold text-[color:var(--text-primary)] leading-tight mb-4">
               Sistema de Gestão<br />
               <span style={{ color: '#2563EB' }}>de Gabinete Político</span>
             </h1>
@@ -164,7 +164,7 @@ export default function RegistroGabinetePage() {
 
         {/* Rodapé */}
         <div className="relative z-10 px-12 pb-10">
-          <div className="h-px mb-6" style={{ background: 'rgba(255,255,255,0.07)' }} />
+          <div className="h-px mb-6" style={{ background: 'var(--tint-06)' }} />
           <p className="text-gray-600 text-xs">© 2025 AdminHub · Todos os direitos reservados</p>
         </div>
       </motion.div>
@@ -302,7 +302,7 @@ export default function RegistroGabinetePage() {
                     background: loading ? '#6b7280' : 'linear-gradient(135deg, #071d36 0%, #0c2a4f 60%, #1e4a80 100%)',
                     color: '#fff', border: 'none',
                     cursor: loading ? 'not-allowed' : 'pointer',
-                    boxShadow: loading ? 'none' : '0 4px 18px rgba(7,29,54,0.35)',
+                    boxShadow: loading ? 'none' : '0 4px 18px var(--tint-08)',
                     letterSpacing: '0.02em',
                   }}
                   onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.12)'; }}

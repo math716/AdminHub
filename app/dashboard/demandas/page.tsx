@@ -447,7 +447,7 @@ export default function DemandasPage() {
                   onClick={() => handleEdit(demand)}
                   className="relative cursor-pointer rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(7,29,54,0.85) 0%, rgba(7,29,54,0.65) 100%)',
+                    background: 'linear-gradient(135deg, var(--bg-card-raised) 0%, var(--bg-card) 100%)',
                     border: '1px solid rgba(37,99,235,0.15)',
                     backdropFilter: 'blur(10px)',
                   }}
@@ -509,24 +509,24 @@ export default function DemandasPage() {
                                   />
                                 )}
                               </span>
-                              <h3 className="font-semibold text-white truncate text-[15px] capitalize">
+                              <h3 className="font-semibold text-[color:var(--text-primary)] truncate text-[15px] capitalize">
                                 {demand?.title}
                               </h3>
                               {isHighPriority && (
                                 <Flag className="h-3.5 w-3.5 flex-shrink-0" style={{ color: priorityColor }} fill={priorityColor} />
                               )}
                             </div>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-[13px] text-slate-400">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-[13px] text-slate-600 dark:text-slate-400">
                               <span className="flex items-center gap-1.5">
-                                <User className="h-3.5 w-3.5 text-slate-500" />
-                                <span className="text-slate-300">{demand?.solicitante}</span>
+                                <User className="h-3.5 w-3.5 text-slate-600 dark:text-slate-500" />
+                                <span className="text-slate-700 dark:text-slate-300">{demand?.solicitante}</span>
                               </span>
                               <span className="flex items-center gap-1.5">
-                                <MapPin className="h-3.5 w-3.5 text-slate-500" />
+                                <MapPin className="h-3.5 w-3.5 text-slate-600 dark:text-slate-500" />
                                 {demand?.municipio}, {demand?.estado}
                               </span>
                               <span className="flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5 text-slate-500" />
+                                <Calendar className="h-3.5 w-3.5 text-slate-600 dark:text-slate-500" />
                                 {new Date(demand?.createdAt)?.toLocaleDateString?.('pt-BR')}
                               </span>
                             </div>
@@ -579,7 +579,7 @@ export default function DemandasPage() {
                         {(userRole === 'ADMIN' || userRole === 'AGENTE_POLITICO' || userRole === 'CHEFE') && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDelete(demand?.id); }}
-                            className="ml-1 p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            className="ml-1 p-1.5 rounded-lg text-slate-600 dark:text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                             aria-label="Excluir demanda"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -612,7 +612,7 @@ export default function DemandasPage() {
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
               placeholder="Descreva a demanda em uma linha"
-              className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500"
+              className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
             />
           </div>
 
@@ -625,7 +625,7 @@ export default function DemandasPage() {
                 onChange={(e) => setFormData({ ...formData, solicitante: e.target.value })}
                 required
                 placeholder="Nome completo"
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500"
+                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
               />
             </div>
             <div>
@@ -634,7 +634,7 @@ export default function DemandasPage() {
                 value={formData.contato}
                 onChange={(e) => setFormData({ ...formData, contato: e.target.value })}
                 placeholder="Telefone ou email"
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500"
+                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
               />
             </div>
           </div>
@@ -667,7 +667,7 @@ export default function DemandasPage() {
                 value={formData.bairro}
                 onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
                 placeholder="Bairro"
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500"
+                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
               />
             </div>
           </div>
@@ -680,13 +680,13 @@ export default function DemandasPage() {
                 value={formData.endereco}
                 onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
                 placeholder="Rua, número, bairro"
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500"
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
               />
               <button
                 type="button"
                 onClick={geocodeFormAddress}
                 disabled={geoLoading}
-                className="flex items-center gap-1.5 px-3 py-2 bg-sky-700 hover:bg-sky-600 text-white rounded-lg text-sm disabled:opacity-50 whitespace-nowrap"
+                className="flex items-center gap-1.5 px-3 py-2 bg-sky-700 hover:bg-sky-600 text-[color:var(--text-primary)] rounded-lg text-sm disabled:opacity-50 whitespace-nowrap"
               >
                 {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                 Localizar
@@ -738,7 +738,7 @@ export default function DemandasPage() {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Detalhes da demanda..."
-              className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500 resize-none"
+              className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 resize-none"
             />
           </div>
 
@@ -773,7 +773,7 @@ export default function DemandasPage() {
               rows={3}
               value={formData.observations}
               onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-              className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-sky-500 resize-none"
+              className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 resize-none"
             />
           </div>
 
@@ -789,7 +789,7 @@ export default function DemandasPage() {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2 bg-sky-600 hover:bg-sky-500 text-[color:var(--text-primary)] rounded-lg text-sm disabled:opacity-50"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
               {editingDemand ? 'Salvar Alterações' : 'Criar Demanda'}

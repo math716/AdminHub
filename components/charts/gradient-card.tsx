@@ -57,14 +57,14 @@ export default function GradientCard({
 
       <div className="relative z-10 flex justify-between items-start">
         <div className="flex-1">
-          <h3 className="text-white/80 text-sm font-medium mb-1">{title}</h3>
-          <p className="text-white text-2xl font-bold tracking-tight">{value}</p>
+          <h3 className="text-[color:var(--text-primary)]/80 text-sm font-medium mb-1">{title}</h3>
+          <p className="text-[color:var(--text-primary)] text-2xl font-bold tracking-tight">{value}</p>
           
           {subtitle && (
             <div className="mt-3">
-              <p className="text-white/70 text-xs">{subtitle}</p>
+              <p className="text-[color:var(--text-primary)]/70 text-xs">{subtitle}</p>
               {subtitleValue && (
-                <p className="text-white font-semibold text-sm">{subtitleValue}</p>
+                <p className="text-[color:var(--text-primary)] font-semibold text-sm">{subtitleValue}</p>
               )}
             </div>
           )}
@@ -72,7 +72,7 @@ export default function GradientCard({
 
         {Icon && (
           <div className={`p-2.5 rounded-xl ${iconBgColors[gradient]}`}>
-            <Icon className="h-6 w-6 text-white" />
+            <Icon className="h-6 w-6 text-[color:var(--text-primary)]" />
           </div>
         )}
       </div>

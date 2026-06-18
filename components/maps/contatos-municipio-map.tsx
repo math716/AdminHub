@@ -138,8 +138,8 @@ export default function ContatosMunicipioMap({
         marker.bindTooltip(`
           <div style="background:${DARK};border:1px solid rgba(37,99,235,0.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;min-width:140px">
             <strong style="color:#2563EB">${c.nome}</strong><br>
-            <span style="color:rgba(255,255,255,0.6)">${c.numero}</span>
-            ${c.endereco ? `<br><span style="color:rgba(255,255,255,0.4);font-size:11px">${c.endereco}</span>` : ''}
+            <span style="color:var(--tint-65)">${c.numero}</span>
+            ${c.endereco ? `<br><span style="color:var(--tint-45);font-size:11px">${c.endereco}</span>` : ''}
           </div>
         `, { className: 'dark-map-tooltip', permanent: false, direction: 'top' });
         marker.on('click', () => onToggle(c.id));
@@ -189,8 +189,8 @@ export default function ContatosMunicipioMap({
       marker.bindTooltip(`
         <div style="background:${DARK};border:1px solid rgba(37,99,235,0.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;min-width:140px">
           <strong style="color:#2563EB">${c.nome}</strong><br>
-          <span style="color:rgba(255,255,255,0.6)">${c.numero}</span>
-          ${c.endereco ? `<br><span style="color:rgba(255,255,255,0.4);font-size:11px">${c.endereco}</span>` : ''}
+          <span style="color:var(--tint-65)">${c.numero}</span>
+          ${c.endereco ? `<br><span style="color:var(--tint-45);font-size:11px">${c.endereco}</span>` : ''}
         </div>
       `, { className: 'dark-map-tooltip', permanent: false, direction: 'top' });
       marker.on('click', () => onToggle(c.id));
@@ -259,7 +259,7 @@ export default function ContatosMunicipioMap({
                 featureLayer.setStyle(styleHover);
               }
               featureLayer.bindTooltip(
-                `<div style="background:rgba(7,29,54,0.95);border:1px solid #1b4965;border-radius:8px;padding:8px 12px;color:#7dd3fc;font-size:12px;font-weight:600;">
+                `<div style="background:var(--bg-card-raised);border:1px solid #1b4965;border-radius:8px;padding:8px 12px;color:#7dd3fc;font-size:12px;font-weight:600;">
                   ${nome}
                   <div style="color:#94a3b8;font-size:10px;margin-top:3px;font-weight:400;">Clique para selecionar contatos</div>
                 </div>`,

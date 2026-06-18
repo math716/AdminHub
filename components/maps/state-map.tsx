@@ -413,8 +413,8 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           const h = Math.round(size * 1.42);
           return {
             html: `<svg width="${size}" height="${h}" viewBox="0 0 28 40" xmlns="http://www.w3.org/2000/svg" style="display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6));">
-              <path d="M14 1C7.1 1 1 7.1 1 14c0 9.8 13 25 13 25S27 23.8 27 14C27 7.1 20.9 1 14 1z" fill="${color}" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
-              <circle cx="14" cy="13" r="5" fill="rgba(255,255,255,0.22)"/>
+              <path d="M14 1C7.1 1 1 7.1 1 14c0 9.8 13 25 13 25S27 23.8 27 14C27 7.1 20.9 1 14 1z" fill="${color}" stroke="var(--tint-45)" stroke-width="1"/>
+              <circle cx="14" cy="13" r="5" fill="var(--tint-25)"/>
             </svg>`,
             iconSize: [size, h] as [number, number],
             iconAnchor: [size / 2, h] as [number, number],
@@ -439,7 +439,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           subdivisaoLayersMapRef.current.set(bairro.nome, marker);
 
           const locaisHtml = bairro.locais.slice(0, 6).map(l =>
-            `<div style="padding:3px 0;border-top:1px solid rgba(255,255,255,0.08);font-size:11px;color:#94a3b8;">
+            `<div style="padding:3px 0;border-top:1px solid var(--tint-08);font-size:11px;color:#94a3b8;">
               <span style="color:#7dd3fc">Z${l.zona}</span> ${l.nome}
             </div>`
           ).join('') + (bairro.locais.length > 6
@@ -505,7 +505,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
               const size = label.length <= 2 ? 36 : label.length <= 4 ? 44 : 52;
               const circle = L.marker([avgLat, avgLng], {
                 icon: L.divIcon({
-                  html: `<div style="width:${size}px;height:${size}px;background:rgba(8,145,178,0.85);border:2.5px solid rgba(255,255,255,0.6);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.45);cursor:pointer;">${label}</div>`,
+                  html: `<div style="width:${size}px;height:${size}px;background:rgba(8,145,178,0.85);border:2.5px solid var(--tint-65);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.45);cursor:pointer;">${label}</div>`,
                   className: '',
                   iconSize: [size, size],
                   iconAnchor: [size / 2, size / 2],
@@ -875,10 +875,10 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
             ">
               <strong style="color:#fff;font-size:13px;display:block;margin-bottom:4px;letter-spacing:0.02em;">${nome}</strong>
               ${votos !== undefined
-                ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#2563EB;font-weight:600;">${votos.toLocaleString('pt-BR')} <span style="color:rgba(255,255,255,0.5);font-weight:400;">${valueLabel}</span></span>`
-                : '<span style="color:rgba(255,255,255,0.3);font-size:11px;">Sem dados</span>'
+                ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#2563EB;font-weight:600;">${votos.toLocaleString('pt-BR')} <span style="color:var(--tint-55);font-weight:400;">${valueLabel}</span></span>`
+                : '<span style="color:var(--tint-35);font-size:11px;">Sem dados</span>'
               }
-              ${!disableSubdivisaoRef.current ? `<div style="margin-top:7px;padding-top:5px;border-top:1px solid rgba(37,99,235,0.15);"><span style="color:rgba(255,255,255,0.35);font-size:10px;">📍 Clique para ver bairros</span></div>` : ''}
+              ${!disableSubdivisaoRef.current ? `<div style="margin-top:7px;padding-top:5px;border-top:1px solid rgba(37,99,235,0.15);"><span style="color:var(--tint-35);font-size:10px;">📍 Clique para ver bairros</span></div>` : ''}
             </div>`,
             { sticky: true, direction: 'top', offset: [0, -12], opacity: 1, className: 'municipio-tooltip' }
           );
@@ -1101,7 +1101,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         <div className="absolute top-3 left-3 z-[1000] bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-700/60 px-4 py-3 shadow-2xl max-w-[280px]">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-semibold text-white">{selectedMunicipio}</span>
+            <span className="text-sm font-semibold text-[color:var(--text-primary)]">{selectedMunicipio}</span>
           </div>
           {loadingSubdivisao && (
             <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">

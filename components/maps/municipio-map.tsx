@@ -73,14 +73,14 @@ interface PinIconOptions {
 }
 
 function makePinIconOptions(color: string, isSelected: boolean, size = 26): PinIconOptions {
-  const border = isSelected ? '#facc15' : 'rgba(255,255,255,0.45)';
+  const border = isSelected ? '#facc15' : 'var(--tint-45)';
   const bw = isSelected ? 2.5 : 1;
   const h = Math.round(size * 1.42);
   return {
     className: 'bairro-pin',
     html: `<svg width="${size}" height="${h}" viewBox="0 0 28 40" xmlns="http://www.w3.org/2000/svg" style="display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6));">
       <path d="M14 1C7.1 1 1 7.1 1 14c0 9.8 13 25 13 25S27 23.8 27 14C27 7.1 20.9 1 14 1z" fill="${color}" stroke="${border}" stroke-width="${bw}"/>
-      <circle cx="14" cy="13" r="5" fill="rgba(255,255,255,0.22)"/>
+      <circle cx="14" cy="13" r="5" fill="var(--tint-25)"/>
     </svg>`,
     iconSize: [size, h],
     iconAnchor: [size / 2, h],
@@ -338,7 +338,7 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
                 html: `<div style="
                   width:${size}px;height:${size}px;
                   background:rgba(8,145,178,0.85);
-                  border:2px solid rgba(255,255,255,0.55);
+                  border:2px solid var(--tint-55);
                   border-radius:50%;
                   display:flex;align-items:center;justify-content:center;
                   color:#fff;font-size:11px;font-weight:700;

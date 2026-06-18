@@ -64,6 +64,23 @@
   /* Misc */
   --focus-ring: rgba(37, 99, 235, 0.35);
 
+  /* Tint scale — usado em inline styles legados (rgba(255,255,255,X)).
+     No tema claro, vira tint de slate-900 (escuro sobre claro).
+     No tema escuro, vira tint de branco (claro sobre escuro). */
+  --tint-04: rgba(15, 23, 42, 0.04);
+  --tint-06: rgba(15, 23, 42, 0.06);
+  --tint-08: rgba(15, 23, 42, 0.08);
+  --tint-10: rgba(15, 23, 42, 0.10);
+  --tint-14: rgba(15, 23, 42, 0.14);
+  --tint-18: rgba(15, 23, 42, 0.18);
+  --tint-25: rgba(15, 23, 42, 0.30);
+  --tint-35: rgba(15, 23, 42, 0.45);
+  --tint-45: rgba(15, 23, 42, 0.55);
+  --tint-55: rgba(15, 23, 42, 0.65);
+  --tint-65: rgba(15, 23, 42, 0.72);
+  --tint-75: rgba(15, 23, 42, 0.82);
+  --tint-85: rgba(15, 23, 42, 0.92);
+
   /* Compat shadcn — mantém Radix/shadcn funcionando */
   --background: 220 16% 97%;
   --foreground: 222 47% 11%;
@@ -125,6 +142,21 @@
   --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.25);
 
   --focus-ring: rgba(96, 165, 250, 0.45);
+
+  /* Tints — tema escuro inverte para branco translucido */
+  --tint-04: rgba(255, 255, 255, 0.04);
+  --tint-06: rgba(255, 255, 255, 0.06);
+  --tint-08: rgba(255, 255, 255, 0.08);
+  --tint-10: rgba(255, 255, 255, 0.10);
+  --tint-14: rgba(255, 255, 255, 0.14);
+  --tint-18: rgba(255, 255, 255, 0.18);
+  --tint-25: rgba(255, 255, 255, 0.25);
+  --tint-35: rgba(255, 255, 255, 0.35);
+  --tint-45: rgba(255, 255, 255, 0.45);
+  --tint-55: rgba(255, 255, 255, 0.55);
+  --tint-65: rgba(255, 255, 255, 0.65);
+  --tint-75: rgba(255, 255, 255, 0.78);
+  --tint-85: rgba(255, 255, 255, 0.90);
 
   --background: 218 60% 8%;
   --foreground: 0 0% 100%;

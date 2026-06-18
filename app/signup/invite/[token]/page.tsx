@@ -126,7 +126,7 @@ export default function InviteSignupPage() {
             Você foi convidado
           </h2>
           {gabineteNome && (
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', marginBottom: '2rem' }}>
+            <p style={{ color: 'var(--tint-55)', fontSize: '0.875rem', marginBottom: '2rem' }}>
               como <span style={{ color: '#3B82F6', fontWeight: 600 }}>{inviteRole === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor'}</span> do{' '}
               <span style={{ color: '#3B82F6', fontWeight: 600 }}>{gabineteNome}</span>
             </p>
@@ -137,7 +137,7 @@ export default function InviteSignupPage() {
                 <div style={{ width: 36, height: 36, borderRadius: '0.625rem', background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Icon size={16} color="#2563EB" />
                 </div>
-                <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.875rem' }}>{label}</span>
+                <span style={{ color: 'var(--tint-65)', fontSize: '0.875rem' }}>{label}</span>
               </div>
             ))}
           </div>

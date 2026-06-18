@@ -54,7 +54,7 @@ export function ThemeToggleButton() {
       title={isDark ? 'Tema claro' : 'Tema escuro'}
       className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors flex-shrink-0"
       style={{
-        background: 'rgba(255,255,255,0.04)',
+        background: 'var(--tint-04)',
         border: '1px solid rgba(148,163,184,0.10)',
         color: '#CBD5E1',
       }}

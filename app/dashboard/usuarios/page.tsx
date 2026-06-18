@@ -49,16 +49,16 @@ function PermissionsChecklist({
               className="w-full text-left flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200"
               style={{
                 background: checked ? accent.bgLight : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${checked ? accent.borderLight : 'rgba(255,255,255,0.08)'}`,
+                border: `1px solid ${checked ? accent.borderLight : 'var(--tint-08)'}`,
               }}>
               <span className="text-sm font-medium tracking-wide"
-                style={{ color: checked ? '#fff' : 'rgba(255,255,255,0.75)' }}>
+                style={{ color: checked ? '#fff' : 'var(--tint-75)' }}>
                 {PERMISSION_LABELS[p as Permission]}
               </span>
               <span className="flex items-center justify-center w-5 h-5 rounded-md flex-shrink-0 transition-all"
                 style={checked
                   ? { background: accent.solid, color: '#fff', boxShadow: `0 0 8px ${accent.borderLight}` }
-                  : { background: 'transparent', border: '1.5px solid rgba(255,255,255,0.2)' }
+                  : { background: 'transparent', border: '1.5px solid var(--tint-25)' }
                 }>
                 {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
               </span>
@@ -75,7 +75,7 @@ function PermissionsChecklist({
         </button>
         <button type="button" onClick={onClear}
           className="hover:opacity-80 transition-opacity"
-          style={{ color: 'rgba(255,255,255,0.45)' }}>
+          style={{ color: 'var(--tint-45)' }}>
           Limpar
         </button>
       </div>
@@ -125,8 +125,8 @@ const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> 
   AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: '#c084fc',  border: 'rgba(168,85,247,0.3)'  },
   CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)'  },
   ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: '#4ade80',  border: 'rgba(34,197,94,0.25)'  },
-  ANALISTA:        { bg: 'rgba(255,255,255,0.06)', color: '#cbd5e1',  border: 'rgba(255,255,255,0.12)' },
-  VISUALIZADOR:    { bg: 'rgba(255,255,255,0.06)', color: '#94a3b8',  border: 'rgba(255,255,255,0.12)' },
+  ANALISTA:        { bg: 'var(--tint-06)', color: '#cbd5e1',  border: 'var(--tint-14)' },
+  VISUALIZADOR:    { bg: 'var(--tint-06)', color: '#94a3b8',  border: 'var(--tint-14)' },
 };
 
 function RoleBadge({ role }: { role: string }) {
@@ -239,7 +239,7 @@ function RoleSelect({
             {roles.map(r => (
               <button key={r} onClick={() => change(r)}
                 className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/5 flex items-center gap-2"
-                style={{ color: r === current ? '#2563EB' : 'rgba(255,255,255,0.7)' }}>
+                style={{ color: r === current ? '#2563EB' : 'var(--tint-75)' }}>
                 {r === current && <Check className="w-3 h-3 flex-shrink-0" style={{ color: '#2563EB' }} />}
                 {r !== current && <span className="w-3" />}
                 {ROLE_LABELS[r]}
@@ -609,7 +609,7 @@ export default function UsuariosPage() {
               <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                 className="absolute right-0 mt-1 z-20 rounded-xl overflow-hidden shadow-xl"
                 style={{ background: '#071d36', border: '1px solid rgba(37,99,235,0.2)', minWidth: 200 }}>
-                <p className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>Tipo de convite</p>
+                <p className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--tint-35)' }}>Tipo de convite</p>
                 {(['CHEFE', 'ASSESSOR'] as const).map(r => {
                   const labelColor = r === 'CHEFE' ? '#4a9ede' : '#4ade80';
                   const label      = r === 'CHEFE' ? 'Chefe de Gabinete' : 'Assessor';
@@ -617,9 +617,9 @@ export default function UsuariosPage() {
                   return (
                     <button key={r} onClick={() => handleGenerateInvite(r)}
                       className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/5"
-                      style={{ color: 'rgba(255,255,255,0.75)' }}>
+                      style={{ color: 'var(--tint-75)' }}>
                       <span className="font-semibold" style={{ color: labelColor }}>{label}</span><br />
-                      <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px' }}>{desc}</span>
+                      <span style={{ color: 'var(--tint-35)', fontSize: '10px' }}>{desc}</span>
                     </button>
                   );
                 })}
@@ -651,8 +651,8 @@ export default function UsuariosPage() {
                   <stat.icon className="w-4 h-4" style={{ color: stat.color }} />
                 </div>
                 <div>
-                  <p className="text-white font-bold text-lg leading-none">{stat.value}</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{stat.label}</p>
+                  <p className="text-[color:var(--text-primary)] font-bold text-lg leading-none">{stat.value}</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--tint-35)' }}>{stat.label}</p>
                 </div>
               </div>
             ))}
@@ -670,8 +670,8 @@ export default function UsuariosPage() {
                   <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
                 </div>
                 <div>
-                  <p className="text-white font-bold text-2xl leading-none">{stat.value}</p>
-                  <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>{stat.label}</p>
+                  <p className="text-[color:var(--text-primary)] font-bold text-2xl leading-none">{stat.value}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--tint-45)' }}>{stat.label}</p>
                 </div>
               </div>
             ))}
@@ -681,24 +681,24 @@ export default function UsuariosPage() {
           {/* Busca */}
           {isAdmin ? (
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'rgba(255,255,255,0.3)' }} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--tint-35)' }} />
             <input
               value={searchGabinete}
               onChange={e => setSearchGabinete(e.target.value)}
               placeholder="Buscar gabinete pelo nome..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-slate-600 outline-none focus:ring-1"
-              style={{ background: 'var(--bg-card)', border: '1px solid rgba(255,255,255,0.08)' }}
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-[color:var(--text-primary)] placeholder:text-slate-600 outline-none focus:ring-1"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-08)' }}
             />
           </div>
           ) : (
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'rgba(255,255,255,0.3)' }} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--tint-35)' }} />
             <input
               value={searchMember}
               onChange={e => setSearchMember(e.target.value)}
               placeholder="Buscar membro pelo nome ou e-mail..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-slate-600 outline-none focus:ring-1"
-              style={{ background: 'var(--bg-card)', border: '1px solid rgba(255,255,255,0.08)' }}
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-[color:var(--text-primary)] placeholder:text-slate-600 outline-none focus:ring-1"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-08)' }}
             />
           </div>
           )}
@@ -707,7 +707,7 @@ export default function UsuariosPage() {
           {filteredGroups.length === 0 && (
             <div className="py-16 text-center rounded-2xl" style={cardStyle}>
               <Building2 className="w-10 h-10 mx-auto mb-2 opacity-20" style={{ color: '#4a9ede' }} />
-              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              <p className="text-sm" style={{ color: 'var(--tint-35)' }}>
                 {searchGabinete ? `Nenhum gabinete encontrado para "${searchGabinete}"` : 'Nenhum gabinete cadastrado'}
               </p>
             </div>
@@ -724,7 +724,7 @@ export default function UsuariosPage() {
                   initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: gi * 0.04 }}
                   className="rounded-2xl overflow-hidden"
-                  style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(74,158,222,0.15)' }}>
+                  style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.15)' }}>
 
                   {/* Header do card */}
                   <div className="flex items-center px-5 py-4 gap-2">
@@ -736,9 +736,9 @@ export default function UsuariosPage() {
                         <Building2 className="w-[18px] h-[18px]" style={{ color: '#4a9ede' }} />
                       </div>
                       <div>
-                        <p className="text-white font-semibold text-sm">{group.nome}</p>
+                        <p className="text-[color:var(--text-primary)] font-semibold text-sm">{group.nome}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                          <span className="text-[11px]" style={{ color: 'var(--tint-45)' }}>
                             {group.users.length} usuário{group.users.length !== 1 ? 's' : ''}
                           </span>
                           {pending.length > 0 && (
@@ -757,13 +757,13 @@ export default function UsuariosPage() {
                       <button onClick={() => openDeleteGabModal(group)}
                         title="Excluir gabinete"
                         className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
-                        style={{ color: 'rgba(255,255,255,0.25)' }}>
+                        style={{ color: 'var(--tint-25)' }}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                       )}
                       <button onClick={() => toggleGabinete(group.id)}
                         className="p-1.5 rounded-lg transition-all hover:bg-white/5"
-                        style={{ color: 'rgba(255,255,255,0.3)' }}>
+                        style={{ color: 'var(--tint-35)' }}>
                         {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
                     </div>
@@ -780,11 +780,11 @@ export default function UsuariosPage() {
                         style={{ overflow: 'hidden' }}>
 
                         {group.users.length === 0 ? (
-                          <div className="px-5 py-6 text-center text-xs" style={{ color: 'rgba(255,255,255,0.25)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div className="px-5 py-6 text-center text-xs" style={{ color: 'var(--tint-25)', borderTop: '1px solid var(--tint-04)' }}>
                             Nenhum usuário neste gabinete
                           </div>
                         ) : (
-                          <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div className="divide-y" style={{ borderColor: 'var(--tint-04)', borderTop: '1px solid var(--tint-04)' }}>
                             {/* Pendentes primeiro */}
                             {[...pending, ...approved]
                               .filter(u => {
@@ -811,7 +811,7 @@ export default function UsuariosPage() {
 
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <p className="text-white text-sm font-medium truncate">{u.name}</p>
+                                      <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{u.name}</p>
                                       {u.id === sessionUserId && (
                                         <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(37,99,235,0.15)', color: '#2563EB' }}>você</span>
                                       )}
@@ -822,7 +822,7 @@ export default function UsuariosPage() {
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{u.email}</p>
+                                    <p className="text-[11px] truncate" style={{ color: 'var(--tint-35)' }}>{u.email}</p>
                                   </div>
                                 </div>
 
@@ -857,7 +857,7 @@ export default function UsuariosPage() {
                                     <button onClick={() => openEditPermsModal(u)}
                                       title="Editar permissões"
                                       className="p-1.5 rounded-lg transition-all hover:bg-purple-500/10"
-                                      style={{ color: 'rgba(255,255,255,0.3)' }}>
+                                      style={{ color: 'var(--tint-35)' }}>
                                       <SlidersHorizontal className="w-3.5 h-3.5" />
                                     </button>
                                   )}
@@ -867,7 +867,7 @@ export default function UsuariosPage() {
                                     <button onClick={() => openResetModal(u.id, u.name)}
                                       title="Resetar senha"
                                       className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
-                                      style={{ color: 'rgba(255,255,255,0.3)' }}>
+                                      style={{ color: 'var(--tint-35)' }}>
                                       <KeyRound className="w-3.5 h-3.5" />
                                     </button>
                                   )}
@@ -877,7 +877,7 @@ export default function UsuariosPage() {
                                     <button onClick={() => handleReject(u.id, u.name)} disabled={actionId === u.id}
                                       title="Remover usuário"
                                       className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
-                                      style={{ color: 'rgba(255,255,255,0.3)' }}>
+                                      style={{ color: 'var(--tint-35)' }}>
                                       {actionId === u.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
                                     </button>
                                   )}
@@ -900,7 +900,7 @@ export default function UsuariosPage() {
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: pgi * 0.04 }}
               className="rounded-2xl overflow-hidden"
-              style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(245,158,11,0.3)' }}>
+              style={{ background: 'var(--bg-card)', border: '1px solid rgba(245,158,11,0.3)' }}>
 
               {/* Header */}
               <button className="w-full flex items-center justify-between px-5 py-4 transition-all hover:bg-white/[0.02] text-left"
@@ -912,20 +912,20 @@ export default function UsuariosPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-white font-semibold text-sm">{pg.nome}</p>
+                      <p className="text-[color:var(--text-primary)] font-semibold text-sm">{pg.nome}</p>
                       <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold tracking-wide"
                         style={{ background: 'rgba(245,158,11,0.18)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.35)' }}>
                         AGUARDANDO APROVAÇÃO
                       </span>
                     </div>
-                    <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    <p className="text-[11px] mt-0.5" style={{ color: 'var(--tint-45)' }}>
                       {pg.users.length} usuário{pg.users.length !== 1 ? 's' : ''} · gabinete será criado após aprovação
                     </p>
                   </div>
                 </div>
                 {expandedGabs.has(`__pending__${pg.nome}`)
-                  ? <ChevronUp  className="w-4 h-4 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                  : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.3)' }} />
+                  ? <ChevronUp  className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
+                  : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
                 }
               </button>
 
@@ -933,7 +933,7 @@ export default function UsuariosPage() {
                 {expandedGabs.has(`__pending__${pg.nome}`) && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} style={{ overflow: 'hidden' }}>
-                    <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)', borderTop: '1px solid rgba(245,158,11,0.12)' }}>
+                    <div className="divide-y" style={{ borderColor: 'var(--tint-04)', borderTop: '1px solid rgba(245,158,11,0.12)' }}>
                       {pg.users.map(u => (
                         <div key={u.id}
                           className="flex items-center justify-between px-5 py-3.5 gap-3 transition-all hover:bg-white/[0.02]"
@@ -945,13 +945,13 @@ export default function UsuariosPage() {
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <p className="text-white text-sm font-medium truncate">{u.name}</p>
+                                <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{u.name}</p>
                                 <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
                                   style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>
                                   Pendente
                                 </span>
                               </div>
-                              <p className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{u.email}</p>
+                              <p className="text-[11px] truncate" style={{ color: 'var(--tint-35)' }}>{u.email}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -966,7 +966,7 @@ export default function UsuariosPage() {
                             <button onClick={() => handleReject(u.id, u.name)} disabled={actionId === u.id}
                               title="Recusar solicitação"
                               className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
-                              style={{ color: 'rgba(255,255,255,0.3)' }}>
+                              style={{ color: 'var(--tint-35)' }}>
                               {actionId === u.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
                             </button>
                           </div>
@@ -983,7 +983,7 @@ export default function UsuariosPage() {
           {noGabinete.length > 0 && !searchGabinete && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               className="rounded-2xl overflow-hidden"
-              style={{ background: 'rgba(7,29,54,0.8)', border: '1px solid rgba(37,99,235,0.15)' }}>
+              style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.15)' }}>
               <button className="w-full flex items-center justify-between px-5 py-4 transition-all hover:bg-white/[0.02] text-left"
                 onClick={() => toggleGabinete('__no_gabinete__')}>
                 <div className="flex items-center gap-3">
@@ -992,15 +992,15 @@ export default function UsuariosPage() {
                     <Shield className="w-[18px] h-[18px]" style={{ color: '#2563EB' }} />
                   </div>
                   <div>
-                    <p className="text-white font-semibold text-sm">Administradores do Sistema</p>
-                    <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    <p className="text-[color:var(--text-primary)] font-semibold text-sm">Administradores do Sistema</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: 'var(--tint-45)' }}>
                       {noGabinete.length} usuário{noGabinete.length !== 1 ? 's' : ''} sem gabinete
                     </p>
                   </div>
                 </div>
                 {expandedGabs.has('__no_gabinete__')
-                  ? <ChevronUp  className="w-4 h-4 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                  : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.3)' }} />
+                  ? <ChevronUp  className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
+                  : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
                 }
               </button>
 
@@ -1008,7 +1008,7 @@ export default function UsuariosPage() {
                 {expandedGabs.has('__no_gabinete__') && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} style={{ overflow: 'hidden' }}>
-                    <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div className="divide-y" style={{ borderColor: 'var(--tint-04)', borderTop: '1px solid var(--tint-04)' }}>
                       {noGabinete.map(u => (
                         <div key={u.id} className="flex items-center justify-between px-5 py-3.5 gap-3 transition-all hover:bg-white/[0.02]">
                           <div className="flex items-center gap-3 min-w-0">
@@ -1018,12 +1018,12 @@ export default function UsuariosPage() {
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <p className="text-white text-sm font-medium truncate">{u.name}</p>
+                                <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{u.name}</p>
                                 {u.id === sessionUserId && (
                                   <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(37,99,235,0.15)', color: '#2563EB' }}>você</span>
                                 )}
                               </div>
-                              <p className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{u.email}</p>
+                              <p className="text-[11px] truncate" style={{ color: 'var(--tint-35)' }}>{u.email}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -1041,13 +1041,13 @@ export default function UsuariosPage() {
                               <>
                                 <button onClick={() => openResetModal(u.id, u.name)} title="Resetar senha"
                                   className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
-                                  style={{ color: 'rgba(255,255,255,0.3)' }}>
+                                  style={{ color: 'var(--tint-35)' }}>
                                   <KeyRound className="w-3.5 h-3.5" />
                                 </button>
                                 <button onClick={() => handleReject(u.id, u.name)} disabled={actionId === u.id}
                                   title="Remover usuário"
                                   className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
-                                  style={{ color: 'rgba(255,255,255,0.3)' }}>
+                                  style={{ color: 'var(--tint-35)' }}>
                                   {actionId === u.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
                                 </button>
                               </>
@@ -1081,11 +1081,11 @@ export default function UsuariosPage() {
                   <Link2 className="w-4 h-4" style={{ color: '#2563EB' }} />
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold text-sm">Link de Convite</h3>
+                  <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Link de Convite</h3>
                   {inviteGabinete && <p className="text-xs" style={{ color: '#2563EB' }}>{inviteGabinete}</p>}
                 </div>
               </div>
-              <p className="text-xs mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              <p className="text-xs mb-3" style={{ color: 'var(--tint-45)' }}>
                 Convite para <span style={{
                   color:
                     inviteRoleResult === 'AGENTE_POLITICO' ? '#c084fc' :
@@ -1099,8 +1099,8 @@ export default function UsuariosPage() {
                   : ' Requer aprovação após o cadastro.'}
                 {' '}Expira em <span style={{ color: '#3B82F6' }}>7 dias</span>.
               </p>
-              <div className="flex items-center gap-2 rounded-xl p-3 mb-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <p className="text-xs flex-1 break-all" style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'monospace' }}>{inviteUrl}</p>
+              <div className="flex items-center gap-2 rounded-xl p-3 mb-4" style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
+                <p className="text-xs flex-1 break-all" style={{ color: 'var(--tint-65)', fontFamily: 'monospace' }}>{inviteUrl}</p>
                 <button onClick={() => { navigator.clipboard.writeText(inviteUrl); setCopied(true); setTimeout(() => setCopied(false), 2500); }}
                   className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                   style={copied
@@ -1112,7 +1112,7 @@ export default function UsuariosPage() {
               </div>
               <button onClick={() => setShowInviteModal(false)}
                 className="w-full py-2 rounded-xl text-sm font-medium transition-all hover:bg-white/5"
-                style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-08)' }}>
                 Fechar
               </button>
             </motion.div>
@@ -1140,21 +1140,21 @@ export default function UsuariosPage() {
                   <KeyRound className="w-5 h-5" style={{ color: '#f59e0b' }} />
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold text-sm">Resetar Senha</h3>
-                  <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{resetTargetName}</p>
+                  <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Resetar Senha</h3>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--tint-45)' }}>{resetTargetName}</p>
                 </div>
               </div>
 
               {/* Antes do reset: confirmação */}
               {!resetResult && (
                 <>
-                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  <p className="text-sm" style={{ color: 'var(--tint-55)' }}>
                     Uma <strong style={{ color: '#f59e0b' }}>senha temporária</strong> será gerada e a senha atual será substituída. Compartilhe com o usuário para que ele faça login e altere a senha nas configurações.
                   </p>
                   <div className="flex gap-3 pt-1">
                     <button onClick={() => setShowResetModal(false)} disabled={resettingPwd}
                       className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
-                      style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-08)' }}>
                       Cancelar
                     </button>
                     <button onClick={confirmResetPassword} disabled={resettingPwd}
@@ -1173,18 +1173,18 @@ export default function UsuariosPage() {
                   {resetResult === '__EMAIL_SENT__' ? (
                     <div className="rounded-xl p-4 text-center space-y-2" style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)' }}>
                       <p className="text-sm font-semibold" style={{ color: '#4ade80' }}>Senha redefinida com sucesso!</p>
-                      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                      <p className="text-xs" style={{ color: 'var(--tint-55)' }}>
                         A senha temporária foi enviada por e-mail ao usuário.<br />Ele deverá alterá-la no próximo acesso.
                       </p>
                     </div>
                   ) : (
                     <>
                       <div className="rounded-xl p-4 text-center space-y-2" style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Senha temporária gerada</p>
+                        <p className="text-xs" style={{ color: 'var(--tint-45)' }}>Senha temporária gerada</p>
                         <p className="text-2xl font-bold tracking-[0.2em] select-all" style={{ color: '#4ade80', fontFamily: 'monospace' }}>
                           {resetResult}
                         </p>
-                        <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                        <p className="text-[10px]" style={{ color: 'var(--tint-35)' }}>
                           Clique na senha para selecionar
                         </p>
                       </div>
@@ -1203,7 +1203,7 @@ export default function UsuariosPage() {
                         {copiedPwd ? 'Copiado!' : 'Copiar Senha'}
                       </button>
 
-                      <p className="text-[11px] text-center" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                      <p className="text-[11px] text-center" style={{ color: 'var(--tint-35)' }}>
                         ⚠️ Esta senha não será exibida novamente após fechar
                       </p>
                     </>
@@ -1211,7 +1211,7 @@ export default function UsuariosPage() {
 
                   <button onClick={() => { setShowResetModal(false); setResetResult(''); }}
                     className="w-full py-2 rounded-xl text-sm font-medium transition-all hover:bg-white/5"
-                    style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-08)' }}>
                     Fechar
                   </button>
                 </>
@@ -1240,8 +1240,8 @@ export default function UsuariosPage() {
                   <Check className="w-5 h-5" style={{ color: '#4ade80' }} />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-white font-semibold text-sm">Aprovar usuário</h3>
-                  <p className="text-xs mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Aprovar usuário</h3>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--tint-45)' }}>
                     {approveTarget.name} · <RoleBadge role={approveTarget.role} />
                   </p>
                 </div>
@@ -1251,13 +1251,13 @@ export default function UsuariosPage() {
                 <div className="flex items-center gap-2 rounded-xl px-3 py-2.5"
                   style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
                   <Building2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#f59e0b' }} />
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                  <p className="text-xs" style={{ color: 'var(--tint-65)' }}>
                     O gabinete <span style={{ color: '#f59e0b', fontWeight: 600 }}>"{approveTarget.pendingGabineteNome}"</span> será criado automaticamente.
                   </p>
                 </div>
               )}
 
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              <p className="text-xs" style={{ color: 'var(--tint-55)' }}>
                 Selecione quais áreas este usuário poderá acessar:
               </p>
 
@@ -1272,7 +1272,7 @@ export default function UsuariosPage() {
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setShowApproveModal(false)} disabled={actionId === approveTarget.id}
                   className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
-                  style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-08)' }}>
                   Cancelar
                 </button>
                 <button onClick={() => approveUser(approveTarget.id, Array.from(approvePerms))}
@@ -1307,8 +1307,8 @@ export default function UsuariosPage() {
                   <SlidersHorizontal className="w-5 h-5" style={{ color: '#c084fc' }} />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-white font-semibold text-sm">Editar permissões</h3>
-                  <p className="text-xs mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Editar permissões</h3>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--tint-45)' }}>
                     {editPermsTarget.name}
                   </p>
                 </div>
@@ -1325,7 +1325,7 @@ export default function UsuariosPage() {
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setShowEditPermsModal(false)} disabled={savingPerms}
                   className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
-                  style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-08)' }}>
                   Cancelar
                 </button>
                 <button onClick={confirmEditPermissions} disabled={savingPerms}
@@ -1359,21 +1359,21 @@ export default function UsuariosPage() {
                   <Trash2 className="w-5 h-5" style={{ color: '#f87171' }} />
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold text-sm">Excluir Gabinete</h3>
-                  <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{deleteGabTarget.nome}</p>
+                  <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Excluir Gabinete</h3>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--tint-45)' }}>{deleteGabTarget.nome}</p>
                 </div>
               </div>
 
               <div className="rounded-xl p-4 space-y-2 text-xs"
                 style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.18)' }}>
                 <p className="font-semibold" style={{ color: '#fca5a5' }}>Esta ação é irreversível. Serão excluídos permanentemente:</p>
-                <ul className="space-y-1 mt-2" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                <ul className="space-y-1 mt-2" style={{ color: 'var(--tint-55)' }}>
                   <li>• Todas as demandas do gabinete</li>
                   <li>• Todos os contatos do gabinete</li>
                   <li>• Todos os eventos da agenda</li>
                 </ul>
                 {deleteGabTarget.userCount > 0 && (
-                  <p className="mt-2" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                  <p className="mt-2" style={{ color: 'var(--tint-45)' }}>
                     Os <span style={{ color: '#fbbf24' }}>{deleteGabTarget.userCount} usuário{deleteGabTarget.userCount !== 1 ? 's' : ''}</span> vinculados perderão o vínculo mas não serão excluídos.
                   </p>
                 )}
@@ -1382,7 +1382,7 @@ export default function UsuariosPage() {
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setShowDeleteGabModal(false)} disabled={deletingGab}
                   className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
-                  style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-08)' }}>
                   Cancelar
                 </button>
                 <button onClick={confirmDeleteGabinete} disabled={deletingGab}

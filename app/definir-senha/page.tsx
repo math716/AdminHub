@@ -51,8 +51,8 @@ export default function DefinirSenhaPage() {
   };
 
   const inputStyle = {
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'var(--tint-04)',
+    border: '1px solid var(--tint-10)',
     color: '#fff',
   };
 
@@ -71,9 +71,9 @@ export default function DefinirSenhaPage() {
             style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)' }}>
             <ShieldCheck className="w-8 h-8" style={{ color: '#2563EB' }} />
           </div>
-          <h1 className="text-white font-bold text-2xl tracking-tight">Definir Nova Senha</h1>
+          <h1 className="text-[color:var(--text-primary)] font-bold text-2xl tracking-tight">Definir Nova Senha</h1>
           {userName && (
-            <p className="mt-1 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
+            <p className="mt-1 text-sm" style={{ color: 'var(--tint-45)' }}>
               Olá, <span style={{ color: '#2563EB' }}>{userName}</span>. Por segurança, defina uma senha pessoal antes de continuar.
             </p>
           )}
@@ -86,19 +86,19 @@ export default function DefinirSenhaPage() {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
               className="py-6 text-center space-y-3">
               <CheckCircle2 className="w-12 h-12 mx-auto" style={{ color: '#4ade80' }} />
-              <p className="text-white font-semibold text-lg">Senha alterada com sucesso!</p>
-              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>Redirecionando para o sistema…</p>
+              <p className="text-[color:var(--text-primary)] font-semibold text-lg">Senha alterada com sucesso!</p>
+              <p className="text-sm" style={{ color: 'var(--tint-45)' }}>Redirecionando para o sistema…</p>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Nova Senha */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--tint-45)' }}>
                   Nova Senha
                 </label>
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                    style={{ color: 'rgba(255,255,255,0.3)' }} />
+                    style={{ color: 'var(--tint-35)' }} />
                   <input
                     type={showNew ? 'text' : 'password'}
                     value={newPassword}
@@ -110,7 +110,7 @@ export default function DefinirSenhaPage() {
                   />
                   <button type="button" onClick={() => setShowNew(v => !v)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
-                    style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    style={{ color: 'var(--tint-35)' }}>
                     {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
@@ -118,12 +118,12 @@ export default function DefinirSenhaPage() {
 
               {/* Confirmar Senha */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--tint-45)' }}>
                   Confirmar Senha
                 </label>
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                    style={{ color: 'rgba(255,255,255,0.3)' }} />
+                    style={{ color: 'var(--tint-35)' }} />
                   <input
                     type={showConfirm ? 'text' : 'password'}
                     value={confirmPassword}
@@ -135,7 +135,7 @@ export default function DefinirSenhaPage() {
                   />
                   <button type="button" onClick={() => setShowConfirm(v => !v)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
-                    style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    style={{ color: 'var(--tint-35)' }}>
                     {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
@@ -150,7 +150,7 @@ export default function DefinirSenhaPage() {
                         style={{
                           background: newPassword.length >= i * 3
                             ? (newPassword.length >= 12 ? '#4ade80' : newPassword.length >= 8 ? '#f59e0b' : '#ef4444')
-                            : 'rgba(255,255,255,0.1)',
+                            : 'var(--tint-10)',
                         }} />
                     ))}
                   </div>
