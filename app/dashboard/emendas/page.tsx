@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import dynamic from 'next/dynamic';
 import {
   Landmark,
@@ -169,6 +170,8 @@ const ANO_PADRAO = 2026;
 export default function EmendasPage() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
+  const { resolvedTheme } = useTheme();
+  const isDarkTheme = resolvedTheme === 'dark';
   const userRole = (session?.user as any)?.role;
   const userPermissions = (session?.user as any)?.permissions ?? [];
   const canAccess = hasPermission({ role: userRole, permissions: userPermissions }, PERMISSIONS.EMENDAS_MAPA);
@@ -1161,7 +1164,7 @@ export default function EmendasPage() {
             )}
 
             {view === 'brasil' && (
-              <BrazilMap onStateClick={handleStateClick} darkMode />
+              <BrazilMap onStateClick={handleStateClick} darkMode={isDarkTheme} />
             )}
             {view === 'estado' && selectedUf && (
               <StateMap
@@ -1176,7 +1179,7 @@ export default function EmendasPage() {
                 highlightColor="gold"
                 highlightMunicipioNome={selectedMunicipio?.nome ?? null}
                 valueLabel={selectedParlamentar ? `de ${selectedParlamentar.nome.split(' ')[0]}` : 'em emendas'}
-                darkMode
+                darkMode={isDarkTheme}
               />
             )}
 

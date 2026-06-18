@@ -199,8 +199,8 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
         <div
           className="flex items-center gap-3 px-2.5 py-2.5 mb-2 rounded-lg"
           style={{
-            background: 'var(--tint-04)',
-            border: '1px solid rgba(148,163,184,0.10)',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(148,163,184,0.16)',
           }}
         >
           <span
@@ -210,7 +210,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
             {initials || '?'}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate leading-tight text-white">{userName}</p>
+            <p className="text-sm font-semibold truncate leading-tight" style={{ color: '#FFFFFF' }}>{userName}</p>
             <p className="text-[11px] truncate leading-tight mt-0.5" style={{ color: '#94A3B8' }}>
               {ROLE_LABELS[userRole] ?? 'Assessor'}
             </p>
@@ -220,8 +220,8 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
         <div className="flex items-center gap-2">
           <button
             onClick={handleSignOut}
-            className="flex-1 flex items-center gap-3 px-3 py-2 rounded-md transition-colors duration-150"
-            style={{ color: 'var(--text-primary)', background: 'var(--tint-04)', border: '1px solid rgba(148,163,184,0.10)' }}
+            className="flex-1 flex items-center gap-3 px-3 py-2 rounded-md transition-colors duration-150 hover:[background:rgba(255,255,255,0.10)]"
+            style={{ color: '#CBD5E1', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(148,163,184,0.20)' }}
           >
             <LogOut className="h-4 w-4 flex-shrink-0" />
             <span className="text-[13px] font-medium tracking-wide">Sair</span>

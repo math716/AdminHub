@@ -52,7 +52,7 @@ function PermissionsChecklist({
                 border: `1px solid ${checked ? accent.borderLight : 'var(--tint-08)'}`,
               }}>
               <span className="text-sm font-medium tracking-wide"
-                style={{ color: checked ? '#fff' : 'var(--tint-75)' }}>
+                style={{ color: checked ? accent.solid : 'var(--text-secondary)' }}>
                 {PERMISSION_LABELS[p as Permission]}
               </span>
               <span className="flex items-center justify-center w-5 h-5 rounded-md flex-shrink-0 transition-all"

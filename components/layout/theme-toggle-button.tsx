@@ -52,11 +52,11 @@ export function ThemeToggleButton() {
       onClick={toggle}
       aria-label={isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
       title={isDark ? 'Tema claro' : 'Tema escuro'}
-      className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors flex-shrink-0"
+      className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors flex-shrink-0 hover:[background:rgba(255,255,255,0.10)]"
       style={{
-        background: 'var(--tint-04)',
-        border: '1px solid rgba(148,163,184,0.10)',
-        color: 'var(--text-primary)',
+        background: 'rgba(255,255,255,0.06)',
+        border: '1px solid rgba(148,163,184,0.20)',
+        color: '#CBD5E1',
       }}
     >
       {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
