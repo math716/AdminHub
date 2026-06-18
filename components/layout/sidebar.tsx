@@ -105,22 +105,17 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
     <>
       {/* ── Logo / header ───────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-3 px-5 pt-5 pb-5"
+        className="flex items-center gap-3 px-4 pt-5 pb-5"
         style={{ borderBottom: '1px solid rgba(148,163,184,0.12)' }}
       >
         <img
           src="/logo.png"
           alt="AdminHub"
-          className="w-14 h-14 object-contain flex-shrink-0"
+          className="w-20 h-20 object-contain flex-shrink-0"
         />
-        <div className="min-w-0">
-          <p className="text-lg font-semibold text-white leading-tight tracking-tight">
-            AdminHub
-          </p>
-          <p className="text-xs leading-tight mt-1" style={{ color: '#94A3B8' }}>
-            Plataforma de gabinete
-          </p>
-        </div>
+        <p className="text-2xl font-semibold text-white leading-tight tracking-tight truncate">
+          AdminHub
+        </p>
       </div>
 
       {/* ── Navigation ──────────────────────────────────────────────────── */}
