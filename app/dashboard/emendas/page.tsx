@@ -2447,13 +2447,13 @@ function EmendasDetalhadasCard({
                         {d.funcao ?? '—'}
                       </td>
                       <td className="py-2.5 px-3 truncate max-w-[220px]" title={d.nomeFavorecido ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
-                        <span className="text-slate-200 group-hover:text-white transition-colors font-medium">
+                        <span className="text-slate-800 dark:text-slate-200 group-hover:text-white transition-colors font-medium">
                           {d.nomeFavorecido ?? <span className="text-slate-600 italic font-normal">sem favorecido</span>}
                         </span>
                       </td>
                       <td className="py-2.5 px-3 truncate max-w-[150px]" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {d.municipio ? (
-                          <span className="text-slate-600 dark:text-slate-400 group-hover:text-slate-200 transition-colors">
+                          <span className="text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:text-slate-200 transition-colors">
                             {d.municipio}
                             {d.uf && <span className="text-slate-600 ml-1 text-[10px]">/ {d.uf}</span>}
                           </span>
@@ -2519,7 +2519,7 @@ function EmendasDetalhadasCard({
                         <span title={tipo.hint} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap" style={{ background: `${tipo.color}18`, color: tipo.color, border: `1px solid ${tipo.color}33` }}>{tipo.label}</span>
                       </td>
                       <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 truncate max-w-[140px] group-hover:text-white transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>{e.funcao ?? '—'}</td>
-                      <td className="py-2.5 px-3 text-slate-200 truncate max-w-[200px] font-medium group-hover:text-white transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 text-slate-800 dark:text-slate-200 truncate max-w-[200px] font-medium group-hover:text-white transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {e.municipioNome ?? <span className="text-slate-600 italic font-normal">{e.objeto ?? 'sem destino'}</span>}
                       </td>
                       <td className="py-2.5 px-3 text-right font-semibold text-[color:var(--text-primary)] whitespace-nowrap group-hover:text-amber-200 transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>{formatBRLCompact(e.valorEmpenhado)}</td>

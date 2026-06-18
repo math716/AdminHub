@@ -1560,7 +1560,7 @@ export default function MapaPage() {
                     <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
                       <button
                         onClick={() => { setDfVisualizacao('bairros'); setSelectedBairro(null); }}
-                        className={`px-2.5 py-1 rounded-md font-medium transition-all ${dfVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
+                        className={`px-2.5 py-1 rounded-md font-medium transition-all ${dfVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
                         style={dfVisualizacao === 'bairros' ? { background: '#1a73e8' } : {}}
                       >
                         Bairros
@@ -1573,7 +1573,7 @@ export default function MapaPage() {
                           setBairrosData([]);
                           fetchZonasMunicipio('BRASÍLIA', undefined, 'DF');
                         }}
-                        className={`px-2.5 py-1 rounded-md font-medium transition-all ${dfVisualizacao === 'zonas' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
+                        className={`px-2.5 py-1 rounded-md font-medium transition-all ${dfVisualizacao === 'zonas' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
                         style={dfVisualizacao === 'zonas' ? { background: '#1a73e8' } : {}}
                       >
                         Zonas
@@ -1753,14 +1753,14 @@ export default function MapaPage() {
                         <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
                           <button
                             onClick={() => { setSpVisualizacao('distritos'); setSelectedBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${spVisualizacao === 'distritos' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${spVisualizacao === 'distritos' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
                             style={spVisualizacao === 'distritos' ? { background: '#1a73e8' } : {}}
                           >
                             Bairros
                           </button>
                           <button
                             onClick={() => { setSpVisualizacao('bairros'); setSelectedSpDistrito(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${spVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${spVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
                             style={spVisualizacao === 'bairros' ? { background: '#1a73e8' } : {}}
                           >
                             Zonas
@@ -1772,14 +1772,14 @@ export default function MapaPage() {
                         <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
                           <button
                             onClick={() => { setRjVisualizacao('bairros'); setSelectedBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${rjVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${rjVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
                             style={rjVisualizacao === 'bairros' ? { background: '#059669' } : {}}
                           >
                             Bairros
                           </button>
                           <button
                             onClick={() => { setRjVisualizacao('zonas'); setSelectedRjBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${rjVisualizacao === 'zonas' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${rjVisualizacao === 'zonas' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
                             style={rjVisualizacao === 'zonas' ? { background: '#059669' } : {}}
                           >
                             Zonas
@@ -1791,14 +1791,14 @@ export default function MapaPage() {
                         <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
                           <button
                             onClick={() => { setCeVisualizacao('bairros'); setSelectedBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${ceVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${ceVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
                             style={ceVisualizacao === 'bairros' ? { background: '#ea580c' } : {}}
                           >
                             Bairros
                           </button>
                           <button
                             onClick={() => { setCeVisualizacao('zonas'); setSelectedCeBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${ceVisualizacao === 'zonas' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${ceVisualizacao === 'zonas' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
                             style={ceVisualizacao === 'zonas' ? { background: '#ea580c' } : {}}
                           >
                             Zonas
@@ -1810,14 +1810,14 @@ export default function MapaPage() {
                         <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
                           <button
                             onClick={() => { setGenVisualizacao('bairros'); setSelectedBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${genVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${genVisualizacao === 'bairros' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
                             style={genVisualizacao === 'bairros' ? { background: '#0284c7' } : {}}
                           >
                             Bairros
                           </button>
                           <button
                             onClick={() => { setGenVisualizacao('zonas'); setSelectedGenBairro(null); }}
-                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${genVisualizacao === 'zonas' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-200'}`}
+                            className={`px-2.5 py-1 rounded-md font-medium transition-all ${genVisualizacao === 'zonas' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'}`}
                             style={genVisualizacao === 'zonas' ? { background: '#0284c7' } : {}}
                           >
                             Zonas

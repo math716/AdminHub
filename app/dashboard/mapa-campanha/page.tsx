@@ -2833,7 +2833,7 @@ export default function MapaCampanhaPage() {
                         <select
                           value={mgBairrosMunicipio}
                           onChange={e => { setMgBairrosMunicipio(e.target.value); setSelectedMgBairro(null); }}
-                          className="px-2 py-1 text-xs rounded-md text-slate-200 bg-slate-800 border border-slate-600"
+                          className="px-2 py-1 text-xs rounded-md text-slate-800 dark:text-slate-200 bg-slate-800 border border-slate-600"
                         >
                           <option value="">Selecione a cidade</option>
                           {[...MG_MUNICIPIOS_COM_BAIRROS].sort().map(c => (
@@ -4470,23 +4470,21 @@ export default function MapaCampanhaPage() {
           )}
 
           {/* Ações */}
-          <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--tint-06)' }}>
+          <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border-default)' }}>
             <button
               onClick={() => setShowNovoCandidatoModal(false)}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
-              style={{ color: '#8fa3bf' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#8fa3bf')}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              style={{ color: 'var(--text-tertiary)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
             >
               Cancelar
             </button>
             <button
               onClick={criarNovoCandidato}
               disabled={!novoCandidatoNome.trim() || ((novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') && !novoCandidatoMunicipio)}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-[color:var(--text-primary)] transition-all disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card) 60%, #1e4a80 100%)', border: '1px solid rgba(37,99,235,0.3)', boxShadow: '0 4px 16px var(--bg-card-subtle)' }}
-              onMouseEnter={e => { const ok = novoCandidatoNome.trim() && (!(novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') || novoCandidatoMunicipio); if (ok) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.15)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)'; }}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 hover:brightness-110"
+              style={{ background: 'var(--brand-cobalt)', color: '#FFFFFF', border: 'none' }}
             >
               <Plus className="w-4 h-4" />
               Criar Projeção

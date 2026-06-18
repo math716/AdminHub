@@ -254,10 +254,15 @@ html, body {
   width: 100% !important;
   border-radius: 8px;
   z-index: 1;
-  background: #0d1b2a !important;
+  background: var(--bg-card) !important;
 }
 .brazil-map-container .leaflet-container,
 .state-map-container .leaflet-container {
+  background: var(--bg-card) !important;
+}
+.dark .leaflet-container,
+.dark .brazil-map-container .leaflet-container,
+.dark .state-map-container .leaflet-container {
   background: #0d1b2a !important;
 }
 .leaflet-control-zoom {
