@@ -113,9 +113,14 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           alt="AdminHub"
           className="w-20 h-20 object-contain flex-shrink-0"
         />
-        <p className="text-2xl font-semibold text-white leading-tight tracking-tight truncate">
-          AdminHub
-        </p>
+        <div className="min-w-0">
+          <p className="text-2xl font-semibold text-white leading-tight tracking-tight truncate">
+            AdminHub
+          </p>
+          <p className="text-[11px] leading-snug mt-1" style={{ color: '#94A3B8' }}>
+            Plataforma de Gabinete Político
+          </p>
+        </div>
       </div>
 
       {/* ── Navigation ──────────────────────────────────────────────────── */}
