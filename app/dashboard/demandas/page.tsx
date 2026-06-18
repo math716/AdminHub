@@ -612,7 +612,7 @@ export default function DemandasPage() {
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
               placeholder="Descreva a demanda em uma linha"
-              className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+              className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
             />
           </div>
 
@@ -625,7 +625,7 @@ export default function DemandasPage() {
                 onChange={(e) => setFormData({ ...formData, solicitante: e.target.value })}
                 required
                 placeholder="Nome completo"
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
               />
             </div>
             <div>
@@ -634,7 +634,7 @@ export default function DemandasPage() {
                 value={formData.contato}
                 onChange={(e) => setFormData({ ...formData, contato: e.target.value })}
                 placeholder="Telefone ou email"
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
               />
             </div>
           </div>
@@ -667,7 +667,7 @@ export default function DemandasPage() {
                 value={formData.bairro}
                 onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
                 placeholder="Bairro"
-                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
               />
             </div>
           </div>
@@ -680,7 +680,7 @@ export default function DemandasPage() {
                 value={formData.endereco}
                 onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
                 placeholder="Rua, número, bairro"
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                className="flex-1 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
               />
               <button
                 type="button"
@@ -738,7 +738,7 @@ export default function DemandasPage() {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Detalhes da demanda..."
-              className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 resize-none"
+              className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 resize-none"
             />
           </div>
 
@@ -749,14 +749,14 @@ export default function DemandasPage() {
               <button
                 type="button"
                 onClick={() => fotoInputRef.current?.click()}
-                className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-gray-300 hover:bg-white/10"
+                className="flex items-center gap-2 px-3 py-2 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-lg text-sm text-gray-300 hover:bg-[var(--tint-10)]"
               >
                 <Camera className="w-4 h-4" />
                 {formData.foto ? 'Trocar foto' : 'Adicionar foto'}
               </button>
               {formData.foto && (
                 <div className="flex items-center gap-2">
-                  <img src={formData.foto} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-white/10" />
+                  <img src={formData.foto} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-[var(--tint-10)]" />
                   <button type="button" onClick={() => setFormData((f) => ({ ...f, foto: '' }))} className="text-gray-500 hover:text-red-400">
                     <X className="w-4 h-4" />
                   </button>
@@ -773,12 +773,12 @@ export default function DemandasPage() {
               rows={3}
               value={formData.observations}
               onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-              className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 resize-none"
+              className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 resize-none"
             />
           </div>
 
           {/* Botões */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+          <div className="flex justify-end gap-3 pt-4 border-t border-[var(--tint-10)]">
             <button
               type="button"
               onClick={() => { setShowModal(false); setEditingDemand(null); }}

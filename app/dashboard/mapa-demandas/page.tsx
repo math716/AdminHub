@@ -74,7 +74,7 @@ interface GeoResult {
 const DemandaMapLeaflet = dynamic(() => import('@/components/maps/demanda-map-leaflet'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-[#0d1b2a]">
+    <div className="w-full h-full flex items-center justify-center bg-[var(--bg-card)]">
       <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
     </div>
   ),
@@ -365,7 +365,7 @@ export default function MapaDemandasPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="-m-4 -mt-16 lg:-m-8 h-screen flex items-center justify-center bg-[#0a1628]">
+      <div className="-m-4 -mt-16 lg:-m-8 h-screen flex items-center justify-center bg-[var(--bg-page)]">
         <Loader2 className="w-10 h-10 animate-spin text-sky-400" />
       </div>
     );
@@ -374,9 +374,9 @@ export default function MapaDemandasPage() {
   const categoryKeys = Object.keys(CATEGORY_LABELS) as (keyof typeof CATEGORY_LABELS)[];
 
   return (
-    <div className="-m-4 -mt-16 lg:-m-8 h-screen flex flex-col bg-[#0a1628] overflow-hidden">
+    <div className="-m-4 -mt-16 lg:-m-8 h-screen flex flex-col bg-[var(--bg-page)] overflow-hidden">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--tint-10)] flex-shrink-0">
         <div className="flex items-center gap-3">
           <div
             className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -394,7 +394,7 @@ export default function MapaDemandasPage() {
         </div>
         <div className="flex items-center gap-2">
           {/* Busca de endereço no mapa — só desktop */}
-          <div className="relative hidden md:flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2">
+          <div className="relative hidden md:flex items-center gap-1.5 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2">
             <Navigation className="w-4 h-4 text-gray-400" />
             <input
               value={geoQuery}
@@ -408,12 +408,12 @@ export default function MapaDemandasPage() {
               : <button onClick={geocode} className="text-sky-400 hover:text-sky-300"><Search className="w-4 h-4" /></button>
             }
             {geoResults.length > 0 && (
-              <div className="absolute top-full left-0 mt-1 w-80 bg-[#0d1b2a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+              <div className="absolute top-full left-0 mt-1 w-80 bg-[var(--bg-card)] border border-[var(--tint-10)] rounded-xl shadow-2xl z-50 overflow-hidden">
                 {geoResults.map((r, i) => (
                   <button
                     key={i}
                     onClick={() => { setMapCenter([r.lat, r.lng]); setGeoResults([]); setGeoQuery(r.endereco); }}
-                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-sm text-gray-300 border-b border-white/5 last:border-0"
+                    className="w-full text-left px-4 py-2.5 hover:bg-[var(--tint-06)] text-sm text-gray-300 border-b border-[var(--tint-06)] last:border-0"
                   >
                     <div className="font-medium text-[color:var(--text-primary)] truncate">{r.endereco}</div>
                     <div className="text-xs text-gray-500 truncate">{r.displayName}</div>
@@ -425,14 +425,14 @@ export default function MapaDemandasPage() {
           {/* Lista — mobile only */}
           <button
             onClick={() => setMobileSidebar(true)}
-            className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-white/5 text-gray-300 hover:bg-white/10 transition-all"
+            className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-[var(--tint-06)] text-gray-300 hover:bg-[var(--tint-10)] transition-all"
           >
             <Filter className="w-4 h-4" />
             Lista
           </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`hidden md:flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${showFilters ? 'bg-sky-600 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}
+            className={`hidden md:flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${showFilters ? 'bg-sky-600 text-white' : 'bg-[var(--tint-06)] text-gray-300 hover:bg-[var(--tint-10)]'}`}
           >
             <Filter className="w-4 h-4" />
             Filtros
@@ -449,12 +449,12 @@ export default function MapaDemandasPage() {
 
       {/* ── Filtros (desktop) ── */}
       {showFilters && (
-        <div className="hidden md:flex items-center gap-3 px-4 py-2 border-b border-white/10 bg-white/2 flex-wrap flex-shrink-0">
+        <div className="hidden md:flex items-center gap-3 px-4 py-2 border-b border-[var(--tint-10)] bg-white/2 flex-wrap flex-shrink-0">
           <input
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder="Buscar por título, solicitante..."
-            className="bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-[color:var(--text-primary)] placeholder-gray-500 outline-none w-56"
+            className="bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2 text-sm text-[color:var(--text-primary)] placeholder-gray-500 outline-none w-56"
           />
           <Select
             value={filterStatus}
@@ -483,8 +483,8 @@ export default function MapaDemandasPage() {
       {/* ── Conteúdo principal ── */}
       <div className="flex flex-1 min-h-0 gap-3 p-3 overflow-hidden">
         {/* Painel lateral — lista de demandas (desktop) */}
-        <div className={`hidden md:flex flex-shrink-0 flex-col border border-white/10 rounded-2xl overflow-hidden transition-all duration-300 bg-[#0d1b2a] ${sidebarCollapsed ? 'w-0 border-transparent' : 'w-72'}`}>
-          <div className="px-3 py-2 border-b border-white/10 flex-shrink-0 flex items-center justify-between gap-2">
+        <div className={`hidden md:flex flex-shrink-0 flex-col border border-[var(--tint-10)] rounded-2xl overflow-hidden transition-all duration-300 bg-[var(--bg-card)] ${sidebarCollapsed ? 'w-0 border-transparent' : 'w-72'}`}>
+          <div className="px-3 py-2 border-b border-[var(--tint-10)] flex-shrink-0 flex items-center justify-between gap-2">
             <p className="text-xs text-gray-400 font-medium uppercase tracking-wide truncate">
               {filteredDemands.length} demanda{filteredDemands.length !== 1 ? 's' : ''}
               {demandsWithCoords.length < filteredDemands.length && (
@@ -495,7 +495,7 @@ export default function MapaDemandasPage() {
               <button
                 onClick={() => setShowDemands(v => !v)}
                 title={showDemands ? 'Ocultar demandas' : 'Exibir demandas'}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showDemands ? 'bg-sky-500/20 border-sky-500/50 text-sky-400' : 'bg-white/5 border-white/10 text-gray-500 hover:text-gray-300'}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showDemands ? 'bg-sky-500/20 border-sky-500/50 text-sky-400' : 'bg-[var(--tint-06)] border-[var(--tint-10)] text-gray-500 hover:text-gray-300'}`}
               >
                 <MapPin className="w-3 h-3" />
                 Demandas
@@ -503,7 +503,7 @@ export default function MapaDemandasPage() {
               <button
                 onClick={() => setShowAgendas(v => !v)}
                 title={showAgendas ? 'Ocultar agenda' : 'Exibir agenda'}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showAgendas ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-white/5 border-white/10 text-gray-500 hover:text-gray-300'}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showAgendas ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-[var(--tint-06)] border-[var(--tint-10)] text-gray-500 hover:text-gray-300'}`}
               >
                 <Calendar className="w-3 h-3" />
                 Agenda
@@ -511,7 +511,7 @@ export default function MapaDemandasPage() {
               <button
                 onClick={() => setSidebarCollapsed(true)}
                 title="Recolher painel"
-                className="p-1 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-all"
+                className="p-1 rounded-lg text-gray-500 hover:text-white hover:bg-[var(--tint-10)] transition-all"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
@@ -528,7 +528,7 @@ export default function MapaDemandasPage() {
                 <button
                   key={d.id}
                   onClick={() => { selectDemandWithFoto(d); if (d.lat && d.lng) setMapCenter([d.lat, d.lng]); }}
-                  className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedDemand?.id === d.id ? 'bg-sky-900/30 border-l-2 border-l-sky-400' : ''}`}
+                  className={`w-full text-left px-3 py-2.5 border-b border-[var(--tint-06)] hover:bg-[var(--tint-06)] transition-all ${selectedDemand?.id === d.id ? 'bg-sky-900/30 border-l-2 border-l-sky-400' : ''}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -553,10 +553,10 @@ export default function MapaDemandasPage() {
 
             {/* Seção colapsável — demandas concluídas */}
             {showDemands && demandsResolvidas.length > 0 && (
-              <div className="border-t border-white/10">
+              <div className="border-t border-[var(--tint-10)]">
                 <button
                   onClick={() => setConcluidasOpen(v => !v)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-all"
+                  className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-[var(--tint-06)] transition-all"
                 >
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-3.5 h-3.5 text-green-500" />
@@ -578,9 +578,9 @@ export default function MapaDemandasPage() {
                     <button
                       key={d.id}
                       onClick={() => toggleConcluida(d)}
-                      className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all flex items-start gap-2.5 ${isSel ? 'bg-green-900/20 border-l-2 border-l-green-500' : ''}`}
+                      className={`w-full text-left px-3 py-2.5 border-b border-[var(--tint-06)] hover:bg-[var(--tint-06)] transition-all flex items-start gap-2.5 ${isSel ? 'bg-green-900/20 border-l-2 border-l-green-500' : ''}`}
                     >
-                      <span className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-all ${isSel ? 'bg-green-500 border-green-500' : 'border-white/20 bg-white/5'}`}>
+                      <span className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-all ${isSel ? 'bg-green-500 border-green-500' : 'border-[var(--tint-18)] bg-[var(--tint-06)]'}`}>
                         {isSel && <CheckCircle className="w-2.5 h-2.5 text-[color:var(--text-primary)]" />}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -601,14 +601,14 @@ export default function MapaDemandasPage() {
             {/* Eventos da agenda com localização */}
             {showAgendas && agendaEvents.length > 0 && (
               <>
-                <div className="px-3 py-2 border-b border-white/10 bg-white/2 flex-shrink-0 mt-1">
+                <div className="px-3 py-2 border-b border-[var(--tint-10)] bg-white/2 flex-shrink-0 mt-1">
                   <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Eventos da Agenda</p>
                 </div>
                 {agendaEvents.map((e) => (
                   <button
                     key={e.id}
                     onClick={() => { setSelectedEvent(e); setSelectedDemand(null); if (e.lat && e.lng) setMapCenter([e.lat, e.lng]); }}
-                    className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedEvent?.id === e.id ? 'bg-indigo-900/30 border-l-2 border-l-indigo-400' : ''}`}
+                    className={`w-full text-left px-3 py-2.5 border-b border-[var(--tint-06)] hover:bg-[var(--tint-06)] transition-all ${selectedEvent?.id === e.id ? 'bg-indigo-900/30 border-l-2 border-l-indigo-400' : ''}`}
                   >
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: e.cor ?? TIPO_AGENDA_COLORS[e.tipo] ?? '#6366f1' }} />
@@ -627,27 +627,27 @@ export default function MapaDemandasPage() {
         {mobileSidebar && (
           <>
             <div className="md:hidden fixed inset-0 bg-black/60 z-[1500]" onClick={() => setMobileSidebar(false)} />
-            <div className="md:hidden fixed inset-y-0 right-0 w-full max-w-xs bg-[#0a1628] border-l border-white/10 z-[1600] flex flex-col">
-              <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between gap-2 flex-shrink-0">
+            <div className="md:hidden fixed inset-y-0 right-0 w-full max-w-xs bg-[var(--bg-page)] border-l border-[var(--tint-10)] z-[1600] flex flex-col">
+              <div className="px-3 py-2 border-b border-[var(--tint-10)] flex items-center justify-between gap-2 flex-shrink-0">
                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
                   {filteredDemands.length} demanda{filteredDemands.length !== 1 ? 's' : ''}
                 </p>
                 <div className="flex items-center gap-1">
                   <button onClick={() => setShowDemands(v => !v)}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showDemands ? 'bg-sky-500/20 border-sky-500/50 text-sky-400' : 'bg-white/5 border-white/10 text-gray-500'}`}>
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showDemands ? 'bg-sky-500/20 border-sky-500/50 text-sky-400' : 'bg-[var(--tint-06)] border-[var(--tint-10)] text-gray-500'}`}>
                     <MapPin className="w-3 h-3" />Demandas
                   </button>
                   <button onClick={() => setShowAgendas(v => !v)}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showAgendas ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-white/5 border-white/10 text-gray-500'}`}>
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${showAgendas ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-[var(--tint-06)] border-[var(--tint-10)] text-gray-500'}`}>
                     <Calendar className="w-3 h-3" />Agenda
                   </button>
                   <button onClick={() => setMobileSidebar(false)} className="ml-1 p-1.5 text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
                 </div>
               </div>
               {/* Filtros mobile */}
-              <div className="px-3 py-1.5 border-b border-white/10 flex flex-col gap-1.5 flex-shrink-0">
+              <div className="px-3 py-1.5 border-b border-[var(--tint-10)] flex flex-col gap-1.5 flex-shrink-0">
                 <input value={searchText} onChange={(e) => setSearchText(e.target.value)}
-                  placeholder="Buscar..." className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-gray-500 outline-none" />
+                  placeholder="Buscar..." className="w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-gray-500 outline-none" />
                 <div className="grid grid-cols-2 gap-2">
                   <Select
                     value={filterStatus}
@@ -665,7 +665,7 @@ export default function MapaDemandasPage() {
                 {filteredDemands.map((d) => (
                   <button key={d.id}
                     onClick={() => { selectDemandWithFoto(d); if (d.lat && d.lng) setMapCenter([d.lat, d.lng]); setMobileSidebar(false); }}
-                    className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedDemand?.id === d.id ? 'bg-sky-900/30 border-l-2 border-l-sky-400' : ''}`}>
+                    className={`w-full text-left px-3 py-2.5 border-b border-[var(--tint-06)] hover:bg-[var(--tint-06)] transition-all ${selectedDemand?.id === d.id ? 'bg-sky-900/30 border-l-2 border-l-sky-400' : ''}`}>
                     <p className="text-[color:var(--text-primary)] text-xs font-semibold truncate mb-0.5">{d.title}</p>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full"
@@ -678,13 +678,13 @@ export default function MapaDemandasPage() {
                 ))}
                 {agendaEvents.length > 0 && showAgendas && (
                   <>
-                    <div className="px-3 py-2 border-b border-white/10 bg-white/2 flex-shrink-0 mt-1">
+                    <div className="px-3 py-2 border-b border-[var(--tint-10)] bg-white/2 flex-shrink-0 mt-1">
                       <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Agenda</p>
                     </div>
                     {agendaEvents.map((e) => (
                       <button key={e.id}
                         onClick={() => { setSelectedEvent(e); setSelectedDemand(null); if (e.lat && e.lng) setMapCenter([e.lat, e.lng]); setMobileSidebar(false); }}
-                        className={`w-full text-left px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-all ${selectedEvent?.id === e.id ? 'bg-indigo-900/30 border-l-2 border-l-indigo-400' : ''}`}>
+                        className={`w-full text-left px-3 py-2.5 border-b border-[var(--tint-06)] hover:bg-[var(--tint-06)] transition-all ${selectedEvent?.id === e.id ? 'bg-indigo-900/30 border-l-2 border-l-indigo-400' : ''}`}>
                         <p className="text-[color:var(--text-primary)] text-xs font-semibold truncate">{e.titulo}</p>
                         <p className="text-gray-500 text-[10px]">{TIPO_AGENDA_LABELS[e.tipo]} · {new Date(e.data).toLocaleDateString('pt-BR')}</p>
                       </button>
@@ -697,7 +697,7 @@ export default function MapaDemandasPage() {
         )}
 
         {/* Mapa */}
-        <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[#0d1b2a]' : 'flex-1 relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-[#0d1b2a]'}>
+        <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)]' : 'flex-1 relative rounded-2xl overflow-hidden border border-[var(--tint-10)] shadow-2xl bg-[var(--bg-card)]'}>
           <DemandaMapLeaflet
             demands={showDemands ? demandsWithCoords : []}
             agendaEvents={showAgendas ? agendaEvents : []}
@@ -715,7 +715,7 @@ export default function MapaDemandasPage() {
             <button
               onClick={() => setSidebarCollapsed(false)}
               title="Expandir painel lateral"
-              className="absolute top-3 left-3 z-[1000] flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-semibold tracking-wide text-slate-200 hover:text-white bg-[#0d1b2a]/95 backdrop-blur-md border border-white/20 hover:border-sky-400/50 hover:bg-[#111f35] transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
+              className="absolute top-3 left-3 z-[1000] flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-semibold tracking-wide text-slate-200 hover:text-white bg-[var(--bg-card)]/95 backdrop-blur-md border border-[var(--tint-18)] hover:border-sky-400/50 hover:bg-[var(--bg-card-raised)] transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
             >
               <ChevronRight className="w-4 h-4" />
               <span className="hidden sm:inline">Painel</span>
@@ -725,7 +725,7 @@ export default function MapaDemandasPage() {
           {/* Botão tela cheia — canto superior direito */}
           <button
             onClick={() => setMapFullscreen(f => !f)}
-            className="absolute top-3 right-3 z-[1000] p-2.5 rounded-2xl text-slate-200 hover:text-white bg-[#0d1b2a]/95 backdrop-blur-md border border-white/20 hover:border-white/40 hover:bg-[#111f35] transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
+            className="absolute top-3 right-3 z-[1000] p-2.5 rounded-2xl text-slate-200 hover:text-white bg-[var(--bg-card)]/95 backdrop-blur-md border border-[var(--tint-18)] hover:border-[var(--tint-45)] hover:bg-[var(--bg-card-raised)] transition-all duration-200 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
             title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
           >
             {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -733,7 +733,7 @@ export default function MapaDemandasPage() {
 
           {/* Popup detalhe — demanda */}
           {selectedDemand && (
-            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-3 md:left-auto md:w-64 w-full bg-[#0a1628] border-t md:border border-white/15 md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] z-[1000] overflow-hidden max-h-[65vh] overflow-y-auto">
+            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-3 md:left-auto md:w-64 w-full bg-[var(--bg-page)] border-t md:border border-[var(--tint-14)] md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] z-[1000] overflow-hidden max-h-[65vh] overflow-y-auto">
               {selectedDemand.foto
                 ? <div className="w-full h-32 bg-black overflow-hidden flex-shrink-0">
                     <img src={selectedDemand.foto} alt="Foto da demanda" className="w-full h-full object-cover" />
@@ -751,12 +751,12 @@ export default function MapaDemandasPage() {
                     </div>
                     <h3 className="text-[color:var(--text-primary)] font-bold text-sm leading-snug">{selectedDemand.title}</h3>
                   </div>
-                  <button onClick={() => setSelectedDemand(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-white/10">
+                  <button onClick={() => setSelectedDemand(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-[var(--tint-10)]">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="space-y-1.5 text-[11px] bg-white/5 rounded-xl p-2.5 mb-2.5 border border-white/5">
+                <div className="space-y-1.5 text-[11px] bg-[var(--tint-06)] rounded-xl p-2.5 mb-2.5 border border-[var(--tint-06)]">
                   <div className="flex items-center gap-2 text-gray-200">
                     <User className="w-3 h-3 text-sky-400 flex-shrink-0" />
                     <span>{selectedDemand.solicitante}</span>
@@ -800,7 +800,7 @@ export default function MapaDemandasPage() {
                 )}
 
                 {selectedDemand.lat && selectedDemand.lng && (
-                  <div className="pt-2.5 border-t border-white/10">
+                  <div className="pt-2.5 border-t border-[var(--tint-10)]">
                     <p className="text-[11px] text-gray-400 font-medium mb-2">Traçar rota até aqui</p>
                     <div className="flex gap-3">
                       <a href={`https://waze.com/ul?ll=${selectedDemand.lat},${selectedDemand.lng}&navigate=yes`}
@@ -824,7 +824,7 @@ export default function MapaDemandasPage() {
 
           {/* Popup detalhe — evento */}
           {selectedEvent && (
-            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-4 md:left-auto md:w-80 w-full bg-[#0a1628] border-t md:border border-white/15 md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] z-[1000] overflow-hidden max-h-[60vh] overflow-y-auto">
+            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-4 md:left-auto md:w-80 w-full bg-[var(--bg-page)] border-t md:border border-[var(--tint-14)] md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] z-[1000] overflow-hidden max-h-[60vh] overflow-y-auto">
               <div className="h-1 w-full flex-shrink-0" style={{ background: selectedEvent.cor ?? TIPO_AGENDA_COLORS[selectedEvent.tipo] ?? '#6366f1' }} />
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-3">
@@ -837,12 +837,12 @@ export default function MapaDemandasPage() {
                     </div>
                     <h3 className="text-[color:var(--text-primary)] font-bold text-sm">{selectedEvent.titulo}</h3>
                   </div>
-                  <button onClick={() => setSelectedEvent(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-white/10">
+                  <button onClick={() => setSelectedEvent(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-[var(--tint-10)]">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="space-y-2 text-xs bg-white/5 rounded-xl p-3 mb-3 border border-white/5">
+                <div className="space-y-2 text-xs bg-[var(--tint-06)] rounded-xl p-3 mb-3 border border-[var(--tint-06)]">
                   <div className="flex items-center gap-2.5 text-gray-200">
                     <Calendar className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
                     <span>{new Date(selectedEvent.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
@@ -860,7 +860,7 @@ export default function MapaDemandasPage() {
                 )}
 
                 {selectedEvent.lat && selectedEvent.lng && (
-                  <div className="pt-3 border-t border-white/10">
+                  <div className="pt-3 border-t border-[var(--tint-10)]">
                     <p className="text-xs text-gray-400 font-medium mb-2.5">Traçar rota até aqui</p>
                     <div className="flex gap-3">
                       <a href={`https://waze.com/ul?ll=${selectedEvent.lat},${selectedEvent.lng}&navigate=yes`}
@@ -888,8 +888,8 @@ export default function MapaDemandasPage() {
       {/* ── Modal nova demanda ── */}
       {showNewModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2100] flex items-end sm:items-center justify-center sm:p-4">
-          <div className="bg-[#0d1b2a] border border-white/10 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <div className="bg-[var(--bg-card)] border border-[var(--tint-10)] rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--tint-10)]">
               <div className="flex items-center gap-3">
                 <Plus className="w-5 h-5 text-sky-400" />
                 <h2 className="text-[color:var(--text-primary)] font-semibold">Nova Demanda</h2>
@@ -904,7 +904,7 @@ export default function MapaDemandasPage() {
               <div>
                 <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Título *</label>
                 <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                  className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                  className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
                   placeholder="Descreva a demanda em uma linha" />
               </div>
 
@@ -913,13 +913,13 @@ export default function MapaDemandasPage() {
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Solicitante *</label>
                   <input value={form.solicitante} onChange={(e) => setForm((f) => ({ ...f, solicitante: e.target.value }))}
-                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                    className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
                     placeholder="Nome completo" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Contato</label>
                   <input value={form.contato} onChange={(e) => setForm((f) => ({ ...f, contato: e.target.value }))}
-                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                    className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
                     placeholder="Telefone ou email" />
                 </div>
               </div>
@@ -929,13 +929,13 @@ export default function MapaDemandasPage() {
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Estado *</label>
                   <input value={form.estado} onChange={(e) => setForm((f) => ({ ...f, estado: e.target.value }))}
-                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                    className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
                     placeholder="UF (ex: SP)" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Município *</label>
                   <input value={form.municipio} onChange={(e) => setForm((f) => ({ ...f, municipio: e.target.value }))}
-                    className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                    className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
                     placeholder="Nome do município" />
                 </div>
               </div>
@@ -945,7 +945,7 @@ export default function MapaDemandasPage() {
                 <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Endereço completo</label>
                 <div className="flex gap-2 mt-1">
                   <input value={form.endereco} onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                    className="flex-1 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
                     placeholder="Rua, número, bairro" />
                   <button onClick={geocodeFormAddress} disabled={geoLoading}
                     className="flex items-center gap-1.5 px-4 py-2.5 bg-sky-700 hover:bg-sky-600 text-[color:var(--text-primary)] rounded-xl text-sm font-semibold disabled:opacity-50">
@@ -996,7 +996,7 @@ export default function MapaDemandasPage() {
                 <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Descrição</label>
                 <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   rows={3}
-                  className="mt-1 w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 resize-none"
+                  className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 resize-none"
                   placeholder="Detalhes da demanda..." />
               </div>
 
@@ -1005,13 +1005,13 @@ export default function MapaDemandasPage() {
                 <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Foto (opcional)</label>
                 <div className="mt-1 flex items-center gap-3">
                   <button onClick={() => fotoInputRef.current?.click()}
-                    className="flex items-center gap-2 px-3.5 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 hover:bg-white/10">
+                    className="flex items-center gap-2 px-3.5 py-2 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl text-sm text-gray-300 hover:bg-[var(--tint-10)]">
                     <Camera className="w-4 h-4" />
                     {form.foto ? 'Trocar foto' : 'Adicionar foto'}
                   </button>
                   {form.foto && (
                     <div className="flex items-center gap-2">
-                      <img src={form.foto} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-white/10" />
+                      <img src={form.foto} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-[var(--tint-10)]" />
                       <button onClick={() => setForm((f) => ({ ...f, foto: '' }))} className="text-gray-500 hover:text-red-400">
                         <X className="w-4 h-4" />
                       </button>
@@ -1029,7 +1029,7 @@ export default function MapaDemandasPage() {
               )}
             </div>
 
-            <div className="flex justify-end gap-3 px-6 py-4 border-t border-white/10">
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--tint-10)]">
               <button onClick={() => setShowNewModal(false)}
                 className="px-4 py-2 text-gray-400 hover:text-white text-sm font-medium transition-colors rounded-xl">
                 Cancelar

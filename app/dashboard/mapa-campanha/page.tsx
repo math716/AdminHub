@@ -2319,7 +2319,7 @@ export default function MapaCampanhaPage() {
   };
 
   return (
-    <div className="min-h-screen p-3 md:p-6" style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 50%, #0c2a4f 100%)' }}>
+    <div className="min-h-screen p-3 md:p-6" style={{ background: 'linear-gradient(160deg, var(--bg-page) 0%, var(--bg-card) 50%, var(--bg-card) 100%)' }}>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -2760,7 +2760,7 @@ export default function MapaCampanhaPage() {
 
           {/* Main Content */}
           <div className={mapFullscreen
-            ? 'fixed inset-0 z-[2000] bg-[#0d1b2a] flex'
+            ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)] flex'
             : 'grid grid-cols-1 lg:grid-cols-3 gap-6'
           }>
             {/* Map */}
@@ -2771,7 +2771,7 @@ export default function MapaCampanhaPage() {
               className={mapFullscreen ? 'flex-1 min-w-0 relative' : 'lg:col-span-2'}
             >
               <Card className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'bg-slate-800/50 border-slate-700 h-[600px]'}>
-                <CardHeader className={`border-b border-slate-700 py-3 ${mapFullscreen ? 'bg-[#071d36]/95' : ''}`}>
+                <CardHeader className={`border-b border-slate-700 py-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <CardTitle className="text-[color:var(--text-primary)] flex items-center gap-2">
                       <Map className="h-5 w-5 text-cyan-500" />
@@ -3056,7 +3056,7 @@ export default function MapaCampanhaPage() {
                   {/* Botão tela cheia */}
                   <button
                     onClick={() => setMapFullscreen(f => !f)}
-                    className="absolute bottom-3 right-3 z-[1000] bg-[#0d1b2a]/90 border border-white/10 rounded-lg p-2 text-slate-700 dark:text-slate-300 hover:text-white hover:border-white/30 transition-all shadow-lg"
+                    className="absolute bottom-3 right-3 z-[1000] bg-[var(--bg-card)]/90 border border-[var(--tint-10)] rounded-lg p-2 text-slate-700 dark:text-slate-300 hover:text-white hover:border-[var(--tint-35)] transition-all shadow-lg"
                     title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
                   >
                     {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -3070,9 +3070,9 @@ export default function MapaCampanhaPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5 }}
-              className={mapFullscreen ? 'w-72 flex-shrink-0 h-full border-l border-white/10' : ''}
+              className={mapFullscreen ? 'w-72 flex-shrink-0 h-full border-l border-[var(--tint-10)]' : ''}
             >
-              <Card className={mapFullscreen ? 'h-full rounded-none border-0 bg-[#071d36] flex flex-col' : 'bg-slate-800/50 border-slate-700 h-[600px] flex flex-col'}>
+              <Card className={mapFullscreen ? 'h-full rounded-none border-0 bg-[var(--bg-card)] flex flex-col' : 'bg-slate-800/50 border-slate-700 h-[600px] flex flex-col'}>
                 <CardHeader className="border-b border-slate-700 py-3">
                   <div className="flex items-center justify-between gap-2">
                     <CardTitle className="text-[color:var(--text-primary)] text-sm flex items-center gap-2">
@@ -4369,7 +4369,7 @@ export default function MapaCampanhaPage() {
                 style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
               >
                 {ESTADOS_BRASIL.map((e) => (
-                  <option key={e.sigla} value={e.sigla} style={{ background: '#071d36' }}>{e.sigla} — {e.nome}</option>
+                  <option key={e.sigla} value={e.sigla} style={{ background: 'var(--bg-card)' }}>{e.sigla} — {e.nome}</option>
                 ))}
               </select>
             </div>
@@ -4393,7 +4393,7 @@ export default function MapaCampanhaPage() {
                   ['SENADOR', 'Senador'],
                   ['GOVERNADOR', 'Governador'],
                 ].map(([v, l]) => (
-                  <option key={v} value={v} style={{ background: '#071d36' }}>{l}</option>
+                  <option key={v} value={v} style={{ background: 'var(--bg-card)' }}>{l}</option>
                 ))}
               </select>
             </div>
@@ -4406,7 +4406,7 @@ export default function MapaCampanhaPage() {
                 style={{ background: 'rgba(4,17,31,0.6)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#cbd5e1' }}
               >
                 {['2024','2026','2028','2030'].map((a) => (
-                  <option key={a} value={a} style={{ background: '#071d36' }}>{a}</option>
+                  <option key={a} value={a} style={{ background: 'var(--bg-card)' }}>{a}</option>
                 ))}
               </select>
             </div>
@@ -4484,7 +4484,7 @@ export default function MapaCampanhaPage() {
               onClick={criarNovoCandidato}
               disabled={!novoCandidatoNome.trim() || ((novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') && !novoCandidatoMunicipio)}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-[color:var(--text-primary)] transition-all disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, #071d36 0%, #0c2a4f 60%, #1e4a80 100%)', border: '1px solid rgba(37,99,235,0.3)', boxShadow: '0 4px 16px var(--bg-card-subtle)' }}
+              style={{ background: 'linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card) 60%, #1e4a80 100%)', border: '1px solid rgba(37,99,235,0.3)', boxShadow: '0 4px 16px var(--bg-card-subtle)' }}
               onMouseEnter={e => { const ok = novoCandidatoNome.trim() && (!(novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') || novoCandidatoMunicipio); if (ok) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.15)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)'; }}
             >

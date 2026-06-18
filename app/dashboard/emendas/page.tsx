@@ -905,7 +905,7 @@ export default function EmendasPage() {
                         <div key={fav.id} className="flex items-center gap-1 px-1">
                           <button
                             onClick={() => { handleClickEmendaFavorito(fav); setShowFavDropdown(false); }}
-                            className="flex-1 flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-colors hover:bg-white/5 text-left"
+                            className="flex-1 flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-colors hover:bg-[var(--tint-06)] text-left"
                             style={{ color: '#e8c660' }}
                           >
                             <Star className="w-3 h-3 fill-amber-400 text-amber-400 flex-shrink-0" />
@@ -968,7 +968,7 @@ export default function EmendasPage() {
                 value={parlamentarQuery}
                 onChange={(e) => setParlamentarQuery(e.target.value)}
                 placeholder="Pesquisar parlamentar…"
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-[color:var(--text-primary)] placeholder-slate-500 outline-none focus:border-amber-500/50 transition-colors"
+                className="w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[color:var(--text-primary)] placeholder-slate-500 outline-none focus:border-amber-500/50 transition-colors"
               />
             </div>
             {selectedParlamentar && (
@@ -1016,7 +1016,7 @@ export default function EmendasPage() {
                 <button
                   key={p.idPortal}
                   onClick={() => { setSelectedParlamentar(p); setParlamentarQuery(''); setParlamentarResults([]); }}
-                  className="w-full text-left px-4 py-2.5 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                  className="w-full text-left px-4 py-2.5 hover:bg-[var(--tint-06)] transition-colors border-b border-[var(--tint-06)] last:border-0"
                 >
                   <p className="text-sm text-[color:var(--text-primary)] font-medium">{p.nome}</p>
                   <p className="text-[11px] text-slate-600 dark:text-slate-400">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
@@ -1602,7 +1602,7 @@ function Top5ParlamentaresDoMunicipioCard({
             <li key={p.idPortal}>
               <button
                 onClick={() => onPick(p)}
-                className="w-full flex items-center gap-2 group hover:bg-white/5 -mx-2 px-2 py-1 rounded-lg transition-colors text-left"
+                className="w-full flex items-center gap-2 group hover:bg-[var(--tint-06)] -mx-2 px-2 py-1 rounded-lg transition-colors text-left"
               >
                 <span className="text-xs font-bold text-slate-600 dark:text-slate-500 w-4">{i + 1}.</span>
                 <div className="min-w-0 flex-1">
@@ -1637,7 +1637,7 @@ function Top5ParlamentaresEstadoCard({
           <button
             key={p.idPortal}
             onClick={() => onPick(p)}
-            className="w-full flex items-center gap-2 group text-left hover:bg-white/5 -mx-1 px-1 py-1 rounded-lg transition-colors"
+            className="w-full flex items-center gap-2 group text-left hover:bg-[var(--tint-06)] -mx-1 px-1 py-1 rounded-lg transition-colors"
           >
             <div className="min-w-0 flex-1">
               <p className="text-[11px] text-[color:var(--text-primary)] truncate group-hover:text-amber-300">{p.nome}</p>
@@ -1703,7 +1703,7 @@ function Top5MunicipiosCard({
             <li key={m.codigoIbge}>
               <button
                 onClick={() => onClick(m)}
-                className="w-full flex items-center gap-2 group hover:bg-white/5 -mx-2 px-2 py-1 rounded-lg transition-colors text-left"
+                className="w-full flex items-center gap-2 group hover:bg-[var(--tint-06)] -mx-2 px-2 py-1 rounded-lg transition-colors text-left"
               >
                 <span className="text-xs font-bold text-slate-600 dark:text-slate-500 w-4">{i + 1}.</span>
                 <span className="text-xs text-[color:var(--text-primary)] truncate flex-1 group-hover:text-amber-300 transition-colors">{m.nome}</span>
@@ -1743,7 +1743,7 @@ function ParlamentarSearchCard({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Pesquisar parlamentar…"
-          className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-3 py-2 text-xs text-[color:var(--text-primary)] placeholder-slate-500 outline-none focus:border-amber-500/50"
+          className="w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl pl-8 pr-3 py-2 text-xs text-[color:var(--text-primary)] placeholder-slate-500 outline-none focus:border-amber-500/50"
         />
         {searching && <Loader2 className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-slate-600 dark:text-slate-500" />}
       </div>
@@ -1754,7 +1754,7 @@ function ParlamentarSearchCard({
             <button
               key={p.idPortal}
               onClick={() => onPick(p)}
-              className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
+              className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-[var(--tint-06)] transition-colors"
             >
               <p className="text-xs text-[color:var(--text-primary)] font-medium truncate">{p.nome}</p>
               <p className="text-[10px] text-slate-600 dark:text-slate-500">
@@ -1789,7 +1789,7 @@ function ParlamentarSearchCard({
             <button
               key={p.idPortal}
               onClick={() => onPickFromResumo(p)}
-              className="w-full flex items-center gap-2 group text-left hover:bg-white/5 -mx-1 px-1 py-1 rounded-lg transition-colors"
+              className="w-full flex items-center gap-2 group text-left hover:bg-[var(--tint-06)] -mx-1 px-1 py-1 rounded-lg transition-colors"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] text-[color:var(--text-primary)] truncate group-hover:text-amber-300">{p.nome}</p>
@@ -2052,7 +2052,7 @@ function ParlamentarDashboard({
                           {formatBRLCompact(p.total)}
                         </span>
                       </div>
-                      <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                      <div className="h-2 rounded-full bg-[var(--tint-06)] overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all"
                           style={{
@@ -2086,7 +2086,7 @@ function ParlamentarDashboard({
                         <span className="text-slate-700 dark:text-slate-300 truncate">{a.name}</span>
                         <span className="text-[color:var(--text-primary)] font-semibold">{formatBRLCompact(a.value)}</span>
                       </div>
-                      <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                      <div className="h-2 rounded-full bg-[var(--tint-06)] overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${pct}%`, background: a.color, boxShadow: `0 0 6px ${a.color}66` }} />
                       </div>
                     </div>
@@ -2329,7 +2329,7 @@ function EmendasDetalhadasCard({
         {/* Coluna de valor + faixa */}
         <div className="flex items-center gap-1.5">
           {/* Toggle Empenhado / Pago */}
-          <div className="flex rounded-xl overflow-hidden border border-white/10 flex-shrink-0">
+          <div className="flex rounded-xl overflow-hidden border border-[var(--tint-10)] flex-shrink-0">
             {(['empenhado', 'pago'] as const).map((col) => (
               <button
                 key={col}

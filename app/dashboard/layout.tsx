@@ -54,7 +54,7 @@ export default function DashboardLayout({
     return (
       <div
         className="min-h-screen flex flex-col items-center justify-center"
-        style={{ background: '#0F2240' }}
+        style={{ background: 'var(--bg-card)' }}
       >
         <div className="flex flex-col items-center gap-5">
           <img

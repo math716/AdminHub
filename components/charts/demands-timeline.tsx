@@ -29,8 +29,8 @@ export default function DemandsTimelineChart({ data, darkMode = false }: Props) 
   }
 
   const gradientId = darkMode ? 'timelineGradientDark' : 'timelineGradientLight';
-  const strokeColor = darkMode ? '#1D4ED8' : '#1e3a5f';
-  const gradientStart = darkMode ? '#1D4ED8' : '#1e3a5f';
+  const strokeColor = darkMode ? '#1D4ED8' : 'var(--bg-card-raised)';
+  const gradientStart = darkMode ? '#1D4ED8' : 'var(--bg-card-raised)';
   const gradientEnd = darkMode ? 'rgba(201, 150, 26, 0.1)' : 'rgba(30, 58, 95, 0.1)';
 
   return (

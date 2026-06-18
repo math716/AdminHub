@@ -11,10 +11,11 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** @deprecated mantido por retrocompat — modal agora segue o tema. */
   dark?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children, size = 'md', dark = false }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   const sizes = {
     sm: 'max-w-md',
     md: 'max-w-lg',
@@ -53,23 +54,31 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', dark = fa
               'w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto',
               sizes[size]
             )}
-            style={dark ? {
-              background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)',
-              border: '1px solid rgba(37,99,235,0.2)',
-              boxShadow: '0 25px 60px rgba(4,17,31,0.7)'
-            } : { background: '#fff', border: '1px solid #e5e7eb' }}
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-default)',
+              color: 'var(--text-primary)',
+              boxShadow: 'var(--shadow-raised)',
+            }}
           >
-            <div className={cn(
-              'sticky top-0 px-6 py-4 border-b flex items-center justify-between rounded-t-2xl',
-              dark ? 'border-white/8' : 'bg-white border-gray-200'
-            )}
-            style={dark ? { background: 'var(--bg-card-raised)', backdropFilter: 'blur(8px)' } : {}}>
-              {title && <h2 className={cn('text-lg font-bold tracking-tight', dark ? 'text-white' : 'text-gray-900')}>{title}</h2>}
+            <div
+              className="sticky top-0 px-6 py-4 flex items-center justify-between rounded-t-2xl"
+              style={{
+                background: 'var(--bg-card)',
+                borderBottom: '1px solid var(--border-default)',
+              }}
+            >
+              {title && (
+                <h2 className="text-lg font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                  {title}
+                </h2>
+              )}
               <button
                 onClick={onClose}
-                className={cn('p-2 rounded-lg transition-colors ml-auto', dark ? 'hover:bg-white/10 text-gray-400' : 'hover:bg-gray-100')}
+                className="p-2 rounded-lg transition-colors ml-auto"
+                style={{ color: 'var(--text-tertiary)' }}
               >
-                <X className={cn('h-5 w-5', dark ? 'text-gray-400' : 'text-gray-500')} />
+                <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-6">{children}</div>

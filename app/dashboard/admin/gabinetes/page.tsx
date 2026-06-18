@@ -147,10 +147,10 @@ function RoleSelect({ userId, current, sessionRole, onChanged }: { userId: strin
           <motion.div ref={dropRef}
             initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
             className="fixed z-[9999] rounded-xl overflow-hidden shadow-xl"
-            style={{ top: dropPos.top, right: dropPos.right, background: '#071d36', border: '1px solid rgba(37,99,235,0.2)', minWidth: 170 }}>
+            style={{ top: dropPos.top, right: dropPos.right, background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', minWidth: 170 }}>
             {roles.map(r => (
               <button key={r} onClick={() => change(r)}
-                className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/5 flex items-center gap-2"
+                className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-[var(--tint-06)] flex items-center gap-2"
                 style={{ color: r === current ? '#2563EB' : 'var(--tint-75)' }}>
                 {r === current && <Check className="w-3 h-3 flex-shrink-0" style={{ color: '#2563EB' }} />}
                 {r !== current && <span className="w-3" />}
@@ -661,7 +661,7 @@ export default function AdminGabinetesPage() {
           </div>
           <button onClick={gerarLink} disabled={gerandoLink}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-90 disabled:opacity-50 flex-shrink-0"
-            style={{ background:'linear-gradient(135deg,#2563EB,#3B82F6)', color:'#04111f', border:'none', cursor:gerandoLink?'not-allowed':'pointer' }}>
+            style={{ background:'linear-gradient(135deg,#2563EB,#3B82F6)', color:'var(--bg-page)', border:'none', cursor:gerandoLink?'not-allowed':'pointer' }}>
             {gerandoLink ? <Loader2 size={15} className="animate-spin" /> : <Link2 size={15} />}
             {gerandoLink ? 'Gerando...' : 'Gerar Link'}
           </button>
@@ -793,7 +793,7 @@ export default function AdminGabinetesPage() {
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => toggleGab(group.id)}
-                        className="p-1.5 rounded-lg transition-all hover:bg-white/5"
+                        className="p-1.5 rounded-lg transition-all hover:bg-[var(--tint-06)]"
                         style={{ color:'var(--tint-35)' }}>
                         {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
@@ -1079,7 +1079,7 @@ export default function AdminGabinetesPage() {
             onClick={e => { if (e.target===e.currentTarget && actionId!==approveTarget.id) setShowApproveModal(false); }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
               className="w-full max-w-md rounded-2xl p-6 space-y-4"
-              style={{ background:'#071d36', border:'1px solid rgba(34,197,94,0.25)' }}>
+              style={{ background:'var(--bg-card)', border:'1px solid rgba(34,197,94,0.25)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(34,197,94,0.12)', border:'1px solid rgba(34,197,94,0.3)' }}>
@@ -1098,11 +1098,11 @@ export default function AdminGabinetesPage() {
                 accent={ACCENT_EMERALD} />
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setShowApproveModal(false)} disabled={actionId===approveTarget.id}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-[var(--tint-06)] disabled:opacity-50"
                   style={{ color:'var(--tint-45)', border:'1px solid var(--tint-08)' }}>Cancelar</button>
                 <button onClick={() => doApprove(approveTarget.id, Array.from(approvePerms))} disabled={actionId===approveTarget.id}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-                  style={{ background:'linear-gradient(135deg,#16a34a,#22c55e)', color:'#04111f' }}>
+                  style={{ background:'linear-gradient(135deg,#16a34a,#22c55e)', color:'var(--bg-page)' }}>
                   {actionId===approveTarget.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   {actionId===approveTarget.id ? 'Aprovando...' : 'Aprovar'}
                 </button>
@@ -1123,7 +1123,7 @@ export default function AdminGabinetesPage() {
             onClick={e => { if (e.target===e.currentTarget && !savingPerms) setShowEditPermsModal(false); }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
               className="w-full max-w-md rounded-2xl p-6 space-y-4"
-              style={{ background:'#071d36', border:'1px solid rgba(168,85,247,0.25)' }}>
+              style={{ background:'var(--bg-card)', border:'1px solid rgba(168,85,247,0.25)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.3)' }}>
@@ -1141,7 +1141,7 @@ export default function AdminGabinetesPage() {
                 accent={ACCENT_PURPLE} />
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setShowEditPermsModal(false)} disabled={savingPerms}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-[var(--tint-06)] disabled:opacity-50"
                   style={{ color:'var(--tint-45)', border:'1px solid var(--tint-08)' }}>Cancelar</button>
                 <button onClick={doEditPerms} disabled={savingPerms}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
@@ -1166,7 +1166,7 @@ export default function AdminGabinetesPage() {
             onClick={e => { if (e.target===e.currentTarget && !resettingPwd) { setShowResetModal(false); setResetResult(''); } }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
               className="w-full max-w-sm rounded-2xl p-6 space-y-4"
-              style={{ background:'#071d36', border:'1px solid rgba(245,158,11,0.25)' }}>
+              style={{ background:'var(--bg-card)', border:'1px solid rgba(245,158,11,0.25)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)' }}>
@@ -1185,11 +1185,11 @@ export default function AdminGabinetesPage() {
                   </p>
                   <div className="flex gap-3 pt-1">
                     <button onClick={() => setShowResetModal(false)} disabled={resettingPwd}
-                      className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+                      className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-[var(--tint-06)] disabled:opacity-50"
                       style={{ color:'var(--tint-45)', border:'1px solid var(--tint-08)' }}>Cancelar</button>
                     <button onClick={doReset} disabled={resettingPwd}
                       className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-                      style={{ background:'linear-gradient(135deg,#d97706,#f59e0b)', color:'#04111f' }}>
+                      style={{ background:'linear-gradient(135deg,#d97706,#f59e0b)', color:'var(--bg-page)' }}>
                       {resettingPwd ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
                       {resettingPwd ? 'Gerando...' : 'Confirmar Reset'}
                     </button>
@@ -1225,7 +1225,7 @@ export default function AdminGabinetesPage() {
                     </>
                   )}
                   <button onClick={() => { setShowResetModal(false); setResetResult(''); }}
-                    className="w-full py-2 rounded-xl text-sm font-medium transition-all hover:bg-white/5"
+                    className="w-full py-2 rounded-xl text-sm font-medium transition-all hover:bg-[var(--tint-06)]"
                     style={{ color:'var(--tint-45)', border:'1px solid var(--tint-08)' }}>Fechar</button>
                 </>
               )}
@@ -1245,7 +1245,7 @@ export default function AdminGabinetesPage() {
             onClick={e => { if (e.target===e.currentTarget && !deletingGab) setConfirmDeleteGab(null); }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
               className="w-full max-w-sm rounded-2xl p-6 space-y-4"
-              style={{ background:'#071d36', border:'1px solid rgba(239,68,68,0.25)' }}>
+              style={{ background:'var(--bg-card)', border:'1px solid rgba(239,68,68,0.25)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.3)' }}>
@@ -1265,7 +1265,7 @@ export default function AdminGabinetesPage() {
               </p>
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setConfirmDeleteGab(null)} disabled={deletingGab}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-[var(--tint-06)] disabled:opacity-50"
                   style={{ color:'var(--tint-45)', border:'1px solid var(--tint-08)' }}>Cancelar</button>
                 <button onClick={doDeleteGabinete} disabled={deletingGab}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
@@ -1290,7 +1290,7 @@ export default function AdminGabinetesPage() {
             onClick={e => { if (e.target===e.currentTarget && !deletingReject) setConfirmReject(null); }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
               className="w-full max-w-sm rounded-2xl p-6 space-y-4"
-              style={{ background:'#071d36', border:'1px solid rgba(239,68,68,0.25)' }}>
+              style={{ background:'var(--bg-card)', border:'1px solid rgba(239,68,68,0.25)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.3)' }}>
@@ -1306,7 +1306,7 @@ export default function AdminGabinetesPage() {
               </p>
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setConfirmReject(null)} disabled={deletingReject}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-[var(--tint-06)] disabled:opacity-50"
                   style={{ color:'var(--tint-45)', border:'1px solid var(--tint-08)' }}>Cancelar</button>
                 <button onClick={doReject} disabled={deletingReject}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"

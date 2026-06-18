@@ -166,7 +166,7 @@ export default function ConfiguracoesPage() {
             <h2 className="font-semibold text-sm text-[color:var(--text-primary)]">WhatsApp</h2>
           </div>
           <button onClick={handleRefresh} disabled={refreshing}
-            className="p-1.5 rounded-lg transition-all hover:bg-white/5 disabled:opacity-40"
+            className="p-1.5 rounded-lg transition-all hover:bg-[var(--tint-06)] disabled:opacity-40"
             style={{ color: 'var(--tint-45)' }}>
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
@@ -393,7 +393,7 @@ function AparenciaCard() {
           >
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: '#0F2240', border: '1px solid rgba(148,163,184,0.18)' }}
+              style={{ background: 'var(--bg-card)', border: '1px solid rgba(148,163,184,0.18)' }}
             >
               <Moon className="w-5 h-5" style={{ color: '#60A5FA' }} />
             </div>

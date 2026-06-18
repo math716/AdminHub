@@ -48,10 +48,11 @@ export function ConfirmDialog({
             transition={{ type: 'spring', damping: 22, stiffness: 260 }}
             className="relative w-full max-w-sm mx-4"
             style={{
-              background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)',
-              border: '1px solid rgba(74,158,222,0.2)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-default)',
               borderRadius: 18,
-              boxShadow: '0 28px 64px rgba(4,17,31,0.75)',
+              boxShadow: 'var(--shadow-raised)',
+              color: 'var(--text-primary)',
             }}
           >
             {/* Top accent line */}

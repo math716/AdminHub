@@ -297,7 +297,7 @@ export default function AgendaPage() {
 
   if (status === 'loading') {
     return (
-      <div className="h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 50%, #0c2a4f 100%)' }}>
+      <div className="h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, var(--bg-page) 0%, var(--bg-card) 50%, var(--bg-card) 100%)' }}>
         <Loader2 className="w-10 h-10 animate-spin" style={{ color: '#2563EB' }} />
       </div>
     );
@@ -313,7 +313,7 @@ export default function AgendaPage() {
           <button
             onClick={() => { setEditEvent(null); setForm({ ...EMPTY_FORM }); setFormError(''); setShowModal(true); }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}
+            style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}
           >
             <Plus className="w-4 h-4" />
             Novo Evento
@@ -352,7 +352,7 @@ export default function AgendaPage() {
           {/* Navegação do mês */}
           <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--tint-06)' }}>
             <button onClick={prevMonth}
-              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:bg-white/10"
+              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:bg-[var(--tint-10)]"
               style={{ color: 'var(--tint-55)' }}>
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -374,7 +374,7 @@ export default function AgendaPage() {
             </div>
 
             <button onClick={nextMonth}
-              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:bg-white/10"
+              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:bg-[var(--tint-10)]"
               style={{ color: 'var(--tint-55)' }}>
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -430,7 +430,7 @@ export default function AgendaPage() {
                       <span
                         className="text-sm font-semibold w-6 h-6 flex items-center justify-center rounded-full"
                         style={isTod
-                          ? { background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f', fontWeight: 800 }
+                          ? { background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)', fontWeight: 800 }
                           : feriado
                             ? { color: '#f87171' }
                             : isWeekend
@@ -519,7 +519,7 @@ export default function AgendaPage() {
                   const color = e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB';
                   return (
                     <button key={e.id} onClick={() => openEdit(e)}
-                      className="w-full text-left px-4 py-3 transition-all hover:bg-white/5">
+                      className="w-full text-left px-4 py-3 transition-all hover:bg-[var(--tint-06)]">
                       <div className="flex items-start gap-3">
                         <div className="flex flex-col items-center mt-0.5">
                           <TipoIconBox tipo={e.tipo} box={28} icon={13} />
@@ -569,7 +569,7 @@ export default function AgendaPage() {
                 const color = e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB';
                 return (
                   <button key={e.id} onClick={() => openEdit(e)}
-                    className="w-full text-left px-4 py-3 transition-all hover:bg-white/5 group">
+                    className="w-full text-left px-4 py-3 transition-all hover:bg-[var(--tint-06)] group">
                     <div className="flex items-center gap-2.5">
                       <TipoIconBox tipo={e.tipo} box={28} icon={13} />
                       <div className="flex-1 min-w-0">
@@ -614,7 +614,7 @@ export default function AgendaPage() {
           <div
             className="w-full max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[95vh] md:max-h-[90vh] flex flex-col"
             style={{
-              background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)',
+              background: 'var(--bg-card)',
               border: '1px solid rgba(37,99,235,0.25)',
             }}
           >
@@ -628,7 +628,7 @@ export default function AgendaPage() {
                 </h2>
               </div>
               <button onClick={() => { setShowModal(false); setEditEvent(null); }}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10"
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-[var(--tint-10)]"
                 style={{ color: 'var(--tint-55)' }}>
                 <X className="w-4 h-4" />
               </button>
@@ -791,7 +791,7 @@ export default function AgendaPage() {
                 </button>
                 <button onClick={handleSave} disabled={saving}
                   className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}>
+                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                   {editEvent ? 'Atualizar' : 'Salvar Evento'}
                 </button>

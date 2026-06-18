@@ -397,7 +397,7 @@ export default function ImportacaoPage() {
               <select
                 value={uf}
                 onChange={(e) => setUf(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-[color:var(--text-primary)] outline-none focus:border-amber-500/50"
+                className="w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3 py-2.5 text-sm text-[color:var(--text-primary)] outline-none focus:border-amber-500/50"
               >
                 <option value="">Selecione…</option>
                 {ESTADOS_BRASIL.map((e) => (
@@ -413,7 +413,7 @@ export default function ImportacaoPage() {
                 value={ano}
                 onChange={(e) => setAno(parseInt(e.target.value, 10))}
                 min={2000} max={2099}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-[color:var(--text-primary)] outline-none focus:border-amber-500/50"
+                className="w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3 py-2.5 text-sm text-[color:var(--text-primary)] outline-none focus:border-amber-500/50"
               />
               <p className="text-[10px] text-slate-600 mt-1">Usado quando a coluna Ano não está mapeada</p>
             </div>
@@ -461,7 +461,7 @@ export default function ImportacaoPage() {
                   <select
                     value={mapping[field.key] ?? ''}
                     onChange={(e) => setMapping((prev) => ({ ...prev, [field.key]: e.target.value || undefined }))}
-                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-[color:var(--text-primary)] outline-none focus:border-amber-500/50"
+                    className="flex-1 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-lg px-2.5 py-1.5 text-xs text-[color:var(--text-primary)] outline-none focus:border-amber-500/50"
                   >
                     <option value="">(não mapear)</option>
                     {headers.map((h) => <option key={h} value={h}>{h}</option>)}
@@ -506,7 +506,7 @@ export default function ImportacaoPage() {
               {stage === 'importing' ? `Importando… ${progress}%` : `Importar ${rawRows.length.toLocaleString('pt-BR')} registros`}
             </button>
             {stage === 'importing' && (
-              <div className="flex-1 h-2 rounded-full overflow-hidden bg-white/10">
+              <div className="flex-1 h-2 rounded-full overflow-hidden bg-[var(--tint-10)]">
                 <div
                   className="h-full rounded-full transition-all duration-300"
                   style={{ width: `${progress}%`, background: '#2563EB' }}
@@ -568,7 +568,7 @@ function PreviewTable({ headers, rows }: { headers: string[]; rows: Record<strin
           <thead>
             <tr style={{ background: 'var(--bg-card)' }}>
               {visibleCols.map((h) => (
-                <th key={h} className="px-3 py-2 text-left text-slate-600 dark:text-slate-400 font-semibold whitespace-nowrap border-b border-white/5">
+                <th key={h} className="px-3 py-2 text-left text-slate-600 dark:text-slate-400 font-semibold whitespace-nowrap border-b border-[var(--tint-06)]">
                   {h.length > 20 ? h.slice(0, 18) + '…' : h}
                 </th>
               ))}

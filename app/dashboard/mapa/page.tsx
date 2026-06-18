@@ -1524,13 +1524,13 @@ export default function MapaPage() {
         </div>
 
         {/* Mapa principal */}
-        <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[#0d1b2a]' : 'lg:col-span-3'}>
+        <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)]' : 'lg:col-span-3'}>
           <Card noPadding className={mapFullscreen ? 'h-full rounded-none border-0' : 'h-[750px]'}>
             <CardContent className="h-full p-1.5 relative">
               {/* Botão tela cheia */}
               <button
                 onClick={() => setMapFullscreen(f => !f)}
-                className="absolute bottom-3 right-3 z-[1000] bg-[#0d1b2a]/90 border border-white/10 rounded-lg p-2 text-slate-700 dark:text-slate-300 hover:text-white hover:border-white/30 transition-all shadow-lg"
+                className="absolute bottom-3 right-3 z-[1000] bg-[var(--bg-card)]/90 border border-[var(--tint-10)] rounded-lg p-2 text-slate-700 dark:text-slate-300 hover:text-white hover:border-[var(--tint-35)] transition-all shadow-lg"
                 title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
               >
                 {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -1611,7 +1611,7 @@ export default function MapaPage() {
                                   <button
                                     key={ra}
                                     onClick={() => setSelectedDfRegiao(prev => prev === ra ? null : ra)}
-                                    className="w-full text-left px-3 py-2 transition-colors cursor-pointer hover:bg-white/5"
+                                    className="w-full text-left px-3 py-2 transition-colors cursor-pointer hover:bg-[var(--tint-06)]"
                                     style={{
                                       borderBottom: '1px solid rgba(74,158,222,0.1)',
                                       background: selectedDfRegiao === ra ? 'rgba(74,158,222,0.1)' : undefined,
@@ -1707,7 +1707,7 @@ export default function MapaPage() {
                                   <button
                                     key={z.zona}
                                     onClick={() => setFocusZonaReq({ zona: z.zona, lat: z.latitude || undefined, lng: z.longitude || undefined, nonce: Date.now() })}
-                                    className="w-full text-left px-3 py-2 transition-colors cursor-pointer group hover:bg-white/5"
+                                    className="w-full text-left px-3 py-2 transition-colors cursor-pointer group hover:bg-[var(--tint-06)]"
                                     style={{ borderBottom: '1px solid rgba(74,158,222,0.1)' }}
                                     title={`Zoom na Zona ${z.zona}`}
                                   >
@@ -1863,7 +1863,7 @@ export default function MapaPage() {
                                   <button
                                     key={dist}
                                     onClick={() => handleSpDistritoClick(dist)}
-                                    className="w-full text-left px-3 py-2 transition-colors cursor-pointer hover:bg-white/5"
+                                    className="w-full text-left px-3 py-2 transition-colors cursor-pointer hover:bg-[var(--tint-06)]"
                                     style={{
                                       borderBottom: '1px solid rgba(74,158,222,0.1)',
                                       background: selectedSpDistrito === dist ? 'rgba(74,158,222,0.1)' : undefined,
@@ -1915,7 +1915,7 @@ export default function MapaPage() {
                                   <button
                                     key={bairro}
                                     onClick={() => handleRjBairroClick(bairro)}
-                                    className="w-full text-left px-3 py-2 transition-colors cursor-pointer hover:bg-white/5"
+                                    className="w-full text-left px-3 py-2 transition-colors cursor-pointer hover:bg-[var(--tint-06)]"
                                     style={{
                                       borderBottom: '1px solid rgba(74,158,222,0.1)',
                                       background: selectedRjBairro === bairro ? 'rgba(74,158,222,0.1)' : undefined,
@@ -1967,7 +1967,7 @@ export default function MapaPage() {
                                   <button
                                     key={bairro}
                                     onClick={() => handleCeBairroClick(bairro)}
-                                    className="w-full text-left px-3 py-2 transition-colors cursor-pointer hover:bg-white/5"
+                                    className="w-full text-left px-3 py-2 transition-colors cursor-pointer hover:bg-[var(--tint-06)]"
                                     style={{
                                       borderBottom: '1px solid rgba(74,158,222,0.1)',
                                       background: selectedCeBairro === bairro ? 'rgba(234,88,12,0.15)' : undefined,
@@ -2029,7 +2029,7 @@ export default function MapaPage() {
                                     <button
                                       key={bairro}
                                       onClick={() => handleGenBairroClick(bairro)}
-                                      className="w-full text-left px-3 py-2 transition-colors cursor-pointer hover:bg-white/5"
+                                      className="w-full text-left px-3 py-2 transition-colors cursor-pointer hover:bg-[var(--tint-06)]"
                                       style={{
                                         borderBottom: '1px solid rgba(74,158,222,0.1)',
                                         background: isSelected ? 'rgba(56,189,248,0.12)' : undefined,
@@ -2128,7 +2128,7 @@ export default function MapaPage() {
                               <button
                                 key={z.zona}
                                 onClick={() => setFocusZonaReq({ zona: z.zona, lat: z.latitude || undefined, lng: z.longitude || undefined, nonce: Date.now() })}
-                                className="w-full text-left px-3 py-2 transition-colors cursor-pointer group hover:bg-white/5"
+                                className="w-full text-left px-3 py-2 transition-colors cursor-pointer group hover:bg-[var(--tint-06)]"
                               style={{ borderBottom: '1px solid rgba(74,158,222,0.1)' }}
                                 title={`Zoom na Zona ${z.zona}`}
                               >

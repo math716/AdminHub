@@ -89,7 +89,7 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
               </div>
               {!required && onClose && (
                 <button onClick={onClose}
-                  className="p-1.5 rounded-lg transition-all hover:bg-white/10"
+                  className="p-1.5 rounded-lg transition-all hover:bg-[var(--tint-10)]"
                   style={{ color: 'var(--tint-45)' }}>
                   <X className="w-4 h-4" />
                 </button>

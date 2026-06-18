@@ -655,7 +655,7 @@ export default function ContatosPage() {
             </button>
             <button onClick={() => { setShowModal(true); setForm({ ...EMPTY_FORM }); setResolvedCoords(null); setSaveError(''); setEditingContact(null); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}>
+              style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>
               <Plus className="w-4 h-4" /> Novo Contato
             </button>
           </div>
@@ -726,7 +726,7 @@ export default function ContatosPage() {
                         <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-base tracking-wide"
                           style={{
                             background: 'linear-gradient(135deg, #2563EB 0%, #8a6f1a 100%)',
-                            color: '#04111f',
+                            color: 'var(--bg-page)',
                             boxShadow: '0 2px 8px rgba(37,99,235,0.25)',
                           }}>
                           {initials}
@@ -923,10 +923,10 @@ export default function ContatosPage() {
                       const sel = selectedIds.has(c.id);
                       return (
                         <button key={c.id} onClick={() => toggleContact(c.id)}
-                          className="w-full text-left px-3 py-2.5 transition-all hover:bg-white/5 flex items-center gap-2.5">
+                          className="w-full text-left px-3 py-2.5 transition-all hover:bg-[var(--tint-06)] flex items-center gap-2.5">
                           <span className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-all"
                             style={sel ? { background: '#2563EB' } : { border: '1px solid var(--tint-25)' }}>
-                            {sel && <Check className="h-3 w-3 text-[#04111f]" strokeWidth={3} />}
+                            {sel && <Check className="h-3 w-3 text-[var(--bg-page)]" strokeWidth={3} />}
                           </span>
                           <div className="flex-1 min-w-0">
                             <p className="text-[color:var(--text-primary)] text-xs font-medium truncate">{c.nome}</p>
@@ -942,7 +942,7 @@ export default function ContatosPage() {
               {selectedIds.size > 0 && (
                 <button onClick={() => setShowMsg(true)}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}>
+                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>
                   <MessageSquare className="h-4 w-4" /> Disparar mensagem ({selectedIds.size})
                 </button>
               )}
@@ -979,7 +979,7 @@ export default function ContatosPage() {
                           {popup.type === 'estado' ? <Layers className="h-3.5 w-3.5" style={{ color: '#2563EB' }} /> : <Building2 className="h-3.5 w-3.5" style={{ color: '#2563EB' }} />}
                           <span className="text-sm font-semibold text-[color:var(--text-primary)]">{popup.nome}</span>
                         </div>
-                        <button onClick={() => setPopup(null)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'var(--tint-45)' }}>
+                        <button onClick={() => setPopup(null)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[var(--tint-10)] transition-all" style={{ color: 'var(--tint-45)' }}>
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -1049,7 +1049,7 @@ export default function ContatosPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-md rounded-2xl shadow-2xl"
-              style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(37,99,235,0.25)' }}>
+              style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.25)' }}>
               <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(37,99,235,0.15)' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)' }}>
@@ -1057,7 +1057,7 @@ export default function ContatosPage() {
                   </div>
                   <h2 className="text-[color:var(--text-primary)] font-semibold">{editingContact ? 'Editar Contato' : 'Novo Contato'}</h2>
                 </div>
-                <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10" style={{ color: 'var(--tint-55)' }}>
+                <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-[var(--tint-10)]" style={{ color: 'var(--tint-55)' }}>
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -1106,7 +1106,7 @@ export default function ContatosPage() {
                   style={{ border: '1px solid var(--tint-10)', color: 'var(--tint-55)' }}>Cancelar</button>
                 <button onClick={handleSave} disabled={saving}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}>
+                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : editingContact ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                   {editingContact ? 'Salvar alterações' : 'Salvar'}
                 </button>
@@ -1122,7 +1122,7 @@ export default function ContatosPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-lg rounded-2xl shadow-2xl"
-              style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(37,99,235,0.25)' }}>
+              style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.25)' }}>
               <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(37,99,235,0.15)' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)' }}>
@@ -1130,7 +1130,7 @@ export default function ContatosPage() {
                   </div>
                   <h2 className="text-[color:var(--text-primary)] font-semibold">Importar via CSV</h2>
                 </div>
-                <button onClick={resetImport} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10" style={{ color: 'var(--tint-55)' }}>
+                <button onClick={resetImport} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-[var(--tint-10)]" style={{ color: 'var(--tint-55)' }}>
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -1223,7 +1223,7 @@ export default function ContatosPage() {
                     </div>
                     <button onClick={resetImport}
                       className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-                      style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#04111f' }}>Concluir</button>
+                      style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>Concluir</button>
                   </div>
                 )}
               </div>
@@ -1236,7 +1236,7 @@ export default function ContatosPage() {
       {showMsg && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
           <div className="w-full max-w-lg rounded-2xl shadow-2xl max-h-[90vh] flex flex-col"
-            style={{ background: 'linear-gradient(160deg, #071d36 0%, #0c2a4f 100%)', border: '1px solid rgba(37,99,235,0.25)' }}>
+            style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.25)' }}>
 
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(37,99,235,0.15)' }}>
@@ -1252,7 +1252,7 @@ export default function ContatosPage() {
                 </div>
               </div>
               <button onClick={() => { setShowMsg(false); setSendStatus({}); setSendErrors({}); }}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10"
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-[var(--tint-10)]"
                 style={{ color: 'var(--tint-55)' }}>
                 <X className="h-4 w-4" />
               </button>

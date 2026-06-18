@@ -242,7 +242,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-[var(--tint-10)] transition-colors"
                 aria-label="Fechar"
               >
                 <X className="h-4 w-4 text-slate-700 dark:text-slate-300" />
@@ -335,21 +335,21 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
 
             {/* Pendente enrich — federal */}
             {data && data.pendingEnrich && !data.notFound && data.emenda?.esfera !== 'ESTADUAL' && (
-              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-900/40 border border-white/5 text-center">
+              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-900/40 border border-[var(--tint-06)] text-center">
                 Os dados detalhados desta emenda ainda não estão disponíveis.
               </div>
             )}
 
             {/* Sem execução no estado filtrado */}
             {data && data.semExecucaoNoEstado && !data.notFound && (
-              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-900/40 border border-white/5 text-center">
+              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-900/40 border border-[var(--tint-06)] text-center">
                 Esta emenda não possui execução registrada neste estado.
               </div>
             )}
 
             {/* Not found */}
             {data && data.notFound && (
-              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-900/40 border border-white/5">
+              <div className="rounded-lg p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-900/40 border border-[var(--tint-06)]">
                 Emenda não encontrada no banco. Pode estar em fonte ao vivo ainda não persistida.
               </div>
             )}
@@ -519,7 +519,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
 
                 {/* Link Portal */}
                 {data.emenda && (
-                  <div className="pt-2 border-t border-white/5">
+                  <div className="pt-2 border-t border-[var(--tint-06)]">
                     <a
                       href={`https://portaldatransparencia.gov.br/emendas/consulta?ordenarPor=autor&direcao=asc&codigoEmenda=${data.emenda.codigoEmenda}`}
                       target="_blank"
@@ -557,7 +557,7 @@ function AnotacaoSection({
 }) {
   const alterado = anotacao !== anotacaoSalva;
   return (
-    <section className="border-t border-white/5 pt-4">
+    <section className="border-t border-[var(--tint-06)] pt-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Pencil className="h-3 w-3 text-slate-600 dark:text-slate-400" />
@@ -577,7 +577,7 @@ function AnotacaoSection({
         onChange={(e) => onChange(e.target.value)}
         placeholder="Adicione notas internas sobre esta emenda…"
         rows={3}
-        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-600 outline-none focus:border-amber-500/40 transition-colors resize-none"
+        className="w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-600 outline-none focus:border-amber-500/40 transition-colors resize-none"
       />
       {alterado && (
         <div className="flex justify-end mt-1.5">
