@@ -105,19 +105,19 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
     <>
       {/* ── Logo / header ───────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-3 px-5 pt-5 pb-4"
+        className="flex items-center gap-3 px-5 pt-5 pb-5"
         style={{ borderBottom: '1px solid rgba(148,163,184,0.12)' }}
       >
         <img
           src="/logo.png"
           alt="AdminHub"
-          className="w-10 h-10 object-contain flex-shrink-0"
+          className="w-14 h-14 object-contain flex-shrink-0"
         />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-white leading-tight tracking-tight">
+          <p className="text-lg font-semibold text-white leading-tight tracking-tight">
             AdminHub
           </p>
-          <p className="text-[11px] leading-tight mt-0.5" style={{ color: '#64748B' }}>
+          <p className="text-xs leading-tight mt-1" style={{ color: '#94A3B8' }}>
             Plataforma de gabinete
           </p>
         </div>
@@ -149,19 +149,13 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
                     onClick={() => {
                       if (typeof window !== 'undefined' && window.innerWidth < 1024) onToggle?.();
                     }}
-                    className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors duration-150 relative group"
-                    style={isActive ? {
-                      background: 'rgba(37,99,235,0.18)',
-                      color: '#FFFFFF',
-                    } : {
-                      color: '#94A3B8',
-                    }}
+                    className={cn(
+                      'sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md transition-colors duration-150 relative group',
+                      isActive && 'sidebar-nav-item--active'
+                    )}
                   >
-                    <Icon
-                      className="h-4 w-4 flex-shrink-0"
-                      style={{ color: isActive ? '#60A5FA' : '#94A3B8' }}
-                    />
-                    <span className="text-[13px] font-medium tracking-wide">{item?.name}</span>
+                    <Icon className="sidebar-nav-icon h-[18px] w-[18px] flex-shrink-0" />
+                    <span className="text-[14px] font-medium tracking-wide">{item?.name}</span>
 
                     {isActive && (
                       <span

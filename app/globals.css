@@ -283,6 +283,34 @@ html, body {
 .leaflet-control-attribution { display: none !important; }
 
 /* ──────────────────────────────────────────────────────────
+   Sidebar nav items — hover + active states
+   (sidebar é sempre escura, então cores são fixas)
+   ────────────────────────────────────────────────────────── */
+.sidebar-nav-item {
+  color: #CBD5E1;
+}
+.sidebar-nav-item .sidebar-nav-icon {
+  color: #94A3B8;
+  transition: color 0.15s;
+}
+.sidebar-nav-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #FFFFFF;
+}
+.sidebar-nav-item:hover .sidebar-nav-icon {
+  color: #FFFFFF;
+}
+.sidebar-nav-item--active,
+.sidebar-nav-item--active:hover {
+  background: rgba(37, 99, 235, 0.22);
+  color: #FFFFFF;
+}
+.sidebar-nav-item--active .sidebar-nav-icon,
+.sidebar-nav-item--active:hover .sidebar-nav-icon {
+  color: #60A5FA;
+}
+
+/* ──────────────────────────────────────────────────────────
    Scrollbars — sidebar (sempre escura) + global (segue tema)
    ────────────────────────────────────────────────────────── */
 .sidebar-nav::-webkit-scrollbar,
