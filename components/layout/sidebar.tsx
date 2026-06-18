@@ -24,6 +24,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { PERMISSIONS, type Permission, hasPermission, ROLE_LABELS } from '@/lib/permissions';
+import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
 
 type NavItem = {
   name: string;
@@ -199,14 +200,17 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           </div>
         </div>
 
-        <button
-          onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors duration-150 group"
-          style={{ color: '#94A3B8' }}
-        >
-          <LogOut className="h-4 w-4 flex-shrink-0" />
-          <span className="text-[13px] font-medium tracking-wide">Sair</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSignOut}
+            className="flex-1 flex items-center gap-3 px-3 py-2 rounded-md transition-colors duration-150"
+            style={{ color: '#CBD5E1', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(148,163,184,0.10)' }}
+          >
+            <LogOut className="h-4 w-4 flex-shrink-0" />
+            <span className="text-[13px] font-medium tracking-wide">Sair</span>
+          </button>
+          <ThemeToggleButton />
+        </div>
       </div>
     </>
   );

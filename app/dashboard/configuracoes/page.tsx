@@ -304,6 +304,7 @@ export default function ConfiguracoesPage() {
 // ──────────────────────────────────────────────────────────
 function AparenciaCard() {
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { update } = useSession();
   const [mounted, setMounted] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -321,6 +322,8 @@ function AparenciaCard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme: next }),
       });
+      // Refresca o JWT pra próxima session/tab abrir com o tema correto
+      await update();
     } catch {
       // segue só no localStorage
     } finally {

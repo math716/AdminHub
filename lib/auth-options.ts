@@ -85,15 +85,16 @@ export const authOptions: NextAuthOptions = {
             token.gabineteNome = s.gabineteNome ?? null;
           }
         } else if (token.id) {
-          // Refresh de mustChangePassword + permissions após mudanças no perfil
+          // Refresh de mustChangePassword + permissions + theme após mudanças no perfil
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { mustChangePassword: true, role: true, permissions: true },
+            select: { mustChangePassword: true, role: true, permissions: true, theme: true },
           });
           if (dbUser) {
             token.mustChangePassword = dbUser.mustChangePassword;
             token.role = dbUser.role;
             token.permissions = dbUser.permissions ?? [];
+            token.theme = (dbUser as any).theme ?? 'dark';
           }
         }
       }

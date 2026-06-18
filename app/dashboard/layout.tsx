@@ -4,7 +4,6 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
-import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
 
 export default function DashboardLayout({
   children,
@@ -84,10 +83,7 @@ export default function DashboardLayout({
     <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}>
       <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)} />
       <main className={`transition-[padding] duration-300 ease-out ${sidebarOpen ? 'lg:pl-[260px]' : 'lg:pl-6'}`}>
-        <div className="p-4 lg:p-8 landscape-content relative">
-          <div className="absolute top-4 right-4 lg:top-6 lg:right-8 z-30">
-            <ThemeToggleButton />
-          </div>
+        <div className="p-4 lg:p-8 landscape-content">
           {children}
         </div>
       </main>
