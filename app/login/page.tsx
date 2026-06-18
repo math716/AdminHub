@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Mail, Lock, Shield, ChevronRight, Loader2, BarChart3, Users, MapPin, Landmark, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -74,9 +73,9 @@ export default function LoginPage() {
         />
 
         {/* Logo topo */}
-        <div className="relative z-10 px-12 pt-12 flex items-center gap-3">
-          <img src="/logo.png" alt="AdminHub" style={{ width: 64, height: 64, objectFit: 'contain' }} />
-          <span className="text-white font-semibold text-lg tracking-tight">AdminHub</span>
+        <div className="relative z-10 px-12 pt-12 flex items-center gap-5">
+          <img src="/logo.png" alt="AdminHub" style={{ width: 120, height: 120, objectFit: 'contain' }} />
+          <span className="text-white font-semibold text-4xl tracking-tight">AdminHub</span>
         </div>
 
         {/* Conteúdo central */}
@@ -282,15 +281,6 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
-
-            <div className="mt-7 pt-5 text-center" style={{ borderTop: '1px solid var(--border-subtle)' }}>
-              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                Não tem conta?{' '}
-                <Link href="/registro-gabinete" className="font-semibold" style={{ color: 'var(--brand-cobalt)' }}>
-                  Solicitar acesso
-                </Link>
-              </p>
-            </div>
           </motion.div>
         </div>
       </motion.div>
