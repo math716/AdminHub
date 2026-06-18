@@ -125,14 +125,6 @@ export default function DashboardPage() {
         icon={LayoutDashboard}
         title="Dashboard"
         subtitle="Visão geral do gabinete"
-        actions={
-          <div className="text-right">
-            <p className="text-sm text-slate-600 dark:text-slate-400">{gabineteName}</p>
-            <Badge variant={userRole === 'ADMIN' ? 'danger' : userRole === 'AGENTE_POLITICO' ? 'warning' : userRole === 'CHEFE' ? 'success' : 'info'}>
-              {ROLE_LABELS[userRole] ?? 'Usuário'}
-            </Badge>
-          </div>
-        }
       />
 
       {/* Gradient Cards Row */}
