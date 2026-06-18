@@ -84,22 +84,23 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             ref={ref}
             id={id}
             className={cn(
-              'group w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-sm text-white',
+              'group w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-sm',
               'transition-all duration-150 outline-none cursor-pointer',
-              'hover:bg-white/[0.09] hover:[border-color:var(--tint-25)]',
-              'data-[state=open]:bg-white/[0.09] data-[state=open]:[border-color:rgba(37,99,235,0.45)]',
+              'hover:bg-[var(--bg-hover)]',
+              'data-[state=open]:bg-[var(--bg-hover)]',
               'data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed',
             )}
             style={{
-              background: 'var(--tint-06)',
+              background: 'var(--bg-card-subtle)',
               border: error
                 ? '1px solid rgba(239,68,68,0.55)'
-                : '1px solid var(--tint-10)',
+                : '1px solid var(--border-default)',
+              color: 'var(--text-primary)',
             }}
           >
             <Radix.Value
               placeholder={
-                <span style={{ color: 'rgba(255,255,255,0.28)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>
                   {placeholder ?? 'Selecionar…'}
                 </span>
               }
@@ -107,7 +108,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             <Radix.Icon asChild>
               <ChevronDown
                 className="h-4 w-4 flex-shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180"
-                style={{ color: 'rgba(255,255,255,0.38)' }}
+                style={{ color: 'var(--text-tertiary)' }}
               />
             </Radix.Icon>
           </Radix.Trigger>
@@ -118,13 +119,11 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
               className="z-[9999] overflow-hidden select-dropdown-content"
               style={{
                 minWidth: 'var(--radix-select-trigger-width)',
-                background: 'rgba(5,18,36,0.98)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid rgba(37,99,235,0.2)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-default)',
                 borderRadius: '0.875rem',
-                boxShadow:
-                  '0 24px 64px rgba(0,0,0,0.72), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 var(--tint-04)',
+                boxShadow: 'var(--shadow-raised)',
+                color: 'var(--text-primary)',
                 transformOrigin: 'var(--radix-select-content-transform-origin)',
                 animation: 'selectSlideIn 0.15s cubic-bezier(0.16,1,0.3,1)',
               }}
@@ -135,7 +134,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             >
               <Radix.ScrollUpButton
                 className="flex items-center justify-center h-6 select-none"
-                style={{ color: 'var(--tint-35)' }}
+                style={{ color: 'var(--text-tertiary)' }}
               >
                 <ChevronDown className="h-3.5 w-3.5 rotate-180" />
               </Radix.ScrollUpButton>
@@ -148,13 +147,12 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                     disabled={opt.disabled}
                     className="select-item group relative flex items-center pl-3 pr-8 py-2.5 rounded-lg text-sm cursor-pointer outline-none select-none"
                   >
-                    {/* Gold left accent bar — rendered via CSS class */}
                     <span className="select-item-accent absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[55%] rounded-r-full" />
 
                     <Radix.ItemText>{opt.label}</Radix.ItemText>
 
                     <Radix.ItemIndicator className="absolute right-3 flex items-center">
-                      <Check className="h-3.5 w-3.5" style={{ color: '#2563EB' }} />
+                      <Check className="h-3.5 w-3.5" style={{ color: 'var(--brand-cobalt)' }} />
                     </Radix.ItemIndicator>
                   </Radix.Item>
                 ))}
@@ -162,7 +160,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
 
               <Radix.ScrollDownButton
                 className="flex items-center justify-center h-6 select-none"
-                style={{ color: 'var(--tint-35)' }}
+                style={{ color: 'var(--text-tertiary)' }}
               >
                 <ChevronDown className="h-3.5 w-3.5" />
               </Radix.ScrollDownButton>

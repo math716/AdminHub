@@ -43,7 +43,8 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0"
+            style={{ background: 'var(--modal-backdrop)' }}
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
