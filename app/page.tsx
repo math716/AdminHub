@@ -18,7 +18,7 @@ export default function HomePage() {
   }, [status, router]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center"
+    <div className="dark min-h-screen flex flex-col items-center justify-center"
       style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 55%, #0c2a4f 100%)' }}>
       <motion.div
         initial={{ opacity: 0, y: 12 }}

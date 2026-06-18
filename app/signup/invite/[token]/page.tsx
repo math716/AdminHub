@@ -117,7 +117,7 @@ export default function InviteSignupPage() {
   const panelBg = 'linear-gradient(160deg, #04111f 0%, #071d36 60%, #0c2a4f 100%)';
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex' }}>
+    <div className="dark" style={{ minHeight: '100vh', display: 'flex', background: 'var(--bg-page)' }}>
       {/* Left branding panel */}
       <div className="hidden lg:flex" style={{ width: '42%', background: panelBg, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '3rem' }}>
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} style={{ maxWidth: 360 }}>

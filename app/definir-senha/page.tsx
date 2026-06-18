@@ -57,7 +57,7 @@ export default function DefinirSenhaPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4"
+    <div className="dark min-h-screen flex items-center justify-center p-4"
       style={{ background: 'linear-gradient(135deg,#020d1a 0%,#071d36 50%,#04111f 100%)' }}>
 
       <motion.div

@@ -262,7 +262,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+    <div className="dark min-h-screen flex" style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", background: 'var(--bg-page)' }}>
 
       {/* ── Painel esquerdo: Branding ─────────────────────────────────────── */}
       <motion.div

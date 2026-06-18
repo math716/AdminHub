@@ -34,7 +34,7 @@ export default function AguardandoAprovacaoPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-4"
+      className="dark min-h-screen flex items-center justify-center px-4"
       style={{ background: 'linear-gradient(160deg, #04111f 0%, #071d36 55%, #0c2a4f 100%)' }}
     >
       {/* Subtle grid */}
