@@ -414,6 +414,7 @@ export default function MapaCampanhaPage() {
   const [anoProjecao, setAnoProjecao] = useState('2026');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingParceria, setSavingParceria] = useState(false);
 
   // Data states
   const [electoralData, setElectoralData] = useState<ElectoralData | null>(null);
@@ -1443,11 +1444,13 @@ export default function MapaCampanhaPage() {
 
   // Salvar parceria
   const saveParceria = async () => {
+    if (savingParceria) return; // bloqueia clique duplo enquanto request em andamento
     if (!parceriaForm.nome || !parceriaForm.tipo) {
       toast.error('Nome e tipo são obrigatórios');
       return;
     }
 
+    setSavingParceria(true);
     try {
       // Usa normMunKey pra casar nomes com acentos diferentes
       // (ex.: "São Paulo" vs "SAO PAULO" vs "São Paulo ")
@@ -1510,6 +1513,8 @@ export default function MapaCampanhaPage() {
     } catch (error) {
       console.error('Erro ao salvar parceria:', error);
       toast.error('Erro ao salvar parceria');
+    } finally {
+      setSavingParceria(false);
     }
   };
 
@@ -4971,10 +4976,12 @@ export default function MapaCampanhaPage() {
             </Button>
             <Button
               onClick={saveParceria}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              disabled={savingParceria}
+              loading={savingParceria}
+              style={{ background: 'var(--brand-cobalt)', color: '#FFFFFF', border: 'none' }}
             >
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Salvar Parceria
+              {!savingParceria && <CheckCircle className="h-4 w-4 mr-2" />}
+              {savingParceria ? 'Salvando…' : 'Salvar Parceria'}
             </Button>
           </div>
         </div>
