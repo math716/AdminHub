@@ -1449,11 +1449,19 @@ export default function MapaCampanhaPage() {
     }
 
     try {
-      const munData = projecao?.municipios.find(m => 
-        m.municipio.toUpperCase() === municipioParaParceria.toUpperCase()
+      // Usa normMunKey pra casar nomes com acentos diferentes
+      // (ex.: "São Paulo" vs "SAO PAULO" vs "São Paulo ")
+      const munKey = normMunKey(municipioParaParceria);
+      const munData = projecao?.municipios.find(m =>
+        normMunKey(m.municipio) === munKey
       );
-      
-      if (!munData?.id) {
+
+      if (!munData) {
+        toast.error('Município não encontrado na projeção. Adicione-o antes.');
+        return;
+      }
+
+      if (!munData.id) {
         toast.error('Salve a projeção primeiro para adicionar parcerias');
         return;
       }
