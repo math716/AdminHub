@@ -898,8 +898,8 @@ export default function EmendasPage() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.97 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-2 z-50 w-72 rounded-xl shadow-2xl py-1"
-                    style={{ background: 'rgb(7,20,38)', border: '1px solid rgba(37,99,235,0.25)' }}
+                    className="absolute right-0 top-full mt-2 z-50 w-72 rounded-xl py-1"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-raised)' }}
                   >
                     {favorites.length === 0 ? (
                       <p className="px-4 py-5 text-center text-xs text-slate-600 dark:text-slate-500">Nenhum parlamentar favoritado</p>
@@ -950,15 +950,15 @@ export default function EmendasPage() {
         <div className="relative">
           <div className="flex items-center gap-2">
             {/* Toggle de esfera */}
-            <div className="flex rounded-xl overflow-hidden flex-shrink-0" style={{ border: '1px solid var(--tint-10)' }}>
+            <div className="flex rounded-xl overflow-hidden flex-shrink-0" style={{ border: '1px solid var(--border-default)', background: 'var(--bg-card-subtle)' }}>
               {(['TODAS', 'FEDERAL', 'ESTADUAL'] as const).map((e) => (
                 <button
                   key={e}
                   onClick={() => setEsfera(e)}
                   className="px-3 py-2.5 text-xs font-medium transition-colors"
                   style={esfera === e
-                    ? { background: 'rgba(37,99,235,0.15)', color: '#e8c660' }
-                    : { color: 'rgb(148,163,184)' }}
+                    ? { background: 'var(--brand-cobalt-soft)', color: 'var(--brand-cobalt-text)' }
+                    : { color: 'var(--text-tertiary)' }}
                 >
                   {e === 'TODAS' ? 'Todas' : e === 'FEDERAL' ? 'Federal' : 'Estadual'}
                 </button>
@@ -971,7 +971,8 @@ export default function EmendasPage() {
                 value={parlamentarQuery}
                 onChange={(e) => setParlamentarQuery(e.target.value)}
                 placeholder="Pesquisar parlamentar…"
-                className="w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[color:var(--text-primary)] placeholder-slate-500 outline-none focus:border-amber-500/50 transition-colors"
+                className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm text-[color:var(--text-primary)] placeholder:text-[color:var(--text-tertiary)] outline-none transition-colors"
+                style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}
               />
             </div>
             {selectedParlamentar && (
@@ -1197,7 +1198,7 @@ export default function EmendasPage() {
             {view === 'estado' && (
               <div
                 className="absolute bottom-3 right-3 z-[400] rounded-xl px-3 py-2.5 pointer-events-none"
-                style={{ background: 'rgba(7,29,54,0.92)', border: '1px solid var(--tint-08)', backdropFilter: 'blur(6px)' }}
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-raised)' }}
               >
                 <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-1.5">Valor de Emendas (R$)</p>
                 <LegendaCores />
@@ -2446,11 +2447,11 @@ function EmendasDetalhadasCard({
                           {tipo.label}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 truncate max-w-[110px] group-hover:text-white transition-colors" title={d.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 truncate max-w-[110px] transition-colors" title={d.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {d.funcao ?? '—'}
                       </td>
                       <td className="py-2.5 px-3 truncate max-w-[220px]" title={d.nomeFavorecido ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
-                        <span className="text-slate-800 dark:text-slate-200 group-hover:text-white transition-colors font-medium">
+                        <span className="text-slate-800 dark:text-slate-200 transition-colors font-medium">
                           {d.nomeFavorecido ?? <span className="text-slate-600 italic font-normal">sem favorecido</span>}
                         </span>
                       </td>
@@ -2521,8 +2522,8 @@ function EmendasDetalhadasCard({
                       <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span title={tipo.hint} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap" style={{ background: `${tipo.color}18`, color: tipo.color, border: `1px solid ${tipo.color}33` }}>{tipo.label}</span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 truncate max-w-[140px] group-hover:text-white transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>{e.funcao ?? '—'}</td>
-                      <td className="py-2.5 px-3 text-slate-800 dark:text-slate-200 truncate max-w-[200px] font-medium group-hover:text-white transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 truncate max-w-[140px] transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>{e.funcao ?? '—'}</td>
+                      <td className="py-2.5 px-3 text-slate-800 dark:text-slate-200 truncate max-w-[200px] font-medium transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {e.municipioNome ?? <span className="text-slate-600 italic font-normal">{e.objeto ?? 'sem destino'}</span>}
                       </td>
                       <td className="py-2.5 px-3 text-right font-semibold text-[color:var(--text-primary)] whitespace-nowrap group-hover:text-amber-200 transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>{formatBRLCompact(e.valorEmpenhado)}</td>
@@ -2860,9 +2861,9 @@ function DestaqueDoAnoCard({
     <div
       className="rounded-2xl px-5 py-2.5 flex items-center gap-5 flex-wrap"
       style={{
-        background: 'linear-gradient(135deg, rgba(37,99,235,0.07) 0%, var(--bg-card) 60%, rgba(74,158,222,0.05) 100%)',
-        border: '1px solid rgba(37,99,235,0.18)',
-        boxShadow: '0 2px 16px rgba(0,0,0,0.25)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-default)',
+        boxShadow: 'var(--shadow-card)',
       }}
     >
       {/* Label */}

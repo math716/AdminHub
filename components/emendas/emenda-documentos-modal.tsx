@@ -209,7 +209,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
           exit={{ opacity: 0 }}
           onClick={onClose}
           className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 pb-8 overflow-y-auto"
-          style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+          style={{ background: 'var(--modal-backdrop)', backdropFilter: 'blur(4px)' }}
         >
           <motion.div
             initial={{ y: -20, opacity: 0 }}
@@ -217,10 +217,12 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
             exit={{ y: -10, opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-4xl rounded-2xl p-6 shadow-2xl"
+            className="w-full max-w-4xl rounded-2xl p-6"
             style={{
-              background: 'linear-gradient(135deg, rgba(7,29,54,0.98) 0%, rgba(15,40,75,0.98) 100%)',
-              border: '1px solid rgba(74,158,222,0.2)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-default)',
+              boxShadow: 'var(--shadow-raised)',
+              color: 'var(--text-primary)',
             }}
           >
             {/* Header */}
