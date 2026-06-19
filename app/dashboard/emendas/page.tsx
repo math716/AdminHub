@@ -1824,10 +1824,9 @@ function MunicipioPopup({
         exit={{ opacity: 0, y: 6 }}
         className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-[450] rounded-xl px-4 py-3 pointer-events-auto min-w-[220px]"
         style={{
-          background: 'rgba(7,29,54,0.96)',
-          border: '1px solid rgba(74,158,222,0.4)',
-          backdropFilter: 'blur(8px)',
-          boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-default)',
+          boxShadow: 'var(--shadow-raised)',
         }}
       >
         <div className="flex items-start justify-between gap-3 mb-2">
