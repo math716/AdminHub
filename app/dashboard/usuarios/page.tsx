@@ -48,17 +48,17 @@ function PermissionsChecklist({
             <button key={p} type="button" onClick={() => onToggle(p)}
               className="w-full text-left flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200"
               style={{
-                background: checked ? accent.bgLight : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${checked ? accent.borderLight : 'var(--tint-08)'}`,
+                background: checked ? accent.bgLight : 'var(--tint-04)',
+                border: `1px solid ${checked ? accent.borderLight : 'var(--border-default)'}`,
               }}>
               <span className="text-sm font-medium tracking-wide"
-                style={{ color: checked ? accent.solid : 'var(--text-secondary)' }}>
+                style={{ color: checked ? accent.solid : 'var(--text-primary)' }}>
                 {PERMISSION_LABELS[p as Permission]}
               </span>
               <span className="flex items-center justify-center w-5 h-5 rounded-md flex-shrink-0 transition-all"
                 style={checked
-                  ? { background: accent.solid, color: 'var(--text-primary)', boxShadow: `0 0 8px ${accent.borderLight}` }
-                  : { background: 'transparent', border: '1.5px solid var(--tint-25)' }
+                  ? { background: accent.solid, color: '#FFFFFF', boxShadow: `0 0 8px ${accent.borderLight}` }
+                  : { background: 'transparent', border: '1.5px solid var(--border-strong)' }
                 }>
                 {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
               </span>
