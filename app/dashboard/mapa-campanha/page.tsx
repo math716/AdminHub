@@ -2313,7 +2313,7 @@ export default function MapaCampanhaPage() {
   ];
 
   const cenarioConfig = {
-    conservador: { label: 'Conservador', icon: Shield, color: 'text-amber-400', bg: 'bg-amber-500', border: 'border-amber-500' },
+    conservador: { label: 'Conservador', icon: Shield, color: 'text-[color:var(--brand-cobalt)]', bg: 'bg-amber-500', border: 'border-amber-500' },
     possivel: { label: 'Realista', icon: Gauge, color: 'text-cyan-400', bg: 'bg-cyan-500', border: 'border-cyan-500' },
     arrojado: { label: 'Otimista', icon: Rocket, color: 'text-emerald-400', bg: 'bg-emerald-500', border: 'border-emerald-500' }
   };
@@ -2347,7 +2347,7 @@ export default function MapaCampanhaPage() {
                 <Search className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
                 <div className="flex-1 min-w-0 flex items-center gap-3 flex-wrap">
                   <span className="text-[color:var(--text-primary)] font-semibold truncate">{candidateName || electoralData.nome}</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(37,99,235,0.12)', color: '#e8c660', border: '1px solid rgba(37,99,235,0.25)' }}>
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(37,99,235,0.12)', color: 'var(--brand-cobalt-text)', border: '1px solid rgba(37,99,235,0.25)' }}>
                     {ESTADOS_BRASIL.find(e => e.sigla === uf)?.nome ?? uf}
                   </span>
                   <span className="text-xs text-slate-600 dark:text-slate-400">{ano} → {anoProjecao}</span>
@@ -2676,7 +2676,7 @@ export default function MapaCampanhaPage() {
                   onClick={() => setIncludeParcerias(!includeParcerias)}
                   className={`absolute top-2 right-2 p-1.5 rounded-full transition-all duration-200 ${
                     includeParcerias 
-                      ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-400' 
+                      ? 'bg-amber-500/20 hover:bg-amber-500/30 text-[color:var(--brand-cobalt)]' 
                       : 'bg-slate-600/50 hover:bg-slate-500/50 text-slate-600 dark:text-slate-400'
                   }`}
                   title={includeParcerias ? 'Ocultar parcerias da simulação' : 'Mostrar parcerias na simulação'}
@@ -2686,8 +2686,8 @@ export default function MapaCampanhaPage() {
                 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`text-sm ${includeParcerias ? 'text-amber-300' : 'text-slate-600 dark:text-slate-400'}`}>Parcerias</p>
-                    <p className={`text-2xl font-bold ${includeParcerias ? 'text-amber-400' : 'text-slate-600 dark:text-slate-500'}`}>
+                    <p className={`text-sm ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-600 dark:text-slate-400'}`}>Parcerias</p>
+                    <p className={`text-2xl font-bold ${includeParcerias ? 'text-[color:var(--brand-cobalt)]' : 'text-slate-600 dark:text-slate-500'}`}>
                       {parceriasStats?.total || 0}
                     </p>
                     <p className={`text-xs font-medium ${includeParcerias ? cenarioConfig[cenarioAtivo].color : 'text-slate-600 dark:text-slate-500 line-through'}`}>
@@ -2698,7 +2698,7 @@ export default function MapaCampanhaPage() {
                       )?.toLocaleString() || '0'} votos
                     </p>
                   </div>
-                  <Users className={`h-8 w-8 ${includeParcerias ? 'text-amber-400' : 'text-slate-600 dark:text-slate-500'}`} />
+                  <Users className={`h-8 w-8 ${includeParcerias ? 'text-[color:var(--brand-cobalt)]' : 'text-slate-600 dark:text-slate-500'}`} />
                 </div>
                 
                 {/* Indicador quando desativado */}
@@ -3782,8 +3782,8 @@ export default function MapaCampanhaPage() {
                     {/* Meta Conservadora */}
                     <div className="bg-amber-900/20 rounded-lg p-3 border border-amber-500/30">
                       <div className="flex items-center gap-1 mb-2">
-                        <Shield className="h-4 w-4 text-amber-400" />
-                        <span className="text-amber-400 text-xs font-medium">Conservadora</span>
+                        <Shield className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
+                        <span className="text-[color:var(--brand-cobalt)] text-xs font-medium">Conservadora</span>
                       </div>
                       <Input
                         type="number"
@@ -3844,20 +3844,20 @@ export default function MapaCampanhaPage() {
                   {hasParceriasForMeta && (
                     <div className="bg-gradient-to-r from-amber-900/30 via-cyan-900/30 to-emerald-900/30 rounded-lg p-4 border border-amber-500/30">
                       <h4 className="text-[color:var(--text-primary)] font-medium mb-3 flex items-center gap-2">
-                        <Users className="h-4 w-4 text-amber-400" />
+                        <Users className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
                         Composição das Metas Finais
                         <Badge variant="warning" className="text-xs ml-auto">Inclui Parcerias</Badge>
                       </h4>
                       <div className="grid grid-cols-3 gap-3 text-xs">
                         {/* Conservadora Final */}
                         <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-amber-500/20">
-                          <p className="text-amber-400 mb-1 font-medium">Conservadora</p>
+                          <p className="text-[color:var(--brand-cobalt)] mb-1 font-medium">Conservadora</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
                               <span>Meta Base:</span>
                               <span>{metaConservadoraTemp.toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between text-amber-300">
+                            <div className="flex justify-between text-[color:var(--brand-cobalt-text)]">
                               <span>+ Parcerias:</span>
                               <span>+{parceriasSum.conservadora.toLocaleString()}</span>
                             </div>
@@ -3875,7 +3875,7 @@ export default function MapaCampanhaPage() {
                               <span>Meta Base:</span>
                               <span>{metaPossivelTemp.toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between text-amber-300">
+                            <div className="flex justify-between text-[color:var(--brand-cobalt-text)]">
                               <span>+ Parcerias:</span>
                               <span>+{parceriasSum.possivel.toLocaleString()}</span>
                             </div>
@@ -3893,7 +3893,7 @@ export default function MapaCampanhaPage() {
                               <span>Meta Base:</span>
                               <span>{metaArrojadaTemp.toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between text-amber-300">
+                            <div className="flex justify-between text-[color:var(--brand-cobalt-text)]">
                               <span>+ Parcerias:</span>
                               <span>+{parceriasSum.arrojada.toLocaleString()}</span>
                             </div>
@@ -3976,7 +3976,7 @@ export default function MapaCampanhaPage() {
             <div className="bg-amber-900/20 rounded-lg p-4 border border-amber-500/30">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-amber-400" />
+                  <Users className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
                   <h4 className="text-[color:var(--text-primary)] font-medium">Parcerias</h4>
                   <Badge variant="warning" className="text-xs">
                     {getParceriasMunicipio(selectedMunicipio.nome).length}
@@ -4003,7 +4003,7 @@ export default function MapaCampanhaPage() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-xs px-1.5 py-0.5 bg-amber-600/50 text-amber-200 rounded">
+                          <span className="text-xs px-1.5 py-0.5 bg-amber-600/50 text-[color:var(--brand-cobalt-text)] rounded">
                             {TIPO_PARCERIA_LABELS[parceria.tipo]}
                           </span>
                           <span className="text-[color:var(--text-primary)] text-sm font-medium truncate">{parceria.nome}</span>
@@ -4038,9 +4038,9 @@ export default function MapaCampanhaPage() {
                       {/* Metas da parceria */}
                       <div className="flex items-center gap-4 text-xs">
                         <div className="flex items-center gap-1">
-                          <Shield className="h-3 w-3 text-amber-400" />
+                          <Shield className="h-3 w-3 text-[color:var(--brand-cobalt)]" />
                           <span className="text-slate-600 dark:text-slate-400">Cons:</span>
-                          <span className="text-amber-400 font-medium">{parceria.metaConservadora.toLocaleString()}</span>
+                          <span className="text-[color:var(--brand-cobalt)] font-medium">{parceria.metaConservadora.toLocaleString()}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Gauge className="h-3 w-3 text-cyan-400" />
@@ -4177,8 +4177,8 @@ export default function MapaCampanhaPage() {
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-amber-900/20 rounded-lg p-3 border border-amber-500/30">
               <div className="flex items-center gap-1 mb-2">
-                <Shield className="h-4 w-4 text-amber-400" />
-                <span className="text-amber-400 text-xs font-medium">Conservadora</span>
+                <Shield className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
+                <span className="text-[color:var(--brand-cobalt)] text-xs font-medium">Conservadora</span>
               </div>
               <Input
                 type="number"
@@ -4251,8 +4251,8 @@ export default function MapaCampanhaPage() {
       >
         <div className="space-y-4">
           <div className="flex items-center gap-2 p-3 bg-amber-900/30 border border-amber-500/30 rounded-lg">
-            <Users className="h-5 w-5 text-amber-400" />
-            <p className="text-amber-200 text-sm">{mensagemMultiplos}</p>
+            <Users className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
+            <p className="text-[color:var(--brand-cobalt-text)] text-sm">{mensagemMultiplos}</p>
           </div>
 
           <div className="max-h-[400px] overflow-y-auto space-y-2">
@@ -4565,12 +4565,12 @@ export default function MapaCampanhaPage() {
               </h4>
               <div className="grid grid-cols-3 gap-3">
                 <div className="text-center p-3 bg-amber-900/20 rounded-lg border border-amber-500/30">
-                  <Shield className="h-5 w-5 text-amber-400 mx-auto mb-1" />
-                  <p className="text-amber-400 text-xs mb-1">Conservadora</p>
+                  <Shield className="h-5 w-5 text-[color:var(--brand-cobalt)] mx-auto mb-1" />
+                  <p className="text-[color:var(--brand-cobalt)] text-xs mb-1">Conservadora</p>
                   <p className="text-[color:var(--text-primary)] font-bold">
                     {Math.round(selectedBairro.votos * 1.05).toLocaleString()}
                   </p>
-                  <p className="text-amber-500 text-xs">+5%</p>
+                  <p className="text-[color:var(--brand-cobalt)] text-xs">+5%</p>
                 </div>
                 <div className="text-center p-3 bg-cyan-900/20 rounded-lg border border-cyan-500/30">
                   <Gauge className="h-5 w-5 text-cyan-400 mx-auto mb-1" />
@@ -4894,7 +4894,7 @@ export default function MapaCampanhaPage() {
           {/* Metas */}
           <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
             <h4 className="text-[color:var(--text-primary)] font-medium mb-3 flex items-center gap-2">
-              <Target className="h-4 w-4 text-amber-400" />
+              <Target className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
               Metas da Parceria
             </h4>
             <div className="grid grid-cols-3 gap-4">
@@ -4913,8 +4913,8 @@ export default function MapaCampanhaPage() {
               </div>
               <div className="text-center">
                 <div className="p-3 bg-amber-900/30 rounded-lg border border-amber-500/50">
-                  <Gauge className="h-5 w-5 text-amber-400 mx-auto mb-1" />
-                  <p className="text-amber-400 text-xs mb-1">Realista</p>
+                  <Gauge className="h-5 w-5 text-[color:var(--brand-cobalt)] mx-auto mb-1" />
+                  <p className="text-[color:var(--brand-cobalt)] text-xs mb-1">Realista</p>
                   <input
                     type="number"
                     value={parceriaForm.metaPossivel || 0}

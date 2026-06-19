@@ -229,7 +229,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <FileText className="h-4 w-4 text-amber-300" />
+                  <FileText className="h-4 w-4 text-[color:var(--brand-cobalt-text)]" />
                   <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400">
                     Detalhes da Emenda
                   </p>
@@ -254,7 +254,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
             {/* Loading */}
             {loading && (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-amber-300" />
+                <Loader2 className="h-6 w-6 animate-spin text-[color:var(--brand-cobalt-text)]" />
               </div>
             )}
 
@@ -271,7 +271,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                 {/* Cards de valor */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-lg p-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                    <p className="text-[10px] uppercase font-semibold text-amber-400">Empenhado</p>
+                    <p className="text-[10px] uppercase font-semibold text-[color:var(--brand-cobalt)]">Empenhado</p>
                     <p className="text-base font-bold text-[color:var(--text-primary)] mt-0.5">{formatBRL(data.emenda.valorEmpenhado)}</p>
                   </div>
                   <div className="rounded-lg p-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
@@ -291,10 +291,10 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                   </div>
                 ) : (
                   <div className="rounded-lg p-3 flex items-start gap-2" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                    <MapPin className="h-3.5 w-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
+                    <MapPin className="h-3.5 w-3.5 text-[color:var(--brand-cobalt)] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-[10px] uppercase font-semibold text-amber-400 mb-0.5">Município Beneficiado</p>
-                      <p className="text-xs text-amber-200/70">
+                      <p className="text-[10px] uppercase font-semibold text-[color:var(--brand-cobalt)] mb-0.5">Município Beneficiado</p>
+                      <p className="text-xs text-[color:var(--brand-cobalt-text)]/70">
                         O Portal de Transparência do estado {data.emenda.uf ? `(${data.emenda.uf})` : ''} não disponibiliza a informação de município beneficiado para estas emendas.
                       </p>
                     </div>
@@ -371,7 +371,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                       </p>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="rounded-lg p-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                          <p className="text-[10px] uppercase font-semibold text-amber-400">Total Empenhado</p>
+                          <p className="text-[10px] uppercase font-semibold text-[color:var(--brand-cobalt)]">Total Empenhado</p>
                           <p className="text-base font-bold text-[color:var(--text-primary)] mt-0.5">{formatBRL(data.emenda!.valorEmpenhado)}</p>
                         </div>
                         <div className="rounded-lg p-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
@@ -526,7 +526,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                       href={`https://portaldatransparencia.gov.br/emendas/consulta?ordenarPor=autor&direcao=asc&codigoEmenda=${data.emenda.codigoEmenda}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-[11px] text-amber-300 hover:text-amber-200"
+                      className="inline-flex items-center gap-1.5 text-[11px] text-[color:var(--brand-cobalt-text)] hover:text-[color:var(--brand-cobalt-text)]"
                     >
                       <ExternalLink className="h-3 w-3" />
                       Ver no Portal da Transparência
@@ -587,7 +587,7 @@ function AnotacaoSection({
             onClick={onSave}
             disabled={savingAnotacao}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-            style={{ background: 'rgba(37,99,235,0.15)', color: '#e8c660', border: '1px solid rgba(37,99,235,0.3)' }}
+            style={{ background: 'rgba(37,99,235,0.15)', color: 'var(--brand-cobalt-text)', border: '1px solid rgba(37,99,235,0.3)' }}
           >
             {savingAnotacao ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
             Salvar anotação

@@ -875,10 +875,10 @@ export default function EmendasPage() {
                 style={{
                   background: favorites.length > 0 ? 'rgba(37,99,235,0.12)' : 'var(--tint-04)',
                   border: `1px solid ${favorites.length > 0 ? 'rgba(37,99,235,0.35)' : 'var(--tint-10)'}`,
-                  color: favorites.length > 0 ? '#e8c660' : '#64748b',
+                  color: favorites.length > 0 ? 'var(--brand-cobalt-text)' : '#64748b',
                 }}
               >
-                <Star className={`w-4 h-4 ${favorites.length > 0 ? 'fill-amber-400 text-amber-400' : ''}`} />
+                <Star className={`w-4 h-4 ${favorites.length > 0 ? 'fill-amber-400 text-[color:var(--brand-cobalt)]' : ''}`} />
                 <span className="text-xs font-medium">Favoritos</span>
                 {favorites.length > 0 && (
                   <span
@@ -909,9 +909,9 @@ export default function EmendasPage() {
                           <button
                             onClick={() => { handleClickEmendaFavorito(fav); setShowFavDropdown(false); }}
                             className="flex-1 flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-colors hover:bg-[var(--tint-06)] text-left"
-                            style={{ color: '#e8c660' }}
+                            style={{ color: 'var(--brand-cobalt-text)' }}
                           >
-                            <Star className="w-3 h-3 fill-amber-400 text-amber-400 flex-shrink-0" />
+                            <Star className="w-3 h-3 fill-amber-400 text-[color:var(--brand-cobalt)] flex-shrink-0" />
                             <span className="font-medium flex-1 truncate">{fav.candidateName}</span>
                             <span className="text-slate-600 dark:text-slate-500 flex-shrink-0">{fav.uf} · {fav.ano}</span>
                           </button>
@@ -987,7 +987,7 @@ export default function EmendasPage() {
                   title={isSavedParlamentar ? 'Remover dos favoritos' : 'Salvar parlamentar'}
                   className="transition-colors disabled:opacity-50 ml-0.5"
                 >
-                  <Star className={`w-3.5 h-3.5 ${isSavedParlamentar ? 'fill-amber-400 text-amber-400' : 'text-slate-600 dark:text-slate-400 hover:text-amber-400'}`} />
+                  <Star className={`w-3.5 h-3.5 ${isSavedParlamentar ? 'fill-amber-400 text-[color:var(--brand-cobalt)]' : 'text-slate-600 dark:text-slate-400 hover:text-[color:var(--brand-cobalt)]'}`} />
                 </button>
                 <button onClick={() => setSelectedParlamentar(null)} className="text-slate-600 dark:text-slate-400 hover:text-white">
                   <X className="w-3.5 h-3.5" />
@@ -1003,9 +1003,9 @@ export default function EmendasPage() {
                   key={f.id}
                   onClick={() => handleSelectFavorito(f)}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors"
-                  style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', color: '#e8c660' }}
+                  style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', color: 'var(--brand-cobalt-text)' }}
                 >
-                  <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                  <Star className="w-2.5 h-2.5 fill-amber-400 text-[color:var(--brand-cobalt)]" />
                   {f.candidateName}
                 </button>
               ))}
@@ -1045,7 +1045,7 @@ export default function EmendasPage() {
       {resumo?.mock && (
         <div
           className="rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs"
-          style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.25)', color: '#e8c660' }}
+          style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.25)', color: 'var(--brand-cobalt-text)' }}
         >
           <span className="font-semibold">Modo demonstração:</span>
           <span className="text-slate-700 dark:text-slate-300">
@@ -1130,7 +1130,7 @@ export default function EmendasPage() {
                 {selectedMunicipio && (
                   <>
                     <ChevronRight className="w-3 h-3 text-slate-600" />
-                    <span className="text-amber-300 text-xs font-medium">{selectedMunicipio.nome}</span>
+                    <span className="text-[color:var(--brand-cobalt-text)] text-xs font-medium">{selectedMunicipio.nome}</span>
                   </>
                 )}
               </div>
@@ -1139,7 +1139,7 @@ export default function EmendasPage() {
                 style={{
                   background: selectedParlamentar ? 'rgba(74,158,222,0.15)' : 'rgba(37,99,235,0.15)',
                   border:     `1px solid ${selectedParlamentar ? 'rgba(74,158,222,0.4)' : 'rgba(37,99,235,0.3)'}`,
-                  color:      selectedParlamentar ? '#7fb8e0' : '#e8c660',
+                  color:      selectedParlamentar ? '#7fb8e0' : 'var(--brand-cobalt-text)',
                 }}
                 title={selectedParlamentar ? `Filtrado por ${selectedParlamentar.nome}` : undefined}
               >
@@ -1589,7 +1589,7 @@ function Top5ParlamentaresDoMunicipioCard({
       style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
     >
       <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-1 flex-shrink-0">Top 5 Parlamentares</p>
-      <p className="text-[10px] text-amber-300/80 mb-2 truncate flex-shrink-0" title={municipioNome}>
+      <p className="text-[10px] text-[color:var(--brand-cobalt-text)]/80 mb-2 truncate flex-shrink-0" title={municipioNome}>
         que mais enviaram para {municipioNome}
       </p>
       {loading && (
@@ -1610,7 +1610,7 @@ function Top5ParlamentaresDoMunicipioCard({
               >
                 <span className="text-xs font-bold text-slate-600 dark:text-slate-500 w-4">{i + 1}.</span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-[color:var(--text-primary)] truncate group-hover:text-amber-300 transition-colors">{p.nome}</p>
+                  <p className="text-xs text-[color:var(--text-primary)] truncate group-hover:text-[color:var(--brand-cobalt-text)] transition-colors">{p.nome}</p>
                   <p className="text-[10px] text-slate-600 dark:text-slate-500">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
                 </div>
                 <span className="text-xs font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
@@ -1644,7 +1644,7 @@ function Top5ParlamentaresEstadoCard({
             className="w-full flex items-center gap-2 group text-left hover:bg-[var(--tint-06)] -mx-1 px-1 py-1 rounded-lg transition-colors"
           >
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] text-[color:var(--text-primary)] truncate group-hover:text-amber-300">{p.nome}</p>
+              <p className="text-[11px] text-[color:var(--text-primary)] truncate group-hover:text-[color:var(--brand-cobalt-text)]">{p.nome}</p>
               <p className="text-[10px] text-slate-600 dark:text-slate-500">{CARGO_LABELS[p.cargo as ParlamentarCargo] ?? p.cargo}</p>
             </div>
             <span className="text-[11px] font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
@@ -1683,7 +1683,7 @@ function Top5MunicipiosCard({
         Top 5 Municípios
       </p>
       {isParlamentar && (
-        <p className="text-[10px] text-amber-300/80 mb-2 truncate flex-shrink-0" title={escopoParlamentar.nome}>
+        <p className="text-[10px] text-[color:var(--brand-cobalt-text)]/80 mb-2 truncate flex-shrink-0" title={escopoParlamentar.nome}>
           beneficiados por {escopoParlamentar.nome}
         </p>
       )}
@@ -1710,7 +1710,7 @@ function Top5MunicipiosCard({
                 className="w-full flex items-center gap-2 group hover:bg-[var(--tint-06)] -mx-2 px-2 py-1 rounded-lg transition-colors text-left"
               >
                 <span className="text-xs font-bold text-slate-600 dark:text-slate-500 w-4">{i + 1}.</span>
-                <span className="text-xs text-[color:var(--text-primary)] truncate flex-1 group-hover:text-amber-300 transition-colors">{m.nome}</span>
+                <span className="text-xs text-[color:var(--text-primary)] truncate flex-1 group-hover:text-[color:var(--brand-cobalt-text)] transition-colors">{m.nome}</span>
                 <span className="text-xs font-semibold text-cyan-300">{formatBRLCompact(m.total)}</span>
               </button>
             </li>
@@ -1777,7 +1777,7 @@ function ParlamentarSearchCard({
         >
           <div className="flex-1 min-w-0">
             <p className="text-xs text-[color:var(--text-primary)] font-semibold truncate">{selected.nome}</p>
-            <p className="text-[10px] text-amber-300/80">
+            <p className="text-[10px] text-[color:var(--brand-cobalt-text)]/80">
               {CARGO_LABELS[selected.cargo]}{selected.partido ? ` · ${selected.partido}` : ''}
             </p>
           </div>
@@ -1796,7 +1796,7 @@ function ParlamentarSearchCard({
               className="w-full flex items-center gap-2 group text-left hover:bg-[var(--tint-06)] -mx-1 px-1 py-1 rounded-lg transition-colors"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] text-[color:var(--text-primary)] truncate group-hover:text-amber-300">{p.nome}</p>
+                <p className="text-[11px] text-[color:var(--text-primary)] truncate group-hover:text-[color:var(--brand-cobalt-text)]">{p.nome}</p>
                 <p className="text-[10px] text-slate-600 dark:text-slate-500">{CARGO_LABELS[p.cargo as ParlamentarCargo] ?? p.cargo}</p>
               </div>
               <span className="text-[11px] font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
@@ -1952,7 +1952,7 @@ function ParlamentarDashboard({
     >
       <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
         <div>
-          <p className="text-[10px] uppercase tracking-widest font-bold text-amber-300">Dashboard do parlamentar</p>
+          <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--brand-cobalt-text)]">Dashboard do parlamentar</p>
           <h2 className="text-xl text-[color:var(--text-primary)] font-bold mt-1">{parlamentar.nome}</h2>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
             {CARGO_LABELS[parlamentar.cargo]}
@@ -1968,7 +1968,7 @@ function ParlamentarDashboard({
             boxShadow: 'inset 0 0 18px rgba(37,99,235,0.08)',
           }}
         >
-          <p className="text-[10px] uppercase tracking-widest text-amber-300 font-bold">
+          <p className="text-[10px] uppercase tracking-widest text-[color:var(--brand-cobalt-text)] font-bold">
             Total enviado em {ano}{escopo ? ` · ${escopo}` : ''}
           </p>
           <p className="text-2xl font-bold text-[color:var(--text-primary)] mt-0.5">
@@ -2051,8 +2051,8 @@ function ParlamentarDashboard({
                   return (
                     <div key={p.ano} className="space-y-1">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className={isAnoSelecionado ? 'text-amber-300 font-bold' : 'text-slate-700 dark:text-slate-300'}>{p.ano}</span>
-                        <span className={isAnoSelecionado ? 'text-amber-300 font-bold' : 'text-[color:var(--text-primary)] font-semibold'}>
+                        <span className={isAnoSelecionado ? 'text-[color:var(--brand-cobalt-text)] font-bold' : 'text-slate-700 dark:text-slate-300'}>{p.ano}</span>
+                        <span className={isAnoSelecionado ? 'text-[color:var(--brand-cobalt-text)] font-bold' : 'text-[color:var(--text-primary)] font-semibold'}>
                           {formatBRLCompact(p.total)}
                         </span>
                       </div>
@@ -2062,7 +2062,7 @@ function ParlamentarDashboard({
                           style={{
                             width: `${pct}%`,
                             background: isAnoSelecionado
-                              ? 'linear-gradient(90deg, #2563EB, #e8c660)'
+                              ? 'linear-gradient(90deg, #2563EB, var(--brand-cobalt-text))'
                               : 'linear-gradient(90deg, #4a9ede, #6cb9ed)',
                           }}
                         />
@@ -2247,10 +2247,10 @@ function EmendasDetalhadasCard({
         </div>
         <div className="flex items-center gap-3">
           {semDadosExecucao && (
-            <span className="text-[10px] text-amber-400/70 italic hidden sm:block">Sem dados de execução estadual</span>
+            <span className="text-[10px] text-[color:var(--brand-cobalt)]/70 italic hidden sm:block">Sem dados de execução estadual</span>
           )}
           {semDadosPagamento && !semDadosExecucao && (
-            <span className="text-[10px] text-amber-400/70 italic hidden sm:block">Sem dados de pagamento estadual</span>
+            <span className="text-[10px] text-[color:var(--brand-cobalt)]/70 italic hidden sm:block">Sem dados de pagamento estadual</span>
           )}
           <div className="flex items-center gap-2 px-3 py-1 rounded-full" style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
             {temFiltro && (
@@ -2394,7 +2394,7 @@ function EmendasDetalhadasCard({
             <Search className="w-5 h-5 text-slate-600" />
             <p className="text-[12px] text-slate-600 dark:text-slate-500">Nenhum resultado encontrado</p>
             {temFiltro && (
-              <button onClick={limparFiltros} className="text-[11px] text-amber-400 hover:text-amber-300 mt-1 transition-colors">
+              <button onClick={limparFiltros} className="text-[11px] text-[color:var(--brand-cobalt)] hover:text-[color:var(--brand-cobalt-text)] mt-1 transition-colors">
                 Limpar filtros
               </button>
             )}
@@ -2431,11 +2431,11 @@ function EmendasDetalhadasCard({
                         titulo: d.numeroEmenda ? `Emenda nº ${d.numeroEmenda}` : `Emenda ${d.codigoEmenda}`,
                         filtroFavorecido: { cnpj: d.cnpjFavorecido, nome: d.nomeFavorecido, municipio: d.municipio, uf: d.uf },
                       })}
-                      className="group cursor-pointer transition-colors"
-                      style={{ background: par ? 'transparent' : 'rgba(255,255,255,0.015)' }}
+                      className="group cursor-pointer transition-colors hover:bg-[var(--brand-cobalt-soft)]"
+                      style={{ background: par ? 'transparent' : 'var(--tint-04)' }}
                       title="Clique para ver todos os documentos desta emenda"
                     >
-                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-500 font-mono text-[11px] whitespace-nowrap group-hover:text-slate-700 dark:text-slate-300 transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 font-mono text-[11px] whitespace-nowrap transition-colors text-slate-600 dark:text-slate-500 group-hover:text-[color:var(--brand-cobalt-text)]" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {d.numeroEmenda ?? '—'}
                       </td>
                       <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
@@ -2447,23 +2447,23 @@ function EmendasDetalhadasCard({
                           {tipo.label}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 truncate max-w-[110px] transition-colors" title={d.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 truncate max-w-[110px] transition-colors text-slate-700 dark:text-slate-300 group-hover:text-[color:var(--brand-cobalt-text)]" title={d.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {d.funcao ?? '—'}
                       </td>
                       <td className="py-2.5 px-3 truncate max-w-[220px]" title={d.nomeFavorecido ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
-                        <span className="text-slate-800 dark:text-slate-200 transition-colors font-medium">
+                        <span className="font-medium transition-colors text-slate-800 dark:text-slate-200 group-hover:text-[color:var(--brand-cobalt-text)]">
                           {d.nomeFavorecido ?? <span className="text-slate-600 italic font-normal">sem favorecido</span>}
                         </span>
                       </td>
                       <td className="py-2.5 px-3 truncate max-w-[150px]" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {d.municipio ? (
-                          <span className="text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:text-slate-200 transition-colors">
+                          <span className="transition-colors text-slate-600 dark:text-slate-400 group-hover:text-[color:var(--brand-cobalt-text)]">
                             {d.municipio}
-                            {d.uf && <span className="text-slate-600 ml-1 text-[10px]">/ {d.uf}</span>}
+                            {d.uf && <span className="text-slate-500 ml-1 text-[10px]">/ {d.uf}</span>}
                           </span>
                         ) : <span className="text-slate-600">—</span>}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-semibold text-[color:var(--text-primary)] whitespace-nowrap group-hover:text-amber-200 transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap transition-colors text-[color:var(--text-primary)] group-hover:text-[color:var(--brand-cobalt-text)]" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {formatBRLCompact(d.valorEmpenhado)}
                       </td>
                       <td className="py-2.5 px-3 text-right text-emerald-400 whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
@@ -2526,7 +2526,7 @@ function EmendasDetalhadasCard({
                       <td className="py-2.5 px-3 text-slate-800 dark:text-slate-200 truncate max-w-[200px] font-medium transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {e.municipioNome ?? <span className="text-slate-600 italic font-normal">{e.objeto ?? 'sem destino'}</span>}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-semibold text-[color:var(--text-primary)] whitespace-nowrap group-hover:text-amber-200 transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>{formatBRLCompact(e.valorEmpenhado)}</td>
+                      <td className="py-2.5 px-3 text-right font-semibold text-[color:var(--text-primary)] whitespace-nowrap group-hover:text-[color:var(--brand-cobalt-text)] transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>{formatBRLCompact(e.valorEmpenhado)}</td>
                       <td className="py-2.5 px-3 text-right text-emerald-400 whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>{formatBRLCompact(e.valorPago)}</td>
                       <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: pct >= 80 ? 'rgba(16,185,129,0.12)' : pct >= 40 ? 'rgba(245,158,11,0.12)' : 'rgba(100,116,139,0.12)', color: pct >= 80 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#64748b' }}>{pct.toFixed(0)}%</span>
@@ -2628,7 +2628,7 @@ function MunicipiosBeneficiadosCard({
                 <div className="flex items-center justify-between gap-3 mb-1.5">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className="text-[10px] font-bold text-slate-600 dark:text-slate-500 w-5 flex-shrink-0">{i + 1}.</span>
-                    <span className="text-[color:var(--text-primary)] text-sm font-semibold truncate group-hover:text-amber-300 transition-colors">
+                    <span className="text-[color:var(--text-primary)] text-sm font-semibold truncate group-hover:text-[color:var(--brand-cobalt-text)] transition-colors">
                       {m.nome}
                     </span>
                     {m.uf && (
@@ -2664,7 +2664,7 @@ function MunicipiosBeneficiadosCard({
           {porMunicipio.length > MAX_INICIAL && (
             <button
               onClick={() => setExpandido((v) => !v)}
-              className="mt-3 w-full text-center text-[11px] text-amber-300 hover:text-amber-200 font-semibold transition-colors py-1.5 rounded-lg hover:bg-amber-300/5"
+              className="mt-3 w-full text-center text-[11px] text-[color:var(--brand-cobalt-text)] hover:text-[color:var(--brand-cobalt-text)] font-semibold transition-colors py-1.5 rounded-lg hover:bg-amber-300/5"
             >
               {expandido
                 ? `Mostrar apenas os ${MAX_INICIAL} maiores`
@@ -2868,8 +2868,8 @@ function DestaqueDoAnoCard({
     >
       {/* Label */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
-        <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#e8c660' }} />
-        <p className="text-[9px] uppercase tracking-widest font-bold text-amber-300/70 whitespace-nowrap">
+        <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--brand-cobalt-text)' }} />
+        <p className="text-[9px] uppercase tracking-widest font-bold text-[color:var(--brand-cobalt-text)]/70 whitespace-nowrap">
           Destaque {ano} · {stateName}
         </p>
       </div>
@@ -2908,7 +2908,7 @@ function DestaqueDoAnoCard({
             }}
           >
             <div className="flex flex-col leading-tight">
-              <span className="text-[8px] uppercase tracking-widest font-semibold text-amber-300/60">Parlamentar</span>
+              <span className="text-[8px] uppercase tracking-widest font-semibold text-[color:var(--brand-cobalt-text)]/60">Parlamentar</span>
               <div className="flex items-center gap-1.5">
                 <span className="text-[color:var(--text-primary)] font-bold text-[13px] truncate max-w-[180px] leading-tight">{topParlamentar.nome}</span>
                 <span className="text-[9px] text-slate-600 dark:text-slate-500 whitespace-nowrap hidden sm:block">
@@ -2921,7 +2921,7 @@ function DestaqueDoAnoCard({
               className="px-2 py-0.5 rounded-lg"
               style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.25)' }}
             >
-              <span className="text-amber-300 font-bold text-[11px] whitespace-nowrap">{formatBRLCompact(topParlamentar.total)}</span>
+              <span className="text-[color:var(--brand-cobalt-text)] font-bold text-[11px] whitespace-nowrap">{formatBRLCompact(topParlamentar.total)}</span>
             </div>
           </div>
         )}

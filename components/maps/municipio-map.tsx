@@ -480,7 +480,7 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
     return (
       <div className="w-full bg-[#0d1b2a] rounded-xl flex items-center justify-center" style={{ height }}>
         <div className="flex flex-col items-center gap-3 text-center p-6">
-          <AlertTriangle className="w-10 h-10 text-amber-400" />
+          <AlertTriangle className="w-10 h-10 text-[color:var(--brand-cobalt)]" />
           <span className="text-gray-300 font-medium">Dados de bairros não disponíveis</span>
           <span className="text-gray-500 text-sm max-w-md">
             Os locais de votação de {municipio} não possuem coordenadas geográficas cadastradas.

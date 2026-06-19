@@ -1117,7 +1117,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
                 <div>
                   <span className="text-violet-400 font-medium">✓ {subdivisaoData?.total} setores censitários (IBGE)</span>
                   <div className="flex items-start gap-1.5 mt-2 p-2 bg-[var(--bg-card-subtle)]/60 rounded-lg border border-[var(--border-default)]/50">
-                    <Info className="w-3 h-3 text-amber-400 mt-0.5 flex-shrink-0" />
+                    <Info className="w-3 h-3 text-[color:var(--brand-cobalt)] mt-0.5 flex-shrink-0" />
                     <span className="text-gray-400 leading-tight">
                       Bairros oficiais não disponíveis. Exibindo setores censitários do IBGE.
                     </span>
@@ -1125,7 +1125,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
                 </div>
               ) : subdivisaoTipo === 'bairrosTSE' ? (
                 <div>
-                  <span className="text-amber-400 font-medium">✓ {subdivisaoData?.bairros?.length} locais de votação</span>
+                  <span className="text-[color:var(--brand-cobalt)] font-medium">✓ {subdivisaoData?.bairros?.length} locais de votação</span>
                   <div className="flex items-start gap-1.5 mt-2 p-2 bg-[var(--bg-card-subtle)]/60 rounded-lg border border-[var(--border-default)]/50">
                     <Info className="w-3 h-3 text-blue-400 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-400 leading-tight">

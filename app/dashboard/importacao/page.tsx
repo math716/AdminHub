@@ -350,9 +350,9 @@ export default function ImportacaoPage() {
         >
           <input id="file-input" type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={onFileInput} />
           {stage === 'parsing' ? (
-            <Loader2 className="w-10 h-10 animate-spin text-amber-400 mb-3" />
+            <Loader2 className="w-10 h-10 animate-spin text-[color:var(--brand-cobalt)] mb-3" />
           ) : (
-            <Upload className="w-10 h-10 mb-3" style={{ color: dragging ? '#e8c660' : 'var(--tint-25)' }} />
+            <Upload className="w-10 h-10 mb-3" style={{ color: dragging ? 'var(--brand-cobalt-text)' : 'var(--tint-25)' }} />
           )}
           <p className="text-[color:var(--text-primary)] font-semibold text-base">
             {stage === 'parsing' ? 'Lendo arquivo…' : 'Arraste o arquivo aqui ou clique para selecionar'}
@@ -373,7 +373,7 @@ export default function ImportacaoPage() {
           <div className="flex items-center justify-between rounded-xl px-4 py-3"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-08)' }}>
             <div className="flex items-center gap-3">
-              <FileText className="w-5 h-5 text-amber-300" />
+              <FileText className="w-5 h-5 text-[color:var(--brand-cobalt-text)]" />
               <div>
                 <p className="text-[color:var(--text-primary)] text-sm font-semibold">{fileName}</p>
                 <p className="text-slate-600 dark:text-slate-400 text-xs">{rawRows.length.toLocaleString('pt-BR')} linhas · {headers.length} colunas</p>
@@ -426,7 +426,7 @@ export default function ImportacaoPage() {
                     onClick={() => setEsfera(e)}
                     className="flex-1 py-2.5 text-sm font-medium transition-colors"
                     style={esfera === e
-                      ? { background: 'rgba(37,99,235,0.15)', color: '#e8c660' }
+                      ? { background: 'rgba(37,99,235,0.15)', color: 'var(--brand-cobalt-text)' }
                       : { color: 'rgb(148,163,184)' }}
                   >
                     {e === 'FEDERAL' ? 'Federal' : 'Estadual'}
@@ -439,7 +439,7 @@ export default function ImportacaoPage() {
           {/* Mapeamento de colunas */}
           <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--tint-08)' }}>
             <div className="px-4 py-3 flex items-center gap-2" style={{ background: 'var(--bg-card)' }}>
-              <Table2 className="w-4 h-4 text-amber-300" />
+              <Table2 className="w-4 h-4 text-[color:var(--brand-cobalt-text)]" />
               <p className="text-sm font-semibold text-[color:var(--text-primary)]">Mapeamento de colunas</p>
               {isPortalFed && (
                 <span className="ml-auto text-[11px] text-slate-600 dark:text-slate-500 flex items-center gap-1">
@@ -488,7 +488,7 @@ export default function ImportacaoPage() {
           )}
 
           {!requiredMapped && (
-            <div className="rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-amber-300"
+            <div className="rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-[color:var(--brand-cobalt-text)]"
               style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)' }}>
               <Info className="w-4 h-4 flex-shrink-0" />
               Mapeie os campos obrigatórios (<span className="text-red-400">*</span>) antes de importar.
@@ -500,7 +500,7 @@ export default function ImportacaoPage() {
               onClick={handleImport}
               disabled={!requiredMapped || !uf || !ano || stage === 'importing'}
               className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: 'rgba(37,99,235,0.2)', color: '#e8c660', border: '1px solid rgba(37,99,235,0.4)' }}
+              style={{ background: 'rgba(37,99,235,0.2)', color: 'var(--brand-cobalt-text)', border: '1px solid rgba(37,99,235,0.4)' }}
             >
               {stage === 'importing' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               {stage === 'importing' ? `Importando… ${progress}%` : `Importar ${rawRows.length.toLocaleString('pt-BR')} registros`}

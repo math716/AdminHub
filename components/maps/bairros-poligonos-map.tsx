@@ -350,7 +350,7 @@ function BairrosPoligonosMapComponent({
     return (
       <div className="w-full h-full bg-[#f0f4f8] rounded-xl flex items-center justify-center" style={{ height }}>
         <div className="flex flex-col items-center gap-3 text-center p-6">
-          <AlertTriangle className="w-10 h-10 text-amber-400" />
+          <AlertTriangle className="w-10 h-10 text-[color:var(--brand-cobalt)]" />
           <span className="text-gray-600 font-medium">{error}</span>
         </div>
       </div>

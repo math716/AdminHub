@@ -1553,8 +1553,8 @@ export default function MapaPage() {
                 <div className="h-full flex flex-col">
                   <div className="flex items-center justify-between mb-2 px-1">
                     <div className="flex items-center gap-2">
-                      <Layers className="h-4 w-4 text-amber-400" />
-                      <span className="text-amber-400 font-semibold text-sm">Distrito Federal</span>
+                      <Layers className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
+                      <span className="text-[color:var(--brand-cobalt)] font-semibold text-sm">Distrito Federal</span>
                       {dfVisualizacao === 'zonas' && loadingZonas && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-600 dark:text-slate-400" />}
                     </div>
                     <div className="flex items-center bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg p-0.5 text-xs">
@@ -1743,8 +1743,8 @@ export default function MapaPage() {
                   {/* Subtítulo do município */}
                   <div className="flex items-center justify-between mb-2 px-1">
                     <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-amber-400" />
-                      <span className="text-amber-400 font-semibold text-sm">{selectedMunicipio.nome}</span>
+                      <Building2 className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
+                      <span className="text-[color:var(--brand-cobalt)] font-semibold text-sm">{selectedMunicipio.nome}</span>
                       {loadingZonas && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-600 dark:text-slate-400" />}
                     </div>
                     <div className="flex items-center gap-2">

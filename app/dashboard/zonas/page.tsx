@@ -281,9 +281,9 @@ export default function ZonasPage() {
                 </div>
                 <div className="grid grid-cols-1 gap-2 pt-2 border-t border-[var(--border-default)]">
                   <div className="flex items-center gap-2">
-                    <Vote className="h-4 w-4 text-amber-400" />
+                    <Vote className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
                     <div>
-                      <p className="text-amber-400 font-bold text-sm">
+                      <p className="text-[color:var(--brand-cobalt)] font-bold text-sm">
                         {resultado.resumo.totalVotos.toLocaleString('pt-BR')}
                       </p>
                       <p className="text-slate-600 dark:text-slate-500 text-xs">votos totais</p>
@@ -389,7 +389,7 @@ export default function ZonasPage() {
                 <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                   <span>
                     {municipiosFiltrados.length} município(s) encontrado(s) ·{' '}
-                    <span className="text-amber-400 font-semibold">
+                    <span className="text-[color:var(--brand-cobalt)] font-semibold">
                       {totalFiltrado.toLocaleString('pt-BR')} votos
                     </span>
                   </span>
@@ -449,7 +449,7 @@ export default function ZonasPage() {
                         </div>
 
                         <div className="text-right flex-shrink-0 ml-2">
-                          <p className="text-amber-400 font-bold text-sm">
+                          <p className="text-[color:var(--brand-cobalt)] font-bold text-sm">
                             {mun.totalVotos.toLocaleString('pt-BR')}
                           </p>
                           <p className="text-slate-600 dark:text-slate-500 text-xs">{pct}%</p>
@@ -523,7 +523,7 @@ export default function ZonasPage() {
                                 {z.zona}
                               </span>
                             </td>
-                            <td className="px-4 py-2 text-right text-amber-400 font-semibold">
+                            <td className="px-4 py-2 text-right text-[color:var(--brand-cobalt)] font-semibold">
                               {z.votos.toLocaleString('pt-BR')}
                             </td>
                           </tr>
@@ -534,7 +534,7 @@ export default function ZonasPage() {
                           <td colSpan={3} className="px-4 py-2.5 text-slate-600 dark:text-slate-400 font-medium text-right">
                             Total
                           </td>
-                          <td className="px-4 py-2.5 text-right text-amber-400 font-bold">
+                          <td className="px-4 py-2.5 text-right text-[color:var(--brand-cobalt)] font-bold">
                             {resultado.resumo.totalVotos.toLocaleString('pt-BR')}
                           </td>
                         </tr>
