@@ -275,7 +275,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                     <p className="text-base font-bold text-[color:var(--text-primary)] mt-0.5">{formatBRL(data.emenda.valorEmpenhado)}</p>
                   </div>
                   <div className="rounded-lg p-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                    <p className="text-[10px] uppercase font-semibold text-emerald-400">Pago</p>
+                    <p className="text-[10px] uppercase font-semibold text-[color:var(--success)]">Pago</p>
                     <p className="text-base font-bold text-[color:var(--text-primary)] mt-0.5">{formatBRL(data.emenda.valorPago)}</p>
                   </div>
                 </div>
@@ -375,7 +375,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                           <p className="text-base font-bold text-[color:var(--text-primary)] mt-0.5">{formatBRL(data.emenda!.valorEmpenhado)}</p>
                         </div>
                         <div className="rounded-lg p-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                          <p className="text-[10px] uppercase font-semibold text-emerald-400">Total Pago</p>
+                          <p className="text-[10px] uppercase font-semibold text-[color:var(--success)]">Total Pago</p>
                           <p className="text-base font-bold text-[color:var(--text-primary)] mt-0.5">{formatBRL(data.emenda!.valorPago)}</p>
                         </div>
                       </div>
@@ -434,7 +434,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                         >
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-0.5">
-                              <Building2 className="h-3 w-3 text-cyan-300 flex-shrink-0" />
+                              <Building2 className="h-3 w-3 text-[color:var(--brand-cobalt-text)] flex-shrink-0" />
                               <p className="text-xs font-semibold text-[color:var(--text-primary)] truncate">{f.nome}</p>
                             </div>
                             <p className="text-[10px] text-slate-600 dark:text-slate-400 font-mono">{formatCnpj(f.cnpj)}</p>
@@ -446,7 +446,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                             )}
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-sm font-bold text-emerald-300 whitespace-nowrap">{formatBRL(f.total)}</p>
+                            <p className="text-sm font-bold text-[color:var(--success)] whitespace-nowrap">{formatBRL(f.total)}</p>
                             <p className="text-[10px] text-slate-600 dark:text-slate-500">{f.qtdDocumentos} doc{f.qtdDocumentos === 1 ? '' : 's'}</p>
                           </div>
                         </div>

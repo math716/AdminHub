@@ -467,7 +467,7 @@ export default function ImportacaoPage() {
                     {headers.map((h) => <option key={h} value={h}>{h}</option>)}
                   </select>
                   {mapping[field.key] && (
-                    <span className="text-[10px] text-emerald-400 flex-shrink-0 flex items-center gap-1">
+                    <span className="text-[10px] text-[color:var(--success)] flex-shrink-0 flex items-center gap-1">
                       <CheckCircle className="w-3 h-3" /> Mapeado
                     </span>
                   )}
@@ -523,7 +523,7 @@ export default function ImportacaoPage() {
           <div className="rounded-2xl p-6"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-08)' }}>
             <div className="flex items-center gap-3 mb-4">
-              <CheckCircle className="w-7 h-7 text-emerald-400" />
+              <CheckCircle className="w-7 h-7 text-[color:var(--success)]" />
               <div>
                 <p className="text-[color:var(--text-primary)] font-bold text-lg">Importação concluída!</p>
                 <p className="text-slate-600 dark:text-slate-400 text-sm">{fileName} · {importResult.total.toLocaleString('pt-BR')} linhas processadas</p>

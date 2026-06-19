@@ -1329,8 +1329,8 @@ export default function MapaPage() {
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center justify-between text-base">
                       <span className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-emerald-400" />
-                        <span className="text-emerald-300 truncate max-w-[150px]" title={selectedRjBairro}>
+                        <MapPin className="h-4 w-4 text-[color:var(--success)]" />
+                        <span className="text-[color:var(--success)] truncate max-w-[150px]" title={selectedRjBairro}>
                           {selectedRjBairro}
                         </span>
                       </span>
@@ -1345,7 +1345,7 @@ export default function MapaPage() {
                   <CardContent className="space-y-2">
                     <div className="flex items-center justify-between p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
                       <span className="text-slate-600 dark:text-slate-400 text-xs">Votos no bairro</span>
-                      <span className="text-emerald-300 font-bold">
+                      <span className="text-[color:var(--success)] font-bold">
                         {(rjBairrosVotes[selectedRjBairro] ?? 0).toLocaleString('pt-BR')}
                       </span>
                     </div>

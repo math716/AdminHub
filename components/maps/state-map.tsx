@@ -1066,7 +1066,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       {selectedMunicipio && !disableSubdivisao && (
         <div className="absolute top-3 right-3 z-[1000] bg-[var(--bg-card)]/95 backdrop-blur-md rounded-xl border border-[var(--border-default)]/60 p-3 shadow-2xl min-w-[140px]">
           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[var(--border-default)]/50">
-            <Layers className="w-4 h-4 text-cyan-400" />
+            <Layers className="w-4 h-4 text-[color:var(--brand-cobalt)]" />
             <span className="text-xs text-gray-300 font-semibold">Camadas</span>
           </div>
           
@@ -1100,7 +1100,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       {selectedMunicipio && !disableSubdivisao && (
         <div className="absolute top-3 left-3 z-[1000] bg-[var(--bg-card)]/95 backdrop-blur-md rounded-xl border border-[var(--border-default)]/60 px-4 py-3 shadow-2xl max-w-[280px]">
           <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-cyan-400" />
+            <MapPin className="w-4 h-4 text-[color:var(--brand-cobalt)]" />
             <span className="text-sm font-semibold text-[color:var(--text-primary)]">{selectedMunicipio}</span>
           </div>
           {loadingSubdivisao && (
@@ -1112,7 +1112,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           {!loadingSubdivisao && (
             <div className="text-xs mt-2">
               {subdivisaoTipo === 'bairros' ? (
-                <span className="text-cyan-400 font-medium">✓ {subdivisaoData?.total} bairros oficiais</span>
+                <span className="text-[color:var(--brand-cobalt)] font-medium">✓ {subdivisaoData?.total} bairros oficiais</span>
               ) : subdivisaoTipo === 'setores' ? (
                 <div>
                   <span className="text-violet-400 font-medium">✓ {subdivisaoData?.total} setores censitários (IBGE)</span>

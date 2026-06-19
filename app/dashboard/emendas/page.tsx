@@ -1613,7 +1613,7 @@ function Top5ParlamentaresDoMunicipioCard({
                   <p className="text-xs text-[color:var(--text-primary)] truncate group-hover:text-[color:var(--brand-cobalt-text)] transition-colors">{p.nome}</p>
                   <p className="text-[10px] text-slate-600 dark:text-slate-500">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
                 </div>
-                <span className="text-xs font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
+                <span className="text-xs font-semibold text-[color:var(--brand-cobalt-text)] flex-shrink-0">{formatBRLCompact(p.total)}</span>
               </button>
             </li>
           ))}
@@ -1647,7 +1647,7 @@ function Top5ParlamentaresEstadoCard({
               <p className="text-[11px] text-[color:var(--text-primary)] truncate group-hover:text-[color:var(--brand-cobalt-text)]">{p.nome}</p>
               <p className="text-[10px] text-slate-600 dark:text-slate-500">{CARGO_LABELS[p.cargo as ParlamentarCargo] ?? p.cargo}</p>
             </div>
-            <span className="text-[11px] font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
+            <span className="text-[11px] font-semibold text-[color:var(--brand-cobalt-text)] flex-shrink-0">{formatBRLCompact(p.total)}</span>
           </button>
         ))}
       </div>
@@ -1711,7 +1711,7 @@ function Top5MunicipiosCard({
               >
                 <span className="text-xs font-bold text-slate-600 dark:text-slate-500 w-4">{i + 1}.</span>
                 <span className="text-xs text-[color:var(--text-primary)] truncate flex-1 group-hover:text-[color:var(--brand-cobalt-text)] transition-colors">{m.nome}</span>
-                <span className="text-xs font-semibold text-cyan-300">{formatBRLCompact(m.total)}</span>
+                <span className="text-xs font-semibold text-[color:var(--brand-cobalt-text)]">{formatBRLCompact(m.total)}</span>
               </button>
             </li>
           ))}
@@ -1799,7 +1799,7 @@ function ParlamentarSearchCard({
                 <p className="text-[11px] text-[color:var(--text-primary)] truncate group-hover:text-[color:var(--brand-cobalt-text)]">{p.nome}</p>
                 <p className="text-[10px] text-slate-600 dark:text-slate-500">{CARGO_LABELS[p.cargo as ParlamentarCargo] ?? p.cargo}</p>
               </div>
-              <span className="text-[11px] font-semibold text-cyan-300 flex-shrink-0">{formatBRLCompact(p.total)}</span>
+              <span className="text-[11px] font-semibold text-[color:var(--brand-cobalt-text)] flex-shrink-0">{formatBRLCompact(p.total)}</span>
             </button>
           ))}
         </div>
@@ -1832,7 +1832,7 @@ function MunicipioPopup({
       >
         <div className="flex items-start justify-between gap-3 mb-2">
           <div>
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-cyan-300">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-cobalt-text)]">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
               Município
             </span>
@@ -1975,15 +1975,15 @@ function ParlamentarDashboard({
             {loading ? <Loader2 className="w-5 h-5 animate-spin inline" /> : formatBRLCompact(totalAno)}
           </p>
           {!loading && totalAno > 0 && (
-            <p className="text-[11px] text-emerald-300 mt-0.5">
+            <p className="text-[11px] text-[color:var(--success)] mt-0.5">
               Pago: <span className="font-bold">{formatBRLCompact(totalPago)}</span>
-              <span className="text-emerald-400/60"> ({pctPago.toFixed(0)}%)</span>
+              <span className="text-[color:var(--success)]/60"> ({pctPago.toFixed(0)}%)</span>
             </p>
           )}
           {!loading && (destinos.municipal > 0 || destinos.estadual > 0) && (
             <div className="mt-2 text-[10px] text-slate-700 dark:text-slate-300 space-y-0.5 text-right">
               <p>
-                <span className="text-cyan-300">●</span> A municípios: <span className="font-semibold text-[color:var(--text-primary)]">{formatBRLCompact(destinos.municipal)}</span>
+                <span className="text-[color:var(--brand-cobalt-text)]">●</span> A municípios: <span className="font-semibold text-[color:var(--text-primary)]">{formatBRLCompact(destinos.municipal)}</span>
                 <span className="text-slate-600 dark:text-slate-500"> ({destinos.qtdMun})</span>
               </p>
               <p>
@@ -2261,7 +2261,7 @@ function EmendasDetalhadasCard({
             </span>
             <span className="text-[10px] text-slate-600 dark:text-slate-400">{labelItens}</span>
             <span className="text-slate-600 text-[10px]">·</span>
-            <span className="text-[11px] font-semibold text-emerald-300">{formatBRLCompact(totalValor)}</span>
+            <span className="text-[11px] font-semibold text-[color:var(--success)]">{formatBRLCompact(totalValor)}</span>
           </div>
           {temFiltro && (
             <button
@@ -2466,7 +2466,7 @@ function EmendasDetalhadasCard({
                       <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap transition-colors text-[color:var(--text-primary)] group-hover:text-[color:var(--brand-cobalt-text)]" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {formatBRLCompact(d.valorEmpenhado)}
                       </td>
-                      <td className="py-2.5 px-3 text-right text-emerald-400 whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 text-right text-[color:var(--success)] whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {formatBRLCompact(d.valorPago)}
                       </td>
                       <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
@@ -2527,7 +2527,7 @@ function EmendasDetalhadasCard({
                         {e.municipioNome ?? <span className="text-slate-600 italic font-normal">{e.objeto ?? 'sem destino'}</span>}
                       </td>
                       <td className="py-2.5 px-3 text-right font-semibold text-[color:var(--text-primary)] whitespace-nowrap group-hover:text-[color:var(--brand-cobalt-text)] transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>{formatBRLCompact(e.valorEmpenhado)}</td>
-                      <td className="py-2.5 px-3 text-right text-emerald-400 whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>{formatBRLCompact(e.valorPago)}</td>
+                      <td className="py-2.5 px-3 text-right text-[color:var(--success)] whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>{formatBRLCompact(e.valorPago)}</td>
                       <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: pct >= 80 ? 'rgba(16,185,129,0.12)' : pct >= 40 ? 'rgba(245,158,11,0.12)' : 'rgba(100,116,139,0.12)', color: pct >= 80 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#64748b' }}>{pct.toFixed(0)}%</span>
                       </td>
@@ -2598,7 +2598,7 @@ function MunicipiosBeneficiadosCard({
         {porMunicipio.length > 0 && (
           <p className="text-[10px] text-slate-600 dark:text-slate-500">
             {porMunicipio.length} {porMunicipio.length === 1 ? 'município' : 'municípios'} ·{' '}
-            <span className="text-cyan-300 font-semibold">{formatBRLCompact(total)}</span>
+            <span className="text-[color:var(--brand-cobalt-text)] font-semibold">{formatBRLCompact(total)}</span>
           </p>
         )}
       </div>
@@ -2635,7 +2635,7 @@ function MunicipiosBeneficiadosCard({
                       <span className="text-[10px] text-slate-600 dark:text-slate-500 flex-shrink-0">/ {m.uf}</span>
                     )}
                   </div>
-                  <span className="text-cyan-300 font-bold text-sm whitespace-nowrap">
+                  <span className="text-[color:var(--brand-cobalt-text)] font-bold text-sm whitespace-nowrap">
                     {formatBRLCompact(m.total)}
                   </span>
                 </div>
@@ -2834,7 +2834,7 @@ function ComparativoAreasCard({
               </div>
               <p className="text-[color:var(--text-primary)] font-bold text-lg">{formatBRLCompact(atual)}</p>
               <div className="flex items-center gap-1.5 text-[11px] mt-1">
-                <span className={isUp ? 'text-emerald-400' : 'text-rose-400'}>
+                <span className={isUp ? 'text-[color:var(--success)]' : 'text-rose-400'}>
                   {isUp ? <TrendingUp className="w-3 h-3 inline -mt-0.5" /> : <TrendingDown className="w-3 h-3 inline -mt-0.5" />}
                   {' '}
                   {delta > 0 ? '+' : ''}{delta.toFixed(1)}%
@@ -2887,14 +2887,14 @@ function DestaqueDoAnoCard({
           }}
         >
           <div className="flex flex-col leading-tight">
-            <span className="text-[8px] uppercase tracking-widest font-semibold text-cyan-400/60">Município</span>
+            <span className="text-[8px] uppercase tracking-widest font-semibold text-[color:var(--brand-cobalt)]/60">Município</span>
             <span className="text-[color:var(--text-primary)] font-bold text-[13px] truncate max-w-[150px] leading-tight">{municipio.nome}</span>
           </div>
           <div
             className="px-2 py-0.5 rounded-lg"
             style={{ background: 'rgba(6,182,212,0.15)', border: '1px solid rgba(6,182,212,0.25)' }}
           >
-            <span className="text-cyan-300 font-bold text-[11px] whitespace-nowrap">{formatBRLCompact(municipio.total)}</span>
+            <span className="text-[color:var(--brand-cobalt-text)] font-bold text-[11px] whitespace-nowrap">{formatBRLCompact(municipio.total)}</span>
           </div>
         </div>
 

@@ -2282,7 +2282,7 @@ export default function MapaCampanhaPage() {
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[var(--bg-card)]">
-        <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-[color:var(--brand-cobalt)]" />
       </div>
     );
   }
@@ -2314,8 +2314,8 @@ export default function MapaCampanhaPage() {
 
   const cenarioConfig = {
     conservador: { label: 'Conservador', icon: Shield, color: 'text-[color:var(--brand-cobalt)]', bg: 'bg-amber-500', border: 'border-amber-500' },
-    possivel: { label: 'Realista', icon: Gauge, color: 'text-cyan-400', bg: 'bg-cyan-500', border: 'border-cyan-500' },
-    arrojado: { label: 'Otimista', icon: Rocket, color: 'text-emerald-400', bg: 'bg-emerald-500', border: 'border-emerald-500' }
+    possivel: { label: 'Realista', icon: Gauge, color: 'text-[color:var(--brand-cobalt)]', bg: 'bg-cyan-500', border: 'border-cyan-500' },
+    arrojado: { label: 'Otimista', icon: Rocket, color: 'text-[color:var(--success)]', bg: 'bg-emerald-500', border: 'border-emerald-500' }
   };
 
   return (
@@ -2364,7 +2364,7 @@ export default function MapaCampanhaPage() {
                   <Button
                     onClick={() => setShowNovoCandidatoModal(true)}
                     variant="outline"
-                    className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 whitespace-nowrap text-xs h-8 px-3"
+                    className="border-emerald-500/50 text-[color:var(--success)] hover:bg-emerald-500/10 whitespace-nowrap text-xs h-8 px-3"
                   >
                     <Plus className="h-3 w-3 mr-1.5" />
                     Novo Candidato
@@ -2384,7 +2384,7 @@ export default function MapaCampanhaPage() {
                   <Button
                     onClick={() => setShowNovoCandidatoModal(true)}
                     variant="outline"
-                    className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 whitespace-nowrap text-sm h-8 px-3"
+                    className="border-emerald-500/50 text-[color:var(--success)] hover:bg-emerald-500/10 whitespace-nowrap text-sm h-8 px-3"
                   >
                     <Plus className="h-3.5 w-3.5 mr-1.5" />
                     Novo Candidato
@@ -2613,15 +2613,15 @@ export default function MapaCampanhaPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium tracking-wide mb-1" style={{ color: '#6b82a0' }}>
-                      Crescimento {filtroTipo !== 'todos' && <span className="text-emerald-400 text-xs">(filtrado)</span>}
+                      Crescimento {filtroTipo !== 'todos' && <span className="text-[color:var(--success)] text-xs">(filtrado)</span>}
                     </p>
-                    <p className={`text-2xl font-bold ${parseFloat(getCrescimento() as string) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <p className={`text-2xl font-bold ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
                       {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
                     </p>
                   </div>
                   <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
                     {parseFloat(getCrescimento() as string) >= 0 ? (
-                      <ArrowUp className="h-5 w-5 text-emerald-400" />
+                      <ArrowUp className="h-5 w-5 text-[color:var(--success)]" />
                     ) : (
                       <ArrowDown className="h-5 w-5 text-red-400" />
                     )}
@@ -2774,7 +2774,7 @@ export default function MapaCampanhaPage() {
                 <CardHeader className={`border-b border-[var(--border-default)] py-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <CardTitle className="text-[color:var(--text-primary)] flex items-center gap-2">
-                      <Map className="h-5 w-5 text-cyan-500" />
+                      <Map className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
                       {activeTab === 'historico' ? `Votos em ${ano}` : `Projeção ${cenarioConfig[cenarioAtivo].label} para ${anoProjecao}`}
                     </CardTitle>
                     <div className="flex items-center gap-2">
@@ -2885,7 +2885,7 @@ export default function MapaCampanhaPage() {
                           </span>
                         </div>
                         {bairrosInfo.length > 0 && (
-                          <div className="flex items-center gap-2 text-emerald-300">
+                          <div className="flex items-center gap-2 text-[color:var(--success)]">
                             <Home className="h-4 w-4" />
                             <span>{bairrosInfo.length} bairros com votos</span>
                           </div>
@@ -2900,7 +2900,7 @@ export default function MapaCampanhaPage() {
                         <span className="text-slate-600 dark:text-slate-400 font-medium">Legenda:</span>
                         <div className="flex items-center gap-1.5">
                           <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
-                          <span className="text-emerald-400">Acima da média ({mediaVotosBairro}+ votos)</span>
+                          <span className="text-[color:var(--success)]">Acima da média ({mediaVotosBairro}+ votos)</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className="w-3 h-3 rounded-full bg-blue-500"></span>
@@ -2972,7 +2972,7 @@ export default function MapaCampanhaPage() {
                     />
                   ) : uf === 'DF' && dfVisualizacao === 'zonas' && loadingDfZonas ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-600 dark:text-slate-400">
-                      <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+                      <Loader2 className="h-8 w-8 animate-spin text-[color:var(--brand-cobalt)]" />
                       <span className="text-sm">Carregando zonas eleitorais do DF…</span>
                     </div>
                   ) : uf === 'DF' && dfVisualizacao === 'zonas' && dfZonasDisplay.length > 0 ? (
@@ -3078,7 +3078,7 @@ export default function MapaCampanhaPage() {
                     <CardTitle className="text-[color:var(--text-primary)] text-sm flex items-center gap-2">
                       {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c)) ? (
                         <>
-                          <Home className="h-4 w-4 text-emerald-400" />
+                          <Home className="h-4 w-4 text-[color:var(--success)]" />
                           {(electoralData?.cargo ?? '').toUpperCase().includes('PREFEITO') ? 'Município' : 'Bairros'}
                         </>
                       ) : uf === 'DF' && getFilteredDfZonas().length > 0 ? (
@@ -3088,7 +3088,7 @@ export default function MapaCampanhaPage() {
                         </>
                       ) : (
                         <>
-                          <MapPin className="h-4 w-4 text-cyan-400" />
+                          <MapPin className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
                           Municípios
                         </>
                       )}
@@ -3214,7 +3214,7 @@ export default function MapaCampanhaPage() {
                               </div>
                               <div className="flex items-center gap-2 text-xs">
                                 <span className={`font-medium ${
-                                  category === 'acima' ? 'text-emerald-400' :
+                                  category === 'acima' ? 'text-[color:var(--success)]' :
                                   category === 'abaixo' ? 'text-blue-400' : 'text-slate-600 dark:text-slate-400'
                                 }`}>
                                   {bairro.votos.toLocaleString()} votos
@@ -3277,14 +3277,14 @@ export default function MapaCampanhaPage() {
                             </div>
                             <div className="flex items-center gap-2 text-xs">
                               <span className="text-slate-600 dark:text-slate-400">
-                                {ano}: <span className="text-cyan-400 font-medium">{mun.votosBase.toLocaleString()}</span>
+                                {ano}: <span className="text-[color:var(--brand-cobalt)] font-medium">{mun.votosBase.toLocaleString()}</span>
                               </span>
                               <span className="text-slate-600 dark:text-slate-500">→</span>
                               <span className={cenarioConfig[cenarioAtivo].color}>
                                 {metaAtiva.toLocaleString()}
                               </span>
                               {diff !== 0 && (
-                                <span className={`ml-auto ${diff > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
                                   {diff > 0 ? '+' : ''}{diffPercent}%
                                 </span>
                               )}
@@ -3318,7 +3318,7 @@ export default function MapaCampanhaPage() {
                           >
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <MapPin className="h-3.5 w-3.5 text-cyan-400 flex-shrink-0" />
+                                <MapPin className="h-3.5 w-3.5 text-[color:var(--brand-cobalt)] flex-shrink-0" />
                                 <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">
                                   {regiaoNome}
                                 </span>
@@ -3336,12 +3336,12 @@ export default function MapaCampanhaPage() {
                             </div>
                             <div className="flex items-center gap-2 text-xs">
                               <span className="text-slate-600 dark:text-slate-400">
-                                {ano}: <span className="text-cyan-400 font-medium">{mun.votosBase.toLocaleString()}</span>
+                                {ano}: <span className="text-[color:var(--brand-cobalt)] font-medium">{mun.votosBase.toLocaleString()}</span>
                               </span>
                               <span className="text-slate-600 dark:text-slate-500">→</span>
                               <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
                               {diff !== 0 && (
-                                <span className={`ml-auto ${diff > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
                                   {diff > 0 ? '+' : ''}{diffPercent}%
                                 </span>
                               )}
@@ -3391,7 +3391,7 @@ export default function MapaCampanhaPage() {
                               <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-violet-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
                               <span className="text-slate-600 dark:text-slate-500">→</span>
                               <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
-                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
+                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
                               <div className="mt-1 text-xs text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
@@ -3420,7 +3420,7 @@ export default function MapaCampanhaPage() {
                           >
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <MapPin className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
+                                <MapPin className="h-3.5 w-3.5 text-[color:var(--success)] flex-shrink-0" />
                                 <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
                               </div>
                               <div className="flex items-center gap-1 flex-shrink-0">
@@ -3433,10 +3433,10 @@ export default function MapaCampanhaPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2 text-xs">
-                              <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-emerald-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
+                              <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-[color:var(--success)] font-medium">{mun.votosBase.toLocaleString()}</span></span>
                               <span className="text-slate-600 dark:text-slate-500">→</span>
                               <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
-                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
+                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
                               <div className="mt-1 text-xs text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
@@ -3481,7 +3481,7 @@ export default function MapaCampanhaPage() {
                               <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-orange-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
                               <span className="text-slate-600 dark:text-slate-500">→</span>
                               <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
-                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
+                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
                               <div className="mt-1 text-xs text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
@@ -3526,7 +3526,7 @@ export default function MapaCampanhaPage() {
                               <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-violet-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
                               <span className="text-slate-600 dark:text-slate-500">→</span>
                               <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
-                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
+                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
                               <div className="mt-1 text-xs text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
@@ -3583,7 +3583,7 @@ export default function MapaCampanhaPage() {
                                       <>
                                         <span className="text-slate-600 dark:text-slate-500">→</span>
                                         <span className={cenarioConfig[cenarioAtivo].color}>{votosDisplay.toLocaleString()}</span>
-                                        <span className={`ml-auto ${diff > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>
+                                        <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>
                                       </>
                                     )}
                                   </div>
@@ -3627,7 +3627,7 @@ export default function MapaCampanhaPage() {
                               <span className="text-slate-600 dark:text-slate-400">Base: <span className="text-sky-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
                               <span className="text-slate-600 dark:text-slate-500">→</span>
                               <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
-                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
+                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
                               <div className="mt-1 text-xs text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
@@ -3712,14 +3712,14 @@ export default function MapaCampanhaPage() {
                               ) : (
                                 <>
                                   <span className="text-slate-600 dark:text-slate-400">
-                                    {ano}: <span className="text-cyan-400 font-medium">{mun.votosBase.toLocaleString()}</span>
+                                    {ano}: <span className="text-[color:var(--brand-cobalt)] font-medium">{mun.votosBase.toLocaleString()}</span>
                                   </span>
                                   <span className="text-slate-600 dark:text-slate-500">→</span>
                                   <span className={cenarioConfig[cenarioAtivo].color}>
                                     {metaAtiva.toLocaleString()}
                                   </span>
                                   {diff !== 0 && (
-                                    <span className={`ml-auto ${diff > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
                                       {diff > 0 ? '+' : ''}{diffPercent}%
                                     </span>
                                   )}
@@ -3763,11 +3763,11 @@ export default function MapaCampanhaPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-slate-600 dark:text-slate-400 text-sm">Votos em {ano}</p>
-                  <p className="text-3xl font-bold text-cyan-400">
+                  <p className="text-3xl font-bold text-[color:var(--brand-cobalt)]">
                     {selectedMunicipio.votosBase.toLocaleString()}
                   </p>
                 </div>
-                <BarChart3 className="h-10 w-10 text-cyan-500/50" />
+                <BarChart3 className="h-10 w-10 text-[color:var(--brand-cobalt)]/50" />
               </div>
             </div>
 
@@ -3792,7 +3792,7 @@ export default function MapaCampanhaPage() {
                         className="bg-[var(--bg-card-subtle)] border-amber-500/50 text-[color:var(--text-primary)] text-sm"
                       />
                       <p className={`text-xs mt-1 font-medium ${
-                        metaConservadoraTemp > selectedMunicipio.votosBase ? 'text-emerald-400' :
+                        metaConservadoraTemp > selectedMunicipio.votosBase ? 'text-[color:var(--success)]' :
                         metaConservadoraTemp < selectedMunicipio.votosBase ? 'text-red-400' : 'text-slate-600 dark:text-slate-400'
                       }`}>
                         {calcCrescimento(selectedMunicipio.votosBase, metaConservadoraTemp)}
@@ -3802,8 +3802,8 @@ export default function MapaCampanhaPage() {
                     {/* Meta Realista */}
                     <div className="bg-cyan-900/20 rounded-lg p-3 border border-cyan-500/30">
                       <div className="flex items-center gap-1 mb-2">
-                        <Gauge className="h-4 w-4 text-cyan-400" />
-                        <span className="text-cyan-400 text-xs font-medium">Realista</span>
+                        <Gauge className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
+                        <span className="text-[color:var(--brand-cobalt)] text-xs font-medium">Realista</span>
                       </div>
                       <Input
                         type="number"
@@ -3812,7 +3812,7 @@ export default function MapaCampanhaPage() {
                         className="bg-[var(--bg-card-subtle)] border-cyan-500/50 text-[color:var(--text-primary)] text-sm"
                       />
                       <p className={`text-xs mt-1 font-medium ${
-                        metaPossivelTemp > selectedMunicipio.votosBase ? 'text-emerald-400' :
+                        metaPossivelTemp > selectedMunicipio.votosBase ? 'text-[color:var(--success)]' :
                         metaPossivelTemp < selectedMunicipio.votosBase ? 'text-red-400' : 'text-slate-600 dark:text-slate-400'
                       }`}>
                         {calcCrescimento(selectedMunicipio.votosBase, metaPossivelTemp)}
@@ -3822,8 +3822,8 @@ export default function MapaCampanhaPage() {
                     {/* Meta Arrojada */}
                     <div className="bg-emerald-900/20 rounded-lg p-3 border border-emerald-500/30">
                       <div className="flex items-center gap-1 mb-2">
-                        <Rocket className="h-4 w-4 text-emerald-400" />
-                        <span className="text-emerald-400 text-xs font-medium">Otimista</span>
+                        <Rocket className="h-4 w-4 text-[color:var(--success)]" />
+                        <span className="text-[color:var(--success)] text-xs font-medium">Otimista</span>
                       </div>
                       <Input
                         type="number"
@@ -3832,7 +3832,7 @@ export default function MapaCampanhaPage() {
                         className="bg-[var(--bg-card-subtle)] border-emerald-500/50 text-[color:var(--text-primary)] text-sm"
                       />
                       <p className={`text-xs mt-1 font-medium ${
-                        metaArrojadaTemp > selectedMunicipio.votosBase ? 'text-emerald-400' :
+                        metaArrojadaTemp > selectedMunicipio.votosBase ? 'text-[color:var(--success)]' :
                         metaArrojadaTemp < selectedMunicipio.votosBase ? 'text-red-400' : 'text-slate-600 dark:text-slate-400'
                       }`}>
                         {calcCrescimento(selectedMunicipio.votosBase, metaArrojadaTemp)}
@@ -3869,7 +3869,7 @@ export default function MapaCampanhaPage() {
                         </div>
                         {/* Realista Final */}
                         <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-cyan-500/20">
-                          <p className="text-cyan-400 mb-1 font-medium">Realista</p>
+                          <p className="text-[color:var(--brand-cobalt)] mb-1 font-medium">Realista</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
                               <span>Meta Base:</span>
@@ -3887,7 +3887,7 @@ export default function MapaCampanhaPage() {
                         </div>
                         {/* Arrojada Final */}
                         <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-emerald-500/20">
-                          <p className="text-emerald-400 mb-1 font-medium">Otimista</p>
+                          <p className="text-[color:var(--success)] mb-1 font-medium">Otimista</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
                               <span>Meta Base:</span>
@@ -4018,7 +4018,7 @@ export default function MapaCampanhaPage() {
                               setShowModal(false);
                               editParceria(parceria);
                             }}
-                            className="p-1.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30 rounded transition-colors"
+                            className="p-1.5 text-[color:var(--brand-cobalt)] hover:text-[color:var(--brand-cobalt-text)] hover:bg-cyan-900/30 rounded transition-colors"
                             title="Editar parceria"
                           >
                             <Pencil className="h-3.5 w-3.5" />
@@ -4043,14 +4043,14 @@ export default function MapaCampanhaPage() {
                           <span className="text-[color:var(--brand-cobalt)] font-medium">{parceria.metaConservadora.toLocaleString()}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Gauge className="h-3 w-3 text-cyan-400" />
+                          <Gauge className="h-3 w-3 text-[color:var(--brand-cobalt)]" />
                           <span className="text-slate-600 dark:text-slate-400">Poss:</span>
-                          <span className="text-cyan-400 font-medium">{parceria.metaPossivel.toLocaleString()}</span>
+                          <span className="text-[color:var(--brand-cobalt)] font-medium">{parceria.metaPossivel.toLocaleString()}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Rocket className="h-3 w-3 text-emerald-400" />
+                          <Rocket className="h-3 w-3 text-[color:var(--success)]" />
                           <span className="text-slate-600 dark:text-slate-400">Arroj:</span>
-                          <span className="text-emerald-400 font-medium">{parceria.metaArrojada.toLocaleString()}</span>
+                          <span className="text-[color:var(--success)] font-medium">{parceria.metaArrojada.toLocaleString()}</span>
                         </div>
                         {parceria.impactoEstimado > 0 && (
                           <div className="ml-auto text-slate-600 dark:text-slate-500">
@@ -4167,7 +4167,7 @@ export default function MapaCampanhaPage() {
 
           {novoMunicipioNome && (
             <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-3 border border-cyan-500/30">
-              <p className="text-cyan-400 text-sm font-medium">
+              <p className="text-[color:var(--brand-cobalt)] text-sm font-medium">
                 <MapPin className="h-4 w-4 inline mr-1" />
                 Selecionado: {novoMunicipioNome}
               </p>
@@ -4189,8 +4189,8 @@ export default function MapaCampanhaPage() {
             </div>
             <div className="bg-cyan-900/20 rounded-lg p-3 border border-cyan-500/30">
               <div className="flex items-center gap-1 mb-2">
-                <Gauge className="h-4 w-4 text-cyan-400" />
-                <span className="text-cyan-400 text-xs font-medium">Realista</span>
+                <Gauge className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
+                <span className="text-[color:var(--brand-cobalt)] text-xs font-medium">Realista</span>
               </div>
               <Input
                 type="number"
@@ -4201,8 +4201,8 @@ export default function MapaCampanhaPage() {
             </div>
             <div className="bg-emerald-900/20 rounded-lg p-3 border border-emerald-500/30">
               <div className="flex items-center gap-1 mb-2">
-                <Rocket className="h-4 w-4 text-emerald-400" />
-                <span className="text-emerald-400 text-xs font-medium">Otimista</span>
+                <Rocket className="h-4 w-4 text-[color:var(--success)]" />
+                <span className="text-[color:var(--success)] text-xs font-medium">Otimista</span>
               </div>
               <Input
                 type="number"
@@ -4265,7 +4265,7 @@ export default function MapaCampanhaPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <UserCheck className="h-5 w-5 text-cyan-400" />
+                      <UserCheck className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
                       <span className="text-[color:var(--text-primary)] font-semibold">{candidato.nomeUrna}</span>
                       <Badge variant="info" className="text-xs">{candidato.numero}</Badge>
                     </div>
@@ -4285,7 +4285,7 @@ export default function MapaCampanhaPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-cyan-400 font-bold text-lg">
+                    <p className="text-[color:var(--brand-cobalt)] font-bold text-lg">
                       {candidato.totalVotos.toLocaleString()}
                     </p>
                     <p className="text-slate-600 dark:text-slate-500 text-xs">votos</p>
@@ -4514,7 +4514,7 @@ export default function MapaCampanhaPage() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Home className={`h-6 w-6 ${
-                    getBairroCategory(selectedBairro.votos) === 'acima' ? 'text-emerald-400' :
+                    getBairroCategory(selectedBairro.votos) === 'acima' ? 'text-[color:var(--success)]' :
                     getBairroCategory(selectedBairro.votos) === 'abaixo' ? 'text-blue-400' : 'text-slate-600 dark:text-slate-400'
                   }`} />
                   <span className="text-lg font-semibold text-[color:var(--text-primary)]">{selectedBairro.bairro}</span>
@@ -4537,10 +4537,10 @@ export default function MapaCampanhaPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
                 <div className="flex items-center gap-2 mb-2">
-                  <Vote className="h-5 w-5 text-cyan-400" />
+                  <Vote className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
                   <span className="text-slate-600 dark:text-slate-400 text-sm">Votos Recebidos</span>
                 </div>
-                <p className="text-3xl font-bold text-cyan-400">
+                <p className="text-3xl font-bold text-[color:var(--brand-cobalt)]">
                   {selectedBairro.votos.toLocaleString()}
                 </p>
               </div>
@@ -4560,7 +4560,7 @@ export default function MapaCampanhaPage() {
             {/* Metas Sugeridas */}
             <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
               <h4 className="text-[color:var(--text-primary)] font-medium mb-3 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-emerald-400" />
+                <TrendingUp className="h-5 w-5 text-[color:var(--success)]" />
                 Projeções Sugeridas para {anoProjecao}
               </h4>
               <div className="grid grid-cols-3 gap-3">
@@ -4573,16 +4573,16 @@ export default function MapaCampanhaPage() {
                   <p className="text-[color:var(--brand-cobalt)] text-xs">+5%</p>
                 </div>
                 <div className="text-center p-3 bg-cyan-900/20 rounded-lg border border-cyan-500/30">
-                  <Gauge className="h-5 w-5 text-cyan-400 mx-auto mb-1" />
-                  <p className="text-cyan-400 text-xs mb-1">Realista</p>
+                  <Gauge className="h-5 w-5 text-[color:var(--brand-cobalt)] mx-auto mb-1" />
+                  <p className="text-[color:var(--brand-cobalt)] text-xs mb-1">Realista</p>
                   <p className="text-[color:var(--text-primary)] font-bold">
                     {Math.round(selectedBairro.votos * 1.15).toLocaleString()}
                   </p>
-                  <p className="text-cyan-500 text-xs">+15%</p>
+                  <p className="text-[color:var(--brand-cobalt)] text-xs">+15%</p>
                 </div>
                 <div className="text-center p-3 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
-                  <Rocket className="h-5 w-5 text-emerald-400 mx-auto mb-1" />
-                  <p className="text-emerald-400 text-xs mb-1">Otimista</p>
+                  <Rocket className="h-5 w-5 text-[color:var(--success)] mx-auto mb-1" />
+                  <p className="text-[color:var(--success)] text-xs mb-1">Otimista</p>
                   <p className="text-[color:var(--text-primary)] font-bold">
                     {Math.round(selectedBairro.votos * 1.30).toLocaleString()}
                   </p>
@@ -4761,7 +4761,7 @@ export default function MapaCampanhaPage() {
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <Target className="h-5 w-5 text-cyan-500" />
+                        <Target className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
                         <span className="text-[color:var(--text-primary)] font-medium flex-1">{proj.candidatoNome}</span>
                         <button
                           onClick={(e: MouseEvent<HTMLButtonElement>) => {
@@ -4788,7 +4788,7 @@ export default function MapaCampanhaPage() {
                               <span>{proj.uf}</span>
                               <span>•</span>
                               {isEstreante ? (
-                                <span className="text-emerald-400 font-medium flex items-center gap-0.5">
+                                <span className="text-[color:var(--success)] font-medium flex items-center gap-0.5">
                                   <UserCheck className="h-3 w-3" />
                                   Estreante
                                 </span>
@@ -4926,8 +4926,8 @@ export default function MapaCampanhaPage() {
               </div>
               <div className="text-center">
                 <div className="p-3 bg-[var(--bg-card-subtle)] rounded-lg border border-[var(--border-default)]">
-                  <Rocket className="h-5 w-5 text-emerald-400 mx-auto mb-1" />
-                  <p className="text-emerald-400 text-xs mb-1">Otimista</p>
+                  <Rocket className="h-5 w-5 text-[color:var(--success)] mx-auto mb-1" />
+                  <p className="text-[color:var(--success)] text-xs mb-1">Otimista</p>
                   <input
                     type="number"
                     value={parceriaForm.metaArrojada || 0}
