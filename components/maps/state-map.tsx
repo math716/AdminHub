@@ -1171,9 +1171,10 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         style={{ background: darkMode ? '#071d36' : '#f0f4f8', minHeight: '400px' }}
       />
 
-      {/* Legenda — escondida no darkMode (dashboard de emendas) porque a
-          legenda externa "VALOR DE EMENDAS" no card pai já cobre o mesmo papel. */}
-      {!darkMode && (
+      {/* Legenda interna — escondida quando esta em modo choropleth (dashboard
+          de emendas), porque a legenda externa "VALOR DE EMENDAS" no card pai
+          ja cobre o mesmo papel + libera o canto bottom-left pro zoom. */}
+      {!showChoropleth && (
         <div className="absolute bottom-3 left-3 z-[1000] bg-white/90 backdrop-blur-md rounded-xl border border-gray-200 px-4 py-2.5 text-xs shadow-md">
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-2">
