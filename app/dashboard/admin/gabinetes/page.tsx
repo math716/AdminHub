@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import {
   Building2, Link2, Copy, CheckCheck, Clock, CheckCircle2,
   XCircle, AlertCircle, Loader2, RefreshCw, ChevronDown, ChevronUp,
@@ -168,6 +169,12 @@ function PermissionsChecklist({ selected, onToggle, onSelectAll, onClear, accent
   selected: Set<string>; onToggle: (p: string) => void;
   onSelectAll: () => void; onClear: () => void; accent: Accent;
 }) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  // No escuro, usa tom mais claro do roxo + bg um pouco mais marcado pra contraste.
+  const checkedText = isDark ? '#d8b4fe' : accent.solid;
+  const checkedBg = isDark ? 'rgba(168,85,247,0.16)' : accent.bgLight;
+  const checkedBorder = isDark ? 'rgba(168,85,247,0.40)' : accent.borderLight;
   return (
     <>
       <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
@@ -176,8 +183,8 @@ function PermissionsChecklist({ selected, onToggle, onSelectAll, onClear, accent
           return (
             <button key={p} type="button" onClick={() => onToggle(p)}
               className="w-full text-left flex items-center justify-between px-4 py-3 rounded-xl transition-all"
-              style={{ background: checked ? accent.bgLight : 'var(--tint-04)', border: `1px solid ${checked ? accent.borderLight : 'var(--border-default)'}` }}>
-              <span className="text-sm font-medium" style={{ color: checked ? accent.solid : 'var(--text-primary)' }}>
+              style={{ background: checked ? checkedBg : 'var(--tint-04)', border: `1px solid ${checked ? checkedBorder : 'var(--border-default)'}` }}>
+              <span className="text-sm font-medium" style={{ color: checked ? checkedText : 'var(--text-primary)' }}>
                 {PERMISSION_LABELS[p as Permission]}
               </span>
               <span className="flex items-center justify-center w-5 h-5 rounded-md flex-shrink-0 transition-all"

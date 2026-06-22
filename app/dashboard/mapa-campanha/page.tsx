@@ -2326,9 +2326,9 @@ export default function MapaCampanhaPage() {
   ];
 
   const cenarioConfig = {
-    conservador: { label: 'Conservador', icon: Shield, color: 'text-[color:var(--brand-cobalt)]', bg: 'bg-amber-500', border: 'border-amber-500' },
-    possivel: { label: 'Realista', icon: Gauge, color: 'text-[color:var(--brand-cobalt)]', bg: 'bg-cyan-500', border: 'border-cyan-500' },
-    arrojado: { label: 'Otimista', icon: Rocket, color: 'text-[color:var(--success)]', bg: 'bg-emerald-500', border: 'border-emerald-500' }
+    conservador: { label: 'Conservador', icon: Shield, color: 'text-[color:var(--brand-cobalt)]', bg: 'bg-amber-500', border: 'border-amber-500', hex: '#F59E0B' },
+    possivel: { label: 'Realista', icon: Gauge, color: 'text-[color:var(--brand-cobalt)]', bg: 'bg-cyan-500', border: 'border-cyan-500', hex: '#22D3EE' },
+    arrojado: { label: 'Otimista', icon: Rocket, color: 'text-[color:var(--success)]', bg: 'bg-emerald-500', border: 'border-emerald-500', hex: '#10B981' }
   };
 
   return (
@@ -2377,7 +2377,8 @@ export default function MapaCampanhaPage() {
                   <Button
                     onClick={() => setShowNovoCandidatoModal(true)}
                     variant="outline"
-                    className="border-emerald-500/50 text-[color:var(--success)] hover:bg-emerald-500/10 whitespace-nowrap text-xs h-8 px-3"
+                    style={{ background: 'var(--brand-cobalt-soft)', borderColor: 'var(--brand-cobalt)', color: 'var(--brand-cobalt-text)' }}
+                    className="whitespace-nowrap text-xs h-8 px-3 hover:brightness-110"
                   >
                     <Plus className="h-3 w-3 mr-1.5" />
                     Novo Candidato
@@ -2397,7 +2398,8 @@ export default function MapaCampanhaPage() {
                   <Button
                     onClick={() => setShowNovoCandidatoModal(true)}
                     variant="outline"
-                    className="border-emerald-500/50 text-[color:var(--success)] hover:bg-emerald-500/10 whitespace-nowrap text-sm h-8 px-3"
+                    style={{ background: 'var(--brand-cobalt-soft)', borderColor: 'var(--brand-cobalt)', color: 'var(--brand-cobalt-text)' }}
+                    className="whitespace-nowrap text-sm h-8 px-3 hover:brightness-110"
                   >
                     <Plus className="h-3.5 w-3.5 mr-1.5" />
                     Novo Candidato
@@ -2602,7 +2604,7 @@ export default function MapaCampanhaPage() {
             </Card>
             )}
 
-            <Card style={{ background: 'var(--bg-card)', borderLeft: `3px solid`, borderLeftColor: cenarioConfig[cenarioAtivo].border.replace('border-',''), border: '1px solid var(--tint-06)' }} className={`border-l-4 ${cenarioConfig[cenarioAtivo].border}`}>
+            <Card style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border-default)', borderRight: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)', borderLeft: `4px solid ${cenarioConfig[cenarioAtivo].hex}` }}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
