@@ -607,7 +607,9 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         attributionControl: true,
         preferCanvas: true
       });
-      L.control.zoom({ position: darkMode ? 'bottomleft' : 'topleft' }).addTo(map);
+      // Zoom sempre em bottomleft pra nao brigar com o breadcrumb
+      // "Brasil > Estado" que fica no topo-esquerdo em ambos os temas.
+      L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
       // Atribuir imediatamente para que cleanupMap() de execuções concorrentes
       // consiga destruir este mapa caso o efeito seja cancelado.
@@ -721,15 +723,15 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           return '#7fb8e0';
         }
 
-        // Tema claro + choropleth (dashboard de emendas no light):
-        // faixas discretas em cobalto pra municipios com valor + cinza
-        // claro pra sem emendas. Bate com a mesma legenda discreta.
+        // Tema claro + choropleth: paleta sequencial suave, todos os
+        // tons na mesma familia de azul cobalto/ceu, com progressao
+        // harmonica sem extremos. Bate com a legenda discreta no claro.
         if (showChoropleth) {
-          if (votos === undefined || votos === 0) return '#E2E8F0';
-          if (votos > 2_000_000) return '#1E3A8A';
-          if (votos > 1_000_000) return '#2563EB';
-          if (votos > 500_000)   return '#60A5FA';
-          return '#BFDBFE';
+          if (votos === undefined || votos === 0) return '#F1F5F9';
+          if (votos > 2_000_000) return '#1D4ED8';
+          if (votos > 1_000_000) return '#3B82F6';
+          if (votos > 500_000)   return '#7DD3FC';
+          return '#BAE6FD';
         }
 
         if (votos === undefined || votos === 0) return '#dce8f5';
