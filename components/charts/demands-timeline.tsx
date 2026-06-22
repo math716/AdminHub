@@ -44,13 +44,13 @@ export default function DemandsTimelineChart({ data, darkMode = false }: Props) 
         </defs>
         <XAxis 
           dataKey="formattedDate" 
-          tick={{ fill: darkMode ? '#9CA3AF' : '#6B7280', fontSize: 10 }}
+          tick={{ fill: darkMode ? '#9CA3AF' : '#475569', fontSize: 10, fontWeight: 500 }}
           axisLine={false}
           tickLine={false}
           interval="preserveStartEnd"
         />
         <YAxis 
-          tick={{ fill: darkMode ? '#9CA3AF' : '#6B7280', fontSize: 10 }}
+          tick={{ fill: darkMode ? '#9CA3AF' : '#475569', fontSize: 10, fontWeight: 500 }}
           axisLine={false}
           tickLine={false}
         />

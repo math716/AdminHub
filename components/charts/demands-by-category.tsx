@@ -35,18 +35,18 @@ export default function DemandsByCategoryChart({ data, darkMode = false }: Props
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-        <XAxis 
-          type="number" 
+        <XAxis
+          type="number"
           axisLine={false}
           tickLine={false}
-          tick={{ fill: darkMode ? '#9CA3AF' : '#6B7280', fontSize: 11 }}
+          tick={{ fill: darkMode ? '#9CA3AF' : '#475569', fontSize: 11 }}
         />
-        <YAxis 
-          type="category" 
-          dataKey="name" 
+        <YAxis
+          type="category"
+          dataKey="name"
           axisLine={false}
           tickLine={false}
-          tick={{ fill: darkMode ? '#E5E7EB' : '#374151', fontSize: 11 }}
+          tick={{ fill: darkMode ? '#E5E7EB' : '#0F172A', fontSize: 11, fontWeight: 500 }}
           width={80}
         />
         <Tooltip

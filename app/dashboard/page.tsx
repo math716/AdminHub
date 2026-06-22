@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
@@ -41,6 +42,8 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const { data: session, status: sessionStatus } = useSession() || {};
+  const { resolvedTheme } = useTheme();
+  const isDarkTheme = resolvedTheme === 'dark';
   const userRole   = (session?.user as any)?.role       || 'ASSESSOR';
   const gabineteId = (session?.user as any)?.gabineteId as string | undefined;
   const gabineteName = (session?.user as any)?.gabineteName || 'AdminHub';
@@ -303,7 +306,7 @@ export default function DashboardPage() {
             <h3 className="text-[color:var(--text-primary)] font-semibold">Demandas por Categoria</h3>
           </div>
           <div className="h-[280px]">
-            <DemandsByCategoryChart data={stats?.byCategory} darkMode={true} />
+            <DemandsByCategoryChart data={stats?.byCategory} darkMode={isDarkTheme} />
           </div>
         </motion.div>
       </div>
@@ -321,7 +324,7 @@ export default function DashboardPage() {
           <h3 className="text-[color:var(--text-primary)] font-semibold">Evolução de Demandas</h3>
         </div>
         <div className="h-[250px]">
-          <DemandsTimelineChart data={stats?.timeline} darkMode={true} />
+          <DemandsTimelineChart data={stats?.timeline} darkMode={isDarkTheme} />
         </div>
       </motion.div>
     </div>
