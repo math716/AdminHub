@@ -29,9 +29,11 @@ export default function DemandsTimelineChart({ data, darkMode = false }: Props) 
   }
 
   const gradientId = darkMode ? 'timelineGradientDark' : 'timelineGradientLight';
-  const strokeColor = darkMode ? '#1D4ED8' : 'var(--bg-card-raised)';
-  const gradientStart = darkMode ? '#1D4ED8' : 'var(--bg-card-raised)';
-  const gradientEnd = darkMode ? 'rgba(201, 150, 26, 0.1)' : 'rgba(30, 58, 95, 0.1)';
+  // Cobalto solido em ambos os temas — visivel sobre fundo claro ou escuro.
+  // No dark usa um cobalto mais claro pra contraste melhor em navy.
+  const strokeColor = darkMode ? '#60A5FA' : '#2563EB';
+  const gradientStart = strokeColor;
+  const gradientEnd = darkMode ? 'rgba(96,165,250,0.05)' : 'rgba(37,99,235,0.05)';
 
   return (
     <ResponsiveContainer width="100%" height="100%">
