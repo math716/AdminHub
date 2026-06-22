@@ -22,6 +22,13 @@ interface StateMapProps {
    * mapa eleitoral, mapa-demandas etc.
    */
   darkMode?: boolean;
+  /**
+   * Quando true, renderiza preenchimento (choropleth) dos municipios
+   * com cor por valor. Default = darkMode (retrocompat). Use explicitamente
+   * `choropleth` quando o tema visual e o modo choropleth precisam ser
+   * controlados separadamente (ex: dashboard de emendas no tema claro).
+   */
+  choropleth?: boolean;
 }
 
 const UF_CODES: Record<string, string> = {
@@ -42,7 +49,8 @@ function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
 
 type SubdivisaoTipo = 'bairros' | 'bairrosTSE' | 'setores' | null;
 
-function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunicipioClick, filteredMunicipios, highlightColor, disableSubdivisao, highlightMunicipioNome, valueLabel = 'votos', darkMode = false }: StateMapProps) {
+function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunicipioClick, filteredMunicipios, highlightColor, disableSubdivisao, highlightMunicipioNome, valueLabel = 'votos', darkMode = false, choropleth }: StateMapProps) {
+  const showChoropleth = choropleth ?? darkMode;
   const [geoData, setGeoData] = useState<any>(null);
   // Contorno do Brasil (outros estados) — usado em darkMode pra deixar claro
   // que o azul marinho ao redor é "o resto do mapa não selecionado".
@@ -703,17 +711,25 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       const maxValue = allVotes.length > 0 ? Math.max(...allVotes.filter(v => v > 0)) : 1;
 
       const getColor = (votos: number | undefined, isHighlighted: boolean) => {
-        // darkMode (dashboard de emendas): faixas discretas em hex exatos
-        // batendo com a legenda "VALOR DE EMENDAS" no canto inferior direito.
-        // O "sem emendas" é um navy levemente mais claro que o contexto dos
-        // outros estados, pra ficar visível como município mas sem competir
-        // com as cores reais de emendas.
-        if (darkMode) {
+        // Tema escuro + choropleth: faixas discretas em hex navy batendo
+        // com a legenda "VALOR DE EMENDAS".
+        if (darkMode && showChoropleth) {
           if (votos === undefined || votos === 0) return '#15355c';
           if (votos > 2_000_000) return '#0c4f8a';
           if (votos > 1_000_000) return '#1d6fb8';
           if (votos > 500_000)   return '#3a8ed1';
           return '#7fb8e0';
+        }
+
+        // Tema claro + choropleth (dashboard de emendas no light):
+        // faixas discretas em cobalto pra municipios com valor + cinza
+        // claro pra sem emendas. Bate com a mesma legenda discreta.
+        if (showChoropleth) {
+          if (votos === undefined || votos === 0) return '#E2E8F0';
+          if (votos > 2_000_000) return '#1E3A8A';
+          if (votos > 1_000_000) return '#2563EB';
+          if (votos > 500_000)   return '#60A5FA';
+          return '#BFDBFE';
         }
 
         if (votos === undefined || votos === 0) return '#dce8f5';
@@ -750,9 +766,9 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         const votos = getVotos(codarea, nomeMun);
         const isFiltered = isMunicipioFiltered(nomeMun);
 
-        // darkMode: fill sólido (1.0) pra cor renderizada bater EXATAMENTE com
-        // os hex da legenda. Modo claro original: só bordas (fillOpacity 0).
-        const fillOpacity = darkMode ? 1 : 0;
+        // choropleth: fill solido pra cor renderizada bater com a legenda.
+        // Sem choropleth (mapa eleitoral classico): so bordas.
+        const fillOpacity = showChoropleth ? 1 : 0;
         const borderOpacity = filteredMunicipios ? (isFiltered ? 1 : 0.3) : 1;
 
         // Bordas: claras pra contraste no dark, escuras no claro

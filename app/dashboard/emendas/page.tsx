@@ -1181,6 +1181,7 @@ export default function EmendasPage() {
                 highlightMunicipioNome={selectedMunicipio?.nome ?? null}
                 valueLabel={selectedParlamentar ? `de ${selectedParlamentar.nome.split(' ')[0]}` : 'em emendas'}
                 darkMode={isDarkTheme}
+                choropleth
               />
             )}
 
@@ -1888,16 +1889,26 @@ function PopupRow({ label, value, hint }: { label: string; value: string; hint?:
 }
 
 function LegendaCores() {
-  // Mesmas faixas discretas usadas pelo StateMap em darkMode — qualquer mudança
-  // aqui precisa replicar no getColor de state-map.tsx pra legenda continuar
-  // batendo com o desenho.
-  const items = [
-    { label: 'Acima de R$ 2 milhões',         color: '#0c4f8a' },
-    { label: 'R$ 1 milhão – 2 milhões',       color: '#1d6fb8' },
-    { label: 'R$ 500 mil – 1 milhão',         color: '#3a8ed1' },
-    { label: 'Até R$ 500 mil',                color: '#7fb8e0' },
-    { label: 'Sem emendas',                   color: '#15355c', border: '1px solid var(--tint-18)' },
-  ];
+  // Mesmas faixas discretas usadas pelo StateMap — qualquer mudança aqui
+  // precisa replicar no getColor de state-map.tsx pra legenda continuar
+  // batendo com o desenho. Paletas diferentes por tema.
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const items = isDark
+    ? [
+        { label: 'Acima de R$ 2 milhões',   color: '#0c4f8a' },
+        { label: 'R$ 1 milhão – 2 milhões', color: '#1d6fb8' },
+        { label: 'R$ 500 mil – 1 milhão',   color: '#3a8ed1' },
+        { label: 'Até R$ 500 mil',          color: '#7fb8e0' },
+        { label: 'Sem emendas',             color: '#15355c', border: '1px solid var(--tint-18)' },
+      ]
+    : [
+        { label: 'Acima de R$ 2 milhões',   color: '#1E3A8A' },
+        { label: 'R$ 1 milhão – 2 milhões', color: '#2563EB' },
+        { label: 'R$ 500 mil – 1 milhão',   color: '#60A5FA' },
+        { label: 'Até R$ 500 mil',          color: '#BFDBFE' },
+        { label: 'Sem emendas',             color: '#E2E8F0', border: '1px solid #CBD5E1' },
+      ];
   return (
     <div className="space-y-1">
       {items.map((it) => (
