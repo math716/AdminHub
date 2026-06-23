@@ -3260,7 +3260,7 @@ export default function MapaCampanhaPage() {
                             key={idx}
                             className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' :
-                              mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
+                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                             }`}
                             onClick={() => {
                               const zonaPin = dfZonasDisplay.find(z => z.zona === zonaNum);
@@ -3305,7 +3305,7 @@ export default function MapaCampanhaPage() {
                               )}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-300">
+                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">
                                 🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}
                               </div>
                             )}
@@ -3327,7 +3327,7 @@ export default function MapaCampanhaPage() {
                             key={idx}
                             className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' :
-                              mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
+                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                             }`}
                             onClick={() => handleDfRegiaoClick(regiaoNome)}
                           >
@@ -3362,7 +3362,7 @@ export default function MapaCampanhaPage() {
                               )}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-300">
+                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">
                                 🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}
                               </div>
                             )}
@@ -3384,7 +3384,7 @@ export default function MapaCampanhaPage() {
                             key={idx}
                             className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isSelected ? 'bg-violet-900/30 border-l-2 border-violet-400' :
-                              mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
+                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                             }`}
                             onClick={() => handleSpDistritoClick(distNome)}
                           >
@@ -3409,7 +3409,7 @@ export default function MapaCampanhaPage() {
                               {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
+                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
                             )}
                           </div>
                         );
@@ -3429,7 +3429,7 @@ export default function MapaCampanhaPage() {
                             key={idx}
                             className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isSelected ? 'bg-emerald-900/30 border-l-2 border-emerald-400' :
-                              mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
+                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                             }`}
                             onClick={() => handleRjBairroClick(bairroNome)}
                           >
@@ -3454,7 +3454,7 @@ export default function MapaCampanhaPage() {
                               {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
+                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
                             )}
                           </div>
                         );
@@ -3474,7 +3474,7 @@ export default function MapaCampanhaPage() {
                             key={idx}
                             className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isSelected ? 'bg-orange-900/30 border-l-2 border-orange-400' :
-                              mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
+                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                             }`}
                             onClick={() => handleCeBairroClick(bairroNome)}
                           >
@@ -3499,7 +3499,7 @@ export default function MapaCampanhaPage() {
                               {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
+                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
                             )}
                           </div>
                         );
@@ -3519,7 +3519,7 @@ export default function MapaCampanhaPage() {
                             key={idx}
                             className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isSelected ? 'bg-violet-900/30 border-l-2 border-violet-400' :
-                              mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
+                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                             }`}
                             onClick={() => setSelectedMgBairro(prev => prev === bairroNome ? null : bairroNome)}
                           >
@@ -3544,7 +3544,7 @@ export default function MapaCampanhaPage() {
                               {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
+                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
                             )}
                           </div>
                         );
@@ -3620,7 +3620,7 @@ export default function MapaCampanhaPage() {
                           <div
                             key={idx}
                             className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
-                              mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
+                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                             }`}
                             onClick={() => handleBairroClick(bairroNome, mun.votosBase)}
                           >
@@ -3645,7 +3645,7 @@ export default function MapaCampanhaPage() {
                               {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
+                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
                             )}
                           </div>
                         );
@@ -3666,7 +3666,7 @@ export default function MapaCampanhaPage() {
                             key={idx}
                             className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                               isNew ? 'bg-emerald-900/20 border-l-2 border-emerald-500' :
-                              mun.dobradaAtiva ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''
+                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                             }`}
                             onClick={() => handleMunicipioClick(mun.municipio)}
                           >
@@ -3742,7 +3742,7 @@ export default function MapaCampanhaPage() {
                               )}
                             </div>
                             {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-300">
+                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">
                                 🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}
                               </div>
                             )}
@@ -3948,8 +3948,8 @@ export default function MapaCampanhaPage() {
                     onChange={(e) => setDobradaAtivaTemp(e.target.checked)}
                     className="w-5 h-5 rounded border-[var(--border-default)] bg-[var(--bg-card-subtle)] text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
                   />
-                  <Handshake className={`h-5 w-5 ${dobradaAtivaTemp ? 'text-blue-400' : 'text-slate-600 dark:text-slate-500'}`} />
-                  <span className={`font-medium ${dobradaAtivaTemp ? 'text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}>
+                  <Handshake className={`h-5 w-5 ${dobradaAtivaTemp ? 'text-blue-500 dark:text-blue-400' : 'text-slate-600 dark:text-slate-500'}`} />
+                  <span className={`font-medium ${dobradaAtivaTemp ? 'text-blue-600 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}>
                     Dobrada com Deputado Federal
                   </span>
                 </label>
