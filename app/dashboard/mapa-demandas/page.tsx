@@ -763,33 +763,33 @@ export default function MapaDemandasPage() {
                     </div>
                     <h3 className="text-[color:var(--text-primary)] font-bold text-sm leading-snug">{selectedDemand.title}</h3>
                   </div>
-                  <button onClick={() => setSelectedDemand(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-[var(--tint-10)]">
+                  <button onClick={() => setSelectedDemand(null)} className="text-[color:var(--text-tertiary)] hover:text-[color:var(--text-primary)] transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-[var(--tint-10)]">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
                 <div className="space-y-1.5 text-[11px] bg-[var(--tint-06)] rounded-xl p-2.5 mb-2.5 border border-[var(--tint-06)]">
-                  <div className="flex items-center gap-2 text-gray-200">
+                  <div className="flex items-center gap-2 text-[color:var(--text-secondary)]">
                     <User className="w-3 h-3 text-sky-400 flex-shrink-0" />
                     <span>{selectedDemand.solicitante}</span>
                   </div>
                   {selectedDemand.contato && (
-                    <div className="flex items-center gap-2 text-gray-200">
+                    <div className="flex items-center gap-2 text-[color:var(--text-secondary)]">
                       <Phone className="w-3 h-3 text-sky-400 flex-shrink-0" />
                       <span>{selectedDemand.contato}</span>
                     </div>
                   )}
                   {selectedDemand.endereco
-                    ? <div className="flex items-center gap-2 text-gray-200">
+                    ? <div className="flex items-center gap-2 text-[color:var(--text-secondary)]">
                         <MapPin className="w-3 h-3 text-sky-400 flex-shrink-0" />
                         <span>{selectedDemand.endereco}</span>
                       </div>
-                    : <div className="flex items-center gap-2 text-gray-200">
+                    : <div className="flex items-center gap-2 text-[color:var(--text-secondary)]">
                         <Building2 className="w-3 h-3 text-sky-400 flex-shrink-0" />
                         <span>{selectedDemand.municipio}, {selectedDemand.estado}</span>
                       </div>
                   }
-                  <div className="flex items-center gap-2 text-gray-200">
+                  <div className="flex items-center gap-2 text-[color:var(--text-secondary)]">
                     <Calendar className="w-3 h-3 text-sky-400 flex-shrink-0" />
                     <span>{new Date(selectedDemand.createdAt).toLocaleDateString('pt-BR')}</span>
                   </div>
@@ -808,24 +808,24 @@ export default function MapaDemandasPage() {
                 </div>
 
                 {selectedDemand.description && (
-                  <p className="text-gray-300 text-[11px] leading-relaxed line-clamp-2 mb-2.5">{selectedDemand.description}</p>
+                  <p className="text-[color:var(--text-secondary)] text-[11px] leading-relaxed line-clamp-2 mb-2.5">{selectedDemand.description}</p>
                 )}
 
                 {selectedDemand.lat && selectedDemand.lng && (
                   <div className="pt-2.5 border-t border-[var(--tint-10)]">
-                    <p className="text-[11px] text-gray-400 font-medium mb-2">Traçar rota até aqui</p>
+                    <p className="text-[11px] text-[color:var(--text-tertiary)] font-medium mb-2">Traçar rota até aqui</p>
                     <div className="flex gap-3">
                       <a href={`https://waze.com/ul?ll=${selectedDemand.lat},${selectedDemand.lng}&navigate=yes`}
                         target="_blank" rel="noopener noreferrer"
                         className="flex-1 flex flex-col items-center gap-1 transition-all hover:scale-105 active:scale-95">
                         <img src="/waze-logo.png" alt="Waze" className="w-10 h-10 rounded-xl shadow-lg object-cover" />
-                        <span className="text-[11px] font-semibold text-gray-200">Waze</span>
+                        <span className="text-[11px] font-semibold text-[color:var(--text-secondary)]">Waze</span>
                       </a>
                       <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedDemand.lat},${selectedDemand.lng}`}
                         target="_blank" rel="noopener noreferrer"
                         className="flex-1 flex flex-col items-center gap-1 transition-all hover:scale-105 active:scale-95">
                         <img src="/google-maps-logo.png" alt="Google Maps" className="w-10 h-10 rounded-xl shadow-lg object-cover" />
-                        <span className="text-[11px] font-semibold text-gray-200">Google Maps</span>
+                        <span className="text-[11px] font-semibold text-[color:var(--text-secondary)]">Google Maps</span>
                       </a>
                     </div>
                   </div>
@@ -849,18 +849,18 @@ export default function MapaDemandasPage() {
                     </div>
                     <h3 className="text-[color:var(--text-primary)] font-bold text-sm">{selectedEvent.titulo}</h3>
                   </div>
-                  <button onClick={() => setSelectedEvent(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-[var(--tint-10)]">
+                  <button onClick={() => setSelectedEvent(null)} className="text-[color:var(--text-tertiary)] hover:text-[color:var(--text-primary)] transition-colors flex-shrink-0 p-0.5 rounded-lg hover:bg-[var(--tint-10)]">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 <div className="space-y-2 text-xs bg-[var(--tint-06)] rounded-xl p-3 mb-3 border border-[var(--tint-06)]">
-                  <div className="flex items-center gap-2.5 text-gray-200">
+                  <div className="flex items-center gap-2.5 text-[color:var(--text-secondary)]">
                     <Calendar className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
                     <span>{new Date(selectedEvent.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
                   </div>
                   {selectedEvent.local && (
-                    <div className="flex items-center gap-2.5 text-gray-200">
+                    <div className="flex items-center gap-2.5 text-[color:var(--text-secondary)]">
                       <MapPin className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
                       <span>{selectedEvent.local}</span>
                     </div>
@@ -868,24 +868,24 @@ export default function MapaDemandasPage() {
                 </div>
 
                 {selectedEvent.descricao && (
-                  <p className="text-gray-300 text-xs leading-relaxed mb-3">{selectedEvent.descricao}</p>
+                  <p className="text-[color:var(--text-secondary)] text-xs leading-relaxed mb-3">{selectedEvent.descricao}</p>
                 )}
 
                 {selectedEvent.lat && selectedEvent.lng && (
                   <div className="pt-3 border-t border-[var(--tint-10)]">
-                    <p className="text-xs text-gray-400 font-medium mb-2.5">Traçar rota até aqui</p>
+                    <p className="text-xs text-[color:var(--text-tertiary)] font-medium mb-2.5">Traçar rota até aqui</p>
                     <div className="flex gap-3">
                       <a href={`https://waze.com/ul?ll=${selectedEvent.lat},${selectedEvent.lng}&navigate=yes`}
                         target="_blank" rel="noopener noreferrer"
                         className="flex-1 flex flex-col items-center gap-1.5 transition-all hover:scale-105 active:scale-95">
                         <img src="/waze-logo.png" alt="Waze" className="w-12 h-12 rounded-2xl shadow-lg object-cover" />
-                        <span className="text-xs font-semibold text-gray-200">Waze</span>
+                        <span className="text-xs font-semibold text-[color:var(--text-secondary)]">Waze</span>
                       </a>
                       <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedEvent.lat},${selectedEvent.lng}`}
                         target="_blank" rel="noopener noreferrer"
                         className="flex-1 flex flex-col items-center gap-1.5 transition-all hover:scale-105 active:scale-95">
                         <img src="/google-maps-logo.png" alt="Google Maps" className="w-12 h-12 rounded-2xl shadow-lg object-cover" />
-                        <span className="text-xs font-semibold text-gray-200">Google Maps</span>
+                        <span className="text-xs font-semibold text-[color:var(--text-secondary)]">Google Maps</span>
                       </a>
                     </div>
                   </div>
