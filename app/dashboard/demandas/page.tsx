@@ -744,20 +744,25 @@ export default function DemandasPage() {
 
           {/* Foto */}
           <div>
-            <label className="text-xs text-gray-400 uppercase tracking-wide">Foto (opcional)</label>
+            <label className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>Foto (opcional)</label>
             <div className="mt-1 flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => fotoInputRef.current?.click()}
-                className="flex items-center gap-2 px-3 py-2 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-lg text-sm text-gray-300 hover:bg-[var(--tint-10)]"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:brightness-110"
+                style={{
+                  background: 'var(--bg-card-subtle)',
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--text-primary)',
+                }}
               >
-                <Camera className="w-4 h-4" />
+                <Camera className="w-4 h-4" style={{ color: 'var(--brand-cobalt)' }} />
                 {formData.foto ? 'Trocar foto' : 'Adicionar foto'}
               </button>
               {formData.foto && (
                 <div className="flex items-center gap-2">
-                  <img src={formData.foto} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-[var(--tint-10)]" />
-                  <button type="button" onClick={() => setFormData((f) => ({ ...f, foto: '' }))} className="text-gray-500 hover:text-red-400">
+                  <img src={formData.foto} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-[var(--border-default)]" />
+                  <button type="button" onClick={() => setFormData((f) => ({ ...f, foto: '' }))} className="hover:text-red-500" style={{ color: 'var(--text-tertiary)' }}>
                     <X className="w-4 h-4" />
                   </button>
                 </div>
