@@ -2332,11 +2332,10 @@ export default function MapaCampanhaPage() {
   };
 
   return (
-    <div className="min-h-screen p-3 md:p-6" style={{ background: 'linear-gradient(160deg, var(--bg-page) 0%, var(--bg-card) 50%, var(--bg-card) 100%)' }}>
+    <div className="space-y-4">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
       >
         <PageHeader
           icon={Target}
@@ -2351,7 +2350,7 @@ export default function MapaCampanhaPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <Card className="mb-6" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}>
+        <Card style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}>
           <CardContent className="p-5">
 
             {/* Modo colapsado: resumo + botão editar */}
@@ -2483,16 +2482,15 @@ export default function MapaCampanhaPage() {
 
       {electoralData && projecao && (
         <>
-          {/* Candidato identificação */}
+          {/* Compact top bar: candidate info + tabs + save */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 }}
-            className="mb-4"
           >
             <div
-              className="flex items-center gap-5 px-5 py-3 rounded-2xl flex-wrap"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)', backdropFilter: 'blur(8px)' }}
+              className="flex items-center gap-4 px-5 py-3 rounded-2xl flex-wrap"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}
             >
               {/* Nome + cargo */}
               {(() => {
@@ -2506,286 +2504,932 @@ export default function MapaCampanhaPage() {
                 );
               })()}
 
-              {/* Separador */}
               <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
-
-              {/* Estado */}
               <div className="flex flex-col items-center gap-0.5">
                 <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Estado</span>
                 <span className="text-base font-bold text-[color:var(--text-primary)]">
                   {ESTADOS_BRASIL.find(e => e.sigla === projecao.uf)?.nome ?? projecao.uf}
                 </span>
               </div>
-
               <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
-
-              {/* Eleição base */}
               <div className="flex flex-col items-center gap-0.5">
                 <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Eleição</span>
                 <span className="text-base font-bold" style={{ color: '#4a9ede' }}>{projecao.anoBase}</span>
               </div>
-
               <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
-
-              {/* Projeção */}
               <div className="flex flex-col items-center gap-0.5">
                 <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Projeção</span>
                 <span className="text-base font-bold" style={{ color: '#2563EB' }}>{projecao.anoProjecao}</span>
               </div>
-            </div>
-          </motion.div>
 
-          {/* Scenario Selector */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="mb-6"
-          >
-            <Card style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
-              <CardContent className="px-4 py-1.5">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Cenário</span>
-                  <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'var(--bg-card-subtle)' }}>
-                    {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
-                      const config = cenarioConfig[cenario];
-                      const Icon = config.icon;
-                      const isActive = cenarioAtivo === cenario;
-                      return (
-                        <button
-                          key={cenario}
-                          onClick={() => setCenarioAtivo(cenario)}
-                          className={`flex items-center gap-1.5 px-3 py-0.5 rounded-md font-semibold text-sm transition-all ${
-                            isActive
-                              ? `${config.bg} text-white shadow-lg`
-                              : `text-slate-600 dark:text-slate-400 hover:text-white`
-                          }`}
-                        >
-                          <Icon className="h-3.5 w-3.5" />
-                          {config.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="flex-1" />
-                  <div className="text-right">
-                    <p className="text-xs tracking-wide" style={{ color: '#6b82a0' }}>Totalizando cenário</p>
-                    <p className={`text-xl font-bold ${cenarioConfig[cenarioAtivo].color}`}>
-                      {getTotalVotosMeta().toLocaleString()} <span className="text-sm font-normal" style={{ color: '#6b82a0' }}>votos</span>
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+              <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
 
-          {/* Stats Summary */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6"
-          >
-            {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
-            <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium tracking-wide mb-1" style={{ color: '#6b82a0' }}>
-                      Votos {ano} {filtroTipo !== 'todos' && <span style={{ color: '#2563EB' }}>(filtrado)</span>}
-                    </p>
-                    <p className="text-2xl font-bold text-[color:var(--text-primary)]">{getTotalVotosBase().toLocaleString()}</p>
-                  </div>
-                  <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
-                    <BarChart3 className="h-5 w-5" style={{ color: '#2563EB' }} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            )}
-
-            <Card style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border-default)', borderRight: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)', borderLeft: `4px solid ${cenarioConfig[cenarioAtivo].hex}` }}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium tracking-wide mb-1" style={{ color: '#6b82a0' }}>
-                      Meta {anoProjecao} {filtroTipo !== 'todos' && <span className={`${cenarioConfig[cenarioAtivo].color} text-xs`}>(filtrado)</span>}
-                    </p>
-                    <p className={`text-2xl font-bold ${cenarioConfig[cenarioAtivo].color}`}>
-                      {getTotalVotosMeta().toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
-                    <Target className={`h-5 w-5 ${cenarioConfig[cenarioAtivo].color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
-            <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium tracking-wide mb-1" style={{ color: '#6b82a0' }}>
-                      Crescimento {filtroTipo !== 'todos' && <span className="text-[color:var(--success)] text-xs">(filtrado)</span>}
-                    </p>
-                    <p className={`text-2xl font-bold ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
-                      {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
-                    {parseFloat(getCrescimento() as string) >= 0 ? (
-                      <ArrowUp className="h-5 w-5 text-[color:var(--success)]" />
-                    ) : (
-                      <ArrowDown className="h-5 w-5 text-red-400" />
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            )}
-
-            <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium tracking-wide mb-1" style={{ color: '#6b82a0' }}>
-                      Municípios {filtroTipo !== 'todos' && <span className="text-purple-400">(filtrado)</span>}
-                    </p>
-                    <p className="text-2xl font-bold text-[color:var(--text-primary)]">
-                      {getMunicipiosCount()}
-                      {filtroTipo !== 'todos' && (
-                        <span className="text-sm ml-1" style={{ color: '#6b82a0' }}>/ {projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length}</span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
-                    <MapPin className="h-5 w-5" style={{ color: '#2563EB' }} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Dobradas Card */}
-            <Card className={`bg-gradient-to-br from-blue-900/50 to-slate-800 ${filtroTipo === 'com_dobrada' ? 'border-blue-400 ring-2 ring-blue-400/30' : 'border-blue-500/30'}`}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-300 text-sm">Dobradas</p>
-                    <p className="text-2xl font-bold text-blue-400">{getDobradasCount()}</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">{getVotosComDobrada().toLocaleString()} votos</p>
-                  </div>
-                  <Handshake className="h-8 w-8 text-blue-400" />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Parcerias Card - Com Toggle de Simulação */}
-            <Card className={`relative bg-gradient-to-br from-amber-900/50 to-slate-800 transition-all duration-300 ${
-              filtroTipo === 'parcerias' ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-amber-500/30'
-            } ${!includeParcerias ? 'opacity-60' : ''}`}>
-              <CardContent className="p-4">
-                {/* Toggle Button */}
-                <button
-                  onClick={() => setIncludeParcerias(!includeParcerias)}
-                  className={`absolute top-2 right-2 p-1.5 rounded-full transition-all duration-200 ${
-                    includeParcerias 
-                      ? 'bg-amber-500/20 hover:bg-amber-500/30 text-[color:var(--brand-cobalt)]' 
-                      : 'bg-slate-600/50 hover:bg-slate-500/50 text-slate-600 dark:text-slate-400'
-                  }`}
-                  title={includeParcerias ? 'Ocultar parcerias da simulação' : 'Mostrar parcerias na simulação'}
-                >
-                  {includeParcerias ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </button>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`text-sm ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-600 dark:text-slate-400'}`}>Parcerias</p>
-                    <p className={`text-2xl font-bold ${includeParcerias ? 'text-[color:var(--brand-cobalt)]' : 'text-slate-600 dark:text-slate-500'}`}>
-                      {parceriasStats?.total || 0}
-                    </p>
-                    <p className={`text-xs font-medium ${includeParcerias ? cenarioConfig[cenarioAtivo].color : 'text-slate-600 dark:text-slate-500 line-through'}`}>
-                      {includeParcerias ? '+' : ''}{(
-                        cenarioAtivo === 'conservador' ? parceriasStats?.metaConservadoraTotal :
-                        cenarioAtivo === 'possivel' ? parceriasStats?.metaPossivelTotal :
-                        parceriasStats?.metaArrojadaTotal
-                      )?.toLocaleString() || '0'} votos
-                    </p>
-                  </div>
-                  <Users className={`h-8 w-8 ${includeParcerias ? 'text-[color:var(--brand-cobalt)]' : 'text-slate-600 dark:text-slate-500'}`} />
-                </div>
-                
-                {/* Indicador quando desativado */}
-                {!includeParcerias && (
-                  <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
-                    <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                      <EyeOff className="h-3 w-3" />
-                      Parcerias desativadas na simulação
-                    </p>
-                  </div>
+              {/* Tabs inline */}
+              <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}>
+                {electoralData?.candidatoId && (
+                  <button
+                    onClick={() => setActiveTab('historico')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                      activeTab === 'historico'
+                        ? 'bg-cyan-500 text-white shadow'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    Dados {ano}
+                  </button>
                 )}
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Tabs */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="flex items-center gap-3 mb-4 flex-wrap"
-          >
-            <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
-              {electoralData?.candidatoId && (
                 <button
-                  onClick={() => setActiveTab('historico')}
+                  onClick={() => setActiveTab('projecao')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                    activeTab === 'historico'
-                      ? 'bg-cyan-500 text-white shadow'
+                    activeTab === 'projecao'
+                      ? `${cenarioConfig[cenarioAtivo].bg} text-white shadow`
                       : 'text-slate-600 dark:text-slate-400 hover:text-white'
                   }`}
                 >
-                  <BarChart3 className="h-4 w-4" />
-                  Dados {ano}
+                  <Target className="h-4 w-4" />
+                  Projeção {anoProjecao}
                 </button>
-              )}
-              <button
-                onClick={() => setActiveTab('projecao')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                  activeTab === 'projecao'
-                    ? `${cenarioConfig[cenarioAtivo].bg} text-white shadow`
-                    : 'text-slate-600 dark:text-slate-400 hover:text-white'
-                }`}
+              </div>
+
+              {/* Save button */}
+              <Button
+                onClick={saveProjecao}
+                loading={saving}
+                className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600"
               >
-                <Target className="h-4 w-4" />
-                Projeção {anoProjecao}
-              </button>
+                <Save className="h-4 w-4 mr-2" />
+                Salvar Projeção
+              </Button>
             </div>
-            <div className="flex-1" />
-            <Button
-              onClick={saveProjecao}
-              loading={saving}
-              className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Salvar Projeção
-            </Button>
           </motion.div>
 
-          {/* Main Content */}
+          {/* Main 12-column grid */}
           <div className={mapFullscreen
             ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)] flex'
-            : 'grid grid-cols-1 lg:grid-cols-3 gap-6'
+            : 'grid grid-cols-12 gap-4'
           }>
-            {/* Map */}
+            {/* LEFT SIDEBAR — scenario + stats + municipality list */}
+            {!mapFullscreen && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.15 }}
+                className="col-span-12 md:col-span-4 flex flex-col gap-4"
+              >
+                {/* Scenario selector */}
+                <Card style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
+                  <CardContent className="px-4 py-2">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Cenário</span>
+                      <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'var(--bg-card-subtle)' }}>
+                        {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
+                          const config = cenarioConfig[cenario];
+                          const Icon = config.icon;
+                          const isActive = cenarioAtivo === cenario;
+                          return (
+                            <button
+                              key={cenario}
+                              onClick={() => setCenarioAtivo(cenario)}
+                              className={`flex items-center gap-1.5 px-3 py-0.5 rounded-md font-semibold text-sm transition-all ${
+                                isActive
+                                  ? `${config.bg} text-white shadow-lg`
+                                  : `text-slate-600 dark:text-slate-400 hover:text-white`
+                              }`}
+                            >
+                              <Icon className="h-3.5 w-3.5" />
+                              {config.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="flex-1" />
+                      <div className="text-right">
+                        <p className="text-xs tracking-wide" style={{ color: '#6b82a0' }}>Total</p>
+                        <p className={`text-lg font-bold ${cenarioConfig[cenarioAtivo].color}`}>
+                          {getTotalVotosMeta().toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Stats 2x3 grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Votos base */}
+                  {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
+                  <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
+                            Votos {ano}{filtroTipo !== 'todos' && <span style={{ color: '#2563EB' }}> (filtrado)</span>}
+                          </p>
+                          <p className="text-xl font-bold text-[color:var(--text-primary)]">{getTotalVotosBase().toLocaleString()}</p>
+                        </div>
+                        <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                          <BarChart3 className="h-4 w-4" style={{ color: '#2563EB' }} />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  )}
+
+                  {/* Meta */}
+                  <Card style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border-default)', borderRight: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)', borderLeft: `4px solid ${cenarioConfig[cenarioAtivo].hex}` }}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
+                            Meta {anoProjecao}{filtroTipo !== 'todos' && <span className={`${cenarioConfig[cenarioAtivo].color} text-[10px]`}> (filtrado)</span>}
+                          </p>
+                          <p className={`text-xl font-bold ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</p>
+                        </div>
+                        <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                          <Target className={`h-4 w-4 ${cenarioConfig[cenarioAtivo].color}`} />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Crescimento */}
+                  {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
+                  <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
+                            Crescimento{filtroTipo !== 'todos' && <span className="text-[color:var(--success)] text-[10px]"> (filtrado)</span>}
+                          </p>
+                          <p className={`text-xl font-bold ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
+                            {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
+                          </p>
+                        </div>
+                        <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                          {parseFloat(getCrescimento() as string) >= 0
+                            ? <ArrowUp className="h-4 w-4 text-[color:var(--success)]" />
+                            : <ArrowDown className="h-4 w-4 text-red-400" />
+                          }
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  )}
+
+                  {/* Municípios */}
+                  <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
+                            Municípios{filtroTipo !== 'todos' && <span className="text-purple-400"> (filtrado)</span>}
+                          </p>
+                          <p className="text-xl font-bold text-[color:var(--text-primary)]">
+                            {getMunicipiosCount()}
+                            {filtroTipo !== 'todos' && (
+                              <span className="text-sm ml-1" style={{ color: '#6b82a0' }}>/ {projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length}</span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                          <MapPin className="h-4 w-4" style={{ color: '#2563EB' }} />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Dobradas */}
+                  <Card className={`bg-gradient-to-br from-blue-900/50 to-slate-800 ${filtroTipo === 'com_dobrada' ? 'border-blue-400 ring-2 ring-blue-400/30' : 'border-blue-500/30'}`}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-blue-300 text-xs">Dobradas</p>
+                          <p className="text-xl font-bold text-blue-400">{getDobradasCount()}</p>
+                          <p className="text-[10px] text-slate-600 dark:text-slate-400">{getVotosComDobrada().toLocaleString()} votos</p>
+                        </div>
+                        <Handshake className="h-6 w-6 text-blue-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Parcerias */}
+                  <Card className={`relative bg-gradient-to-br from-amber-900/50 to-slate-800 transition-all duration-300 ${
+                    filtroTipo === 'parcerias' ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-amber-500/30'
+                  } ${!includeParcerias ? 'opacity-60' : ''}`}>
+                    <CardContent className="p-3">
+                      <button
+                        onClick={() => setIncludeParcerias(!includeParcerias)}
+                        className={`absolute top-2 right-2 p-1.5 rounded-full transition-all duration-200 ${
+                          includeParcerias
+                            ? 'bg-amber-500/20 hover:bg-amber-500/30 text-[color:var(--brand-cobalt)]'
+                            : 'bg-slate-600/50 hover:bg-slate-500/50 text-slate-600 dark:text-slate-400'
+                        }`}
+                        title={includeParcerias ? 'Ocultar parcerias da simulação' : 'Mostrar parcerias na simulação'}
+                      >
+                        {includeParcerias ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                      </button>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className={`text-xs ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-600 dark:text-slate-400'}`}>Parcerias</p>
+                          <p className={`text-xl font-bold ${includeParcerias ? 'text-[color:var(--brand-cobalt)]' : 'text-slate-600 dark:text-slate-500'}`}>
+                            {parceriasStats?.total || 0}
+                          </p>
+                          <p className={`text-[10px] font-medium ${includeParcerias ? cenarioConfig[cenarioAtivo].color : 'text-slate-600 dark:text-slate-500 line-through'}`}>
+                            {includeParcerias ? '+' : ''}{(
+                              cenarioAtivo === 'conservador' ? parceriasStats?.metaConservadoraTotal :
+                              cenarioAtivo === 'possivel' ? parceriasStats?.metaPossivelTotal :
+                              parceriasStats?.metaArrojadaTotal
+                            )?.toLocaleString() || '0'} votos
+                          </p>
+                        </div>
+                        <Users className={`h-6 w-6 ${includeParcerias ? 'text-[color:var(--brand-cobalt)]' : 'text-slate-600 dark:text-slate-500'}`} />
+                      </div>
+                      {!includeParcerias && (
+                        <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
+                          <p className="text-[10px] text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                            <EyeOff className="h-3 w-3" />
+                            Parcerias desativadas
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Municipality List */}
+                <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] flex flex-col flex-1 min-h-0" style={{ minHeight: '400px' }}>
+                  <CardHeader className="border-b border-[var(--border-default)] py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-[color:var(--text-primary)] text-sm flex items-center gap-2">
+                        {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c)) ? (
+                          <>
+                            <Home className="h-4 w-4 text-[color:var(--success)]" />
+                            {(electoralData?.cargo ?? '').toUpperCase().includes('PREFEITO') ? 'Município' : 'Bairros'}
+                          </>
+                        ) : uf === 'DF' && getFilteredDfZonas().length > 0 ? (
+                          <>
+                            <Vote className="h-4 w-4 text-sky-400" />
+                            Zonas Eleitorais
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
+                            Municípios
+                          </>
+                        )}
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="info" className="text-xs">
+                          {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c))
+                            ? filteredBairros.length
+                            : uf === 'DF' && getFilteredDfZonas().length > 0
+                              ? getFilteredDfZonas().length
+                              : getFilteredMunicipios().length}
+                        </Badge>
+                        {visualizacaoMapa !== 'bairro' && !(uf === 'DF' && getFilteredDfZonas().length > 0) && (
+                          <button
+                            onClick={openAddModal}
+                            className="p-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors"
+                            title="Adicionar município"
+                          >
+                            <Plus className="h-4 w-4 text-[color:var(--text-primary)]" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-2 space-y-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600 dark:text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder={visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c))
+                            ? "Pesquisar bairro..."
+                            : "Pesquisar município..."}
+                          value={searchMunicipio}
+                          onChange={(e) => setSearchMunicipio(e.target.value)}
+                          className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg pl-9 pr-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        />
+                      </div>
+                      {/* Filtros - só mostrar para view de municípios */}
+                      {!(visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c))) && (
+                      <div className="flex gap-1 flex-wrap">
+                        <button
+                          onClick={() => setFiltroTipo('todos')}
+                          className={`flex-1 min-w-[60px] px-2 py-1.5 text-xs rounded-lg transition-colors ${
+                            filtroTipo === 'todos'
+                              ? 'bg-slate-600 text-white'
+                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
+                          }`}
+                        >
+                          Todos
+                        </button>
+                        <button
+                          onClick={() => setFiltroTipo('com_dobrada')}
+                          className={`flex-1 min-w-[70px] px-2 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-center gap-1 ${
+                            filtroTipo === 'com_dobrada'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
+                          }`}
+                        >
+                          <Handshake className="h-3 w-3" />
+                          Dobrada
+                        </button>
+                        <button
+                          onClick={() => setFiltroTipo('sem_dobrada')}
+                          className={`flex-1 min-w-[80px] px-2 py-1.5 text-xs rounded-lg transition-colors ${
+                            filtroTipo === 'sem_dobrada'
+                              ? 'bg-slate-500 text-white'
+                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
+                          }`}
+                        >
+                          Sem Dobrada
+                        </button>
+                        <button
+                          onClick={() => setFiltroTipo('parcerias')}
+                          className={`flex-1 min-w-[80px] px-2 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-center gap-1 ${
+                            filtroTipo === 'parcerias'
+                              ? 'bg-amber-600 text-white'
+                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
+                          }`}
+                        >
+                          <Users className="h-3 w-3" />
+                          Parcerias
+                        </button>
+                      </div>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0 flex-1 overflow-y-auto">
+                    {/* Lista municipality content — duplicated from old section below (which will be hidden) */}
+                    {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c)) ? (
+                      <div className="divide-y divide-slate-700">
+                        {filteredBairros
+                          .sort((a, b) => b.votos - a.votos)
+                          .map((bairro, idx) => {
+                            const category = getBairroCategory(bairro.votos);
+                            const percentTotal = electoralData?.totalVotos
+                              ? ((bairro.votos / electoralData.totalVotos) * 100).toFixed(1)
+                              : '0';
+                            return (
+                              <div
+                                key={idx}
+                                className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors ${
+                                  category === 'acima' ? 'bg-emerald-900/10 border-l-2 border-emerald-500' :
+                                  category === 'abaixo' ? 'bg-blue-900/10 border-l-2 border-blue-500' :
+                                  'border-l-2 border-[var(--border-default)]'
+                                }`}
+                                onClick={() => handleBairroClick(bairro.bairro, bairro.votos)}
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <span className={`text-xs px-1 py-0.5 rounded ${
+                                      category === 'acima' ? 'bg-emerald-600' :
+                                      category === 'abaixo' ? 'bg-blue-600' : 'bg-slate-600'
+                                    }`}>
+                                      {category === 'acima' ? '🟢' : category === 'abaixo' ? '🔵' : '⚫'}
+                                    </span>
+                                    <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">
+                                      {bairro.bairro}
+                                    </span>
+                                  </div>
+                                  <Badge variant={category === 'acima' ? 'success' : category === 'abaixo' ? 'info' : 'default'} className="text-xs">
+                                    {percentTotal}%
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className={`font-medium ${
+                                    category === 'acima' ? 'text-[color:var(--success)]' :
+                                    category === 'abaixo' ? 'text-blue-400' : 'text-slate-600 dark:text-slate-400'
+                                  }`}>
+                                    {bairro.votos.toLocaleString()} votos
+                                  </span>
+                                  <span className="text-slate-600 dark:text-slate-500">•</span>
+                                  <span className="text-slate-600 dark:text-slate-500">Zonas: {bairro.zonas.join(', ')}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        {filteredBairros.length === 0 && (
+                          <div className="p-4 text-center text-slate-600 dark:text-slate-400 text-sm">
+                            Nenhum bairro encontrado
+                          </div>
+                        )}
+                      </div>
+                    ) : uf === 'DF' && getFilteredDfZonas().length > 0 ? (
+                      <div className="divide-y divide-slate-700">
+                        {getFilteredDfZonas().map((mun, idx) => {
+                          const zonaNum = getZonaNumber(mun.municipio);
+                          const metaAtiva = getMetaAtiva(mun);
+                          const diff = metaAtiva - mun.votosBase;
+                          const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
+                          const isSelected = selectedDfZona === zonaNum;
+                          return (
+                            <div
+                              key={idx}
+                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                                isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' :
+                                mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
+                              }`}
+                              onClick={() => {
+                                const zonaPin = dfZonasDisplay.find(z => z.zona === zonaNum);
+                                if (zonaPin) handleDfZonaClick(zonaPin);
+                              }}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <Vote className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
+                                  <span className="text-[color:var(--text-primary)] font-medium text-sm">
+                                    Zona {zonaNum}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  {mun.dobradaAtiva && (
+                                    <Badge variant="info" className="text-xs bg-blue-600">
+                                      DOBRADA
+                                    </Badge>
+                                  )}
+                                  {mun.prioridade && mun.prioridade !== 'MEDIA' && (
+                                    <Badge
+                                      variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'}
+                                      className="text-xs"
+                                    >
+                                      {mun.prioridade === 'ALTA' ? '!' : '○'}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-slate-600 dark:text-slate-400">
+                                  {ano}: <span className="text-[color:var(--brand-cobalt)] font-medium">{mun.votosBase.toLocaleString()}</span>
+                                </span>
+                                <span className="text-slate-600 dark:text-slate-500">→</span>
+                                <span className={cenarioConfig[cenarioAtivo].color}>
+                                  {metaAtiva.toLocaleString()}
+                                </span>
+                                {diff !== 0 && (
+                                  <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
+                                    {diff > 0 ? '+' : ''}{diffPercent}%
+                                  </span>
+                                )}
+                              </div>
+                              {mun.dobradaAtiva && mun.dobradaNome && (
+                                <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">
+                                  🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : uf === 'DF' && dfVisualizacao === 'regioes' && getFilteredDfRegioes().length > 0 ? (
+                      <div className="divide-y divide-slate-700">
+                        {getFilteredDfRegioes().map((mun, idx) => {
+                          const regiaoNome = getRegiaoNome(mun.municipio);
+                          const metaAtiva = getMetaAtiva(mun);
+                          const diff = metaAtiva - mun.votosBase;
+                          const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
+                          const isSelected = selectedDfRegiao === regiaoNome;
+                          return (
+                            <div
+                              key={idx}
+                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                                isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' :
+                                mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
+                              }`}
+                              onClick={() => handleDfRegiaoClick(regiaoNome)}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <MapPin className="h-3.5 w-3.5 text-[color:var(--brand-cobalt)] flex-shrink-0" />
+                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">
+                                    {regiaoNome}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  {mun.dobradaAtiva && (
+                                    <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>
+                                  )}
+                                  {mun.prioridade && mun.prioridade !== 'MEDIA' && (
+                                    <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
+                                      {mun.prioridade === 'ALTA' ? '!' : '○'}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-slate-600 dark:text-slate-400">
+                                  {ano}: <span className="text-[color:var(--brand-cobalt)] font-medium">{mun.votosBase.toLocaleString()}</span>
+                                </span>
+                                <span className="text-slate-600 dark:text-slate-500">→</span>
+                                <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
+                                {diff !== 0 && (
+                                  <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
+                                    {diff > 0 ? '+' : ''}{diffPercent}%
+                                  </span>
+                                )}
+                              </div>
+                              {mun.dobradaAtiva && mun.dobradaNome && (
+                                <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">
+                                  🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : uf === 'SP' && spVisualizacao === 'distritos' && getFilteredSpDistritos().length > 0 ? (
+                      <div className="divide-y divide-slate-700">
+                        {getFilteredSpDistritos().map((mun, idx) => {
+                          const distNome = getDistritoNome(mun.municipio);
+                          const metaAtiva = getMetaAtiva(mun);
+                          const diff = metaAtiva - mun.votosBase;
+                          const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
+                          const isSelected = selectedSpDistrito === distNome;
+                          return (
+                            <div
+                              key={idx}
+                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                                isSelected ? 'bg-violet-900/30 border-l-2 border-violet-400' :
+                                mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
+                              }`}
+                              onClick={() => handleSpDistritoClick(distNome)}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <MapPin className="h-3.5 w-3.5 text-violet-400 flex-shrink-0" />
+                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{distNome}</span>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
+                                  {mun.prioridade && mun.prioridade !== 'MEDIA' && (
+                                    <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
+                                      {mun.prioridade === 'ALTA' ? '!' : '○'}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-violet-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
+                                <span className="text-slate-600 dark:text-slate-500">→</span>
+                                <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
+                                {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
+                              </div>
+                              {mun.dobradaAtiva && mun.dobradaNome && (
+                                <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : uf === 'RJ' && rjVisualizacao === 'bairros' && getFilteredRjBairros().length > 0 ? (
+                      <div className="divide-y divide-slate-700">
+                        {getFilteredRjBairros().map((mun, idx) => {
+                          const bairroNome = getRjBairroNome(mun.municipio);
+                          const metaAtiva = getMetaAtiva(mun);
+                          const diff = metaAtiva - mun.votosBase;
+                          const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
+                          const isSelected = selectedRjBairro === bairroNome;
+                          return (
+                            <div
+                              key={idx}
+                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                                isSelected ? 'bg-emerald-900/30 border-l-2 border-emerald-400' :
+                                mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
+                              }`}
+                              onClick={() => handleRjBairroClick(bairroNome)}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <MapPin className="h-3.5 w-3.5 text-[color:var(--success)] flex-shrink-0" />
+                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
+                                  {mun.prioridade && mun.prioridade !== 'MEDIA' && (
+                                    <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
+                                      {mun.prioridade === 'ALTA' ? '!' : '○'}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-[color:var(--success)] font-medium">{mun.votosBase.toLocaleString()}</span></span>
+                                <span className="text-slate-600 dark:text-slate-500">→</span>
+                                <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
+                                {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
+                              </div>
+                              {mun.dobradaAtiva && mun.dobradaNome && (
+                                <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : uf === 'CE' && ceVisualizacao === 'bairros' && getFilteredCeBairros().length > 0 ? (
+                      <div className="divide-y divide-slate-700">
+                        {getFilteredCeBairros().map((mun, idx) => {
+                          const bairroNome = getCeBairroNome(mun.municipio);
+                          const metaAtiva = getMetaAtiva(mun);
+                          const diff = metaAtiva - mun.votosBase;
+                          const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
+                          const isSelected = selectedCeBairro === bairroNome;
+                          return (
+                            <div
+                              key={idx}
+                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                                isSelected ? 'bg-orange-900/30 border-l-2 border-orange-400' :
+                                mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
+                              }`}
+                              onClick={() => handleCeBairroClick(bairroNome)}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <MapPin className="h-3.5 w-3.5 text-orange-400 flex-shrink-0" />
+                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
+                                  {mun.prioridade && mun.prioridade !== 'MEDIA' && (
+                                    <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
+                                      {mun.prioridade === 'ALTA' ? '!' : '○'}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-orange-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
+                                <span className="text-slate-600 dark:text-slate-500">→</span>
+                                <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
+                                {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
+                              </div>
+                              {mun.dobradaAtiva && mun.dobradaNome && (
+                                <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : uf === 'MG' && mgVisualizacao === 'bairros' && getFilteredMgBairros().length > 0 ? (
+                      <div className="divide-y divide-slate-700">
+                        {getFilteredMgBairros().map((mun, idx) => {
+                          const bairroNome = getMgBairroNome(mun.municipio);
+                          const metaAtiva = getMetaAtiva(mun);
+                          const diff = metaAtiva - mun.votosBase;
+                          const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
+                          const isSelected = selectedMgBairro === bairroNome;
+                          return (
+                            <div
+                              key={idx}
+                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                                isSelected ? 'bg-violet-900/30 border-l-2 border-violet-400' :
+                                mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
+                              }`}
+                              onClick={() => setSelectedMgBairro(prev => prev === bairroNome ? null : bairroNome)}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <MapPin className="h-3.5 w-3.5 text-violet-400 flex-shrink-0" />
+                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
+                                  {mun.prioridade && mun.prioridade !== 'MEDIA' && (
+                                    <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
+                                      {mun.prioridade === 'ALTA' ? '!' : '○'}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-violet-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
+                                <span className="text-slate-600 dark:text-slate-500">→</span>
+                                <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
+                                {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
+                              </div>
+                              {mun.dobradaAtiva && mun.dobradaNome && (
+                                <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : visualizacaoMapa === 'bairro' && genPoligonosMunicipio && genPoligonosUf ? (
+                      Object.keys(genBairrosApiVotes).length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-600 dark:text-slate-400">
+                          <MapPin className="h-8 w-8 text-sky-400 opacity-50" />
+                          <span className="text-sm text-center px-4">Carregando bairros de {genPoligonosMunicipio}…</span>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-700">
+                          {(() => {
+                            const normFn = (s: string) =>
+                              s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+                            return Object.entries(genBairrosApiVotes)
+                              .map(([nome, votosBase]) => {
+                                const nomeNorm = normFn(nome);
+                                const votosDisplay = genBairrosVotesDisplay[nomeNorm] ?? votosBase;
+                                return { nome, votosBase, votosDisplay };
+                              })
+                              .sort((a, b) => b.votosDisplay - a.votosDisplay)
+                              .map(({ nome, votosBase, votosDisplay }, idx) => {
+                                const isSelected = selectedGenBairro ? normFn(nome) === normFn(selectedGenBairro) : false;
+                                const diff = votosDisplay - votosBase;
+                                const diffPercent = votosBase > 0 ? ((diff / votosBase) * 100).toFixed(0) : 0;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                                      isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' : ''
+                                    }`}
+                                    onClick={() => {
+                                      setSelectedGenBairro(prev =>
+                                        prev && normFn(prev) === normFn(nome) ? null : nome
+                                      );
+                                      handleBairroClick(nome, votosDisplay);
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-between mb-1">
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <MapPin className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
+                                        <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{nome}</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <span className="text-slate-600 dark:text-slate-400">Votos: <span className="text-sky-400 font-medium">{votosBase.toLocaleString()}</span></span>
+                                      {diff !== 0 && (
+                                        <>
+                                          <span className="text-slate-600 dark:text-slate-500">→</span>
+                                          <span className={cenarioConfig[cenarioAtivo].color}>{votosDisplay.toLocaleString()}</span>
+                                          <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              });
+                          })()}
+                        </div>
+                      )
+                    ) : visualizacaoMapa === 'bairro' && getFilteredMunBairros().length > 0 ? (
+                      <div className="divide-y divide-slate-700">
+                        {getFilteredMunBairros().map((mun, idx) => {
+                          const bairroNome = getMunBairroNome(mun.municipio);
+                          const metaAtiva = getMetaAtiva(mun);
+                          const diff = metaAtiva - mun.votosBase;
+                          const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
+                          return (
+                            <div
+                              key={idx}
+                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                                mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
+                              }`}
+                              onClick={() => handleBairroClick(bairroNome, mun.votosBase)}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <MapPin className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
+                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
+                                  {mun.prioridade && mun.prioridade !== 'MEDIA' && (
+                                    <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
+                                      {mun.prioridade === 'ALTA' ? '!' : '○'}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-slate-600 dark:text-slate-400">Base: <span className="text-sky-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
+                                <span className="text-slate-600 dark:text-slate-500">→</span>
+                                <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
+                                {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
+                              </div>
+                              {mun.dobradaAtiva && mun.dobradaNome && (
+                                <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-slate-700">
+                        {getFilteredMunicipios()
+                          .sort((a, b) => b.votosBase - a.votosBase)
+                          .map((mun, idx) => {
+                            const metaAtiva = getMetaAtiva(mun);
+                            const diff = metaAtiva - mun.votosBase;
+                            const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
+                            const isNew = mun.votosBase === 0;
+                            return (
+                              <div
+                                key={idx}
+                                className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                                  isNew ? 'bg-emerald-900/20 border-l-2 border-emerald-500' :
+                                  mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
+                                }`}
+                                onClick={() => handleMunicipioClick(mun.municipio)}
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    {mun.dobradaAtiva && (
+                                      <Handshake className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                                    )}
+                                    <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">
+                                      {mun.municipio}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    {isNew && (
+                                      <Badge variant="success" className="text-xs">
+                                        NOVO
+                                      </Badge>
+                                    )}
+                                    {mun.dobradaAtiva && (
+                                      <Badge variant="info" className="text-xs bg-blue-600">
+                                        DOBRADA
+                                      </Badge>
+                                    )}
+                                    {mun.prioridade && (
+                                      <Badge
+                                        variant={
+                                          mun.prioridade === 'ALTA' ? 'danger' :
+                                          mun.prioridade === 'MEDIA' ? 'warning' : 'default'
+                                        }
+                                        className="text-xs"
+                                      >
+                                        {mun.prioridade === 'ALTA' ? '!' : mun.prioridade === 'MEDIA' ? '●' : '○'}
+                                      </Badge>
+                                    )}
+                                    {isNew && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          removeMunicipio(mun.municipio);
+                                        }}
+                                        className="p-1 text-slate-600 dark:text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Remover município"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs">
+                                  {isNew ? (
+                                    <>
+                                      <span className="text-slate-600 dark:text-slate-500 italic">Sem votos anteriores</span>
+                                      <span className="text-slate-600 dark:text-slate-500">→</span>
+                                      <span className={cenarioConfig[cenarioAtivo].color}>
+                                        {metaAtiva.toLocaleString()}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="text-slate-600 dark:text-slate-400">
+                                        {ano}: <span className="text-[color:var(--brand-cobalt)] font-medium">{mun.votosBase.toLocaleString()}</span>
+                                      </span>
+                                      <span className="text-slate-600 dark:text-slate-500">→</span>
+                                      <span className={cenarioConfig[cenarioAtivo].color}>
+                                        {metaAtiva.toLocaleString()}
+                                      </span>
+                                      {diff !== 0 && (
+                                        <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
+                                          {diff > 0 ? '+' : ''}{diffPercent}%
+                                        </span>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                                {mun.dobradaAtiva && mun.dobradaNome && (
+                                  <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">
+                                    🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        {getFilteredMunicipios().length === 0 && (
+                          <div className="p-4 text-center text-slate-600 dark:text-slate-400 text-sm">
+                            Nenhum município encontrado
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+              </motion.div>
+            )}
+
+            {/* MAP — takes remaining space */}
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className={mapFullscreen ? 'flex-1 min-w-0 relative' : 'lg:col-span-2'}
+              transition={{ delay: 0.3 }}
+              className={mapFullscreen ? 'flex-1 min-w-0 relative' : 'col-span-12 md:col-span-8'}
             >
-              <Card className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] h-[600px]'}>
+              <Card className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] h-[700px]'}>
                 <CardHeader className={`border-b border-[var(--border-default)] py-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <CardTitle className="text-[color:var(--text-primary)] flex items-center gap-2">
@@ -3080,685 +3724,6 @@ export default function MapaCampanhaPage() {
               </Card>
             </motion.div>
 
-            {/* Municipalities/Bairros List */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-              className={mapFullscreen ? 'w-72 flex-shrink-0 h-full border-l border-[var(--tint-10)]' : ''}
-            >
-              <Card className={mapFullscreen ? 'h-full rounded-none border-0 bg-[var(--bg-card)] flex flex-col' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] h-[600px] flex flex-col'}>
-                <CardHeader className="border-b border-[var(--border-default)] py-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="text-[color:var(--text-primary)] text-sm flex items-center gap-2">
-                      {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c)) ? (
-                        <>
-                          <Home className="h-4 w-4 text-[color:var(--success)]" />
-                          {(electoralData?.cargo ?? '').toUpperCase().includes('PREFEITO') ? 'Município' : 'Bairros'}
-                        </>
-                      ) : uf === 'DF' && getFilteredDfZonas().length > 0 ? (
-                        <>
-                          <Vote className="h-4 w-4 text-sky-400" />
-                          Zonas Eleitorais
-                        </>
-                      ) : (
-                        <>
-                          <MapPin className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
-                          Municípios
-                        </>
-                      )}
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="info" className="text-xs">
-                        {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c))
-                          ? filteredBairros.length
-                          : uf === 'DF' && getFilteredDfZonas().length > 0
-                            ? getFilteredDfZonas().length
-                            : getFilteredMunicipios().length}
-                      </Badge>
-                      {visualizacaoMapa !== 'bairro' && !(uf === 'DF' && getFilteredDfZonas().length > 0) && (
-                        <button
-                          onClick={openAddModal}
-                          className="p-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors"
-                          title="Adicionar município"
-                        >
-                          <Plus className="h-4 w-4 text-[color:var(--text-primary)]" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-2 space-y-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600 dark:text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder={visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c))
-                          ? "Pesquisar bairro..."
-                          : "Pesquisar município..."}
-                        value={searchMunicipio}
-                        onChange={(e) => setSearchMunicipio(e.target.value)}
-                        className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg pl-9 pr-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      />
-                    </div>
-                    {/* Filtros - só mostrar para view de municípios */}
-                    {!(visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c))) && (
-                    <div className="flex gap-1 flex-wrap">
-                      <button
-                        onClick={() => setFiltroTipo('todos')}
-                        className={`flex-1 min-w-[60px] px-2 py-1.5 text-xs rounded-lg transition-colors ${
-                          filtroTipo === 'todos'
-                            ? 'bg-slate-600 text-white'
-                            : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
-                        }`}
-                      >
-                        Todos
-                      </button>
-                      <button
-                        onClick={() => setFiltroTipo('com_dobrada')}
-                        className={`flex-1 min-w-[70px] px-2 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-center gap-1 ${
-                          filtroTipo === 'com_dobrada'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
-                        }`}
-                      >
-                        <Handshake className="h-3 w-3" />
-                        Dobrada
-                      </button>
-                      <button
-                        onClick={() => setFiltroTipo('sem_dobrada')}
-                        className={`flex-1 min-w-[80px] px-2 py-1.5 text-xs rounded-lg transition-colors ${
-                          filtroTipo === 'sem_dobrada'
-                            ? 'bg-slate-500 text-white'
-                            : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
-                        }`}
-                      >
-                        Sem Dobrada
-                      </button>
-                      <button
-                        onClick={() => setFiltroTipo('parcerias')}
-                        className={`flex-1 min-w-[80px] px-2 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-center gap-1 ${
-                          filtroTipo === 'parcerias'
-                            ? 'bg-amber-600 text-white'
-                            : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
-                        }`}
-                      >
-                        <Users className="h-3 w-3" />
-                        Parcerias
-                      </button>
-                    </div>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0 flex-1 overflow-y-auto">
-                  {/* Lista condicional: Bairros para vereador em view de bairro, ou Municípios */}
-                  {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c)) ? (
-                    // Lista de Bairros (vereador) ou município focado (prefeito)
-                    <div className="divide-y divide-slate-700">
-                      {filteredBairros
-                        .sort((a, b) => b.votos - a.votos)
-                        .map((bairro, idx) => {
-                          const category = getBairroCategory(bairro.votos);
-                          const percentTotal = electoralData?.totalVotos 
-                            ? ((bairro.votos / electoralData.totalVotos) * 100).toFixed(1) 
-                            : '0';
-                          return (
-                            <div
-                              key={idx}
-                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors ${
-                                category === 'acima' ? 'bg-emerald-900/10 border-l-2 border-emerald-500' :
-                                category === 'abaixo' ? 'bg-blue-900/10 border-l-2 border-blue-500' :
-                                'border-l-2 border-[var(--border-default)]'
-                              }`}
-                              onClick={() => handleBairroClick(bairro.bairro, bairro.votos)}
-                            >
-                              <div className="flex items-center justify-between mb-1">
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  <span className={`text-xs px-1 py-0.5 rounded ${
-                                    category === 'acima' ? 'bg-emerald-600' :
-                                    category === 'abaixo' ? 'bg-blue-600' : 'bg-slate-600'
-                                  }`}>
-                                    {category === 'acima' ? '🟢' : category === 'abaixo' ? '🔵' : '⚫'}
-                                  </span>
-                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">
-                                    {bairro.bairro}
-                                  </span>
-                                </div>
-                                <Badge variant={category === 'acima' ? 'success' : category === 'abaixo' ? 'info' : 'default'} className="text-xs">
-                                  {percentTotal}%
-                                </Badge>
-                              </div>
-                              <div className="flex items-center gap-2 text-xs">
-                                <span className={`font-medium ${
-                                  category === 'acima' ? 'text-[color:var(--success)]' :
-                                  category === 'abaixo' ? 'text-blue-400' : 'text-slate-600 dark:text-slate-400'
-                                }`}>
-                                  {bairro.votos.toLocaleString()} votos
-                                </span>
-                                <span className="text-slate-600 dark:text-slate-500">•</span>
-                                <span className="text-slate-600 dark:text-slate-500">Zonas: {bairro.zonas.join(', ')}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      {filteredBairros.length === 0 && (
-                        <div className="p-4 text-center text-slate-600 dark:text-slate-400 text-sm">
-                          Nenhum bairro encontrado
-                        </div>
-                      )}
-                    </div>
-                  ) : uf === 'DF' && getFilteredDfZonas().length > 0 ? (
-                    // Lista de Zonas Eleitorais do DF
-                    <div className="divide-y divide-slate-700">
-                      {getFilteredDfZonas().map((mun, idx) => {
-                        const zonaNum = getZonaNumber(mun.municipio);
-                        const metaAtiva = getMetaAtiva(mun);
-                        const diff = metaAtiva - mun.votosBase;
-                        const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
-                        const isSelected = selectedDfZona === zonaNum;
-                        return (
-                          <div
-                            key={idx}
-                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
-                              isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' :
-                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
-                            }`}
-                            onClick={() => {
-                              const zonaPin = dfZonasDisplay.find(z => z.zona === zonaNum);
-                              if (zonaPin) handleDfZonaClick(zonaPin);
-                            }}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <Vote className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
-                                <span className="text-[color:var(--text-primary)] font-medium text-sm">
-                                  Zona {zonaNum}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                {mun.dobradaAtiva && (
-                                  <Badge variant="info" className="text-xs bg-blue-600">
-                                    DOBRADA
-                                  </Badge>
-                                )}
-                                {mun.prioridade && mun.prioridade !== 'MEDIA' && (
-                                  <Badge
-                                    variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'}
-                                    className="text-xs"
-                                  >
-                                    {mun.prioridade === 'ALTA' ? '!' : '○'}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="text-slate-600 dark:text-slate-400">
-                                {ano}: <span className="text-[color:var(--brand-cobalt)] font-medium">{mun.votosBase.toLocaleString()}</span>
-                              </span>
-                              <span className="text-slate-600 dark:text-slate-500">→</span>
-                              <span className={cenarioConfig[cenarioAtivo].color}>
-                                {metaAtiva.toLocaleString()}
-                              </span>
-                              {diff !== 0 && (
-                                <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
-                                  {diff > 0 ? '+' : ''}{diffPercent}%
-                                </span>
-                              )}
-                            </div>
-                            {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">
-                                🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : uf === 'DF' && dfVisualizacao === 'regioes' && getFilteredDfRegioes().length > 0 ? (
-                    // Lista de Regiões Administrativas do DF
-                    <div className="divide-y divide-slate-700">
-                      {getFilteredDfRegioes().map((mun, idx) => {
-                        const regiaoNome = getRegiaoNome(mun.municipio);
-                        const metaAtiva = getMetaAtiva(mun);
-                        const diff = metaAtiva - mun.votosBase;
-                        const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
-                        const isSelected = selectedDfRegiao === regiaoNome;
-                        return (
-                          <div
-                            key={idx}
-                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
-                              isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' :
-                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
-                            }`}
-                            onClick={() => handleDfRegiaoClick(regiaoNome)}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <MapPin className="h-3.5 w-3.5 text-[color:var(--brand-cobalt)] flex-shrink-0" />
-                                <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">
-                                  {regiaoNome}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                {mun.dobradaAtiva && (
-                                  <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>
-                                )}
-                                {mun.prioridade && mun.prioridade !== 'MEDIA' && (
-                                  <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
-                                    {mun.prioridade === 'ALTA' ? '!' : '○'}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="text-slate-600 dark:text-slate-400">
-                                {ano}: <span className="text-[color:var(--brand-cobalt)] font-medium">{mun.votosBase.toLocaleString()}</span>
-                              </span>
-                              <span className="text-slate-600 dark:text-slate-500">→</span>
-                              <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
-                              {diff !== 0 && (
-                                <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
-                                  {diff > 0 ? '+' : ''}{diffPercent}%
-                                </span>
-                              )}
-                            </div>
-                            {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">
-                                🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : uf === 'SP' && spVisualizacao === 'distritos' && getFilteredSpDistritos().length > 0 ? (
-                    // Lista de Distritos Municipais de SP
-                    <div className="divide-y divide-slate-700">
-                      {getFilteredSpDistritos().map((mun, idx) => {
-                        const distNome = getDistritoNome(mun.municipio);
-                        const metaAtiva = getMetaAtiva(mun);
-                        const diff = metaAtiva - mun.votosBase;
-                        const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
-                        const isSelected = selectedSpDistrito === distNome;
-                        return (
-                          <div
-                            key={idx}
-                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
-                              isSelected ? 'bg-violet-900/30 border-l-2 border-violet-400' :
-                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
-                            }`}
-                            onClick={() => handleSpDistritoClick(distNome)}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <MapPin className="h-3.5 w-3.5 text-violet-400 flex-shrink-0" />
-                                <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{distNome}</span>
-                              </div>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
-                                {mun.prioridade && mun.prioridade !== 'MEDIA' && (
-                                  <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
-                                    {mun.prioridade === 'ALTA' ? '!' : '○'}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-violet-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
-                              <span className="text-slate-600 dark:text-slate-500">→</span>
-                              <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
-                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
-                            </div>
-                            {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : uf === 'RJ' && rjVisualizacao === 'bairros' && getFilteredRjBairros().length > 0 ? (
-                    // Lista de Bairros do Rio de Janeiro
-                    <div className="divide-y divide-slate-700">
-                      {getFilteredRjBairros().map((mun, idx) => {
-                        const bairroNome = getRjBairroNome(mun.municipio);
-                        const metaAtiva = getMetaAtiva(mun);
-                        const diff = metaAtiva - mun.votosBase;
-                        const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
-                        const isSelected = selectedRjBairro === bairroNome;
-                        return (
-                          <div
-                            key={idx}
-                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
-                              isSelected ? 'bg-emerald-900/30 border-l-2 border-emerald-400' :
-                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
-                            }`}
-                            onClick={() => handleRjBairroClick(bairroNome)}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <MapPin className="h-3.5 w-3.5 text-[color:var(--success)] flex-shrink-0" />
-                                <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
-                              </div>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
-                                {mun.prioridade && mun.prioridade !== 'MEDIA' && (
-                                  <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
-                                    {mun.prioridade === 'ALTA' ? '!' : '○'}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-[color:var(--success)] font-medium">{mun.votosBase.toLocaleString()}</span></span>
-                              <span className="text-slate-600 dark:text-slate-500">→</span>
-                              <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
-                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
-                            </div>
-                            {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : uf === 'CE' && ceVisualizacao === 'bairros' && getFilteredCeBairros().length > 0 ? (
-                    // Lista de Bairros de Fortaleza (CE)
-                    <div className="divide-y divide-slate-700">
-                      {getFilteredCeBairros().map((mun, idx) => {
-                        const bairroNome = getCeBairroNome(mun.municipio);
-                        const metaAtiva = getMetaAtiva(mun);
-                        const diff = metaAtiva - mun.votosBase;
-                        const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
-                        const isSelected = selectedCeBairro === bairroNome;
-                        return (
-                          <div
-                            key={idx}
-                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
-                              isSelected ? 'bg-orange-900/30 border-l-2 border-orange-400' :
-                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
-                            }`}
-                            onClick={() => handleCeBairroClick(bairroNome)}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <MapPin className="h-3.5 w-3.5 text-orange-400 flex-shrink-0" />
-                                <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
-                              </div>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
-                                {mun.prioridade && mun.prioridade !== 'MEDIA' && (
-                                  <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
-                                    {mun.prioridade === 'ALTA' ? '!' : '○'}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-orange-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
-                              <span className="text-slate-600 dark:text-slate-500">→</span>
-                              <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
-                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
-                            </div>
-                            {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : uf === 'MG' && mgVisualizacao === 'bairros' && getFilteredMgBairros().length > 0 ? (
-                    // Lista de Bairros de municípios MG (IBGE CD2022)
-                    <div className="divide-y divide-slate-700">
-                      {getFilteredMgBairros().map((mun, idx) => {
-                        const bairroNome = getMgBairroNome(mun.municipio);
-                        const metaAtiva = getMetaAtiva(mun);
-                        const diff = metaAtiva - mun.votosBase;
-                        const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
-                        const isSelected = selectedMgBairro === bairroNome;
-                        return (
-                          <div
-                            key={idx}
-                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
-                              isSelected ? 'bg-violet-900/30 border-l-2 border-violet-400' :
-                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
-                            }`}
-                            onClick={() => setSelectedMgBairro(prev => prev === bairroNome ? null : bairroNome)}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <MapPin className="h-3.5 w-3.5 text-violet-400 flex-shrink-0" />
-                                <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
-                              </div>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
-                                {mun.prioridade && mun.prioridade !== 'MEDIA' && (
-                                  <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
-                                    {mun.prioridade === 'ALTA' ? '!' : '○'}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="text-slate-600 dark:text-slate-400">Meta: <span className="text-violet-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
-                              <span className="text-slate-600 dark:text-slate-500">→</span>
-                              <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
-                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
-                            </div>
-                            {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : visualizacaoMapa === 'bairro' && genPoligonosMunicipio && genPoligonosUf ? (
-                    // Lista de Bairros — polígonos IBGE genéricos (todas UFs exceto SP/RJ/CE/MG especiais)
-                    Object.keys(genBairrosApiVotes).length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-600 dark:text-slate-400">
-                        <MapPin className="h-8 w-8 text-sky-400 opacity-50" />
-                        <span className="text-sm text-center px-4">Carregando bairros de {genPoligonosMunicipio}…</span>
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-slate-700">
-                        {(() => {
-                          const normFn = (s: string) =>
-                            s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-                          return Object.entries(genBairrosApiVotes)
-                            .map(([nome, votosBase]) => {
-                              const nomeNorm = normFn(nome);
-                              const votosDisplay = genBairrosVotesDisplay[nomeNorm] ?? votosBase;
-                              return { nome, votosBase, votosDisplay };
-                            })
-                            .sort((a, b) => b.votosDisplay - a.votosDisplay)
-                            .map(({ nome, votosBase, votosDisplay }, idx) => {
-                              const isSelected = selectedGenBairro ? normFn(nome) === normFn(selectedGenBairro) : false;
-                              const diff = votosDisplay - votosBase;
-                              const diffPercent = votosBase > 0 ? ((diff / votosBase) * 100).toFixed(0) : 0;
-                              return (
-                                <div
-                                  key={idx}
-                                  className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
-                                    isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' : ''
-                                  }`}
-                                  onClick={() => {
-                                    setSelectedGenBairro(prev =>
-                                      prev && normFn(prev) === normFn(nome) ? null : nome
-                                    );
-                                    handleBairroClick(nome, votosDisplay);
-                                  }}
-                                >
-                                  <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                      <MapPin className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
-                                      <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{nome}</span>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-xs">
-                                    <span className="text-slate-600 dark:text-slate-400">Votos: <span className="text-sky-400 font-medium">{votosBase.toLocaleString()}</span></span>
-                                    {diff !== 0 && (
-                                      <>
-                                        <span className="text-slate-600 dark:text-slate-500">→</span>
-                                        <span className={cenarioConfig[cenarioAtivo].color}>{votosDisplay.toLocaleString()}</span>
-                                        <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            });
-                        })()}
-                      </div>
-                    )
-                  ) : visualizacaoMapa === 'bairro' && getFilteredMunBairros().length > 0 ? (
-                    // Lista de Bairros — municípios genéricos (vereadores/prefeitos)
-                    <div className="divide-y divide-slate-700">
-                      {getFilteredMunBairros().map((mun, idx) => {
-                        const bairroNome = getMunBairroNome(mun.municipio);
-                        const metaAtiva = getMetaAtiva(mun);
-                        const diff = metaAtiva - mun.votosBase;
-                        const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
-                        return (
-                          <div
-                            key={idx}
-                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
-                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
-                            }`}
-                            onClick={() => handleBairroClick(bairroNome, mun.votosBase)}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <MapPin className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
-                                <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
-                              </div>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
-                                {mun.prioridade && mun.prioridade !== 'MEDIA' && (
-                                  <Badge variant={mun.prioridade === 'ALTA' ? 'danger' : 'default'} className="text-xs">
-                                    {mun.prioridade === 'ALTA' ? '!' : '○'}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="text-slate-600 dark:text-slate-400">Base: <span className="text-sky-400 font-medium">{mun.votosBase.toLocaleString()}</span></span>
-                              <span className="text-slate-600 dark:text-slate-500">→</span>
-                              <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
-                              {diff !== 0 && <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
-                            </div>
-                            {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}</div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    // Lista de Municípios (padrão)
-                  <div className="divide-y divide-slate-700">
-                    {getFilteredMunicipios()
-                      .sort((a, b) => b.votosBase - a.votosBase)
-                      .map((mun, idx) => {
-                        const metaAtiva = getMetaAtiva(mun);
-                        const diff = metaAtiva - mun.votosBase;
-                        const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
-                        const isNew = mun.votosBase === 0;
-                        return (
-                          <div
-                            key={idx}
-                            className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
-                              isNew ? 'bg-emerald-900/20 border-l-2 border-emerald-500' :
-                              mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
-                            }`}
-                            onClick={() => handleMunicipioClick(mun.municipio)}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                {mun.dobradaAtiva && (
-                                  <Handshake className="h-4 w-4 text-blue-400 flex-shrink-0" />
-                                )}
-                                <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">
-                                  {mun.municipio}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                {isNew && (
-                                  <Badge variant="success" className="text-xs">
-                                    NOVO
-                                  </Badge>
-                                )}
-                                {mun.dobradaAtiva && (
-                                  <Badge variant="info" className="text-xs bg-blue-600">
-                                    DOBRADA
-                                  </Badge>
-                                )}
-                                {mun.prioridade && (
-                                  <Badge
-                                    variant={
-                                      mun.prioridade === 'ALTA' ? 'danger' :
-                                      mun.prioridade === 'MEDIA' ? 'warning' : 'default'
-                                    }
-                                    className="text-xs"
-                                  >
-                                    {mun.prioridade === 'ALTA' ? '!' : mun.prioridade === 'MEDIA' ? '●' : '○'}
-                                  </Badge>
-                                )}
-                                {isNew && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      removeMunicipio(mun.municipio);
-                                    }}
-                                    className="p-1 text-slate-600 dark:text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Remover município"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              {isNew ? (
-                                <>
-                                  <span className="text-slate-600 dark:text-slate-500 italic">Sem votos anteriores</span>
-                                  <span className="text-slate-600 dark:text-slate-500">→</span>
-                                  <span className={cenarioConfig[cenarioAtivo].color}>
-                                    {metaAtiva.toLocaleString()}
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="text-slate-600 dark:text-slate-400">
-                                    {ano}: <span className="text-[color:var(--brand-cobalt)] font-medium">{mun.votosBase.toLocaleString()}</span>
-                                  </span>
-                                  <span className="text-slate-600 dark:text-slate-500">→</span>
-                                  <span className={cenarioConfig[cenarioAtivo].color}>
-                                    {metaAtiva.toLocaleString()}
-                                  </span>
-                                  {diff !== 0 && (
-                                    <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
-                                      {diff > 0 ? '+' : ''}{diffPercent}%
-                                    </span>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                            {mun.dobradaAtiva && mun.dobradaNome && (
-                              <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">
-                                🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    {getFilteredMunicipios().length === 0 && (
-                      <div className="p-4 text-center text-slate-600 dark:text-slate-400 text-sm">
-                        Nenhum município encontrado
-                      </div>
-                    )}
-                  </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
           </div>
         </>
       )}
