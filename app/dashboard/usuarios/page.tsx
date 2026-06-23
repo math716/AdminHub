@@ -869,8 +869,8 @@ export default function UsuariosPage() {
                                     </button>
                                   )}
 
-                                  {/* Reset senha */}
-                                  {u.id !== sessionUserId && (
+                                  {/* Reset senha — apenas ADMIN / SUPER_ADMIN */}
+                                  {isAdmin && u.id !== sessionUserId && (
                                     <button onClick={() => openResetModal(u.id, u.name)}
                                       title="Resetar senha"
                                       className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
@@ -1046,11 +1046,14 @@ export default function UsuariosPage() {
                             }
                             {u.id !== sessionUserId && (
                               <>
-                                <button onClick={() => openResetModal(u.id, u.name)} title="Resetar senha"
-                                  className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
-                                  style={{ color: 'var(--tint-35)' }}>
-                                  <KeyRound className="w-3.5 h-3.5" />
-                                </button>
+                                {/* Reset senha — apenas ADMIN / SUPER_ADMIN */}
+                                {isAdmin && (
+                                  <button onClick={() => openResetModal(u.id, u.name)} title="Resetar senha"
+                                    className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
+                                    style={{ color: 'var(--tint-35)' }}>
+                                    <KeyRound className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                                 <button onClick={() => handleReject(u.id, u.name)} disabled={actionId === u.id}
                                   title="Remover usuário"
                                   className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
