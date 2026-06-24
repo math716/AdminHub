@@ -13,6 +13,8 @@ interface BrazilMapProps {
   formatValue?: (v: number) => string;
   /** Rótulo usado quando não há valor (ex: "Clique para ver municípios"). */
   emptyLabel?: string;
+  /** Exibe badges circulares com valor sobre cada estado. Default: false. */
+  showBadges?: boolean;
 }
 
 const codeToUf: Record<string, string> = {
@@ -33,7 +35,7 @@ const STATE_CENTROIDS: Record<string, [number, number]> = {
   'SP': [-22.2, -48.7], 'SE': [-10.6, -37.4], 'TO': [-10.2, -48.3]
 };
 
-function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false, formatValue, emptyLabel }: BrazilMapProps) {
+function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false, formatValue, emptyLabel, showBadges = false }: BrazilMapProps) {
   const [geoData, setGeoData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -226,7 +228,7 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false,
       const labelsGroup = L.layerGroup().addTo(map);
       labelsLayerRef.current = labelsGroup;
 
-      if (hasVotes) {
+      if (showBadges && hasVotes) {
         Object.entries(highlightedStates || {}).forEach(([uf, votos]) => {
           if (!votos || votos === 0) return;
           const centroid = STATE_CENTROIDS[uf];
