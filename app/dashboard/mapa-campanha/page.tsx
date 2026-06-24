@@ -2575,7 +2575,7 @@ export default function MapaCampanhaPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
-                className="col-span-12 md:col-span-4 flex flex-col gap-4"
+                className="col-span-12 md:col-span-3 md:order-1 flex flex-col gap-4"
               >
                 {/* Scenario selector */}
                 <Card style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
@@ -2756,8 +2756,20 @@ export default function MapaCampanhaPage() {
                   </Card>
                 </div>
 
+              </motion.div>
+            )}
+
+            {/* RIGHT SIDEBAR — municipality list */}
+            {!mapFullscreen && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="col-span-12 md:col-span-3 md:order-3 flex flex-col"
+                style={{ height: '700px' }}
+              >
                 {/* Municipality List */}
-                <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] flex flex-col flex-1 min-h-0" style={{ minHeight: '400px' }}>
+                <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] flex flex-col h-full">
                   <CardHeader className="border-b border-[var(--border-default)] py-3">
                     <div className="flex items-center justify-between gap-2">
                       <CardTitle className="text-[color:var(--text-primary)] text-sm flex items-center gap-2">
@@ -3427,7 +3439,7 @@ export default function MapaCampanhaPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
-              className={mapFullscreen ? 'flex-1 min-w-0 relative' : 'col-span-12 md:col-span-8'}
+              className={mapFullscreen ? 'flex-1 min-w-0 relative' : 'col-span-12 md:col-span-6 md:order-2'}
             >
               <Card className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] h-[700px]'}>
                 <CardHeader className={`border-b border-[var(--border-default)] py-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
