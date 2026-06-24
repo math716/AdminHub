@@ -2353,7 +2353,7 @@ export default function MapaCampanhaPage() {
         className="flex-shrink-0"
       >
         <Card style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}>
-          <CardContent className="p-5">
+          <CardContent className="px-4 py-2.5">
 
             {/* Modo colapsado: resumo + botão editar */}
             {formCollapsed && electoralData ? (
@@ -2491,7 +2491,7 @@ export default function MapaCampanhaPage() {
             transition={{ delay: 0.08 }}
           >
             <div
-              className="flex items-center gap-4 px-5 py-3 rounded-2xl flex-wrap"
+              className="flex items-center gap-4 px-4 py-2 rounded-2xl flex-wrap"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}
             >
               {/* Nome + cargo */}
@@ -2578,7 +2578,7 @@ export default function MapaCampanhaPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
                 className="col-span-12 md:col-span-3 md:order-1 flex flex-col"
-                style={{ height: 'calc(100vh - 420px)', minHeight: '380px' }}
+                style={{ height: 'calc(100vh - 390px)', minHeight: '380px' }}
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
@@ -2654,7 +2654,7 @@ export default function MapaCampanhaPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
                 className="col-span-12 md:col-span-3 md:order-3 flex flex-col"
-                style={{ height: 'calc(100vh - 420px)', minHeight: '380px' }}
+                style={{ height: 'calc(100vh - 390px)', minHeight: '380px' }}
               >
                 {/* Municipality List */}
                 <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] flex flex-col h-full">
@@ -3331,7 +3331,7 @@ export default function MapaCampanhaPage() {
             >
               <Card
                 className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)]'}
-                style={!mapFullscreen ? { height: 'calc(100vh - 420px)', minHeight: '380px' } : undefined}
+                style={!mapFullscreen ? { height: 'calc(100vh - 390px)', minHeight: '380px' } : undefined}
               >
                 <CardHeader className={`border-b border-[var(--border-default)] py-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -3636,7 +3636,7 @@ export default function MapaCampanhaPage() {
               {/* Votos base */}
               {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
                 <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                  <CardContent className="p-3">
+                  <CardContent className="p-2">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-[10px] font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
@@ -3654,7 +3654,7 @@ export default function MapaCampanhaPage() {
 
               {/* Meta */}
               <Card style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border-default)', borderRight: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)', borderLeft: `4px solid ${cenarioConfig[cenarioAtivo].hex}` }}>
-                <CardContent className="p-3">
+                <CardContent className="p-2">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-[10px] font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
@@ -3672,7 +3672,7 @@ export default function MapaCampanhaPage() {
               {/* Crescimento */}
               {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
                 <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                  <CardContent className="p-3">
+                  <CardContent className="p-2">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-[10px] font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
@@ -3695,7 +3695,7 @@ export default function MapaCampanhaPage() {
 
               {/* Municípios */}
               <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                <CardContent className="p-3">
+                <CardContent className="p-2">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-[10px] font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
@@ -3717,7 +3717,7 @@ export default function MapaCampanhaPage() {
 
               {/* Dobradas */}
               <Card className={`bg-gradient-to-br from-blue-900/50 to-slate-800 ${filtroTipo === 'com_dobrada' ? 'border-blue-400 ring-2 ring-blue-400/30' : 'border-blue-500/30'}`}>
-                <CardContent className="p-3">
+                <CardContent className="p-2">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-blue-300 text-xs">Dobradas</p>
@@ -3733,7 +3733,7 @@ export default function MapaCampanhaPage() {
               <Card className={`relative bg-gradient-to-br from-amber-900/50 to-slate-800 transition-all duration-300 ${
                 filtroTipo === 'parcerias' ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-amber-500/30'
               } ${!includeParcerias ? 'opacity-60' : ''}`}>
-                <CardContent className="p-3">
+                <CardContent className="p-2">
                   <button
                     onClick={() => setIncludeParcerias(!includeParcerias)}
                     className={`absolute top-2 right-2 p-1.5 rounded-full transition-all duration-200 ${
