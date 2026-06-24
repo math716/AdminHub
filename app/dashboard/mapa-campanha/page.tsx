@@ -3772,16 +3772,16 @@ export default function MapaCampanhaPage() {
                 <>
                   <div className="grid grid-cols-3 gap-3">
                     {/* Meta Conservadora */}
-                    <div className="bg-amber-900/20 rounded-lg p-3 border border-amber-500/30">
+                    <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3 border border-amber-200 dark:border-amber-600/40">
                       <div className="flex items-center gap-1 mb-2">
-                        <Shield className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
-                        <span className="text-[color:var(--brand-cobalt)] text-xs font-medium">Conservadora</span>
+                        <Shield className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        <span className="text-amber-700 dark:text-amber-400 text-xs font-medium">Conservadora</span>
                       </div>
                       <Input
                         type="number"
                         value={metaConservadoraTemp}
                         onChange={(e) => setMetaConservadoraTemp(parseInt(e.target.value) || 0)}
-                        className="bg-[var(--bg-card-subtle)] border-amber-500/50 text-[color:var(--text-primary)] text-sm"
+                        className="bg-[var(--bg-card)] border-[var(--border-default)] text-[color:var(--text-primary)] text-sm"
                       />
                       <p className={`text-xs mt-1 font-medium ${
                         metaConservadoraTemp > selectedMunicipio.votosBase ? 'text-[color:var(--success)]' :
@@ -3792,16 +3792,16 @@ export default function MapaCampanhaPage() {
                     </div>
 
                     {/* Meta Realista */}
-                    <div className="bg-cyan-900/20 rounded-lg p-3 border border-cyan-500/30">
+                    <div className="bg-sky-50 dark:bg-sky-950/30 rounded-lg p-3 border border-sky-200 dark:border-sky-600/40">
                       <div className="flex items-center gap-1 mb-2">
-                        <Gauge className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
-                        <span className="text-[color:var(--brand-cobalt)] text-xs font-medium">Realista</span>
+                        <Gauge className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                        <span className="text-sky-700 dark:text-sky-400 text-xs font-medium">Realista</span>
                       </div>
                       <Input
                         type="number"
                         value={metaPossivelTemp}
                         onChange={(e) => setMetaPossivelTemp(parseInt(e.target.value) || 0)}
-                        className="bg-[var(--bg-card-subtle)] border-cyan-500/50 text-[color:var(--text-primary)] text-sm"
+                        className="bg-[var(--bg-card)] border-[var(--border-default)] text-[color:var(--text-primary)] text-sm"
                       />
                       <p className={`text-xs mt-1 font-medium ${
                         metaPossivelTemp > selectedMunicipio.votosBase ? 'text-[color:var(--success)]' :
@@ -3812,16 +3812,16 @@ export default function MapaCampanhaPage() {
                     </div>
 
                     {/* Meta Arrojada */}
-                    <div className="bg-emerald-900/20 rounded-lg p-3 border border-emerald-500/30">
+                    <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-3 border border-emerald-200 dark:border-emerald-600/40">
                       <div className="flex items-center gap-1 mb-2">
-                        <Rocket className="h-4 w-4 text-[color:var(--success)]" />
-                        <span className="text-[color:var(--success)] text-xs font-medium">Otimista</span>
+                        <Rocket className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium">Otimista</span>
                       </div>
                       <Input
                         type="number"
                         value={metaArrojadaTemp}
                         onChange={(e) => setMetaArrojadaTemp(parseInt(e.target.value) || 0)}
-                        className="bg-[var(--bg-card-subtle)] border-emerald-500/50 text-[color:var(--text-primary)] text-sm"
+                        className="bg-[var(--bg-card)] border-[var(--border-default)] text-[color:var(--text-primary)] text-sm"
                       />
                       <p className={`text-xs mt-1 font-medium ${
                         metaArrojadaTemp > selectedMunicipio.votosBase ? 'text-[color:var(--success)]' :
@@ -3834,7 +3834,7 @@ export default function MapaCampanhaPage() {
 
                   {/* Resumo de Metas Finais com Parcerias */}
                   {hasParceriasForMeta && (
-                    <div className="bg-gradient-to-r from-amber-900/30 via-cyan-900/30 to-emerald-900/30 rounded-lg p-4 border border-amber-500/30">
+                    <div className="bg-[var(--bg-card-subtle)] rounded-lg p-4 border border-[var(--border-default)]">
                       <h4 className="text-[color:var(--text-primary)] font-medium mb-3 flex items-center gap-2">
                         <Users className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
                         Composição das Metas Finais
@@ -3842,8 +3842,8 @@ export default function MapaCampanhaPage() {
                       </h4>
                       <div className="grid grid-cols-3 gap-3 text-xs">
                         {/* Conservadora Final */}
-                        <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-amber-500/20">
-                          <p className="text-[color:var(--brand-cobalt)] mb-1 font-medium">Conservadora</p>
+                        <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-amber-200 dark:border-amber-500/20">
+                          <p className="text-amber-700 dark:text-amber-400 mb-1 font-medium">Conservadora</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
                               <span>Meta Base:</span>
@@ -3860,8 +3860,8 @@ export default function MapaCampanhaPage() {
                           </div>
                         </div>
                         {/* Realista Final */}
-                        <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-cyan-500/20">
-                          <p className="text-[color:var(--brand-cobalt)] mb-1 font-medium">Realista</p>
+                        <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-sky-200 dark:border-cyan-500/20">
+                          <p className="text-sky-700 dark:text-sky-400 mb-1 font-medium">Realista</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
                               <span>Meta Base:</span>
@@ -3878,7 +3878,7 @@ export default function MapaCampanhaPage() {
                           </div>
                         </div>
                         {/* Arrojada Final */}
-                        <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-emerald-500/20">
+                        <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-emerald-200 dark:border-emerald-500/20">
                           <p className="text-[color:var(--success)] mb-1 font-medium">Otimista</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
@@ -3965,7 +3965,7 @@ export default function MapaCampanhaPage() {
             </div>
 
             {/* Parcerias Section */}
-            <div className="bg-amber-900/20 rounded-lg p-4 border border-amber-500/30">
+            <div className="bg-[var(--bg-card-subtle)] rounded-lg p-4 border border-[var(--border-default)]">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
@@ -3995,7 +3995,7 @@ export default function MapaCampanhaPage() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-xs px-1.5 py-0.5 bg-amber-600/50 text-[color:var(--brand-cobalt-text)] rounded">
+                          <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-600/50 text-amber-800 dark:text-[color:var(--brand-cobalt-text)] rounded">
                             {TIPO_PARCERIA_LABELS[parceria.tipo]}
                           </span>
                           <span className="text-[color:var(--text-primary)] text-sm font-medium truncate">{parceria.nome}</span>
