@@ -2575,10 +2575,10 @@ export default function MapaCampanhaPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
-                className="col-span-12 md:col-span-3 md:order-1 flex flex-col gap-4"
+                className="col-span-12 md:col-span-3 md:order-1 flex flex-col gap-4 md:h-[700px]"
               >
                 {/* Scenario selector */}
-                <Card style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
+                <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
                   <CardContent className="px-4 py-2">
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Cenário</span>
@@ -2830,7 +2830,7 @@ export default function MapaCampanhaPage() {
                           className={`flex-1 min-w-[60px] px-2 py-1.5 text-xs rounded-lg transition-colors ${
                             filtroTipo === 'todos'
                               ? 'bg-slate-600 text-white'
-                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
+                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600 hover:text-white'
                           }`}
                         >
                           Todos
@@ -2840,7 +2840,7 @@ export default function MapaCampanhaPage() {
                           className={`flex-1 min-w-[70px] px-2 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-center gap-1 ${
                             filtroTipo === 'com_dobrada'
                               ? 'bg-blue-600 text-white'
-                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
+                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-blue-600 hover:text-white'
                           }`}
                         >
                           <Handshake className="h-3 w-3" />
@@ -2851,7 +2851,7 @@ export default function MapaCampanhaPage() {
                           className={`flex-1 min-w-[80px] px-2 py-1.5 text-xs rounded-lg transition-colors ${
                             filtroTipo === 'sem_dobrada'
                               ? 'bg-slate-500 text-white'
-                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
+                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-500 hover:text-white'
                           }`}
                         >
                           Sem Dobrada
@@ -2861,7 +2861,7 @@ export default function MapaCampanhaPage() {
                           className={`flex-1 min-w-[80px] px-2 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-center gap-1 ${
                             filtroTipo === 'parcerias'
                               ? 'bg-amber-600 text-white'
-                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600'
+                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-amber-600 hover:text-white'
                           }`}
                         >
                           <Users className="h-3 w-3" />
