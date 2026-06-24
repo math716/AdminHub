@@ -702,8 +702,8 @@ export default function AdminGabinetesPage() {
         )}
       </div>
 
-      {/* ── Administradores do Sistema ────────────────────────────────────────── */}
-      <div>
+      {/* ── Administradores do Sistema — visível apenas para SUPER_ADMIN ─────── */}
+      {role === 'SUPER_ADMIN' && <div>
         <div className="flex items-center gap-2 mb-3">
           <Shield size={15} style={{ color: '#2563EB' }} />
           <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -779,7 +779,7 @@ export default function AdminGabinetesPage() {
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* ── Solicitações ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
