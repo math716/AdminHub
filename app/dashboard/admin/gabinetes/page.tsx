@@ -419,6 +419,17 @@ export default function AdminGabinetesPage() {
     );
   }, [gabineteGroups, searchGabinete]);
 
+  const adminUsers = useMemo(() =>
+    allUsers
+      .filter(u => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN')
+      .sort((a, b) => {
+        if (a.role === 'SUPER_ADMIN' && b.role !== 'SUPER_ADMIN') return -1;
+        if (b.role === 'SUPER_ADMIN' && a.role !== 'SUPER_ADMIN') return 1;
+        return a.name.localeCompare(b.name, 'pt-BR');
+      }),
+    [allUsers]
+  );
+
   const toggleGab = (id: string) =>
     setExpandedGabs(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
@@ -687,6 +698,84 @@ export default function AdminGabinetesPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ── Administradores do Sistema ────────────────────────────────────────── */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Shield size={15} style={{ color: '#2563EB' }} />
+          <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+            Administradores do Sistema
+          </h2>
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold"
+            style={{ background: 'rgba(37,99,235,0.12)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.25)' }}>
+            {adminUsers.length}
+          </span>
+        </div>
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
+          {loadingSol ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={20} className="animate-spin" style={{ color: '#2563EB' }} />
+            </div>
+          ) : adminUsers.length === 0 ? (
+            <div className="flex items-center justify-center py-8 text-sm" style={{ color: 'var(--tint-35)' }}>
+              Nenhum administrador encontrado
+            </div>
+          ) : (
+            <div>
+              {adminUsers.map((u, idx) => (
+                <div
+                  key={u.id}
+                  className="flex items-center gap-3 px-5 py-3.5"
+                  style={{ borderBottom: idx < adminUsers.length - 1 ? '1px solid var(--tint-06)' : 'none' }}
+                >
+                  {/* Avatar */}
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'rgba(37,99,235,0.10)', border: '1px solid rgba(37,99,235,0.2)' }}>
+                    {u.role === 'SUPER_ADMIN'
+                      ? <Shield size={14} style={{ color: '#2563EB' }} />
+                      : <User size={14} style={{ color: '#2563EB' }} />
+                    }
+                  </div>
+
+                  {/* Nome + email */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{u.name}</p>
+                    <p className="text-xs truncate flex items-center gap-1" style={{ color: 'var(--tint-45)' }}>
+                      <Mail size={10} />
+                      {u.email}
+                    </p>
+                  </div>
+
+                  {/* Role badge */}
+                  <RoleBadge role={u.role} />
+
+                  {/* Ações */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={() => openResetModal(u.id, u.name)}
+                      title="Resetar senha"
+                      className="p-1.5 rounded-lg transition-all hover:bg-[var(--tint-06)]"
+                      style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-06)' }}
+                    >
+                      <KeyRound size={13} />
+                    </button>
+                    {(role === 'SUPER_ADMIN' || u.role !== 'SUPER_ADMIN') && (
+                      <RoleSelect
+                        userId={u.id}
+                        current={u.role}
+                        sessionRole={role ?? ''}
+                        onChanged={(newRole) =>
+                          setAllUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: newRole } : x))
+                        }
+                      />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Solicitações ─────────────────────────────────────────────────────── */}
