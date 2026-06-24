@@ -2602,7 +2602,7 @@ export default function MapaCampanhaPage() {
                           <button
                             key={cenario}
                             onClick={() => setCenarioAtivo(cenario)}
-                            className={`flex-1 flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all w-full text-left border ${
+                            className={`flex-1 flex items-center gap-3 px-3 py-1.5 rounded-xl text-sm transition-all w-full text-left border ${
                               isActive
                                 ? `${config.bg} text-white shadow-md border-transparent`
                                 : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
@@ -3333,7 +3333,7 @@ export default function MapaCampanhaPage() {
                 className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)]'}
                 style={!mapFullscreen ? { height: 'calc(100vh - 390px)', minHeight: '380px' } : undefined}
               >
-                <CardHeader className={`border-b border-[var(--border-default)] py-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
+                <CardHeader className={`border-b border-[var(--border-default)] py-1.5 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <CardTitle className="text-[color:var(--text-primary)] flex items-center gap-2">
                       <Map className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
@@ -3476,7 +3476,7 @@ export default function MapaCampanhaPage() {
                     </div>
                   )}
                 </CardHeader>
-                <CardContent className="p-0 h-[calc(100%-60px)] relative">
+                <CardContent className="p-0 h-[calc(100%-44px)] relative">
                   {visualizacaoMapa === 'bairro' && municipioVereador && uf === 'SP' && normMunKey(municipioVereador) === 'SAO PAULO' ? (
                     // SP capital municipal (prefeito/vereador) — polígonos de distritos
                     <SpDistritosMap
