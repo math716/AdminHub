@@ -2579,37 +2579,64 @@ export default function MapaCampanhaPage() {
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
-                  <CardContent className="px-4 py-2">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Cenário</span>
-                      <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'var(--bg-card-subtle)' }}>
-                        {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
-                          const config = cenarioConfig[cenario];
-                          const Icon = config.icon;
-                          const isActive = cenarioAtivo === cenario;
-                          return (
-                            <button
-                              key={cenario}
-                              onClick={() => setCenarioAtivo(cenario)}
-                              className={`flex items-center gap-1.5 px-3 py-0.5 rounded-md font-semibold text-sm transition-all ${
-                                isActive
-                                  ? `${config.bg} text-white shadow-lg`
-                                  : `text-slate-600 dark:text-slate-400 hover:text-white`
-                              }`}
-                            >
-                              <Icon className="h-3.5 w-3.5" />
-                              {config.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="flex-1" />
-                      <div className="text-right">
-                        <p className="text-xs tracking-wide" style={{ color: '#6b82a0' }}>Total</p>
-                        <p className={`text-lg font-bold ${cenarioConfig[cenarioAtivo].color}`}>
-                          {getTotalVotosMeta().toLocaleString()}
+                  <CardContent className="p-4 flex flex-col h-full">
+                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: '#6b82a0' }}>
+                      Cenário de Projeção
+                    </p>
+
+                    {/* Scenario buttons — stacked */}
+                    <div className="flex flex-col gap-2 flex-1">
+                      {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
+                        const config = cenarioConfig[cenario];
+                        const Icon = config.icon;
+                        const isActive = cenarioAtivo === cenario;
+                        const desc: Record<CenarioType, string> = {
+                          conservador: 'Meta alcançável e segura',
+                          possivel: 'Crescimento equilibrado',
+                          arrojado: 'Meta ambiciosa de expansão',
+                        };
+                        return (
+                          <button
+                            key={cenario}
+                            onClick={() => setCenarioAtivo(cenario)}
+                            className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all w-full text-left border ${
+                              isActive
+                                ? `${config.bg} text-white shadow-md border-transparent`
+                                : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
+                            }`}
+                          >
+                            <div className={`p-1.5 rounded-lg flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-[var(--bg-card-subtle)]'}`}>
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm leading-tight">{config.label}</p>
+                              <p className={`text-[10px] leading-tight mt-0.5 ${isActive ? 'opacity-75' : 'text-[color:var(--text-tertiary)]'}`}>
+                                {desc[cenario]}
+                              </p>
+                            </div>
+                            {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white/80 flex-shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Total */}
+                    <div className="mt-4 pt-4 border-t border-[var(--border-default)]">
+                      <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: '#6b82a0' }}>
+                        Meta Total · {anoProjecao}
+                      </p>
+                      <p className={`text-2xl font-bold ${cenarioConfig[cenarioAtivo].color}`}>
+                        {getTotalVotosMeta().toLocaleString()}
+                      </p>
+                      {getTotalVotosBase() > 0 && (
+                        <p className="text-[11px] mt-0.5 flex items-center gap-1.5" style={{ color: '#6b82a0' }}>
+                          <span>Base {ano}: {getTotalVotosBase().toLocaleString()}</span>
+                          <span>·</span>
+                          <span className={parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}>
+                            {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
+                          </span>
                         </p>
-                      </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
