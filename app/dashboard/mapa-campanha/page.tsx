@@ -2325,6 +2325,8 @@ export default function MapaCampanhaPage() {
     { value: 'BAIXA', label: 'Baixa Prioridade' }
   ];
 
+  const COLS_HEIGHT = 'clamp(600px, calc(100vh - 300px), 900px)';
+
   const cenarioConfig = {
     conservador: { label: 'Conservador', icon: Shield, color: 'text-[color:var(--brand-cobalt)]', bg: 'bg-amber-500', border: 'border-amber-500', hex: '#F59E0B' },
     possivel: { label: 'Realista', icon: Gauge, color: 'text-[color:var(--brand-cobalt)]', bg: 'bg-cyan-500', border: 'border-cyan-500', hex: '#22D3EE' },
@@ -2575,7 +2577,8 @@ export default function MapaCampanhaPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
-                className="col-span-12 md:col-span-3 md:order-1 flex flex-col gap-4 md:h-[700px]"
+                className="col-span-12 md:col-span-3 md:order-1 flex flex-col gap-4"
+                style={{ height: COLS_HEIGHT }}
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
@@ -2793,7 +2796,7 @@ export default function MapaCampanhaPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
                 className="col-span-12 md:col-span-3 md:order-3 flex flex-col"
-                style={{ height: '700px' }}
+                style={{ height: COLS_HEIGHT }}
               >
                 {/* Municipality List */}
                 <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] flex flex-col h-full">
@@ -3468,7 +3471,10 @@ export default function MapaCampanhaPage() {
               transition={{ delay: 0.3 }}
               className={mapFullscreen ? 'flex-1 min-w-0 relative' : 'col-span-12 md:col-span-6 md:order-2'}
             >
-              <Card className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] h-[700px]'}>
+              <Card
+                className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)]'}
+                style={!mapFullscreen ? { height: COLS_HEIGHT } : undefined}
+              >
                 <CardHeader className={`border-b border-[var(--border-default)] py-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <CardTitle className="text-[color:var(--text-primary)] flex items-center gap-2">
