@@ -188,6 +188,10 @@ export default function EmendasPage() {
   // Filtro de esfera
   const [esfera, setEsfera] = useState<'TODAS' | 'FEDERAL' | 'ESTADUAL'>('TODAS');
 
+  // Heatmap Brasil — total empenhado por UF no ano selecionado
+  const [brasilHeatmap, setBrasilHeatmap] = useState<Record<string, number>>({});
+  const [loadingHeatmap, setLoadingHeatmap] = useState(false);
+
   // Dados do estado
   const [resumo, setResumo] = useState<ResumoEstado | null>(null);
   const [loadingResumo, setLoadingResumo] = useState(false);
@@ -215,6 +219,18 @@ export default function EmendasPage() {
   useEffect(() => {
     if (status === 'authenticated' && !canAccess) router.replace('/dashboard');
   }, [status, canAccess, router]);
+
+  // ----- Heatmap Brasil — busca totais por UF sempre que o ano muda -----
+  useEffect(() => {
+    const ctrl = new AbortController();
+    setLoadingHeatmap(true);
+    fetch(`/api/emendas-portal/brasil?ano=${ano}`, { signal: ctrl.signal })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.totaisPorUF) setBrasilHeatmap(data.totaisPorUF); })
+      .catch(() => {})
+      .finally(() => setLoadingHeatmap(false));
+    return () => ctrl.abort();
+  }, [ano]);
 
   // ----- Resumo do estado (top municípios, totais por área etc) -----
   const fetchResumo = useCallback(async (uf: string, year: number, signal?: AbortSignal, esferaParam?: string): Promise<ResumoEstado | null> => {
@@ -1165,7 +1181,18 @@ export default function EmendasPage() {
             )}
 
             {view === 'brasil' && (
-              <BrazilMap onStateClick={handleStateClick} darkMode={isDarkTheme} />
+              <BrazilMap
+                onStateClick={handleStateClick}
+                darkMode={isDarkTheme}
+                highlightedStates={Object.keys(brasilHeatmap).length > 0 ? brasilHeatmap : undefined}
+                formatValue={(v) => {
+                  if (v >= 1_000_000_000) return `R$ ${(v / 1_000_000_000).toFixed(1)}Bi`;
+                  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
+                  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}k`;
+                  return `R$ ${v.toLocaleString('pt-BR')}`;
+                }}
+                emptyLabel="Clique para ver emendas"
+              />
             )}
             {view === 'estado' && selectedUf && (
               <StateMap

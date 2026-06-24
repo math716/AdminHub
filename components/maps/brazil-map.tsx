@@ -9,6 +9,10 @@ interface BrazilMapProps {
   highlightedStates?: Record<string, number>;
   /** Tema escuro com tile CartoDB Dark Matter (pro dashboard de emendas) */
   darkMode?: boolean;
+  /** Formata o valor numérico para exibição no tooltip e badge. Default: número inteiro. */
+  formatValue?: (v: number) => string;
+  /** Rótulo usado quando não há valor (ex: "Clique para ver municípios"). */
+  emptyLabel?: string;
 }
 
 const codeToUf: Record<string, string> = {
@@ -29,7 +33,7 @@ const STATE_CENTROIDS: Record<string, [number, number]> = {
   'SP': [-22.2, -48.7], 'SE': [-10.6, -37.4], 'TO': [-10.2, -48.3]
 };
 
-function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false }: BrazilMapProps) {
+function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false, formatValue, emptyLabel }: BrazilMapProps) {
   const [geoData, setGeoData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -188,6 +192,9 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false 
           });
 
           if (estado) {
+            const votesLabel = votes
+              ? (formatValue ? formatValue(votes) : votes.toLocaleString('pt-BR'))
+              : null;
             layer.bindTooltip(
               `<div style="
                 padding: 10px 14px;
@@ -199,9 +206,9 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false 
               ">
                 <div style="font-weight: 700; color: #4fc3f7; font-size: 14px; margin-bottom: 4px;">${estado.nome}</div>
                 <div style="color: #78909c; font-size: 11px; margin-bottom: 6px;">${uf}</div>
-                ${votes
-                  ? `<div style="color: #e0f7fa; font-size: 13px; font-weight: 600;">${votes.toLocaleString('pt-BR')} votos</div>`
-                  : '<div style="color: #546e7a; font-size: 11px;">Clique para ver municípios</div>'
+                ${votesLabel
+                  ? `<div style="color: #e0f7fa; font-size: 13px; font-weight: 600;">${votesLabel}</div>`
+                  : `<div style="color: #546e7a; font-size: 11px;">${emptyLabel ?? 'Clique para ver municípios'}</div>`
                 }
               </div>`,
               { sticky: true, className: 'dark-tooltip' }
@@ -232,11 +239,13 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false 
           const size = Math.max(32, Math.min(56, 32 + intensity * 24));
           const fontSize = Math.max(9, Math.min(13, 9 + intensity * 4));
 
-          const votosFormatado = votos >= 1000000
-            ? `${(votos / 1000000).toFixed(1)}M`
-            : votos >= 1000
-              ? `${(votos / 1000).toFixed(0)}k`
-              : votos.toString();
+          const votosFormatado = formatValue
+            ? formatValue(votos)
+            : votos >= 1000000
+              ? `${(votos / 1000000).toFixed(1)}M`
+              : votos >= 1000
+                ? `${(votos / 1000).toFixed(0)}k`
+                : votos.toString();
 
           const bgColor = `hsl(200, 70%, ${70 - intensity * 40}%)`;
           const textColor = intensity > 0.5 ? '#0a1929' : '#e0f7fa';
