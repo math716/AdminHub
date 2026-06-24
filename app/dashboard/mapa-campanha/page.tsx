@@ -2332,7 +2332,7 @@ export default function MapaCampanhaPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4 min-h-[calc(100vh-32px)] lg:min-h-[calc(100vh-64px)]">
+    <div className="flex flex-col gap-4">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -2483,13 +2483,12 @@ export default function MapaCampanhaPage() {
       </motion.div>
 
       {electoralData && projecao && (
-        <div className="flex-1 flex flex-col gap-4">
+        <>
           {/* Compact top bar: candidate info + tabs + save */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 }}
-            className="flex-shrink-0"
           >
             <div
               className="flex items-center gap-4 px-5 py-3 rounded-2xl flex-wrap"
@@ -2568,13 +2567,10 @@ export default function MapaCampanhaPage() {
           </motion.div>
 
           {/* Main 12-column grid */}
-          <div
-            className={mapFullscreen
-              ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)] flex'
-              : 'flex-1 grid grid-cols-12 gap-4'
-            }
-            style={!mapFullscreen ? { gridTemplateRows: '1fr' } : undefined}
-          >
+          <div className={mapFullscreen
+            ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)] flex'
+            : 'grid grid-cols-12 gap-4'
+          }>
             {/* LEFT SIDEBAR — scenario + stats + municipality list */}
             {!mapFullscreen && (
               <motion.div
@@ -2582,6 +2578,7 @@ export default function MapaCampanhaPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
                 className="col-span-12 md:col-span-3 md:order-1 flex flex-col gap-4"
+                style={{ height: 'calc(100vh - 310px)', minHeight: '500px' }}
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
@@ -2605,7 +2602,7 @@ export default function MapaCampanhaPage() {
                           <button
                             key={cenario}
                             onClick={() => setCenarioAtivo(cenario)}
-                            className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all w-full text-left border ${
+                            className={`flex-1 flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all w-full text-left border ${
                               isActive
                                 ? `${config.bg} text-white shadow-md border-transparent`
                                 : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
@@ -2799,6 +2796,7 @@ export default function MapaCampanhaPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
                 className="col-span-12 md:col-span-3 md:order-3 flex flex-col"
+                style={{ height: 'calc(100vh - 310px)', minHeight: '500px' }}
               >
                 {/* Municipality List */}
                 <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] flex flex-col h-full">
@@ -3474,7 +3472,8 @@ export default function MapaCampanhaPage() {
               className={mapFullscreen ? 'flex-1 min-w-0 relative' : 'col-span-12 md:col-span-6 md:order-2'}
             >
               <Card
-                className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'h-full bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)]'}
+                className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)]'}
+                style={!mapFullscreen ? { height: 'calc(100vh - 310px)', minHeight: '500px' } : undefined}
               >
                 <CardHeader className={`border-b border-[var(--border-default)] py-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -3771,7 +3770,7 @@ export default function MapaCampanhaPage() {
             </motion.div>
 
           </div>
-        </div>
+        </>
       )}
 
       {/* Edit Municipality Modal */}
