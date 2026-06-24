@@ -90,15 +90,17 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
-function RoleSelect({ userId, current, sessionRole, onChanged }: { userId: string; current: string; sessionRole: string; onChanged: (role: string) => void }) {
+function RoleSelect({ userId, current, sessionRole, onChanged, adminOnly }: { userId: string; current: string; sessionRole: string; onChanged: (role: string) => void; adminOnly?: boolean }) {
   const [open, setOpen]     = useState(false);
   const [saving, setSaving] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; right: number } | null>(null);
   const btnRef  = useRef<HTMLButtonElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
-  const roles   = sessionRole === 'SUPER_ADMIN'
-    ? ['SUPER_ADMIN', 'ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR']
-    : ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR'];
+  const roles   = adminOnly
+    ? (sessionRole === 'SUPER_ADMIN' ? ['SUPER_ADMIN', 'ADMIN'] : ['ADMIN'])
+    : (sessionRole === 'SUPER_ADMIN'
+      ? ['SUPER_ADMIN', 'ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR']
+      : ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR']);
 
   const openDrop = () => {
     if (!btnRef.current) return;
@@ -760,11 +762,12 @@ export default function AdminGabinetesPage() {
                     >
                       <KeyRound size={13} />
                     </button>
-                    {(role === 'SUPER_ADMIN' || u.role !== 'SUPER_ADMIN') && (
+                    {role === 'SUPER_ADMIN' && (
                       <RoleSelect
                         userId={u.id}
                         current={u.role}
                         sessionRole={role ?? ''}
+                        adminOnly
                         onChanged={(newRole) =>
                           setAllUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: newRole } : x))
                         }
