@@ -2582,13 +2582,13 @@ export default function MapaCampanhaPage() {
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
-                  <CardContent className="p-4 flex flex-col gap-4">
-                    <p className="text-sm font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>
+                  <CardContent className="p-4 flex flex-col h-full">
+                    <p className="text-sm font-semibold tracking-widest uppercase mb-3" style={{ color: '#6b82a0' }}>
                       Cenário de Projeção
                     </p>
 
-                    {/* Scenario buttons — stacked */}
-                    <div className="flex flex-col gap-2">
+                    {/* Scenario buttons — stacked, grow to fill space */}
+                    <div className="flex-1 flex flex-col gap-2 mb-4">
                       {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
                         const config = cenarioConfig[cenario];
                         const Icon = config.icon;
@@ -2602,7 +2602,7 @@ export default function MapaCampanhaPage() {
                           <button
                             key={cenario}
                             onClick={() => setCenarioAtivo(cenario)}
-                            className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all w-full text-left border ${
+                            className={`flex-1 flex items-center gap-3 px-3 rounded-lg transition-all w-full text-left border ${
                               isActive
                                 ? `${config.bg} text-white shadow-md border-transparent`
                                 : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
