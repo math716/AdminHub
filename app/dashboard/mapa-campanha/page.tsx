@@ -2612,8 +2612,8 @@ export default function MapaCampanhaPage() {
                               <Icon className="h-3.5 w-3.5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-xs leading-tight">{config.label}</p>
-                              <p className={`text-[9px] leading-tight ${isActive ? 'opacity-75' : 'text-[color:var(--text-tertiary)]'}`}>
+                              <p className="font-semibold text-sm leading-tight">{config.label}</p>
+                              <p className={`text-[11px] leading-tight ${isActive ? 'opacity-75' : 'text-[color:var(--text-tertiary)]'}`}>
                                 {desc[cenario]}
                               </p>
                             </div>
