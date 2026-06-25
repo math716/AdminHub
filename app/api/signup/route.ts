@@ -43,7 +43,8 @@ export async function POST(request: NextRequest) {
     // Se não há role/gabinete especificado:
     // 1. Se não há usuários no sistema - criar como CHEFE com gabinete padrão
     // 2. Se há usuários mas não role - usar primeiro gabinete disponível como fallback
-    if (!role || role === '' || !['CHEFE', 'ASSESSOR'].includes(role)) {
+    // ADMIN e SUPER_ADMIN são roles de plataforma e NÃO devem receber gabinete de fallback
+    if (!['CHEFE', 'ASSESSOR', 'ADMIN', 'SUPER_ADMIN'].includes(role ?? '')) {
       // Buscar ou criar gabinete padrão
       let gabPadrao = await prisma.gabinete.findFirst({ 
         where: { nome: 'Gabinete Padrão' },

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { Building2, Search, Loader2, ChevronRight, X } from 'lucide-react';
+import { Building2, Search, Loader2, ChevronRight, X, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Gabinete {
@@ -43,8 +43,24 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
 
   const select = async (g: Gabinete) => {
     setSelecting(g.id);
+    // Persiste no banco para que a fonte de verdade fique consistente
+    await fetch('/api/users/me/gabinete', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gabineteId: g.id }),
+    });
     await update({ gabineteId: g.id, gabineteNome: g.nome });
-    // Força reload para que todos os hooks de sessão reflitam o novo gabineteId
+    window.location.reload();
+  };
+
+  const clearGabinete = async () => {
+    setSelecting('__clear__');
+    await fetch('/api/users/me/gabinete', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gabineteId: null }),
+    });
+    await update({ gabineteId: null, gabineteNome: null });
     window.location.reload();
   };
 
@@ -113,6 +129,29 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
           {/* List */}
           <div className="max-h-72 overflow-y-auto px-2 pb-4"
             style={{ borderTop: '1px solid var(--tint-06)' }}>
+            {/* Opção: sem gabinete (visão de plataforma) */}
+            {!search && (
+              <button
+                onClick={clearGabinete}
+                disabled={!!selecting}
+                className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl mt-1 transition-all hover:bg-white/[0.06] text-left disabled:opacity-50"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'rgba(100,100,100,0.12)', border: '1px solid rgba(100,100,100,0.2)' }}>
+                    {selecting === '__clear__'
+                      ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#6b82a0' }} />
+                      : <Globe className="w-4 h-4" style={{ color: '#6b82a0' }} />
+                    }
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium" style={{ color: 'var(--tint-75)' }}>Sem Gabinete (Plataforma)</p>
+                    <p className="text-[11px]" style={{ color: 'var(--tint-35)' }}>Visão de administrador da plataforma</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--tint-25)' }} />
+              </button>
+            )}
             {loading ? (
               <div className="py-10 flex justify-center">
                 <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#2563EB' }} />

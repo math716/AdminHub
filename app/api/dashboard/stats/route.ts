@@ -12,12 +12,26 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const userRole   = (session.user as any)?.role as string | undefined;
-    const gabineteId = (session.user as any)?.gabineteId as string | undefined;
+    const userRole = (session.user as any)?.role as string | undefined;
+    const userId   = (session.user as any)?.id   as string | undefined;
 
-    // SUPER_ADMIN sem gabinete selecionado: retorna stats globais (todos os gabinetes)
+    // Fonte de verdade: gabineteId do banco (não da sessão JWT, que pode ser stale)
+    // SUPER_ADMIN sem gabinete no banco vê tudo (visão global de plataforma)
+    let gabineteId: string | null | undefined = (session.user as any)?.gabineteId;
+    if (userId) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { gabineteId: true },
+      });
+      gabineteId = dbUser?.gabineteId ?? null;
+    }
+
     if (!gabineteId && userRole !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Usuário sem gabinete associado' }, { status: 403 });
+      // ADMIN/outros sem gabinete associado → dashboard vazio (não é erro)
+      return NextResponse.json({
+        total: 0, pendentes: 0, emAndamento: 0, resolvidas: 0,
+        byCategory: {}, byPriority: {}, recentDemands: [], timeline: [], lastResolvedDate: null,
+      });
     }
 
     // Filtra por gabinete — SUPER_ADMIN sem gabinete vê tudo
