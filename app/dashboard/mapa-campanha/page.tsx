@@ -2602,18 +2602,18 @@ export default function MapaCampanhaPage() {
                           <button
                             key={cenario}
                             onClick={() => setCenarioAtivo(cenario)}
-                            className={`flex-1 flex items-center gap-3 px-3 py-1.5 rounded-xl text-sm transition-all w-full text-left border ${
+                            className={`flex-1 flex items-center gap-2 px-2.5 py-1 rounded-lg text-sm transition-all w-full text-left border ${
                               isActive
                                 ? `${config.bg} text-white shadow-md border-transparent`
                                 : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
                             }`}
                           >
-                            <div className={`p-1.5 rounded-lg flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-[var(--bg-card-subtle)]'}`}>
-                              <Icon className="h-4 w-4" />
+                            <div className={`p-1 rounded-md flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-[var(--bg-card-subtle)]'}`}>
+                              <Icon className="h-3.5 w-3.5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm leading-tight">{config.label}</p>
-                              <p className={`text-[10px] leading-tight mt-0.5 ${isActive ? 'opacity-75' : 'text-[color:var(--text-tertiary)]'}`}>
+                              <p className="font-semibold text-xs leading-tight">{config.label}</p>
+                              <p className={`text-[9px] leading-tight ${isActive ? 'opacity-75' : 'text-[color:var(--text-tertiary)]'}`}>
                                 {desc[cenario]}
                               </p>
                             </div>
