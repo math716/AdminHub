@@ -2664,7 +2664,11 @@ export default function MapaCampanhaPage() {
                         {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c)) ? (
                           <>
                             <Home className="h-4 w-4 text-[color:var(--success)]" />
-                            {(electoralData?.cargo ?? '').toUpperCase().includes('PREFEITO') ? 'Município' : 'Bairros'}
+                            {(electoralData?.cargo ?? '').toUpperCase().includes('PREFEITO')
+                              ? 'Município'
+                              : uf === 'SP' && normMunKey(municipioVereador) === 'SAO PAULO'
+                                ? 'Distritos'
+                                : 'Bairros'}
                           </>
                         ) : uf === 'DF' && getFilteredDfZonas().length > 0 ? (
                           <>
@@ -2681,7 +2685,9 @@ export default function MapaCampanhaPage() {
                       <div className="flex items-center gap-2">
                         <Badge variant="info" className="text-xs">
                           {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c))
-                            ? filteredBairros.length
+                            ? (uf === 'SP' && normMunKey(municipioVereador) === 'SAO PAULO' && Object.keys(spDistritosVotesDisplay).length > 0
+                              ? Object.keys(spDistritosVotesDisplay).length
+                              : filteredBairros.length)
                             : uf === 'DF' && getFilteredDfZonas().length > 0
                               ? getFilteredDfZonas().length
                               : getFilteredMunicipios().length}
@@ -2763,56 +2769,112 @@ export default function MapaCampanhaPage() {
                     {/* Lista municipality content — duplicated from old section below (which will be hidden) */}
                     {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c)) ? (
                       <div className="divide-y divide-slate-700">
-                        {filteredBairros
-                          .sort((a, b) => b.votos - a.votos)
-                          .map((bairro, idx) => {
-                            const category = getBairroCategory(bairro.votos);
-                            const percentTotal = electoralData?.totalVotos
-                              ? ((bairro.votos / electoralData.totalVotos) * 100).toFixed(1)
-                              : '0';
-                            return (
-                              <div
-                                key={idx}
-                                className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors ${
-                                  category === 'acima' ? 'bg-emerald-900/10 border-l-2 border-emerald-500' :
-                                  category === 'abaixo' ? 'bg-blue-900/10 border-l-2 border-blue-500' :
-                                  'border-l-2 border-[var(--border-default)]'
-                                }`}
-                                onClick={() => handleBairroClick(bairro.bairro, bairro.votos)}
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <span className={`text-xs px-1 py-0.5 rounded ${
-                                      category === 'acima' ? 'bg-emerald-600' :
-                                      category === 'abaixo' ? 'bg-blue-600' : 'bg-slate-600'
+                        {uf === 'SP' && normMunKey(municipioVereador) === 'SAO PAULO' && Object.keys(spDistritosVotesDisplay).length > 0 ? (
+                          // SP capital — lista de distritos municipais
+                          (() => {
+                            const allVotes = Object.values(spDistritosVotesDisplay);
+                            const media = allVotes.length > 0 ? allVotes.reduce((s, v) => s + v, 0) / allVotes.length : 0;
+                            const entries = Object.entries(spDistritosVotesDisplay)
+                              .filter(([nome]) => !searchMunicipio || nome.toLowerCase().includes(searchMunicipio.toLowerCase()))
+                              .sort(([, a], [, b]) => b - a);
+                            if (entries.length === 0) return (
+                              <div className="p-4 text-center text-slate-600 dark:text-slate-400 text-sm">Nenhum distrito encontrado</div>
+                            );
+                            return entries.map(([distrito, votos], idx) => {
+                              const percentTotal = electoralData?.totalVotos
+                                ? ((votos / electoralData.totalVotos) * 100).toFixed(1)
+                                : '0';
+                              const category = votos > media ? 'acima' : votos > 0 ? 'abaixo' : 'zero';
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors ${
+                                    category === 'acima' ? 'bg-emerald-900/10 border-l-2 border-emerald-500' :
+                                    category === 'abaixo' ? 'bg-blue-900/10 border-l-2 border-blue-500' :
+                                    'border-l-2 border-[var(--border-default)]'
+                                  }`}
+                                  onClick={() => handleSpDistritoClick(distrito)}
+                                >
+                                  <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                      <span className={`text-xs px-1 py-0.5 rounded ${
+                                        category === 'acima' ? 'bg-emerald-600' :
+                                        category === 'abaixo' ? 'bg-blue-600' : 'bg-slate-600'
+                                      }`}>
+                                        {category === 'acima' ? '🟢' : category === 'abaixo' ? '🔵' : '⚫'}
+                                      </span>
+                                      <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{distrito}</span>
+                                    </div>
+                                    <Badge variant={category === 'acima' ? 'success' : category === 'abaixo' ? 'info' : 'default'} className="text-xs">
+                                      {percentTotal}%
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <span className={`font-medium ${
+                                      category === 'acima' ? 'text-[color:var(--success)]' :
+                                      category === 'abaixo' ? 'text-blue-400' : 'text-slate-600 dark:text-slate-400'
                                     }`}>
-                                      {category === 'acima' ? '🟢' : category === 'abaixo' ? '🔵' : '⚫'}
-                                    </span>
-                                    <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">
-                                      {bairro.bairro}
+                                      {votos.toLocaleString()} votos
                                     </span>
                                   </div>
-                                  <Badge variant={category === 'acima' ? 'success' : category === 'abaixo' ? 'info' : 'default'} className="text-xs">
-                                    {percentTotal}%
-                                  </Badge>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs">
-                                  <span className={`font-medium ${
-                                    category === 'acima' ? 'text-[color:var(--success)]' :
-                                    category === 'abaixo' ? 'text-blue-400' : 'text-slate-600 dark:text-slate-400'
-                                  }`}>
-                                    {bairro.votos.toLocaleString()} votos
-                                  </span>
-                                  <span className="text-slate-600 dark:text-slate-500">•</span>
-                                  <span className="text-slate-600 dark:text-slate-500">Zonas: {bairro.zonas.join(', ')}</span>
-                                </div>
+                              );
+                            });
+                          })()
+                        ) : (
+                          <>
+                            {filteredBairros
+                              .sort((a, b) => b.votos - a.votos)
+                              .map((bairro, idx) => {
+                                const category = getBairroCategory(bairro.votos);
+                                const percentTotal = electoralData?.totalVotos
+                                  ? ((bairro.votos / electoralData.totalVotos) * 100).toFixed(1)
+                                  : '0';
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors ${
+                                      category === 'acima' ? 'bg-emerald-900/10 border-l-2 border-emerald-500' :
+                                      category === 'abaixo' ? 'bg-blue-900/10 border-l-2 border-blue-500' :
+                                      'border-l-2 border-[var(--border-default)]'
+                                    }`}
+                                    onClick={() => handleBairroClick(bairro.bairro, bairro.votos)}
+                                  >
+                                    <div className="flex items-center justify-between mb-1">
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className={`text-xs px-1 py-0.5 rounded ${
+                                          category === 'acima' ? 'bg-emerald-600' :
+                                          category === 'abaixo' ? 'bg-blue-600' : 'bg-slate-600'
+                                        }`}>
+                                          {category === 'acima' ? '🟢' : category === 'abaixo' ? '🔵' : '⚫'}
+                                        </span>
+                                        <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">
+                                          {bairro.bairro}
+                                        </span>
+                                      </div>
+                                      <Badge variant={category === 'acima' ? 'success' : category === 'abaixo' ? 'info' : 'default'} className="text-xs">
+                                        {percentTotal}%
+                                      </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <span className={`font-medium ${
+                                        category === 'acima' ? 'text-[color:var(--success)]' :
+                                        category === 'abaixo' ? 'text-blue-400' : 'text-slate-600 dark:text-slate-400'
+                                      }`}>
+                                        {bairro.votos.toLocaleString()} votos
+                                      </span>
+                                      <span className="text-slate-600 dark:text-slate-500">•</span>
+                                      <span className="text-slate-600 dark:text-slate-500">Zonas: {bairro.zonas.join(', ')}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            {filteredBairros.length === 0 && (
+                              <div className="p-4 text-center text-slate-600 dark:text-slate-400 text-sm">
+                                Nenhum bairro encontrado
                               </div>
-                            );
-                          })}
-                        {filteredBairros.length === 0 && (
-                          <div className="p-4 text-center text-slate-600 dark:text-slate-400 text-sm">
-                            Nenhum bairro encontrado
-                          </div>
+                            )}
+                          </>
                         )}
                       </div>
                     ) : uf === 'DF' && getFilteredDfZonas().length > 0 ? (
