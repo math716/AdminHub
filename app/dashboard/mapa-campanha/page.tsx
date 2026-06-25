@@ -2333,17 +2333,19 @@ export default function MapaCampanhaPage() {
 
   return (
     <div className="flex flex-col gap-2">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0"
-      >
-        <PageHeader
-          icon={Target}
-          title="Projeto de Campanha"
-          subtitle="Planeje e projete seus votos para as próximas eleições"
-        />
-      </motion.div>
+      {!(electoralData && projecao) && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex-shrink-0"
+        >
+          <PageHeader
+            icon={Target}
+            title="Projeto de Campanha"
+            subtitle="Planeje e projete seus votos para as próximas eleições"
+          />
+        </motion.div>
+      )}
 
       {/* Search Section */}
       <motion.div
@@ -2578,7 +2580,7 @@ export default function MapaCampanhaPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
                 className="col-span-12 md:col-span-2 md:order-1 flex flex-col"
-                style={{ height: 'calc(100vh - 300px)', minHeight: '380px' }}
+                style={{ height: 'calc(100vh - 220px)', minHeight: '380px' }}
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
@@ -2654,7 +2656,7 @@ export default function MapaCampanhaPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
                 className="col-span-12 md:col-span-2 md:order-3 flex flex-col"
-                style={{ height: 'calc(100vh - 300px)', minHeight: '380px' }}
+                style={{ height: 'calc(100vh - 220px)', minHeight: '380px' }}
               >
                 {/* Municipality List */}
                 <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] flex flex-col h-full">
@@ -3393,7 +3395,7 @@ export default function MapaCampanhaPage() {
             >
               <Card
                 className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--tint-06)] overflow-hidden'}
-                style={!mapFullscreen ? { height: 'calc(100vh - 300px)', minHeight: '380px' } : undefined}
+                style={!mapFullscreen ? { height: 'calc(100vh - 220px)', minHeight: '380px' } : undefined}
               >
                 <CardHeader className={`border-b border-[var(--tint-06)] py-0.5 px-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
