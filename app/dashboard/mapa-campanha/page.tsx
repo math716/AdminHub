@@ -2571,7 +2571,7 @@ export default function MapaCampanhaPage() {
           {/* Main 12-column grid */}
           <div className={mapFullscreen
             ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)] flex'
-            : 'grid grid-cols-12 gap-4'
+            : 'grid grid-cols-12 gap-4 items-start'
           }>
             {/* LEFT SIDEBAR — scenario + stats + municipality list */}
             {!mapFullscreen && (
