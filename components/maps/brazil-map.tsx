@@ -102,7 +102,8 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false,
         maxZoom: 14,
         attributionControl: true
       });
-      L.control.zoom({ position: darkMode ? 'bottomleft' : 'topleft' }).addTo(map);
+      // Zoom sempre em bottomleft — em modo claro o breadcrumb sobrepõe topleft
+      L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
       // Atribuir imediatamente para que cleanupMap() de execuções concorrentes
       // consiga destruir este mapa caso o efeito seja cancelado.
@@ -146,9 +147,16 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false,
       const getFillOpacity = (codarea: string): number => {
         const uf = codeToUf[codarea] || '';
         const value = highlightedStates?.[uf] ?? 0;
-        if (!darkMode) return 0; // modo claro mantém só bordas
-        // Estados sem dado ainda mantêm um leve preenchimento navy pra ficarem
-        // visíveis como "resto do mapa" contra o fundo azul marinho.
+        if (!darkMode) {
+          // Sem dados de heatmap → só bordas (mapa-campanha)
+          if (!hasVotes) return 0;
+          // Com heatmap: estados sem valor ficam com fill leve, estados com valor escalam
+          if (!value) return 0.08;
+          const maxValue = Math.max(...Object.values(highlightedStates || { _: 1 }));
+          const intensity = value / maxValue;
+          return 0.25 + intensity * 0.55;
+        }
+        // darkMode — fundo navy, estados precisam de fill sempre visível
         if (!value) return 0.55;
         const maxValue = Math.max(...Object.values(highlightedStates || { _: 1 }));
         const intensity = value / maxValue;
