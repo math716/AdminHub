@@ -2582,13 +2582,13 @@ export default function MapaCampanhaPage() {
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
-                  <CardContent className="p-2 flex flex-col h-full">
-                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#6b82a0' }}>
+                  <CardContent className="p-4 flex flex-col gap-4">
+                    <p className="text-sm font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>
                       Cenário de Projeção
                     </p>
 
                     {/* Scenario buttons — stacked */}
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-2">
                       {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
                         const config = cenarioConfig[cenario];
                         const Icon = config.icon;
@@ -2624,7 +2624,7 @@ export default function MapaCampanhaPage() {
                     </div>
 
                     {/* Total */}
-                    <div className="mt-auto pt-3 border-t border-[var(--border-default)]">
+                    <div className="pt-3 border-t border-[var(--border-default)]">
                       <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: '#6b82a0' }}>
                         Meta Total · {anoProjecao}
                       </p>
