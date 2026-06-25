@@ -2589,8 +2589,8 @@ export default function MapaCampanhaPage() {
                       Cenário de Projeção
                     </p>
 
-                    {/* Scenario buttons — stacked, grow to fill space */}
-                    <div className="flex-1 flex flex-col gap-2 mb-4">
+                    {/* Scenario buttons — fixed height */}
+                    <div className="flex flex-col gap-2 mb-4">
                       {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
                         const config = cenarioConfig[cenario];
                         const Icon = config.icon;
@@ -2604,7 +2604,7 @@ export default function MapaCampanhaPage() {
                           <button
                             key={cenario}
                             onClick={() => setCenarioAtivo(cenario)}
-                            className={`flex-1 flex items-center gap-3 px-3 rounded-lg transition-all w-full text-left border ${
+                            className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all w-full text-left border ${
                               isActive
                                 ? `${config.bg} text-white shadow-md border-transparent`
                                 : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
