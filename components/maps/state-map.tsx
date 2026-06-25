@@ -1168,7 +1168,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       <div
         ref={mapRef}
         className="w-full h-full rounded-xl overflow-hidden"
-        style={{ background: darkMode ? '#071d36' : '#f0f4f8', minHeight: '400px' }}
+        style={{ background: darkMode ? '#071d36' : '#f0f4f8' }}
       />
 
       {/* Legenda interna — escondida no choropleth (emendas). Offset left-12

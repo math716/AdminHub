@@ -3327,10 +3327,10 @@ export default function MapaCampanhaPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
-              className={mapFullscreen ? 'flex-1 min-w-0 relative' : 'col-span-12 md:col-span-6 md:order-2'}
+              className={mapFullscreen ? 'flex-1 min-w-0 relative overflow-hidden' : 'col-span-12 md:col-span-6 md:order-2 overflow-hidden'}
             >
               <Card
-                className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)]'}
+                className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] overflow-hidden'}
                 style={!mapFullscreen ? { height: 'calc(100vh - 390px)', minHeight: '380px' } : undefined}
               >
                 <CardHeader className={`border-b border-[var(--border-default)] py-1.5 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
