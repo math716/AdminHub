@@ -2585,63 +2585,65 @@ export default function MapaCampanhaPage() {
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
                   <CardContent className="p-4 flex flex-col h-full">
-                    <p className="text-sm font-semibold tracking-widest uppercase mb-3" style={{ color: '#6b82a0' }}>
-                      Cenário de Projeção
-                    </p>
-
-                    {/* Scenario buttons — fixed height */}
-                    <div className="flex flex-col gap-2">
-                      {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
-                        const config = cenarioConfig[cenario];
-                        const Icon = config.icon;
-                        const isActive = cenarioAtivo === cenario;
-                        const desc: Record<CenarioType, string> = {
-                          conservador: 'Meta alcançável e segura',
-                          possivel: 'Crescimento equilibrado',
-                          arrojado: 'Meta ambiciosa de expansão',
-                        };
-                        return (
-                          <button
-                            key={cenario}
-                            onClick={() => setCenarioAtivo(cenario)}
-                            className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all w-full text-left border ${
-                              isActive
-                                ? `${config.bg} text-white shadow-md border-transparent`
-                                : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
-                            }`}
-                          >
-                            <div className={`p-1.5 rounded-md flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-[var(--bg-card-subtle)]'}`}>
-                              <Icon className="h-5 w-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-base leading-tight">{config.label}</p>
-                              <p className={`text-xs leading-tight mt-0.5 ${isActive ? 'opacity-80' : 'text-[color:var(--text-tertiary)]'}`}>
-                                {desc[cenario]}
-                              </p>
-                            </div>
-                            {isActive && <div className="w-2 h-2 rounded-full bg-white/80 flex-shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Total */}
-                    <div className="mt-auto pt-3 border-t border-[var(--border-default)]">
-                      <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: '#6b82a0' }}>
-                        Meta Total · {anoProjecao}
+                    <div className="my-auto flex flex-col gap-4">
+                      <p className="text-sm font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>
+                        Cenário de Projeção
                       </p>
-                      <p className={`text-xl font-bold ${cenarioConfig[cenarioAtivo].color}`}>
-                        {getTotalVotosMeta().toLocaleString()}
-                      </p>
-                      {getTotalVotosBase() > 0 && (
-                        <p className="text-[11px] mt-0.5 flex items-center gap-1.5" style={{ color: '#6b82a0' }}>
-                          <span>Base {ano}: {getTotalVotosBase().toLocaleString()}</span>
-                          <span>·</span>
-                          <span className={parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}>
-                            {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
-                          </span>
+
+                      {/* Scenario buttons */}
+                      <div className="flex flex-col gap-2">
+                        {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
+                          const config = cenarioConfig[cenario];
+                          const Icon = config.icon;
+                          const isActive = cenarioAtivo === cenario;
+                          const desc: Record<CenarioType, string> = {
+                            conservador: 'Meta alcançável e segura',
+                            possivel: 'Crescimento equilibrado',
+                            arrojado: 'Meta ambiciosa de expansão',
+                          };
+                          return (
+                            <button
+                              key={cenario}
+                              onClick={() => setCenarioAtivo(cenario)}
+                              className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all w-full text-left border ${
+                                isActive
+                                  ? `${config.bg} text-white shadow-md border-transparent`
+                                  : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
+                              }`}
+                            >
+                              <div className={`p-1.5 rounded-md flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-[var(--bg-card-subtle)]'}`}>
+                                <Icon className="h-5 w-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-base leading-tight">{config.label}</p>
+                                <p className={`text-xs leading-tight mt-0.5 ${isActive ? 'opacity-80' : 'text-[color:var(--text-tertiary)]'}`}>
+                                  {desc[cenario]}
+                                </p>
+                              </div>
+                              {isActive && <div className="w-2 h-2 rounded-full bg-white/80 flex-shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Total */}
+                      <div className="pt-3 border-t border-[var(--border-default)]">
+                        <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: '#6b82a0' }}>
+                          Meta Total · {anoProjecao}
                         </p>
-                      )}
+                        <p className={`text-xl font-bold ${cenarioConfig[cenarioAtivo].color}`}>
+                          {getTotalVotosMeta().toLocaleString()}
+                        </p>
+                        {getTotalVotosBase() > 0 && (
+                          <p className="text-[11px] mt-0.5 flex items-center gap-1.5" style={{ color: '#6b82a0' }}>
+                            <span>Base {ano}: {getTotalVotosBase().toLocaleString()}</span>
+                            <span>·</span>
+                            <span className={parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}>
+                              {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
+                            </span>
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
