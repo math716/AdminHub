@@ -2770,7 +2770,7 @@ export default function MapaCampanhaPage() {
                   <CardContent className="p-0 flex-1 overflow-y-auto">
                     {/* Lista municipality content — duplicated from old section below (which will be hidden) */}
                     {visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c)) ? (
-                      <div className="divide-y divide-slate-700">
+                      <div className="divide-y divide-[var(--border-default)]">
                         {uf === 'SP' && normMunKey(municipioVereador) === 'SAO PAULO' && Object.keys(spDistritosVotesDisplay).length > 0 ? (
                           // SP capital — lista de distritos municipais
                           (() => {
@@ -2790,7 +2790,7 @@ export default function MapaCampanhaPage() {
                               return (
                                 <div
                                   key={idx}
-                                  className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors ${
+                                  className={`px-3 py-2 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors ${
                                     category === 'acima' ? 'bg-emerald-900/10 border-l-2 border-emerald-500' :
                                     category === 'abaixo' ? 'bg-blue-900/10 border-l-2 border-blue-500' :
                                     'border-l-2 border-[var(--border-default)]'
@@ -2805,7 +2805,7 @@ export default function MapaCampanhaPage() {
                                       }`}>
                                         {category === 'acima' ? '🟢' : category === 'abaixo' ? '🔵' : '⚫'}
                                       </span>
-                                      <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{distrito}</span>
+                                      <span className="text-[color:var(--text-primary)] font-semibold text-xs truncate tracking-wide uppercase">{distrito}</span>
                                     </div>
                                     <Badge variant={category === 'acima' ? 'success' : category === 'abaixo' ? 'info' : 'default'} className="text-xs">
                                       {percentTotal}%
@@ -2835,7 +2835,7 @@ export default function MapaCampanhaPage() {
                                 return (
                                   <div
                                     key={idx}
-                                    className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors ${
+                                    className={`px-3 py-2 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors ${
                                       category === 'acima' ? 'bg-emerald-900/10 border-l-2 border-emerald-500' :
                                       category === 'abaixo' ? 'bg-blue-900/10 border-l-2 border-blue-500' :
                                       'border-l-2 border-[var(--border-default)]'
@@ -2850,7 +2850,7 @@ export default function MapaCampanhaPage() {
                                         }`}>
                                           {category === 'acima' ? '🟢' : category === 'abaixo' ? '🔵' : '⚫'}
                                         </span>
-                                        <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">
+                                        <span className="text-[color:var(--text-primary)] font-semibold text-xs truncate tracking-wide uppercase">
                                           {bairro.bairro}
                                         </span>
                                       </div>
@@ -2880,7 +2880,7 @@ export default function MapaCampanhaPage() {
                         )}
                       </div>
                     ) : uf === 'DF' && getFilteredDfZonas().length > 0 ? (
-                      <div className="divide-y divide-slate-700">
+                      <div className="divide-y divide-[var(--border-default)]">
                         {getFilteredDfZonas().map((mun, idx) => {
                           const zonaNum = getZonaNumber(mun.municipio);
                           const metaAtiva = getMetaAtiva(mun);
@@ -2890,7 +2890,7 @@ export default function MapaCampanhaPage() {
                           return (
                             <div
                               key={idx}
-                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                              className={`px-3 py-2 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                                 isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' :
                                 mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                               }`}
@@ -2946,7 +2946,7 @@ export default function MapaCampanhaPage() {
                         })}
                       </div>
                     ) : uf === 'DF' && dfVisualizacao === 'regioes' && getFilteredDfRegioes().length > 0 ? (
-                      <div className="divide-y divide-slate-700">
+                      <div className="divide-y divide-[var(--border-default)]">
                         {getFilteredDfRegioes().map((mun, idx) => {
                           const regiaoNome = getRegiaoNome(mun.municipio);
                           const metaAtiva = getMetaAtiva(mun);
@@ -2956,7 +2956,7 @@ export default function MapaCampanhaPage() {
                           return (
                             <div
                               key={idx}
-                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                              className={`px-3 py-2 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                                 isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' :
                                 mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                               }`}
@@ -2965,7 +2965,7 @@ export default function MapaCampanhaPage() {
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <MapPin className="h-3.5 w-3.5 text-[color:var(--brand-cobalt)] flex-shrink-0" />
-                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">
+                                  <span className="text-[color:var(--text-primary)] font-semibold text-xs truncate tracking-wide uppercase">
                                     {regiaoNome}
                                   </span>
                                 </div>
@@ -3002,7 +3002,7 @@ export default function MapaCampanhaPage() {
                         })}
                       </div>
                     ) : uf === 'SP' && spVisualizacao === 'distritos' && getFilteredSpDistritos().length > 0 ? (
-                      <div className="divide-y divide-slate-700">
+                      <div className="divide-y divide-[var(--border-default)]">
                         {getFilteredSpDistritos().map((mun, idx) => {
                           const distNome = getDistritoNome(mun.municipio);
                           const metaAtiva = getMetaAtiva(mun);
@@ -3012,7 +3012,7 @@ export default function MapaCampanhaPage() {
                           return (
                             <div
                               key={idx}
-                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                              className={`px-3 py-2 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                                 isSelected ? 'bg-violet-900/30 border-l-2 border-violet-400' :
                                 mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                               }`}
@@ -3021,7 +3021,7 @@ export default function MapaCampanhaPage() {
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <MapPin className="h-3.5 w-3.5 text-violet-400 flex-shrink-0" />
-                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{distNome}</span>
+                                  <span className="text-[color:var(--text-primary)] font-semibold text-xs truncate tracking-wide uppercase">{distNome}</span>
                                 </div>
                                 <div className="flex items-center gap-1 flex-shrink-0">
                                   {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
@@ -3046,7 +3046,7 @@ export default function MapaCampanhaPage() {
                         })}
                       </div>
                     ) : uf === 'RJ' && rjVisualizacao === 'bairros' && getFilteredRjBairros().length > 0 ? (
-                      <div className="divide-y divide-slate-700">
+                      <div className="divide-y divide-[var(--border-default)]">
                         {getFilteredRjBairros().map((mun, idx) => {
                           const bairroNome = getRjBairroNome(mun.municipio);
                           const metaAtiva = getMetaAtiva(mun);
@@ -3056,7 +3056,7 @@ export default function MapaCampanhaPage() {
                           return (
                             <div
                               key={idx}
-                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                              className={`px-3 py-2 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                                 isSelected ? 'bg-emerald-900/30 border-l-2 border-emerald-400' :
                                 mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                               }`}
@@ -3065,7 +3065,7 @@ export default function MapaCampanhaPage() {
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <MapPin className="h-3.5 w-3.5 text-[color:var(--success)] flex-shrink-0" />
-                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
+                                  <span className="text-[color:var(--text-primary)] font-semibold text-xs truncate tracking-wide uppercase">{bairroNome}</span>
                                 </div>
                                 <div className="flex items-center gap-1 flex-shrink-0">
                                   {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
@@ -3090,7 +3090,7 @@ export default function MapaCampanhaPage() {
                         })}
                       </div>
                     ) : uf === 'CE' && ceVisualizacao === 'bairros' && getFilteredCeBairros().length > 0 ? (
-                      <div className="divide-y divide-slate-700">
+                      <div className="divide-y divide-[var(--border-default)]">
                         {getFilteredCeBairros().map((mun, idx) => {
                           const bairroNome = getCeBairroNome(mun.municipio);
                           const metaAtiva = getMetaAtiva(mun);
@@ -3100,7 +3100,7 @@ export default function MapaCampanhaPage() {
                           return (
                             <div
                               key={idx}
-                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                              className={`px-3 py-2 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                                 isSelected ? 'bg-orange-900/30 border-l-2 border-orange-400' :
                                 mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                               }`}
@@ -3109,7 +3109,7 @@ export default function MapaCampanhaPage() {
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <MapPin className="h-3.5 w-3.5 text-orange-400 flex-shrink-0" />
-                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
+                                  <span className="text-[color:var(--text-primary)] font-semibold text-xs truncate tracking-wide uppercase">{bairroNome}</span>
                                 </div>
                                 <div className="flex items-center gap-1 flex-shrink-0">
                                   {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
@@ -3134,7 +3134,7 @@ export default function MapaCampanhaPage() {
                         })}
                       </div>
                     ) : uf === 'MG' && mgVisualizacao === 'bairros' && getFilteredMgBairros().length > 0 ? (
-                      <div className="divide-y divide-slate-700">
+                      <div className="divide-y divide-[var(--border-default)]">
                         {getFilteredMgBairros().map((mun, idx) => {
                           const bairroNome = getMgBairroNome(mun.municipio);
                           const metaAtiva = getMetaAtiva(mun);
@@ -3144,7 +3144,7 @@ export default function MapaCampanhaPage() {
                           return (
                             <div
                               key={idx}
-                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                              className={`px-3 py-2 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                                 isSelected ? 'bg-violet-900/30 border-l-2 border-violet-400' :
                                 mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                               }`}
@@ -3153,7 +3153,7 @@ export default function MapaCampanhaPage() {
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <MapPin className="h-3.5 w-3.5 text-violet-400 flex-shrink-0" />
-                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
+                                  <span className="text-[color:var(--text-primary)] font-semibold text-xs truncate tracking-wide uppercase">{bairroNome}</span>
                                 </div>
                                 <div className="flex items-center gap-1 flex-shrink-0">
                                   {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
@@ -3184,7 +3184,7 @@ export default function MapaCampanhaPage() {
                           <span className="text-sm text-center px-4">Carregando bairros de {genPoligonosMunicipio}…</span>
                         </div>
                       ) : (
-                        <div className="divide-y divide-slate-700">
+                        <div className="divide-y divide-[var(--border-default)]">
                           {(() => {
                             const normFn = (s: string) =>
                               s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -3202,7 +3202,7 @@ export default function MapaCampanhaPage() {
                                 return (
                                   <div
                                     key={idx}
-                                    className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                                    className={`px-3 py-2 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                                       isSelected ? 'bg-sky-900/30 border-l-2 border-sky-400' : ''
                                     }`}
                                     onClick={() => {
@@ -3215,7 +3215,7 @@ export default function MapaCampanhaPage() {
                                     <div className="flex items-center justify-between mb-1">
                                       <div className="flex items-center gap-2 flex-1 min-w-0">
                                         <MapPin className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
-                                        <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{nome}</span>
+                                        <span className="text-[color:var(--text-primary)] font-semibold text-xs truncate tracking-wide uppercase">{nome}</span>
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-2 text-xs">
@@ -3235,7 +3235,7 @@ export default function MapaCampanhaPage() {
                         </div>
                       )
                     ) : visualizacaoMapa === 'bairro' && getFilteredMunBairros().length > 0 ? (
-                      <div className="divide-y divide-slate-700">
+                      <div className="divide-y divide-[var(--border-default)]">
                         {getFilteredMunBairros().map((mun, idx) => {
                           const bairroNome = getMunBairroNome(mun.municipio);
                           const metaAtiva = getMetaAtiva(mun);
@@ -3244,7 +3244,7 @@ export default function MapaCampanhaPage() {
                           return (
                             <div
                               key={idx}
-                              className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                              className={`px-3 py-2 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                                 mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                               }`}
                               onClick={() => handleBairroClick(bairroNome, mun.votosBase)}
@@ -3252,7 +3252,7 @@ export default function MapaCampanhaPage() {
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <MapPin className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
-                                  <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">{bairroNome}</span>
+                                  <span className="text-[color:var(--text-primary)] font-semibold text-xs truncate tracking-wide uppercase">{bairroNome}</span>
                                 </div>
                                 <div className="flex items-center gap-1 flex-shrink-0">
                                   {mun.dobradaAtiva && <Badge variant="info" className="text-xs bg-blue-600">DOBRADA</Badge>}
@@ -3277,7 +3277,7 @@ export default function MapaCampanhaPage() {
                         })}
                       </div>
                     ) : (
-                      <div className="divide-y divide-slate-700">
+                      <div className="divide-y divide-[var(--border-default)]">
                         {getFilteredMunicipios()
                           .sort((a, b) => b.votosBase - a.votosBase)
                           .map((mun, idx) => {
@@ -3288,7 +3288,7 @@ export default function MapaCampanhaPage() {
                             return (
                               <div
                                 key={idx}
-                                className={`p-3 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
+                                className={`px-3 py-2 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
                                   isNew ? 'bg-emerald-900/20 border-l-2 border-emerald-500' :
                                   mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
                                 }`}
@@ -3299,7 +3299,7 @@ export default function MapaCampanhaPage() {
                                     {mun.dobradaAtiva && (
                                       <Handshake className="h-4 w-4 text-blue-400 flex-shrink-0" />
                                     )}
-                                    <span className="text-[color:var(--text-primary)] font-medium text-sm truncate">
+                                    <span className="text-[color:var(--text-primary)] font-semibold text-xs truncate tracking-wide uppercase">
                                       {mun.municipio}
                                     </span>
                                   </div>
@@ -3700,16 +3700,16 @@ export default function MapaCampanhaPage() {
               {/* Votos base */}
               {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
                 <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                  <CardContent className="px-3 py-2">
+                  <CardContent className="px-3 py-1.5">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
                           Votos {ano}{filtroTipo !== 'todos' && <span style={{ color: '#2563EB' }}> (filtrado)</span>}
                         </p>
-                        <p className="text-xl font-bold text-[color:var(--text-primary)]">{getTotalVotosBase().toLocaleString()}</p>
+                        <p className="text-base font-bold text-[color:var(--text-primary)]">{getTotalVotosBase().toLocaleString()}</p>
                       </div>
-                      <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
-                        <BarChart3 className="h-6 w-6" style={{ color: '#2563EB' }} />
+                      <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                        <BarChart3 className="h-5 w-5" style={{ color: '#2563EB' }} />
                       </div>
                     </div>
                   </CardContent>
@@ -3718,16 +3718,16 @@ export default function MapaCampanhaPage() {
 
               {/* Meta */}
               <Card style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border-default)', borderRight: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)', borderLeft: `4px solid ${cenarioConfig[cenarioAtivo].hex}` }}>
-                <CardContent className="px-3 py-2">
+                <CardContent className="px-3 py-1.5">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
                         Meta {anoProjecao}{filtroTipo !== 'todos' && <span className={`${cenarioConfig[cenarioAtivo].color} text-[10px]`}> (filtrado)</span>}
                       </p>
-                      <p className={`text-xl font-bold ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</p>
+                      <p className={`text-base font-bold ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</p>
                     </div>
-                    <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
-                      <Target className={`h-6 w-6 ${cenarioConfig[cenarioAtivo].color}`} />
+                    <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                      <Target className={`h-5 w-5 ${cenarioConfig[cenarioAtivo].color}`} />
                     </div>
                   </div>
                 </CardContent>
@@ -3736,20 +3736,20 @@ export default function MapaCampanhaPage() {
               {/* Crescimento */}
               {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
                 <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                  <CardContent className="px-3 py-2">
+                  <CardContent className="px-3 py-1.5">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
                           Crescimento{filtroTipo !== 'todos' && <span className="text-[color:var(--success)] text-[10px]"> (filtrado)</span>}
                         </p>
-                        <p className={`text-xl font-bold ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
+                        <p className={`text-base font-bold ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
                           {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
                         </p>
                       </div>
-                      <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                      <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
                         {parseFloat(getCrescimento() as string) >= 0
-                          ? <ArrowUp className="h-6 w-6 text-[color:var(--success)]" />
-                          : <ArrowDown className="h-6 w-6 text-red-400" />
+                          ? <ArrowUp className="h-5 w-5 text-[color:var(--success)]" />
+                          : <ArrowDown className="h-5 w-5 text-red-400" />
                         }
                       </div>
                     </div>
@@ -3759,21 +3759,21 @@ export default function MapaCampanhaPage() {
 
               {/* Municípios */}
               <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                <CardContent className="px-3 py-2">
+                <CardContent className="px-3 py-1.5">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
                         Municípios{filtroTipo !== 'todos' && <span className="text-purple-400"> (filtrado)</span>}
                       </p>
-                      <p className="text-xl font-bold text-[color:var(--text-primary)]">
+                      <p className="text-base font-bold text-[color:var(--text-primary)]">
                         {getMunicipiosCount()}
                         {filtroTipo !== 'todos' && (
-                          <span className="text-xl ml-1" style={{ color: '#6b82a0' }}>/ {projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length}</span>
+                          <span className="text-base ml-1" style={{ color: '#6b82a0' }}>/ {projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length}</span>
                         )}
                       </p>
                     </div>
-                    <div className="p-2 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
-                      <MapPin className="h-6 w-6" style={{ color: '#2563EB' }} />
+                    <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                      <MapPin className="h-5 w-5" style={{ color: '#2563EB' }} />
                     </div>
                   </div>
                 </CardContent>
@@ -3781,14 +3781,14 @@ export default function MapaCampanhaPage() {
 
               {/* Dobradas */}
               <Card className={`bg-gradient-to-br from-blue-900/50 to-slate-800 ${filtroTipo === 'com_dobrada' ? 'border-blue-400 ring-2 ring-blue-400/30' : 'border-blue-500/30'}`}>
-                <CardContent className="px-3 py-2">
+                <CardContent className="px-3 py-1.5">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-blue-300 text-xs mb-0.5">Dobradas</p>
-                      <p className="text-xl font-bold text-blue-400">{getDobradasCount()}</p>
+                      <p className="text-base font-bold text-blue-400">{getDobradasCount()}</p>
                       <p className="text-xs text-slate-400">{getVotosComDobrada().toLocaleString()} votos</p>
                     </div>
-                    <Handshake className="h-6 w-6 text-blue-400" />
+                    <Handshake className="h-5 w-5 text-blue-400" />
                   </div>
                 </CardContent>
               </Card>
@@ -3797,7 +3797,7 @@ export default function MapaCampanhaPage() {
               <Card className={`relative bg-gradient-to-br from-amber-900/50 to-slate-800 transition-all duration-300 ${
                 filtroTipo === 'parcerias' ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-amber-500/30'
               } ${!includeParcerias ? 'opacity-60' : ''}`}>
-                <CardContent className="px-3 py-2">
+                <CardContent className="px-3 py-1.5">
                   <button
                     onClick={() => setIncludeParcerias(!includeParcerias)}
                     className={`absolute top-2 right-2 p-1.5 rounded-full transition-all duration-200 ${
@@ -3812,7 +3812,7 @@ export default function MapaCampanhaPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className={`text-xs mb-0.5 ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-600 dark:text-slate-400'}`}>Parcerias</p>
-                      <p className={`text-xl font-bold ${includeParcerias ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-500'}`}>
+                      <p className={`text-base font-bold ${includeParcerias ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-500'}`}>
                         {parceriasStats?.total || 0}
                       </p>
                       <p className={`text-xs font-medium ${includeParcerias ? cenarioConfig[cenarioAtivo].color : 'text-slate-600 dark:text-slate-500 line-through'}`}>
@@ -3823,7 +3823,7 @@ export default function MapaCampanhaPage() {
                         )?.toLocaleString() || '0'} votos
                       </p>
                     </div>
-                    <Users className={`h-6 w-6 ${includeParcerias ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-500'}`} />
+                    <Users className={`h-5 w-5 ${includeParcerias ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-500'}`} />
                   </div>
                   {!includeParcerias && (
                     <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
