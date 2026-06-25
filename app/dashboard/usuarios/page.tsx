@@ -93,7 +93,7 @@ function PermissionsChecklist({
 // ---------------------------------------------------------------------------
 // Tipos
 // ---------------------------------------------------------------------------
-type UserRoleKey = 'SUPER_ADMIN' | 'ADMIN' | 'AGENTE_POLITICO' | 'CHEFE' | 'ASSESSOR' | 'ANALISTA' | 'VISUALIZADOR';
+type UserRoleKey = 'SUPER_ADMIN' | 'ADMIN' | 'AGENTE_POLITICO' | 'CHEFE' | 'ASSESSOR';
 
 interface UserData {
   id: string;
@@ -122,8 +122,6 @@ const ROLE_LABELS: Record<string, string> = {
   AGENTE_POLITICO: 'Agente Político',
   CHEFE:           'Chefe de Gabinete',
   ASSESSOR:        'Assessor',
-  ANALISTA:        'Analista',
-  VISUALIZADOR:    'Visualizador',
 };
 
 const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> = {
@@ -132,8 +130,6 @@ const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> 
   AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: '#c084fc',  border: 'rgba(168,85,247,0.3)'  },
   CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)'  },
   ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: '#4ade80',  border: 'rgba(34,197,94,0.25)'  },
-  ANALISTA:        { bg: 'var(--tint-06)', color: 'var(--text-primary)',  border: 'var(--tint-14)' },
-  VISUALIZADOR:    { bg: 'var(--tint-06)', color: '#94a3b8',  border: 'var(--tint-14)' },
 };
 
 function RoleBadge({ role }: { role: string }) {

@@ -7,7 +7,7 @@ import { prisma } from '@/lib/db';
 import { ALL_PERMISSIONS } from '@/lib/permissions';
 import type { UserRole } from '@prisma/client';
 
-const VALID_ROLES = ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR', 'ANALISTA', 'VISUALIZADOR'];
+const VALID_ROLES = ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR'];
 
 export async function PATCH(
   request: NextRequest,

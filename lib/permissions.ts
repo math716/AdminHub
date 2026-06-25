@@ -3,9 +3,7 @@ export type Role =
   | 'ADMIN'
   | 'AGENTE_POLITICO'
   | 'CHEFE'
-  | 'ASSESSOR'
-  | 'ANALISTA'
-  | 'VISUALIZADOR';
+  | 'ASSESSOR';
 
 export const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN:     'Super Admin',
@@ -13,8 +11,6 @@ export const ROLE_LABELS: Record<string, string> = {
   AGENTE_POLITICO: 'Agente Político',
   CHEFE:           'Chefe de Gabinete',
   ASSESSOR:        'Assessor',
-  ANALISTA:        'Analista',
-  VISUALIZADOR:    'Visualizador',
 };
 
 export function isSuperAdmin(role?: string | null): boolean {

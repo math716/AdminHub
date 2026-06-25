@@ -23,7 +23,7 @@ const TIPO_LABELS: Record<string, string> = {
 };
 const ROLE_LABELS: Record<string, string> = {
   AGENTE_POLITICO: 'Agente Político', CHEFE: 'Chefe de Gabinete',
-  ASSESSOR: 'Assessor', ANALISTA: 'Analista', VISUALIZADOR: 'Visualizador',
+  ASSESSOR: 'Assessor',
   ADMIN: 'Administrador', SUPER_ADMIN: 'Super Admin',
 };
 
