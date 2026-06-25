@@ -3700,17 +3700,11 @@ export default function MapaCampanhaPage() {
               {/* Votos base */}
               {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
                 <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                  <CardContent className="px-3 py-1.5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
-                          Votos {ano}{filtroTipo !== 'todos' && <span style={{ color: '#2563EB' }}> (filtrado)</span>}
-                        </p>
-                        <p className="text-base font-bold text-[color:var(--text-primary)]">{getTotalVotosBase().toLocaleString()}</p>
-                      </div>
-                      <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
-                        <BarChart3 className="h-5 w-5" style={{ color: '#2563EB' }} />
-                      </div>
+                  <CardContent className="!px-3 !py-2">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
+                      <span className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Votos {ano}</span>
+                      <span className="ml-auto text-sm font-bold text-[color:var(--text-primary)] whitespace-nowrap">{getTotalVotosBase().toLocaleString()}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -3718,17 +3712,11 @@ export default function MapaCampanhaPage() {
 
               {/* Meta */}
               <Card style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border-default)', borderRight: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)', borderLeft: `4px solid ${cenarioConfig[cenarioAtivo].hex}` }}>
-                <CardContent className="px-3 py-1.5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
-                        Meta {anoProjecao}{filtroTipo !== 'todos' && <span className={`${cenarioConfig[cenarioAtivo].color} text-[10px]`}> (filtrado)</span>}
-                      </p>
-                      <p className={`text-base font-bold ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</p>
-                    </div>
-                    <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
-                      <Target className={`h-5 w-5 ${cenarioConfig[cenarioAtivo].color}`} />
-                    </div>
+                <CardContent className="!px-3 !py-2">
+                  <div className="flex items-center gap-2">
+                    <Target className={`h-4 w-4 flex-shrink-0 ${cenarioConfig[cenarioAtivo].color}`} />
+                    <span className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Meta {anoProjecao}</span>
+                    <span className={`ml-auto text-sm font-bold whitespace-nowrap ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -3736,22 +3724,16 @@ export default function MapaCampanhaPage() {
               {/* Crescimento */}
               {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
                 <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                  <CardContent className="px-3 py-1.5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
-                          Crescimento{filtroTipo !== 'todos' && <span className="text-[color:var(--success)] text-[10px]"> (filtrado)</span>}
-                        </p>
-                        <p className={`text-base font-bold ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
-                          {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
-                        </p>
-                      </div>
-                      <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
-                        {parseFloat(getCrescimento() as string) >= 0
-                          ? <ArrowUp className="h-5 w-5 text-[color:var(--success)]" />
-                          : <ArrowDown className="h-5 w-5 text-red-400" />
-                        }
-                      </div>
+                  <CardContent className="!px-3 !py-2">
+                    <div className="flex items-center gap-2">
+                      {parseFloat(getCrescimento() as string) >= 0
+                        ? <ArrowUp className="h-4 w-4 flex-shrink-0 text-[color:var(--success)]" />
+                        : <ArrowDown className="h-4 w-4 flex-shrink-0 text-red-400" />
+                      }
+                      <span className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Crescimento</span>
+                      <span className={`ml-auto text-sm font-bold whitespace-nowrap ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
+                        {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -3759,36 +3741,28 @@ export default function MapaCampanhaPage() {
 
               {/* Municípios */}
               <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                <CardContent className="px-3 py-1.5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
-                        Municípios{filtroTipo !== 'todos' && <span className="text-purple-400"> (filtrado)</span>}
-                      </p>
-                      <p className="text-base font-bold text-[color:var(--text-primary)]">
-                        {getMunicipiosCount()}
-                        {filtroTipo !== 'todos' && (
-                          <span className="text-base ml-1" style={{ color: '#6b82a0' }}>/ {projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length}</span>
-                        )}
-                      </p>
-                    </div>
-                    <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
-                      <MapPin className="h-5 w-5" style={{ color: '#2563EB' }} />
-                    </div>
+                <CardContent className="!px-3 !py-2">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
+                    <span className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Municípios</span>
+                    <span className="ml-auto text-sm font-bold text-[color:var(--text-primary)] whitespace-nowrap">
+                      {getMunicipiosCount()}
+                      {filtroTipo !== 'todos' && <span className="text-xs font-normal ml-1" style={{ color: '#6b82a0' }}>/ {projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length}</span>}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Dobradas */}
               <Card className={`bg-gradient-to-br from-blue-900/50 to-slate-800 ${filtroTipo === 'com_dobrada' ? 'border-blue-400 ring-2 ring-blue-400/30' : 'border-blue-500/30'}`}>
-                <CardContent className="px-3 py-1.5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-blue-300 text-xs mb-0.5">Dobradas</p>
-                      <p className="text-base font-bold text-blue-400">{getDobradasCount()}</p>
-                      <p className="text-xs text-slate-400">{getVotosComDobrada().toLocaleString()} votos</p>
+                <CardContent className="!px-3 !py-2">
+                  <div className="flex items-center gap-2">
+                    <Handshake className="h-4 w-4 flex-shrink-0 text-blue-400" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wide truncate text-blue-300">Dobradas</span>
+                    <div className="ml-auto text-right">
+                      <span className="text-sm font-bold text-blue-400 whitespace-nowrap">{getDobradasCount()}</span>
+                      {getVotosComDobrada() > 0 && <span className="text-[10px] text-slate-400 ml-1">+{getVotosComDobrada().toLocaleString()}v</span>}
                     </div>
-                    <Handshake className="h-5 w-5 text-blue-400" />
                   </div>
                 </CardContent>
               </Card>
@@ -3797,42 +3771,23 @@ export default function MapaCampanhaPage() {
               <Card className={`relative bg-gradient-to-br from-amber-900/50 to-slate-800 transition-all duration-300 ${
                 filtroTipo === 'parcerias' ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-amber-500/30'
               } ${!includeParcerias ? 'opacity-60' : ''}`}>
-                <CardContent className="px-3 py-1.5">
-                  <button
-                    onClick={() => setIncludeParcerias(!includeParcerias)}
-                    className={`absolute top-2 right-2 p-1.5 rounded-full transition-all duration-200 ${
-                      includeParcerias
-                        ? 'bg-amber-500/20 hover:bg-amber-500/30 text-[color:var(--brand-cobalt)]'
-                        : 'bg-slate-600/50 hover:bg-slate-500/50 text-slate-600 dark:text-slate-400'
-                    }`}
-                    title={includeParcerias ? 'Ocultar parcerias da simulação' : 'Mostrar parcerias na simulação'}
-                  >
-                    {includeParcerias ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                  </button>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className={`text-xs mb-0.5 ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-600 dark:text-slate-400'}`}>Parcerias</p>
-                      <p className={`text-base font-bold ${includeParcerias ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-500'}`}>
-                        {parceriasStats?.total || 0}
-                      </p>
-                      <p className={`text-xs font-medium ${includeParcerias ? cenarioConfig[cenarioAtivo].color : 'text-slate-600 dark:text-slate-500 line-through'}`}>
-                        {includeParcerias ? '+' : ''}{(
-                          cenarioAtivo === 'conservador' ? parceriasStats?.metaConservadoraTotal :
-                          cenarioAtivo === 'possivel' ? parceriasStats?.metaPossivelTotal :
-                          parceriasStats?.metaArrojadaTotal
-                        )?.toLocaleString() || '0'} votos
-                      </p>
+                <CardContent className="!px-3 !py-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIncludeParcerias(!includeParcerias)}
+                      className={`p-0.5 rounded-full transition-all duration-200 flex-shrink-0 ${includeParcerias ? 'text-[color:var(--brand-cobalt)]' : 'text-slate-500'}`}
+                      title={includeParcerias ? 'Ocultar parcerias da simulação' : 'Mostrar parcerias na simulação'}
+                    >
+                      {includeParcerias ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    </button>
+                    <span className={`text-[10px] font-semibold uppercase tracking-wide truncate ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-500'}`}>Parcerias</span>
+                    <div className="ml-auto text-right">
+                      <span className={`text-sm font-bold whitespace-nowrap ${includeParcerias ? 'text-sky-400' : 'text-slate-500'}`}>{parceriasStats?.total || 0}</span>
+                      {includeParcerias && <span className={`text-[10px] ml-1 ${cenarioConfig[cenarioAtivo].color}`}>
+                        +{((cenarioAtivo === 'conservador' ? parceriasStats?.metaConservadoraTotal : cenarioAtivo === 'possivel' ? parceriasStats?.metaPossivelTotal : parceriasStats?.metaArrojadaTotal) || 0).toLocaleString()}v
+                      </span>}
                     </div>
-                    <Users className={`h-5 w-5 ${includeParcerias ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-500'}`} />
                   </div>
-                  {!includeParcerias && (
-                    <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
-                      <p className="text-[10px] text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                        <EyeOff className="h-3 w-3" />
-                        Parcerias desativadas
-                      </p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
