@@ -2588,7 +2588,7 @@ export default function MapaCampanhaPage() {
                     </p>
 
                     {/* Scenario buttons — stacked */}
-                    <div className="flex flex-col gap-1 flex-1">
+                    <div className="flex flex-col gap-1">
                       {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
                         const config = cenarioConfig[cenario];
                         const Icon = config.icon;
@@ -2608,18 +2608,23 @@ export default function MapaCampanhaPage() {
                                 : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
                             }`}
                           >
-                            <div className={`p-0.5 rounded flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-[var(--bg-card-subtle)]'}`}>
-                              <Icon className="h-3 w-3" />
+                            <div className={`p-1 rounded-md flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-[var(--bg-card-subtle)]'}`}>
+                              <Icon className="h-3.5 w-3.5" />
                             </div>
-                            <span className="font-semibold text-sm leading-none">{config.label}</span>
-                            {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/80 flex-shrink-0" />}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm leading-tight">{config.label}</p>
+                              <p className={`text-[10px] leading-tight ${isActive ? 'opacity-80' : 'text-[color:var(--text-tertiary)]'}`}>
+                                {desc[cenario]}
+                              </p>
+                            </div>
+                            {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white/80 flex-shrink-0" />}
                           </button>
                         );
                       })}
                     </div>
 
                     {/* Total */}
-                    <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
+                    <div className="mt-auto pt-3 border-t border-[var(--border-default)]">
                       <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: '#6b82a0' }}>
                         Meta Total · {anoProjecao}
                       </p>
