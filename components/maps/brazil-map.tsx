@@ -134,10 +134,8 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false,
         const intensity = value / maxValue;
 
         if (darkMode) {
-          // Mais valor = cor mais escura/saturada (legenda: #7fb8e0 → #0c4f8a)
-          const lightness  = 70 - (intensity * 40); // 70% (pouco) → 30% (muito)
-          const saturation = 60 + (intensity * 25); // 60% → 85%
-          return `hsl(209, ${saturation}%, ${lightness}%)`;
+          // Dark mode: cor plana para todos os estados com valor (sem heatmap)
+          return '#1a3a5c';
         }
         // Modo claro original
         const lightness = 85 - (intensity * 55);
@@ -156,11 +154,8 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false,
           const intensity = value / maxValue;
           return 0.25 + intensity * 0.55;
         }
-        // darkMode — fundo navy, estados precisam de fill sempre visível
-        if (!value) return 0.55;
-        const maxValue = Math.max(...Object.values(highlightedStates || { _: 1 }));
-        const intensity = value / maxValue;
-        return 0.65 + intensity * 0.3;
+        // darkMode — cor plana, sem variação por valor
+        return value ? 0.75 : 0.55;
       };
 
       const style = (feature: any) => {
