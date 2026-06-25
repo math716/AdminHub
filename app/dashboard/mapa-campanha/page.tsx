@@ -2353,7 +2353,7 @@ export default function MapaCampanhaPage() {
         className="flex-shrink-0"
       >
         <Card style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}>
-          <CardContent className="px-4 py-1">
+          <CardContent className="px-4 py-0.5">
 
             {/* Modo colapsado: resumo + botão editar */}
             {formCollapsed && electoralData ? (
@@ -2370,7 +2370,7 @@ export default function MapaCampanhaPage() {
                   <Button
                     onClick={() => setFormCollapsed(false)}
                     variant="outline"
-                    className="border-[var(--border-default)] text-slate-700 dark:text-slate-300 hover:bg-[var(--bg-card-subtle)] text-xs h-8 px-3"
+                    className="border-[var(--border-default)] text-slate-700 dark:text-slate-300 hover:bg-[var(--bg-card-subtle)] text-xs h-6 px-2.5"
                   >
                     <Pencil className="h-3 w-3 mr-1.5" />
                     Editar busca
@@ -2379,7 +2379,7 @@ export default function MapaCampanhaPage() {
                     onClick={() => setShowNovoCandidatoModal(true)}
                     variant="outline"
                     style={{ background: 'var(--brand-cobalt-soft)', borderColor: 'var(--brand-cobalt)', color: 'var(--brand-cobalt-text)' }}
-                    className="whitespace-nowrap text-xs h-8 px-3 hover:brightness-110"
+                    className="whitespace-nowrap text-xs h-6 px-2.5 hover:brightness-110"
                   >
                     <Plus className="h-3 w-3 mr-1.5" />
                     Novo Candidato
@@ -2582,13 +2582,13 @@ export default function MapaCampanhaPage() {
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
-                  <CardContent className="p-4 flex flex-col h-full">
-                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: '#6b82a0' }}>
+                  <CardContent className="p-2 flex flex-col h-full">
+                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#6b82a0' }}>
                       Cenário de Projeção
                     </p>
 
                     {/* Scenario buttons — stacked */}
-                    <div className="flex flex-col gap-2 flex-1">
+                    <div className="flex flex-col gap-1.5 flex-1">
                       {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
                         const config = cenarioConfig[cenario];
                         const Icon = config.icon;
@@ -2602,7 +2602,7 @@ export default function MapaCampanhaPage() {
                           <button
                             key={cenario}
                             onClick={() => setCenarioAtivo(cenario)}
-                            className={`flex-1 flex items-center gap-2 px-2.5 py-1 rounded-lg text-sm transition-all w-full text-left border ${
+                            className={`flex-1 flex items-center gap-2 px-2 py-0.5 rounded-lg text-sm transition-all w-full text-left border ${
                               isActive
                                 ? `${config.bg} text-white shadow-md border-transparent`
                                 : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
@@ -2624,11 +2624,11 @@ export default function MapaCampanhaPage() {
                     </div>
 
                     {/* Total */}
-                    <div className="mt-4 pt-4 border-t border-[var(--border-default)]">
-                      <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: '#6b82a0' }}>
+                    <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
+                      <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: '#6b82a0' }}>
                         Meta Total · {anoProjecao}
                       </p>
-                      <p className={`text-2xl font-bold ${cenarioConfig[cenarioAtivo].color}`}>
+                      <p className={`text-xl font-bold ${cenarioConfig[cenarioAtivo].color}`}>
                         {getTotalVotosMeta().toLocaleString()}
                       </p>
                       {getTotalVotosBase() > 0 && (
@@ -3392,10 +3392,10 @@ export default function MapaCampanhaPage() {
               className={mapFullscreen ? 'flex-1 min-w-0 relative overflow-hidden' : 'col-span-12 md:col-span-6 md:order-2 overflow-hidden'}
             >
               <Card
-                className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] overflow-hidden'}
+                className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--tint-06)] overflow-hidden'}
                 style={!mapFullscreen ? { height: 'calc(100vh - 390px)', minHeight: '380px' } : undefined}
               >
-                <CardHeader className={`border-b border-[var(--border-default)] py-1.5 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
+                <CardHeader className={`border-b border-[var(--tint-06)] py-1 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <CardTitle className="text-[color:var(--text-primary)] flex items-center gap-2">
                       <Map className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
@@ -3680,7 +3680,7 @@ export default function MapaCampanhaPage() {
                   {/* Botão tela cheia */}
                   <button
                     onClick={() => setMapFullscreen(f => !f)}
-                    className="absolute bottom-3 right-3 z-[1000] bg-[var(--bg-card)]/90 border border-[var(--tint-10)] rounded-lg p-2 text-slate-700 dark:text-slate-300 hover:text-white hover:border-[var(--tint-35)] transition-all shadow-lg"
+                    className="absolute bottom-3 right-3 z-[1000] bg-slate-800 border border-slate-600 rounded-lg p-2 text-slate-200 hover:bg-slate-700 hover:text-white hover:border-slate-400 transition-all shadow-lg"
                     title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
                   >
                     {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -3698,13 +3698,13 @@ export default function MapaCampanhaPage() {
               {/* Votos base */}
               {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
                 <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                  <CardContent className="px-2 py-1.5">
+                  <CardContent className="px-2 py-1">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
                           Votos {ano}{filtroTipo !== 'todos' && <span style={{ color: '#2563EB' }}> (filtrado)</span>}
                         </p>
-                        <p className="text-base font-bold text-[color:var(--text-primary)]">{getTotalVotosBase().toLocaleString()}</p>
+                        <p className="text-sm font-bold text-[color:var(--text-primary)]">{getTotalVotosBase().toLocaleString()}</p>
                       </div>
                       <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
                         <BarChart3 className="h-4 w-4" style={{ color: '#2563EB' }} />
@@ -3716,13 +3716,13 @@ export default function MapaCampanhaPage() {
 
               {/* Meta */}
               <Card style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border-default)', borderRight: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)', borderLeft: `4px solid ${cenarioConfig[cenarioAtivo].hex}` }}>
-                <CardContent className="px-2 py-1.5">
+                <CardContent className="px-2 py-1">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
                         Meta {anoProjecao}{filtroTipo !== 'todos' && <span className={`${cenarioConfig[cenarioAtivo].color} text-[10px]`}> (filtrado)</span>}
                       </p>
-                      <p className={`text-base font-bold ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</p>
+                      <p className={`text-sm font-bold ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</p>
                     </div>
                     <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
                       <Target className={`h-4 w-4 ${cenarioConfig[cenarioAtivo].color}`} />
@@ -3734,13 +3734,13 @@ export default function MapaCampanhaPage() {
               {/* Crescimento */}
               {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
                 <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                  <CardContent className="px-2 py-1.5">
+                  <CardContent className="px-2 py-1">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
                           Crescimento{filtroTipo !== 'todos' && <span className="text-[color:var(--success)] text-[10px]"> (filtrado)</span>}
                         </p>
-                        <p className={`text-base font-bold ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
+                        <p className={`text-sm font-bold ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
                           {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
                         </p>
                       </div>
@@ -3757,13 +3757,13 @@ export default function MapaCampanhaPage() {
 
               {/* Municípios */}
               <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                <CardContent className="px-2 py-1.5">
+                <CardContent className="px-2 py-1">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
                         Municípios{filtroTipo !== 'todos' && <span className="text-purple-400"> (filtrado)</span>}
                       </p>
-                      <p className="text-base font-bold text-[color:var(--text-primary)]">
+                      <p className="text-sm font-bold text-[color:var(--text-primary)]">
                         {getMunicipiosCount()}
                         {filtroTipo !== 'todos' && (
                           <span className="text-sm ml-1" style={{ color: '#6b82a0' }}>/ {projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length}</span>
@@ -3779,11 +3779,11 @@ export default function MapaCampanhaPage() {
 
               {/* Dobradas */}
               <Card className={`bg-gradient-to-br from-blue-900/50 to-slate-800 ${filtroTipo === 'com_dobrada' ? 'border-blue-400 ring-2 ring-blue-400/30' : 'border-blue-500/30'}`}>
-                <CardContent className="px-2 py-1.5">
+                <CardContent className="px-2 py-1">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-blue-300 text-xs">Dobradas</p>
-                      <p className="text-base font-bold text-blue-400">{getDobradasCount()}</p>
+                      <p className="text-sm font-bold text-blue-400">{getDobradasCount()}</p>
                       <p className="text-xs text-slate-600 dark:text-slate-400">{getVotosComDobrada().toLocaleString()} votos</p>
                     </div>
                     <Handshake className="h-6 w-6 text-blue-400" />
@@ -3795,7 +3795,7 @@ export default function MapaCampanhaPage() {
               <Card className={`relative bg-gradient-to-br from-amber-900/50 to-slate-800 transition-all duration-300 ${
                 filtroTipo === 'parcerias' ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-amber-500/30'
               } ${!includeParcerias ? 'opacity-60' : ''}`}>
-                <CardContent className="px-2 py-1.5">
+                <CardContent className="px-2 py-1">
                   <button
                     onClick={() => setIncludeParcerias(!includeParcerias)}
                     className={`absolute top-2 right-2 p-1.5 rounded-full transition-all duration-200 ${
@@ -3810,7 +3810,7 @@ export default function MapaCampanhaPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className={`text-xs ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-600 dark:text-slate-400'}`}>Parcerias</p>
-                      <p className={`text-base font-bold ${includeParcerias ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-500'}`}>
+                      <p className={`text-sm font-bold ${includeParcerias ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-500'}`}>
                         {parceriasStats?.total || 0}
                       </p>
                       <p className={`text-xs font-medium ${includeParcerias ? cenarioConfig[cenarioAtivo].color : 'text-slate-600 dark:text-slate-500 line-through'}`}>
