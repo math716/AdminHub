@@ -2353,7 +2353,7 @@ export default function MapaCampanhaPage() {
         className="flex-shrink-0"
       >
         <Card style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}>
-          <CardContent className="px-4 py-1.5">
+          <CardContent className="px-4 py-1">
 
             {/* Modo colapsado: resumo + botão editar */}
             {formCollapsed && electoralData ? (
