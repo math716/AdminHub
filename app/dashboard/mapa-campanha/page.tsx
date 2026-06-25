@@ -2584,13 +2584,13 @@ export default function MapaCampanhaPage() {
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
-                  <CardContent className="p-4 flex flex-col h-full justify-between">
+                  <CardContent className="p-4 flex flex-col h-full">
                     <p className="text-sm font-semibold tracking-widest uppercase mb-3" style={{ color: '#6b82a0' }}>
                       Cenário de Projeção
                     </p>
 
                     {/* Scenario buttons — fixed height */}
-                    <div className="flex flex-col gap-2 mb-4">
+                    <div className="flex flex-col gap-2">
                       {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
                         const config = cenarioConfig[cenario];
                         const Icon = config.icon;
@@ -2626,7 +2626,7 @@ export default function MapaCampanhaPage() {
                     </div>
 
                     {/* Total */}
-                    <div className="pt-3 border-t border-[var(--border-default)]">
+                    <div className="mt-auto pt-3 border-t border-[var(--border-default)]">
                       <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: '#6b82a0' }}>
                         Meta Total · {anoProjecao}
                       </p>
@@ -3288,80 +3288,39 @@ export default function MapaCampanhaPage() {
                             return (
                               <div
                                 key={idx}
-                                className={`px-3 py-2 hover:bg-[var(--bg-card-subtle)]/50 cursor-pointer transition-colors group ${
-                                  isNew ? 'bg-emerald-900/20 border-l-2 border-emerald-500' :
-                                  mun.dobradaAtiva ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-500' : ''
+                                className={`px-3 py-2.5 hover:bg-[var(--bg-card-subtle)]/70 cursor-pointer transition-colors group border-b border-[var(--border-default)] ${
+                                  isNew ? 'border-l-2 border-l-emerald-500' :
+                                  mun.dobradaAtiva ? 'border-l-2 border-l-blue-400' : ''
                                 }`}
                                 onClick={() => handleMunicipioClick(mun.municipio)}
                               >
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    {mun.dobradaAtiva && (
-                                      <Handshake className="h-4 w-4 text-blue-400 flex-shrink-0" />
-                                    )}
-                                    <span className="text-[color:var(--text-primary)] font-semibold text-xs truncate tracking-wide uppercase">
+                                <div className="flex items-center justify-between gap-1">
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    {mun.dobradaAtiva && <Handshake className="h-3.5 w-3.5 text-blue-400 flex-shrink-0" />}
+                                    <span className="text-[color:var(--text-primary)] font-semibold text-sm truncate">
                                       {mun.municipio}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-1 flex-shrink-0">
+                                    {isNew && <Badge variant="success" className="text-[10px] px-1 py-0">NOVO</Badge>}
+                                    {mun.prioridade === 'ALTA' && <Badge variant="danger" className="text-[10px] px-1 py-0">!</Badge>}
                                     {isNew && (
-                                      <Badge variant="success" className="text-xs">
-                                        NOVO
-                                      </Badge>
-                                    )}
-                                    {mun.dobradaAtiva && (
-                                      <Badge variant="info" className="text-xs bg-blue-600">
-                                        DOBRADA
-                                      </Badge>
-                                    )}
-                                    {mun.prioridade && (
-                                      <Badge
-                                        variant={
-                                          mun.prioridade === 'ALTA' ? 'danger' :
-                                          mun.prioridade === 'MEDIA' ? 'warning' : 'default'
-                                        }
-                                        className="text-xs"
-                                      >
-                                        {mun.prioridade === 'ALTA' ? '!' : mun.prioridade === 'MEDIA' ? '●' : '○'}
-                                      </Badge>
-                                    )}
-                                    {isNew && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          removeMunicipio(mun.municipio);
-                                        }}
-                                        className="p-1 text-slate-600 dark:text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Remover município"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
+                                      <button onClick={(e) => { e.stopPropagation(); removeMunicipio(mun.municipio); }} className="p-0.5 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Trash2 className="h-3 w-3" />
                                       </button>
                                     )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs">
+                                <div className="flex items-center gap-1.5 mt-0.5">
                                   {isNew ? (
-                                    <>
-                                      <span className="text-slate-600 dark:text-slate-500 italic">Sem votos anteriores</span>
-                                      <span className="text-slate-600 dark:text-slate-500">→</span>
-                                      <span className={cenarioConfig[cenarioAtivo].color}>
-                                        {metaAtiva.toLocaleString()}
-                                      </span>
-                                    </>
+                                    <span className="text-[11px] text-slate-500 italic">Sem votos anteriores → <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span></span>
                                   ) : (
                                     <>
-                                      <span className="text-slate-600 dark:text-slate-400">
-                                        {ano}: <span className="text-sky-600 dark:text-sky-400 font-medium">{mun.votosBase.toLocaleString()}</span>
-                                      </span>
-                                      <span className="text-slate-600 dark:text-slate-500">→</span>
-                                      <span className={cenarioConfig[cenarioAtivo].color}>
-                                        {metaAtiva.toLocaleString()}
-                                      </span>
-                                      {diff !== 0 && (
-                                        <span className={`ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
-                                          {diff > 0 ? '+' : ''}{diffPercent}%
-                                        </span>
-                                      )}
+                                      <span className="text-[11px]" style={{ color: '#6b82a0' }}>{ano}:</span>
+                                      <span className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold">{mun.votosBase.toLocaleString()}</span>
+                                      <span className="text-[11px] text-slate-400">→</span>
+                                      <span className={`text-[11px] font-semibold ${cenarioConfig[cenarioAtivo].color}`}>{metaAtiva.toLocaleString()}</span>
+                                      {diff !== 0 && <span className={`text-[10px] ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
                                     </>
                                   )}
                                 </div>
