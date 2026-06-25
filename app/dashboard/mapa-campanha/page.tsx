@@ -2326,8 +2326,8 @@ export default function MapaCampanhaPage() {
   ];
 
   const cenarioConfig = {
-    conservador: { label: 'Conservador', icon: Shield, color: 'text-[color:var(--brand-cobalt)]', bg: 'bg-amber-500', border: 'border-amber-500', hex: '#F59E0B' },
-    possivel: { label: 'Realista', icon: Gauge, color: 'text-[color:var(--brand-cobalt)]', bg: 'bg-cyan-500', border: 'border-cyan-500', hex: '#22D3EE' },
+    conservador: { label: 'Conservador', icon: Shield, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500', border: 'border-amber-500', hex: '#F59E0B' },
+    possivel: { label: 'Realista', icon: Gauge, color: 'text-cyan-600 dark:text-cyan-300', bg: 'bg-cyan-500', border: 'border-cyan-500', hex: '#22D3EE' },
     arrojado: { label: 'Otimista', icon: Rocket, color: 'text-[color:var(--success)]', bg: 'bg-emerald-500', border: 'border-emerald-500', hex: '#10B981' }
   };
 
@@ -2860,7 +2860,7 @@ export default function MapaCampanhaPage() {
                               </div>
                               <div className="flex items-center gap-2 text-xs">
                                 <span className="text-slate-600 dark:text-slate-400">
-                                  {ano}: <span className="text-[color:var(--brand-cobalt)] font-medium">{mun.votosBase.toLocaleString()}</span>
+                                  {ano}: <span className="text-sky-600 dark:text-sky-400 font-medium">{mun.votosBase.toLocaleString()}</span>
                                 </span>
                                 <span className="text-slate-600 dark:text-slate-500">→</span>
                                 <span className={cenarioConfig[cenarioAtivo].color}>
@@ -2918,7 +2918,7 @@ export default function MapaCampanhaPage() {
                               </div>
                               <div className="flex items-center gap-2 text-xs">
                                 <span className="text-slate-600 dark:text-slate-400">
-                                  {ano}: <span className="text-[color:var(--brand-cobalt)] font-medium">{mun.votosBase.toLocaleString()}</span>
+                                  {ano}: <span className="text-sky-600 dark:text-sky-400 font-medium">{mun.votosBase.toLocaleString()}</span>
                                 </span>
                                 <span className="text-slate-600 dark:text-slate-500">→</span>
                                 <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span>
@@ -3287,7 +3287,7 @@ export default function MapaCampanhaPage() {
                                   ) : (
                                     <>
                                       <span className="text-slate-600 dark:text-slate-400">
-                                        {ano}: <span className="text-[color:var(--brand-cobalt)] font-medium">{mun.votosBase.toLocaleString()}</span>
+                                        {ano}: <span className="text-sky-600 dark:text-sky-400 font-medium">{mun.votosBase.toLocaleString()}</span>
                                       </span>
                                       <span className="text-slate-600 dark:text-slate-500">→</span>
                                       <span className={cenarioConfig[cenarioAtivo].color}>
@@ -3748,7 +3748,7 @@ export default function MapaCampanhaPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className={`text-xs ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-600 dark:text-slate-400'}`}>Parcerias</p>
-                      <p className={`text-sm font-bold ${includeParcerias ? 'text-[color:var(--brand-cobalt)]' : 'text-slate-600 dark:text-slate-500'}`}>
+                      <p className={`text-sm font-bold ${includeParcerias ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-500'}`}>
                         {parceriasStats?.total || 0}
                       </p>
                       <p className={`text-[10px] font-medium ${includeParcerias ? cenarioConfig[cenarioAtivo].color : 'text-slate-600 dark:text-slate-500 line-through'}`}>
@@ -3759,7 +3759,7 @@ export default function MapaCampanhaPage() {
                         )?.toLocaleString() || '0'} votos
                       </p>
                     </div>
-                    <Users className={`h-6 w-6 ${includeParcerias ? 'text-[color:var(--brand-cobalt)]' : 'text-slate-600 dark:text-slate-500'}`} />
+                    <Users className={`h-6 w-6 ${includeParcerias ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-500'}`} />
                   </div>
                   {!includeParcerias && (
                     <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
