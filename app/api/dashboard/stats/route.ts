@@ -15,9 +15,16 @@ export async function GET() {
     const userRole = (session.user as any)?.role as string | undefined;
     const userId   = (session.user as any)?.id   as string | undefined;
 
+    // SUPER_ADMIN é admin de plataforma — nunca deve ver dados de gabinetes no dashboard
+    if (userRole === 'SUPER_ADMIN') {
+      return NextResponse.json({
+        total: 0, pendentes: 0, emAndamento: 0, resolvidas: 0,
+        byCategory: {}, byPriority: {}, recentDemands: [], timeline: [], lastResolvedDate: null,
+      });
+    }
+
     // Fonte de verdade: gabineteId do banco (não da sessão JWT, que pode ser stale)
-    // SUPER_ADMIN sem gabinete no banco vê tudo (visão global de plataforma)
-    let gabineteId: string | null | undefined = (session.user as any)?.gabineteId;
+    let gabineteId: string | null | undefined = null;
     if (userId) {
       const dbUser = await prisma.user.findUnique({
         where: { id: userId },
@@ -26,16 +33,15 @@ export async function GET() {
       gabineteId = dbUser?.gabineteId ?? null;
     }
 
-    if (!gabineteId && userRole !== 'SUPER_ADMIN') {
-      // ADMIN/outros sem gabinete associado → dashboard vazio (não é erro)
+    if (!gabineteId) {
+      // Usuário sem gabinete associado → dashboard vazio
       return NextResponse.json({
         total: 0, pendentes: 0, emAndamento: 0, resolvidas: 0,
         byCategory: {}, byPriority: {}, recentDemands: [], timeline: [], lastResolvedDate: null,
       });
     }
 
-    // Filtra por gabinete — SUPER_ADMIN sem gabinete vê tudo
-    const scope = gabineteId ? { gabineteId } : {};
+    const scope = { gabineteId };
 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
