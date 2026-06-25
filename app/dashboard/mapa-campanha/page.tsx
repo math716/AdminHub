@@ -2580,7 +2580,6 @@ export default function MapaCampanhaPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
                 className="col-span-12 md:col-span-2 md:order-1 flex flex-col"
-                style={{ height: 'calc(100vh - 220px)', minHeight: '380px' }}
               >
                 {/* Scenario selector */}
                 <Card style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
