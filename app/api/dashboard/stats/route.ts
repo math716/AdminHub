@@ -15,8 +15,8 @@ export async function GET() {
     const userRole = (session.user as any)?.role as string | undefined;
     const userId   = (session.user as any)?.id   as string | undefined;
 
-    // SUPER_ADMIN é admin de plataforma — nunca deve ver dados de gabinetes no dashboard
-    if (userRole === 'SUPER_ADMIN') {
+    // ADMIN e SUPER_ADMIN são roles de plataforma — nunca veem dados de gabinetes
+    if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {
       return NextResponse.json({
         total: 0, pendentes: 0, emAndamento: 0, resolvidas: 0,
         byCategory: {}, byPriority: {}, recentDemands: [], timeline: [], lastResolvedDate: null,
