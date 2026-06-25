@@ -2583,8 +2583,8 @@ export default function MapaCampanhaPage() {
                 style={{ height: 'calc(100vh - 220px)', minHeight: '380px' }}
               >
                 {/* Scenario selector */}
-                <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
-                  <CardContent className="p-4 flex flex-col h-full">
+                <Card style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
+                  <CardContent className="p-4 flex flex-col">
                     <p className="text-sm font-semibold tracking-widest uppercase mb-3" style={{ color: '#6b82a0' }}>
                       Cenário de Projeção
                     </p>
