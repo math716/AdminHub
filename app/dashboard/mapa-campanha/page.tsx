@@ -2588,7 +2588,7 @@ export default function MapaCampanhaPage() {
                     </p>
 
                     {/* Scenario buttons — stacked */}
-                    <div className="flex flex-col gap-1.5 flex-1">
+                    <div className="flex flex-col gap-1 flex-1">
                       {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
                         const config = cenarioConfig[cenario];
                         const Icon = config.icon;
@@ -2602,22 +2602,17 @@ export default function MapaCampanhaPage() {
                           <button
                             key={cenario}
                             onClick={() => setCenarioAtivo(cenario)}
-                            className={`flex-1 flex items-center gap-2 px-2 py-0.5 rounded-lg text-sm transition-all w-full text-left border ${
+                            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all w-full text-left border ${
                               isActive
                                 ? `${config.bg} text-white shadow-md border-transparent`
                                 : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
                             }`}
                           >
-                            <div className={`p-1 rounded-md flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-[var(--bg-card-subtle)]'}`}>
-                              <Icon className="h-3.5 w-3.5" />
+                            <div className={`p-0.5 rounded flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-[var(--bg-card-subtle)]'}`}>
+                              <Icon className="h-3 w-3" />
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm leading-tight">{config.label}</p>
-                              <p className={`text-[11px] leading-tight ${isActive ? 'opacity-75' : 'text-[color:var(--text-tertiary)]'}`}>
-                                {desc[cenario]}
-                              </p>
-                            </div>
-                            {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white/80 flex-shrink-0" />}
+                            <span className="font-semibold text-sm leading-none">{config.label}</span>
+                            {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/80 flex-shrink-0" />}
                           </button>
                         );
                       })}
