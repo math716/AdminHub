@@ -101,7 +101,11 @@ export async function GET(request: NextRequest, { params }: { params: { codigo: 
         total: 0,
         qtdDocumentos: 0,
       };
-      cur.total += d.valor;
+      // Soma apenas documentos de Empenho para não duplicar o valor
+      // (Liquidação e Pagamento são fases do mesmo montante empenhado)
+      if ((d.fase ?? '').toLowerCase().includes('empenho')) {
+        cur.total += d.valor;
+      }
       cur.qtdDocumentos++;
       porFavorecido.set(key, cur);
 
