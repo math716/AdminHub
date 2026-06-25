@@ -2579,7 +2579,7 @@ export default function MapaCampanhaPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
-                className="col-span-12 md:col-span-2 md:order-1 flex flex-col"
+                className="col-span-12 md:col-span-2 md:order-1 flex flex-col self-start"
               >
                 {/* Scenario selector */}
                 <Card style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
