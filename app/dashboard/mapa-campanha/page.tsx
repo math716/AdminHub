@@ -3390,7 +3390,7 @@ export default function MapaCampanhaPage() {
                 className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--tint-06)] overflow-hidden'}
                 style={!mapFullscreen ? { height: 'calc(100vh - 390px)', minHeight: '380px' } : undefined}
               >
-                <CardHeader className={`border-b border-[var(--tint-06)] py-1 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
+                <CardHeader className={`border-b border-[var(--tint-06)] py-0.5 px-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <CardTitle className="text-[color:var(--text-primary)] flex items-center gap-2">
                       <Map className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
@@ -3533,7 +3533,7 @@ export default function MapaCampanhaPage() {
                     </div>
                   )}
                 </CardHeader>
-                <CardContent className="p-0 h-[calc(100%-44px)] relative">
+                <CardContent className="p-0 h-[calc(100%-36px)] relative">
                   {visualizacaoMapa === 'bairro' && municipioVereador && uf === 'SP' && normMunKey(municipioVereador) === 'SAO PAULO' ? (
                     // SP capital municipal (prefeito/vereador) — polígonos de distritos
                     <SpDistritosMap
