@@ -3639,10 +3639,10 @@ export default function MapaCampanhaPage() {
                   <CardContent className="px-2 py-1.5">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-[10px] font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
+                        <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
                           Votos {ano}{filtroTipo !== 'todos' && <span style={{ color: '#2563EB' }}> (filtrado)</span>}
                         </p>
-                        <p className="text-sm font-bold text-[color:var(--text-primary)]">{getTotalVotosBase().toLocaleString()}</p>
+                        <p className="text-base font-bold text-[color:var(--text-primary)]">{getTotalVotosBase().toLocaleString()}</p>
                       </div>
                       <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
                         <BarChart3 className="h-4 w-4" style={{ color: '#2563EB' }} />
@@ -3657,10 +3657,10 @@ export default function MapaCampanhaPage() {
                 <CardContent className="px-2 py-1.5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
+                      <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
                         Meta {anoProjecao}{filtroTipo !== 'todos' && <span className={`${cenarioConfig[cenarioAtivo].color} text-[10px]`}> (filtrado)</span>}
                       </p>
-                      <p className={`text-sm font-bold ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</p>
+                      <p className={`text-base font-bold ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</p>
                     </div>
                     <div className="p-1.5 rounded-lg" style={{ background: 'rgba(37,99,235,0.1)' }}>
                       <Target className={`h-4 w-4 ${cenarioConfig[cenarioAtivo].color}`} />
@@ -3675,10 +3675,10 @@ export default function MapaCampanhaPage() {
                   <CardContent className="px-2 py-1.5">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-[10px] font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
+                        <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
                           Crescimento{filtroTipo !== 'todos' && <span className="text-[color:var(--success)] text-[10px]"> (filtrado)</span>}
                         </p>
-                        <p className={`text-sm font-bold ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
+                        <p className={`text-base font-bold ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
                           {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
                         </p>
                       </div>
@@ -3698,10 +3698,10 @@ export default function MapaCampanhaPage() {
                 <CardContent className="px-2 py-1.5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
+                      <p className="text-xs font-medium tracking-wide mb-0.5" style={{ color: '#6b82a0' }}>
                         Municípios{filtroTipo !== 'todos' && <span className="text-purple-400"> (filtrado)</span>}
                       </p>
-                      <p className="text-sm font-bold text-[color:var(--text-primary)]">
+                      <p className="text-base font-bold text-[color:var(--text-primary)]">
                         {getMunicipiosCount()}
                         {filtroTipo !== 'todos' && (
                           <span className="text-sm ml-1" style={{ color: '#6b82a0' }}>/ {projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length}</span>
@@ -3721,8 +3721,8 @@ export default function MapaCampanhaPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-blue-300 text-xs">Dobradas</p>
-                      <p className="text-sm font-bold text-blue-400">{getDobradasCount()}</p>
-                      <p className="text-[10px] text-slate-600 dark:text-slate-400">{getVotosComDobrada().toLocaleString()} votos</p>
+                      <p className="text-base font-bold text-blue-400">{getDobradasCount()}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{getVotosComDobrada().toLocaleString()} votos</p>
                     </div>
                     <Handshake className="h-6 w-6 text-blue-400" />
                   </div>
@@ -3748,10 +3748,10 @@ export default function MapaCampanhaPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className={`text-xs ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-600 dark:text-slate-400'}`}>Parcerias</p>
-                      <p className={`text-sm font-bold ${includeParcerias ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-500'}`}>
+                      <p className={`text-base font-bold ${includeParcerias ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-500'}`}>
                         {parceriasStats?.total || 0}
                       </p>
-                      <p className={`text-[10px] font-medium ${includeParcerias ? cenarioConfig[cenarioAtivo].color : 'text-slate-600 dark:text-slate-500 line-through'}`}>
+                      <p className={`text-xs font-medium ${includeParcerias ? cenarioConfig[cenarioAtivo].color : 'text-slate-600 dark:text-slate-500 line-through'}`}>
                         {includeParcerias ? '+' : ''}{(
                           cenarioAtivo === 'conservador' ? parceriasStats?.metaConservadoraTotal :
                           cenarioAtivo === 'possivel' ? parceriasStats?.metaPossivelTotal :
