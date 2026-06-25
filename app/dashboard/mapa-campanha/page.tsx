@@ -3703,8 +3703,8 @@ export default function MapaCampanhaPage() {
                   <CardContent className="!px-3 !py-2">
                     <div className="flex items-center gap-2">
                       <BarChart3 className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
-                      <span className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Votos {ano}</span>
-                      <span className="ml-auto text-sm font-bold text-[color:var(--text-primary)] whitespace-nowrap">{getTotalVotosBase().toLocaleString()}</span>
+                      <span className="text-xs font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Votos {ano}</span>
+                      <span className="ml-auto text-base font-bold text-[color:var(--text-primary)] whitespace-nowrap">{getTotalVotosBase().toLocaleString()}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -3715,8 +3715,8 @@ export default function MapaCampanhaPage() {
                 <CardContent className="!px-3 !py-2">
                   <div className="flex items-center gap-2">
                     <Target className={`h-4 w-4 flex-shrink-0 ${cenarioConfig[cenarioAtivo].color}`} />
-                    <span className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Meta {anoProjecao}</span>
-                    <span className={`ml-auto text-sm font-bold whitespace-nowrap ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Meta {anoProjecao}</span>
+                    <span className={`ml-auto text-base font-bold whitespace-nowrap ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -3730,8 +3730,8 @@ export default function MapaCampanhaPage() {
                         ? <ArrowUp className="h-4 w-4 flex-shrink-0 text-[color:var(--success)]" />
                         : <ArrowDown className="h-4 w-4 flex-shrink-0 text-red-400" />
                       }
-                      <span className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Crescimento</span>
-                      <span className={`ml-auto text-sm font-bold whitespace-nowrap ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
+                      <span className="text-xs font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Crescimento</span>
+                      <span className={`ml-auto text-base font-bold whitespace-nowrap ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
                         {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
                       </span>
                     </div>
@@ -3744,8 +3744,8 @@ export default function MapaCampanhaPage() {
                 <CardContent className="!px-3 !py-2">
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
-                    <span className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Municípios</span>
-                    <span className="ml-auto text-sm font-bold text-[color:var(--text-primary)] whitespace-nowrap">
+                    <span className="text-xs font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Municípios</span>
+                    <span className="ml-auto text-base font-bold text-[color:var(--text-primary)] whitespace-nowrap">
                       {getMunicipiosCount()}
                       {filtroTipo !== 'todos' && <span className="text-xs font-normal ml-1" style={{ color: '#6b82a0' }}>/ {projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length}</span>}
                     </span>
@@ -3758,9 +3758,9 @@ export default function MapaCampanhaPage() {
                 <CardContent className="!px-3 !py-2">
                   <div className="flex items-center gap-2">
                     <Handshake className="h-4 w-4 flex-shrink-0 text-blue-400" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wide truncate text-blue-300">Dobradas</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide truncate text-blue-300">Dobradas</span>
                     <div className="ml-auto text-right">
-                      <span className="text-sm font-bold text-blue-400 whitespace-nowrap">{getDobradasCount()}</span>
+                      <span className="text-base font-bold text-blue-400 whitespace-nowrap">{getDobradasCount()}</span>
                       {getVotosComDobrada() > 0 && <span className="text-[10px] text-slate-400 ml-1">+{getVotosComDobrada().toLocaleString()}v</span>}
                     </div>
                   </div>
@@ -3780,9 +3780,9 @@ export default function MapaCampanhaPage() {
                     >
                       {includeParcerias ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                     </button>
-                    <span className={`text-[10px] font-semibold uppercase tracking-wide truncate ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-500'}`}>Parcerias</span>
+                    <span className={`text-xs font-semibold uppercase tracking-wide truncate ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-500'}`}>Parcerias</span>
                     <div className="ml-auto text-right">
-                      <span className={`text-sm font-bold whitespace-nowrap ${includeParcerias ? 'text-sky-400' : 'text-slate-500'}`}>{parceriasStats?.total || 0}</span>
+                      <span className={`text-base font-bold whitespace-nowrap ${includeParcerias ? 'text-sky-400' : 'text-slate-500'}`}>{parceriasStats?.total || 0}</span>
                       {includeParcerias && <span className={`text-[10px] ml-1 ${cenarioConfig[cenarioAtivo].color}`}>
                         +{((cenarioAtivo === 'conservador' ? parceriasStats?.metaConservadoraTotal : cenarioAtivo === 'possivel' ? parceriasStats?.metaPossivelTotal : parceriasStats?.metaArrojadaTotal) || 0).toLocaleString()}v
                       </span>}
