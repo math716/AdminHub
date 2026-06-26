@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,12 +17,18 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+  const [mounted, setMounted] = React.useState(false);
+
   const sizes = {
     sm: 'max-w-md',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
     xl: 'max-w-4xl'
   };
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -34,10 +41,12 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     };
   }, [isOpen]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-start justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-start justify-center" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -52,7 +61,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             exit={{ opacity: 0, scale: 0.98 }}
             className={cn(
               'relative rounded-2xl shadow-2xl',
-              'w-[calc(100%-2rem)] max-h-screen overflow-y-auto',
+              'w-[calc(100%-2rem)] max-h-[calc(100vh-1rem)] overflow-y-auto',
               sizes[size]
             )}
             style={{
@@ -86,6 +95,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
