@@ -710,104 +710,102 @@ export default function ContatosPage() {
                   .map(w => w[0]?.toUpperCase() ?? '')
                   .join('') || '?';
                 const isGeocoded = !!(c.lat && c.lng);
+                // Cor do avatar baseada na inicial
+                const avatarHue = (initials.charCodeAt(0) ?? 65) * 137 % 360;
+                const avatarColor = `hsl(${avatarHue},55%,58%)`;
+                const avatarBg   = `hsla(${avatarHue},55%,58%,0.12)`;
+
                 return (
                   <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ y: -2 }}
-                    className="rounded-2xl relative overflow-hidden transition-all"
+                    whileHover={{ y: -3, boxShadow: '0 12px 32px rgba(0,0,0,0.35)' }}
+                    className="rounded-2xl overflow-hidden flex flex-col"
                     style={{
-                      background: 'linear-gradient(135deg, var(--bg-card-raised) 0%, rgba(4,17,31,0.95) 100%)',
-                      border: '1px solid rgba(37,99,235,0.18)',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--tint-08)',
+                      boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                      transition: 'box-shadow 0.2s, transform 0.2s',
                     }}>
-                    {/* Accent stripe lateral dourada */}
-                    <div className="absolute left-0 top-0 bottom-0 w-[3px]"
-                      style={{ background: 'linear-gradient(180deg, #2563EB 0%, rgba(37,99,235,0.2) 100%)' }} />
 
-                    <div className="p-5 pl-6 flex flex-col gap-4">
-                      {/* Header: avatar + nome + status */}
-                      <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-base tracking-wide"
-                          style={{
-                            background: 'linear-gradient(135deg, #2563EB 0%, #8a6f1a 100%)',
-                            color: 'var(--bg-page)',
-                            boxShadow: '0 2px 8px rgba(37,99,235,0.25)',
-                          }}>
+                    {/* Barra de acento topo */}
+                    <div className="h-[3px] w-full" style={{ background: `linear-gradient(90deg, ${avatarColor}, transparent)` }} />
+
+                    {/* Header: avatar + nome + status */}
+                    <div className="px-4 pt-4 pb-3 flex items-center gap-3">
+                      <div className="relative flex-shrink-0">
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
+                          style={{ background: avatarBg, color: avatarColor, letterSpacing: '0.04em' }}>
                           {initials}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-[color:var(--text-primary)] text-[15px] leading-tight truncate" title={c.nome}>
-                            {c.nome}
-                          </h3>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <span className="w-1.5 h-1.5 rounded-full"
-                              style={{ background: isGeocoded ? '#4a9ede' : 'var(--tint-25)' }} />
-                            <span className="text-[11px] uppercase tracking-wider font-medium"
-                              style={{ color: isGeocoded ? 'rgba(74,158,222,0.85)' : 'var(--tint-35)' }}>
-                              {isGeocoded ? 'Localizado' : 'Sem localização'}
-                            </span>
-                          </div>
-                        </div>
+                        <span
+                          className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
+                          style={{
+                            background: isGeocoded ? '#22c55e' : 'var(--tint-20)',
+                            boxShadow: `0 0 0 2px var(--bg-card)`,
+                          }} />
                       </div>
-
-                      {/* Divisor sutil */}
-                      <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(37,99,235,0.18), transparent)' }} />
-
-                      {/* Informações */}
-                      <div className="flex flex-col gap-2.5">
-                        <div className="flex items-center gap-2.5 text-[13px]">
-                          <WhatsAppIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
-                          <span style={{ color: 'var(--tint-85)' }}>{c.numero}</span>
-                        </div>
-                        {c.email && (
-                          <div className="flex items-center gap-2.5 text-[13px]">
-                            <Mail className="w-4 h-4 flex-shrink-0" style={{ color: '#4a9ede' }} />
-                            <span className="truncate" style={{ color: 'var(--tint-75)' }} title={c.email}>{c.email}</span>
-                          </div>
-                        )}
-                        {c.endereco && (
-                          <div className="flex items-start gap-2.5 text-[13px]">
-                            <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#2563EB' }} />
-                            <span className="leading-snug" style={{ color: 'var(--tint-75)' }}>{c.endereco}</span>
-                          </div>
-                        )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm truncate leading-snug" style={{ color: 'var(--text-primary)' }} title={c.nome}>
+                          {c.nome}
+                        </h3>
+                        <span
+                          className="inline-block text-[10px] font-semibold uppercase tracking-widest mt-0.5"
+                          style={{ color: isGeocoded ? '#4ade80' : 'var(--tint-35)' }}>
+                          {isGeocoded ? 'Localizado' : 'Sem localização'}
+                        </span>
                       </div>
+                    </div>
 
-                      {/* Ações sempre visíveis */}
-                      <div className="flex items-center justify-between gap-2 pt-3 mt-1"
-                        style={{ borderTop: '1px solid var(--tint-04)' }}>
-                        {!isGeocoded && c.endereco ? (
-                          <button
-                            onClick={() => handleReGeocode(c.id, c.endereco!)}
-                            disabled={reGeocodingId === c.id}
-                            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg font-medium transition-all hover:opacity-80 disabled:opacity-50"
-                            style={{ background: 'rgba(37,99,235,0.1)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.22)' }}>
-                            {reGeocodingId === c.id
-                              ? <Loader2 className="w-3 h-3 animate-spin" />
-                              : <MapPin className="w-3 h-3" />}
-                            {reGeocodingId === c.id ? 'Localizando...' : 'Localizar'}
-                          </button>
-                        ) : <span />}
-
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => openMsgFor(c.id)}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-green-500/15"
-                            style={{ color: 'rgba(37,211,102,0.85)', border: '1px solid rgba(37,211,102,0.2)' }}
-                            title="Enviar mensagem">
-                            <Send className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => handleEdit(c)}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-yellow-500/15"
-                            style={{ color: 'rgba(37,99,235,0.85)', border: '1px solid rgba(37,99,235,0.2)' }}
-                            title="Editar contato">
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => handleDelete(c.id)}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-red-500/15"
-                            style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-08)' }}
-                            title="Excluir contato">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                    {/* Informações */}
+                    <div className="px-4 pb-3 flex flex-col gap-2" style={{ borderTop: '1px solid var(--tint-06)', paddingTop: 12 }}>
+                      <div className="flex items-center gap-2.5">
+                        <WhatsAppIcon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#25d366' }} />
+                        <span className="text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>{c.numero}</span>
+                      </div>
+                      {c.email && (
+                        <div className="flex items-center gap-2.5">
+                          <Mail className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
+                          <span className="text-[13px] truncate" style={{ color: 'var(--tint-55)' }} title={c.email}>{c.email}</span>
                         </div>
+                      )}
+                      {c.endereco && (
+                        <div className="flex items-start gap-2.5">
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: 'var(--tint-35)' }} />
+                          <span className="text-[13px] leading-snug" style={{ color: 'var(--tint-55)' }}>{c.endereco}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Rodapé: ações */}
+                    <div className="mt-auto px-3 py-2 flex items-center justify-between"
+                      style={{ borderTop: '1px solid var(--tint-05)', background: 'var(--tint-03)' }}>
+                      {!isGeocoded && c.endereco ? (
+                        <button
+                          onClick={() => handleReGeocode(c.id, c.endereco!)}
+                          disabled={reGeocodingId === c.id}
+                          className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg font-semibold transition-all hover:opacity-80 disabled:opacity-50"
+                          style={{ background: 'rgba(37,99,235,0.08)', color: '#60A5FA' }}>
+                          {reGeocodingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPin className="w-3 h-3" />}
+                          {reGeocodingId === c.id ? 'Localizando...' : 'Localizar'}
+                        </button>
+                      ) : <span />}
+
+                      <div className="flex items-center gap-0.5">
+                        <button onClick={() => openMsgFor(c.id)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:bg-emerald-500/12"
+                          style={{ color: '#25d366' }} title="Enviar mensagem">
+                          <Send className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleEdit(c)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:bg-[var(--tint-08)]"
+                          style={{ color: 'var(--tint-55)' }} title="Editar contato">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleDelete(c.id)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:bg-red-500/10"
+                          style={{ color: 'var(--tint-35)' }} title="Excluir contato">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   </motion.div>
