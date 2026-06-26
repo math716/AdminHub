@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Select } from '@/components/ui/select';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -609,12 +610,12 @@ export default function AgendaPage() {
       </div>
 
       {/* ── Modal criar/editar evento ── */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', alignItems: 'flex-start', paddingTop: '1rem', paddingBottom: '1rem' }}>
+      {showModal && createPortal(
+        <div className="fixed inset-0 z-50 flex justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', alignItems: 'flex-start', paddingTop: '8px', paddingBottom: '8px' }}>
           <div
             className="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col"
-            style={{ maxHeight: 'calc(100vh - 2rem)' }}
             style={{
+              maxHeight: 'calc(100vh - 1rem)',
               background: 'var(--bg-card)',
               border: '1px solid rgba(37,99,235,0.25)',
             }}
@@ -799,7 +800,8 @@ export default function AgendaPage() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

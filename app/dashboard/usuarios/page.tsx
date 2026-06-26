@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -277,6 +278,8 @@ export default function UsuariosPage() {
   const [inviteGabinete,   setInviteGabinete]   = useState('');
   const [inviteRoleResult, setInviteRoleResult] = useState('ASSESSOR');
   const [showInviteModal,  setShowInviteModal]  = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [showInviteForm,   setShowInviteForm]   = useState(false);
   const [copied,           setCopied]           = useState(false);
 
@@ -1069,6 +1072,7 @@ export default function UsuariosPage() {
           )}
         </div>
 
+      {mounted && createPortal(<>
       {/* ══════════════════════════════════════════════════════════════════════
           MODAL: Invite
       ══════════════════════════════════════════════════════════════════════ */}
@@ -1402,6 +1406,7 @@ export default function UsuariosPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </>, document.body)}
 
       <ConfirmDialog
         open={!!confirmReject}

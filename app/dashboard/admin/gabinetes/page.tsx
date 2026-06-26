@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -349,6 +350,8 @@ export default function AdminGabinetesPage() {
   const [deletingGab,      setDeletingGab]      = useState(false);
 
   const [showApproveModal, setShowApproveModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [approveTarget,    setApproveTarget]    = useState<UserData|null>(null);
   const [approvePerms,     setApprovePerms]     = useState<Set<string>>(new Set());
 
@@ -1165,6 +1168,7 @@ export default function AdminGabinetesPage() {
         </>
       )}
 
+      {mounted && createPortal(<>
       {/* ══════════════════════════════════════════════════════════════════════
           MODAL: Aprovar com permissões
       ══════════════════════════════════════════════════════════════════════ */}
@@ -1416,6 +1420,7 @@ export default function AdminGabinetesPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </>, document.body)}
 
     </div>
   );
