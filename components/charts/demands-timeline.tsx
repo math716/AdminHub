@@ -17,7 +17,7 @@ export default function DemandsTimelineChart({ data, darkMode = false }: Props) 
 
   const chartData = data?.map?.(item => ({
     ...item,
-    formattedDate: new Date(item?.date)?.toLocaleDateString?.('pt-BR', { day: '2-digit', month: 'short' }) ?? item?.date
+    formattedDate: item?.date ?? ''
   })) ?? [];
 
   if (!mounted || (chartData?.length ?? 0) === 0) {
