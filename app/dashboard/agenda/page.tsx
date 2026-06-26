@@ -610,9 +610,10 @@ export default function AgendaPage() {
 
       {/* ── Modal criar/editar evento ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-start justify-center sm:pt-8 sm:pb-8" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
+        <div className="fixed inset-0 z-50 flex justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', alignItems: 'flex-start', paddingTop: '1rem', paddingBottom: '1rem' }}>
           <div
-            className="w-full max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[95vh] sm:max-h-[calc(100vh-4rem)] flex flex-col"
+            className="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col"
+            style={{ maxHeight: 'calc(100vh - 2rem)' }}
             style={{
               background: 'var(--bg-card)',
               border: '1px solid rgba(37,99,235,0.25)',

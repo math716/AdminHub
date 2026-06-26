@@ -1046,7 +1046,7 @@ export default function ContatosPage() {
       {/* ══════════════════ MODAL Novo Contato ══════════════════ */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
+          <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-md rounded-2xl shadow-2xl max-h-[calc(100vh-4rem)] overflow-y-auto"
               style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.25)' }}>
@@ -1119,7 +1119,7 @@ export default function ContatosPage() {
       {/* ══════════════════ MODAL Importar CSV ══════════════════ */}
       <AnimatePresence>
         {showImportModal && (
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
+          <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-lg rounded-2xl shadow-2xl max-h-[calc(100vh-4rem)] overflow-y-auto"
               style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.25)' }}>
@@ -1234,7 +1234,7 @@ export default function ContatosPage() {
 
       {/* ══════════════════ MODAL Disparo ══════════════════ */}
       {showMsg && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
           <div className="w-full max-w-lg rounded-2xl shadow-2xl max-h-[calc(100vh-4rem)] flex flex-col"
             style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.25)' }}>
 

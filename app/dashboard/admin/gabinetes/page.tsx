@@ -1171,7 +1171,7 @@ export default function AdminGabinetesPage() {
       <AnimatePresence>
         {showApproveModal && approveTarget && (
           <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-            className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8"
+            className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4"
             style={{ background:'rgba(0,0,0,0.65)', backdropFilter:'blur(4px)' }}
             onClick={e => { if (e.target===e.currentTarget && actionId!==approveTarget.id) setShowApproveModal(false); }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
@@ -1215,7 +1215,7 @@ export default function AdminGabinetesPage() {
       <AnimatePresence>
         {showEditPermsModal && editPermsTarget && (
           <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-            className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8"
+            className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4"
             style={{ background:'rgba(0,0,0,0.65)', backdropFilter:'blur(4px)' }}
             onClick={e => { if (e.target===e.currentTarget && !savingPerms) setShowEditPermsModal(false); }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
@@ -1258,7 +1258,7 @@ export default function AdminGabinetesPage() {
       <AnimatePresence>
         {showResetModal && (
           <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-            className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8"
+            className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4"
             style={{ background:'rgba(0,0,0,0.65)', backdropFilter:'blur(4px)' }}
             onClick={e => { if (e.target===e.currentTarget && !resettingPwd) { setShowResetModal(false); setResetResult(''); } }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
@@ -1337,7 +1337,7 @@ export default function AdminGabinetesPage() {
       <AnimatePresence>
         {confirmDeleteGab && (
           <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-            className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8"
+            className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4"
             style={{ background:'rgba(0,0,0,0.65)', backdropFilter:'blur(4px)' }}
             onClick={e => { if (e.target===e.currentTarget && !deletingGab) setConfirmDeleteGab(null); }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
@@ -1382,7 +1382,7 @@ export default function AdminGabinetesPage() {
       <AnimatePresence>
         {confirmReject && (
           <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-            className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8"
+            className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4"
             style={{ background:'rgba(0,0,0,0.65)', backdropFilter:'blur(4px)' }}
             onClick={e => { if (e.target===e.currentTarget && !deletingReject) setConfirmReject(null); }}>
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.95, opacity:0 }}
