@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Clock, ChevronUp, ChevronDown, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, ChevronUp, ChevronDown } from 'lucide-react';
 
 // ─── DatePicker ────────────────────────────────────────────────────────────
 
@@ -279,12 +279,41 @@ export function TimePicker({ value, onChange, className, style }: TimePickerProp
 
 // ─── ColorPicker ───────────────────────────────────────────────────────────
 
-const COLOR_PALETTE = [
-  '#2563EB','#3B82F6','#60A5FA','#0EA5E9','#06B6D4',
-  '#22c55e','#10b981','#84cc16','#eab308','#f59e0b',
-  '#818cf8','#a855f7','#ec4899','#f43f5e','#ef4444',
-  '#fb923c','#f97316','#64748b','#94a3b8','#6366f1',
-];
+function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
+  s /= 100; v /= 100;
+  const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+  let r = 0, g = 0, b = 0;
+  if      (h < 60)  { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else              { r = c; b = x; }
+  return [Math.round((r+m)*255), Math.round((g+m)*255), Math.round((b+m)*255)];
+}
+
+function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+  let h = 0;
+  if (d) {
+    if      (max === r) h = ((g-b)/d + (g<b?6:0)) / 6;
+    else if (max === g) h = ((b-r)/d + 2) / 6;
+    else                h = ((r-g)/d + 4) / 6;
+  }
+  return [Math.round(h*360), max ? Math.round(d/max*100) : 0, Math.round(max*100)];
+}
+
+function hexToRgb(hex: string): [number,number,number] | null {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return [(n>>16)&255, (n>>8)&255, n&255];
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return '#' + [r,g,b].map(x => x.toString(16).padStart(2,'0')).join('');
+}
 
 interface ColorPickerProps {
   value: string;
@@ -292,29 +321,84 @@ interface ColorPickerProps {
 }
 
 export function ColorPicker({ value, onChange }: ColorPickerProps) {
-  const [open, setOpen] = useState(false);
-  const [hex, setHex] = useState(value || '#2563EB');
-  const ref = useRef<HTMLDivElement>(null);
+  const initHsv = (): [number,number,number] => {
+    const rgb = hexToRgb(value || '#2563EB') ?? [37,99,235];
+    return rgbToHsv(...rgb);
+  };
 
-  useEffect(() => { setHex(value || '#2563EB'); }, [value]);
+  const [open, setOpen]                       = useState(false);
+  const [[hue, sat, bri], setHsv]             = useState<[number,number,number]>(initHsv);
+  const [hexInput, setHexInput]               = useState(value || '#2563EB');
+  const triggerRef  = useRef<HTMLButtonElement>(null);
+  const popoverRef  = useRef<HTMLDivElement>(null);
+  const gradRef     = useRef<HTMLDivElement>(null);
+  const hueRef      = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const rgb = hexToRgb(value || '#2563EB');
+    if (rgb) { setHsv(rgbToHsv(...rgb)); setHexInput(value || '#2563EB'); }
+  }, [value]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (
+        popoverRef.current && !popoverRef.current.contains(e.target as Node) &&
+        triggerRef.current && !triggerRef.current.contains(e.target as Node)
+      ) setOpen(false);
     };
     if (open) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const commitHex = (raw: string) => {
-    const v = raw.startsWith('#') ? raw : '#' + raw;
-    if (/^#[0-9a-fA-F]{6}$/.test(v)) { onChange(v); setHex(v); }
+  const emit = (h: number, s: number, v: number) => {
+    const hex = rgbToHex(...hsvToRgb(h, s, v));
+    setHexInput(hex);
+    onChange(hex);
   };
 
+  const handleGrad = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = gradRef.current!;
+    el.setPointerCapture(e.pointerId);
+    const update = (ev: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      const s = Math.round(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * 100);
+      const v = Math.round(Math.max(0, Math.min(1, 1 - (ev.clientY - r.top) / r.height)) * 100);
+      setHsv([hue, s, v]);
+      emit(hue, s, v);
+    };
+    const up = () => { el.removeEventListener('pointermove', update); el.removeEventListener('pointerup', up); };
+    el.addEventListener('pointermove', update);
+    el.addEventListener('pointerup', up);
+    update(e.nativeEvent);
+  };
+
+  const handleHue = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = hueRef.current!;
+    el.setPointerCapture(e.pointerId);
+    const update = (ev: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      const h = Math.round(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * 360);
+      setHsv([h, sat, bri]);
+      emit(h, sat, bri);
+    };
+    const up = () => { el.removeEventListener('pointermove', update); el.removeEventListener('pointerup', up); };
+    el.addEventListener('pointermove', update);
+    el.addEventListener('pointerup', up);
+    update(e.nativeEvent);
+  };
+
+  const commitHex = (raw: string) => {
+    const rgb = hexToRgb(raw);
+    if (rgb) { setHsv(rgbToHsv(...rgb)); onChange(raw.startsWith('#') ? raw : '#' + raw); }
+  };
+
+  const currentHex = rgbToHex(...hsvToRgb(hue, sat, bri));
+  const hueHex     = rgbToHex(...hsvToRgb(hue, 100, 100));
+
   return (
-    <div className="relative" ref={ref}>
-      {/* Trigger */}
+    <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(o => !o)}
         className="flex items-center gap-2.5 rounded-lg px-3 py-2 w-full transition-all hover:opacity-90"
@@ -322,56 +406,84 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
       >
         <span
           className="w-5 h-5 rounded-md flex-shrink-0"
-          style={{ background: hex, boxShadow: `0 0 0 1px rgba(0,0,0,0.3), 0 0 8px ${hex}55` }}
+          style={{ background: currentHex, boxShadow: '0 0 0 1px rgba(0,0,0,0.3)' }}
         />
-        <span className="text-sm font-mono" style={{ color: 'var(--text-primary)' }}>{hex.toUpperCase()}</span>
+        <span className="text-sm font-mono" style={{ color: 'var(--text-primary)' }}>
+          {currentHex.toUpperCase()}
+        </span>
       </button>
 
-      {/* Popover */}
       {open && (
         <div
-          className="absolute left-0 top-full mt-1 z-50 rounded-xl p-3 w-52"
+          ref={popoverRef}
+          className="absolute left-0 top-full mt-1 z-50 rounded-xl p-3"
           style={{
+            width: 220,
             background: 'var(--bg-card)',
             border: '1px solid var(--tint-14)',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.55)',
           }}
         >
-          {/* Palette grid */}
-          <div className="grid grid-cols-5 gap-1.5 mb-3">
-            {COLOR_PALETTE.map((c) => {
-              const isSelected = hex.toLowerCase() === c.toLowerCase();
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => { onChange(c); setHex(c); }}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-110"
-                  style={{
-                    background: c,
-                    boxShadow: isSelected ? `0 0 0 2px var(--bg-card), 0 0 0 4px ${c}` : `0 0 0 1px rgba(0,0,0,0.25)`,
-                    transform: isSelected ? 'scale(1.1)' : undefined,
-                  }}
-                >
-                  {isSelected && <Check className="w-3.5 h-3.5 text-white drop-shadow" />}
-                </button>
-              );
-            })}
+          {/* Gradient panel: saturation × brightness */}
+          <div
+            ref={gradRef}
+            className="relative rounded-lg mb-2.5 cursor-crosshair select-none"
+            style={{
+              height: 148,
+              background: `linear-gradient(to bottom, transparent, #000),
+                           linear-gradient(to right, #fff, ${hueHex})`,
+              touchAction: 'none',
+            }}
+            onPointerDown={handleGrad}
+          >
+            <div
+              className="absolute w-4 h-4 rounded-full border-2 border-white pointer-events-none"
+              style={{
+                left: `${sat}%`,
+                top: `${100 - bri}%`,
+                transform: 'translate(-50%, -50%)',
+                background: currentHex,
+                boxShadow: '0 0 0 1px rgba(0,0,0,0.5)',
+              }}
+            />
+          </div>
+
+          {/* Hue slider */}
+          <div
+            ref={hueRef}
+            className="relative rounded-full mb-3 cursor-pointer select-none"
+            style={{
+              height: 12,
+              background: 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)',
+              touchAction: 'none',
+            }}
+            onPointerDown={handleHue}
+          >
+            <div
+              className="absolute top-1/2 w-4 h-4 rounded-full border-2 border-white pointer-events-none"
+              style={{
+                left: `${(hue / 360) * 100}%`,
+                transform: 'translate(-50%, -50%)',
+                background: hueHex,
+                boxShadow: '0 0 0 1px rgba(0,0,0,0.4)',
+              }}
+            />
           </div>
 
           {/* Hex input */}
-          <div className="flex items-center gap-2 pt-2" style={{ borderTop: '1px solid var(--tint-08)' }}>
+          <div className="flex items-center gap-2">
             <span
-              className="w-6 h-6 rounded-md flex-shrink-0"
-              style={{ background: hex, border: '1px solid var(--tint-14)' }}
+              className="w-7 h-7 rounded-md flex-shrink-0"
+              style={{ background: currentHex, border: '1px solid var(--tint-14)' }}
             />
             <input
-              value={hex}
-              onChange={(e) => setHex(e.target.value)}
+              value={hexInput}
+              onChange={(e) => setHexInput(e.target.value)}
               onBlur={(e) => commitHex(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') commitHex(hex); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') commitHex(hexInput); }}
               maxLength={7}
-              className="flex-1 rounded-md px-2 py-1 text-xs font-mono outline-none"
+              spellCheck={false}
+              className="flex-1 rounded-md px-2 py-1.5 text-xs font-mono outline-none"
               style={{
                 background: 'var(--tint-06)',
                 border: '1px solid var(--tint-14)',
