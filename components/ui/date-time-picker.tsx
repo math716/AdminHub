@@ -326,15 +326,22 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
     return rgbToHsv(...rgb);
   };
 
-  const [open, setOpen]                       = useState(false);
-  const [[hue, sat, bri], setHsv]             = useState<[number,number,number]>(initHsv);
-  const [hexInput, setHexInput]               = useState(value || '#2563EB');
+  const [open, setOpen]           = useState(false);
+  const [[hue, sat, bri], setHsv] = useState<[number,number,number]>(initHsv);
+  const [hexInput, setHexInput]   = useState(value || '#2563EB');
   const triggerRef  = useRef<HTMLButtonElement>(null);
   const popoverRef  = useRef<HTMLDivElement>(null);
   const gradRef     = useRef<HTMLDivElement>(null);
   const hueRef      = useRef<HTMLDivElement>(null);
+  // Tracks the last hex we emitted ourselves to avoid re-syncing from value
+  const lastEmitted = useRef('');
+  // Always-current HSV so drag closures never read stale state
+  const hsvRef = useRef<[number,number,number]>([hue, sat, bri]);
+  hsvRef.current = [hue, sat, bri];
 
   useEffect(() => {
+    // Ignore value changes that we triggered ourselves
+    if (value === lastEmitted.current) return;
     const rgb = hexToRgb(value || '#2563EB');
     if (rgb) { setHsv(rgbToHsv(...rgb)); setHexInput(value || '#2563EB'); }
   }, [value]);
@@ -353,6 +360,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
   const emit = (h: number, s: number, v: number) => {
     const hex = rgbToHex(...hsvToRgb(h, s, v));
     setHexInput(hex);
+    lastEmitted.current = hex;
     onChange(hex);
   };
 
@@ -363,8 +371,9 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
       const r = el.getBoundingClientRect();
       const s = Math.round(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * 100);
       const v = Math.round(Math.max(0, Math.min(1, 1 - (ev.clientY - r.top) / r.height)) * 100);
-      setHsv([hue, s, v]);
-      emit(hue, s, v);
+      const [h] = hsvRef.current; // read current hue without stale closure
+      setHsv([h, s, v]);
+      emit(h, s, v);
     };
     const up = () => { el.removeEventListener('pointermove', update); el.removeEventListener('pointerup', up); };
     el.addEventListener('pointermove', update);
@@ -378,8 +387,9 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
     const update = (ev: PointerEvent) => {
       const r = el.getBoundingClientRect();
       const h = Math.round(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * 360);
-      setHsv([h, sat, bri]);
-      emit(h, sat, bri);
+      const [, s, v] = hsvRef.current; // read current sat/bri without stale closure
+      setHsv([h, s, v]);
+      emit(h, s, v);
     };
     const up = () => { el.removeEventListener('pointermove', update); el.removeEventListener('pointerup', up); };
     el.addEventListener('pointermove', update);
@@ -389,7 +399,13 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
 
   const commitHex = (raw: string) => {
     const rgb = hexToRgb(raw);
-    if (rgb) { setHsv(rgbToHsv(...rgb)); onChange(raw.startsWith('#') ? raw : '#' + raw); }
+    if (rgb) {
+      const hsv = rgbToHsv(...rgb);
+      setHsv(hsv);
+      const hex = raw.startsWith('#') ? raw : '#' + raw;
+      lastEmitted.current = hex;
+      onChange(hex);
+    }
   };
 
   const currentHex = rgbToHex(...hsvToRgb(hue, sat, bri));
