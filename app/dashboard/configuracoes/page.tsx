@@ -8,7 +8,7 @@ import { useTheme } from 'next-themes';
 import {
   Settings, Smartphone, Wifi, WifiOff, RefreshCw,
   Loader2, CheckCircle2, AlertCircle, Trash2, QrCode,
-  Sun, Moon, Palette,
+  Sun, Moon, Palette, X,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -112,12 +112,21 @@ export default function ConfiguracoesPage() {
     setDeleting(true);
     try {
       await fetch('/api/whatsapp/instance', { method: 'DELETE' });
-      setWaStatus('disconnected');
       setQrCode(null);
       setInstanceData(null);
+      setWaStatus('loading');
       showToast('ok', 'WhatsApp desconectado.');
-      fetchStatus();
+      await fetchStatus();
     } finally { setDeleting(false); }
+  };
+
+  const handleCancelQr = async () => {
+    try {
+      await fetch('/api/whatsapp/instance', { method: 'DELETE' });
+    } catch { /* ignora */ }
+    setQrCode(null);
+    setInstanceData(null);
+    setWaStatus('not_configured');
   };
 
   const handleRefresh = async () => {
@@ -273,12 +282,20 @@ export default function ConfiguracoesPage() {
                     </p>
                   </div>
 
-                  <button onClick={handleCreate} disabled={creating}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80 disabled:opacity-50"
-                    style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)', color: 'var(--tint-45)' }}>
-                    {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                    Gerar novo QR Code
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={handleCreate} disabled={creating}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80 disabled:opacity-50"
+                      style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)', color: 'var(--tint-45)' }}>
+                      {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      Gerar novo QR Code
+                    </button>
+                    <button onClick={handleCancelQr}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
+                      style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}>
+                      <X className="w-3.5 h-3.5" />
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
