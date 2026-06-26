@@ -37,7 +37,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-8 pb-8">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -52,7 +52,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className={cn(
               'relative rounded-2xl shadow-2xl',
-              'w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto',
+              'w-[calc(100%-2rem)] max-h-[calc(100vh-4rem)] overflow-y-auto',
               sizes[size]
             )}
             style={{
