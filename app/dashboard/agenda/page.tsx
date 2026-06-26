@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
+import { DatePicker, TimePicker } from '@/components/ui/date-time-picker';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -679,18 +680,20 @@ export default function AgendaPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Data *</label>
-                  <input type="date" value={form.data}
-                    onChange={(e) => setForm((f) => ({ ...f, data: e.target.value }))}
+                  <DatePicker
+                    value={form.data}
+                    onChange={(v) => setForm((f) => ({ ...f, data: v }))}
                     className={inputCls}
-                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'light dark' }}
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
                   />
                 </div>
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Hora</label>
-                  <input type="time" value={form.hora}
-                    onChange={(e) => setForm((f) => ({ ...f, hora: e.target.value }))}
+                  <TimePicker
+                    value={form.hora}
+                    onChange={(v) => setForm((f) => ({ ...f, hora: v }))}
                     className={inputCls}
-                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'light dark' }}
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
                   />
                 </div>
               </div>
@@ -699,18 +702,20 @@ export default function AgendaPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Data Fim</label>
-                  <input type="date" value={form.dataFim}
-                    onChange={(e) => setForm((f) => ({ ...f, dataFim: e.target.value }))}
+                  <DatePicker
+                    value={form.dataFim}
+                    onChange={(v) => setForm((f) => ({ ...f, dataFim: v }))}
                     className={inputCls}
-                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'light dark' }}
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
                   />
                 </div>
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Hora Fim</label>
-                  <input type="time" value={form.horaFim}
-                    onChange={(e) => setForm((f) => ({ ...f, horaFim: e.target.value }))}
+                  <TimePicker
+                    value={form.horaFim}
+                    onChange={(v) => setForm((f) => ({ ...f, horaFim: v }))}
                     className={inputCls}
-                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', colorScheme: 'light dark' }}
+                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
                   />
                 </div>
               </div>
