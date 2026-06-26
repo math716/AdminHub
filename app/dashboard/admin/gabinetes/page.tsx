@@ -729,11 +729,11 @@ export default function AdminGabinetesPage() {
               {adminUsers.map((u, idx) => (
                 <div
                   key={u.id}
-                  className="flex items-center gap-3 px-5 py-3.5"
+                  className="flex items-start gap-3 px-4 py-3"
                   style={{ borderBottom: idx < adminUsers.length - 1 ? '1px solid var(--tint-06)' : 'none' }}
                 >
                   {/* Avatar */}
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
                     style={{ background: 'rgba(37,99,235,0.10)', border: '1px solid rgba(37,99,235,0.2)' }}>
                     {u.role === 'SUPER_ADMIN'
                       ? <Shield size={14} style={{ color: '#2563EB' }} />
@@ -741,39 +741,35 @@ export default function AdminGabinetesPage() {
                     }
                   </div>
 
-                  {/* Nome + email */}
+                  {/* Nome + email + badge + ações */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{u.name}</p>
-                    <p className="text-xs truncate flex items-center gap-1" style={{ color: 'var(--tint-45)' }}>
+                    <p className="text-xs truncate flex items-center gap-1 mb-1.5" style={{ color: 'var(--tint-45)' }}>
                       <Mail size={10} />
                       {u.email}
                     </p>
-                  </div>
-
-                  {/* Role badge */}
-                  <RoleBadge role={u.role} />
-
-                  {/* Ações */}
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button
-                      onClick={() => openResetModal(u.id, u.name)}
-                      title="Resetar senha"
-                      className="p-1.5 rounded-lg transition-all hover:bg-[var(--tint-06)]"
-                      style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-06)' }}
-                    >
-                      <KeyRound size={13} />
-                    </button>
-                    {role === 'SUPER_ADMIN' && (
-                      <RoleSelect
-                        userId={u.id}
-                        current={u.role}
-                        sessionRole={role ?? ''}
-                        adminOnly
-                        onChanged={(newRole) =>
-                          setAllUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: newRole } : x))
-                        }
-                      />
-                    )}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <RoleBadge role={u.role} />
+                      <button
+                        onClick={() => openResetModal(u.id, u.name)}
+                        title="Resetar senha"
+                        className="p-1.5 rounded-lg transition-all hover:bg-[var(--tint-06)]"
+                        style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-06)' }}
+                      >
+                        <KeyRound size={13} />
+                      </button>
+                      {role === 'SUPER_ADMIN' && (
+                        <RoleSelect
+                          userId={u.id}
+                          current={u.role}
+                          sessionRole={role ?? ''}
+                          adminOnly
+                          onChanged={(newRole) =>
+                            setAllUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: newRole } : x))
+                          }
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

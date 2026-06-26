@@ -1059,9 +1059,9 @@ export default function MapaPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Sidebar */}
-        <div className="lg:col-span-1 h-[750px] overflow-y-auto scrollbar-dark space-y-3">
+        <div className="md:col-span-1 h-auto md:h-[750px] max-h-[60vh] md:max-h-none overflow-y-auto scrollbar-dark space-y-3">
           {/* Search */}
           <div
             className="rounded-xl p-4 space-y-3"
@@ -1524,8 +1524,8 @@ export default function MapaPage() {
         </div>
 
         {/* Mapa principal */}
-        <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)]' : 'lg:col-span-3'}>
-          <Card noPadding className={mapFullscreen ? 'h-full rounded-none border-0' : 'h-[750px]'}>
+        <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)]' : 'md:col-span-3'}>
+          <Card noPadding className={mapFullscreen ? 'h-full rounded-none border-0' : 'h-[400px] md:h-[750px]'}>
             <CardContent className="h-full p-1.5 relative">
               {/* Botão tela cheia */}
               <button

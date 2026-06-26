@@ -83,7 +83,7 @@ export default function DashboardLayout({
     <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}>
       <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)} />
       <main className={`transition-[padding] duration-300 ease-out ${sidebarOpen ? 'lg:pl-[260px]' : 'lg:pl-6'}`}>
-        <div className="p-4 lg:p-8 landscape-content">
+        <div className="p-4 lg:p-8 landscape-content max-w-[1920px] mx-auto">
           {children}
         </div>
       </main>
