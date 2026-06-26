@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Clock, ChevronUp, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, ChevronUp, ChevronDown, Check } from 'lucide-react';
 
 // ─── DatePicker ────────────────────────────────────────────────────────────
 
@@ -271,6 +271,115 @@ export function TimePicker({ value, onChange, className, style }: TimePickerProp
           >
             Confirmar
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ColorPicker ───────────────────────────────────────────────────────────
+
+const COLOR_PALETTE = [
+  '#2563EB','#3B82F6','#60A5FA','#0EA5E9','#06B6D4',
+  '#22c55e','#10b981','#84cc16','#eab308','#f59e0b',
+  '#818cf8','#a855f7','#ec4899','#f43f5e','#ef4444',
+  '#fb923c','#f97316','#64748b','#94a3b8','#6366f1',
+];
+
+interface ColorPickerProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+export function ColorPicker({ value, onChange }: ColorPickerProps) {
+  const [open, setOpen] = useState(false);
+  const [hex, setHex] = useState(value || '#2563EB');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setHex(value || '#2563EB'); }, [value]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    if (open) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const commitHex = (raw: string) => {
+    const v = raw.startsWith('#') ? raw : '#' + raw;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) { onChange(v); setHex(v); }
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2.5 rounded-lg px-3 py-2 w-full transition-all hover:opacity-90"
+        style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', userSelect: 'none' }}
+      >
+        <span
+          className="w-5 h-5 rounded-md flex-shrink-0"
+          style={{ background: hex, boxShadow: `0 0 0 1px rgba(0,0,0,0.3), 0 0 8px ${hex}55` }}
+        />
+        <span className="text-sm font-mono" style={{ color: 'var(--text-primary)' }}>{hex.toUpperCase()}</span>
+      </button>
+
+      {/* Popover */}
+      {open && (
+        <div
+          className="absolute left-0 top-full mt-1 z-50 rounded-xl p-3 w-52"
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--tint-14)',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+          }}
+        >
+          {/* Palette grid */}
+          <div className="grid grid-cols-5 gap-1.5 mb-3">
+            {COLOR_PALETTE.map((c) => {
+              const isSelected = hex.toLowerCase() === c.toLowerCase();
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => { onChange(c); setHex(c); }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-110"
+                  style={{
+                    background: c,
+                    boxShadow: isSelected ? `0 0 0 2px var(--bg-card), 0 0 0 4px ${c}` : `0 0 0 1px rgba(0,0,0,0.25)`,
+                    transform: isSelected ? 'scale(1.1)' : undefined,
+                  }}
+                >
+                  {isSelected && <Check className="w-3.5 h-3.5 text-white drop-shadow" />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Hex input */}
+          <div className="flex items-center gap-2 pt-2" style={{ borderTop: '1px solid var(--tint-08)' }}>
+            <span
+              className="w-6 h-6 rounded-md flex-shrink-0"
+              style={{ background: hex, border: '1px solid var(--tint-14)' }}
+            />
+            <input
+              value={hex}
+              onChange={(e) => setHex(e.target.value)}
+              onBlur={(e) => commitHex(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') commitHex(hex); }}
+              maxLength={7}
+              className="flex-1 rounded-md px-2 py-1 text-xs font-mono outline-none"
+              style={{
+                background: 'var(--tint-06)',
+                border: '1px solid var(--tint-14)',
+                color: 'var(--text-primary)',
+              }}
+              placeholder="#2563EB"
+            />
+          </div>
         </div>
       )}
     </div>

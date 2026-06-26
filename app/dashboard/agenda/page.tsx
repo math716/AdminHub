@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
-import { DatePicker, TimePicker } from '@/components/ui/date-time-picker';
+import { DatePicker, TimePicker, ColorPicker } from '@/components/ui/date-time-picker';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -664,14 +664,11 @@ export default function AgendaPage() {
                 </div>
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>Cor</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <input type="color"
+                  <div className="mt-1">
+                    <ColorPicker
                       value={form.cor || TIPO_COLORS[form.tipo] || '#2563EB'}
-                      onChange={(e) => setForm((f) => ({ ...f, cor: e.target.value }))}
-                      className="w-10 h-9 rounded-lg cursor-pointer border"
-                      style={{ background: 'transparent', borderColor: 'var(--tint-10)' }}
+                      onChange={(v) => setForm((f) => ({ ...f, cor: v }))}
                     />
-                    <span className="text-xs" style={{ color: 'var(--tint-35)' }}>{form.cor || TIPO_COLORS[form.tipo] || '#2563EB'}</span>
                   </div>
                 </div>
               </div>
