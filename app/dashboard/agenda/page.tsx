@@ -611,7 +611,7 @@ export default function AgendaPage() {
 
       {/* ── Modal criar/editar evento ── */}
       {showModal && createPortal(
-        <div className="fixed inset-0 z-50 flex justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', alignItems: 'flex-start', paddingTop: '8px', paddingBottom: '8px' }}>
+        <div className="fixed inset-0 z-50 flex justify-center" style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', alignItems: 'center', padding: '1rem' }}>
           <div
             className="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col"
             style={{

@@ -46,7 +46,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-start justify-center" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ padding: '1rem' }}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

@@ -1050,7 +1050,7 @@ export default function ContatosPage() {
       {mounted && createPortal(
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-start justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', paddingTop: '8px', paddingBottom: '8px' }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', padding: '1rem' }}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-md rounded-2xl shadow-2xl max-h-[calc(100vh-4rem)] overflow-y-auto"
               style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.25)' }}>
@@ -1126,7 +1126,7 @@ export default function ContatosPage() {
       {mounted && createPortal(
       <AnimatePresence>
         {showImportModal && (
-          <div className="fixed inset-0 z-50 flex items-start justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', paddingTop: '8px', paddingBottom: '8px' }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', padding: '1rem' }}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-lg rounded-2xl shadow-2xl max-h-[calc(100vh-4rem)] overflow-y-auto"
               style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.25)' }}>
@@ -1243,7 +1243,7 @@ export default function ContatosPage() {
 
       {/* ══════════════════ MODAL Disparo ══════════════════ */}
       {mounted && showMsg && createPortal(
-        <div className="fixed inset-0 z-50 flex items-start justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', paddingTop: '8px', paddingBottom: '8px' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', padding: '1rem' }}>
           <div className="w-full max-w-lg rounded-2xl shadow-2xl max-h-[calc(100vh-4rem)] flex flex-col"
             style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.25)' }}>
 
