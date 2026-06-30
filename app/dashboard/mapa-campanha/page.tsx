@@ -3423,7 +3423,7 @@ export default function MapaCampanhaPage() {
                         </select>
                       )}
                       {/* Alternância de visualização para vereadores */}
-                      {(electoralData.cargo ?? '').toUpperCase().includes('VEREADOR') && (bairrosInfo.length > 0 || Object.keys(votosPorZona).length > 0) && (
+                      {(electoralData.cargo ?? '').toUpperCase().includes('VEREADOR') && (
                         <div className="flex bg-[var(--bg-card-subtle)] rounded-lg p-0.5">
                           <button
                             onClick={() => setVisualizacaoMapa('municipio')}
