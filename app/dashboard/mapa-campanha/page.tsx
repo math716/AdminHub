@@ -428,6 +428,7 @@ export default function MapaCampanhaPage() {
 
   // Parcerias states
   const [parcerias, setParcerias] = useState<Parceria[]>([]);
+  const [pendingParcerias, setPendingParcerias] = useState<Parceria[]>([]);
   const [parceriasStats, setParceriasStats] = useState<ParceriasStats | null>(null);
   const [showParceriaModal, setShowParceriaModal] = useState(false);
   const [confirmRemoveMun, setConfirmRemoveMun] = useState<string | null>(null);
@@ -989,6 +990,7 @@ export default function MapaCampanhaPage() {
     } else {
       // Limpar parcerias para nova projeção
       setParcerias([]);
+      setPendingParcerias([]);
       setParceriasStats(null);
       let municipiosData: Record<string, number> = {};
       municipiosData = data.votosPorNomeMunicipio || {};
@@ -1078,6 +1080,9 @@ export default function MapaCampanhaPage() {
     setUf(novoCandidatoUf);
     setAno(novoCandidatoAnoProjecao);
     setAnoProjecao(novoCandidatoAnoProjecao);
+    setParcerias([]);
+    setPendingParcerias([]);
+    setParceriasStats(null);
     setActiveTab('projecao');
     setShowNovoCandidatoModal(false);
 
@@ -1136,6 +1141,38 @@ export default function MapaCampanhaPage() {
           }
           return [...prev, saved];
         });
+
+        // Salvar parcerias que estavam pendentes (buffered antes da projeção existir)
+        if (pendingParcerias.length > 0) {
+          const savedMunicipios: ProjecaoMunicipio[] = saved.municipios ?? [];
+          for (const pending of pendingParcerias) {
+            const munKey = normMunKey(pending.municipio || '');
+            const munData = savedMunicipios.find(m => normMunKey(m.municipio) === munKey);
+            if (!munData?.id) continue;
+            try {
+              await fetch('/api/parcerias', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  projecaoMunicipioId: munData.id,
+                  bairro: pending.bairro ?? null,
+                  nome: pending.nome,
+                  tipo: pending.tipo,
+                  responsavel: pending.responsavel ?? null,
+                  contato: pending.contato ?? null,
+                  observacoes: pending.observacoes ?? null,
+                  impactoEstimado: pending.impactoEstimado ?? 0,
+                  metaConservadora: pending.metaConservadora ?? 0,
+                  metaPossivel: pending.metaPossivel ?? 0,
+                  metaArrojada: pending.metaArrojada ?? 0,
+                }),
+              });
+            } catch { /* ignora erro individual — a projeção já foi salva */ }
+          }
+          setPendingParcerias([]);
+          await loadParcerias(saved.id);
+        }
+
         toast.success('Projeção salva com sucesso!');
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -1464,8 +1501,37 @@ export default function MapaCampanhaPage() {
         return;
       }
 
+      // Projeção ainda não salva → buffering local
       if (!munData.id) {
-        toast.error('Salve a projeção primeiro para adicionar parcerias');
+        const isPendingEdit = selectedParceria?.id?.startsWith('pending-');
+        const pendingEntry: Parceria = {
+          id: isPendingEdit ? selectedParceria!.id! : `pending-${Date.now()}`,
+          municipio: municipioParaParceria,
+          bairro: bairroParaParceria || null,
+          projecaoMunicipioId: '',
+          nome: parceriaForm.nome ?? '',
+          tipo: (parceriaForm.tipo ?? 'LIDERANCA') as any,
+          responsavel: parceriaForm.responsavel ?? null,
+          contato: parceriaForm.contato ?? null,
+          observacoes: parceriaForm.observacoes ?? null,
+          impactoEstimado: parceriaForm.impactoEstimado ?? 0,
+          metaConservadora: parceriaForm.metaConservadora ?? 0,
+          metaPossivel: parceriaForm.metaPossivel ?? 0,
+          metaArrojada: parceriaForm.metaArrojada ?? 0,
+          ativa: parceriaForm.ativa ?? true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        setPendingParcerias(prev =>
+          isPendingEdit
+            ? prev.map(p => p.id === selectedParceria!.id ? pendingEntry : p)
+            : [...prev, pendingEntry]
+        );
+        setShowParceriaModal(false);
+        setSelectedParceria(null);
+        setParceriaForm({ nome: '', tipo: 'LIDERANCA', responsavel: '', contato: '', observacoes: '', impactoEstimado: 0, metaConservadora: 0, metaPossivel: 0, metaArrojada: 0, ativa: true });
+        toast.success('Parceria adicionada — será salva junto com a projeção');
+        setSavingParceria(false);
         return;
       }
 
@@ -1475,9 +1541,9 @@ export default function MapaCampanhaPage() {
         bairro: bairroParaParceria || null
       };
 
-      const method = selectedParceria?.id ? 'PUT' : 'POST';
-      if (selectedParceria?.id) {
-        (payload as any).id = selectedParceria.id;
+      const method = selectedParceria?.id && !selectedParceria.id.startsWith('pending-') ? 'PUT' : 'POST';
+      if (method === 'PUT') {
+        (payload as any).id = selectedParceria!.id;
       }
 
       const res = await fetch('/api/parcerias', {
@@ -1525,6 +1591,13 @@ export default function MapaCampanhaPage() {
     if (!confirmDeleteParceria) return;
     const id = confirmDeleteParceria;
     setConfirmDeleteParceria(null);
+
+    // Parceria ainda não salva → remove apenas do estado local
+    if (id.startsWith('pending-')) {
+      setPendingParcerias(prev => prev.filter(p => p.id !== id));
+      return;
+    }
+
     try {
       const res = await fetch(`/api/parcerias?id=${id}`, { method: 'DELETE' });
       if (res.ok && projecao?.id) {
@@ -1557,12 +1630,17 @@ export default function MapaCampanhaPage() {
 
   // Obter parcerias de um município
   const getParceriasMunicipio = (municipio: string): Parceria[] => {
-    return parcerias.filter(p => p.municipio?.toUpperCase() === municipio.toUpperCase());
+    const munUp = municipio.toUpperCase();
+    const saved = parcerias.filter(p => p.municipio?.toUpperCase() === munUp);
+    const pending = pendingParcerias.filter(p => p.municipio?.toUpperCase() === munUp);
+    return [...saved, ...pending];
   };
 
   // Verificar se município tem parcerias
   const municipioTemParcerias = (municipio: string): boolean => {
-    return parcerias.some(p => p.municipio?.toUpperCase() === municipio.toUpperCase());
+    const munUp = municipio.toUpperCase();
+    return parcerias.some(p => p.municipio?.toUpperCase() === munUp) ||
+           pendingParcerias.some(p => p.municipio?.toUpperCase() === munUp);
   };
 
   // Calcular soma das metas de parcerias por município
@@ -4002,13 +4080,18 @@ export default function MapaCampanhaPage() {
                   {getParceriasMunicipio(selectedMunicipio.nome).map((parceria) => (
                     <div
                       key={parceria.id}
-                      className="p-3 bg-[var(--bg-card-subtle)]/50 rounded-lg border border-[var(--border-default)] hover:border-amber-500/50 transition-colors"
+                      className={`p-3 bg-[var(--bg-card-subtle)]/50 rounded-lg border transition-colors ${parceria.id?.startsWith('pending-') ? 'border-amber-500/40 border-dashed hover:border-amber-500/70' : 'border-[var(--border-default)] hover:border-amber-500/50'}`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-600/50 text-amber-800 dark:text-[color:var(--brand-cobalt-text)] rounded">
                             {TIPO_PARCERIA_LABELS[parceria.tipo]}
                           </span>
+                          {parceria.id?.startsWith('pending-') && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
+                              pendente
+                            </span>
+                          )}
                           <span className="text-[color:var(--text-primary)] text-sm font-medium truncate">{parceria.nome}</span>
                           {parceria.responsavel && (
                             <span className="text-slate-600 dark:text-slate-500 text-xs">({parceria.responsavel})</span>
