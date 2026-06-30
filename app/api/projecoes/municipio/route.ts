@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { hasPermission, PERMISSIONS } from '@/lib/permissions';
 
 // Atualizar um município específico na projeção
 export async function PUT(request: NextRequest) {
@@ -12,7 +13,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const user = session.user as any;
-    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+    if (!hasPermission(user, PERMISSIONS.PROJETO_CAMPANHA)) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -39,8 +40,9 @@ export async function PUT(request: NextRequest) {
     const isOwner        = projecao.userId === user.id;
     const isSameGabinete = projecao.user?.gabineteId === user.gabineteId;
     const isAdmin        = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+    const isGabineteManager = user.role === 'CHEFE' || user.role === 'AGENTE_POLITICO';
 
-    if (!isOwner && !(isSameGabinete && user.role === 'CHEFE') && !isAdmin) {
+    if (!isOwner && !(isSameGabinete && isGabineteManager) && !isAdmin) {
       return NextResponse.json({ error: 'Projeção não encontrada' }, { status: 404 });
     }
 

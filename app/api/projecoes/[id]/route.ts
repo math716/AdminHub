@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { hasPermission, PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(
   request: NextRequest,
@@ -41,7 +42,7 @@ export async function DELETE(
     }
 
     const user = session.user as any;
-    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN' && user.role !== 'AGENTE_POLITICO') {
+    if (!hasPermission(user, PERMISSIONS.PROJETO_CAMPANHA)) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 

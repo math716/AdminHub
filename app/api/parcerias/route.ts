@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { hasPermission, PERMISSIONS } from '@/lib/permissions';
 
 function safeInt(value: unknown, defaultValue = 0): number {
   const n = Number(value);
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const user = session.user as any;
-    if (user?.role !== 'CHEFE' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN' && user?.role !== 'AGENTE_POLITICO') {
+    if (!hasPermission(user, PERMISSIONS.PROJETO_CAMPANHA)) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const user = session.user as any;
-    if (user?.role !== 'CHEFE' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN' && user?.role !== 'AGENTE_POLITICO') {
+    if (!hasPermission(user, PERMISSIONS.PROJETO_CAMPANHA)) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -183,7 +184,7 @@ export async function PUT(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const user = session.user as any;
-    if (user?.role !== 'CHEFE' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN' && user?.role !== 'AGENTE_POLITICO') {
+    if (!hasPermission(user, PERMISSIONS.PROJETO_CAMPANHA)) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -232,7 +233,7 @@ export async function DELETE(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const user = session.user as any;
-    if (user?.role !== 'CHEFE' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN' && user?.role !== 'AGENTE_POLITICO') {
+    if (!hasPermission(user, PERMISSIONS.PROJETO_CAMPANHA)) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 

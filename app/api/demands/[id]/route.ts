@@ -124,7 +124,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const ctx = await getSessionAndGabinete(['CHEFE', 'ADMIN']);
+    const ctx = await getSessionAndGabinete(['CHEFE', 'ADMIN', 'AGENTE_POLITICO', 'SUPER_ADMIN']);
     if ('error' in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
 
     // Verifica posse antes de deletar

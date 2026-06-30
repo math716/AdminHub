@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { hasPermission, PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = session.user as any;
-    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN' && user.role !== 'AGENTE_POLITICO') {
+    if (!hasPermission(user, PERMISSIONS.PROJETO_CAMPANHA)) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -38,7 +39,7 @@ export async function DELETE(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     const user = session.user as any;
-    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN' && user.role !== 'AGENTE_POLITICO') return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    if (!hasPermission(user, PERMISSIONS.PROJETO_CAMPANHA)) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
 
     const id = new URL(request.url).searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = session.user as any;
-    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN' && user.role !== 'AGENTE_POLITICO') {
+    if (!hasPermission(user, PERMISSIONS.PROJETO_CAMPANHA)) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 

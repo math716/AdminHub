@@ -21,7 +21,7 @@ export async function PATCH(
     const sessionUserId     = (session.user as any)?.id;
     const sessionGabineteId = (session.user as any)?.gabineteId;
 
-    if (sessionRole !== 'ADMIN' && sessionRole !== 'CHEFE' && sessionRole !== 'SUPER_ADMIN') {
+    if (sessionRole !== 'ADMIN' && sessionRole !== 'CHEFE' && sessionRole !== 'SUPER_ADMIN' && sessionRole !== 'AGENTE_POLITICO') {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
     }
 
@@ -46,8 +46,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Este usuário não pode ser alterado' }, { status: 403 });
     }
 
-    // CHEFE só pode mexer em usuários do próprio gabinete
-    if (sessionRole === 'CHEFE' && target.gabineteId !== sessionGabineteId) {
+    // CHEFE e AGENTE_POLITICO só podem mexer em usuários do próprio gabinete
+    if ((sessionRole === 'CHEFE' || sessionRole === 'AGENTE_POLITICO') && target.gabineteId !== sessionGabineteId) {
       return NextResponse.json({ error: 'Você só pode alterar usuários do seu gabinete' }, { status: 403 });
     }
 
