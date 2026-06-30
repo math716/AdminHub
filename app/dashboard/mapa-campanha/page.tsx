@@ -5013,6 +5013,10 @@ export default function MapaCampanhaPage() {
                 if (res.ok) {
                   setProjecoesSalvas((prev: Projecao[]) => prev.filter((p: Projecao) => p.id !== projecaoParaExcluir.id));
                   if (projecao?.id === projecaoParaExcluir.id) setProjecao(null);
+                  toast.success('Projeção excluída com sucesso!');
+                } else {
+                  const errData = await res.json().catch(() => ({}));
+                  toast.error((errData as any)?.error || 'Erro ao excluir projeção');
                 }
                 setShowDeleteModal(false);
                 setProjecaoParaExcluir(null);
