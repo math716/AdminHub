@@ -818,7 +818,8 @@ export default function ContatosPage() {
 
       {/* ══════════════════════════════ MAPA ══════════════════════════════ */}
       {activeTab === 'mapa' && (
-        <div className="rounded-2xl overflow-hidden max-w-5xl" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.28)', boxShadow: '0 2px 20px rgba(0,0,0,0.10)' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-4 items-start">
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.28)', boxShadow: '0 2px 20px rgba(0,0,0,0.10)' }}>
           {/* Header — breadcrumb integrado */}
           <div className="flex items-center gap-1 px-4 py-3 text-sm flex-wrap" style={{ borderBottom: '1px solid var(--tint-06)' }}>
             <button onClick={view === 'brasil' ? undefined : goBack}
@@ -1038,6 +1039,77 @@ export default function ContatosPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* ── Painel lateral de resumo ── */}
+        <div className="space-y-3 lg:sticky lg:top-4">
+          {/* Card resumo de contatos */}
+          <div className="rounded-2xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)' }}>
+            <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--tint-45)' }}>Resumo</p>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Total de contatos</span>
+                <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{contatos.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+                  <span style={{ color: 'var(--text-secondary)' }}>No mapa</span>
+                </span>
+                <span className="text-sm font-bold" style={{ color: '#4ade80' }}>{geocodedContacts.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'var(--tint-25)' }} />
+                  <span style={{ color: 'var(--text-secondary)' }}>Sem localização</span>
+                </span>
+                <span className="text-sm font-bold" style={{ color: 'var(--tint-45)' }}>{contatos.length - geocodedContacts.length}</span>
+              </div>
+            </div>
+            {contatos.length > 0 && (
+              <div className="mt-3">
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--tint-08)' }}>
+                  <div className="h-full rounded-full bg-green-400 transition-all"
+                    style={{ width: `${Math.round((geocodedContacts.length / contatos.length) * 100)}%` }} />
+                </div>
+                <p className="text-[10px] mt-1" style={{ color: 'var(--tint-35)' }}>
+                  {Math.round((geocodedContacts.length / contatos.length) * 100)}% exibidos no mapa
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Card alerta sem localização */}
+          {contatos.length - geocodedContacts.length > 0 && (
+            <div className="rounded-2xl p-4" style={{ background: 'rgba(74,158,222,0.06)', border: '1px solid rgba(74,158,222,0.18)' }}>
+              <MapPin className="h-4 w-4 mb-2" style={{ color: '#4a9ede' }} />
+              <p className="text-xs font-semibold mb-1" style={{ color: '#4a9ede' }}>
+                {contatos.length - geocodedContacts.length} sem endereço
+              </p>
+              <p className="text-[11px] leading-relaxed" style={{ color: 'var(--tint-45)' }}>
+                Abra o contato e preencha o endereço para que apareça aqui no mapa.
+              </p>
+            </div>
+          )}
+
+          {/* Card dicas de navegação */}
+          <div className="rounded-2xl p-4" style={{ background: 'var(--tint-03)', border: '1px solid var(--tint-06)' }}>
+            <p className="text-[10px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: 'var(--tint-35)' }}>Navegação</p>
+            <div className="space-y-2">
+              {[
+                { icon: '🗺️', text: 'Clique num estado para entrar nele' },
+                { icon: '📍', text: 'Clique num município para ver bairros' },
+                { icon: '✅', text: 'Selecione contatos para disparar mensagem em massa' },
+              ].map((tip, i) => (
+                <p key={i} className="text-[11px] flex gap-2 leading-relaxed" style={{ color: 'var(--tint-45)' }}>
+                  <span className="flex-shrink-0">{tip.icon}</span>
+                  <span>{tip.text}</span>
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+
         </div>
       )}
 
