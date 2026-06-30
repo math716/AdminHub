@@ -1592,7 +1592,7 @@ export default function MapaPage() {
                             height="100%"
                           />
                         </div>
-                        <div className="w-48 flex flex-col rounded-xl overflow-hidden"
+                        <div className="flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px] flex flex-col rounded-xl overflow-hidden"
                           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <Layers className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
@@ -1654,7 +1654,7 @@ export default function MapaPage() {
                             />
                           </div>
                         )}
-                        <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0) ? 'flex-1' : 'w-48'}`}
+                        <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0) ? 'flex-1' : 'flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px]'}`}
                           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <Layers className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
@@ -1844,7 +1844,7 @@ export default function MapaPage() {
                             height="100%"
                           />
                         </div>
-                        <div className="w-48 flex flex-col rounded-xl overflow-hidden"
+                        <div className="flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px] flex flex-col rounded-xl overflow-hidden"
                           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <Layers className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
@@ -1896,7 +1896,7 @@ export default function MapaPage() {
                             height="100%"
                           />
                         </div>
-                        <div className="w-48 flex flex-col rounded-xl overflow-hidden"
+                        <div className="flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px] flex flex-col rounded-xl overflow-hidden"
                           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <MapPin className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
@@ -1948,7 +1948,7 @@ export default function MapaPage() {
                             height="100%"
                           />
                         </div>
-                        <div className="w-48 flex flex-col rounded-xl overflow-hidden"
+                        <div className="flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px] flex flex-col rounded-xl overflow-hidden"
                           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <MapPin className="h-3.5 w-3.5" style={{ color: '#fb923c' }} />
@@ -2006,7 +2006,7 @@ export default function MapaPage() {
                             height="100%"
                           />
                         </div>
-                        <div className="w-48 flex flex-col rounded-xl overflow-hidden"
+                        <div className="flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px] flex flex-col rounded-xl overflow-hidden"
                           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <MapPin className="h-3.5 w-3.5" style={{ color: '#38bdf8' }} />
@@ -2074,7 +2074,7 @@ export default function MapaPage() {
                     )}
 
                     {/* Lista de zonas — oculta quando SP/RJ/CE/gen estão no modo bairros/distritos */}
-                    {!(isSaoPauloCapital && spVisualizacao === 'distritos') && !(isRioDeJaneiro && rjVisualizacao === 'bairros') && !(isFortalezaCe && ceVisualizacao === 'bairros') && !(isGenPoligonosMunicipio && genVisualizacao === 'bairros') && <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0 && !isSaoPauloCapital && !isRioDeJaneiro) ? 'flex-1' : 'w-48'}`}
+                    {!(isSaoPauloCapital && spVisualizacao === 'distritos') && !(isRioDeJaneiro && rjVisualizacao === 'bairros') && !(isFortalezaCe && ceVisualizacao === 'bairros') && !(isGenPoligonosMunicipio && genVisualizacao === 'bairros') && <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0 && !isSaoPauloCapital && !isRioDeJaneiro) ? 'flex-1' : 'flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px]'}`}
                       style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                       <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                         <Layers className="h-3.5 w-3.5" style={{ color: '#4a9ede' }} />
