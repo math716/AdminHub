@@ -627,7 +627,7 @@ export default function MapaDemandasPage() {
         {mobileSidebar && (
           <>
             <div className="md:hidden fixed inset-0 bg-black/60 z-[1500]" onClick={() => setMobileSidebar(false)} />
-            <div className="md:hidden fixed inset-y-0 right-0 w-full max-w-xs bg-[var(--bg-page)] border-l border-[var(--tint-10)] z-[1600] flex flex-col">
+            <div className="md:hidden fixed top-0 bottom-0 right-0 w-full max-w-xs bg-[var(--bg-page)] border-l border-[var(--tint-10)] z-[1600] flex flex-col">
               <div className="px-3 py-2 border-b border-[var(--tint-10)] flex items-center justify-between gap-2 flex-shrink-0">
                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
                   {filteredDemands.length} demanda{filteredDemands.length !== 1 ? 's' : ''}
@@ -648,7 +648,7 @@ export default function MapaDemandasPage() {
               <div className="px-3 py-1.5 border-b border-[var(--tint-10)] flex flex-col gap-1.5 flex-shrink-0">
                 <input value={searchText} onChange={(e) => setSearchText(e.target.value)}
                   placeholder="Buscar..." className="w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-gray-500 outline-none" />
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
                   <Select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}

@@ -274,7 +274,7 @@ export default function ConfiguracoesPage() {
 
                   <div className="flex flex-col items-center gap-3">
                     <div className="p-3 rounded-2xl bg-white">
-                      <img src={qrCode} alt="QR Code WhatsApp" className="w-52 h-52 object-contain" />
+                      <img src={qrCode} alt="QR Code WhatsApp" className="w-40 h-40 sm:w-52 sm:h-52 object-contain" />
                     </div>
                     <p className="text-xs flex items-center gap-1.5" style={{ color: 'var(--tint-35)' }}>
                       <RefreshCw className="w-3 h-3 animate-spin" />

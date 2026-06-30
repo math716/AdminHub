@@ -49,7 +49,7 @@ function PermissionsChecklist({
   const checkedBorder = isDark ? 'rgba(168,85,247,0.40)' : accent.borderLight;
   return (
     <>
-      <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-48 md:max-h-72 overflow-y-auto pr-1">
         {ALL_PERMISSIONS.map((p) => {
           const checked = selected.has(p);
           return (
@@ -644,7 +644,7 @@ export default function UsuariosPage() {
 
           {/* Stats */}
           {isAdmin ? (
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
               { label: 'Gabinetes',  value: gabineteGroups.length, color: '#4a9ede',  icon: Building2 },
               { label: 'Usuários',   value: users.length,          color: '#2563EB',  icon: Users    },
@@ -664,7 +664,7 @@ export default function UsuariosPage() {
             ))}
           </div>
           ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               { label: 'Membros Ativos',       value: approvedUsers.length, color: '#4a9ede', icon: Users },
               { label: 'Aguardando Aprovação', value: pendingUsers.length,  color: '#f59e0b', icon: Clock },

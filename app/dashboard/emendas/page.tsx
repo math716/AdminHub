@@ -1080,7 +1080,7 @@ export default function EmendasPage() {
               ├ Pizza  ├──────────┴─────────┤
               │        │ Comparativo (9)   │  ← linha 2
               └────────┴────────────────────┘ */}
-      <div className="grid grid-cols-12 gap-4">
+      <div className="grid grid-cols-12 gap-4 min-w-0">
         {/* COLUNA ESQUERDA — Resumo + Pizza encostados (row-span-2 cobre as 2 linhas) */}
         <div className="col-span-12 md:col-span-3 md:row-span-2 flex flex-col gap-4">
           <ResumoGeralCard
@@ -2274,7 +2274,7 @@ function EmendasDetalhadasCard({
     >
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <div
-        className="px-5 py-3.5 flex items-center justify-between gap-4 flex-wrap"
+        className="px-5 py-3.5 flex items-center justify-between gap-2 md:gap-4 flex-wrap"
         style={{ borderBottom: '1px solid var(--tint-06)', background: 'rgba(255,255,255,0.02)' }}
       >
         <div className="flex items-center gap-3">
@@ -2315,7 +2315,7 @@ function EmendasDetalhadasCard({
       {/* ── Barra de filtros ─────────────────────────────────────────────── */}
       <div className="px-5 py-3 flex flex-wrap gap-2" style={{ borderBottom: '1px solid var(--tint-04)' }}>
         {/* Busca */}
-        <div className="relative flex-1 min-w-[180px]">
+        <div className="relative flex-1 min-w-[120px] md:min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 dark:text-slate-500 pointer-events-none" />
           <input
             value={busca}
@@ -2484,15 +2484,15 @@ function EmendasDetalhadasCard({
                           {tipo.label}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 truncate max-w-[110px] transition-colors text-slate-700 dark:text-slate-300 group-hover:text-[color:var(--brand-cobalt-text)]" title={d.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 truncate max-w-[80px] md:max-w-[110px] transition-colors text-slate-700 dark:text-slate-300 group-hover:text-[color:var(--brand-cobalt-text)]" title={d.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {d.funcao ?? '—'}
                       </td>
-                      <td className="py-2.5 px-3 truncate max-w-[220px]" title={d.nomeFavorecido ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 truncate max-w-[140px] md:max-w-[220px]" title={d.nomeFavorecido ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span className="font-medium transition-colors text-slate-800 dark:text-slate-200 group-hover:text-[color:var(--brand-cobalt-text)]">
                           {d.nomeFavorecido ?? <span className="text-slate-600 italic font-normal">sem favorecido</span>}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 truncate max-w-[150px]" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 truncate max-w-[100px] md:max-w-[150px]" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {d.municipio ? (
                           <span className="transition-colors text-slate-600 dark:text-slate-400 group-hover:text-[color:var(--brand-cobalt-text)]">
                             {d.municipio}
@@ -2559,7 +2559,7 @@ function EmendasDetalhadasCard({
                       <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span title={tipo.hint} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap" style={{ background: `${tipo.color}18`, color: tipo.color, border: `1px solid ${tipo.color}33` }}>{tipo.label}</span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 truncate max-w-[140px] transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>{e.funcao ?? '—'}</td>
+                      <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 truncate max-w-[100px] md:max-w-[140px] transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>{e.funcao ?? '—'}</td>
                       <td className="py-2.5 px-3 text-slate-800 dark:text-slate-200 truncate max-w-[200px] font-medium transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {e.municipioNome ?? <span className="text-slate-600 italic font-normal">{e.objeto ?? 'sem destino'}</span>}
                       </td>
@@ -2925,7 +2925,7 @@ function DestaqueDoAnoCard({
         >
           <div className="flex flex-col leading-tight">
             <span className="text-[8px] uppercase tracking-widest font-semibold text-[color:var(--brand-cobalt)]/60">Município</span>
-            <span className="text-[color:var(--text-primary)] font-bold text-[13px] truncate max-w-[150px] leading-tight">{municipio.nome}</span>
+            <span className="text-[color:var(--text-primary)] font-bold text-[13px] truncate max-w-[120px] md:max-w-[180px] leading-tight">{municipio.nome}</span>
           </div>
           <div
             className="px-2 py-0.5 rounded-lg"
@@ -2947,7 +2947,7 @@ function DestaqueDoAnoCard({
             <div className="flex flex-col leading-tight">
               <span className="text-[8px] uppercase tracking-widest font-semibold text-[color:var(--brand-cobalt-text)]/60">Parlamentar</span>
               <div className="flex items-center gap-1.5">
-                <span className="text-[color:var(--text-primary)] font-bold text-[13px] truncate max-w-[180px] leading-tight">{topParlamentar.nome}</span>
+                <span className="text-[color:var(--text-primary)] font-bold text-[13px] truncate max-w-[120px] md:max-w-[200px] leading-tight">{topParlamentar.nome}</span>
                 <span className="text-[9px] text-slate-600 dark:text-slate-500 whitespace-nowrap hidden sm:block">
                   {CARGO_LABELS[topParlamentar.cargo as ParlamentarCargo] ?? topParlamentar.cargo}
                   {topParlamentar.partido ? ` · ${topParlamentar.partido}` : ''}

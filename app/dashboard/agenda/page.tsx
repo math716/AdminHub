@@ -394,7 +394,7 @@ export default function AgendaPage() {
 
           {/* Células do calendário */}
           {loading ? (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex items-center justify-center h-48 md:h-64">
               <Loader2 className="w-7 h-7 animate-spin" style={{ color: '#2563EB' }} />
             </div>
           ) : (
@@ -564,7 +564,7 @@ export default function AgendaPage() {
                 Próximos Compromissos
               </p>
             </div>
-            <div className="divide-y max-h-72 overflow-y-auto" style={{ borderColor: 'var(--tint-04)' }}>
+            <div className="divide-y max-h-48 md:max-h-72 overflow-y-auto" style={{ borderColor: 'var(--tint-04)' }}>
               {upcomingEvents.length === 0 ? (
                 <p className="text-sm px-4 py-5 text-center" style={{ color: 'var(--tint-35)' }}>Nenhum evento futuro</p>
               ) : upcomingEvents.map((e) => {
