@@ -2657,8 +2657,8 @@ export default function MapaCampanhaPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
-                className="hidden md:flex md:col-span-3 md:order-1 flex-col"
-                style={{ height: 'calc(100vh - 220px)', minHeight: '380px' }}
+                className="hidden md:flex md:col-span-4 lg:col-span-3 md:order-1 flex-col"
+                style={{ height: 'calc(100vh - 220px)', minHeight: '340px' }}
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
@@ -2729,8 +2729,8 @@ export default function MapaCampanhaPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className="hidden md:flex md:col-span-3 md:order-3 flex-col"
-                style={{ height: 'calc(100vh - 220px)', minHeight: '380px' }}
+                className="hidden lg:flex lg:col-span-3 lg:order-3 flex-col"
+                style={{ height: 'calc(100vh - 220px)', minHeight: '340px' }}
               >
                 {/* Municipality List */}
                 <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] flex flex-col h-full">
@@ -3424,7 +3424,7 @@ export default function MapaCampanhaPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
-              className={mapFullscreen ? 'flex-1 min-w-0 relative overflow-hidden' : 'col-span-12 md:col-span-6 md:order-2 overflow-hidden order-1'}
+              className={mapFullscreen ? 'flex-1 min-w-0 relative overflow-hidden' : 'col-span-12 md:col-span-8 lg:col-span-6 md:order-2 overflow-hidden order-1'}
             >
               <Card
                 className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--tint-06)] overflow-hidden'}
@@ -3728,7 +3728,7 @@ export default function MapaCampanhaPage() {
 
           {/* Stats row — faixa horizontal abaixo das 3 colunas */}
           {!mapFullscreen && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
 
               {/* Votos base */}
               {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
