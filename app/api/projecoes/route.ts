@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = session.user as any;
-    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN' && user.role !== 'AGENTE_POLITICO') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -38,7 +38,7 @@ export async function DELETE(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     const user = session.user as any;
-    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN' && user.role !== 'AGENTE_POLITICO') return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
 
     const id = new URL(request.url).searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = session.user as any;
-    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN' && user.role !== 'AGENTE_POLITICO') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 

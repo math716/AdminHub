@@ -41,7 +41,7 @@ export async function DELETE(
     }
 
     const user = session.user as any;
-    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+    if (user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN' && user.role !== 'AGENTE_POLITICO') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 

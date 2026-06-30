@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const user = session.user as any;
-    if (user?.role !== 'CHEFE' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+    if (user?.role !== 'CHEFE' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN' && user?.role !== 'AGENTE_POLITICO') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const user = session.user as any;
-    if (user?.role !== 'CHEFE' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+    if (user?.role !== 'CHEFE' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN' && user?.role !== 'AGENTE_POLITICO') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -183,7 +183,7 @@ export async function PUT(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const user = session.user as any;
-    if (user?.role !== 'CHEFE' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+    if (user?.role !== 'CHEFE' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN' && user?.role !== 'AGENTE_POLITICO') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -232,7 +232,7 @@ export async function DELETE(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const user = session.user as any;
-    if (user?.role !== 'CHEFE' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+    if (user?.role !== 'CHEFE' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN' && user?.role !== 'AGENTE_POLITICO') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
