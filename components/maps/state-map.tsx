@@ -455,11 +455,11 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
             : '');
 
           marker.bindTooltip(`
-            <div style="padding:10px 14px;background:rgba(10,25,41,0.97);border-radius:8px;
-                        border:1px solid #1b4965;min-width:180px;max-width:240px;
-                        box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+            <div style="padding:10px 14px;background:var(--bg-card);border-radius:8px;
+                        border:1px solid rgba(37,99,235,0.35);min-width:180px;max-width:240px;
+                        box-shadow:0 4px 20px rgba(0,0,0,0.25);">
               <strong style="color:#7dd3fc;font-size:13px;display:block;margin-bottom:6px;">${bairro.nome}</strong>
-              <span style="color:#e2e8f0;font-size:12px;">${bairro.totalLocais} local${bairro.totalLocais !== 1 ? 'is' : ''} de votação</span>
+              <span style="color:var(--text-secondary);font-size:12px;">${bairro.totalLocais} local${bairro.totalLocais !== 1 ? 'is' : ''} de votação</span>
               <div style="margin-top:6px;">${locaisHtml}</div>
             </div>`,
             { sticky: true, direction: 'top', opacity: 1, className: 'bairro-tooltip' }
@@ -885,13 +885,13 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           layer.bindTooltip(
             `<div style="
               padding: 10px 14px;
-              background: linear-gradient(160deg, #071d36 0%, #0c2a4f 100%);
+              background: var(--bg-card);
               border-radius: 10px;
               border: 1px solid rgba(37,99,235,0.35);
               min-width: 150px;
-              box-shadow: 0 4px 20px rgba(0,0,0,0.45);
+              box-shadow: 0 4px 20px rgba(0,0,0,0.25);
             ">
-              <strong style="color:#fff;font-size:13px;display:block;margin-bottom:4px;letter-spacing:0.02em;">${nome}</strong>
+              <strong style="color:var(--text-primary);font-size:13px;display:block;margin-bottom:4px;letter-spacing:0.02em;">${nome}</strong>
               ${votos !== undefined
                 ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#2563EB;font-weight:600;">${votos.toLocaleString('pt-BR')} <span style="color:var(--tint-55);font-weight:400;">${valueLabel}</span></span>`
                 : '<span style="color:var(--tint-35);font-size:11px;">Sem dados</span>'
