@@ -2579,7 +2579,7 @@ export default function MapaCampanhaPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
-                className="hidden md:flex md:col-span-2 md:order-1 flex-col"
+                className="hidden md:flex md:col-span-3 md:order-1 flex-col"
                 style={{ height: 'calc(100vh - 220px)', minHeight: '380px' }}
               >
                 {/* Scenario selector */}
@@ -2602,7 +2602,7 @@ export default function MapaCampanhaPage() {
                         <button
                           key={cenario}
                           onClick={() => setCenarioAtivo(cenario)}
-                          className={`flex items-center gap-2 px-2.5 py-2 rounded-lg transition-all w-full text-left border ${
+                          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all w-full text-left border ${
                             isActive
                               ? `${config.bg} text-white shadow-md border-transparent`
                               : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
@@ -2612,8 +2612,8 @@ export default function MapaCampanhaPage() {
                             <Icon className="h-4 w-4" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm leading-tight truncate">{config.label}</p>
-                            <p className={`text-[11px] leading-tight mt-0.5 truncate ${isActive ? 'opacity-80' : 'text-[color:var(--text-tertiary)]'}`}>
+                            <p className="font-semibold text-sm leading-tight">{config.label}</p>
+                            <p className={`text-xs leading-tight mt-0.5 ${isActive ? 'opacity-80' : 'text-[color:var(--text-tertiary)]'}`}>
                               {desc[cenario]}
                             </p>
                           </div>
@@ -2651,7 +2651,7 @@ export default function MapaCampanhaPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className="hidden md:flex md:col-span-2 md:order-3 flex-col"
+                className="hidden md:flex md:col-span-3 md:order-3 flex-col"
                 style={{ height: 'calc(100vh - 220px)', minHeight: '380px' }}
               >
                 {/* Municipality List */}
@@ -3346,7 +3346,7 @@ export default function MapaCampanhaPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
-              className={mapFullscreen ? 'flex-1 min-w-0 relative overflow-hidden' : 'col-span-12 md:col-span-8 md:order-2 overflow-hidden order-1'}
+              className={mapFullscreen ? 'flex-1 min-w-0 relative overflow-hidden' : 'col-span-12 md:col-span-6 md:order-2 overflow-hidden order-1'}
             >
               <Card
                 className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--tint-06)] overflow-hidden'}

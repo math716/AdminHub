@@ -179,7 +179,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Row */}
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Status Donut Chart */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -224,7 +224,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Table and Bar Chart Row */}
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Recent Demands Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -255,7 +255,7 @@ export default function DashboardPage() {
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: STATUS_COLORS?.[demand.status as DemandStatus] || '#6B7280' }}
                         />
-                        <span className="truncate max-w-[150px]">{demand.title}</span>
+                        <span className="truncate min-w-0 flex-1">{demand.title}</span>
                       </div>
                     </td>
                     <td className="py-3">
