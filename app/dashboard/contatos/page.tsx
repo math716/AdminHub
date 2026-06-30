@@ -632,7 +632,7 @@ export default function ContatosPage() {
     );
   }, [contatos, search]);
 
-  const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[color:var(--text-tertiary)] outline-none transition-all';
+  const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-[color:var(--text-primary)] placeholder-[color:var(--text-tertiary)] outline-none transition-all';
   const inputStyle = { background: 'var(--tint-06)', border: '1px solid var(--tint-10)' };
 
   if (status === 'loading') return (
@@ -951,7 +951,7 @@ export default function ContatosPage() {
 
             {/* Map */}
             <div className="lg:col-span-3">
-              <div className="rounded-2xl overflow-hidden relative" style={{ height: 560, background: 'var(--bg-card-subtle)', border: '1px solid rgba(37,99,235,0.13)' }}>
+              <div className="rounded-2xl overflow-hidden relative" style={{ height: 560, background: 'var(--bg-card-subtle)', border: '1px solid rgba(37,99,235,0.35)', boxShadow: '0 2px 16px rgba(0,0,0,0.10)' }}>
                 {(pipLoading || bairroLoading) && (
                   <div className="absolute inset-0 flex items-center justify-center z-10 rounded-2xl" style={{ background: 'var(--bg-card)' }}>
                     <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: '#4a9ede' }} />
