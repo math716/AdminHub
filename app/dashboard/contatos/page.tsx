@@ -818,7 +818,7 @@ export default function ContatosPage() {
 
       {/* ══════════════════════════════ MAPA ══════════════════════════════ */}
       {activeTab === 'mapa' && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.28)', boxShadow: '0 2px 20px rgba(0,0,0,0.10)' }}>
+        <div className="rounded-2xl overflow-hidden max-w-5xl" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.28)', boxShadow: '0 2px 20px rgba(0,0,0,0.10)' }}>
           {/* Header — breadcrumb integrado */}
           <div className="flex items-center gap-1 px-4 py-3 text-sm flex-wrap" style={{ borderBottom: '1px solid var(--tint-06)' }}>
             <button onClick={view === 'brasil' ? undefined : goBack}
@@ -860,7 +860,7 @@ export default function ContatosPage() {
           </div>
 
           {/* Corpo — sidebar + mapa lado a lado */}
-          <div className="flex flex-col md:flex-row" style={{ minHeight: 560 }}>
+          <div className="flex flex-col md:flex-row md:h-[520px]">
             {/* Sidebar */}
             <div className="md:w-64 lg:w-72 flex-shrink-0 flex flex-col gap-3 p-3 overflow-y-auto border-b md:border-b-0 md:border-r" style={{ borderColor: 'var(--tint-06)' }}>
               {/* Stats */}
@@ -949,7 +949,7 @@ export default function ContatosPage() {
             </div>
 
             {/* Map */}
-            <div className="flex-1 relative" style={{ minHeight: 420 }}>
+            <div className="flex-1 relative" style={{ minHeight: 320 }}>
               {(pipLoading || bairroLoading) && (
                 <div className="absolute inset-0 flex items-center justify-center z-10" style={{ background: 'var(--bg-card)' }}>
                   <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: '#4a9ede' }} />
