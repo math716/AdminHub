@@ -818,7 +818,7 @@ export default function ContatosPage() {
 
       {/* ══════════════════════════════ MAPA ══════════════════════════════ */}
       {activeTab === 'mapa' && (
-        <div className="grid grid-cols-1 gap-4 items-start">
+        <div>
         <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.28)', boxShadow: '0 2px 20px rgba(0,0,0,0.10)' }}>
           {/* Header — breadcrumb integrado */}
           <div className="flex items-center gap-1 px-4 py-3 text-sm flex-wrap" style={{ borderBottom: '1px solid var(--tint-06)' }}>
@@ -861,9 +861,9 @@ export default function ContatosPage() {
           </div>
 
           {/* Corpo — sidebar + mapa lado a lado */}
-          <div className="flex flex-col md:flex-row md:h-[520px]">
+          <div className="flex flex-col md:flex-row" style={{ height: 'calc(100vh - 210px)', minHeight: 500 }}>
             {/* Sidebar */}
-            <div className="md:w-64 lg:w-72 flex-shrink-0 flex flex-col gap-3 p-3 overflow-y-auto border-b md:border-b-0 md:border-r" style={{ borderColor: 'var(--tint-06)' }}>
+            <div className="md:w-72 lg:w-80 flex-shrink-0 flex flex-col gap-3 p-3 overflow-y-auto border-b md:border-b-0 md:border-r" style={{ borderColor: 'var(--tint-06)' }}>
               {/* Stats */}
               <div className="rounded-xl p-3" style={{ background: 'var(--tint-03)', border: '1px solid var(--tint-06)' }}>
                 <p className="text-[10px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: 'var(--tint-45)' }}>
