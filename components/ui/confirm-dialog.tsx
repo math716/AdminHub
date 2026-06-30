@@ -2,6 +2,8 @@
 
 import { AlertTriangle, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
+import { useEffect, useState } from 'react';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -25,8 +27,10 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const isDanger = variant === 'danger';
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
-  return (
+  const content = (
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center">
@@ -121,4 +125,7 @@ export function ConfirmDialog({
       )}
     </AnimatePresence>
   );
+
+  if (!mounted) return null;
+  return createPortal(content, document.body);
 }
