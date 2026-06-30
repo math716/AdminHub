@@ -374,9 +374,9 @@ export default function MapaDemandasPage() {
   const categoryKeys = Object.keys(CATEGORY_LABELS) as (keyof typeof CATEGORY_LABELS)[];
 
   return (
-    <div className="-m-4 -mt-16 lg:-m-8 h-screen flex flex-col bg-[var(--bg-page)] overflow-hidden">
+    <div className="flex flex-col gap-4">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--tint-10)] flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 rounded-2xl flex-wrap gap-2" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)' }}>
         <div className="flex items-center gap-3">
           <div
             className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -449,7 +449,7 @@ export default function MapaDemandasPage() {
 
       {/* ── Filtros (desktop) ── */}
       {showFilters && (
-        <div className="hidden md:flex items-center gap-3 px-4 py-2 border-b border-[var(--tint-10)] bg-white/2 flex-wrap flex-shrink-0">
+        <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-2xl flex-wrap" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)' }}>
           <input
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
@@ -481,7 +481,7 @@ export default function MapaDemandasPage() {
       )}
 
       {/* ── Conteúdo principal ── */}
-      <div className="flex flex-1 min-h-0 gap-3 p-3 overflow-hidden">
+      <div className="flex gap-3 overflow-hidden" style={{ height: 'calc(100vh - 200px)', minHeight: '450px' }}>
         {/* Painel lateral — lista de demandas (desktop) */}
         <div className={`hidden md:flex flex-shrink-0 flex-col border border-[var(--tint-10)] rounded-2xl overflow-hidden transition-all duration-300 bg-[var(--bg-card)] ${sidebarCollapsed ? 'w-0 border-transparent' : 'w-72'}`}>
           <div className="px-3 py-2 border-b border-[var(--tint-10)] flex-shrink-0 flex items-center justify-between gap-2">
