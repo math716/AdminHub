@@ -958,7 +958,7 @@ export default function MapaCampanhaPage() {
 
     if (isMunicipal && municipioEncontrado) {
       setMunicipioVereador(municipioEncontrado);
-      setVisualizacaoMapa('bairro');
+      setVisualizacaoMapa('municipio');
     }
 
     // Para candidatos estaduais/federais de CE: carregar votos de Fortaleza por bairro
@@ -1084,7 +1084,7 @@ export default function MapaCampanhaPage() {
     // Configura visualização do mapa para candidatos municipais
     if (isMunicipal && novoCandidatoMunicipio) {
       setMunicipioVereador(munNormalized || novoCandidatoMunicipio);
-      setVisualizacaoMapa('bairro');
+      setVisualizacaoMapa('municipio');
       setBairrosInfo([]);
       setMediaVotosBairro(0);
       if (novoCandidatoUf === 'SP' && munNormalized === 'SAO PAULO') {
@@ -1427,7 +1427,7 @@ export default function MapaCampanhaPage() {
 
         if (municipioFound) {
           setMunicipioVereador(municipioFound);
-          setVisualizacaoMapa('bairro');
+          setVisualizacaoMapa('municipio');
         }
       }
       
@@ -4669,7 +4669,7 @@ export default function MapaCampanhaPage() {
                           .sort((a, b) => b.metaPossivel - a.metaPossivel || b.votosBase - a.votosBase)[0]?.municipio;
                         if (munFromProj) {
                           setMunicipioVereador(munFromProj);
-                          setVisualizacaoMapa('bairro');
+                          setVisualizacaoMapa('municipio');
                         } else {
                           // Projeção com entradas de bairros (RJ/SP/CE) mas sem municípios diretos
                           const rjBairros = proj.municipios.filter((m: ProjecaoMunicipio) => isRjBairro(m.municipio));
@@ -4677,13 +4677,13 @@ export default function MapaCampanhaPage() {
                           const ceBairros = proj.municipios.filter((m: ProjecaoMunicipio) => isCeBairro(m.municipio));
                           if (rjBairros.length > 0) {
                             setMunicipioVereador('RIO DE JANEIRO');
-                            setVisualizacaoMapa('bairro');
+                            setVisualizacaoMapa('municipio');
                           } else if (spDistritos.length > 0) {
                             setMunicipioVereador('SAO PAULO');
-                            setVisualizacaoMapa('bairro');
+                            setVisualizacaoMapa('municipio');
                           } else if (ceBairros.length > 0) {
                             setMunicipioVereador('FORTALEZA');
-                            setVisualizacaoMapa('bairro');
+                            setVisualizacaoMapa('municipio');
                           }
                         }
                         // Estreantes não têm histórico no TSE: evitar chamada com ano futuro
