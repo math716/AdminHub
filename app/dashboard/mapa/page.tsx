@@ -1530,7 +1530,8 @@ export default function MapaPage() {
               {/* Botão tela cheia */}
               <button
                 onClick={() => setMapFullscreen(f => !f)}
-                className="absolute bottom-3 right-3 z-[1000] bg-[var(--bg-card)]/90 border border-[var(--tint-10)] rounded-lg p-2 text-slate-700 dark:text-slate-300 hover:text-white hover:border-[var(--tint-35)] transition-all shadow-lg"
+                className="absolute bottom-3 right-3 z-[1000] rounded-xl p-2.5 transition-all"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-raised)' }}
                 title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
               >
                 {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
