@@ -189,11 +189,12 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false,
               color: '#1565c0',
               fillOpacity: 0.1
             });
-            e.target.bringToFront();
+            if (estado) layer.openTooltip();
           });
 
           layer.on('mouseout', (e: any) => {
             geoLayer.resetStyle(e.target);
+            layer.closeTooltip();
           });
 
           if (estado) {
@@ -203,20 +204,20 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false,
             layer.bindTooltip(
               `<div style="
                 padding: 10px 14px;
-                background: rgba(10, 25, 47, 0.97);
+                background: var(--bg-card);
                 border-radius: 8px;
-                border: 1px solid rgba(79,195,247,0.4);
+                border: 1px solid rgba(37,99,235,0.35);
                 min-width: 160px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
               ">
-                <div style="font-weight: 700; color: #4fc3f7; font-size: 14px; margin-bottom: 4px;">${estado.nome}</div>
-                <div style="color: #78909c; font-size: 11px; margin-bottom: 6px;">${uf}</div>
+                <div style="font-weight: 700; color: #4a9ede; font-size: 14px; margin-bottom: 4px;">${estado.nome}</div>
+                <div style="color: var(--tint-45); font-size: 11px; margin-bottom: 6px;">${uf}</div>
                 ${votesLabel
-                  ? `<div style="color: #e0f7fa; font-size: 13px; font-weight: 600;">${votesLabel}</div>`
-                  : `<div style="color: #546e7a; font-size: 11px;">${emptyLabel ?? 'Clique para ver municípios'}</div>`
+                  ? `<div style="color: var(--text-primary); font-size: 13px; font-weight: 600;">${votesLabel}</div>`
+                  : `<div style="color: var(--tint-45); font-size: 11px;">${emptyLabel ?? 'Clique para ver municípios'}</div>`
                 }
               </div>`,
-              { sticky: true, className: 'dark-tooltip' }
+              { sticky: false, className: 'dark-tooltip' }
             );
           }
         }

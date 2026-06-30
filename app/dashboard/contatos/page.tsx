@@ -818,10 +818,9 @@ export default function ContatosPage() {
 
       {/* ══════════════════════════════ MAPA ══════════════════════════════ */}
       {activeTab === 'mapa' && (
-        <>
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-1 text-sm rounded-xl px-4 py-2.5 w-fit flex-wrap"
-            style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.13)' }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.28)', boxShadow: '0 2px 20px rgba(0,0,0,0.10)' }}>
+          {/* Header — breadcrumb integrado */}
+          <div className="flex items-center gap-1 px-4 py-3 text-sm flex-wrap" style={{ borderBottom: '1px solid var(--tint-06)' }}>
             <button onClick={view === 'brasil' ? undefined : goBack}
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
               style={view === 'brasil' ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 } : { color: 'var(--tint-55)', cursor: 'pointer' }}>
@@ -853,19 +852,20 @@ export default function ContatosPage() {
               </>
             )}
             {selectedIds.size > 0 && (
-              <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-semibold"
+              <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full font-semibold"
                 style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)' }}>
                 {selectedIds.size} selecionado{selectedIds.size !== 1 ? 's' : ''}
               </span>
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Corpo — sidebar + mapa lado a lado */}
+          <div className="flex flex-col md:flex-row" style={{ minHeight: 560 }}>
             {/* Sidebar */}
-            <div className="space-y-3">
+            <div className="md:w-64 lg:w-72 flex-shrink-0 flex flex-col gap-3 p-3 overflow-y-auto border-b md:border-b-0 md:border-r" style={{ borderColor: 'var(--tint-06)' }}>
               {/* Stats */}
-              <div className="rounded-xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.13)' }}>
-                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--tint-45)' }}>
+              <div className="rounded-xl p-3" style={{ background: 'var(--tint-03)', border: '1px solid var(--tint-06)' }}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: 'var(--tint-45)' }}>
                   {view === 'municipio' ? navMunicipio?.nome : view === 'estado' ? selectedStateName : 'Visão Geral'}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
@@ -892,11 +892,10 @@ export default function ContatosPage() {
                 )}
               </div>
 
-
               {/* Search + contacts list */}
               {view !== 'brasil' && (
-                <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.13)' }}>
-                  <div className="p-2.5" style={{ borderBottom: '1px solid var(--tint-06)' }}>
+                <div className="rounded-xl overflow-hidden flex-1 flex flex-col" style={{ border: '1px solid var(--tint-06)', minHeight: 0 }}>
+                  <div className="p-2.5 flex-shrink-0" style={{ borderBottom: '1px solid var(--tint-06)' }}>
                     <div className="flex items-center gap-2 rounded-lg px-2.5 py-2"
                       style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}>
                       <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
@@ -905,7 +904,7 @@ export default function ContatosPage() {
                         className="flex-1 bg-transparent text-[color:var(--text-primary)] text-xs outline-none placeholder-[color:var(--text-tertiary)]" />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid var(--tint-06)' }}>
+                  <div className="flex items-center justify-between px-3 py-2 flex-shrink-0" style={{ borderBottom: '1px solid var(--tint-06)' }}>
                     <button onClick={selectAll} className="flex items-center gap-1 text-xs transition-all hover:opacity-70" style={{ color: '#4a9ede' }}>
                       <UserCheck className="h-3.5 w-3.5" /> Todos
                     </button>
@@ -915,7 +914,7 @@ export default function ContatosPage() {
                       </button>
                     )}
                   </div>
-                  <div className="max-h-48 overflow-y-auto divide-y" style={{ borderColor: 'var(--tint-04)' }}>
+                  <div className="flex-1 overflow-y-auto divide-y" style={{ borderColor: 'var(--tint-04)' }}>
                     {mapSidebarContacts.length === 0 ? (
                       <p className="text-xs text-center py-5" style={{ color: 'var(--tint-35)' }}>
                         {(pipLoading || bairroLoading) ? 'Calculando...' : 'Nenhum contato geolocado aqui'}
@@ -942,106 +941,104 @@ export default function ContatosPage() {
 
               {selectedIds.size > 0 && (
                 <button onClick={() => setShowMsg(true)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>
+                  className="flex-shrink-0 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#fff' }}>
                   <MessageSquare className="h-4 w-4" /> Disparar mensagem ({selectedIds.size})
                 </button>
               )}
             </div>
 
             {/* Map */}
-            <div className="lg:col-span-3">
-              <div className="rounded-2xl overflow-hidden relative" style={{ height: 560, background: 'var(--bg-card-subtle)', border: '1px solid rgba(37,99,235,0.35)', boxShadow: '0 2px 16px rgba(0,0,0,0.10)' }}>
-                {(pipLoading || bairroLoading) && (
-                  <div className="absolute inset-0 flex items-center justify-center z-10 rounded-2xl" style={{ background: 'var(--bg-card)' }}>
-                    <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: '#4a9ede' }} />
-                    <span className="text-sm" style={{ color: 'var(--tint-65)' }}>Calculando...</span>
+            <div className="flex-1 relative" style={{ minHeight: 420 }}>
+              {(pipLoading || bairroLoading) && (
+                <div className="absolute inset-0 flex items-center justify-center z-10" style={{ background: 'var(--bg-card)' }}>
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: '#4a9ede' }} />
+                  <span className="text-sm" style={{ color: 'var(--tint-65)' }}>Calculando...</span>
+                </div>
+              )}
+
+              {/* Overlay invisível — fecha popup ao clicar fora dele */}
+              {popup && (
+                <div className="absolute inset-0 z-[15]" onClick={() => setPopup(null)} />
+              )}
+
+              {/* Popup de ação — aparece ao clicar em estado ou município */}
+              <AnimatePresence>
+                {popup && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: -8 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: -8 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-4 left-1/2 -translate-x-1/2 z-20 rounded-2xl shadow-2xl overflow-hidden"
+                    style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.35)', minWidth: 260, backdropFilter: 'blur(12px)' }}
+                    onClick={e => e.stopPropagation()}>
+                    <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--tint-08)' }}>
+                      <div className="flex items-center gap-2">
+                        {popup.type === 'estado' ? <Layers className="h-3.5 w-3.5" style={{ color: '#2563EB' }} /> : <Building2 className="h-3.5 w-3.5" style={{ color: '#2563EB' }} />}
+                        <span className="text-sm font-semibold text-[color:var(--text-primary)]">{popup.nome}</span>
+                      </div>
+                      <button onClick={() => setPopup(null)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[var(--tint-10)] transition-all" style={{ color: 'var(--tint-45)' }}>
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="p-3 space-y-2">
+                      <button
+                        onClick={() => popup.type === 'estado'
+                          ? navigateToState(popup.uf, popup.nome)
+                          : navigateToMunicipio(popup.codigo!, popup.nome)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90"
+                        style={{ background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.25)', color: '#4a9ede' }}>
+                        <Navigation className="h-4 w-4 flex-shrink-0" />
+                        <span>Navegar {popup.type === 'estado' ? 'pelo estado' : 'pelo município'}</span>
+                      </button>
+                      <button
+                        onClick={() => popup.type === 'estado'
+                          ? selectStateContacts(popup.uf)
+                          : selectMunicipioContacts(popup.uf, popup.codigo!)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90"
+                        style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: '#4ade80' }}>
+                        <MousePointer className="h-4 w-4 flex-shrink-0" />
+                        <span>Selecionar contatos {popup.type === 'estado' ? 'do estado' : 'do município'}</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="h-full p-2">
+                {view === 'brasil' && <BrazilMap onStateClick={handleStateClick} />}
+                {view === 'estado' && (
+                  <StateMap uf={selectedUf} stateName={selectedStateName}
+                    votesData={contactsByMunCode} onMunicipioClick={handleMunicipioClick}
+                    valueLabel="contatos" disableSubdivisao />
+                )}
+                {view === 'municipio' && navMunicipio && bairroLoading && (
+                  <div className="h-full flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
                   </div>
                 )}
-
-                {/* Overlay invisível — fecha popup ao clicar fora dele */}
-                {popup && (
-                  <div className="absolute inset-0 z-[15]" onClick={() => setPopup(null)} />
+                {view === 'municipio' && navMunicipio && !bairroLoading && munHasBairros && bairroFeatures.length > 0 && (
+                  <ContatosBairrosMap
+                    municipio={navMunicipio.nome}
+                    uf={selectedUf}
+                    features={bairroFeatures}
+                    contatosPorBairro={bairroCount}
+                    selectedBairros={selectedBairros}
+                    onBairroClick={handleBairroClick}
+                    height="100%"
+                  />
                 )}
-
-                {/* Popup de ação — aparece ao clicar em estado ou município */}
-                <AnimatePresence>
-                  {popup && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9, y: -8 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.9, y: -8 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute top-4 left-1/2 -translate-x-1/2 z-20 rounded-2xl shadow-2xl overflow-hidden"
-                      style={{ background: 'rgba(4,17,31,0.95)', border: '1px solid rgba(37,99,235,0.35)', minWidth: 260, backdropFilter: 'blur(12px)' }}
-                      onClick={e => e.stopPropagation()}>
-                      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--tint-08)' }}>
-                        <div className="flex items-center gap-2">
-                          {popup.type === 'estado' ? <Layers className="h-3.5 w-3.5" style={{ color: '#2563EB' }} /> : <Building2 className="h-3.5 w-3.5" style={{ color: '#2563EB' }} />}
-                          <span className="text-sm font-semibold text-[color:var(--text-primary)]">{popup.nome}</span>
-                        </div>
-                        <button onClick={() => setPopup(null)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[var(--tint-10)] transition-all" style={{ color: 'var(--tint-45)' }}>
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                      <div className="p-3 space-y-2">
-                        <button
-                          onClick={() => popup.type === 'estado'
-                            ? navigateToState(popup.uf, popup.nome)
-                            : navigateToMunicipio(popup.codigo!, popup.nome)}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90"
-                          style={{ background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.25)', color: '#4a9ede' }}>
-                          <Navigation className="h-4 w-4 flex-shrink-0" />
-                          <span>Navegar {popup.type === 'estado' ? 'pelo estado' : 'pelo município'}</span>
-                        </button>
-                        <button
-                          onClick={() => popup.type === 'estado'
-                            ? selectStateContacts(popup.uf)
-                            : selectMunicipioContacts(popup.uf, popup.codigo!)}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90"
-                          style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: '#4ade80' }}>
-                          <MousePointer className="h-4 w-4 flex-shrink-0" />
-                          <span>Selecionar contatos {popup.type === 'estado' ? 'do estado' : 'do município'}</span>
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div className="h-full p-3">
-                  {view === 'brasil' && <BrazilMap onStateClick={handleStateClick} />}
-                  {view === 'estado' && (
-                    <StateMap uf={selectedUf} stateName={selectedStateName}
-                      votesData={contactsByMunCode} onMunicipioClick={handleMunicipioClick}
-                      valueLabel="contatos" disableSubdivisao />
-                  )}
-                  {view === 'municipio' && navMunicipio && bairroLoading && (
-                    <div className="h-full flex items-center justify-center">
-                      <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
-                    </div>
-                  )}
-                  {view === 'municipio' && navMunicipio && !bairroLoading && munHasBairros && bairroFeatures.length > 0 && (
-                    <ContatosBairrosMap
-                      municipio={navMunicipio.nome}
-                      uf={selectedUf}
-                      features={bairroFeatures}
-                      contatosPorBairro={bairroCount}
-                      selectedBairros={selectedBairros}
-                      onBairroClick={handleBairroClick}
-                      height="100%"
-                    />
-                  )}
-                  {view === 'municipio' && navMunicipio && !bairroLoading && (!munHasBairros || bairroFeatures.length === 0) && (
-                    <div className="h-full flex flex-col items-center justify-center gap-3">
-                      <Building2 className="h-12 w-12 opacity-20" style={{ color: '#4a9ede' }} />
-                      <p className="text-sm" style={{ color: 'var(--tint-45)' }}>Dados de bairros não disponíveis para {navMunicipio.nome}</p>
-                    </div>
-                  )}
-                </div>
+                {view === 'municipio' && navMunicipio && !bairroLoading && (!munHasBairros || bairroFeatures.length === 0) && (
+                  <div className="h-full flex flex-col items-center justify-center gap-3">
+                    <Building2 className="h-12 w-12 opacity-20" style={{ color: '#4a9ede' }} />
+                    <p className="text-sm" style={{ color: 'var(--tint-45)' }}>Dados de bairros não disponíveis para {navMunicipio.nome}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* ══════════════════ MODAL Novo Contato ══════════════════ */}
