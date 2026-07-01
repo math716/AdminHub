@@ -2549,7 +2549,7 @@ export default function MapaCampanhaPage() {
                   <Button
                     onClick={() => searchCandidate()}
                     loading={loading}
-                    className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 font-semibold"
+                    className="w-full font-semibold"
                   >
                     <Search className="h-4 w-4 mr-2" />
                     Buscar Candidato

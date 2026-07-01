@@ -23,8 +23,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantStyles: Record<NonNullable<ButtonProps['variant']>, React.CSSProperties> = {
       primary: {
-        background: 'var(--brand-cobalt)',
-        color: '#FFFFFF',
+        background: 'linear-gradient(135deg, #2563EB, #3B82F6)',
+        color: 'var(--bg-page)',
       },
       secondary: {
         background: 'var(--success)',
