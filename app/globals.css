@@ -9,10 +9,10 @@
    ────────────────────────────────────────────────────────── */
 :root {
   /* Surfaces */
-  --bg-page: #F5F7FA;
+  --bg-page: #C8DCEF;
   --bg-card: #FFFFFF;
   --bg-card-raised: #FFFFFF;
-  --bg-card-subtle: #D9E8FB;
+  --bg-card-subtle: #F1F5F9;
   --bg-sidebar: #0F2240;
   --bg-hover: rgba(15, 34, 64, 0.04);
 
