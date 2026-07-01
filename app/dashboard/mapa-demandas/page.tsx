@@ -901,37 +901,41 @@ export default function MapaDemandasPage() {
       {showNewModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2100] flex items-end sm:items-center justify-center sm:p-4">
           <div className="bg-[var(--bg-card)] border border-[var(--tint-10)] rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--tint-10)]">
+            {/* Linha de acento no topo */}
+            <div className="h-1 rounded-t-2xl bg-gradient-to-r from-sky-500 via-blue-500 to-sky-400" />
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-default)]">
               <div className="flex items-center gap-3">
-                <Plus className="w-5 h-5 text-sky-400" />
-                <h2 className="text-[color:var(--text-primary)] font-semibold">Nova Demanda</h2>
+                <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(14,165,233,0.15)', border: '1px solid rgba(14,165,233,0.35)' }}>
+                  <Plus className="w-4 h-4 text-sky-500" />
+                </span>
+                <h2 className="text-[color:var(--text-primary)] font-bold text-base">Nova Demanda</h2>
               </div>
-              <button onClick={() => setShowNewModal(false)} className="text-gray-500 hover:text-white">
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowNewModal(false)} className="p-1.5 rounded-lg transition-colors text-[color:var(--text-tertiary)] hover:text-[color:var(--text-primary)] hover:bg-[var(--tint-08)]">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="p-6 space-y-4">
               {/* Título */}
               <div>
-                <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Título *</label>
+                <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Título *</label>
                 <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                  className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                  className="mt-1.5 w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 placeholder:text-[color:var(--text-tertiary)] transition-all"
                   placeholder="Descreva a demanda em uma linha" />
               </div>
 
               {/* Solicitante + Contato */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Solicitante *</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Solicitante *</label>
                   <input value={form.solicitante} onChange={(e) => setForm((f) => ({ ...f, solicitante: e.target.value }))}
-                    className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                    className="mt-1.5 w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 placeholder:text-[color:var(--text-tertiary)] transition-all"
                     placeholder="Nome completo" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Contato</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Contato</label>
                   <input value={form.contato} onChange={(e) => setForm((f) => ({ ...f, contato: e.target.value }))}
-                    className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                    className="mt-1.5 w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 placeholder:text-[color:var(--text-tertiary)] transition-all"
                     placeholder="Telefone ou email" />
                 </div>
               </div>
@@ -939,35 +943,35 @@ export default function MapaDemandasPage() {
               {/* Estado + Município */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Estado *</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Estado *</label>
                   <input value={form.estado} onChange={(e) => setForm((f) => ({ ...f, estado: e.target.value }))}
-                    className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                    className="mt-1.5 w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 placeholder:text-[color:var(--text-tertiary)] transition-all"
                     placeholder="UF (ex: SP)" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Município *</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Município *</label>
                   <input value={form.municipio} onChange={(e) => setForm((f) => ({ ...f, municipio: e.target.value }))}
-                    className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                    className="mt-1.5 w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 placeholder:text-[color:var(--text-tertiary)] transition-all"
                     placeholder="Nome do município" />
                 </div>
               </div>
 
               {/* Endereço + Geocodificar */}
               <div>
-                <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Endereço completo</label>
-                <div className="flex gap-2 mt-1">
+                <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Endereço completo</label>
+                <div className="flex gap-2 mt-1.5">
                   <input value={form.endereco} onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
-                    className="flex-1 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                    className="flex-1 bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 placeholder:text-[color:var(--text-tertiary)] transition-all"
                     placeholder="Rua, número, bairro" />
                   <button onClick={geocodeFormAddress} disabled={geoLoading}
-                    className="flex items-center gap-1.5 px-4 py-2.5 bg-sky-700 hover:bg-sky-600 text-[color:var(--text-primary)] rounded-xl text-sm font-semibold disabled:opacity-50">
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-sm font-semibold disabled:opacity-50 transition-all shadow-sm">
                     {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                     Localizar
                   </button>
                 </div>
                 {form.lat && form.lng && (
-                  <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
-                    <CheckCircle className="w-3 h-3" /> Localização: {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
+                  <p className="text-xs text-[color:var(--success)] mt-1.5 flex items-center gap-1.5 font-medium">
+                    <CheckCircle className="w-3.5 h-3.5" /> Localização: {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
                   </p>
                 )}
               </div>
@@ -975,56 +979,57 @@ export default function MapaDemandasPage() {
               {/* Categoria + Status + Prioridade */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Categoria</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Categoria</label>
                   <Select
                     value={form.category}
                     onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                     options={categoryKeys.map((k) => ({ value: k, label: CATEGORY_LABELS[k] }))}
-                    className="mt-1"
+                    className="mt-1.5"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Status</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Status</label>
                   <Select
                     value={form.status}
                     onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
                     options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
-                    className="mt-1"
+                    className="mt-1.5"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Prioridade</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Prioridade</label>
                   <Select
                     value={form.priority}
                     onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
                     options={Object.entries(PRIORITY_LABELS).map(([k, v]) => ({ value: k, label: v }))}
-                    className="mt-1"
+                    className="mt-1.5"
                   />
                 </div>
               </div>
 
               {/* Descrição */}
               <div>
-                <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Descrição</label>
+                <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Descrição</label>
                 <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   rows={3}
-                  className="mt-1 w-full bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 resize-none"
+                  className="mt-1.5 w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 placeholder:text-[color:var(--text-tertiary)] resize-none transition-all"
                   placeholder="Detalhes da demanda..." />
               </div>
 
               {/* Foto */}
               <div>
-                <label className="text-xs text-gray-400 font-medium uppercase tracking-widest">Foto (opcional)</label>
-                <div className="mt-1 flex items-center gap-3">
+                <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Foto (opcional)</label>
+                <div className="mt-1.5 flex items-center gap-3">
                   <button onClick={() => fotoInputRef.current?.click()}
-                    className="flex items-center gap-2 px-3.5 py-2 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl text-sm text-gray-300 hover:bg-[var(--tint-10)]">
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold border-2 border-dashed transition-all text-[color:var(--text-secondary)] hover:text-sky-500 hover:border-sky-500 hover:bg-sky-500/8"
+                    style={{ borderColor: 'var(--border-default)' }}>
                     <Camera className="w-4 h-4" />
                     {form.foto ? 'Trocar foto' : 'Adicionar foto'}
                   </button>
                   {form.foto && (
                     <div className="flex items-center gap-2">
-                      <img src={form.foto} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-[var(--tint-10)]" />
-                      <button onClick={() => setForm((f) => ({ ...f, foto: '' }))} className="text-gray-500 hover:text-red-400">
+                      <img src={form.foto} alt="Preview" className="w-12 h-12 rounded-xl object-cover border-2 border-[var(--border-default)]" />
+                      <button onClick={() => setForm((f) => ({ ...f, foto: '' }))} className="p-1 rounded-lg text-[color:var(--text-tertiary)] hover:text-red-500 hover:bg-red-500/10 transition-all">
                         <X className="w-4 h-4" />
                       </button>
                     </div>
@@ -1034,20 +1039,20 @@ export default function MapaDemandasPage() {
               </div>
 
               {saveError && (
-                <div className="flex items-center gap-2 text-red-400 text-sm bg-red-900/20 border border-red-500/20 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/20 rounded-xl px-3 py-2.5">
                   <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                   {saveError}
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--tint-10)]">
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--border-default)]">
               <button onClick={() => setShowNewModal(false)}
-                className="px-4 py-2 text-gray-400 hover:text-[color:var(--text-primary)] text-sm font-medium transition-colors rounded-xl">
+                className="px-4 py-2 text-sm font-semibold transition-all rounded-xl text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] hover:bg-[var(--tint-08)]">
                 Cancelar
               </button>
               <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-[color:var(--text-primary)] rounded-xl text-sm font-semibold disabled:opacity-50">
+                className="flex items-center gap-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-sm font-bold disabled:opacity-50 shadow-md shadow-sky-500/25 transition-all">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                 Salvar Demanda
               </button>
