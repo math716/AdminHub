@@ -1930,11 +1930,11 @@ function LegendaCores() {
         { label: 'Sem emendas',             color: '#15355c', border: '1px solid var(--tint-18)' },
       ]
     : [
-        { label: 'Acima de R$ 2 milhões',   color: '#1D4ED8' },
-        { label: 'R$ 1 milhão – 2 milhões', color: '#3B82F6' },
-        { label: 'R$ 500 mil – 1 milhão',   color: '#7DD3FC' },
-        { label: 'Até R$ 500 mil',          color: '#BAE6FD' },
-        { label: 'Sem emendas',             color: '#F1F5F9', border: '1px solid #CBD5E1' },
+        { label: 'Acima de R$ 2 milhões',   color: '#2C5282' },
+        { label: 'R$ 1 milhão – 2 milhões', color: '#4A7FB5' },
+        { label: 'R$ 500 mil – 1 milhão',   color: '#82B0D4' },
+        { label: 'Até R$ 500 mil',          color: '#B5D0E8' },
+        { label: 'Sem emendas',             color: '#E8F0F8', border: '1px solid #CBD5E1' },
       ];
   return (
     <div className="space-y-1">

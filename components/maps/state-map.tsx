@@ -727,11 +727,11 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         // tons na mesma familia de azul cobalto/ceu, com progressao
         // harmonica sem extremos. Bate com a legenda discreta no claro.
         if (showChoropleth) {
-          if (votos === undefined || votos === 0) return '#F1F5F9';
-          if (votos > 2_000_000) return '#1D4ED8';
-          if (votos > 1_000_000) return '#3B82F6';
-          if (votos > 500_000)   return '#7DD3FC';
-          return '#BAE6FD';
+          if (votos === undefined || votos === 0) return '#E8F0F8';
+          if (votos > 2_000_000) return '#2C5282';
+          if (votos > 1_000_000) return '#4A7FB5';
+          if (votos > 500_000)   return '#82B0D4';
+          return '#B5D0E8';
         }
 
         if (votos === undefined || votos === 0) return '#dce8f5';
