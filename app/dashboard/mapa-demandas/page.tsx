@@ -432,14 +432,15 @@ export default function MapaDemandasPage() {
           </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`hidden md:flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${showFilters ? 'bg-sky-600 text-white' : 'bg-[var(--tint-06)] text-gray-300 hover:bg-[var(--tint-10)]'}`}
+            className={`hidden md:flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${showFilters ? 'text-white' : 'bg-[var(--tint-06)] text-[color:var(--text-secondary)] hover:bg-[var(--tint-10)]'}`}
+            style={showFilters ? { background: 'var(--brand-cobalt)' } : undefined}
           >
             <Filter className="w-4 h-4" />
             Filtros
           </button>
           <button
             onClick={() => { setShowNewModal(true); setForm({ ...EMPTY_FORM }); setSaveError(''); }}
-            className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-sky-600 hover:bg-sky-500 text-[color:var(--text-primary)] rounded-xl text-sm font-semibold transition-all"
+            className="flex items-center gap-1.5 px-3 md:px-4 py-2 text-white rounded-xl text-sm font-semibold transition-all hover:brightness-110" style={{ background: 'var(--brand-cobalt)' }}
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nova Demanda</span>
@@ -964,7 +965,7 @@ export default function MapaDemandasPage() {
                     className="flex-1 bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 placeholder:text-[color:var(--text-tertiary)] transition-all"
                     placeholder="Rua, número, bairro" />
                   <button onClick={geocodeFormAddress} disabled={geoLoading}
-                    className="flex items-center gap-1.5 px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-sm font-semibold disabled:opacity-50 transition-all shadow-sm">
+                    className="flex items-center gap-1.5 px-4 py-2.5 text-white rounded-xl text-sm font-semibold disabled:opacity-50 transition-all shadow-sm hover:brightness-110" style={{ background: 'var(--brand-cobalt)' }}>
                     {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                     Localizar
                   </button>
@@ -1021,7 +1022,7 @@ export default function MapaDemandasPage() {
                 <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Foto (opcional)</label>
                 <div className="mt-1.5 flex items-center gap-3">
                   <button onClick={() => fotoInputRef.current?.click()}
-                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold border-2 border-dashed transition-all text-[color:var(--text-secondary)] hover:text-sky-500 hover:border-sky-500 hover:bg-sky-500/8"
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold border-2 border-dashed transition-all text-[color:var(--text-secondary)] hover:text-[color:var(--brand-cobalt-text)] hover:border-[color:var(--brand-cobalt)] hover:bg-[color:var(--brand-cobalt-soft)]"
                     style={{ borderColor: 'var(--border-default)' }}>
                     <Camera className="w-4 h-4" />
                     {form.foto ? 'Trocar foto' : 'Adicionar foto'}
@@ -1052,7 +1053,7 @@ export default function MapaDemandasPage() {
                 Cancelar
               </button>
               <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-sm font-bold disabled:opacity-50 shadow-md shadow-sky-500/25 transition-all">
+                className="flex items-center gap-2 px-5 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-50 shadow-sm transition-all hover:brightness-110" style={{ background: 'var(--brand-cobalt)' }}>
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                 Salvar Demanda
               </button>
