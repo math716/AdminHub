@@ -39,7 +39,7 @@ export default function Donut3DChart({
 
   if (!mounted || filteredData.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center text-gray-400">
+      <div className="h-full flex items-center justify-center text-[color:var(--text-tertiary)]">
         Sem dados disponíveis
       </div>
     );
@@ -128,7 +128,7 @@ export default function Donut3DChart({
               <div className="text-sm font-bold text-[color:var(--text-primary)] leading-tight">{centerValue}</div>
             )}
             {centerLabel && (
-              <div className="text-[10px] text-gray-400 leading-tight">{centerLabel}</div>
+              <div className="text-[10px] text-[color:var(--text-secondary)] leading-tight">{centerLabel}</div>
             )}
           </div>
         </div>
@@ -145,7 +145,7 @@ export default function Donut3DChart({
                 className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                 style={{ backgroundColor: entry.color, boxShadow: `0 0 6px ${entry.color}` }}
               />
-              <span className="text-xs text-gray-300">{entry.name}</span>
+              <span className="text-xs text-[color:var(--text-secondary)]">{entry.name}</span>
             </div>
           ))}
         </div>
