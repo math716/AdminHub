@@ -1,0 +1,120 @@
+name: Import Emendas SP (ALESP)
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # toda segunda-feira às 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      ano:
+        description: 'Ano a importar (ex: 2025)'
+        required: false
+        default: '2025'
+        type: string
+      ano_extra:
+        description: 'Segundo ano a importar (opcional)'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  import-sp:
+    name: Import SP ${{ github.event.inputs.ano || '2025' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias Node
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Criar diretorio de dados
+        run: mkdir -p data/estados
+
+      - name: Baixar XLSX do dadosabertos.sp.gov.br
+        run: |
+          set -e
+          ANO="${{ github.event.inputs.ano || '2025' }}"
+          ANO2="${{ github.event.inputs.ano_extra }}"
+
+          download_xlsx() {
+            local ano=$1
+            local dest="data/estados/Emendas_Impositivas_${ano}.xlsx"
+
+            echo "=== Buscando URL do XLSX ${ano} via CKAN API ==="
+            CKAN_URL="https://dadosabertos.sp.gov.br/api/3/action/package_show?id=emendas-impositivas-${ano}"
+            echo "CKAN: $CKAN_URL"
+
+            RESPONSE=$(curl -fsSL --max-time 30 "$CKAN_URL")
+            # Extrai a primeira URL de recurso .xlsx (case insensitive)
+            XLSX_URL=$(echo "$RESPONSE" | python3 -c "
+          import sys, json, re
+          data = json.load(sys.stdin)
+          resources = data.get('result', {}).get('resources', [])
+          for r in resources:
+              url = r.get('url', '')
+              if re.search(r'\.xlsx', url, re.IGNORECASE):
+                  print(url)
+                  break
+          ")
+
+            if [ -z "$XLSX_URL" ]; then
+              echo "AVISO: CKAN nao retornou URL xlsx para ${ano}. Tentando URL direta..."
+              # Fallback: URL direta conhecida do dadosabertos.sp.gov.br
+              XLSX_URL="https://dadosabertos.sp.gov.br/dataset/emendas-impositivas-${ano}/resource/download/Emendas_Impositivas_${ano}.xlsx"
+            fi
+
+            echo "URL: $XLSX_URL"
+            curl -fsSL --max-time 300 --retry 3 --retry-delay 10 \
+              -H "User-Agent: Mozilla/5.0 (compatible; AdminHub-import/1.0)" \
+              -o "$dest" \
+              "$XLSX_URL"
+
+            MAGIC=$(xxd -p -l 4 "$dest" 2>/dev/null || echo "erro")
+            if [ "$MAGIC" != "504b0304" ]; then
+              echo "ERRO: arquivo baixado nao e um XLSX valido (magic=$MAGIC)."
+              head -c 500 "$dest"
+              exit 1
+            fi
+            echo "OK: $(ls -lh "$dest" | awk '{print $5}') baixados para $dest"
+          }
+
+          download_xlsx "$ANO"
+          [ -n "$ANO2" ] && download_xlsx "$ANO2"
+
+      - name: Importar SP no banco
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          ANO="${{ github.event.inputs.ano || '2025' }}"
+          ANO2="${{ github.event.inputs.ano_extra }}"
+
+          echo "=== Importando $ANO ==="
+          npx tsx --require dotenv/config scripts/estados/import-sp.ts \
+            --file "data/estados/Emendas_Impositivas_${ANO}.xlsx" \
+            --ano "$ANO"
+
+          if [ -n "$ANO2" ] && [ -f "data/estados/Emendas_Impositivas_${ANO2}.xlsx" ]; then
+            echo "=== Importando $ANO2 ==="
+            npx tsx --require dotenv/config scripts/estados/import-sp.ts \
+              --file "data/estados/Emendas_Impositivas_${ANO2}.xlsx" \
+              --ano "$ANO2"
+          fi
+
+      - name: Resumo
+        if: always()
+        run: |
+          ANO="${{ github.event.inputs.ano || '2025' }}"
+          echo "## Import SP (ALESP) concluido" >> $GITHUB_STEP_SUMMARY
+          echo "- **Ano principal:** $ANO" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horario:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
