@@ -100,13 +100,13 @@ export default function Donut3DChart({
             cursor={{ fill: 'var(--tint-04)' }}
             wrapperStyle={{ outline: 'none', zIndex: 50 }}
             contentStyle={{
-              backgroundColor: 'rgba(13, 27, 42, 0.97)',
-              border: '1px solid var(--tint-14)',
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border-default)',
               borderRadius: '10px',
               color: 'var(--text-primary)',
               fontSize: '12px',
               padding: '8px 12px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              boxShadow: 'var(--shadow-raised)',
             }}
             itemStyle={{ color: 'var(--text-primary)', padding: '2px 0' }}
             labelStyle={{ display: 'none' }}
