@@ -934,34 +934,44 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           if (!isMunicipioFiltered(nomeMun)) return;
           try {
             const geom = feature.geometry as { type: string; coordinates: any };
-            // Usa a geometria GeoJSON diretamente para evitar ambiguidades do getLatLngs().
-            // GeoJSON: coordenadas são [lng, lat]. Exterior rings = coordinates[0] por polígono.
+            // Usa a geometria GeoJSON diretamente (coordenadas [lng, lat]).
+            // Exterior ring = coordinates[0] de cada polígono (ignora holes).
             let exteriorRings: [number, number][][] = [];
             if (geom.type === 'Polygon') {
               if (geom.coordinates?.[0]?.length) exteriorRings = [geom.coordinates[0]];
             } else if (geom.type === 'MultiPolygon') {
               exteriorRings = (geom.coordinates as any[][][]).map((poly) => poly[0]).filter(Boolean);
             }
-            // Calcula área e centróide (shoelace) para um anel no formato GeoJSON [lng, lat]
-            const ringMetrics = (ring: [number, number][]) => {
+
+            // Para cada anel calcula a área (shoelace) e um "centro visual":
+            // média dos vértices nos 40% norte do intervalo de latitude.
+            // Municípios brasileiros têm seu núcleo urbano tipicamente no norte
+            // do território — extensões sul (mata, serra) puxam o centróide
+            // geométrico para longe do nome que aparece no mapa.
+            const ringVisualCenter = (ring: [number, number][]) => {
               const n = ring.length;
-              let area = 0, cx = 0, cy = 0;
+              // área pelo shoelace (para escolher o maior sub-polígono)
+              let area = 0;
               for (let i = 0; i < n; i++) {
                 const j = (i + 1) % n;
-                const cross = ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1];
-                area += cross;
-                cx += (ring[i][0] + ring[j][0]) * cross; // lng
-                cy += (ring[i][1] + ring[j][1]) * cross; // lat
+                area += ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1];
               }
-              area /= 2;
-              const absArea = Math.abs(area);
-              if (absArea < 1e-10) {
-                return { area: absArea, lat: ring.reduce((s, p) => s + p[1], 0) / n, lng: ring.reduce((s, p) => s + p[0], 0) / n };
-              }
-              return { area: absArea, lat: cy / (6 * area), lng: cx / (6 * area) };
+              const absArea = Math.abs(area) / 2;
+              // centro visual = média dos vértices no terço norte do polígono
+              const lats = ring.map(p => p[1]);
+              const minLat = Math.min(...lats);
+              const maxLat = Math.max(...lats);
+              const threshold = maxLat - (maxLat - minLat) * 0.40; // norte-40%
+              const north = ring.filter(p => p[1] >= threshold);
+              const pts = north.length >= 3 ? north : ring;
+              const lat = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+              const lng = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+              return { area: absArea, lat, lng };
             };
-            // Escolhe o anel exterior com maior área (correto para MultiPolygon)
-            const best = exteriorRings.map(ringMetrics).reduce((a, b) => b.area > a.area ? b : a, { area: 0, lat: 0, lng: 0 });
+
+            const best = exteriorRings
+              .map(ringVisualCenter)
+              .reduce((a, b) => b.area > a.area ? b : a, { area: 0, lat: 0, lng: 0 });
             const center = layer.getBounds().getCenter();
             const lat = best.area > 0 ? best.lat : center.lat;
             const lng = best.area > 0 ? best.lng : center.lng;
