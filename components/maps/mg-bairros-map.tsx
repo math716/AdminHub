@@ -118,22 +118,14 @@ function MgBairrosMapComponent({ municipio, votesData, selectedBairro, onBairroC
         const n = ring.length;
         let centerLat: number, centerLng: number;
         if (n >= 3) {
-          let area = 0, clat = 0, clng = 0;
-          for (let i = 0, j = n - 1; i < n; j = i++) {
-            const cross = ring[i].lng * ring[j].lat - ring[j].lng * ring[i].lat;
-            area += cross;
-            clng += (ring[i].lng + ring[j].lng) * cross;
-            clat += (ring[i].lat + ring[j].lat) * cross;
-          }
-          area *= 0.5;
-          if (Math.abs(area) > 1e-10) {
-            const f = 1 / (6 * area);
-            centerLat = clat * f;
-            centerLng = clng * f;
-          } else {
-            const bc = layer.getBounds().getCenter();
-            centerLat = bc.lat; centerLng = bc.lng;
-          }
+          const lats = ring.map((p: any) => p.lat);
+          const minLat = Math.min(...lats);
+          const maxLat = Math.max(...lats);
+          const threshold = maxLat - (maxLat - minLat) * 0.40;
+          const north = ring.filter((p: any) => p.lat >= threshold);
+          const pts = north.length >= 3 ? north : ring;
+          centerLat = pts.reduce((s: number, p: any) => s + p.lat, 0) / pts.length;
+          centerLng = pts.reduce((s: number, p: any) => s + p.lng, 0) / pts.length;
         } else {
           const bc = layer.getBounds().getCenter();
           centerLat = bc.lat; centerLng = bc.lng;
