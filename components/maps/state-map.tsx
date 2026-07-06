@@ -940,12 +940,29 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
             };
             const rings = findRings(raw);
             const ring = rings.reduce((a, b) => (b.length > a.length ? b : a), rings[0] ?? []);
-            const lat = ring.length > 0
-              ? ring.reduce((s: number, p: any) => s + p.lat, 0) / ring.length
-              : layer.getBounds().getCenter().lat;
-            const lng = ring.length > 0
-              ? ring.reduce((s: number, p: any) => s + p.lng, 0) / ring.length
-              : layer.getBounds().getCenter().lng;
+            // Centróide ponderado pela área (shoelace) — mais preciso que média
+            // aritmética de vértices, que pode cair fora de polígonos côncavos.
+            const polygonCentroid = (pts: any[]): { lat: number; lng: number } => {
+              const n = pts.length;
+              if (n === 0) return layer.getBounds().getCenter();
+              let area = 0, cx = 0, cy = 0;
+              for (let i = 0; i < n; i++) {
+                const j = (i + 1) % n;
+                const cross = pts[i].lng * pts[j].lat - pts[j].lng * pts[i].lat;
+                area += cross;
+                cx += (pts[i].lng + pts[j].lng) * cross;
+                cy += (pts[i].lat + pts[j].lat) * cross;
+              }
+              area /= 2;
+              if (Math.abs(area) < 1e-10) {
+                return { lat: pts.reduce((s: number, p: any) => s + p.lat, 0) / n,
+                         lng: pts.reduce((s: number, p: any) => s + p.lng, 0) / n };
+              }
+              return { lat: cy / (6 * area), lng: cx / (6 * area) };
+            };
+            const { lat, lng } = ring.length > 0
+              ? polygonCentroid(ring)
+              : layer.getBounds().getCenter();
             labelItems.push({ latlng: [lat, lng], votos, nome: nomeMun });
           } catch (_) {}
         });
