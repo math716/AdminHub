@@ -106,16 +106,11 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Atualizar municípios com batch (deleteMany + createMany) — evita N upserts sequenciais
+    // Upsert municípios individualmente para preservar IDs existentes (e portanto as parcerias vinculadas)
     if (municipios && Array.isArray(municipios) && municipios.length > 0) {
-      await prisma.$transaction([
-        prisma.projecaoMunicipio.deleteMany({
-          where: { projecaoId: projecao.id }
-        }),
-        prisma.projecaoMunicipio.createMany({
-          data: municipios.map((mun: any) => ({
-            projecaoId: projecao.id,
-            municipio: mun.municipio,
+      await prisma.$transaction(async (tx) => {
+        for (const mun of municipios as any[]) {
+          const munData = {
             votosBase: mun.votosBase ?? 0,
             metaConservadora: mun.metaConservadora ?? mun.votosBase ?? 0,
             metaPossivel: mun.metaPossivel ?? mun.votosBase ?? 0,
@@ -126,9 +121,19 @@ export async function POST(request: NextRequest) {
             dobradaNome: mun.dobradaNome ?? null,
             dobradaPartido: mun.dobradaPartido ?? null,
             dobradaObservacoes: mun.dobradaObservacoes ?? null,
-          }))
-        })
-      ]);
+          };
+          await tx.projecaoMunicipio.upsert({
+            where: { projecaoId_municipio: { projecaoId: projecao.id, municipio: mun.municipio } },
+            update: munData,
+            create: { projecaoId: projecao.id, municipio: mun.municipio, ...munData },
+          });
+        }
+        // Remove municípios que foram excluídos pelo usuário
+        const incomingNames = (municipios as any[]).map((m: any) => m.municipio as string);
+        await tx.projecaoMunicipio.deleteMany({
+          where: { projecaoId: projecao.id, municipio: { notIn: incomingNames } },
+        });
+      });
     }
 
     const projecaoCompleta = await prisma.projecaoCampanha.findUnique({

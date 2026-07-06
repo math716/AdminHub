@@ -1628,19 +1628,39 @@ export default function MapaCampanhaPage() {
     setShowParceriaModal(true);
   };
 
-  // Obter parcerias de um município
+  // Verifica se uma parceria pertence a um bairro do município dado
+  const parceriaBairroDestesMunicipio = (pMun: string, municipioNorm: string): boolean => {
+    if (isMunBairro(pMun) && municipioVereador && normMunKey(municipioVereador) === municipioNorm) return true;
+    if (isMgBairro(pMun) && mgBairrosMunicipio && normMunKey(mgBairrosMunicipio) === municipioNorm) return true;
+    return false;
+  };
+
+  // Obter parcerias de um município (inclui parcerias de bairros pertencentes ao município)
   const getParceriasMunicipio = (municipio: string): Parceria[] => {
     const munUp = municipio.toUpperCase();
-    const saved = parcerias.filter(p => p.municipio?.toUpperCase() === munUp);
-    const pending = pendingParcerias.filter(p => p.municipio?.toUpperCase() === munUp);
+    const munNorm = normMunKey(municipio);
+    const saved = parcerias.filter(p => {
+      const pMun = p.municipio ?? '';
+      return pMun.toUpperCase() === munUp || parceriaBairroDestesMunicipio(pMun, munNorm);
+    });
+    const pending = pendingParcerias.filter(p => {
+      const pMun = p.municipio ?? '';
+      return pMun.toUpperCase() === munUp || parceriaBairroDestesMunicipio(pMun, munNorm);
+    });
     return [...saved, ...pending];
   };
 
-  // Verificar se município tem parcerias
+  // Verificar se município tem parcerias (inclui bairros)
   const municipioTemParcerias = (municipio: string): boolean => {
     const munUp = municipio.toUpperCase();
-    return parcerias.some(p => p.municipio?.toUpperCase() === munUp) ||
-           pendingParcerias.some(p => p.municipio?.toUpperCase() === munUp);
+    const munNorm = normMunKey(municipio);
+    return parcerias.some(p => {
+      const pMun = p.municipio ?? '';
+      return pMun.toUpperCase() === munUp || parceriaBairroDestesMunicipio(pMun, munNorm);
+    }) || pendingParcerias.some(p => {
+      const pMun = p.municipio ?? '';
+      return pMun.toUpperCase() === munUp || parceriaBairroDestesMunicipio(pMun, munNorm);
+    });
   };
 
   // Calcular soma das metas de parcerias por município
@@ -1654,14 +1674,33 @@ export default function MapaCampanhaPage() {
     };
   };
 
-  // Obter meta final (base + parcerias) para um município
+  // Soma o delta de projeções de bairros para um município (meta - votosBase de cada bairro)
+  const getBairrosDeltaMunicipio = (municipio: string, cenario: CenarioType): number => {
+    if (!projecao) return 0;
+    const munNorm = normMunKey(municipio);
+    const bairros = projecao.municipios.filter(m => {
+      const mMun = m.municipio;
+      if (isMunBairro(mMun) && municipioVereador && normMunKey(municipioVereador) === munNorm) return true;
+      if (isMgBairro(mMun) && mgBairrosMunicipio && normMunKey(mgBairrosMunicipio) === munNorm) return true;
+      return false;
+    });
+    return bairros.reduce((acc, m) => {
+      const meta = cenario === 'conservador' ? m.metaConservadora
+        : cenario === 'arrojado' ? m.metaArrojada
+        : m.metaPossivel;
+      return acc + Math.max(0, meta - m.votosBase);
+    }, 0);
+  };
+
+  // Obter meta final (base + parcerias + delta de bairros) para um município
   const getMetaFinalMunicipio = (mun: ProjecaoMunicipio, cenario: CenarioType): number => {
     const parceriasSum = getParceriasSumForMunicipio(mun.municipio);
+    const bairrosDelta = getBairrosDeltaMunicipio(mun.municipio, cenario);
     switch (cenario) {
-      case 'conservador': return mun.metaConservadora + parceriasSum.conservadora;
-      case 'possivel': return mun.metaPossivel + parceriasSum.possivel;
-      case 'arrojado': return mun.metaArrojada + parceriasSum.arrojada;
-      default: return mun.metaPossivel + parceriasSum.possivel;
+      case 'conservador': return mun.metaConservadora + parceriasSum.conservadora + bairrosDelta;
+      case 'possivel': return mun.metaPossivel + parceriasSum.possivel + bairrosDelta;
+      case 'arrojado': return mun.metaArrojada + parceriasSum.arrojada + bairrosDelta;
+      default: return mun.metaPossivel + parceriasSum.possivel + bairrosDelta;
     }
   };
 
@@ -3359,6 +3398,7 @@ export default function MapaCampanhaPage() {
                             const diff = metaAtiva - mun.votosBase;
                             const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
                             const isNew = mun.votosBase === 0;
+                            const bairrosDelta = getBairrosDeltaMunicipio(mun.municipio, cenarioAtivo);
                             return (
                               <div
                                 key={idx}
@@ -3378,6 +3418,7 @@ export default function MapaCampanhaPage() {
                                   <div className="flex items-center gap-1 flex-shrink-0">
                                     {isNew && <Badge variant="success" className="text-[10px] px-1 py-0">NOVO</Badge>}
                                     {mun.prioridade === 'ALTA' && <Badge variant="danger" className="text-[10px] px-1 py-0">!</Badge>}
+                                    {bairrosDelta > 0 && <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.25)' }}>+{bairrosDelta.toLocaleString()} bairros</span>}
                                     {isNew && (
                                       <button onClick={(e) => { e.stopPropagation(); removeMunicipio(mun.municipio); }} className="p-0.5 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Trash2 className="h-3 w-3" />
@@ -3855,7 +3896,11 @@ export default function MapaCampanhaPage() {
             {/* Metas Grid */}
             {(() => {
               const parceriasSum = getParceriasSumForMunicipio(selectedMunicipio.nome);
-              const hasParceriasForMeta = parceriasSum.conservadora > 0 || parceriasSum.possivel > 0 || parceriasSum.arrojada > 0;
+              const bairrosDeltaC = getBairrosDeltaMunicipio(selectedMunicipio.nome, 'conservador');
+              const bairrosDeltaP = getBairrosDeltaMunicipio(selectedMunicipio.nome, 'possivel');
+              const bairrosDeltaA = getBairrosDeltaMunicipio(selectedMunicipio.nome, 'arrojado');
+              const hasBairrosDelta = bairrosDeltaC > 0 || bairrosDeltaP > 0 || bairrosDeltaA > 0;
+              const hasParceriasForMeta = parceriasSum.conservadora > 0 || parceriasSum.possivel > 0 || parceriasSum.arrojada > 0 || hasBairrosDelta;
               
               return (
                 <>
@@ -3927,7 +3972,7 @@ export default function MapaCampanhaPage() {
                       <h4 className="text-[color:var(--text-primary)] font-medium mb-3 flex items-center gap-2">
                         <Users className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
                         Composição das Metas Finais
-                        <Badge variant="warning" className="text-xs ml-auto">Inclui Parcerias</Badge>
+                        <Badge variant="warning" className="text-xs ml-auto">{hasBairrosDelta ? 'Inclui Parcerias + Bairros' : 'Inclui Parcerias'}</Badge>
                       </h4>
                       <div className="grid grid-cols-3 gap-3 text-xs">
                         {/* Conservadora Final */}
@@ -3938,13 +3983,17 @@ export default function MapaCampanhaPage() {
                               <span>Meta Base:</span>
                               <span>{metaConservadoraTemp.toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between text-[color:var(--brand-cobalt-text)]">
+                            {parceriasSum.conservadora > 0 && <div className="flex justify-between text-[color:var(--brand-cobalt-text)]">
                               <span>+ Parcerias:</span>
                               <span>+{parceriasSum.conservadora.toLocaleString()}</span>
-                            </div>
+                            </div>}
+                            {bairrosDeltaC > 0 && <div className="flex justify-between" style={{ color: '#38bdf8' }}>
+                              <span>+ Bairros:</span>
+                              <span>+{bairrosDeltaC.toLocaleString()}</span>
+                            </div>}
                             <div className="flex justify-between text-[color:var(--text-primary)] font-bold border-t border-[var(--border-default)] pt-1">
                               <span>= Final:</span>
-                              <span>{(metaConservadoraTemp + parceriasSum.conservadora).toLocaleString()}</span>
+                              <span>{(metaConservadoraTemp + parceriasSum.conservadora + bairrosDeltaC).toLocaleString()}</span>
                             </div>
                           </div>
                         </div>
@@ -3956,13 +4005,17 @@ export default function MapaCampanhaPage() {
                               <span>Meta Base:</span>
                               <span>{metaPossivelTemp.toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between text-[color:var(--brand-cobalt-text)]">
+                            {parceriasSum.possivel > 0 && <div className="flex justify-between text-[color:var(--brand-cobalt-text)]">
                               <span>+ Parcerias:</span>
                               <span>+{parceriasSum.possivel.toLocaleString()}</span>
-                            </div>
+                            </div>}
+                            {bairrosDeltaP > 0 && <div className="flex justify-between" style={{ color: '#38bdf8' }}>
+                              <span>+ Bairros:</span>
+                              <span>+{bairrosDeltaP.toLocaleString()}</span>
+                            </div>}
                             <div className="flex justify-between text-[color:var(--text-primary)] font-bold border-t border-[var(--border-default)] pt-1">
                               <span>= Final:</span>
-                              <span>{(metaPossivelTemp + parceriasSum.possivel).toLocaleString()}</span>
+                              <span>{(metaPossivelTemp + parceriasSum.possivel + bairrosDeltaP).toLocaleString()}</span>
                             </div>
                           </div>
                         </div>
@@ -3974,13 +4027,17 @@ export default function MapaCampanhaPage() {
                               <span>Meta Base:</span>
                               <span>{metaArrojadaTemp.toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between text-[color:var(--brand-cobalt-text)]">
+                            {parceriasSum.arrojada > 0 && <div className="flex justify-between text-[color:var(--brand-cobalt-text)]">
                               <span>+ Parcerias:</span>
                               <span>+{parceriasSum.arrojada.toLocaleString()}</span>
-                            </div>
+                            </div>}
+                            {bairrosDeltaA > 0 && <div className="flex justify-between" style={{ color: '#38bdf8' }}>
+                              <span>+ Bairros:</span>
+                              <span>+{bairrosDeltaA.toLocaleString()}</span>
+                            </div>}
                             <div className="flex justify-between text-[color:var(--text-primary)] font-bold border-t border-[var(--border-default)] pt-1">
                               <span>= Final:</span>
-                              <span>{(metaArrojadaTemp + parceriasSum.arrojada).toLocaleString()}</span>
+                              <span>{(metaArrojadaTemp + parceriasSum.arrojada + bairrosDeltaA).toLocaleString()}</span>
                             </div>
                           </div>
                         </div>
@@ -4092,6 +4149,17 @@ export default function MapaCampanhaPage() {
                               pendente
                             </span>
                           )}
+                          {(() => {
+                            const pMun = parceria.municipio ?? '';
+                            const bairroNome = isMunBairro(pMun) ? getMunBairroNome(pMun)
+                              : isMgBairro(pMun) ? getMgBairroNome(pMun)
+                              : null;
+                            return bairroNome ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0" style={{ background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>
+                                bairro: {bairroNome}
+                              </span>
+                            ) : null;
+                          })()}
                           <span className="text-[color:var(--text-primary)] text-sm font-medium truncate">{parceria.nome}</span>
                           {parceria.responsavel && (
                             <span className="text-slate-600 dark:text-slate-500 text-xs">({parceria.responsavel})</span>
