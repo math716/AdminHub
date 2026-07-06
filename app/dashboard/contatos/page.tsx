@@ -658,7 +658,7 @@ export default function ContatosPage() {
             </button>
             <button onClick={() => { setShowModal(true); setForm({ ...EMPTY_FORM }); setResolvedCoords(null); setSaveError(''); setEditingContact(null); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:brightness-110"
-              style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>
+              style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' }}>
               <Plus className="w-4 h-4" /> Novo Contato
             </button>
           </div>
@@ -943,7 +943,7 @@ export default function ContatosPage() {
               {selectedIds.size > 0 && (
                 <button onClick={() => setShowMsg(true)}
                   className="flex-shrink-0 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>
+                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' }}>
                   <MessageSquare className="h-4 w-4" /> Disparar mensagem ({selectedIds.size})
                 </button>
               )}
@@ -1109,7 +1109,7 @@ export default function ContatosPage() {
                   style={{ border: '1px solid var(--tint-10)', color: 'var(--tint-55)' }}>Cancelar</button>
                 <button onClick={handleSave} disabled={saving}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>
+                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' }}>
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : editingContact ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                   {editingContact ? 'Salvar alterações' : 'Salvar'}
                 </button>
@@ -1229,7 +1229,7 @@ export default function ContatosPage() {
                     </div>
                     <button onClick={resetImport}
                       className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-                      style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>Concluir</button>
+                      style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' }}>Concluir</button>
                   </div>
                 )}
               </div>

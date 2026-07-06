@@ -315,7 +315,7 @@ export default function AgendaPage() {
           <button
             onClick={() => { setEditEvent(null); setForm({ ...EMPTY_FORM }); setFormError(''); setShowModal(true); }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}
+            style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' }}
           >
             <Plus className="w-4 h-4" />
             Novo Evento
@@ -432,7 +432,7 @@ export default function AgendaPage() {
                       <span
                         className="text-sm font-semibold w-6 h-6 flex items-center justify-center rounded-full"
                         style={isTod
-                          ? { background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)', fontWeight: 800 }
+                          ? { background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF', fontWeight: 800 }
                           : feriado
                             ? { color: '#f87171' }
                             : isWeekend
@@ -795,7 +795,7 @@ export default function AgendaPage() {
                 </button>
                 <button onClick={handleSave} disabled={saving}
                   className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>
+                  style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' }}>
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                   {editEvent ? 'Atualizar' : 'Salvar Evento'}
                 </button>

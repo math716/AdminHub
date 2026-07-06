@@ -603,7 +603,7 @@ export default function UsuariosPage() {
             onClick={() => (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'AGENTE_POLITICO') ? setShowInviteForm(f => !f) : handleGenerateInvite('ASSESSOR')}
             disabled={generatingInvite}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#2563EB,#3B82F6)', color: 'var(--bg-page)' }}
+            style={{ background: 'linear-gradient(135deg,#2563EB,#3B82F6)', color: '#FFFFFF' }}
           >
             {generatingInvite ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
             Gerar Convite
@@ -1019,7 +1019,7 @@ export default function UsuariosPage() {
                         <div key={u.id} className="flex items-center justify-between px-5 py-3.5 gap-3 transition-all hover:bg-white/[0.02]">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-                              style={{ background: 'linear-gradient(135deg,#2563EB,#3B82F6)', color: 'var(--bg-page)' }}>
+                              style={{ background: 'linear-gradient(135deg,#2563EB,#3B82F6)', color: '#FFFFFF' }}>
                               {u.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('')}
                             </div>
                             <div className="min-w-0">
@@ -1169,7 +1169,7 @@ export default function UsuariosPage() {
                     </button>
                     <button onClick={confirmResetPassword} disabled={resettingPwd}
                       className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-                      style={{ background: 'linear-gradient(135deg,#d97706,#f59e0b)', color: 'var(--bg-page)' }}>
+                      style={{ background: 'linear-gradient(135deg,#d97706,#f59e0b)', color: '#FFFFFF' }}>
                       {resettingPwd ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
                       {resettingPwd ? 'Gerando...' : 'Confirmar Reset'}
                     </button>
@@ -1288,7 +1288,7 @@ export default function UsuariosPage() {
                 <button onClick={() => approveUser(approveTarget.id, Array.from(approvePerms))}
                   disabled={actionId === approveTarget.id}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg,#16a34a,#22c55e)', color: 'var(--bg-page)' }}>
+                  style={{ background: 'linear-gradient(135deg,#16a34a,#22c55e)', color: '#FFFFFF' }}>
                   {actionId === approveTarget.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   {actionId === approveTarget.id ? 'Aprovando...' : 'Aprovar'}
                 </button>

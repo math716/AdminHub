@@ -433,14 +433,14 @@ export default function MapaDemandasPage() {
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`hidden md:flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${showFilters ? 'hover:opacity-90' : 'bg-[var(--tint-06)] text-[color:var(--text-secondary)] hover:bg-[var(--tint-10)]'}`}
-            style={showFilters ? { background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' } : undefined}
+            style={showFilters ? { background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' } : undefined}
           >
             <Filter className="w-4 h-4" />
             Filtros
           </button>
           <button
             onClick={() => { setShowNewModal(true); setForm({ ...EMPTY_FORM }); setSaveError(''); }}
-            className="flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90" style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}
+            className="flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90" style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' }}
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nova Demanda</span>
@@ -965,7 +965,7 @@ export default function MapaDemandasPage() {
                     className="flex-1 bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 placeholder:text-[color:var(--text-tertiary)] transition-all"
                     placeholder="Rua, número, bairro" />
                   <button onClick={geocodeFormAddress} disabled={geoLoading}
-                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 transition-all shadow-sm hover:opacity-90" style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 transition-all shadow-sm hover:opacity-90" style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' }}>
                     {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                     Localizar
                   </button>
@@ -1053,7 +1053,7 @@ export default function MapaDemandasPage() {
                 Cancelar
               </button>
               <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 shadow-sm transition-all hover:opacity-90" style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: 'var(--bg-page)' }}>
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 shadow-sm transition-all hover:opacity-90" style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' }}>
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                 Salvar Demanda
               </button>
