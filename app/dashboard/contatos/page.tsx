@@ -927,7 +927,7 @@ export default function ContatosPage() {
                           className="w-full text-left px-3 py-2.5 transition-all hover:bg-[var(--tint-06)] flex items-center gap-2.5">
                           <span className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-all"
                             style={sel ? { background: '#2563EB' } : { border: '1px solid var(--tint-25)' }}>
-                            {sel && <Check className="h-3 w-3 text-[var(--bg-page)]" strokeWidth={3} />}
+                            {sel && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
                           </span>
                           <div className="flex-1 min-w-0">
                             <p className="text-[color:var(--text-primary)] text-xs font-medium truncate">{c.nome}</p>
