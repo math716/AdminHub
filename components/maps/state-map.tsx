@@ -933,36 +933,38 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           if (!votos || votos === 0) return;
           if (!isMunicipioFiltered(nomeMun)) return;
           try {
-            const raw = layer.getLatLngs();
-            const findRings = (arr: any[]): any[][] => {
-              if (arr.length > 0 && arr[0].lat !== undefined) return [arr];
-              return arr.flatMap((x: any) => findRings(x));
-            };
-            const rings = findRings(raw);
-            const ring = rings.reduce((a, b) => (b.length > a.length ? b : a), rings[0] ?? []);
-            // Centróide ponderado pela área (shoelace) — mais preciso que média
-            // aritmética de vértices, que pode cair fora de polígonos côncavos.
-            const polygonCentroid = (pts: any[]): { lat: number; lng: number } => {
-              const n = pts.length;
-              if (n === 0) return layer.getBounds().getCenter();
+            const geom = feature.geometry as { type: string; coordinates: any };
+            // Usa a geometria GeoJSON diretamente para evitar ambiguidades do getLatLngs().
+            // GeoJSON: coordenadas são [lng, lat]. Exterior rings = coordinates[0] por polígono.
+            let exteriorRings: [number, number][][] = [];
+            if (geom.type === 'Polygon') {
+              if (geom.coordinates?.[0]?.length) exteriorRings = [geom.coordinates[0]];
+            } else if (geom.type === 'MultiPolygon') {
+              exteriorRings = (geom.coordinates as any[][][]).map((poly) => poly[0]).filter(Boolean);
+            }
+            // Calcula área e centróide (shoelace) para um anel no formato GeoJSON [lng, lat]
+            const ringMetrics = (ring: [number, number][]) => {
+              const n = ring.length;
               let area = 0, cx = 0, cy = 0;
               for (let i = 0; i < n; i++) {
                 const j = (i + 1) % n;
-                const cross = pts[i].lng * pts[j].lat - pts[j].lng * pts[i].lat;
+                const cross = ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1];
                 area += cross;
-                cx += (pts[i].lng + pts[j].lng) * cross;
-                cy += (pts[i].lat + pts[j].lat) * cross;
+                cx += (ring[i][0] + ring[j][0]) * cross; // lng
+                cy += (ring[i][1] + ring[j][1]) * cross; // lat
               }
               area /= 2;
-              if (Math.abs(area) < 1e-10) {
-                return { lat: pts.reduce((s: number, p: any) => s + p.lat, 0) / n,
-                         lng: pts.reduce((s: number, p: any) => s + p.lng, 0) / n };
+              const absArea = Math.abs(area);
+              if (absArea < 1e-10) {
+                return { area: absArea, lat: ring.reduce((s, p) => s + p[1], 0) / n, lng: ring.reduce((s, p) => s + p[0], 0) / n };
               }
-              return { lat: cy / (6 * area), lng: cx / (6 * area) };
+              return { area: absArea, lat: cy / (6 * area), lng: cx / (6 * area) };
             };
-            const { lat, lng } = ring.length > 0
-              ? polygonCentroid(ring)
-              : layer.getBounds().getCenter();
+            // Escolhe o anel exterior com maior área (correto para MultiPolygon)
+            const best = exteriorRings.map(ringMetrics).reduce((a, b) => b.area > a.area ? b : a, { area: 0, lat: 0, lng: 0 });
+            const center = layer.getBounds().getCenter();
+            const lat = best.area > 0 ? best.lat : center.lat;
+            const lng = best.area > 0 ? best.lng : center.lng;
             labelItems.push({ latlng: [lat, lng], votos, nome: nomeMun });
           } catch (_) {}
         });
