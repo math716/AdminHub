@@ -2696,8 +2696,8 @@ export default function MapaCampanhaPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
-                className="hidden md:flex md:col-span-4 lg:col-span-3 xl:col-span-2 md:order-1 flex-col"
-                style={{ height: 'calc(100vh - 220px)', minHeight: '340px' }}
+                className="hidden md:flex md:col-span-4 lg:col-span-3 md:order-1 flex-col"
+                style={{ height: 'calc(100vh - 170px)', minHeight: '340px' }}
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
@@ -2769,7 +2769,7 @@ export default function MapaCampanhaPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
                 className="hidden lg:flex lg:col-span-3 lg:order-3 flex-col"
-                style={{ height: 'calc(100vh - 220px)', minHeight: '340px' }}
+                style={{ height: 'calc(100vh - 170px)', minHeight: '340px' }}
               >
                 {/* Municipality List */}
                 <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] flex flex-col h-full">
@@ -3465,11 +3465,11 @@ export default function MapaCampanhaPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
-              className={mapFullscreen ? 'flex-1 min-w-0 relative overflow-hidden' : 'col-span-12 md:col-span-8 lg:col-span-6 xl:col-span-7 md:order-2 overflow-hidden order-1'}
+              className={mapFullscreen ? 'flex-1 min-w-0 relative overflow-hidden' : 'col-span-12 md:col-span-8 lg:col-span-6 md:order-2 overflow-hidden order-1'}
             >
               <Card
                 className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden flex flex-col' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--tint-06)] overflow-hidden flex flex-col'}
-                style={!mapFullscreen ? { height: 'clamp(340px, calc(100vh - 220px), 900px)', minHeight: '340px' } : undefined}
+                style={!mapFullscreen ? { height: 'clamp(400px, calc(100vh - 170px), 900px)', minHeight: '400px' } : undefined}
               >
                 <CardHeader className={`border-b border-[var(--tint-06)] py-0.5 px-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
