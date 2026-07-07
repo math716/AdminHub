@@ -2697,12 +2697,12 @@ export default function MapaCampanhaPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
                 className="hidden md:flex md:col-span-4 lg:col-span-3 md:order-1 flex-col"
-                style={{ height: 'calc(100vh - 170px)', minHeight: '340px' }}
+                style={{ height: 'calc(100vh - 160px)', minHeight: '340px' }}
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
                   <CardContent className="p-4 flex flex-col h-full justify-between">
-                    <p className="text-sm font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>
+                    <p className="text-xs 2xl:text-sm font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>
                       Cenário de Projeção
                     </p>
 
@@ -2719,7 +2719,7 @@ export default function MapaCampanhaPage() {
                         <button
                           key={cenario}
                           onClick={() => setCenarioAtivo(cenario)}
-                          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all w-full text-left border ${
+                          className={`flex items-center gap-2.5 px-2 py-1.5 2xl:px-3 2xl:py-2.5 rounded-lg transition-all w-full text-left border ${
                             isActive
                               ? `${config.bg} text-white shadow-md border-transparent`
                               : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
@@ -2729,7 +2729,7 @@ export default function MapaCampanhaPage() {
                             <Icon className="h-4 w-4" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm leading-tight">{config.label}</p>
+                            <p className="font-semibold text-xs 2xl:text-sm leading-tight">{config.label}</p>
                             <p className={`text-xs leading-tight mt-0.5 ${isActive ? 'opacity-80' : 'text-[color:var(--text-tertiary)]'}`}>
                               {desc[cenario]}
                             </p>
@@ -2743,7 +2743,7 @@ export default function MapaCampanhaPage() {
                       <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: '#6b82a0' }}>
                         Meta Total · {anoProjecao}
                       </p>
-                      <p className={`text-lg font-bold ${cenarioConfig[cenarioAtivo].color}`}>
+                      <p className={`text-base 2xl:text-lg font-bold ${cenarioConfig[cenarioAtivo].color}`}>
                         {getTotalVotosMeta().toLocaleString()}
                       </p>
                       {getTotalVotosBase() > 0 && (
@@ -2769,7 +2769,7 @@ export default function MapaCampanhaPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
                 className="hidden lg:flex lg:col-span-3 lg:order-3 flex-col"
-                style={{ height: 'calc(100vh - 170px)', minHeight: '340px' }}
+                style={{ height: 'calc(100vh - 160px)', minHeight: '340px' }}
               >
                 {/* Municipality List */}
                 <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] flex flex-col h-full">
@@ -3469,12 +3469,12 @@ export default function MapaCampanhaPage() {
             >
               <Card
                 className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden flex flex-col' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--tint-06)] overflow-hidden flex flex-col pt-2'}
-                style={!mapFullscreen ? { height: 'clamp(400px, calc(100vh - 170px), 900px)', minHeight: '400px' } : undefined}
+                style={!mapFullscreen ? { height: 'clamp(400px, calc(100vh - 160px), 900px)', minHeight: '400px' } : undefined}
               >
                 <CardHeader className={`border-b border-[var(--tint-06)] py-0.5 px-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <CardTitle className="text-[color:var(--text-primary)] flex items-center gap-2">
-                      <Map className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
+                    <CardTitle className="text-sm 2xl:text-base text-[color:var(--text-primary)] flex items-center gap-2">
+                      <Map className="h-4 w-4 2xl:h-5 2xl:w-5 text-[color:var(--brand-cobalt)]" />
                       {activeTab === 'historico' ? `Votos em ${ano}` : `Projeção ${cenarioConfig[cenarioAtivo].label} para ${anoProjecao}`}
                     </CardTitle>
                     <div className="flex items-center gap-2">
@@ -3778,7 +3778,7 @@ export default function MapaCampanhaPage() {
                     <div className="flex items-center gap-2">
                       <BarChart3 className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
                       <span className="text-xs font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Votos {ano}</span>
-                      <span className="ml-auto text-base font-bold text-[color:var(--text-primary)] whitespace-nowrap">{getTotalVotosBase().toLocaleString()}</span>
+                      <span className="ml-auto text-sm 2xl:text-base font-bold text-[color:var(--text-primary)] whitespace-nowrap">{getTotalVotosBase().toLocaleString()}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -3790,7 +3790,7 @@ export default function MapaCampanhaPage() {
                   <div className="flex items-center gap-2">
                     <Target className={`h-4 w-4 flex-shrink-0 ${cenarioConfig[cenarioAtivo].color}`} />
                     <span className="text-xs font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Meta {anoProjecao}</span>
-                    <span className={`ml-auto text-base font-bold whitespace-nowrap ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</span>
+                    <span className={`ml-auto text-sm 2xl:text-base font-bold whitespace-nowrap ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -3805,7 +3805,7 @@ export default function MapaCampanhaPage() {
                         : <ArrowDown className="h-4 w-4 flex-shrink-0 text-red-400" />
                       }
                       <span className="text-xs font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Crescimento</span>
-                      <span className={`ml-auto text-base font-bold whitespace-nowrap ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
+                      <span className={`ml-auto text-sm 2xl:text-base font-bold whitespace-nowrap ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
                         {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
                       </span>
                     </div>
@@ -3819,7 +3819,7 @@ export default function MapaCampanhaPage() {
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
                     <span className="text-xs font-semibold uppercase tracking-wide truncate" style={{ color: '#6b82a0' }}>Municípios</span>
-                    <span className="ml-auto text-base font-bold text-[color:var(--text-primary)] whitespace-nowrap">
+                    <span className="ml-auto text-sm 2xl:text-base font-bold text-[color:var(--text-primary)] whitespace-nowrap">
                       {getMunicipiosCount()}
                       {filtroTipo !== 'todos' && <span className="text-xs font-normal ml-1" style={{ color: '#6b82a0' }}>/ {projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length}</span>}
                     </span>
@@ -3834,7 +3834,7 @@ export default function MapaCampanhaPage() {
                     <Handshake className="h-4 w-4 flex-shrink-0 text-blue-400" />
                     <span className="text-xs font-semibold uppercase tracking-wide truncate text-blue-300">Dobradas</span>
                     <div className="ml-auto text-right">
-                      <span className="text-base font-bold text-blue-400 whitespace-nowrap">{getDobradasCount()}</span>
+                      <span className="text-sm 2xl:text-base font-bold text-blue-400 whitespace-nowrap">{getDobradasCount()}</span>
                       {getVotosComDobrada() > 0 && <span className="text-[10px] text-slate-400 ml-1">+{getVotosComDobrada().toLocaleString()}v</span>}
                     </div>
                   </div>
@@ -3856,7 +3856,7 @@ export default function MapaCampanhaPage() {
                     </button>
                     <span className={`text-xs font-semibold uppercase tracking-wide truncate ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-500'}`}>Parcerias</span>
                     <div className="ml-auto text-right">
-                      <span className={`text-base font-bold whitespace-nowrap ${includeParcerias ? 'text-sky-400' : 'text-slate-500'}`}>{parceriasStats?.total || 0}</span>
+                      <span className={`text-sm 2xl:text-base font-bold whitespace-nowrap ${includeParcerias ? 'text-sky-400' : 'text-slate-500'}`}>{parceriasStats?.total || 0}</span>
                       {includeParcerias && <span className={`text-[10px] ml-1 ${cenarioConfig[cenarioAtivo].color}`}>
                         +{((cenarioAtivo === 'conservador' ? parceriasStats?.metaConservadoraTotal : cenarioAtivo === 'possivel' ? parceriasStats?.metaPossivelTotal : parceriasStats?.metaArrojadaTotal) || 0).toLocaleString()}v
                       </span>}
