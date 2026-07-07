@@ -90,7 +90,7 @@ const S = StyleSheet.create({
     marginBottom: 13,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logo: { width: 36, height: 36, objectFit: 'contain' },
+  logo: { width: 48, height: 48, objectFit: 'contain' },
   headerText: { flexDirection: 'column', gap: 1 },
   gabineteName: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: C.blue },
   reportSubtitle: { fontSize: 8.5, color: C.textMuted },
