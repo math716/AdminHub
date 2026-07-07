@@ -7,6 +7,8 @@ import { prisma } from '@/lib/db';
 import { renderToBuffer } from '@react-pdf/renderer';
 import React from 'react';
 import DashboardReport from '@/components/pdf/dashboard-report';
+import fs from 'fs';
+import path from 'path';
 
 export async function GET() {
   try {
@@ -97,8 +99,13 @@ export async function GET() {
       lastResolvedDate: lastResolvedDate ?? null,
     };
 
+    const logoPath = path.join(process.cwd(), 'public', 'logo.png');
+    const logoSrc = fs.existsSync(logoPath)
+      ? `data:image/png;base64,${fs.readFileSync(logoPath).toString('base64')}`
+      : undefined;
+
     const buffer = await renderToBuffer(
-      React.createElement(DashboardReport, { gabineteName, stats })
+      React.createElement(DashboardReport, { gabineteName, stats, logoSrc })
     );
 
     const dateStr = new Date().toISOString().slice(0, 10);

@@ -1,12 +1,32 @@
-import { Document, Page, Text, View, StyleSheet, Svg, Path, Circle } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Svg, Path, Circle, Image } from '@react-pdf/renderer';
+
+// ── Cores idênticas ao dashboard ───────────────────────────────────────────────
+const C = {
+  blue:        '#1d4ed8',
+  blueDark:    '#1e3a8a',
+  blueLight:   '#dbeafe',
+  blueMid:     '#bfdbfe',
+  pendente:    '#EF4444',
+  andamento:   '#2196F3',
+  resolvida:   '#4CAF50',
+  baixa:       '#4CAF50',
+  media:       '#FFC107',
+  alta:        '#F44336',
+  urgente:     '#DC2626',
+  textPrimary: '#0f172a',
+  textMuted:   '#64748b',
+  textLight:   '#94a3b8',
+  bg:          '#f8fafc',
+  border:      '#e2e8f0',
+  rowAlt:      '#f0f9ff',
+  white:       '#ffffff',
+};
 
 // ── Pie chart helpers ──────────────────────────────────────────────────────────
-
 function polarXY(cx: number, cy: number, r: number, deg: number) {
   const rad = ((deg - 90) * Math.PI) / 180;
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
-
 function slicePath(cx: number, cy: number, r: number, start: number, end: number) {
   const s = polarXY(cx, cy, r, start);
   const e = polarXY(cx, cy, r, end);
@@ -18,175 +38,162 @@ interface PieEntry { label: string; value: number; color: string }
 
 function DonutChart({ data, size = 110 }: { data: PieEntry[]; size?: number }) {
   const total = data.reduce((s, d) => s + d.value, 0);
-  const cx = size / 2, cy = size / 2, r = size / 2 - 3, ir = r * 0.42;
+  const cx = size / 2, cy = size / 2, r = size / 2 - 3, ir = r * 0.40;
 
   if (!total) return (
     <Svg width={size} height={size}>
-      <Circle cx={cx} cy={cy} r={r} fill="#e2e8f0" />
-      <Circle cx={cx} cy={cy} r={ir} fill="#ffffff" />
+      <Circle cx={cx} cy={cy} r={r} fill={C.border} />
+      <Circle cx={cx} cy={cy} r={ir} fill={C.white} />
     </Svg>
   );
-
   const valid = data.filter(d => d.value > 0);
   if (valid.length === 1) return (
     <Svg width={size} height={size}>
       <Circle cx={cx} cy={cy} r={r} fill={valid[0].color} />
-      <Circle cx={cx} cy={cy} r={ir} fill="#ffffff" />
+      <Circle cx={cx} cy={cy} r={ir} fill={C.white} />
     </Svg>
   );
-
   let angle = 0;
   const slices = valid.map(d => {
     const start = angle;
-    const sweep = (d.value / total) * 360;
-    angle += sweep;
+    angle += (d.value / total) * 360;
     return { color: d.color, start, end: angle - 0.001 };
   });
-
   return (
     <Svg width={size} height={size}>
       {slices.map((s, i) => (
         <Path key={i} d={slicePath(cx, cy, r, s.start, s.end)} fill={s.color} />
       ))}
-      <Circle cx={cx} cy={cy} r={ir} fill="#ffffff" />
+      <Circle cx={cx} cy={cy} r={ir} fill={C.white} />
     </Svg>
   );
 }
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
-
 const S = StyleSheet.create({
   page: {
     fontFamily: 'Helvetica',
     fontSize: 9,
-    color: '#1e293b',
-    backgroundColor: '#ffffff',
-    paddingTop: 28,
-    paddingBottom: 36,
-    paddingHorizontal: 34,
+    color: C.textPrimary,
+    backgroundColor: C.white,
+    paddingTop: 26,
+    paddingBottom: 34,
+    paddingHorizontal: 32,
   },
   // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    borderBottom: '2px solid #1d4ed8',
+    alignItems: 'center',
+    borderBottom: `2.5px solid ${C.blue}`,
     paddingBottom: 10,
-    marginBottom: 14,
+    marginBottom: 13,
   },
-  gabineteName: { fontSize: 17, fontFamily: 'Helvetica-Bold', color: '#1d4ed8' },
-  reportSubtitle: { fontSize: 9, color: '#64748b', marginTop: 2 },
-  dateLabel: { fontSize: 8, color: '#94a3b8' },
-  dateValue: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#475569' },
-  // Stats row
-  statsRow: { flexDirection: 'row', gap: 7, marginBottom: 8 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logo: { width: 36, height: 36, objectFit: 'contain' },
+  headerText: { flexDirection: 'column', gap: 1 },
+  gabineteName: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: C.blue },
+  reportSubtitle: { fontSize: 8.5, color: C.textMuted },
+  headerRight: { alignItems: 'flex-end', gap: 1 },
+  dateLabel: { fontSize: 7.5, color: C.textLight },
+  dateValue: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: C.textMuted },
+  // Stats
+  statsRow: { flexDirection: 'row', gap: 7, marginBottom: 7 },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
-    border: '1px solid #e2e8f0',
+    backgroundColor: C.bg,
+    border: `1px solid ${C.border}`,
     borderRadius: 5,
-    padding: '8 10',
+    padding: '7 10',
     alignItems: 'center',
   },
-  statValue: { fontSize: 19, fontFamily: 'Helvetica-Bold', color: '#1e293b' },
-  statLabel: { fontSize: 7.5, color: '#64748b', marginTop: 1, textAlign: 'center' },
-  statPct: { fontSize: 7, color: '#94a3b8', marginTop: 1 },
+  statValue: { fontSize: 20, fontFamily: 'Helvetica-Bold' },
+  statLabel: { fontSize: 7.5, color: C.textMuted, marginTop: 1, textAlign: 'center' },
+  statSub: { fontSize: 6.5, color: C.textLight, marginTop: 1 },
   // Progress bar
-  progressRow: { flexDirection: 'row', height: 5, borderRadius: 3, overflow: 'hidden', backgroundColor: '#e2e8f0', marginBottom: 3 },
-  legendRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  progressOuter: { flexDirection: 'row', height: 5, borderRadius: 3, overflow: 'hidden', backgroundColor: C.border, marginBottom: 3 },
+  legendRow: { flexDirection: 'row', gap: 12, marginBottom: 11 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   legendDot: { width: 7, height: 7, borderRadius: 3.5 },
-  legendText: { fontSize: 7.5, color: '#64748b' },
+  legendText: { fontSize: 7.5, color: C.textMuted },
   // Section title
   sectionTitle: {
     fontSize: 9.5,
     fontFamily: 'Helvetica-Bold',
-    color: '#1d4ed8',
-    marginBottom: 7,
-    borderBottom: '1px solid #e2e8f0',
+    color: C.blue,
+    borderBottom: `1px solid ${C.blueMid}`,
     paddingBottom: 3,
+    marginBottom: 6,
   },
-  // Two-column layout
-  twoCol: { flexDirection: 'row', gap: 14 },
+  // Two-column
+  twoCol: { flexDirection: 'row', gap: 13 },
   col: { flex: 1 },
   // Chart box
   chartBox: {
-    backgroundColor: '#f8fafc',
-    border: '1px solid #e2e8f0',
-    borderRadius: 5,
+    backgroundColor: C.blueLight,
+    border: `1px solid ${C.blueMid}`,
+    borderRadius: 6,
     padding: '10 12',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 11,
   },
-  chartLegend: { flex: 1, gap: 5 },
-  chartLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  chartLegendDot: { width: 8, height: 8, borderRadius: 4 },
-  chartLegendLabel: { fontSize: 8, color: '#334155', flex: 1 },
-  chartLegendValue: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#1e293b' },
-  chartLegendPct: { fontSize: 7, color: '#94a3b8', marginLeft: 2 },
+  chartLegend: { flex: 1, gap: 6 },
+  chartRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  chartDot: { width: 9, height: 9, borderRadius: 4.5 },
+  chartLabel: { fontSize: 8, color: C.textPrimary, flex: 1 },
+  chartVal: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: C.textPrimary },
+  chartPct: { fontSize: 7, color: C.textMuted, marginLeft: 2 },
   // Table
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
-    padding: '5 7',
+    backgroundColor: C.blue,
+    padding: '4.5 7',
     borderRadius: 4,
     marginBottom: 1,
   },
-  tableRow: { flexDirection: 'row', padding: '4 7', borderBottom: '1px solid #f1f5f9' },
-  tableRowAlt: { flexDirection: 'row', padding: '4 7', borderBottom: '1px solid #f1f5f9', backgroundColor: '#fafafa' },
-  th: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: '#475569' },
-  td: { fontSize: 8, color: '#334155' },
-  tdBold: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#1e293b' },
-  badge: { borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1.5 },
+  tableRow:    { flexDirection: 'row', padding: '4 7', borderBottom: `1px solid ${C.border}` },
+  tableRowAlt: { flexDirection: 'row', padding: '4 7', borderBottom: `1px solid ${C.border}`, backgroundColor: C.rowAlt },
+  th:     { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: C.white },
+  td:     { fontSize: 8, color: C.textPrimary },
+  tdBold: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: C.textPrimary },
+  badge:     { borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1.5 },
   badgeText: { fontSize: 6.5, fontFamily: 'Helvetica-Bold' },
   // Footer
   footer: {
     position: 'absolute',
-    bottom: 16,
-    left: 34,
-    right: 34,
+    bottom: 14,
+    left: 32,
+    right: 32,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderTop: '1px solid #e2e8f0',
-    paddingTop: 5,
+    borderTop: `1px solid ${C.border}`,
+    paddingTop: 4,
   },
-  footerText: { fontSize: 7.5, color: '#94a3b8' },
+  footerText: { fontSize: 7.5, color: C.textLight },
 });
 
-// ── Static maps ────────────────────────────────────────────────────────────────
-
+// ── Helpers ────────────────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, string> = {
-  PENDENTE: '#F59E0B',
-  EM_ANDAMENTO: '#3B82F6',
-  RESOLVIDA: '#10B981',
+  PENDENTE: C.pendente, EM_ANDAMENTO: C.andamento, RESOLVIDA: C.resolvida,
 };
 const STATUS_LABELS: Record<string, string> = {
-  PENDENTE: 'Pendente',
-  EM_ANDAMENTO: 'Em Andamento',
-  RESOLVIDA: 'Resolvida',
+  PENDENTE: 'Pendente', EM_ANDAMENTO: 'Em Andamento', RESOLVIDA: 'Resolvida',
 };
 const PRIORITY_COLORS: Record<string, string> = {
-  BAIXA: '#6B7280',
-  MEDIA: '#3B82F6',
-  ALTA: '#F59E0B',
-  URGENTE: '#EF4444',
+  BAIXA: C.baixa, MEDIA: C.media, ALTA: C.alta, URGENTE: C.urgente,
 };
 const PRIORITY_LABELS: Record<string, string> = {
-  BAIXA: 'Baixa',
-  MEDIA: 'Média',
-  ALTA: 'Alta',
-  URGENTE: 'Urgente',
+  BAIXA: 'Baixa', MEDIA: 'Média', ALTA: 'Alta', URGENTE: 'Urgente',
 };
-
-function fmt(n: number) { return n.toLocaleString('pt-BR'); }
-function pct(part: number, total: number) { return total ? `${Math.round((part / total) * 100)}%` : '0%'; }
+const fmt = (n: number) => n.toLocaleString('pt-BR');
+const pct = (part: number, total: number) => total ? `${Math.round((part / total) * 100)}%` : '0%';
 
 // ── Props ──────────────────────────────────────────────────────────────────────
-
 interface ReportProps {
   gabineteName: string;
+  logoSrc?: string;
   stats: {
     total: number;
     pendentes: number;
@@ -201,23 +208,19 @@ interface ReportProps {
 }
 
 // ── Document ───────────────────────────────────────────────────────────────────
-
-export default function DashboardReport({ gabineteName, stats }: ReportProps) {
+export default function DashboardReport({ gabineteName, logoSrc, stats }: ReportProps) {
   const today = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
   const { total, pendentes, emAndamento, resolvidas, byCategory, byPriority, recentDemands } = stats;
 
-  const resolvedPct  = Math.round(((resolvidas   || 0) / (total || 1)) * 100);
-  const andamentoPct = Math.round(((emAndamento  || 0) / (total || 1)) * 100);
-  const pendentePct  = Math.round(((pendentes    || 0) / (total || 1)) * 100);
+  const resolvedPct  = Math.round(((resolvidas  || 0) / (total || 1)) * 100);
+  const andamentoPct = Math.round(((emAndamento || 0) / (total || 1)) * 100);
+  const pendentePct  = Math.round(((pendentes   || 0) / (total || 1)) * 100);
 
-  // Pie data — status
   const statusPie: PieEntry[] = [
-    { label: 'Resolvidas',   value: resolvidas  || 0, color: '#10B981' },
-    { label: 'Em Andamento', value: emAndamento || 0, color: '#3B82F6' },
-    { label: 'Pendentes',    value: pendentes   || 0, color: '#F59E0B' },
+    { label: 'Resolvidas',   value: resolvidas  || 0, color: C.resolvida },
+    { label: 'Em Andamento', value: emAndamento || 0, color: C.andamento },
+    { label: 'Pendentes',    value: pendentes   || 0, color: C.pendente  },
   ];
-
-  // Pie data — priority
   const priorityPie: PieEntry[] = Object.entries(byPriority || {})
     .map(([k, v]) => ({ label: PRIORITY_LABELS[k] || k, value: v, color: PRIORITY_COLORS[k] || '#9E9E9E' }))
     .sort((a, b) => b.value - a.value);
@@ -231,37 +234,40 @@ export default function DashboardReport({ gabineteName, stats }: ReportProps) {
 
         {/* HEADER */}
         <View style={S.header}>
-          <View>
-            <Text style={S.gabineteName}>{gabineteName}</Text>
-            <Text style={S.reportSubtitle}>Relatório de Demandas — Dashboard</Text>
+          <View style={S.headerLeft}>
+            {logoSrc && <Image src={logoSrc} style={S.logo} />}
+            <View style={S.headerText}>
+              <Text style={S.gabineteName}>{gabineteName}</Text>
+              <Text style={S.reportSubtitle}>Relatório de Demandas — Dashboard</Text>
+            </View>
           </View>
-          <View style={{ alignItems: 'flex-end' }}>
+          <View style={S.headerRight}>
             <Text style={S.dateLabel}>Gerado em</Text>
             <Text style={S.dateValue}>{today}</Text>
           </View>
         </View>
 
-        {/* STATS CARDS */}
+        {/* STATS */}
         <View style={S.statsRow}>
           {[
-            { label: 'Total de Demandas', value: total || 0, color: '#1e293b', sub: '' },
-            { label: 'Resolvidas',        value: resolvidas || 0, color: '#10B981', sub: `${resolvedPct}% do total` },
-            { label: 'Em Andamento',      value: emAndamento || 0, color: '#3B82F6', sub: `${andamentoPct}% do total` },
-            { label: 'Pendentes',         value: pendentes || 0, color: '#F59E0B', sub: `${pendentePct}% do total` },
+            { label: 'Total de Demandas', value: total || 0,      color: C.blue,      sub: '' },
+            { label: 'Resolvidas',        value: resolvidas || 0, color: C.resolvida, sub: `${resolvedPct}% do total` },
+            { label: 'Em Andamento',      value: emAndamento || 0,color: C.andamento, sub: `${andamentoPct}% do total` },
+            { label: 'Pendentes',         value: pendentes || 0,  color: C.pendente,  sub: `${pendentePct}% do total` },
           ].map(c => (
-            <View key={c.label} style={S.statCard}>
+            <View key={c.label} style={[S.statCard, { borderLeft: `3px solid ${c.color}` }]}>
               <Text style={[S.statValue, { color: c.color }]}>{fmt(c.value)}</Text>
               <Text style={S.statLabel}>{c.label}</Text>
-              {c.sub ? <Text style={S.statPct}>{c.sub}</Text> : null}
+              {c.sub ? <Text style={S.statSub}>{c.sub}</Text> : null}
             </View>
           ))}
         </View>
 
         {/* PROGRESS BAR */}
-        <View style={S.progressRow}>
-          <View style={{ width: `${resolvedPct}%`,  backgroundColor: '#10B981', height: 5 }} />
-          <View style={{ width: `${andamentoPct}%`, backgroundColor: '#3B82F6', height: 5 }} />
-          <View style={{ width: `${pendentePct}%`,  backgroundColor: '#F59E0B', height: 5 }} />
+        <View style={S.progressOuter}>
+          <View style={{ width: `${resolvedPct}%`,  backgroundColor: C.resolvida, height: 5 }} />
+          <View style={{ width: `${andamentoPct}%`, backgroundColor: C.andamento, height: 5 }} />
+          <View style={{ width: `${pendentePct}%`,  backgroundColor: C.pendente,  height: 5 }} />
         </View>
         <View style={S.legendRow}>
           {statusPie.map(s => (
@@ -272,38 +278,36 @@ export default function DashboardReport({ gabineteName, stats }: ReportProps) {
           ))}
         </View>
 
-        {/* CHARTS ROW */}
+        {/* CHARTS */}
         <View style={S.twoCol}>
-          {/* Status donut */}
           <View style={S.col}>
             <Text style={S.sectionTitle}>Demandas por Status</Text>
             <View style={S.chartBox}>
-              <DonutChart data={statusPie} size={110} />
+              <DonutChart data={statusPie} size={112} />
               <View style={S.chartLegend}>
                 {statusPie.filter(d => d.value > 0).map(d => (
-                  <View key={d.label} style={S.chartLegendItem}>
-                    <View style={[S.chartLegendDot, { backgroundColor: d.color }]} />
-                    <Text style={S.chartLegendLabel}>{d.label}</Text>
-                    <Text style={S.chartLegendValue}>{fmt(d.value)}</Text>
-                    <Text style={S.chartLegendPct}>({pct(d.value, total)})</Text>
+                  <View key={d.label} style={S.chartRow}>
+                    <View style={[S.chartDot, { backgroundColor: d.color }]} />
+                    <Text style={S.chartLabel}>{d.label}</Text>
+                    <Text style={S.chartVal}>{fmt(d.value)}</Text>
+                    <Text style={S.chartPct}>({pct(d.value, total)})</Text>
                   </View>
                 ))}
               </View>
             </View>
           </View>
 
-          {/* Priority donut */}
           <View style={S.col}>
             <Text style={S.sectionTitle}>Demandas por Prioridade</Text>
             <View style={S.chartBox}>
-              <DonutChart data={priorityPie} size={110} />
+              <DonutChart data={priorityPie} size={112} />
               <View style={S.chartLegend}>
                 {priorityPie.filter(d => d.value > 0).map(d => (
-                  <View key={d.label} style={S.chartLegendItem}>
-                    <View style={[S.chartLegendDot, { backgroundColor: d.color }]} />
-                    <Text style={S.chartLegendLabel}>{d.label}</Text>
-                    <Text style={S.chartLegendValue}>{fmt(d.value)}</Text>
-                    <Text style={S.chartLegendPct}>({pct(d.value, total)})</Text>
+                  <View key={d.label} style={S.chartRow}>
+                    <View style={[S.chartDot, { backgroundColor: d.color }]} />
+                    <Text style={S.chartLabel}>{d.label}</Text>
+                    <Text style={S.chartVal}>{fmt(d.value)}</Text>
+                    <Text style={S.chartPct}>({pct(d.value, total)})</Text>
                   </View>
                 ))}
               </View>
@@ -311,9 +315,8 @@ export default function DashboardReport({ gabineteName, stats }: ReportProps) {
           </View>
         </View>
 
-        {/* TABLES ROW */}
+        {/* TABLES */}
         <View style={S.twoCol}>
-          {/* Category table */}
           <View style={S.col}>
             <Text style={S.sectionTitle}>Demandas por Categoria</Text>
             <View style={S.tableHeader}>
@@ -325,12 +328,11 @@ export default function DashboardReport({ gabineteName, stats }: ReportProps) {
               <View key={key} style={i % 2 === 0 ? S.tableRow : S.tableRowAlt}>
                 <Text style={[S.td, { flex: 4 }]}>{key}</Text>
                 <Text style={[S.tdBold, { flex: 1, textAlign: 'right' }]}>{fmt(value)}</Text>
-                <Text style={[S.td, { flex: 1, textAlign: 'right', color: '#64748b' }]}>{pct(value, total)}</Text>
+                <Text style={[S.td, { flex: 1, textAlign: 'right', color: C.textMuted }]}>{pct(value, total)}</Text>
               </View>
             ))}
           </View>
 
-          {/* Recent demands table */}
           <View style={S.col}>
             <Text style={S.sectionTitle}>Demandas Recentes</Text>
             <View style={S.tableHeader}>
@@ -341,7 +343,7 @@ export default function DashboardReport({ gabineteName, stats }: ReportProps) {
             {recent.map((d: any, i: number) => (
               <View key={d.id || i} style={i % 2 === 0 ? S.tableRow : S.tableRowAlt}>
                 <Text style={[S.td, { flex: 4 }]}>
-                  {(d.title || '—').slice(0, 40)}{(d.title || '').length > 40 ? '…' : ''}
+                  {(d.title || '—').slice(0, 42)}{(d.title || '').length > 42 ? '…' : ''}
                 </Text>
                 <View style={{ flex: 2 }}>
                   <View style={[S.badge, { backgroundColor: `${STATUS_COLORS[d.status] || '#6B7280'}22` }]}>
