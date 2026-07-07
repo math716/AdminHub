@@ -28,10 +28,10 @@ export async function GET() {
     if (userId) {
       const dbUser = await prisma.user.findUnique({
         where: { id: userId },
-        select: { gabineteId: true, gabinete: { select: { name: true } } },
+        select: { gabineteId: true, gabinete: { select: { nome: true } } },
       });
       gabineteId = dbUser?.gabineteId ?? null;
-      gabineteName = (dbUser as any)?.gabinete?.name ?? 'AdminHub';
+      gabineteName = (dbUser as any)?.gabinete?.nome ?? 'AdminHub';
     }
 
     if (!gabineteId) {
