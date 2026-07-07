@@ -47,6 +47,7 @@ import {
   Layers,
   Maximize2,
   Minimize2,
+  ArrowLeft,
 } from 'lucide-react';
 
 const StateMap = dynamic(() => import('@/components/maps/state-map'), { ssr: false });
@@ -421,6 +422,12 @@ export default function MapaCampanhaPage() {
   const [projecao, setProjecao] = useState<Projecao | null>(null);
   const [projecoesSalvas, setProjecoesSalvas] = useState<Projecao[]>([]);
   const [formCollapsed, setFormCollapsed] = useState(false);
+
+  const voltarParaPesquisa = () => {
+    setElectoralData(null);
+    setProjecao(null);
+    setFormCollapsed(false);
+  };
 
   // Cenário and filter states
   const [cenarioAtivo, setCenarioAtivo] = useState<CenarioType>('possivel');
@@ -2486,6 +2493,14 @@ export default function MapaCampanhaPage() {
                   <span className="text-xs text-slate-600 dark:text-slate-400">{ano} → {anoProjecao}</span>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    onClick={voltarParaPesquisa}
+                    variant="outline"
+                    className="border-[var(--border-default)] text-slate-700 dark:text-slate-300 hover:bg-[var(--bg-card-subtle)] text-xs h-6 px-2.5"
+                  >
+                    <ArrowLeft className="h-3 w-3 mr-1.5" />
+                    Voltar
+                  </Button>
                   <Button
                     onClick={() => setFormCollapsed(false)}
                     variant="outline"
