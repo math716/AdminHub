@@ -4,36 +4,21 @@ import { useState } from 'react';
 import { FileDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// Direct imports — this component is loaded with ssr:false from the dashboard page
-import { pdf } from '@react-pdf/renderer';
-import DashboardReport from './dashboard-report';
-
 interface DashboardDownloadButtonProps {
-  gabineteName: string;
-  stats: {
-    total: number;
-    pendentes: number;
-    emAndamento: number;
-    resolvidas: number;
-    byCategory: Record<string, number>;
-    byPriority: Record<string, number>;
-    recentDemands: any[];
-    timeline: { date: string; count: number; resolved: number }[];
-    lastResolvedDate: string | null;
-  } | null;
+  disabled?: boolean;
 }
 
-export default function DashboardDownloadButton({ gabineteName, stats }: DashboardDownloadButtonProps) {
+export default function DashboardDownloadButton({ disabled }: DashboardDownloadButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
   const handleGenerate = async () => {
-    if (!stats) return;
     setLoading(true);
     setError(false);
     try {
-      const doc = <DashboardReport gabineteName={gabineteName} stats={stats} />;
-      const blob = await pdf(doc).toBlob();
+      const res = await fetch('/api/dashboard/report');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -43,7 +28,7 @@ export default function DashboardDownloadButton({ gabineteName, stats }: Dashboa
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('PDF generation error:', err);
+      console.error('PDF download error:', err);
       setError(true);
     } finally {
       setLoading(false);
@@ -69,7 +54,7 @@ export default function DashboardDownloadButton({ gabineteName, stats }: Dashboa
       variant="outline"
       size="sm"
       onClick={handleGenerate}
-      disabled={loading || !stats}
+      disabled={loading || disabled}
       className="gap-2 text-xs"
     >
       {loading ? (

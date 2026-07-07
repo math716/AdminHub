@@ -132,7 +132,7 @@ export default function DashboardPage() {
           subtitle="Visão geral do gabinete"
         />
         <div className="flex-shrink-0 pt-1">
-          <DashboardDownloadButton gabineteName={gabineteName} stats={stats} />
+          <DashboardDownloadButton disabled={loading} />
         </div>
       </div>
 
