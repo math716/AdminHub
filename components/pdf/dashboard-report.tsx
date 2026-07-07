@@ -86,11 +86,11 @@ const S = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottom: `2.5px solid ${C.blue}`,
-    paddingBottom: 10,
-    marginBottom: 13,
+    paddingBottom: 8,
+    marginBottom: 10,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logo: { width: 48, height: 48, objectFit: 'contain' },
+  logo: { width: 60, height: 60, objectFit: 'contain' },
   headerText: { flexDirection: 'column', gap: 1 },
   gabineteName: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: C.blue },
   reportSubtitle: { fontSize: 8.5, color: C.textMuted },
@@ -225,8 +225,8 @@ export default function DashboardReport({ gabineteName, logoSrc, stats }: Report
     .map(([k, v]) => ({ label: PRIORITY_LABELS[k] || k, value: v, color: PRIORITY_COLORS[k] || '#9E9E9E' }))
     .sort((a, b) => b.value - a.value);
 
-  const categories = Object.entries(byCategory || {}).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  const recent = (recentDemands || []).slice(0, 9);
+  const categories = Object.entries(byCategory || {}).sort((a, b) => b[1] - a[1]).slice(0, 7);
+  const recent = (recentDemands || []).slice(0, 7);
 
   return (
     <Document title={`Relatório Dashboard — ${gabineteName}`} author="AdminHub">
