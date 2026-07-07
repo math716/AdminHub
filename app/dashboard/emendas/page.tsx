@@ -2165,7 +2165,7 @@ function ParlamentarDashboard({
           uf={uf}
           emendas={emendas}
           destinosFlat={destinosFlat}
-          parlamentarId={selectedParlamentar ? (selectedParlamentar.cpf ?? selectedParlamentar.idPortal) : ''}
+          parlamentarId={parlamentar.cpf ?? parlamentar.idPortal}
         />
       )}
 
