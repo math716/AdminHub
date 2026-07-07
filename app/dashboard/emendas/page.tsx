@@ -22,6 +22,11 @@ import {
   X,
   Calendar,
   Star,
+  Plus,
+  Pencil,
+  Trash2,
+  Save,
+  AlertCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ESTADOS_BRASIL } from '@/lib/types';
@@ -127,6 +132,19 @@ interface DestinoRow {
   valorEmpenhado: number;
   valorPago: number;
   fonte: 'documento' | 'emenda';
+}
+
+interface EmendaNaoRealizadaLocal {
+  id: string;
+  ano: number;
+  numero: string | null;
+  tipo: string | null;
+  area: string | null;
+  favorecido: string;
+  municipio: string | null;
+  uf: string | null;
+  valor: number;
+  createdAt: string;
 }
 
 interface MunicipioStats {
@@ -2166,6 +2184,8 @@ function ParlamentarDashboard({
   );
 }
 
+const FORM_NR_EMPTY = { numero: '', tipo: '', area: '', favorecido: '', municipio: '', uf: '', valor: '' };
+
 function EmendasDetalhadasCard({
   ano, uf, emendas, destinosFlat,
 }: {
@@ -2174,6 +2194,8 @@ function EmendasDetalhadasCard({
   emendas: PortalEmenda[];
   destinosFlat: DestinoRow[];
 }) {
+  const { data: session } = useSession() || {};
+
   const semDadosPagamento = emendas.length > 0
     && emendas.every((e) => e.autorCargo === 'DEPUTADO_ESTADUAL' && e.valorPago === 0);
   const semDadosExecucao = semDadosPagamento
@@ -2184,6 +2206,75 @@ function EmendasDetalhadasCard({
     titulo: string;
     filtroFavorecido?: { cnpj: string | null; nome: string | null; municipio: string | null; uf: string | null };
   } | null>(null);
+
+  // ── Emendas não realizadas ───────────────────────────────────────────────────
+  const [modoNR, setModoNR] = useState(false);
+  const [emendasNR, setEmendasNR] = useState<EmendaNaoRealizadaLocal[]>([]);
+  const [loadingNR, setLoadingNR] = useState(false);
+  const [showFormNR, setShowFormNR] = useState(false);
+  const [editingNR, setEditingNR] = useState<EmendaNaoRealizadaLocal | null>(null);
+  const [formNR, setFormNR] = useState(FORM_NR_EMPTY);
+  const [savingNR, setSavingNR] = useState(false);
+  const [errNR, setErrNR] = useState('');
+
+  const fetchNR = useCallback(async () => {
+    setLoadingNR(true);
+    try {
+      const res = await fetch(`/api/emendas-nao-realizadas?ano=${ano}`);
+      if (res.ok) setEmendasNR(await res.json());
+    } finally {
+      setLoadingNR(false);
+    }
+  }, [ano]);
+
+  useEffect(() => { if (modoNR) fetchNR(); }, [modoNR, fetchNR]);
+
+  const openNewNR = () => {
+    setEditingNR(null);
+    setFormNR(FORM_NR_EMPTY);
+    setErrNR('');
+    setShowFormNR(true);
+  };
+
+  const openEditNR = (item: EmendaNaoRealizadaLocal) => {
+    setEditingNR(item);
+    setFormNR({
+      numero: item.numero ?? '',
+      tipo: item.tipo ?? '',
+      area: item.area ?? '',
+      favorecido: item.favorecido,
+      municipio: item.municipio ?? '',
+      uf: item.uf ?? '',
+      valor: item.valor ? String(item.valor) : '',
+    });
+    setErrNR('');
+    setShowFormNR(true);
+  };
+
+  const saveNR = async () => {
+    if (!formNR.favorecido.trim()) { setErrNR('Favorecido é obrigatório.'); return; }
+    setSavingNR(true);
+    setErrNR('');
+    try {
+      const body = { ...formNR, ano, valor: parseFloat(formNR.valor.replace(',', '.')) || 0 };
+      const url = editingNR ? `/api/emendas-nao-realizadas/${editingNR.id}` : '/api/emendas-nao-realizadas';
+      const method = editingNR ? 'PATCH' : 'POST';
+      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!res.ok) { const e = await res.json(); setErrNR(e.error ?? 'Erro ao salvar.'); return; }
+      setShowFormNR(false);
+      setEditingNR(null);
+      setFormNR(FORM_NR_EMPTY);
+      fetchNR();
+    } finally {
+      setSavingNR(false);
+    }
+  };
+
+  const deleteNR = async (id: string) => {
+    if (!confirm('Excluir esta emenda não realizada?')) return;
+    await fetch(`/api/emendas-nao-realizadas/${id}`, { method: 'DELETE' });
+    fetchNR();
+  };
 
   // Filtros
   const [busca, setBusca] = useState('');
@@ -2282,38 +2373,211 @@ function EmendasDetalhadasCard({
           <p className="text-xs font-bold text-[color:var(--text-primary)] tracking-wide">Detalhe das Emendas</p>
           <span className="text-[10px] text-slate-600 dark:text-slate-500 font-medium">{ano}</span>
         </div>
-        <div className="flex items-center gap-3">
-          {semDadosExecucao && (
-            <span className="text-[10px] text-[color:var(--brand-cobalt)]/70 italic hidden sm:block">Sem dados de execução estadual</span>
+        <div className="flex items-center gap-2">
+          {/* Toggle: Emendas não realizadas */}
+          <button
+            onClick={() => { setModoNR((v) => !v); setShowFormNR(false); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all"
+            style={modoNR
+              ? { background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)' }
+              : { background: 'var(--tint-04)', color: 'var(--text-secondary)', border: '1px solid var(--tint-08)' }}
+          >
+            <AlertCircle className="w-3.5 h-3.5" />
+            Não realizadas
+          </button>
+
+          {!modoNR && (
+            <>
+              {semDadosExecucao && (
+                <span className="text-[10px] text-[color:var(--brand-cobalt)]/70 italic hidden sm:block">Sem dados de execução estadual</span>
+              )}
+              {semDadosPagamento && !semDadosExecucao && (
+                <span className="text-[10px] text-[color:var(--brand-cobalt)]/70 italic hidden sm:block">Sem dados de pagamento estadual</span>
+              )}
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full" style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
+                {temFiltro && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
+                <span className="text-[11px] font-semibold text-[color:var(--text-primary)]">{temFiltro ? filtradoQtd : totalItens}</span>
+                <span className="text-[10px] text-slate-600 dark:text-slate-400">{labelItens}</span>
+                <span className="text-slate-600 text-[10px]">·</span>
+                <span className="text-[11px] font-semibold text-[color:var(--success)]">{formatBRLCompact(totalValor)}</span>
+              </div>
+              {temFiltro && (
+                <button
+                  onClick={limparFiltros}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium text-slate-700 dark:text-slate-300 hover:text-white transition-colors"
+                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}
+                >
+                  <X className="w-3 h-3" /> Limpar
+                </button>
+              )}
+            </>
           )}
-          {semDadosPagamento && !semDadosExecucao && (
-            <span className="text-[10px] text-[color:var(--brand-cobalt)]/70 italic hidden sm:block">Sem dados de pagamento estadual</span>
-          )}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full" style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
-            {temFiltro && (
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-            )}
-            <span className="text-[11px] font-semibold text-[color:var(--text-primary)]">
-              {temFiltro ? filtradoQtd : totalItens}
-            </span>
-            <span className="text-[10px] text-slate-600 dark:text-slate-400">{labelItens}</span>
-            <span className="text-slate-600 text-[10px]">·</span>
-            <span className="text-[11px] font-semibold text-[color:var(--success)]">{formatBRLCompact(totalValor)}</span>
-          </div>
-          {temFiltro && (
-            <button
-              onClick={limparFiltros}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium text-slate-700 dark:text-slate-300 hover:text-white transition-colors"
-              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}
-            >
-              <X className="w-3 h-3" /> Limpar
-            </button>
+
+          {modoNR && (
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full" style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
+              <span className="text-[11px] font-semibold text-[color:var(--text-primary)]">{emendasNR.length}</span>
+              <span className="text-[10px] text-slate-600 dark:text-slate-400">registros</span>
+              {emendasNR.length > 0 && (
+                <>
+                  <span className="text-slate-600 text-[10px]">·</span>
+                  <span className="text-[11px] font-semibold" style={{ color: '#ef4444' }}>
+                    {formatBRLCompact(emendasNR.reduce((s, e) => s + e.valor, 0))}
+                  </span>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>
 
+      {/* ── Emendas Não Realizadas ───────────────────────────────────────── */}
+      {modoNR && (
+        <div className="px-5 py-4">
+          {/* Botão adicionar + form */}
+          {!showFormNR ? (
+            <button
+              onClick={openNewNR}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold mb-4 transition-all hover:opacity-90"
+              style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.35)' }}
+            >
+              <Plus className="w-4 h-4" /> Adicionar emenda não realizada
+            </button>
+          ) : (
+            <div className="mb-4 rounded-xl p-4" style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-10)' }}>
+              <p className="text-[11px] font-bold text-[color:var(--text-primary)] mb-3 uppercase tracking-widest">
+                {editingNR ? 'Editar emenda' : 'Nova emenda não realizada'}
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-3">
+                {([
+                  { key: 'numero',    label: 'Nº',          placeholder: '0001' },
+                  { key: 'tipo',      label: 'Tipo',        placeholder: 'Individual' },
+                  { key: 'area',      label: 'Área',        placeholder: 'Saúde' },
+                  { key: 'favorecido',label: 'Favorecido *',placeholder: 'Nome do favorecido' },
+                  { key: 'municipio', label: 'Município',   placeholder: 'São Paulo' },
+                  { key: 'uf',        label: 'UF',          placeholder: 'SP' },
+                ] as const).map(({ key, label, placeholder }) => (
+                  <div key={key} className="flex flex-col gap-1">
+                    <label className="text-[9px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500">{label}</label>
+                    <input
+                      value={formNR[key]}
+                      onChange={(e) => setFormNR((f) => ({ ...f, [key]: e.target.value }))}
+                      placeholder={placeholder}
+                      className="h-8 px-2.5 rounded-lg text-[12px] text-[color:var(--text-primary)] placeholder-slate-500 outline-none"
+                      style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)' }}
+                      maxLength={key === 'uf' ? 2 : undefined}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500">Valor (R$)</label>
+                  <input
+                    value={formNR.valor}
+                    onChange={(e) => setFormNR((f) => ({ ...f, valor: e.target.value }))}
+                    placeholder="0,00"
+                    type="text"
+                    inputMode="decimal"
+                    className="h-8 px-2.5 rounded-lg text-[12px] text-[color:var(--text-primary)] placeholder-slate-500 outline-none w-40"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)' }}
+                  />
+                </div>
+              </div>
+              {errNR && <p className="text-[11px] text-red-400 mb-2">{errNR}</p>}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={saveNR}
+                  disabled={savingNR}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all disabled:opacity-50"
+                  style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)' }}
+                >
+                  {savingNR ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                  Salvar
+                </button>
+                <button
+                  onClick={() => { setShowFormNR(false); setEditingNR(null); setErrNR(''); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-slate-500 hover:text-slate-700 transition-all"
+                  style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}
+                >
+                  <X className="w-3.5 h-3.5" /> Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Tabela NR */}
+          {loadingNR ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
+            </div>
+          ) : emendasNR.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-500">
+              <AlertCircle className="w-6 h-6 opacity-40" />
+              <p className="text-[12px]">Nenhuma emenda não realizada registrada para {ano}.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto -mx-1">
+              <table className="w-full text-[12px] border-separate border-spacing-0">
+                <thead>
+                  <tr style={{ background: 'rgba(239,68,68,0.06)' }}>
+                    {['Nº', 'Tipo', 'Área', 'Favorecido', 'Município', 'Valor', 'Ações'].map((h, i) => (
+                      <th
+                        key={h}
+                        className={`py-2.5 px-3 text-[9px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500 whitespace-nowrap ${i === 5 ? 'text-right' : i === 6 ? 'text-center' : 'text-left'}`}
+                        style={{ borderBottom: '1px solid var(--tint-06)' }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {emendasNR.map((item, i) => (
+                    <tr key={item.id} style={{ background: i % 2 === 0 ? 'transparent' : 'var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 font-mono text-[11px] text-slate-600 dark:text-slate-500 whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                        {item.numero ?? '—'}
+                      </td>
+                      <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                        {item.tipo ? (
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}>
+                            {item.tipo}
+                          </span>
+                        ) : <span className="text-slate-500">—</span>}
+                      </td>
+                      <td className="py-2.5 px-3 truncate max-w-[100px] text-slate-700 dark:text-slate-300" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                        {item.area ?? '—'}
+                      </td>
+                      <td className="py-2.5 px-3 max-w-[200px]" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                        <span className="font-medium text-slate-800 dark:text-slate-200 truncate block">{item.favorecido}</span>
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                        {item.municipio ?? '—'}
+                        {item.uf && <span className="text-slate-500 ml-1 text-[10px]">/ {item.uf}</span>}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)', color: '#ef4444' }}>
+                        {formatBRLCompact(item.valor)}
+                      </td>
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => openEditNR(item)} className="p-1 rounded hover:bg-blue-500/10 text-slate-500 hover:text-blue-400 transition-colors" title="Editar">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => deleteNR(item.id)} className="p-1 rounded hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-colors" title="Excluir">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Barra de filtros ─────────────────────────────────────────────── */}
-      <div className="px-5 py-3 flex flex-wrap gap-2" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+      {!modoNR && <div className="px-5 py-3 flex flex-wrap gap-2" style={{ borderBottom: '1px solid var(--tint-04)' }}>
         {/* Busca */}
         <div className="relative flex-1 min-w-[120px] md:min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 dark:text-slate-500 pointer-events-none" />
@@ -2421,10 +2685,10 @@ function EmendasDetalhadasCard({
             </div>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* ── Tabelas ──────────────────────────────────────────────────────── */}
-      <div className="px-5 pb-4">
+      {!modoNR && <div className="px-5 pb-4">
         {/* Vazio */}
         {((usandoFlat && destinosFiltrados.length === 0) || (!usandoFlat && emendasFiltradas.length === 0)) && (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
@@ -2575,7 +2839,7 @@ function EmendasDetalhadasCard({
             </table>
           </div>
         )}
-      </div>
+      </div>}
 
       <EmendaDocumentosModal
         codigoEmenda={emendaSelecionada?.codigo ?? null}
