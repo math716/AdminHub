@@ -3468,8 +3468,7 @@ export default function MapaCampanhaPage() {
               className={mapFullscreen ? 'flex-1 min-w-0 relative overflow-hidden' : 'col-span-12 md:col-span-8 lg:col-span-6 md:order-2 overflow-hidden order-1'}
             >
               <Card
-                noPadding
-                className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden flex flex-col' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--tint-06)] overflow-hidden flex flex-col'}
+                className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden flex flex-col' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--tint-06)] overflow-hidden flex flex-col pt-2'}
                 style={!mapFullscreen ? { height: 'clamp(400px, calc(100vh - 170px), 900px)', minHeight: '400px' } : undefined}
               >
                 <CardHeader className={`border-b border-[var(--tint-06)] py-0.5 px-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
