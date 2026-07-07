@@ -1,20 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import dynamic from 'next/dynamic';
 import { FileDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// Lazy-load heavy PDF components to avoid SSR issues
-const PDFDownloadLink = dynamic(
-  () => import('@react-pdf/renderer').then(m => ({ default: m.PDFDownloadLink })),
-  { ssr: false, loading: () => null }
-);
-
-const DashboardReport = dynamic(
-  () => import('./dashboard-report'),
-  { ssr: false, loading: () => null }
-);
+// Direct imports — this component is loaded with ssr:false from the dashboard page
+import { pdf } from '@react-pdf/renderer';
+import DashboardReport from './dashboard-report';
 
 interface DashboardDownloadButtonProps {
   gabineteName: string;
@@ -32,63 +24,60 @@ interface DashboardDownloadButtonProps {
 }
 
 export default function DashboardDownloadButton({ gabineteName, stats }: DashboardDownloadButtonProps) {
-  const [clicked, setClicked] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
-  if (!stats) {
-    return (
-      <Button variant="outline" size="sm" disabled className="gap-2 text-xs">
-        <FileDown className="h-3.5 w-3.5" />
-        Gerar Relatório
-      </Button>
-    );
-  }
+  const handleGenerate = async () => {
+    if (!stats) return;
+    setLoading(true);
+    setError(false);
+    try {
+      const doc = <DashboardReport gabineteName={gabineteName} stats={stats} />;
+      const blob = await pdf(doc).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio-dashboard-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Only render PDFDownloadLink after first click (avoids eager PDF generation on page load)
-  if (!clicked) {
+  if (error) {
     return (
       <Button
         variant="outline"
         size="sm"
-        onClick={() => setClicked(true)}
-        className="gap-2 text-xs"
+        onClick={() => { setError(false); handleGenerate(); }}
+        className="gap-2 text-xs text-red-500 border-red-300 hover:bg-red-50"
       >
         <FileDown className="h-3.5 w-3.5" />
-        Gerar Relatório
+        Erro — tentar novamente
       </Button>
     );
   }
 
-  const fileName = `relatorio-dashboard-${new Date().toISOString().slice(0, 10)}.pdf`;
-
   return (
-    <PDFDownloadLink
-      document={<DashboardReport gabineteName={gabineteName} stats={stats} />}
-      fileName={fileName}
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleGenerate}
+      disabled={loading || !stats}
+      className="gap-2 text-xs"
     >
-      {({ loading, error }) => {
-        if (error) {
-          return (
-            <Button variant="outline" size="sm" className="gap-2 text-xs text-red-500" onClick={() => setClicked(false)}>
-              <FileDown className="h-3.5 w-3.5" />
-              Erro — tentar novamente
-            </Button>
-          );
-        }
-        if (loading) {
-          return (
-            <Button variant="outline" size="sm" disabled className="gap-2 text-xs">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Gerando PDF...
-            </Button>
-          );
-        }
-        return (
-          <Button variant="outline" size="sm" className="gap-2 text-xs text-blue-600 border-blue-300 hover:bg-blue-50">
-            <FileDown className="h-3.5 w-3.5" />
-            Baixar Relatório
-          </Button>
-        );
-      }}
-    </PDFDownloadLink>
+      {loading ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <FileDown className="h-3.5 w-3.5" />
+      )}
+      {loading ? 'Gerando PDF...' : 'Gerar Relatório'}
+    </Button>
   );
 }
