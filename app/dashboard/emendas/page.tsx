@@ -136,6 +136,7 @@ interface DestinoRow {
 
 interface EmendaNaoRealizadaLocal {
   id: string;
+  parlamentarId: string;
   ano: number;
   numero: string | null;
   tipo: string | null;
@@ -2159,7 +2160,13 @@ function ParlamentarDashboard({
 
       {/* Tabela detalhada das emendas individuais */}
       {!loading && (emendas.length > 0 || destinosFlat.length > 0) && (
-        <EmendasDetalhadasCard ano={ano} uf={uf} emendas={emendas} destinosFlat={destinosFlat} />
+        <EmendasDetalhadasCard
+          ano={ano}
+          uf={uf}
+          emendas={emendas}
+          destinosFlat={destinosFlat}
+          parlamentarId={selectedParlamentar ? (selectedParlamentar.cpf ?? selectedParlamentar.idPortal) : ''}
+        />
       )}
 
 
@@ -2187,12 +2194,13 @@ function ParlamentarDashboard({
 const FORM_NR_EMPTY = { numero: '', tipo: '', area: '', favorecido: '', municipio: '', uf: '', valor: '' };
 
 function EmendasDetalhadasCard({
-  ano, uf, emendas, destinosFlat,
+  ano, uf, emendas, destinosFlat, parlamentarId,
 }: {
   ano: number;
   uf?: string;
   emendas: PortalEmenda[];
   destinosFlat: DestinoRow[];
+  parlamentarId: string;
 }) {
   const { data: session } = useSession() || {};
 
@@ -2220,12 +2228,12 @@ function EmendasDetalhadasCard({
   const fetchNR = useCallback(async () => {
     setLoadingNR(true);
     try {
-      const res = await fetch(`/api/emendas-nao-realizadas?ano=${ano}`);
+      const res = await fetch(`/api/emendas-nao-realizadas?ano=${ano}&parlamentarId=${encodeURIComponent(parlamentarId)}`);
       if (res.ok) setEmendasNR(await res.json());
     } finally {
       setLoadingNR(false);
     }
-  }, [ano]);
+  }, [ano, parlamentarId]);
 
   useEffect(() => { if (modoNR) fetchNR(); }, [modoNR, fetchNR]);
 
@@ -2256,7 +2264,7 @@ function EmendasDetalhadasCard({
     setSavingNR(true);
     setErrNR('');
     try {
-      const body = { ...formNR, ano, valor: parseFloat(formNR.valor.replace(',', '.')) || 0 };
+      const body = { ...formNR, ano, parlamentarId, valor: parseFloat(formNR.valor.replace(',', '.')) || 0 };
       const url = editingNR ? `/api/emendas-nao-realizadas/${editingNR.id}` : '/api/emendas-nao-realizadas';
       const method = editingNR ? 'PATCH' : 'POST';
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

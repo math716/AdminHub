@@ -806,20 +806,21 @@ model EmendaAnotacao {
 }
 
 model EmendaNaoRealizada {
-  id         String   @id @default(cuid())
-  gabineteId String
-  gabinete   Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
-  ano        Int
-  numero     String?
-  tipo       String?
-  area       String?
-  favorecido String
-  municipio  String?
-  uf         String?
-  valor      Float    @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String   @id @default(cuid())
+  gabineteId    String
+  gabinete      Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+  parlamentarId String
+  ano           Int
+  numero        String?
+  tipo          String?
+  area          String?
+  favorecido    String
+  municipio     String?
+  uf            String?
+  valor         Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@index([gabineteId, ano])
+  @@index([gabineteId, parlamentarId, ano])
   @@map("emendas_nao_realizadas")
 }

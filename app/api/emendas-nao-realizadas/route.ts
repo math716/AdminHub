@@ -20,9 +20,12 @@ export async function GET(req: NextRequest) {
   if (!gabineteId) return NextResponse.json([]);
 
   const ano = Number(req.nextUrl.searchParams.get('ano') ?? new Date().getFullYear());
+  const parlamentarId = req.nextUrl.searchParams.get('parlamentarId') ?? '';
+
+  if (!parlamentarId) return NextResponse.json([]);
 
   const items = await prisma.emendaNaoRealizada.findMany({
-    where: { gabineteId, ano },
+    where: { gabineteId, parlamentarId, ano },
     orderBy: { createdAt: 'asc' },
   });
 
@@ -37,15 +40,19 @@ export async function POST(req: NextRequest) {
   if (!gabineteId) return NextResponse.json({ error: 'Sem gabinete' }, { status: 403 });
 
   const body = await req.json();
-  const { ano, numero, tipo, area, favorecido, municipio, uf, valor } = body;
+  const { ano, parlamentarId, numero, tipo, area, favorecido, municipio, uf, valor } = body;
 
   if (!favorecido?.trim()) {
     return NextResponse.json({ error: 'Favorecido é obrigatório' }, { status: 400 });
+  }
+  if (!parlamentarId?.trim()) {
+    return NextResponse.json({ error: 'Parlamentar não identificado' }, { status: 400 });
   }
 
   const item = await prisma.emendaNaoRealizada.create({
     data: {
       gabineteId,
+      parlamentarId: parlamentarId.trim(),
       ano: Number(ano) || new Date().getFullYear(),
       numero: numero?.trim() || null,
       tipo: tipo?.trim() || null,
