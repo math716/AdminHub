@@ -37,6 +37,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  transpilePackages: ['@react-pdf/renderer'],
   images: { unoptimized: true },
   experimental: {
     outputFileTracingIncludes: {

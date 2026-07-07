@@ -27,6 +27,7 @@ const GradientCard = dynamic(() => import('@/components/charts/gradient-card'), 
 const MiniLineChart = dynamic(() => import('@/components/charts/mini-line-chart'), { ssr: false });
 const DemandsTimelineChart = dynamic(() => import('@/components/charts/demands-timeline'), { ssr: false });
 const DemandsByCategoryChart = dynamic(() => import('@/components/charts/demands-by-category'), { ssr: false });
+const DashboardDownloadButton = dynamic(() => import('@/components/pdf/dashboard-download-button'), { ssr: false });
 
 interface DashboardStats {
   total: number;
@@ -124,11 +125,16 @@ export default function DashboardPage() {
         }}
       />
 
-      <PageHeader
-        icon={LayoutDashboard}
-        title="Dashboard"
-        subtitle="Visão geral do gabinete"
-      />
+      <div className="flex items-start justify-between gap-4">
+        <PageHeader
+          icon={LayoutDashboard}
+          title="Dashboard"
+          subtitle="Visão geral do gabinete"
+        />
+        <div className="flex-shrink-0 pt-1">
+          <DashboardDownloadButton gabineteName={gabineteName} stats={stats} />
+        </div>
+      </div>
 
       {/* Gradient Cards Row */}
       <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
