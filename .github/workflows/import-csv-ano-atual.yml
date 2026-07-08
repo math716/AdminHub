@@ -1,14 +1,15 @@
-name: Import CSV - ano atual
+name: Import CSV - emendas federais
 
 on:
   schedule:
-    - cron: '0 5 * * 1'
+    - cron: '0 5 * * 1'    # Toda segunda-feira 5h UTC → 2025 e 2026
+    - cron: '0 5 1 * *'    # Todo dia 1 do mês 5h UTC  → 2021 a 2024
   workflow_dispatch:
     inputs:
-      ano:
-        description: 'Ano a importar'
+      anos:
+        description: 'Anos a importar, separados por vírgula (ex: 2021,2025,2026)'
         required: false
-        default: '2026'
+        default: '2025,2026'
         type: string
       batch:
         description: 'Tamanho do chunk de leitura (default 500)'
@@ -16,7 +17,7 @@ on:
         default: '500'
         type: string
       concurrency:
-        description: 'Operacoes simultaneas no banco (default 50, alinhado com connection_limit do Prisma)'
+        description: 'Operacoes simultaneas no banco (default 50)'
         required: false
         default: '50'
         type: string
@@ -26,6 +27,12 @@ jobs:
     name: Import CSV
     runs-on: ubuntu-latest
     timeout-minutes: 360
+
+    env:
+      ANOS: >-
+        ${{ github.event_name == 'workflow_dispatch' && inputs.anos ||
+            github.event.schedule == '0 5 * * 1' && '2025,2026' ||
+            '2021,2022,2023,2024' }}
 
     steps:
       - name: Checkout
@@ -46,76 +53,74 @@ jobs:
       - name: Criar diretorio de dados
         run: mkdir -p data/portal-csv-imports
 
-      - name: Baixar CSV do Portal da Transparencia
+      - name: Baixar CSVs do Portal da Transparencia
         run: |
-          ANO="${{ github.event.inputs.ano || '2026' }}"
-          ZIP="data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip"
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
           BASE="https://portaldatransparencia.gov.br"
-          URL="$BASE/download-de-dados/emendas-parlamentares-documentos/$ANO"
 
-          echo "=== Passo 1: obter cookies de sessao ==="
+          echo "=== Obtendo cookies de sessao ==="
           curl -s -c /tmp/portal-cookies.txt \
             --user-agent "$UA" \
             -H "Accept: text/html,*/*" \
             -o /dev/null \
             "$BASE/download-de-dados/emendas-parlamentares-documentos"
-          echo "Cookies obtidos:"
-          cat /tmp/portal-cookies.txt 2>/dev/null || echo "(nenhum)"
 
-          echo ""
-          echo "=== Passo 2: descobrir URL real do arquivo ==="
-          REDIRECT_URL=$(curl -s -o /dev/null -w "%{url_effective}" -L \
-            -b /tmp/portal-cookies.txt \
-            --user-agent "$UA" \
-            -H "Accept: application/zip,application/octet-stream,*/*" \
-            -H "Referer: $BASE/download-de-dados/emendas-parlamentares-documentos" \
-            --max-time 30 \
-            "$URL")
-          echo "URL final apos redirecionamentos: $REDIRECT_URL"
+          FALHOU=0
+          IFS=',' read -ra ANOS_ARRAY <<< "$ANOS"
+          for ANO in "${ANOS_ARRAY[@]}"; do
+            ANO=$(echo "$ANO" | tr -d ' ')
+            ZIP="data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip"
+            URL="$BASE/download-de-dados/emendas-parlamentares-documentos/$ANO"
 
-          echo ""
-          echo "=== Passo 3: download com diagnostico ==="
-          HTTP_INFO=$(curl -L \
-            -b /tmp/portal-cookies.txt \
-            --user-agent "$UA" \
-            -H "Accept: application/zip,application/octet-stream,*/*" \
-            -H "Accept-Language: pt-BR,pt;q=0.9" \
-            -H "Referer: $BASE/download-de-dados/emendas-parlamentares-documentos" \
-            --retry 3 --retry-delay 10 --retry-all-errors \
-            --max-time 1800 \
-            -w "\nHTTP_CODE=%{http_code}\nCONTENT_TYPE=%{content_type}\nSIZE=%{size_download}" \
-            -o "$ZIP" \
-            "$URL")
-          echo "$HTTP_INFO"
-
-          echo ""
-          MAGIC=$(xxd -p -l 4 "$ZIP" 2>/dev/null || echo "erro-xxd")
-          echo "Magic bytes: $MAGIC (esperado 504b0304 para ZIP)"
-
-          if [ "$MAGIC" != "504b0304" ]; then
             echo ""
-            echo "ERRO: Nao e um ZIP. Primeiros 1000 bytes do que foi baixado:"
-            echo "---"
-            head -c 1000 "$ZIP"
-            echo ""
-            echo "---"
-            exit 1
-          fi
+            echo "=== Baixando $ANO ==="
+            HTTP_INFO=$(curl -L \
+              -b /tmp/portal-cookies.txt \
+              --user-agent "$UA" \
+              -H "Accept: application/zip,application/octet-stream,*/*" \
+              -H "Accept-Language: pt-BR,pt;q=0.9" \
+              -H "Referer: $BASE/download-de-dados/emendas-parlamentares-documentos" \
+              --retry 3 --retry-delay 10 --retry-all-errors \
+              --max-time 1800 \
+              -w "\nHTTP_CODE=%{http_code}\nCONTENT_TYPE=%{content_type}\nSIZE=%{size_download}" \
+              -o "$ZIP" \
+              "$URL")
+            echo "$HTTP_INFO"
 
-          echo "ZIP valido! Tamanho: $(stat -c%s "$ZIP") bytes ($(ls -lh "$ZIP" | awk '{print $5}'))"
+            MAGIC=$(xxd -p -l 4 "$ZIP" 2>/dev/null || echo "erro-xxd")
+            echo "Magic bytes: $MAGIC (esperado 504b0304 para ZIP)"
+
+            if [ "$MAGIC" != "504b0304" ]; then
+              echo "ERRO: $ANO nao e um ZIP valido — pulando"
+              rm -f "$ZIP"
+              FALHOU=1
+            else
+              echo "ZIP valido: $(stat -c%s "$ZIP") bytes ($(ls -lh "$ZIP" | awk '{print $5}'))"
+            fi
+          done
+
+          if [ "$FALHOU" != "0" ]; then exit 1; fi
 
       - name: Importar dados no banco
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          ANO="${{ github.event.inputs.ano || '2026' }}"
           BATCH="${{ github.event.inputs.batch || '500' }}"
-          CONC="${{ github.event.inputs.concurrency || '20' }}"
-          npx tsx scripts/import-portal-csv.mts \
-            --file "data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip" \
-            --batch $BATCH \
-            --concurrency $CONC
+          CONC="${{ github.event.inputs.concurrency || '50' }}"
+          IFS=',' read -ra ANOS_ARRAY <<< "$ANOS"
+          for ANO in "${ANOS_ARRAY[@]}"; do
+            ANO=$(echo "$ANO" | tr -d ' ')
+            ZIP="data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip"
+            if [ -f "$ZIP" ]; then
+              echo "=== Importando $ANO ==="
+              npx tsx scripts/import-portal-csv.mts \
+                --file "$ZIP" \
+                --batch $BATCH \
+                --concurrency $CONC
+            else
+              echo "ZIP nao encontrado para $ANO, pulando."
+            fi
+          done
 
       - name: Reclassificar senadores
         env:
@@ -130,7 +135,6 @@ jobs:
       - name: Resumo
         if: always()
         run: |
-          ANO="${{ github.event.inputs.ano || '2026' }}"
-          echo "## Import CSV concluido" >> $GITHUB_STEP_SUMMARY
-          echo "- **Ano:** $ANO" >> $GITHUB_STEP_SUMMARY
+          echo "## Import CSV Federal concluido" >> $GITHUB_STEP_SUMMARY
+          echo "- **Anos:** $ANOS" >> $GITHUB_STEP_SUMMARY
           echo "- **Horario:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
