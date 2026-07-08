@@ -7,6 +7,23 @@ import { PrismaClient } from '@prisma/client';
 import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
 import { classificarArea } from '../../lib/portal-transparencia';
 
+/** Busca todos os municípios de uma UF na API do IBGE e retorna mapa nome-normalizado → código IBGE 7 dígitos */
+export async function fetchMunicipiosIBGE(uf: string): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  try {
+    const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
+    if (!res.ok) { console.warn(`[ibge] HTTP ${res.status} ao buscar municípios de ${uf}`); return map; }
+    const data = await res.json() as Array<{ id: number; nome: string }>;
+    for (const m of data) {
+      map.set(normalizeNome(m.nome), String(m.id));
+    }
+    console.log(`[ibge] ${map.size} municípios carregados para ${uf}`);
+  } catch (e: any) {
+    console.warn(`[ibge] Erro ao buscar municípios de ${uf}:`, e.message);
+  }
+  return map;
+}
+
 // Transaction Pooler — padrão para todos os scripts de importação
 export function buildPrismaUrl(): string {
   const raw = process.env.DATABASE_URL ?? '';
@@ -130,6 +147,9 @@ export async function importarEmendas(
   const { batchSize = 20, dryRun = false } = opts;
   const result: ImportResult = { inseridas: 0, erros: 0, parlamentares: 0 };
 
+  // Lookup IBGE para enriquecer municipioNome → codigoIbge automaticamente
+  const municipiosIbge = await fetchMunicipiosIBGE(uf);
+
   let prisma = prismaInicial;
   const getPrisma = () => prisma;
   const setPrisma = (p: PrismaClient) => { prisma = p; };
@@ -169,6 +189,10 @@ export async function importarEmendas(
           const parlamentarId = await obterParlamentar(row);
           const area = row.area ?? classificarArea(null, row.funcao ?? null);
 
+          // Enriquecer codigoIbge via lookup se não veio no CSV
+          const codigoIbge = row.codigoIbge
+            ?? (row.municipioNome ? municipiosIbge.get(normalizeNome(row.municipioNome)) ?? null : null);
+
           if (!dryRun) {
             await withRetry(
               (db) => db.emendaParlamentar.upsert({
@@ -181,7 +205,7 @@ export async function importarEmendas(
                   valorProposto: row.valorProposto ?? null,
                   valorEmpenhado: row.valorEmpenhado, valorPago: row.valorPago,
                   valorRestoPago: row.valorRestoPago ?? 0,
-                  uf: row.uf, codigoIbge: row.codigoIbge ?? null,
+                  uf: row.uf, codigoIbge: codigoIbge ?? null,
                   municipioNome: row.municipioNome ?? null,
                   parlamentarId: parlamentarId ?? undefined,
                 },
@@ -192,7 +216,7 @@ export async function importarEmendas(
                   valorProposto: row.valorProposto ?? null,
                   valorEmpenhado: row.valorEmpenhado, valorPago: row.valorPago,
                   valorRestoPago: row.valorRestoPago ?? 0,
-                  uf: row.uf, codigoIbge: row.codigoIbge ?? null,
+                  uf: row.uf, codigoIbge: codigoIbge ?? null,
                   municipioNome: row.municipioNome ?? null,
                   ...(parlamentarId ? { parlamentarId } : {}),
                 },

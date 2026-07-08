@@ -68,6 +68,12 @@ jobs:
             fi
           done
 
+      - name: Backfill codigos IBGE
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx --require dotenv/config scripts/backfill-municipios-ibge.ts --uf SP
+
       - name: Reclassificar areas
         continue-on-error: true
         env:
