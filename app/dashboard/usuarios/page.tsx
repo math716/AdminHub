@@ -890,20 +890,12 @@ export default function UsuariosPage() {
 
                                   {/* Reset senha — apenas ADMIN / SUPER_ADMIN */}
                                   {isAdmin && u.id !== sessionUserId && (
-                                    <>
-                                      <button onClick={() => openResetModal(u.id, u.name)}
-                                        title="Resetar senha"
-                                        className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
-                                        style={{ color: 'var(--tint-35)' }}>
-                                        <KeyRound className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button onClick={() => openLogsModal(u.id, u.name)}
-                                        title="Histórico de resets"
-                                        className="p-1.5 rounded-lg transition-all hover:bg-blue-500/10"
-                                        style={{ color: 'var(--tint-35)' }}>
-                                        <History className="w-3.5 h-3.5" />
-                                      </button>
-                                    </>
+                                    <button onClick={() => openResetModal(u.id, u.name)}
+                                      title="Resetar senha"
+                                      className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
+                                      style={{ color: 'var(--tint-35)' }}>
+                                      <KeyRound className="w-3.5 h-3.5" />
+                                    </button>
                                   )}
 
                                   {/* Excluir */}
@@ -1075,18 +1067,11 @@ export default function UsuariosPage() {
                               <>
                                 {/* Reset senha — apenas ADMIN / SUPER_ADMIN */}
                                 {isAdmin && (
-                                  <>
-                                    <button onClick={() => openResetModal(u.id, u.name)} title="Resetar senha"
-                                      className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
-                                      style={{ color: 'var(--tint-35)' }}>
-                                      <KeyRound className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button onClick={() => openLogsModal(u.id, u.name)} title="Histórico de resets"
-                                      className="p-1.5 rounded-lg transition-all hover:bg-blue-500/10"
-                                      style={{ color: 'var(--tint-35)' }}>
-                                      <History className="w-3.5 h-3.5" />
-                                    </button>
-                                  </>
+                                  <button onClick={() => openResetModal(u.id, u.name)} title="Resetar senha"
+                                    className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
+                                    style={{ color: 'var(--tint-35)' }}>
+                                    <KeyRound className="w-3.5 h-3.5" />
+                                  </button>
                                 )}
                                 <button onClick={() => handleReject(u.id, u.name)} disabled={actionId === u.id}
                                   title="Remover usuário"
