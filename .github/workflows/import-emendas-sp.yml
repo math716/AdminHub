@@ -2,25 +2,27 @@ name: Import Emendas SP (ALESP)
 
 on:
   schedule:
-    - cron: '0 6 * * 1'   # toda segunda-feira às 06:00 UTC
+    - cron: '0 7 * * 1'   # Toda segunda-feira 7h UTC → 2025 e 2026
+    - cron: '0 7 1 * *'   # Todo dia 1 do mês 7h UTC  → 2023 e 2024
   workflow_dispatch:
     inputs:
-      ano:
-        description: 'Ano a importar (ex: 2025)'
+      anos:
+        description: 'Anos a importar, separados por vírgula (ex: 2023,2024,2025,2026)'
         required: false
-        default: '2025'
-        type: string
-      ano_extra:
-        description: 'Segundo ano a importar (opcional)'
-        required: false
-        default: ''
+        default: '2025,2026'
         type: string
 
 jobs:
   import-sp:
-    name: Import SP ${{ github.event.inputs.ano || '2025' }}
+    name: Import SP ALESP
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
+    env:
+      ANOS: >-
+        ${{ github.event_name == 'workflow_dispatch' && inputs.anos ||
+            github.event.schedule == '0 7 * * 1' && '2025,2026' ||
+            '2023,2024' }}
 
     steps:
       - name: Checkout
@@ -32,8 +34,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Instalar dependencias Node
+      - name: Instalar dependencias
         run: npm ci
+
+      - name: Instalar Playwright (Chromium)
+        run: npx playwright install chromium --with-deps
 
       - name: Gerar Prisma Client
         run: npx prisma generate
@@ -41,80 +46,37 @@ jobs:
       - name: Criar diretorio de dados
         run: mkdir -p data/estados
 
-      - name: Baixar XLSX do dadosabertos.sp.gov.br
-        run: |
-          set -e
-          ANO="${{ github.event.inputs.ano || '2025' }}"
-          ANO2="${{ github.event.inputs.ano_extra }}"
+      - name: Baixar XLSX via Power BI
+        run: npx tsx scripts/download-emendas-sp-powerbi.ts
+        timeout-minutes: 30
 
-          download_xlsx() {
-            local ano=$1
-            local dest="data/estados/Emendas_Impositivas_${ano}.xlsx"
-
-            echo "=== Buscando URL do XLSX ${ano} via CKAN API ==="
-            CKAN_URL="https://dadosabertos.sp.gov.br/api/3/action/package_show?id=emendas-impositivas-${ano}"
-            echo "CKAN: $CKAN_URL"
-
-            RESPONSE=$(curl -fsSL --max-time 30 "$CKAN_URL")
-            # Extrai a primeira URL de recurso .xlsx (case insensitive)
-            XLSX_URL=$(echo "$RESPONSE" | python3 -c "
-          import sys, json, re
-          data = json.load(sys.stdin)
-          resources = data.get('result', {}).get('resources', [])
-          for r in resources:
-              url = r.get('url', '')
-              if re.search(r'\.xlsx', url, re.IGNORECASE):
-                  print(url)
-                  break
-          ")
-
-            if [ -z "$XLSX_URL" ]; then
-              echo "AVISO: CKAN nao retornou URL xlsx para ${ano}. Tentando URL direta..."
-              # Fallback: URL direta conhecida do dadosabertos.sp.gov.br
-              XLSX_URL="https://dadosabertos.sp.gov.br/dataset/emendas-impositivas-${ano}/resource/download/Emendas_Impositivas_${ano}.xlsx"
-            fi
-
-            echo "URL: $XLSX_URL"
-            curl -fsSL --max-time 300 --retry 3 --retry-delay 10 \
-              -H "User-Agent: Mozilla/5.0 (compatible; AdminHub-import/1.0)" \
-              -o "$dest" \
-              "$XLSX_URL"
-
-            MAGIC=$(xxd -p -l 4 "$dest" 2>/dev/null || echo "erro")
-            if [ "$MAGIC" != "504b0304" ]; then
-              echo "ERRO: arquivo baixado nao e um XLSX valido (magic=$MAGIC)."
-              head -c 500 "$dest"
-              exit 1
-            fi
-            echo "OK: $(ls -lh "$dest" | awk '{print $5}') baixados para $dest"
-          }
-
-          download_xlsx "$ANO"
-          [ -n "$ANO2" ] && download_xlsx "$ANO2"
-
-      - name: Importar SP no banco
+      - name: Importar no banco
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          ANO="${{ github.event.inputs.ano || '2025' }}"
-          ANO2="${{ github.event.inputs.ano_extra }}"
+          IFS=',' read -ra ANOS_ARRAY <<< "$ANOS"
+          for ANO in "${ANOS_ARRAY[@]}"; do
+            ANO=$(echo "$ANO" | tr -d ' ')
+            FILE="data/estados/Emendas_Impositivas_${ANO}.xlsx"
+            if [ -f "$FILE" ]; then
+              echo "=== Importando $ANO ==="
+              npx tsx --require dotenv/config scripts/estados/import-sp.ts \
+                --file "$FILE" \
+                --ano "$ANO"
+            else
+              echo "Arquivo não encontrado para $ANO, pulando."
+            fi
+          done
 
-          echo "=== Importando $ANO ==="
-          npx tsx --require dotenv/config scripts/estados/import-sp.ts \
-            --file "data/estados/Emendas_Impositivas_${ANO}.xlsx" \
-            --ano "$ANO"
-
-          if [ -n "$ANO2" ] && [ -f "data/estados/Emendas_Impositivas_${ANO2}.xlsx" ]; then
-            echo "=== Importando $ANO2 ==="
-            npx tsx --require dotenv/config scripts/estados/import-sp.ts \
-              --file "data/estados/Emendas_Impositivas_${ANO2}.xlsx" \
-              --ano "$ANO2"
-          fi
+      - name: Reclassificar areas
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx --require dotenv/config scripts/reclassificar-areas.ts
 
       - name: Resumo
         if: always()
         run: |
-          ANO="${{ github.event.inputs.ano || '2025' }}"
-          echo "## Import SP (ALESP) concluido" >> $GITHUB_STEP_SUMMARY
-          echo "- **Ano principal:** $ANO" >> $GITHUB_STEP_SUMMARY
-          echo "- **Horario:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "## Import SP (ALESP) concluído" >> $GITHUB_STEP_SUMMARY
+          echo "- **Anos:** $ANOS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horário:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
