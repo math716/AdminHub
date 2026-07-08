@@ -17,13 +17,24 @@ function arg(name: string): string | undefined {
 
 const UF_FILTER = arg('uf');
 
-async function fetchMunicipiosUF(uf: string): Promise<Map<string, string>> {
+interface MunicipiosResult {
+  map: Map<string, string>;        // normalizado → código
+  mapSemEspaco: Map<string, string>; // normalizado-sem-espaço → código (fallback para "Doeste" vs "D Oeste")
+}
+
+async function fetchMunicipiosUF(uf: string): Promise<MunicipiosResult> {
   const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
   if (!res.ok) throw new Error(`IBGE HTTP ${res.status} para UF=${uf}`);
   const data = await res.json() as Array<{ id: number; nome: string }>;
   const map = new Map<string, string>();
-  for (const m of data) map.set(normalizeNome(m.nome), String(m.id));
-  return map;
+  const mapSemEspaco = new Map<string, string>();
+  for (const m of data) {
+    const norm = normalizeNome(m.nome);
+    const id   = String(m.id);
+    map.set(norm, id);
+    mapSemEspaco.set(norm.replace(/\s/g, ''), id);
+  }
+  return { map, mapSemEspaco };
 }
 
 async function main() {
@@ -61,12 +72,12 @@ async function main() {
 
     for (const [uf, registros] of porUf) {
       console.log(`\n[${uf}] ${registros.length} registros — buscando municípios no IBGE...`);
-      const municipiosMap = await fetchMunicipiosUF(uf);
+      const { map: municipiosMap, mapSemEspaco } = await fetchMunicipiosUF(uf);
 
       // Agrupa por municipioNome único
       const porNome = new Map<string, string[]>();
       for (const e of registros) {
-        const nome = e.municipioNome!;
+        const nome = e.municipioNome!.trim(); // remove espaços invisíveis
         if (!porNome.has(nome)) porNome.set(nome, []);
         porNome.get(nome)!.push(e.id);
       }
@@ -75,7 +86,9 @@ async function main() {
       let ufSemMatch = 0;
 
       for (const [nome, ids] of porNome) {
-        const codigo = municipiosMap.get(normalizeNome(nome));
+        const norm   = normalizeNome(nome);
+        // Tenta match exato; fallback sem espaços (resolve "Doeste" vs "D Oeste")
+        const codigo = municipiosMap.get(norm) ?? mapSemEspaco.get(norm.replace(/\s/g, ''));
         if (!codigo) {
           console.warn(`  [sem match] "${nome}"`);
           ufSemMatch += ids.length;

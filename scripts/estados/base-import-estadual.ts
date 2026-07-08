@@ -7,16 +7,24 @@ import { PrismaClient } from '@prisma/client';
 import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
 import { classificarArea } from '../../lib/portal-transparencia';
 
-/** Busca todos os municípios de uma UF na API do IBGE e retorna mapa nome-normalizado → código IBGE 7 dígitos */
+/** Busca todos os municípios de uma UF na API do IBGE.
+ *  Retorna dois mapas: exato (normalizado) e fallback sem espaços
+ *  (resolve nomes como "Doeste" vs "D Oeste" vindos de planilhas). */
 export async function fetchMunicipiosIBGE(uf: string): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
+  const map        = new Map<string, string>(); // normalizado → código
+  const mapNoSpace = new Map<string, string>(); // sem espaços  → código
   try {
     const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
     if (!res.ok) { console.warn(`[ibge] HTTP ${res.status} ao buscar municípios de ${uf}`); return map; }
     const data = await res.json() as Array<{ id: number; nome: string }>;
     for (const m of data) {
-      map.set(normalizeNome(m.nome), String(m.id));
+      const norm = normalizeNome(m.nome);
+      const id   = String(m.id);
+      map.set(norm, id);
+      mapNoSpace.set(norm.replace(/\s/g, ''), id);
     }
+    // Mescla fallback no mesmo Map com chaves sem espaço (prefixadas para não colidir)
+    for (const [k, v] of mapNoSpace) if (!map.has(k)) map.set(k, v);
     console.log(`[ibge] ${map.size} municípios carregados para ${uf}`);
   } catch (e: any) {
     console.warn(`[ibge] Erro ao buscar municípios de ${uf}:`, e.message);
@@ -189,9 +197,12 @@ export async function importarEmendas(
           const parlamentarId = await obterParlamentar(row);
           const area = row.area ?? classificarArea(null, row.funcao ?? null);
 
-          // Enriquecer codigoIbge via lookup se não veio no CSV
-          const codigoIbge = row.codigoIbge
-            ?? (row.municipioNome ? municipiosIbge.get(normalizeNome(row.municipioNome)) ?? null : null);
+          // Enriquecer codigoIbge via lookup (tenta exato; fallback sem espaços para "Doeste" vs "D Oeste")
+          const codigoIbge = row.codigoIbge ?? (() => {
+            if (!row.municipioNome) return null;
+            const norm = normalizeNome(row.municipioNome.trim());
+            return municipiosIbge.get(norm) ?? municipiosIbge.get(norm.replace(/\s/g, '')) ?? null;
+          })();
 
           if (!dryRun) {
             await withRetry(
