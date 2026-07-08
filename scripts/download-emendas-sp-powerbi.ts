@@ -31,32 +31,43 @@ async function downloadAno(ano: number): Promise<boolean> {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
 
     // Power BI precisa de tempo para renderizar o relatório completo
-    console.log(`[${ano}] Aguardando renderização (30s)...`);
-    await page.waitForTimeout(30_000);
+    console.log(`[${ano}] Aguardando renderização (60s)...`);
+    await page.waitForTimeout(60_000);
 
     let download = null;
 
+    // Variações do texto do botão de download que o Power BI pode usar
+    const TEXTOS_BOTAO = ['Baixar os dados', 'Exportar dados', 'Export data', 'Download'];
+
     // Tenta encontrar o botão na página principal e em cada iframe
     const targets = [page, ...page.frames()];
-    for (const target of targets) {
-      try {
-        const btn = target.getByText('Baixar os dados', { exact: false });
-        await btn.waitFor({ timeout: 5_000 });
-        const dlPromise = page.waitForEvent('download', { timeout: 60_000 });
-        await btn.click();
-
-        // Power BI pode mostrar dialog de seleção de dados
+    outer: for (const target of targets) {
+      for (const texto of TEXTOS_BOTAO) {
         try {
-          await page.getByText('Dados subjacentes', { exact: false }).click({ timeout: 8_000 });
-        } catch { /* sem dialog, download já iniciou */ }
+          const btn = target.getByText(texto, { exact: false });
+          await btn.waitFor({ timeout: 3_000 });
+          console.log(`[${ano}] Botão encontrado: "${texto}"`);
+          const dlPromise = page.waitForEvent('download', { timeout: 60_000 });
+          await btn.click();
 
-        download = await dlPromise;
-        break;
-      } catch { /* botão não encontrado neste frame, tenta próximo */ }
+          // Power BI pode mostrar dialog de seleção de dados
+          for (const textoDialog of ['Dados subjacentes', 'Underlying data', 'Exportar']) {
+            try {
+              await page.getByText(textoDialog, { exact: false }).click({ timeout: 5_000 });
+              break;
+            } catch { /* tenta próximo */ }
+          }
+
+          download = await dlPromise;
+          break outer;
+        } catch { /* botão não encontrado, tenta próximo */ }
+      }
     }
 
     if (!download) {
-      console.error(`[${ano}] ✗ Botão "Baixar os dados" não encontrado após 30s`);
+      // Salva screenshot para diagnóstico
+      await page.screenshot({ path: `data/estados/debug-${ano}.png`, fullPage: true }).catch(() => {});
+      console.error(`[${ano}] ✗ Botão de download não encontrado após 60s (screenshot salvo)`);
       return false;
     }
 
