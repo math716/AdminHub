@@ -16,9 +16,9 @@ on:
         default: '500'
         type: string
       concurrency:
-        description: 'Operacoes simultaneas no banco (default 20, max seguro para Supabase free)'
+        description: 'Operacoes simultaneas no banco (default 50, alinhado com connection_limit do Prisma)'
         required: false
-        default: '20'
+        default: '50'
         type: string
 
 jobs:
@@ -31,10 +31,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Instalar dependencias
