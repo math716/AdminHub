@@ -54,7 +54,24 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     const tempPassword = generateTempPassword();
     const hashed = await bcrypt.hash(tempPassword, 10);
 
-    await prisma.user.update({ where: { id: params.id }, data: { password: hashed, mustChangePassword: true } });
+    const resetBy = (session.user as any);
+    const treseMesesAtras = new Date();
+    treseMesesAtras.setMonth(treseMesesAtras.getMonth() - 3);
+
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: params.id }, data: { password: hashed, mustChangePassword: true } }),
+      prisma.passwordResetLog.create({
+        data: {
+          userId:      params.id,
+          resetById:   resetBy.id ?? '',
+          resetByName: resetBy.name ?? resetBy.email ?? '',
+          emailSent:   false,
+        },
+      }),
+      prisma.passwordResetLog.deleteMany({
+        where: { createdAt: { lt: treseMesesAtras } },
+      }),
+    ]);
 
     const baseUrl = process.env.NEXTAUTH_URL ?? '';
     const emailSent = await sendPasswordResetEmail({
@@ -64,9 +81,11 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       loginUrl: `${baseUrl}/login`,
     });
 
-    // Retornar a senha apenas quando o email não estiver configurado,
-    // para que o admin possa comunicá-la manualmente ao usuário.
     if (emailSent) {
+      await prisma.passwordResetLog.updateMany({
+        where: { userId: params.id, emailSent: false },
+        data: { emailSent: true },
+      });
       return NextResponse.json({ success: true, emailSent: true });
     }
     return NextResponse.json({ success: true, emailSent: false, password: tempPassword });

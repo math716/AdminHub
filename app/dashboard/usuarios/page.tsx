@@ -8,7 +8,7 @@ import { useTheme } from 'next-themes';
 import {
   Users, Check, X, Clock, Shield, Building2,
   Loader2, ChevronDown, ChevronUp, CheckCircle2, AlertCircle,
-  Link2, Copy, CheckCheck, Search, KeyRound, Trash2, SlidersHorizontal,
+  Link2, Copy, CheckCheck, Search, KeyRound, Trash2, SlidersHorizontal, History,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -313,6 +313,12 @@ export default function UsuariosPage() {
   const [resettingPwd,    setResettingPwd]    = useState(false);
   const [copiedPwd,       setCopiedPwd]       = useState(false);
 
+  // ── histórico de resets ───────────────────────────────────────────────────
+  const [showLogsModal,  setShowLogsModal]  = useState(false);
+  const [logsTargetName, setLogsTargetName] = useState('');
+  const [resetLogs,      setResetLogs]      = useState<{ id: string; resetByName: string; emailSent: boolean; createdAt: string }[]>([]);
+  const [loadingLogs,    setLoadingLogs]    = useState(false);
+
   // ── redirect ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (status === 'authenticated' && userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'AGENTE_POLITICO') {
@@ -485,6 +491,20 @@ export default function UsuariosPage() {
     setResetResult('');
     setCopiedPwd(false);
     setShowResetModal(true);
+  };
+
+  const openLogsModal = async (userId: string, name: string) => {
+    setLogsTargetName(name);
+    setResetLogs([]);
+    setShowLogsModal(true);
+    setLoadingLogs(true);
+    try {
+      const res = await fetch(`/api/users/${userId}/reset-logs`);
+      const data = await res.json();
+      setResetLogs(Array.isArray(data) ? data : []);
+    } finally {
+      setLoadingLogs(false);
+    }
   };
 
   const confirmResetPassword = async () => {
@@ -870,12 +890,20 @@ export default function UsuariosPage() {
 
                                   {/* Reset senha — apenas ADMIN / SUPER_ADMIN */}
                                   {isAdmin && u.id !== sessionUserId && (
-                                    <button onClick={() => openResetModal(u.id, u.name)}
-                                      title="Resetar senha"
-                                      className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
-                                      style={{ color: 'var(--tint-35)' }}>
-                                      <KeyRound className="w-3.5 h-3.5" />
-                                    </button>
+                                    <>
+                                      <button onClick={() => openResetModal(u.id, u.name)}
+                                        title="Resetar senha"
+                                        className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
+                                        style={{ color: 'var(--tint-35)' }}>
+                                        <KeyRound className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button onClick={() => openLogsModal(u.id, u.name)}
+                                        title="Histórico de resets"
+                                        className="p-1.5 rounded-lg transition-all hover:bg-blue-500/10"
+                                        style={{ color: 'var(--tint-35)' }}>
+                                        <History className="w-3.5 h-3.5" />
+                                      </button>
+                                    </>
                                   )}
 
                                   {/* Excluir */}
@@ -1047,11 +1075,18 @@ export default function UsuariosPage() {
                               <>
                                 {/* Reset senha — apenas ADMIN / SUPER_ADMIN */}
                                 {isAdmin && (
-                                  <button onClick={() => openResetModal(u.id, u.name)} title="Resetar senha"
-                                    className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
-                                    style={{ color: 'var(--tint-35)' }}>
-                                    <KeyRound className="w-3.5 h-3.5" />
-                                  </button>
+                                  <>
+                                    <button onClick={() => openResetModal(u.id, u.name)} title="Resetar senha"
+                                      className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
+                                      style={{ color: 'var(--tint-35)' }}>
+                                      <KeyRound className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button onClick={() => openLogsModal(u.id, u.name)} title="Histórico de resets"
+                                      className="p-1.5 rounded-lg transition-all hover:bg-blue-500/10"
+                                      style={{ color: 'var(--tint-35)' }}>
+                                      <History className="w-3.5 h-3.5" />
+                                    </button>
+                                  </>
                                 )}
                                 <button onClick={() => handleReject(u.id, u.name)} disabled={actionId === u.id}
                                   title="Remover usuário"
@@ -1121,6 +1156,73 @@ export default function UsuariosPage() {
                 </button>
               </div>
               <button onClick={() => setShowInviteModal(false)}
+                className="w-full py-2 rounded-xl text-sm font-medium transition-all hover:bg-[var(--tint-06)]"
+                style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-08)' }}>
+                Fechar
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL: Histórico de Resets de Senha
+      ══════════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {showLogsModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', padding: '1rem' }}
+            onClick={e => { if (e.target === e.currentTarget) setShowLogsModal(false); }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md rounded-2xl p-6 space-y-4"
+              style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.25)' }}>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.3)' }}>
+                  <History className="w-5 h-5" style={{ color: '#2563EB' }} />
+                </div>
+                <div>
+                  <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Histórico de Resets</h3>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--tint-45)' }}>{logsTargetName}</p>
+                </div>
+              </div>
+
+              {loadingLogs ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#2563EB' }} />
+                </div>
+              ) : resetLogs.length === 0 ? (
+                <div className="text-center py-6 text-sm" style={{ color: 'var(--tint-35)' }}>
+                  Nenhum reset de senha registrado.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {resetLogs.map(log => (
+                    <div key={log.id} className="flex items-start gap-3 rounded-xl px-4 py-3"
+                      style={{ background: 'var(--tint-04)', border: '1px solid var(--border-default)' }}>
+                      <KeyRound className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#f59e0b' }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                          Reset por <span style={{ color: '#2563EB' }}>{log.resetByName}</span>
+                        </p>
+                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--tint-35)' }}>
+                          {new Date(log.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          {' · '}
+                          {log.emailSent ? 'E-mail enviado' : 'Senha exibida na tela'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="text-[11px] text-center" style={{ color: 'var(--tint-25)' }}>
+                Logs são mantidos por 3 meses
+              </p>
+
+              <button onClick={() => setShowLogsModal(false)}
                 className="w-full py-2 rounded-xl text-sm font-medium transition-all hover:bg-[var(--tint-06)]"
                 style={{ color: 'var(--tint-45)', border: '1px solid var(--tint-08)' }}>
                 Fechar

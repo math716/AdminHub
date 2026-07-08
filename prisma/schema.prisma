@@ -147,6 +147,7 @@ model User {
   projecoes     ProjecaoCampanha[]
   accounts      Account[]
   sessions      Session[]
+  passwordResetLogs PasswordResetLog[]
 
   @@index([email])
   @@index([gabineteId])
@@ -823,4 +824,18 @@ model EmendaNaoRealizada {
 
   @@index([gabineteId, parlamentarId, ano])
   @@map("emendas_nao_realizadas")
+}
+
+model PasswordResetLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resetById   String
+  resetByName String
+  emailSent   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("password_reset_logs")
 }
