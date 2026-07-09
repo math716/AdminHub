@@ -838,13 +838,19 @@ export default function EmendasPage() {
     return m;
   }, [parlamentarHistorico, ano]);
 
-  // Interseção: emendas do parlamentar destinas ao município selecionado.
-  // Usa emenda.codigoIbge (destino declarado), que é o mesmo campo pelo qual
-  // a rota /municipio/[codigo]/emendas filtra — garante consistência com o TOP 5.
+  // Interseção: emendas do parlamentar destinadas ao município selecionado.
+  // Usa municipioEmendas (mesma fonte do TOP 5) filtrada ao parlamentar — evita
+  // a inconsistência com parlamentarEmendas que filtra por uf e pode excluir
+  // emendas onde uf=null mesmo que codigoIbge seja do município correto.
   const parlamentarMunicipioEmendas = useMemo(() => {
     if (!selectedParlamentar || !selectedMunicipio) return [];
-    return parlamentarEmendas.filter((e) => e.codigoIbge === selectedMunicipio.codigo);
-  }, [selectedParlamentar, selectedMunicipio, parlamentarEmendas]);
+    const cpf  = selectedParlamentar.cpf;
+    const nome = selectedParlamentar.nome.trim().toUpperCase();
+    return municipioEmendas.filter((e) =>
+      (cpf && e.autorCpf === cpf) ||
+      e.autorNome.trim().toUpperCase() === nome
+    );
+  }, [selectedParlamentar, selectedMunicipio, municipioEmendas]);
 
   // Quando município + parlamentar selecionados, filtra destinos flat às emendas
   // que foram destinadas ao município — mantém detalhes dos favorecidos mas evita
