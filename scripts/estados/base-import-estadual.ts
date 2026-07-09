@@ -183,7 +183,7 @@ export async function importarEmendas(
       result.parlamentares++;
       return p.id;
     } catch (e: any) {
-      console.warn(`  [parlamentar] erro "${row.autorNome}": ${e.message?.slice(0, 80)}`);
+      console.warn(`  [parlamentar] erro "${row.autorNome}": ${e.message?.slice(0, 300)}`);
       return null;
     }
   }
@@ -238,7 +238,7 @@ export async function importarEmendas(
 
           result.inseridas++;
         } catch (e: any) {
-          console.warn(`  [emenda] erro "${row.idPortal}": ${e.message?.slice(0, 80)}`);
+          console.warn(`  [emenda] erro "${row.idPortal}": ${e.message?.slice(0, 300)}`);
           result.erros++;
         }
       }),
