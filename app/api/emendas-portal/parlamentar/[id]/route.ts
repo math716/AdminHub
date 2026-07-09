@@ -118,13 +118,16 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             autorUf:        e.parlamentar?.uf ?? null,
           };
         });
-        // Dedup: mesma emenda importada mais de uma vez com idPortal idêntico.
-        // rows está ordenado por valorEmpenhado desc, então o primeiro registro
-        // de cada idPortal é o mais completo — basta manter a primeira ocorrência.
-        const seenPortalIds = new Set<string>();
+        // Dedup: mesmo numero+ano dentro do contexto do parlamentar.
+        // Cobre tanto registros com idPortal idêntico (constraint não aplicada)
+        // quanto registros com idPortal diferente mas numero idêntico (mesma emenda
+        // importada por caminhos diferentes). rows está ordenado por valorEmpenhado
+        // desc, então o primeiro de cada chave é o mais completo.
+        const seenKeys = new Set<string>();
         const emendasDedup = emendas.filter((e) => {
-          if (seenPortalIds.has(e.idPortal)) return false;
-          seenPortalIds.add(e.idPortal);
+          const key = e.numero ? `${e.numero}_${e.ano}` : e.idPortal;
+          if (seenKeys.has(key)) return false;
+          seenKeys.add(key);
           return true;
         });
 

@@ -106,9 +106,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     for (const e of emendas) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const eDocs: DocRec[] = (e as any).documentos ?? [];
-      const existing = emendaMergeMap.get(e.idPortal);
+      // Chave de dedup: mesmo número + ano dentro do contexto do parlamentar.
+      // Usa numero quando disponível porque idPortal pode variar entre importações
+      // da mesma emenda (ex.: dois registros distintos no banco com idPortal diferente
+      // mas numero idêntico — a mesma emenda importada por caminhos diferentes).
+      const dedupKey = e.numero ? `${e.numero}_${e.ano}` : e.idPortal;
+      const existing = emendaMergeMap.get(dedupKey);
       if (!existing) {
-        emendaMergeMap.set(e.idPortal, {
+        emendaMergeMap.set(dedupKey, {
           idPortal:       e.idPortal,
           numero:         e.numero,
           tipo:           e.tipo,
