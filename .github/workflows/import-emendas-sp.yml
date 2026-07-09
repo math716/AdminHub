@@ -2,8 +2,8 @@ name: Import Emendas SP (ALESP)
 
 on:
   schedule:
-    - cron: '0 7 * * 1'   # Toda segunda-feira 7h UTC → 2025 e 2026
-    - cron: '0 7 1 * *'   # Todo dia 1 do mês 7h UTC  → 2023 e 2024
+    - cron: '0 3 * * 1'   # Toda segunda-feira 3h UTC → 2025 e 2026
+    - cron: '0 2 3 * *'   # Dia 3 do mês 2h UTC       → 2023 e 2024
   workflow_dispatch:
     inputs:
       anos:
@@ -21,7 +21,7 @@ jobs:
     env:
       ANOS: >-
         ${{ github.event_name == 'workflow_dispatch' && inputs.anos ||
-            github.event.schedule == '0 7 * * 1' && '2025,2026' ||
+            github.event.schedule == '0 3 * * 1' && '2025,2026' ||
             '2023,2024' }}
 
     steps:
