@@ -77,6 +77,63 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       orderBy: { valorEmpenhado: 'desc' },
     });
 
+    // Deduplica registros com o mesmo idPortal (mesma emenda importada mais de uma vez).
+    // Mescla os documentos de todos os duplicados para garantir que o porFav
+    // consiga deduplicar corretamente dentro de cada emenda.
+    type DocRec = {
+      cnpjFavorecido: string | null;
+      nomeFavorecido: string | null;
+      municipioFavorecido: string | null;
+      ufFavorecido: string | null;
+      codigoIbgeFavorecido: string | null;
+      fase: string;
+      valor: number;
+    };
+    type MergedEmenda = {
+      idPortal: string;
+      numero: string | null;
+      tipo: string | null;
+      funcao: string | null;
+      uf: string | null;
+      municipioNome: string | null;
+      codigoIbge: string | null;
+      beneficiario: string | null;
+      valorEmpenhado: number;
+      valorPago: number;
+      documentos: DocRec[];
+    };
+    const emendaMergeMap = new Map<string, MergedEmenda>();
+    for (const e of emendas) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const eDocs: DocRec[] = (e as any).documentos ?? [];
+      const existing = emendaMergeMap.get(e.idPortal);
+      if (!existing) {
+        emendaMergeMap.set(e.idPortal, {
+          idPortal:       e.idPortal,
+          numero:         e.numero,
+          tipo:           e.tipo,
+          funcao:         e.funcao,
+          uf:             e.uf,
+          municipioNome:  e.municipioNome,
+          codigoIbge:     e.codigoIbge,
+          beneficiario:   e.beneficiario,
+          valorEmpenhado: e.valorEmpenhado,
+          valorPago:      e.valorPago,
+          documentos:     [...eDocs],
+        });
+      } else {
+        existing.documentos.push(...eDocs);
+        if (e.valorEmpenhado > existing.valorEmpenhado) existing.valorEmpenhado = e.valorEmpenhado;
+        if (e.valorPago > existing.valorPago)           existing.valorPago      = e.valorPago;
+        if (!existing.funcao && e.funcao)               existing.funcao         = e.funcao;
+        if (!existing.tipo && e.tipo)                   existing.tipo           = e.tipo;
+        if (!existing.municipioNome && e.municipioNome) existing.municipioNome  = e.municipioNome;
+        if (!existing.codigoIbge && e.codigoIbge)       existing.codigoIbge     = e.codigoIbge;
+        if (!existing.beneficiario && e.beneficiario)   existing.beneficiario   = e.beneficiario;
+      }
+    }
+    const emendaDedup = Array.from(emendaMergeMap.values());
+
     type DestinoRow = {
       codigoEmenda: string;
       numeroEmenda: string | null;
@@ -94,7 +151,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     const destinos: DestinoRow[] = [];
 
-    for (const emenda of emendas) {
+    for (const emenda of emendaDedup) {
       if (emenda.documentos.length > 0) {
         // Agrupa documentos por favorecido (cnpj ou nome)
         type Acum = {
