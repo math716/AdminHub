@@ -17,9 +17,9 @@ on:
         default: '500'
         type: string
       concurrency:
-        description: 'Operacoes simultaneas no banco (default 50)'
+        description: 'Operacoes simultaneas no banco (default 150)'
         required: false
-        default: '50'
+        default: '150'
         type: string
 
 jobs:
@@ -106,7 +106,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           BATCH="${{ github.event.inputs.batch || '500' }}"
-          CONC="${{ github.event.inputs.concurrency || '50' }}"
+          CONC="${{ github.event.inputs.concurrency || '150' }}"
           IFS=',' read -ra ANOS_ARRAY <<< "$ANOS"
           for ANO in "${ANOS_ARRAY[@]}"; do
             ANO=$(echo "$ANO" | tr -d ' ')
