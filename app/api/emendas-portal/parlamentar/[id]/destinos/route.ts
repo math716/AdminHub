@@ -123,6 +123,23 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           if (fase.includes('pagamento'))  cur.pago      += doc.valor;
           porFav.set(key, cur);
         }
+        // Quando existe um grupo sem favorecido ('—') junto com grupos reais,
+        // o portal registra o mesmo empenho duas vezes (um sem nome, um com nome).
+        // Distribui o pago do grupo nulo para os grupos reais e descarta o nulo
+        // para evitar contagem dupla do mesmo valor.
+        if (porFav.size > 1 && porFav.has('—')) {
+          const dash = porFav.get('—')!;
+          porFav.delete('—');
+          if (dash.pago > 0) {
+            const realFavs = Array.from(porFav.values());
+            const totalEmp = realFavs.reduce((s, v) => s + v.empenhado, 0);
+            for (const fav of realFavs) {
+              const share = totalEmp > 0 ? fav.empenhado / totalEmp : 1 / realFavs.length;
+              fav.pago += dash.pago * share;
+            }
+          }
+        }
+
         for (const fav of porFav.values()) {
           destinos.push({
             codigoEmenda:  emenda.idPortal,
