@@ -25,6 +25,7 @@ on:
 jobs:
   import-csv:
     name: Import CSV
+    if: github.repository == 'math716/AdminHub'
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
