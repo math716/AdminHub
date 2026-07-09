@@ -3,10 +3,9 @@
  * Uso: ANOS=2025,2026 npx tsx scripts/download-emendas-df-sisconep.ts
  *
  * URL: https://sistemas.df.gov.br/SISCONEPCIDADAO/
- * - Seleciona o ano no dropdown vscomp (data-value="YYYY")
- * - Clica em Buscar
- * - Clica em Excel (link de exportação no topo)
- * - Aguarda o download
+ * O botão "Excel" do site usa fetch()→blob→link programático, então
+ * o evento 'download' do Playwright não dispara. Solução: interceptar
+ * a resposta HTTP diretamente com page.on('response').
  */
 import { chromium } from 'playwright';
 import path from 'path';
@@ -17,28 +16,57 @@ const DEST_DIR = path.join('data', 'estados');
 const ANOS = (process.env.ANOS ?? '2025,2026').split(',').map(Number).filter(Boolean);
 
 async function downloadAno(ano: number): Promise<boolean> {
-  const destFile = path.join(DEST_DIR, `Emendas_DF_${ano}.xls`);
+  const destFile = path.join(DEST_DIR, `Emendas_DF_${ano}.json`);
   console.log(`\n[${ano}] Abrindo SISCONEP: ${BASE_URL}`);
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
   const page    = await context.newPage();
 
+  let fileBuffer: Buffer | null = null;
+
+  // ── Intercepta respostas HTTP procurando o arquivo Excel ──────────────────
+  page.on('response', async (response) => {
+    const ct  = response.headers()['content-type'] ?? '';
+    const cd  = response.headers()['content-disposition'] ?? '';
+    const url = response.url();
+
+    const isExcel =
+      ct.includes('excel') ||
+      ct.includes('spreadsheetml') ||
+      ct.includes('octet-stream') ||
+      cd.toLowerCase().includes('.xls') ||
+      url.toLowerCase().includes('excel') ||
+      url.toLowerCase().includes('.xls');
+
+    if (isExcel) {
+      try {
+        const body = await response.body();
+        if (body.length > 1_000) {
+          fileBuffer = body;
+          console.log(`[${ano}] Arquivo interceptado: ${body.length} bytes (${ct || url.split('?')[0].slice(-40)})`);
+        }
+      } catch { /* corpo já consumido ou resposta sem corpo */ }
+    }
+  });
+
+  // Loga requests XHR/fetch para diagnóstico
+  page.on('request', (req) => {
+    if (['xhr', 'fetch'].includes(req.resourceType())) {
+      const u = req.url();
+      if (/excel|export|download|xls/i.test(u)) {
+        console.log(`[${ano}] → Request: ${u.slice(0, 120)}`);
+      }
+    }
+  });
+
   try {
     await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 60_000 });
     console.log(`[${ano}] Página carregada.`);
 
-    // ── Selecionar ano no vscomp ────────────────────────────────────────────
-    // O componente vscomp tem opções com [data-value="YYYY"]
-    // Precisa clicar no dropdown primeiro para abrir as opções
-    const dropdownSel = [
-      'vscomp-element',
-      '.vscomp-wrapper',
-      '[class*="vscomp"]',
-    ];
-
+    // ── Selecionar ano no vscomp ───────────────────────────────────────────
     let dropdownAberto = false;
-    for (const sel of dropdownSel) {
+    for (const sel of ['vscomp-element', '.vscomp-wrapper', '[class*="vscomp"]']) {
       try {
         await page.locator(sel).first().click({ timeout: 5_000 });
         dropdownAberto = true;
@@ -46,9 +74,7 @@ async function downloadAno(ano: number): Promise<boolean> {
         break;
       } catch { /* tenta próximo */ }
     }
-
     if (!dropdownAberto) {
-      // Tenta clicar via texto que contenha "Exercício"
       try {
         await page.getByText(/exerc[íi]cio/i).first().click({ timeout: 5_000 });
         dropdownAberto = true;
@@ -58,16 +84,8 @@ async function downloadAno(ano: number): Promise<boolean> {
 
     if (dropdownAberto) {
       await page.waitForTimeout(500);
-
-      // Clica na opção do ano desejado
-      const optionSels = [
-        `[data-value="${ano}"]`,
-        `vs-option[data-value="${ano}"]`,
-        `.vscomp-option[data-value="${ano}"]`,
-      ];
-
       let anoSelecionado = false;
-      for (const sel of optionSels) {
+      for (const sel of [`[data-value="${ano}"]`, `vs-option[data-value="${ano}"]`, `.vscomp-option[data-value="${ano}"]`]) {
         try {
           await page.locator(sel).first().click({ timeout: 3_000 });
           anoSelecionado = true;
@@ -75,31 +93,18 @@ async function downloadAno(ano: number): Promise<boolean> {
           break;
         } catch { /* tenta próximo */ }
       }
-
       if (!anoSelecionado) {
-        // Fallback: busca por texto "2024", "2025", etc.
         try {
           await page.getByText(String(ano), { exact: true }).first().click({ timeout: 3_000 });
-          anoSelecionado = true;
           console.log(`[${ano}] Ano ${ano} selecionado via texto exato`);
-        } catch { /* continua sem selecionar */ }
-      }
-
-      if (!anoSelecionado) {
-        console.warn(`[${ano}] Não foi possível selecionar o ano — tentando mesmo assim`);
+        } catch { console.warn(`[${ano}] Não foi possível selecionar o ano`); }
       }
     }
 
     await page.waitForTimeout(500);
 
-    // ── Clicar em Buscar ───────────────────────────────────────────────────
-    const buscarSels = [
-      'button:has-text("Buscar")',
-      'input[value="Buscar"]',
-      '[class*="buscar"]',
-    ];
-
-    for (const sel of buscarSels) {
+    // ── Clicar em Buscar ──────────────────────────────────────────────────
+    for (const sel of ['button:has-text("Buscar")', 'input[value="Buscar"]', '[class*="buscar"]']) {
       try {
         await page.locator(sel).first().click({ timeout: 5_000 });
         console.log(`[${ano}] Buscar clicado.`);
@@ -107,71 +112,62 @@ async function downloadAno(ano: number): Promise<boolean> {
       } catch { /* tenta próximo */ }
     }
 
-    // Aguarda carregamento dos dados (tabela ou spinner desaparecendo)
+    // Aguarda carregamento inicial dos dados
     console.log(`[${ano}] Aguardando dados (15s)...`);
     await page.waitForTimeout(15_000);
 
-    // ── Clicar em Excel e aguardar download ────────────────────────────────
-    const excelSels = [
+    // ── Clicar em Excel ───────────────────────────────────────────────────
+    for (const sel of [
       'a:has-text("Excel")',
       'button:has-text("Excel")',
       '[title*="Excel"]',
       '[class*="excel"]',
       'a[href*="excel"]',
       'a[href*="xls"]',
-    ];
-
-    let download = null;
-    for (const sel of excelSels) {
+    ]) {
       try {
         const el = page.locator(sel).first();
         await el.waitFor({ timeout: 5_000 });
-
-        // Escuta download tanto na página principal quanto em popups
-        const dlPage    = page.waitForEvent('download',    { timeout: 180_000 });
-        const dlContext = context.waitForEvent('page', { timeout: 10_000 })
-          .then(p => p.waitForEvent('download', { timeout: 180_000 }))
-          .catch(() => null);
-
         await el.click();
-        console.log(`[${ano}] Excel clicado via "${sel}" — aguardando download (180s)...`);
-
-        const result = await Promise.race([dlPage, dlContext]);
-        if (result) {
-          download = result;
-          console.log(`[${ano}] Download capturado via "${sel}"`);
-        }
+        console.log(`[${ano}] Excel clicado via "${sel}" — aguardando geração (300s)...`);
         break;
       } catch { /* tenta próximo */ }
     }
 
-    if (!download) {
-      // Última tentativa: aguarda mais 120s por download tardio (o modal "Gerando Excel" pode demorar)
-      console.log(`[${ano}] Aguardando download tardio (120s)...`);
-      try {
-        download = await page.waitForEvent('download', { timeout: 120_000 });
-        console.log(`[${ano}] Download capturado na espera adicional.`);
-      } catch { /* nenhum download */ }
+    // ── Aguarda até 300s pelo arquivo interceptado ────────────────────────
+    const deadline = Date.now() + 300_000;
+    while (!fileBuffer && Date.now() < deadline) {
+      await page.waitForTimeout(3_000);
+      if (fileBuffer) break;
+      const pct = Math.round((300_000 - (deadline - Date.now())) / 3_000);
+      if (pct % 10 === 0) process.stdout.write(`\r[${ano}] aguardando... ${Math.round((deadline - Date.now()) / 1000)}s restantes   `);
     }
+    process.stdout.write('\n');
 
-    if (!download) {
+    if (!fileBuffer) {
       await page.screenshot({ path: `data/estados/debug-df-${ano}.png`, fullPage: true }).catch(() => {});
-      console.error(`[${ano}] ✗ Botão Excel não encontrado (screenshot salvo)`);
+      console.error(`[${ano}] ✗ Arquivo não recebido após 300s (screenshot salvo)`);
       return false;
     }
 
-    await download.saveAs(destFile);
+    fs.writeFileSync(destFile, fileBuffer);
 
-    // Valida se o arquivo tem conteúdo mínimo (>2KB)
-    const size = fs.statSync(destFile).size;
-    if (size < 2_048) {
-      console.error(`[${ano}] ✗ Arquivo muito pequeno (${size} bytes) — possivelmente inválido`);
+    // Valida se é JSON com dados
+    try {
+      const json = JSON.parse(fileBuffer.toString('utf8'));
+      const lista = json?.data?.List?.List;
+      if (!Array.isArray(lista) || lista.length === 0) {
+        console.error(`[${ano}] ✗ JSON sem registros`);
+        fs.unlinkSync(destFile);
+        return false;
+      }
+      const kb = (fs.statSync(destFile).size / 1024).toFixed(0);
+      console.log(`[${ano}] ✓ Salvo: ${destFile} (${kb} KB, ${lista.length} registros)`);
+    } catch {
+      console.error(`[${ano}] ✗ Resposta não é JSON válido`);
       fs.unlinkSync(destFile);
       return false;
     }
-
-    const kb = (size / 1024).toFixed(0);
-    console.log(`[${ano}] ✓ Salvo: ${destFile} (${kb} KB)`);
     return true;
   } catch (e) {
     console.error(`[${ano}] ✗ Erro:`, e);

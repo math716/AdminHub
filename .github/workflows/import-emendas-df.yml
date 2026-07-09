@@ -57,7 +57,7 @@ jobs:
           IFS=',' read -ra ANOS_ARRAY <<< "$ANOS"
           for ANO in "${ANOS_ARRAY[@]}"; do
             ANO=$(echo "$ANO" | tr -d ' ')
-            FILE="data/estados/Emendas_DF_${ANO}.xls"
+            FILE="data/estados/Emendas_DF_${ANO}.json"
             if [ -f "$FILE" ]; then
               echo "=== Importando $ANO ==="
               npx tsx --require dotenv/config scripts/estados/import-df.ts \

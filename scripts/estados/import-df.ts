@@ -1,15 +1,20 @@
 /**
  * Importa emendas parlamentares do DF via SISCONEP Cidadão.
- * Todos os parlamentares são DEPUTADO_DISTRITAL (CLDF).
+ * Todos os parlamentares são DEPUTADO_ESTADUAL (CLDF).
  *
- * Colunas esperadas no XLS/XLSX do SISCONEP:
- *   Unidade Orçamentária | Parlamentar | Nº Emenda | Programa de Trabalho
- *   Subtítulo | Valor da Emenda (R$) | Empenhado (R$) | Liquidado (R$) | Status
+ * Suporta dois formatos de entrada:
+ *   .json  — resposta OutSystems interceptada pelo download-emendas-df-sisconep.ts
+ *            campos: EmendaId, NomeCompleto, NrEmenda, NoUO, NameSubTitulo,
+ *                    PT, EmpenhadoEmendaSum, LiquidadoEmendaSum, Label, AnoExercicio
+ *   .xls / .xlsx — planilha gerada pelo site (fallback legado)
+ *            colunas: Unidade Orçamentária | Parlamentar | N° Emenda | Programa de Trabalho
+ *                     Subtítulo | Valor Emenda | Empenhado | Liquidado | Status
  *
  * Uso:
- *   npx tsx --require dotenv/config scripts/estados/import-df.ts --file data/estados/Emendas_DF_2025.xls --ano 2025
+ *   npx tsx --require dotenv/config scripts/estados/import-df.ts --file data/estados/Emendas_DF_2025.json --ano 2025
  */
 import * as XLSX from 'xlsx';
+import * as fs from 'fs';
 import { buildPrisma, importarEmendas, parseValorBR, type EmendaEstadualRow } from './base-import-estadual';
 import { classificarArea } from '../../lib/portal-transparencia';
 
@@ -23,15 +28,56 @@ const FILE    = arg('file');
 const ANO     = parseInt(arg('ano', String(new Date().getFullYear()))!, 10);
 const DRY_RUN = process.argv.includes('--dry-run');
 
-// ─── Leitura do XLS/XLSX ─────────────────────────────────────────────────────
+// ─── Formato JSON (OutSystems) ────────────────────────────────────────────────
 
-function lerArquivo(caminho: string): Record<string, any>[] {
-  const wb = XLSX.readFile(caminho);
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  return XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: '' });
+interface SISCONEPRow {
+  EmendaId: string;
+  Label: string;
+  NameSubTitulo: string;
+  NomeCompleto: string;
+  NoUO: string;
+  NrEmenda: string;
+  PT: string;
+  EmpenhadoEmendaSum: string;
+  LiquidadoEmendaSum: string;
+  AnoExercicio: number;
 }
 
-// ─── Mapeamento de colunas ───────────────────────────────────────────────────
+function lerJson(caminho: string): SISCONEPRow[] {
+  const raw = JSON.parse(fs.readFileSync(caminho, 'utf8'));
+  const lista = raw?.data?.List?.List;
+  if (!Array.isArray(lista)) throw new Error('Formato JSON inválido — esperado data.List.List[]');
+  return lista as SISCONEPRow[];
+}
+
+function mapearJson(row: SISCONEPRow, ano: number): EmendaEstadualRow | null {
+  const autor = (row.NomeCompleto ?? '').trim();
+  if (!autor) return null;
+
+  const funcao   = (row.NoUO ?? '').trim();
+  const objeto   = (row.NameSubTitulo ?? '').trim();
+  const area     = classificarArea(null, funcao || null);
+  const empenhado = parseFloat(row.EmpenhadoEmendaSum) || 0;
+  const liquidado = parseFloat(row.LiquidadoEmendaSum) || 0;
+
+  return {
+    idPortal:       `DF-${ano}-${row.EmendaId}`,
+    ano,
+    numero:         row.NrEmenda?.trim() || undefined,
+    funcao:         funcao || undefined,
+    subfuncao:      row.PT?.trim() || undefined,
+    objeto:         objeto || undefined,
+    area,
+    valorProposto:  empenhado || undefined,
+    valorEmpenhado: empenhado,
+    valorPago:      liquidado,
+    uf:             'DF',
+    autorNome:      autor,
+    autorCargo:     'DEPUTADO_ESTADUAL',
+  };
+}
+
+// ─── Formato XLS/XLSX (legado) ────────────────────────────────────────────────
 
 function normalizeKey(k: string): string {
   return k.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -45,20 +91,25 @@ function findCol(row: Record<string, any>, candidates: string[]): any {
   return '';
 }
 
-function mapearRow(row: Record<string, any>, ano: number): EmendaEstadualRow | null {
-  const autor    = String(findCol(row, ['PARLAMENTAR']) ?? '').replace(/\n/g, ' ').trim();
+function lerXls(caminho: string): Record<string, any>[] {
+  const wb = XLSX.readFile(caminho);
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: '' });
+}
+
+function mapearXls(row: Record<string, any>, ano: number): EmendaEstadualRow | null {
+  const autor = String(findCol(row, ['PARLAMENTAR']) ?? '').replace(/\n/g, ' ').trim();
   if (!autor) return null;
 
-  const numero   = String(findCol(row, ['N EMENDA', 'NUM EMENDA', 'NUMERO EMENDA', 'NO EMENDA']) ?? '').trim();
-  const unidade  = String(findCol(row, ['UNIDADE ORCAMENTARIA', 'UNIDADE ORC']) ?? '').trim();
-  const programa = String(findCol(row, ['PROGRAMA DE TRABALHO', 'PROGRAMA']) ?? '').trim();
+  const numero    = String(findCol(row, ['N EMENDA', 'NUM EMENDA', 'NUMERO EMENDA', 'NO EMENDA']) ?? '').trim();
+  const unidade   = String(findCol(row, ['UNIDADE ORCAMENTARIA', 'UNIDADE ORC']) ?? '').trim();
+  const programa  = String(findCol(row, ['PROGRAMA DE TRABALHO', 'PROGRAMA']) ?? '').trim();
   const subtitulo = String(findCol(row, ['SUBTITULO']) ?? '').trim();
 
   const valorProposto  = parseValorBR(findCol(row, ['VALOR DA EMENDA', 'VALOR EMENDA']));
   const valorEmpenhado = parseValorBR(findCol(row, ['EMPENHADO']));
   const valorPago      = parseValorBR(findCol(row, ['LIQUIDADO', 'PAGO']));
 
-  // ID determinístico: DF + ano + número da emenda (ou fallback com autor+índice)
   const idPortal = numero
     ? `DF-${ano}-${numero.replace(/\s+/g, '')}`
     : `DF-${ano}-${autor.slice(0, 20).replace(/\s+/g, '_')}-${programa.slice(0, 15).replace(/\s+/g, '_')}`;
@@ -67,19 +118,10 @@ function mapearRow(row: Record<string, any>, ano: number): EmendaEstadualRow | n
   const area   = classificarArea(null, funcao ?? null);
 
   return {
-    idPortal,
-    ano,
-    numero:         numero || undefined,
-    funcao,
-    subfuncao:      subtitulo || undefined,
-    objeto:         programa || undefined,
-    area,
-    valorProposto:  valorProposto || undefined,
-    valorEmpenhado,
-    valorPago,
-    uf:             'DF',
-    autorNome:      autor,
-    autorCargo:     'DEPUTADO_ESTADUAL',
+    idPortal, ano, numero: numero || undefined, funcao,
+    subfuncao: subtitulo || undefined, objeto: programa || undefined, area,
+    valorProposto: valorProposto || undefined, valorEmpenhado, valorPago,
+    uf: 'DF', autorNome: autor, autorCargo: 'DEPUTADO_ESTADUAL',
   };
 }
 
@@ -87,34 +129,38 @@ function mapearRow(row: Record<string, any>, ano: number): EmendaEstadualRow | n
 
 async function main() {
   if (!FILE) {
-    console.error('\nUso: npx tsx --require dotenv/config scripts/estados/import-df.ts --file <caminho.xls> --ano <ano>');
+    console.error('\nUso: npx tsx --require dotenv/config scripts/estados/import-df.ts --file <caminho> --ano <ano>');
+    console.error('     Formatos suportados: .json (OutSystems), .xls, .xlsx');
     process.exit(1);
   }
 
   console.log(`\n🔄 Import DF — arquivo=${FILE} ano=${ANO}${DRY_RUN ? ' [DRY RUN]' : ''}\n`);
 
-  const rawRows = lerArquivo(FILE);
-  console.log(`  ${rawRows.length} linhas lidas.`);
-  if (rawRows.length > 0) {
-    console.log('  Colunas:', Object.keys(rawRows[0]).join(', '));
-  }
+  const isJson = FILE.endsWith('.json');
+  let rows: EmendaEstadualRow[];
 
-  const rows = rawRows
-    .map(r => mapearRow(r, ANO))
-    .filter((r): r is EmendaEstadualRow => r !== null);
+  if (isJson) {
+    const rawJson = lerJson(FILE);
+    console.log(`  ${rawJson.length} registros JSON lidos.`);
+    rows = rawJson.map(r => mapearJson(r, ANO)).filter((r): r is EmendaEstadualRow => r !== null);
+  } else {
+    const rawXls = lerXls(FILE);
+    console.log(`  ${rawXls.length} linhas XLS lidas.`);
+    if (rawXls.length > 0) console.log('  Colunas:', Object.keys(rawXls[0]).join(', '));
+    rows = rawXls.map(r => mapearXls(r, ANO)).filter((r): r is EmendaEstadualRow => r !== null);
+  }
 
   console.log(`  ${rows.length} emendas mapeadas.`);
   if (rows[0]) {
     console.log(`\n  Exemplo:`);
     console.log(`    parlamentar   : ${rows[0].autorNome}`);
     console.log(`    nº emenda     : ${rows[0].numero}`);
-    console.log(`    valor proposto: R$ ${rows[0].valorProposto?.toLocaleString('pt-BR')}`);
     console.log(`    empenhado     : R$ ${rows[0].valorEmpenhado.toLocaleString('pt-BR')}`);
     console.log(`    área          : ${rows[0].area}`);
   }
 
   if (rows.length === 0) {
-    console.error('\nNenhuma emenda mapeada. Verifique os nomes das colunas acima.');
+    console.error('\nNenhuma emenda mapeada.');
     process.exit(1);
   }
 
