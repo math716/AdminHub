@@ -179,6 +179,10 @@ async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTAD
   const parlamentares = Array.from(porParlamentar.values())
     .sort((a, b) => b.total - a.total);
 
+  const municipiosLista = Array.from(porMunicipio.values())
+    .sort((a, b) => b.total - a.total)
+    .map(v => ({ codigoIbge: v.codigoIbge, nome: v.nome }));
+
   return NextResponse.json({
     uf,
     ano,
@@ -191,6 +195,7 @@ async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTAD
     topMunicipios,
     valorPorMunicipio,
     valorPorMunicipioNome,
+    municipiosLista,
     areas,
     parlamentares,
     mock: false,
@@ -260,6 +265,9 @@ async function resumoDoPortal(uf: string, ano: number) {
         .filter((v) => v.nome && v.nome !== v.codigoIbge)
         .map((v) => [v.nome.toUpperCase(), v.total])
     ),
+    municipiosLista: Array.from(porMunicipio.values())
+      .sort((a, b) => b.total - a.total)
+      .map(v => ({ codigoIbge: v.codigoIbge, nome: v.nome })),
     areas:            Array.from(porArea.entries()).map(([area, total]) => ({ area, total })).sort((a, b) => b.total - a.total),
     parlamentares:    Array.from(porParlamentar.values()).sort((a, b) => b.total - a.total),
     mock: PORTAL_MOCK_MODE,

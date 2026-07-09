@@ -170,6 +170,7 @@ interface ResumoEstado {
   topMunicipios: { codigoIbge: string; nome: string; total: number; qtd: number }[];
   valorPorMunicipio: Record<string, number>;
   valorPorMunicipioNome?: Record<string, number>;
+  municipiosLista?: Array<{ codigoIbge: string; nome: string }>;
   areas: { area: EmendaArea; total: number }[];
   parlamentares: { cpf: string | null; idPortal: string; nome: string; nomeUrna?: string | null; cargo: string; partido: string | null; total: number; qtd: number }[];
   mock: boolean;
@@ -225,6 +226,8 @@ export default function EmendasPage() {
   const [parlamentarQuery, setParlamentarQuery] = useState('');
   const [parlamentarResults, setParlamentarResults] = useState<PortalParlamentar[]>([]);
   const [searchingParlamentar, setSearchingParlamentar] = useState(false);
+  const [municipioQuery, setMunicipioQuery] = useState('');
+  const [municipioResults, setMunicipioResults] = useState<Array<{ codigoIbge: string; nome: string }>>([]);
   const [selectedParlamentar, setSelectedParlamentar] = useState<PortalParlamentar | null>(null);
   const [parlamentarEmendas, setParlamentarEmendas] = useState<PortalEmenda[]>([]);
   const [parlamentarPix, setParlamentarPix] = useState<TransferenciaPix[]>([]);
@@ -365,6 +368,18 @@ export default function EmendasPage() {
       }));
     setParlamentarResults(matches);
   }, [parlamentarQuery, resumo, selectedUf, selectedMunicipio, municipioEmendas]);
+
+  // ----- Autocomplete município -----
+  useEffect(() => {
+    const q = municipioQuery.trim().toLowerCase();
+    if (q.length < 2 || !resumo?.municipiosLista) {
+      setMunicipioResults([]);
+      return;
+    }
+    const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const qNorm = norm(q);
+    setMunicipioResults(resumo.municipiosLista.filter(m => norm(m.nome).includes(qNorm)).slice(0, 15));
+  }, [municipioQuery, resumo]);
 
   // ----- Emendas + transferências Pix + destinos do parlamentar selecionado -----
   useEffect(() => {
@@ -1046,6 +1061,35 @@ export default function EmendasPage() {
               ))}
             </div>
           )}
+          {/* OU + busca de município */}
+          <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="h-px w-6" style={{ background: 'var(--border-default)' }} />
+              <span className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: 'var(--text-tertiary)' }}>OU</span>
+              <div className="h-px w-6" style={{ background: 'var(--border-default)' }} />
+            </div>
+            <div className="relative flex-1">
+              <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-500" />
+              <input
+                value={municipioQuery}
+                onChange={(e) => setMunicipioQuery(e.target.value)}
+                placeholder="Município…"
+                className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm text-[color:var(--text-primary)] placeholder:text-[color:var(--text-tertiary)] outline-none transition-colors"
+                style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}
+              />
+            </div>
+            {selectedMunicipio && (
+              <div
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl flex-shrink-0"
+                style={{ background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.3)' }}
+              >
+                <span className="text-xs text-[color:var(--text-primary)] font-semibold truncate max-w-[160px]">{selectedMunicipio.nome}</span>
+                <button onClick={() => setSelectedMunicipio(null)} className="text-slate-600 dark:text-slate-400 hover:text-white">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
           {parlamentarQuery.length >= 2 && parlamentarResults.length > 0 && (
             <div
               className="absolute top-full left-0 right-0 mt-1 z-[500] rounded-xl overflow-hidden"
@@ -1059,6 +1103,22 @@ export default function EmendasPage() {
                 >
                   <p className="text-sm text-[color:var(--text-primary)] font-medium">{p.nome}</p>
                   <p className="text-[11px] text-slate-600 dark:text-slate-400">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
+                </button>
+              ))}
+            </div>
+          )}
+          {municipioQuery.length >= 2 && municipioResults.length > 0 && (
+            <div
+              className="absolute top-full left-0 right-0 mt-1 z-[500] rounded-xl overflow-hidden"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-raised)' }}
+            >
+              {municipioResults.map((m) => (
+                <button
+                  key={m.codigoIbge}
+                  onClick={() => { handleMunicipioClick(m.codigoIbge, m.nome); setMunicipioQuery(''); setMunicipioResults([]); }}
+                  className="w-full text-left px-4 py-2.5 hover:bg-[var(--tint-06)] transition-colors border-b border-[var(--tint-06)] last:border-0"
+                >
+                  <p className="text-sm text-[color:var(--text-primary)] font-medium">{m.nome}</p>
                 </button>
               ))}
             </div>

@@ -194,6 +194,7 @@ const pct = (part: number, total: number) => total ? `${Math.round((part / total
 interface ReportProps {
   gabineteName: string;
   logoSrc?: string;
+  periodoLabel?: string;
   stats: {
     total: number;
     pendentes: number;
@@ -208,7 +209,7 @@ interface ReportProps {
 }
 
 // ── Document ───────────────────────────────────────────────────────────────────
-export default function DashboardReport({ gabineteName, logoSrc, stats }: ReportProps) {
+export default function DashboardReport({ gabineteName, logoSrc, stats, periodoLabel }: ReportProps) {
   const today = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
   const { total, pendentes, emAndamento, resolvidas, byCategory, byPriority, recentDemands } = stats;
 
@@ -238,7 +239,7 @@ export default function DashboardReport({ gabineteName, logoSrc, stats }: Report
             {logoSrc && <Image src={logoSrc} style={S.logo} />}
             <View style={S.headerText}>
               <Text style={S.gabineteName}>{gabineteName}</Text>
-              <Text style={S.reportSubtitle}>Relatório de Demandas — Dashboard</Text>
+              <Text style={S.reportSubtitle}>Relatório de Demandas — Dashboard{periodoLabel ? ` · ${periodoLabel}` : ''}</Text>
             </View>
           </View>
           <View style={S.headerRight}>

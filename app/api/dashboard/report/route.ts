@@ -10,7 +10,7 @@ import DashboardReport from '@/components/pdf/dashboard-report';
 import fs from 'fs';
 import path from 'path';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -41,8 +41,31 @@ export async function GET() {
     }
 
     const scope = { gabineteId };
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Período do relatório
+    const url     = new URL(request.url);
+    const periodo = url.searchParams.get('periodo') ?? 'MENSAL';
+    const hoje    = new Date();
+    let dataInicio: Date;
+    let dataFim: Date = new Date(hoje);
+
+    if (periodo === 'ANUAL') {
+      dataInicio = new Date(hoje.getFullYear(), 0, 1);
+    } else if (periodo === 'CUSTOM') {
+      const ini = url.searchParams.get('dataInicio');
+      const fim = url.searchParams.get('dataFim');
+      dataInicio = ini ? new Date(ini) : new Date(hoje.getTime() - 30 * 86_400_000);
+      dataFim    = fim ? new Date(fim + 'T23:59:59') : hoje;
+    } else {
+      // MENSAL — últimos 30 dias
+      dataInicio = new Date(hoje.getTime() - 30 * 86_400_000);
+    }
+
+    const periodoLabel = periodo === 'ANUAL'
+      ? `Ano ${hoje.getFullYear()}`
+      : periodo === 'CUSTOM'
+        ? `${dataInicio.toLocaleDateString('pt-BR')} – ${dataFim.toLocaleDateString('pt-BR')}`
+        : 'Últimos 30 dias';
 
     const [total, pendentes, emAndamento, resolvidas, byCategory, byPriority, recentDemands, demands] =
       await Promise.all([
@@ -59,7 +82,7 @@ export async function GET() {
           select: { id: true, title: true, status: true, priority: true, createdAt: true },
         }),
         prisma.demand.findMany({
-          where: { ...scope, createdAt: { gte: thirtyDaysAgo } },
+          where: { ...scope, createdAt: { gte: dataInicio, lte: dataFim } },
           select: { createdAt: true, status: true, updatedAt: true },
         }),
       ]);
@@ -77,10 +100,11 @@ export async function GET() {
 
     const timeline: { date: string; count: number; resolved: number }[] = [];
     let lastResolvedDate: string | null = null;
-    for (let i = 29; i >= 0; i--) {
-      const day = new Date();
+    const diffDays = Math.max(1, Math.ceil((dataFim.getTime() - dataInicio.getTime()) / 86_400_000));
+    for (let i = 0; i < diffDays; i++) {
+      const day = new Date(dataInicio);
       day.setHours(0, 0, 0, 0);
-      day.setDate(day.getDate() - i);
+      day.setDate(day.getDate() + i);
       const key = day.toISOString().split('T')[0];
       const resolvedCount = resolvedMap[key] ?? 0;
       if (resolvedCount > 0) lastResolvedDate = day.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -105,7 +129,7 @@ export async function GET() {
       : undefined;
 
     const buffer = await renderToBuffer(
-      React.createElement(DashboardReport, { gabineteName, stats, logoSrc })
+      React.createElement(DashboardReport, { gabineteName, stats, logoSrc, periodoLabel })
     );
 
     const dateStr = new Date().toISOString().slice(0, 10);
