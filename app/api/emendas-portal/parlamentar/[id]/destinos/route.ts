@@ -108,10 +108,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         };
         const porFav = new Map<string, Acum>();
         for (const doc of emenda.documentos) {
-          const key = doc.cnpjFavorecido ?? doc.nomeFavorecido ?? '—';
+          // Normaliza strings vazias para null antes de gerar a key,
+          // pois o portal às vezes envia "" em vez de null no cnpj/nome.
+          const cnpj = doc.cnpjFavorecido || null;
+          const nome = doc.nomeFavorecido || null;
+          const key  = cnpj ?? nome ?? '—';
           const cur = porFav.get(key) ?? {
-            cnpj:       doc.cnpjFavorecido,
-            nome:       doc.nomeFavorecido,
+            cnpj,
+            nome,
             municipio:  doc.municipioFavorecido,
             uf:         doc.ufFavorecido,
             codigoIbge: doc.codigoIbgeFavorecido,
