@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       anos:
-        description: 'Anos a importar, separados por vírgula (ex: 2023,2024,2025,2026)'
+        description: 'Anos a importar, separados por vírgula (ex: 2021,2022,2023,2024,2025,2026)'
         required: false
         default: '2025,2026'
         type: string
@@ -22,7 +22,7 @@ jobs:
       ANOS: >-
         ${{ github.event_name == 'workflow_dispatch' && inputs.anos ||
             github.event.schedule == '0 8 * * 1' && '2025,2026' ||
-            '2023,2024' }}
+            '2021,2022,2023,2024' }}
 
     steps:
       - name: Checkout
