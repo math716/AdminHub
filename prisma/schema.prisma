@@ -655,6 +655,9 @@ model EmendaParlamentar {
   @@index([parlamentarId, ano])
   @@index([area])
   @@index([uf, ano])
+  // Impede que a mesma emenda (mesmo parlamentar + ano + numero) seja importada
+  // duas vezes com idPortal diferente — root cause das duplicatas visuais.
+  @@unique([parlamentarId, ano, numero])
   @@map("emendas_parlamentares")
 }
 
