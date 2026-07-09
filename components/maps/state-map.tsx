@@ -87,6 +87,11 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
   useEffect(() => { disableSubdivisaoRef.current = disableSubdivisao; }, [disableSubdivisao]);
   useEffect(() => { codigoToNomeRef.current = codigoToNome; }, [codigoToNome]);
 
+  const highlightMunicipioNomeRef = useRef(highlightMunicipioNome);
+  useEffect(() => { highlightMunicipioNomeRef.current = highlightMunicipioNome; }, [highlightMunicipioNome]);
+  const darkModeRef = useRef(darkMode);
+  useEffect(() => { darkModeRef.current = darkMode; }, [darkMode]);
+
   // Destaque programático (ex: clique na lista lateral) — usa refs para evitar closure stale.
   // Quando há município selecionado: ele mantém a cor da faixa (via resetStyle) com
   // uma borda dourada; demais ficam todos navy "sem emendas" (#15355c). Quando o
@@ -122,20 +127,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
     });
     if (!targetLayer) return;
 
-    geoLayer.eachLayer((l: any) => {
-      if (l === targetLayer) {
-        geoLayer.resetStyle(l);  // restaura cor da faixa
-        l.setStyle({ weight: 3, color: '#2563EB', opacity: 1 });  // borda dourada de destaque
-      } else {
-        l.setStyle({
-          fillColor:   '#15355c',
-          fillOpacity: 1,
-          color:       'rgba(74,158,222,0.15)',
-          weight:      0.5,
-          opacity:     0.7,
-        });
-      }
-    });
+    applySpotlight(geoLayer, targetLayer, darkModeRef.current);
     targetLayer.bringToFront();
     municipioSelectedLayerRef.current = targetLayer;
     selectedMunicipioRef.current = highlightMunicipioNome;
@@ -563,6 +555,27 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
     renderSubdivisao();
   }, [showSubdivisao, subdivisaoData, subdivisaoTipo, setMunicipiosInteractivity, highlightItem, debouncedSetDisplay, getSubdivisaoColors]);
 
+  // Estilos spotlight — Opção A: selecionado em cobalt sólido, demais acinzentados/navy
+  const spotlightDimStyle = (isDark: boolean) => ({
+    fillColor:   isDark ? '#0c1929' : '#94a3b8',
+    fillOpacity: isDark ? 0.9 : 0.55,
+    color:       isDark ? 'rgba(74,158,222,0.06)' : '#64748b',
+    weight:      0.3,
+    opacity:     0.4,
+  });
+  const spotlightSelectStyle = {
+    fillColor:   '#2563EB',
+    fillOpacity: 0.88,
+    weight:      3,
+    color:       '#ffffff',
+    opacity:     1,
+  };
+  const applySpotlight = (geoLayer: any, targetLayer: any, isDark: boolean) => {
+    geoLayer.eachLayer((l: any) => {
+      l.setStyle(l === targetLayer ? spotlightSelectStyle : spotlightDimStyle(isDark));
+    });
+  };
+
   // Inicializar mapa
   useEffect(() => {
     if (loading || !geoData || !mapRef.current || Object.keys(codigoToNome).length === 0) return;
@@ -802,20 +815,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
               // Modo emendas/campanha: clicado mantém sua cor de faixa
               // (via resetStyle) + borda dourada de destaque; demais viram
               // navy "sem emendas" (#15355c).
-              geoLayer.eachLayer((l: any) => {
-                if (l === layer) {
-                  geoLayer.resetStyle(l);
-                  l.setStyle({ weight: 3, color: '#2563EB', opacity: 1 });
-                } else {
-                  l.setStyle({
-                    fillColor:   '#15355c',
-                    fillOpacity: 1,
-                    color:       'rgba(74,158,222,0.15)',
-                    weight:      0.5,
-                    opacity:     0.7,
-                  });
-                }
-              });
+              applySpotlight(geoLayer, layer, darkModeRef.current);
 
               municipioSelectedLayerRef.current = layer;
               selectedMunicipioRef.current = nome;
@@ -868,15 +868,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           layer.on('mouseout', (e: any) => {
             if (selectedMunicipioRef.current === nome) return;
             if (disableSubdivisaoRef.current && municipioSelectedLayerRef.current) {
-              // Modo emendas com outro município selecionado: volta pro navy
-              // "sem emendas" pra não competir visualmente com o selecionado.
-              e.target.setStyle({
-                fillColor:   '#15355c',
-                fillOpacity: 1,
-                color:       'rgba(74,158,222,0.15)',
-                weight:      0.5,
-                opacity:     0.7,
-              });
+              e.target.setStyle(spotlightDimStyle(darkModeRef.current));
             } else {
               geoLayer.resetStyle(e.target);
             }
@@ -906,9 +898,33 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       municipiosLayerRef.current = geoLayer;
       registerLayer(geoLayer);
 
-      const bounds = geoLayer.getBounds();
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [30, 30] });
+      // Restaura spotlight após re-init (ex: mudança de votesData por seleção de parlamentar)
+      const pendingHighlight = highlightMunicipioNomeRef.current;
+      if (pendingHighlight && disableSubdivisao) {
+        let targetLayer: any = null;
+        geoLayer.eachLayer((l: any) => {
+          const cod = l.feature?.properties?.codarea || '';
+          const nm  = codigoToNomeRef.current[cod] || '';
+          if (nm.toUpperCase() === pendingHighlight.toUpperCase()) targetLayer = l;
+        });
+        if (targetLayer) {
+          applySpotlight(geoLayer, targetLayer, darkMode);
+          targetLayer.bringToFront();
+          municipioSelectedLayerRef.current = targetLayer;
+          selectedMunicipioRef.current = pendingHighlight;
+          try {
+            const b = targetLayer.getBounds();
+            if (b.isValid()) map.fitBounds(b, { padding: [60, 60] });
+          } catch (_) {}
+        } else {
+          const bounds = geoLayer.getBounds();
+          if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
+        }
+      } else {
+        const bounds = geoLayer.getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [30, 30] });
+        }
       }
 
       // ── Labels de votos com clustering dinâmico (recluster a cada zoom/move) ──
