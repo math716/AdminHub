@@ -871,6 +871,57 @@ export default function EmendasPage() {
     return m;
   }, [parlamentarHistorico, ano, selectedMunicipio]);
 
+  // Dados do parlamentar filtrados ao município — alimentam o ParlamentarDashboard
+  // quando município está selecionado, para não exibir totais de SP inteiro.
+  const parlamentarMunicipioTotalPago = useMemo(
+    () => parlamentarMunicipioEmendas.reduce((s, e) => s + (e.valorPago ?? 0), 0),
+    [parlamentarMunicipioEmendas],
+  );
+
+  const parlamentarMunicipioPorAno = useMemo(() => {
+    if (!selectedMunicipio) return parlamentarPorAno;
+    const map = new Map<number, number>();
+    parlamentarHistorico
+      .filter((e) => e.codigoIbge === selectedMunicipio.codigo)
+      .forEach((e) => map.set(e.ano, (map.get(e.ano) ?? 0) + e.valorEmpenhado));
+    return Array.from(map.entries())
+      .map(([ano, total]) => ({ ano, total }))
+      .sort((a, b) => a.ano - b.ano);
+  }, [selectedMunicipio, parlamentarHistorico, parlamentarPorAno]);
+
+  const parlamentarMunicipioMaxPorAno = useMemo(
+    () => parlamentarMunicipioPorAno.reduce((m, x) => Math.max(m, x.total), 1),
+    [parlamentarMunicipioPorAno],
+  );
+
+  const parlamentarMunicipioPorTipo = useMemo(() => {
+    const map = new Map<string, { tipo: string; total: number; qtd: number }>();
+    parlamentarMunicipioEmendas.forEach((e) => {
+      const tipo = e.tipo ?? 'Não classificada';
+      const tipoCurto =
+        tipo.match(/individual/i)   ? 'Individual'
+        : tipo.match(/bancada/i)    ? 'Bancada'
+        : tipo.match(/comiss[ãa]o/i)? 'Comissão'
+        : tipo.match(/relator/i)    ? 'Relator'
+        : tipo.match(/especiais?/i) ? 'Transf. Especial'
+        : tipo;
+      const cur = map.get(tipoCurto) ?? { tipo: tipoCurto, total: 0, qtd: 0 };
+      cur.total += e.valorEmpenhado ?? 0;
+      cur.qtd++;
+      map.set(tipoCurto, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [parlamentarMunicipioEmendas]);
+
+  const parlamentarMunicipioDestinosBreakdown = useMemo(() => {
+    let municipal = 0; let estadual = 0; let qtdMun = 0; let qtdEst = 0;
+    parlamentarMunicipioEmendas.forEach((e) => {
+      if (e.codigoIbge) { municipal += e.valorEmpenhado ?? 0; qtdMun++; }
+      else { estadual += e.valorEmpenhado ?? 0; qtdEst++; }
+    });
+    return { municipal, estadual, qtdMun, qtdEst };
+  }, [parlamentarMunicipioEmendas]);
+
   const comparativoAreasAnterior = useMemo(() => {
     if (!resumoAnterior) return new Map<string, number>();
     const m = new Map<string, number>();
@@ -1406,18 +1457,27 @@ export default function EmendasPage() {
           parlamentar={selectedParlamentar}
           ano={ano}
           uf={selectedUf}
-          escopo={selectedStateName}
+          escopo={selectedMunicipio ? selectedMunicipio.nome : selectedStateName}
           loading={loadingParlamentar}
-          totalAno={parlamentarTotalAno}
-          totalPago={parlamentarTotalPago}
-          porArea={parlamentarPorArea}
-          porAno={parlamentarPorAno}
-          maxPorAno={maxParlamentarPorAno}
+          totalAno={selectedMunicipio
+            ? parlamentarMunicipioEmendas.reduce((s, e) => s + (e.valorEmpenhado ?? 0), 0)
+            : parlamentarTotalAno}
+          totalPago={selectedMunicipio ? parlamentarMunicipioTotalPago : parlamentarTotalPago}
+          porArea={selectedMunicipio
+            ? parlamentarMunicipioAreasAtual.map((a) => ({
+                name:  AREA_LABELS[a.area],
+                value: Math.round(a.total),
+                color: AREA_COLORS[a.area] ?? '#94a3b8',
+                area:  a.area,
+              }))
+            : parlamentarPorArea}
+          porAno={selectedMunicipio ? parlamentarMunicipioPorAno : parlamentarPorAno}
+          maxPorAno={selectedMunicipio ? parlamentarMunicipioMaxPorAno : maxParlamentarPorAno}
           porMunicipio={parlamentarPorMunicipio}
-          porTipo={parlamentarPorTipo}
-          destinos={parlamentarDestinos}
+          porTipo={selectedMunicipio ? parlamentarMunicipioPorTipo : parlamentarPorTipo}
+          destinos={selectedMunicipio ? parlamentarMunicipioDestinosBreakdown : parlamentarDestinos}
           destinosFlat={parlamentarMunicipioDestinosFlat}
-          emendas={parlamentarEmendas}
+          emendas={selectedMunicipio ? parlamentarMunicipioEmendas : parlamentarEmendas}
           pixPorMunicipio={parlamentarPixPorMunicipio}
           pixTotal={parlamentarPixTotal}
           onMunicipioClick={(m) => setSelectedMunicipio({ codigo: m.codigoIbge, nome: m.nome })}
