@@ -838,26 +838,23 @@ export default function EmendasPage() {
     return m;
   }, [parlamentarHistorico, ano]);
 
-  // Interseção: emendas do parlamentar filtradas pelo município selecionado.
-  // Para emendas federais o codigoIbge está nos documentos (parlamentarDestinosFlat),
-  // não na emenda raiz — cruza os dois para não retornar vazio.
+  // Interseção: emendas do parlamentar destinas ao município selecionado.
+  // Usa emenda.codigoIbge (destino declarado), que é o mesmo campo pelo qual
+  // a rota /municipio/[codigo]/emendas filtra — garante consistência com o TOP 5.
   const parlamentarMunicipioEmendas = useMemo(() => {
     if (!selectedParlamentar || !selectedMunicipio) return [];
-
-    if (parlamentarDestinosFlat.length > 0) {
-      const emendasNoMunicipio = new Set(
-        parlamentarDestinosFlat
-          .filter((d) => d.codigoIbge === selectedMunicipio.codigo)
-          .map((d) => d.codigoEmenda),
-      );
-      if (emendasNoMunicipio.size > 0) {
-        return parlamentarEmendas.filter((e) => emendasNoMunicipio.has(e.idPortal));
-      }
-    }
-
-    // Fallback: codigoIbge direto (emendas estaduais importadas)
     return parlamentarEmendas.filter((e) => e.codigoIbge === selectedMunicipio.codigo);
-  }, [selectedParlamentar, selectedMunicipio, parlamentarEmendas, parlamentarDestinosFlat]);
+  }, [selectedParlamentar, selectedMunicipio, parlamentarEmendas]);
+
+  // Quando município + parlamentar selecionados, filtra destinos flat às emendas
+  // que foram destinadas ao município — mantém detalhes dos favorecidos mas evita
+  // exibir emendas de outros municípios na tabela.
+  const parlamentarMunicipioDestinosFlat = useMemo(() => {
+    if (!selectedMunicipio || !selectedParlamentar) return parlamentarDestinosFlat;
+    if (parlamentarMunicipioEmendas.length === 0) return [];
+    const emendaIds = new Set(parlamentarMunicipioEmendas.map((e) => e.idPortal));
+    return parlamentarDestinosFlat.filter((d) => emendaIds.has(d.codigoEmenda));
+  }, [selectedMunicipio, selectedParlamentar, parlamentarMunicipioEmendas, parlamentarDestinosFlat]);
 
   const parlamentarMunicipioAreasAtual = useMemo<{ area: EmendaArea; total: number }[]>(() => {
     const m = new Map<EmendaArea, number>();
@@ -1174,7 +1171,7 @@ export default function EmendasPage() {
             parlamentarTotalPago={parlamentarTotalPago}
             parlamentarMunicipioTotal={
               selectedMunicipio && selectedParlamentar
-                ? (parlamentarValorPorMunicipio[selectedMunicipio.codigo] ?? 0)
+                ? parlamentarMunicipioEmendas.reduce((s, e) => s + (e.valorEmpenhado ?? 0), 0)
                 : null
             }
           />
@@ -1419,7 +1416,7 @@ export default function EmendasPage() {
           porMunicipio={parlamentarPorMunicipio}
           porTipo={parlamentarPorTipo}
           destinos={parlamentarDestinos}
-          destinosFlat={parlamentarDestinosFlat}
+          destinosFlat={parlamentarMunicipioDestinosFlat}
           emendas={parlamentarEmendas}
           pixPorMunicipio={parlamentarPixPorMunicipio}
           pixTotal={parlamentarPixTotal}
