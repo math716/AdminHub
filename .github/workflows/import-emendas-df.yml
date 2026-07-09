@@ -1,0 +1,82 @@
+name: Import Emendas DF (SISCONEP)
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'   # Toda segunda-feira 8h UTC → 2025 e 2026
+    - cron: '0 8 1 * *'   # Todo dia 1 do mês 8h UTC  → 2023 e 2024
+  workflow_dispatch:
+    inputs:
+      anos:
+        description: 'Anos a importar, separados por vírgula (ex: 2023,2024,2025,2026)'
+        required: false
+        default: '2025,2026'
+        type: string
+
+jobs:
+  import-df:
+    name: Import DF SISCONEP
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      ANOS: >-
+        ${{ github.event_name == 'workflow_dispatch' && inputs.anos ||
+            github.event.schedule == '0 8 * * 1' && '2025,2026' ||
+            '2023,2024' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Instalar Playwright (Chromium)
+        run: npx playwright install chromium --with-deps
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Criar diretorio de dados
+        run: mkdir -p data/estados
+
+      - name: Baixar XLS via SISCONEP
+        run: npx tsx scripts/download-emendas-df-sisconep.ts
+        timeout-minutes: 45
+
+      - name: Importar no banco
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          IFS=',' read -ra ANOS_ARRAY <<< "$ANOS"
+          for ANO in "${ANOS_ARRAY[@]}"; do
+            ANO=$(echo "$ANO" | tr -d ' ')
+            FILE="data/estados/Emendas_DF_${ANO}.xls"
+            if [ -f "$FILE" ]; then
+              echo "=== Importando $ANO ==="
+              npx tsx --require dotenv/config scripts/estados/import-df.ts \
+                --file "$FILE" \
+                --ano "$ANO"
+            else
+              echo "Arquivo não encontrado para $ANO, pulando."
+            fi
+          done
+
+      - name: Reclassificar areas
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx --require dotenv/config scripts/reclassificar-areas.ts
+
+      - name: Resumo
+        if: always()
+        run: |
+          echo "## Import DF (SISCONEP) concluído" >> $GITHUB_STEP_SUMMARY
+          echo "- **Anos:** $ANOS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horário:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
