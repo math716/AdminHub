@@ -207,35 +207,35 @@ export async function importarEmendas(
           })();
 
           if (!dryRun) {
+            const commonData = {
+              esfera: 'ESTADUAL' as const, numero: row.numero ?? null, tipo: row.tipo ?? null,
+              funcao: row.funcao ?? null, subfuncao: row.subfuncao ?? null,
+              area, objeto: row.objeto ?? null,
+              valorProposto: row.valorProposto ?? null,
+              valorEmpenhado: row.valorEmpenhado, valorPago: row.valorPago,
+              valorRestoPago: row.valorRestoPago ?? 0,
+              uf: row.uf, codigoIbge: codigoIbge ?? null,
+              municipioNome: row.municipioNome ?? null,
+              estagio: row.estagio ?? null,
+            };
+
             await withRetry(
-              (db) => db.emendaParlamentar.upsert({
-                where: { idPortal: row.idPortal },
-                create: {
-                  idPortal: row.idPortal, esfera: 'ESTADUAL', ano: row.ano,
-                  numero: row.numero ?? null, tipo: row.tipo ?? null,
-                  funcao: row.funcao ?? null, subfuncao: row.subfuncao ?? null,
-                  area, objeto: row.objeto ?? null,
-                  valorProposto: row.valorProposto ?? null,
-                  valorEmpenhado: row.valorEmpenhado, valorPago: row.valorPago,
-                  valorRestoPago: row.valorRestoPago ?? 0,
-                  uf: row.uf, codigoIbge: codigoIbge ?? null,
-                  municipioNome: row.municipioNome ?? null,
-                  estagio: row.estagio ?? null,
-                  parlamentarId: parlamentarId ?? undefined,
-                },
-                update: {
-                  esfera: 'ESTADUAL', numero: row.numero ?? null, tipo: row.tipo ?? null,
-                  funcao: row.funcao ?? null, subfuncao: row.subfuncao ?? null,
-                  area, objeto: row.objeto ?? null,
-                  valorProposto: row.valorProposto ?? null,
-                  valorEmpenhado: row.valorEmpenhado, valorPago: row.valorPago,
-                  valorRestoPago: row.valorRestoPago ?? 0,
-                  uf: row.uf, codigoIbge: codigoIbge ?? null,
-                  municipioNome: row.municipioNome ?? null,
-                  estagio: row.estagio ?? null,
-                  ...(parlamentarId ? { parlamentarId } : {}),
-                },
-              }),
+              (db) => {
+                // Quando parlamentarId + numero existem, usa o composite unique key
+                // para evitar conflito caso o idPortal tenha mudado entre imports.
+                if (parlamentarId && row.numero) {
+                  return db.emendaParlamentar.upsert({
+                    where: { parlamentarId_ano_numero: { parlamentarId, ano: row.ano, numero: row.numero } },
+                    create: { idPortal: row.idPortal, parlamentarId, ano: row.ano, ...commonData },
+                    update: { idPortal: row.idPortal, ...commonData },
+                  });
+                }
+                return db.emendaParlamentar.upsert({
+                  where: { idPortal: row.idPortal },
+                  create: { idPortal: row.idPortal, ano: row.ano, ...commonData, parlamentarId: parlamentarId ?? undefined },
+                  update: { ...commonData, ...(parlamentarId ? { parlamentarId } : {}) },
+                });
+              },
               getPrisma, setPrisma,
             );
           }
