@@ -271,35 +271,51 @@ async function obterEmendaId(opts: {
   if (emendaInflight.has(opts.codigoEmenda)) return emendaInflight.get(opts.codigoEmenda)!;
 
   const promise = (async () => {
-    const e = await withRetry(() => prisma.emendaParlamentar.upsert({
-      where: { idPortal: opts.codigoEmenda },
-      create: {
-        idPortal:       opts.codigoEmenda,
-        ano:            opts.ano,
-        numero:         opts.numero,
-        tipo:           opts.tipo,
-        funcao:         opts.funcao,
-        area:           classificarArea(opts.funcao),
-        objeto:         opts.objeto,
-        valorEmpenhado: opts.valorEmpenhado,
-        valorPago:      opts.valorPago,
-        valorRestoPago: 0,
-        uf:             opts.uf,
-        codigoIbge:     opts.codigoIbge,
-        municipioNome:  opts.municipioNome,
-        parlamentarId:  opts.parlamentarId,
-      },
-      update: {
-        numero:        opts.numero        ?? undefined,
-        tipo:          opts.tipo          ?? undefined,
-        funcao:        opts.funcao        ?? undefined,
-        area:          opts.funcao ? classificarArea(opts.funcao) : undefined,
-        uf:            opts.uf            ?? undefined,
-        codigoIbge:    opts.codigoIbge    ?? undefined,
-        municipioNome: opts.municipioNome ?? undefined,
-      },
-      select: { id: true },
-    }));
+    const createData = {
+      idPortal:       opts.codigoEmenda,
+      ano:            opts.ano,
+      numero:         opts.numero,
+      tipo:           opts.tipo,
+      funcao:         opts.funcao,
+      area:           classificarArea(opts.funcao),
+      objeto:         opts.objeto,
+      valorEmpenhado: opts.valorEmpenhado,
+      valorPago:      opts.valorPago,
+      valorRestoPago: 0,
+      uf:             opts.uf,
+      codigoIbge:     opts.codigoIbge,
+      municipioNome:  opts.municipioNome,
+      parlamentarId:  opts.parlamentarId,
+    };
+    const updateData = {
+      idPortal:      opts.codigoEmenda,
+      numero:        opts.numero        ?? undefined,
+      tipo:          opts.tipo          ?? undefined,
+      funcao:        opts.funcao        ?? undefined,
+      area:          opts.funcao ? classificarArea(opts.funcao) : undefined,
+      uf:            opts.uf            ?? undefined,
+      codigoIbge:    opts.codigoIbge    ?? undefined,
+      municipioNome: opts.municipioNome ?? undefined,
+    };
+
+    const e = await withRetry(() => {
+      // Usa composite key quando parlamentarId+numero existem para evitar
+      // conflito caso o idPortal tenha divergido entre imports anteriores.
+      if (opts.numero) {
+        return prisma.emendaParlamentar.upsert({
+          where: { parlamentarId_ano_numero: { parlamentarId: opts.parlamentarId, ano: opts.ano, numero: opts.numero } },
+          create: createData,
+          update: updateData,
+          select: { id: true },
+        });
+      }
+      return prisma.emendaParlamentar.upsert({
+        where: { idPortal: opts.codigoEmenda },
+        create: createData,
+        update: updateData,
+        select: { id: true },
+      });
+    });
     emendaPorCodigo.set(opts.codigoEmenda, e.id);
     emendaInflight.delete(opts.codigoEmenda);
     return e.id;
