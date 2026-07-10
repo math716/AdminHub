@@ -1,9 +1,9 @@
 name: Import CSV - emendas federais
 
 on:
-  # schedules pausados até validar conclusão do import completo
-  # - cron: '0 2 * * 1'    # Toda segunda-feira 2h UTC → 2025 e 2026
-  # - cron: '0 2 1 * *'    # Dia 1 do mês 2h UTC       → 2024
+  schedule:
+    - cron: '0 2 * * 1'   # Toda segunda-feira 2h UTC → 2025 e 2026
+    - cron: '0 2 1 * *'   # Dia 1 do mês 2h UTC       → 2024
   workflow_dispatch:
     inputs:
       anos:
@@ -17,9 +17,9 @@ on:
         default: '500'
         type: string
       concurrency:
-        description: 'Operacoes simultaneas no banco (default 150)'
+        description: 'Operacoes simultaneas no banco (default 80)'
         required: false
-        default: '150'
+        default: '80'
         type: string
 
 jobs:
