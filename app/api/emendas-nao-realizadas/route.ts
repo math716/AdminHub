@@ -24,12 +24,46 @@ export async function GET(req: NextRequest) {
 
   if (!parlamentarId) return NextResponse.json([]);
 
-  const items = await prisma.emendaNaoRealizada.findMany({
-    where: { gabineteId, parlamentarId, ano },
-    orderBy: { createdAt: 'asc' },
-  });
+  const [items, impedidas] = await Promise.all([
+    prisma.emendaNaoRealizada.findMany({
+      where: { gabineteId, parlamentarId, ano },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.emendaParlamentar.findMany({
+      where: {
+        parlamentarId,
+        ano,
+        estagio: { contains: 'impedi', mode: 'insensitive' },
+      },
+      select: {
+        idPortal: true, parlamentarId: true, ano: true,
+        numero: true, tipo: true, area: true,
+        beneficiario: true, municipioNome: true, uf: true,
+        valorEmpenhado: true, estagio: true, fetchedAt: true,
+      },
+    }),
+  ]);
 
-  return NextResponse.json(items);
+  const portalItems = impedidas.map((e) => ({
+    id: e.idPortal,
+    parlamentarId: e.parlamentarId ?? parlamentarId,
+    ano: e.ano,
+    numero: e.numero,
+    tipo: e.tipo,
+    area: e.area,
+    favorecido: e.beneficiario ?? e.municipioNome ?? '—',
+    municipio: e.municipioNome,
+    uf: e.uf,
+    valor: e.valorEmpenhado,
+    estagio: e.estagio,
+    createdAt: e.fetchedAt.toISOString(),
+    deletavel: false as const,
+  }));
+
+  return NextResponse.json([
+    ...items.map((i) => ({ ...i, deletavel: true as const })),
+    ...portalItems,
+  ]);
 }
 
 export async function POST(req: NextRequest) {

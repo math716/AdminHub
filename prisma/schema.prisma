@@ -626,6 +626,7 @@ model EmendaParlamentar {
   unidadeOrcamentaria String?
   beneficiario      String?
   cnpjBeneficiario  String?
+  estagio           String?
 
   uf                String?
   codigoIbge        String?

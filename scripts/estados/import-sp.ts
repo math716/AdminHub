@@ -141,7 +141,8 @@ function mapearFormatoB(row: Record<string, any>, ano: number): EmendaEstadualRo
   const partido   = String(row['PARTIDO'] ?? '').trim();
   const funcao    = String(row['FUNÇÃO DE GOVERNO'] ?? row['FUNCAO DE GOVERNO'] ?? '').trim();
   const tipo      = String(row['TIPO EMENDA'] ?? '').trim();
-  const estagio   = String(row['ESTÁGIO'] ?? row['ESTAGIO'] ?? '').trim().toLowerCase();
+  const estagioRaw = String(row['ESTÁGIO'] ?? row['ESTAGIO'] ?? '').trim();
+  const estagio    = estagioRaw.toLowerCase();
 
   const valorDecisao    = parseValorBR(row['VALOR DECISÃO'] ?? row['VALOR DECISAO'] ?? 0);
   const valorRemanejado = parseValorBR(row['VALOR REMANEJADO'] ?? 0);
@@ -163,6 +164,7 @@ function mapearFormatoB(row: Record<string, any>, ano: number): EmendaEstadualRo
     autorNome:     autor,
     autorCargo:    'DEPUTADO_ESTADUAL',
     autorPartido:  partido || undefined,
+    estagio:       estagioRaw || undefined,
   };
 }
 

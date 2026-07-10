@@ -117,6 +117,8 @@ export interface EmendaEstadualRow {
   autorCargo?: ParlamentarCargo;
   /** Partido do parlamentar */
   autorPartido?: string;
+  /** Estágio da emenda conforme portal de origem (ex: "Impedida Tecnicamente") */
+  estagio?: string;
 }
 
 export interface ImportResult {
@@ -218,6 +220,7 @@ export async function importarEmendas(
                   valorRestoPago: row.valorRestoPago ?? 0,
                   uf: row.uf, codigoIbge: codigoIbge ?? null,
                   municipioNome: row.municipioNome ?? null,
+                  estagio: row.estagio ?? null,
                   parlamentarId: parlamentarId ?? undefined,
                 },
                 update: {
@@ -229,6 +232,7 @@ export async function importarEmendas(
                   valorRestoPago: row.valorRestoPago ?? 0,
                   uf: row.uf, codigoIbge: codigoIbge ?? null,
                   municipioNome: row.municipioNome ?? null,
+                  estagio: row.estagio ?? null,
                   ...(parlamentarId ? { parlamentarId } : {}),
                 },
               }),

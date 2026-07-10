@@ -145,6 +145,8 @@ interface EmendaNaoRealizadaLocal {
   municipio: string | null;
   uf: string | null;
   valor: number;
+  estagio?: string | null;
+  deletavel?: boolean;
   createdAt: string;
 }
 
@@ -2669,11 +2671,18 @@ function EmendasDetalhadasCard({
                         {item.numero ?? '—'}
                       </td>
                       <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
-                        {item.tipo ? (
-                          <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}>
-                            {item.tipo}
-                          </span>
-                        ) : <span className="text-slate-500">—</span>}
+                        <div className="flex flex-col gap-0.5">
+                          {item.tipo ? (
+                            <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}>
+                              {item.tipo}
+                            </span>
+                          ) : <span className="text-slate-500">—</span>}
+                          {item.estagio && (
+                            <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ background: 'rgba(245,158,11,0.12)', color: '#d97706', border: '1px solid rgba(245,158,11,0.3)' }}>
+                              {item.estagio}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2.5 px-3 truncate max-w-[100px] text-slate-700 dark:text-slate-300" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {item.area ?? '—'}
@@ -2689,14 +2698,20 @@ function EmendasDetalhadasCard({
                         {formatBRLCompact(item.valor)}
                       </td>
                       <td className="py-2.5 px-3 text-center whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
-                        <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => openEditNR(item)} className="p-1 rounded hover:bg-blue-500/10 text-slate-500 hover:text-blue-400 transition-colors" title="Editar">
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => deleteNR(item.id)} className="p-1 rounded hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-colors" title="Excluir">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        {item.deletavel === false ? (
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ background: 'var(--tint-04)', color: 'var(--text-secondary)', border: '1px solid var(--tint-08)' }}>
+                            Portal
+                          </span>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2">
+                            <button onClick={() => openEditNR(item)} className="p-1 rounded hover:bg-blue-500/10 text-slate-500 hover:text-blue-400 transition-colors" title="Editar">
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => deleteNR(item.id)} className="p-1 rounded hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-colors" title="Excluir">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
