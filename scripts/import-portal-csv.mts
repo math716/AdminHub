@@ -298,21 +298,38 @@ async function obterEmendaId(opts: {
       municipioNome: opts.municipioNome ?? undefined,
     };
 
-    const e = await withRetry(() => {
-      // Usa composite key quando parlamentarId+numero existem para evitar
-      // conflito caso o idPortal tenha divergido entre imports anteriores.
-      if (opts.numero) {
-        return prisma.emendaParlamentar.upsert({
-          where: { parlamentarId_ano_numero: { parlamentarId: opts.parlamentarId, ano: opts.ano, numero: opts.numero } },
-          create: createData,
-          update: updateData,
+    const e = await withRetry(async () => {
+      // 1. Busca pelo idPortal (caso mais comum: mesma emenda reimportada)
+      const byPortal = await prisma.emendaParlamentar.findUnique({
+        where: { idPortal: opts.codigoEmenda },
+        select: { id: true },
+      });
+      if (byPortal) {
+        return prisma.emendaParlamentar.update({
+          where: { id: byPortal.id },
+          data: updateData,
           select: { id: true },
         });
       }
-      return prisma.emendaParlamentar.upsert({
-        where: { idPortal: opts.codigoEmenda },
-        create: createData,
-        update: updateData,
+
+      // 2. Busca pelo composite key (idPortal mudou entre imports)
+      if (opts.numero) {
+        const byComposite = await prisma.emendaParlamentar.findUnique({
+          where: { parlamentarId_ano_numero: { parlamentarId: opts.parlamentarId, ano: opts.ano, numero: opts.numero } },
+          select: { id: true },
+        });
+        if (byComposite) {
+          return prisma.emendaParlamentar.update({
+            where: { id: byComposite.id },
+            data: { idPortal: opts.codigoEmenda, ...updateData },
+            select: { id: true },
+          });
+        }
+      }
+
+      // 3. Nenhum existe — cria
+      return prisma.emendaParlamentar.create({
+        data: createData,
         select: { id: true },
       });
     });
