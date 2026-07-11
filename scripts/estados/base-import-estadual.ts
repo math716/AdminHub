@@ -164,30 +164,42 @@ export async function importarEmendas(
   const getPrisma = () => prisma;
   const setPrisma = (p: PrismaClient) => { prisma = p; };
 
-  const parlamentarCache = new Map<string, string>();
+  const parlamentarCache   = new Map<string, string>();
+  const parlamentarPending = new Map<string, Promise<string | null>>();
 
   async function obterParlamentar(row: EmendaEstadualRow): Promise<string | null> {
     const chave = normalizeNome(row.autorNome);
     if (parlamentarCache.has(chave)) return parlamentarCache.get(chave)!;
     if (dryRun) return null;
 
-    try {
-      const idPortal = `${uf}:${chave}`;
-      const p = await withRetry(
-        (db) => db.parlamentar.upsert({
-          where: { idPortal },
-          create: { idPortal, nome: row.autorNome, cargo: row.autorCargo ?? 'DEPUTADO_ESTADUAL', partido: row.autorPartido ?? null, uf },
-          update: { ...(row.autorPartido ? { partido: row.autorPartido } : {}) },
-        }),
-        getPrisma, setPrisma,
-      );
-      parlamentarCache.set(chave, p.id);
-      result.parlamentares++;
-      return p.id;
-    } catch (e: any) {
-      console.warn(`  [parlamentar] erro "${row.autorNome}": ${e.message?.slice(0, 300)}`);
-      return null;
-    }
+    // Evita race condition: se já há uma promise em andamento para este parlamentar,
+    // aguarda ela em vez de disparar outro INSERT concorrente.
+    if (parlamentarPending.has(chave)) return parlamentarPending.get(chave)!;
+
+    const promise = (async () => {
+      try {
+        const idPortal = `${uf}:${chave}`;
+        const p = await withRetry(
+          (db) => db.parlamentar.upsert({
+            where: { idPortal },
+            create: { idPortal, nome: row.autorNome, cargo: row.autorCargo ?? 'DEPUTADO_ESTADUAL', partido: row.autorPartido ?? null, uf },
+            update: { ...(row.autorPartido ? { partido: row.autorPartido } : {}) },
+          }),
+          getPrisma, setPrisma,
+        );
+        parlamentarCache.set(chave, p.id);
+        result.parlamentares++;
+        return p.id;
+      } catch (e: any) {
+        console.warn(`  [parlamentar] erro "${row.autorNome}": ${e.message?.slice(0, 300)}`);
+        return null;
+      } finally {
+        parlamentarPending.delete(chave);
+      }
+    })();
+
+    parlamentarPending.set(chave, promise);
+    return promise;
   }
 
   for (let i = 0; i < rows.length; i += batchSize) {
