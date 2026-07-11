@@ -62,15 +62,17 @@ jobs:
             echo ""
             echo "=== Buscando arquivo de $ANO ==="
 
-            # Extrai o href contendo o ano e a extensão csv ou xlsx
+            # Extrai o href do arquivo principal (sem "fase" no nome)
             # Tenta padrão "detalhamento" (2026) e "EmendasImpositivas" (2024/2025)
             HREF=$(echo "$HTML" | grep -oiE \
               '/img/docs/emendas[^"'"'"' >]*[Dd]etalhamento[^"'"'"' >]*'"$ANO"'[^"'"'"' >]*\.(csv|xlsx)' \
+              | grep -iv 'fase' \
               | head -1)
 
             if [ -z "$HREF" ]; then
               HREF=$(echo "$HTML" | grep -oiE \
                 '/img/docs/emendas[^"'"'"' >]*[Ee]mendas[Ii]mpositivas'"$ANO"'[^"'"'"' >]*\.(csv|xlsx)' \
+                | grep -iv 'fase' \
                 | head -1)
             fi
 
