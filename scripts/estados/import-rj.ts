@@ -68,11 +68,11 @@ function mapearLinha(rowRaw: Record<string, any>, ano: number): EmendaEstadualRo
   if (!autor) return null;
 
   const identificador = String(row['Identificador'] ?? '').trim();
-  const numero        = String(row['Emenda'] ?? '').trim();
+  const numero        = String(row['Número Emenda'] ?? row['Emenda'] ?? '').trim();
   const funcao        = String(row['Função'] ?? '').trim();
   const subfuncao     = String(row['Subfunção'] ?? '').trim();
-  const objeto        = String(row['Objeto'] ?? '').replace(/\s+/g, ' ').trim();
-  const orgao         = String(row['Órgão'] ?? '').trim();
+  const objeto        = String(row['Nome emenda'] ?? row['Objeto'] ?? '').replace(/\s+/g, ' ').trim();
+  const orgao         = String(row['Órgão'] ?? row['UO'] ?? '').trim();
   const municipio     = String(row['Município'] ?? '').trim();
   const modalidade    = String(row['Modalidade'] ?? '').trim();
 

@@ -1,0 +1,158 @@
+name: Import estadual - Rio de Janeiro
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'  # Domingo 3h UTC (sábado 24h Brasília)
+  workflow_dispatch:
+    inputs:
+      anos:
+        description: 'Anos a importar, separados por vírgula (ex: 2024,2025,2026)'
+        required: false
+        default: '2025,2026'
+        type: string
+      dry_run:
+        description: 'Dry run (não grava no banco)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  import-rj:
+    name: Import RJ
+    if: github.repository == 'math716/AdminHub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Criar diretorio de dados
+        run: mkdir -p data/estados
+
+      - name: Descobrir e baixar arquivos do portal RJ
+        run: |
+          BASE="https://redeplan.planejamento.rj.gov.br"
+          PAGE_URL="$BASE/demaisprocessos/emendas.html"
+          ANOS="${{ github.event.inputs.anos || '2025,2026' }}"
+
+          echo "=== Baixando página do portal RJ ==="
+          HTML=$(curl -s --max-time 30 "$PAGE_URL")
+          if [ -z "$HTML" ]; then
+            echo "ERRO: não foi possível acessar $PAGE_URL"
+            exit 1
+          fi
+
+          FALHOU=0
+          IFS=',' read -ra ANOS_ARRAY <<< "$ANOS"
+          for ANO in "${ANOS_ARRAY[@]}"; do
+            ANO=$(echo "$ANO" | tr -d ' ')
+            echo ""
+            echo "=== Buscando arquivo de $ANO ==="
+
+            # Extrai o href contendo o ano e a extensão csv ou xlsx
+            # Tenta padrão "detalhamento" (2026) e "EmendasImpositivas" (2024/2025)
+            HREF=$(echo "$HTML" | grep -oiE \
+              '/img/docs/emendas[^"'"'"' >]*[Dd]etalhamento[^"'"'"' >]*'"$ANO"'[^"'"'"' >]*\.(csv|xlsx)' \
+              | head -1)
+
+            if [ -z "$HREF" ]; then
+              HREF=$(echo "$HTML" | grep -oiE \
+                '/img/docs/emendas[^"'"'"' >]*[Ee]mendas[Ii]mpositivas'"$ANO"'[^"'"'"' >]*\.(csv|xlsx)' \
+                | head -1)
+            fi
+
+            if [ -z "$HREF" ]; then
+              echo "AVISO: link do arquivo $ANO não encontrado na página — pulando"
+              FALHOU=1
+              continue
+            fi
+
+            URL="$BASE$HREF"
+            EXT="${HREF##*.}"
+            DEST="data/estados/rj-${ANO}.${EXT}"
+
+            echo "URL encontrada: $URL"
+            HTTP_CODE=$(curl -L \
+              --retry 3 --retry-delay 10 \
+              --max-time 300 \
+              -w "%{http_code}" \
+              -o "$DEST" \
+              "$URL")
+            echo "HTTP: $HTTP_CODE — $(stat -c%s "$DEST" 2>/dev/null || echo 0) bytes"
+
+            if [ "$HTTP_CODE" != "200" ] || [ ! -s "$DEST" ]; then
+              echo "ERRO: download de $ANO falhou (HTTP $HTTP_CODE)"
+              rm -f "$DEST"
+              FALHOU=1
+            else
+              echo "Arquivo salvo: $DEST"
+            fi
+          done
+
+          if [ "$FALHOU" != "0" ]; then exit 1; fi
+
+      - name: Importar dados no banco
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          ANOS="${{ github.event.inputs.anos || '2025,2026' }}"
+          IFS=',' read -ra ANOS_ARRAY <<< "$ANOS"
+          for ANO in "${ANOS_ARRAY[@]}"; do
+            ANO=$(echo "$ANO" | tr -d ' ')
+            # Tenta CSV primeiro, depois XLSX
+            FILE=""
+            if [ -f "data/estados/rj-${ANO}.csv" ]; then FILE="data/estados/rj-${ANO}.csv"; fi
+            if [ -f "data/estados/rj-${ANO}.xlsx" ]; then FILE="data/estados/rj-${ANO}.xlsx"; fi
+
+            if [ -n "$FILE" ]; then
+              echo "=== Importando RJ $ANO ($FILE) ==="
+              npx tsx --require dotenv/config scripts/estados/import-rj.ts \
+                --file "$FILE" \
+                --ano "$ANO"
+            else
+              echo "Arquivo de $ANO não encontrado, pulando."
+            fi
+          done
+
+      - name: Dry run
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          ANOS="${{ github.event.inputs.anos || '2025,2026' }}"
+          IFS=',' read -ra ANOS_ARRAY <<< "$ANOS"
+          for ANO in "${ANOS_ARRAY[@]}"; do
+            ANO=$(echo "$ANO" | tr -d ' ')
+            FILE=""
+            if [ -f "data/estados/rj-${ANO}.csv" ]; then FILE="data/estados/rj-${ANO}.csv"; fi
+            if [ -f "data/estados/rj-${ANO}.xlsx" ]; then FILE="data/estados/rj-${ANO}.xlsx"; fi
+
+            if [ -n "$FILE" ]; then
+              echo "=== [DRY RUN] RJ $ANO ($FILE) ==="
+              npx tsx --require dotenv/config scripts/estados/import-rj.ts \
+                --file "$FILE" \
+                --ano "$ANO" \
+                --dry-run
+            fi
+          done
+
+      - name: Resumo
+        if: always()
+        run: |
+          echo "## Import RJ concluido" >> $GITHUB_STEP_SUMMARY
+          echo "- **Anos:** ${{ github.event.inputs.anos || '2025,2026' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horario:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
