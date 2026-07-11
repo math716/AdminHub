@@ -1,0 +1,191 @@
+name: Import CSV - emendas federais 2025
+
+on:
+  schedule:
+    - cron: '0 1 * * 6'  # Sábado 1h UTC (sexta 22h Brasília)
+  workflow_dispatch:
+    inputs:
+      batch:
+        description: 'Tamanho do chunk de leitura (default 500)'
+        required: false
+        default: '500'
+        type: string
+      concurrency:
+        description: 'Operacoes simultaneas no banco (default 150)'
+        required: false
+        default: '150'
+        type: string
+
+jobs:
+  import-parte-1:
+    name: 'Parte 1/2 — linhas 1–190 000'
+    if: github.repository == 'math716/AdminHub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Criar diretorio de dados
+        run: mkdir -p data/portal-csv-imports
+
+      - name: Baixar ZIP 2025
+        run: |
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          BASE="https://portaldatransparencia.gov.br"
+          ZIP="data/portal-csv-imports/2025_EmendasParlamentaresPorDocumento.zip"
+
+          echo "=== Obtendo cookies de sessao ==="
+          curl -s -c /tmp/portal-cookies.txt \
+            --user-agent "$UA" \
+            -H "Accept: text/html,*/*" \
+            -o /dev/null \
+            "$BASE/download-de-dados/emendas-parlamentares-documentos"
+
+          echo "=== Baixando 2025 ==="
+          HTTP_INFO=$(curl -L \
+            -b /tmp/portal-cookies.txt \
+            --user-agent "$UA" \
+            -H "Accept: application/zip,application/octet-stream,*/*" \
+            -H "Accept-Language: pt-BR,pt;q=0.9" \
+            -H "Referer: $BASE/download-de-dados/emendas-parlamentares-documentos" \
+            --retry 3 --retry-delay 10 --retry-all-errors \
+            --max-time 1800 \
+            -w "\nHTTP_CODE=%{http_code}\nCONTENT_TYPE=%{content_type}\nSIZE=%{size_download}" \
+            -o "$ZIP" \
+            "$BASE/download-de-dados/emendas-parlamentares-documentos/2025")
+          echo "$HTTP_INFO"
+
+          MAGIC=$(xxd -p -l 4 "$ZIP" 2>/dev/null || echo "erro-xxd")
+          echo "Magic bytes: $MAGIC (esperado 504b0304 para ZIP)"
+          if [ "$MAGIC" != "504b0304" ]; then
+            echo "ERRO: ZIP 2025 invalido"
+            rm -f "$ZIP"
+            exit 1
+          fi
+          echo "ZIP valido: $(stat -c%s "$ZIP") bytes"
+
+      - name: Importar parte 1 (linhas 1–190 000)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          BATCH="${{ github.event.inputs.batch || '500' }}"
+          CONC="${{ github.event.inputs.concurrency || '150' }}"
+          echo "=== Importando 2025 - Parte 1 (ate 190000 linhas) ==="
+          npx tsx scripts/import-portal-csv.mts \
+            --file data/portal-csv-imports/2025_EmendasParlamentaresPorDocumento.zip \
+            --batch $BATCH \
+            --concurrency $CONC \
+            --limit 190000
+
+      - name: Resumo parte 1
+        if: always()
+        run: |
+          echo "## Import 2025 - Parte 1 concluida" >> $GITHUB_STEP_SUMMARY
+          echo "- **Linhas:** 1 a 190 000" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horario:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+
+  import-parte-2:
+    name: 'Parte 2/2 — linhas 190 001 em diante'
+    needs: import-parte-1
+    if: github.repository == 'math716/AdminHub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Criar diretorio de dados
+        run: mkdir -p data/portal-csv-imports
+
+      - name: Baixar ZIP 2025
+        run: |
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          BASE="https://portaldatransparencia.gov.br"
+          ZIP="data/portal-csv-imports/2025_EmendasParlamentaresPorDocumento.zip"
+
+          echo "=== Obtendo cookies de sessao ==="
+          curl -s -c /tmp/portal-cookies.txt \
+            --user-agent "$UA" \
+            -H "Accept: text/html,*/*" \
+            -o /dev/null \
+            "$BASE/download-de-dados/emendas-parlamentares-documentos"
+
+          echo "=== Baixando 2025 ==="
+          HTTP_INFO=$(curl -L \
+            -b /tmp/portal-cookies.txt \
+            --user-agent "$UA" \
+            -H "Accept: application/zip,application/octet-stream,*/*" \
+            -H "Accept-Language: pt-BR,pt;q=0.9" \
+            -H "Referer: $BASE/download-de-dados/emendas-parlamentares-documentos" \
+            --retry 3 --retry-delay 10 --retry-all-errors \
+            --max-time 1800 \
+            -w "\nHTTP_CODE=%{http_code}\nCONTENT_TYPE=%{content_type}\nSIZE=%{size_download}" \
+            -o "$ZIP" \
+            "$BASE/download-de-dados/emendas-parlamentares-documentos/2025")
+          echo "$HTTP_INFO"
+
+          MAGIC=$(xxd -p -l 4 "$ZIP" 2>/dev/null || echo "erro-xxd")
+          echo "Magic bytes: $MAGIC (esperado 504b0304 para ZIP)"
+          if [ "$MAGIC" != "504b0304" ]; then
+            echo "ERRO: ZIP 2025 invalido"
+            rm -f "$ZIP"
+            exit 1
+          fi
+          echo "ZIP valido: $(stat -c%s "$ZIP") bytes"
+
+      - name: Importar parte 2 (linhas 190 001 em diante)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          BATCH="${{ github.event.inputs.batch || '500' }}"
+          CONC="${{ github.event.inputs.concurrency || '150' }}"
+          echo "=== Importando 2025 - Parte 2 (190001 em diante) ==="
+          npx tsx scripts/import-portal-csv.mts \
+            --file data/portal-csv-imports/2025_EmendasParlamentaresPorDocumento.zip \
+            --batch $BATCH \
+            --concurrency $CONC \
+            --skip 190000
+
+      - name: Reclassificar senadores
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx scripts/sync-senadores.ts
+
+      - name: Reclassificar areas
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx scripts/reclassificar-areas.ts
+
+      - name: Resumo final
+        if: always()
+        run: |
+          echo "## Import CSV 2025 concluido" >> $GITHUB_STEP_SUMMARY
+          echo "- **Partes:** 1/2 + 2/2 (190k + 197k linhas)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horario:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY

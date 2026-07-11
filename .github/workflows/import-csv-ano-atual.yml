@@ -3,14 +3,13 @@ name: Import CSV - emendas federais
 on:
   schedule:
     - cron: '0 2 * * 1'   # Segunda-feira 2h UTC → 2026
-    - cron: '0 2 * * 3'   # Quarta-feira  2h UTC → 2025
     - cron: '0 2 1 * *'   # Dia 1 do mês  2h UTC → 2024
   workflow_dispatch:
     inputs:
       anos:
-        description: 'Anos a importar, separados por vírgula (ex: 2024,2025,2026)'
+        description: 'Anos a importar, separados por vírgula (ex: 2024,2026)'
         required: false
-        default: '2025,2026'
+        default: '2026'
         type: string
       batch:
         description: 'Tamanho do chunk de leitura (default 500)'
@@ -34,7 +33,6 @@ jobs:
       ANOS: >-
         ${{ github.event_name == 'workflow_dispatch' && inputs.anos ||
             github.event.schedule == '0 2 * * 1' && '2026' ||
-            github.event.schedule == '0 2 * * 3' && '2025' ||
             '2024' }}
 
     steps:
