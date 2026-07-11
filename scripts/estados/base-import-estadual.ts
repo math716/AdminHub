@@ -232,20 +232,33 @@ export async function importarEmendas(
             };
 
             await withRetry(
-              (db) => {
-                // Quando parlamentarId + numero existem, usa o composite unique key
-                // para evitar conflito caso o idPortal tenha mudado entre imports.
-                if (parlamentarId && row.numero) {
-                  return db.emendaParlamentar.upsert({
-                    where: { parlamentarId_ano_numero: { parlamentarId, ano: row.ano, numero: row.numero } },
-                    create: { idPortal: row.idPortal, parlamentarId, ano: row.ano, ...commonData },
-                    update: { idPortal: row.idPortal, ...commonData },
+              async (db) => {
+                // 1. Busca pelo idPortal (caso mais comum: mesma emenda reimportada)
+                const byPortal = await db.emendaParlamentar.findUnique({
+                  where: { idPortal: row.idPortal }, select: { id: true },
+                });
+                if (byPortal) {
+                  return db.emendaParlamentar.update({
+                    where: { id: byPortal.id },
+                    data: { ...commonData, ...(parlamentarId ? { parlamentarId } : {}) },
                   });
                 }
-                return db.emendaParlamentar.upsert({
-                  where: { idPortal: row.idPortal },
-                  create: { idPortal: row.idPortal, ano: row.ano, ...commonData, parlamentarId: parlamentarId ?? undefined },
-                  update: { ...commonData, ...(parlamentarId ? { parlamentarId } : {}) },
+                // 2. Busca pelo composite key (idPortal mudou ou parlamentarId foi adicionado depois)
+                if (parlamentarId && row.numero) {
+                  const byComposite = await db.emendaParlamentar.findUnique({
+                    where: { parlamentarId_ano_numero: { parlamentarId, ano: row.ano, numero: row.numero } },
+                    select: { id: true },
+                  });
+                  if (byComposite) {
+                    return db.emendaParlamentar.update({
+                      where: { id: byComposite.id },
+                      data: { idPortal: row.idPortal, ...commonData },
+                    });
+                  }
+                }
+                // 3. Emenda nova — insere
+                return db.emendaParlamentar.create({
+                  data: { idPortal: row.idPortal, ano: row.ano, ...commonData, parlamentarId: parlamentarId ?? undefined },
                 });
               },
               getPrisma, setPrisma,
