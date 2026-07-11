@@ -49,7 +49,7 @@ jobs:
           ANOS="${{ github.event.inputs.anos || '2025,2026' }}"
 
           echo "=== Baixando página do portal RJ ==="
-          HTML=$(curl -s --max-time 30 "$PAGE_URL")
+          HTML=$(curl -s --insecure --max-time 30 "$PAGE_URL")
           if [ -z "$HTML" ]; then
             echo "ERRO: não foi possível acessar $PAGE_URL"
             exit 1
@@ -97,7 +97,7 @@ jobs:
             DEST="data/estados/rj-${ANO}.${EXT}"
 
             echo "URL encontrada: $URL"
-            HTTP_CODE=$(curl -L \
+            HTTP_CODE=$(curl -L --insecure \
               --retry 3 --retry-delay 10 \
               --max-time 300 \
               -w "%{http_code}" \
