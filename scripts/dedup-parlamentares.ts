@@ -70,11 +70,19 @@ async function main() {
   let deletados = 0;
 
   for (const grupo of duplicados) {
-    // Elege canônico: prefere PORTAL:, depois quem tem mais emendas
+    // Elege canônico com 3 prioridades:
+    // 1. PORTAL:NAME  → import federal (mais estável)
+    // 2. STATE:NAME   → import estadual (SP:, RJ:, DF:, MG: etc.) — evita recriar na próxima importação
+    // 3. null / outro → registros antigos sem prefixo
+    // Desempate: quem tem mais emendas
+    const prioridade = (id: string | null): number => {
+      if (id?.startsWith('PORTAL:')) return 2;
+      if (id && id.includes(':'))   return 1; // STATE: prefix
+      return 0;
+    };
     const canonico = grupo.slice().sort((a, b) => {
-      const aPortal = a.idPortal?.startsWith('PORTAL:') ? 1 : 0;
-      const bPortal = b.idPortal?.startsWith('PORTAL:') ? 1 : 0;
-      if (bPortal !== aPortal) return bPortal - aPortal;
+      const diff = prioridade(b.idPortal) - prioridade(a.idPortal);
+      if (diff !== 0) return diff;
       return b._count.emendas - a._count.emendas;
     })[0];
 
