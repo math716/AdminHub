@@ -381,10 +381,10 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                       </div>
                       {isPartial && (
                         <div className="mt-2 rounded-lg px-3 py-2 flex items-start gap-2" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)' }}>
-                          <Info className="h-3.5 w-3.5 text-blue-400 mt-0.5 flex-shrink-0" />
-                          <p className="text-[11px] text-blue-200/80 leading-relaxed">
+                          <Info className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                          <p className="text-[11px] text-blue-700 dark:text-blue-200/80 leading-relaxed">
                             Esta emenda é distribuída para múltiplos municípios. Os documentos abaixo representam{' '}
-                            <span className="font-semibold text-blue-200">{formatBRL(totalDocsEmp)}</span> do total empenhado.
+                            <span className="font-semibold text-blue-700 dark:text-blue-200">{formatBRL(totalDocsEmp)}</span> do total empenhado.
                           </p>
                         </div>
                       )}
