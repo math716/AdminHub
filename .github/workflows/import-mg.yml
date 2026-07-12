@@ -46,35 +46,67 @@ jobs:
         run: |
           PAGE_URL="https://www.emendas.mg.gov.br/transparencia/"
           DEST="data/estados/mg-emendas.xlsx"
+          YEAR=$(date +%Y)
 
-          echo "=== Baixando página do portal MG ==="
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+          echo "=== Tentando scraping da página do portal MG ==="
           HTML=$(curl -s --max-time 30 \
-            -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36" \
-            "$PAGE_URL")
+            -H "User-Agent: $UA" \
+            -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
+            -H "Accept-Language: pt-BR,pt;q=0.9,en;q=0.8" \
+            -H "Accept-Encoding: gzip, deflate, br" \
+            -H "Connection: keep-alive" \
+            --compressed \
+            "$PAGE_URL" 2>/dev/null)
 
-          if [ -z "$HTML" ]; then
-            echo "ERRO: não foi possível acessar $PAGE_URL"
-            exit 1
-          fi
+          HREF=""
 
-          # Extrai o href do XLSX de emendas (exclui dicionário)
-          HREF=$(echo "$HTML" | grep -oiE \
-            'https?://[^"'"'"' >]*DADOS_EMENDAS[^"'"'"' >]*\.xlsx' \
-            | grep -iv 'dicionario\|2019\|2020\|2021\|2022' \
-            | head -1)
-
-          # Fallback: qualquer XLSX de dados de emendas
-          if [ -z "$HREF" ]; then
+          if [ -n "$HTML" ] && ! echo "$HTML" | grep -qi "403 Forbidden"; then
+            # Extrai o href do XLSX de emendas (exclui dicionário e anos antigos)
             HREF=$(echo "$HTML" | grep -oiE \
               'https?://[^"'"'"' >]*DADOS_EMENDAS[^"'"'"' >]*\.xlsx' \
-              | grep -iv 'dicionario' \
+              | grep -iv 'dicionario\|2019\|2020\|2021\|2022' \
               | head -1)
+
+            # Fallback: qualquer XLSX de dados de emendas
+            if [ -z "$HREF" ]; then
+              HREF=$(echo "$HTML" | grep -oiE \
+                'https?://[^"'"'"' >]*DADOS_EMENDAS[^"'"'"' >]*\.xlsx' \
+                | grep -iv 'dicionario' \
+                | head -1)
+            fi
+          else
+            echo "Scraping bloqueado (403 ou resposta vazia) — tentando URL direta"
+          fi
+
+          # Fallback: construir URL diretamente pelo padrão conhecido do portal
+          # Formato: https://www.emendas.mg.gov.br/wp-content/dados-emendas/${YEAR}_Marcel/DADOS_EMENDAS_${YEAR}.xlsx
+          if [ -z "$HREF" ]; then
+            echo "=== Tentando URL direta (fallback) ==="
+            for CANDIDATE_YEAR in $YEAR $((YEAR - 1)); do
+              CANDIDATE="https://www.emendas.mg.gov.br/wp-content/dados-emendas/${CANDIDATE_YEAR}_Marcel/DADOS_EMENDAS_${CANDIDATE_YEAR}.xlsx"
+              echo "Testando: $CANDIDATE"
+              HTTP_TEST=$(curl -L --head -s --max-time 20 \
+                -H "User-Agent: $UA" \
+                -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*" \
+                -H "Accept-Language: pt-BR,pt;q=0.9,en;q=0.8" \
+                --compressed \
+                -w "%{http_code}" -o /dev/null "$CANDIDATE")
+              echo "  HTTP: $HTTP_TEST"
+              if [ "$HTTP_TEST" = "200" ]; then
+                HREF="$CANDIDATE"
+                break
+              fi
+            done
           fi
 
           if [ -z "$HREF" ]; then
-            echo "ERRO: link do XLSX não encontrado na página"
-            echo "--- HTML (primeiras 200 linhas) ---"
-            echo "$HTML" | head -200
+            echo "ERRO: link do XLSX não encontrado (scraping e fallback falharam)"
+            if [ -n "$HTML" ]; then
+              echo "--- HTML (primeiras 100 linhas) ---"
+              echo "$HTML" | head -100
+            fi
             exit 1
           fi
 
@@ -82,7 +114,10 @@ jobs:
           HTTP_CODE=$(curl -L \
             --retry 3 --retry-delay 10 \
             --max-time 300 \
-            -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36" \
+            -H "User-Agent: $UA" \
+            -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*" \
+            -H "Accept-Language: pt-BR,pt;q=0.9,en;q=0.8" \
+            --compressed \
             -w "%{http_code}" \
             -o "$DEST" \
             "$HREF")
