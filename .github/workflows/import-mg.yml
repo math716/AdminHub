@@ -21,7 +21,7 @@ jobs:
     name: Import MG
     if: github.repository == 'math716/AdminHub'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
 
     steps:
       - name: Checkout
