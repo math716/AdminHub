@@ -1101,22 +1101,6 @@ export default function EmendasPage() {
               </div>
             )}
           </div>
-          {/* Chips de parlamentares salvos */}
-          {savedParlamentaresDoEstado.length > 0 && !selectedParlamentar && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {savedParlamentaresDoEstado.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => handleSelectFavorito(f)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors"
-                  style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', color: 'var(--brand-cobalt-text)' }}
-                >
-                  <Star className="w-2.5 h-2.5 fill-amber-400 text-[color:var(--brand-cobalt)]" />
-                  {f.candidateName}
-                </button>
-              ))}
-            </div>
-          )}
           {/* OU + busca de município */}
           <div className="flex items-center gap-3 mt-2">
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -1146,6 +1130,22 @@ export default function EmendasPage() {
               </div>
             )}
           </div>
+          {/* Chips de favoritos — abaixo das duas barras para não deslocar o layout */}
+          {savedParlamentaresDoEstado.length > 0 && !selectedParlamentar && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {savedParlamentaresDoEstado.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => handleSelectFavorito(f)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors"
+                  style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', color: 'var(--brand-cobalt-text)' }}
+                >
+                  <Star className="w-2.5 h-2.5 fill-amber-400 text-[color:var(--brand-cobalt)]" />
+                  {f.candidateName}
+                </button>
+              ))}
+            </div>
+          )}
           {parlamentarQuery.length >= 2 && parlamentarResults.length > 0 && (
             <div
               className="absolute top-full left-0 right-0 mt-1 z-[500] rounded-xl overflow-hidden"
