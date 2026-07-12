@@ -1,0 +1,52 @@
+name: Dedup parlamentares
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (não altera o banco)'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  dedup:
+    name: Dedup parlamentares
+    if: github.repository == 'math716/AdminHub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Dedup parlamentares
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            echo "=== DRY RUN ==="
+            npx tsx --require dotenv/config scripts/dedup-parlamentares.ts --dry-run
+          else
+            echo "=== APLICANDO ==="
+            npx tsx --require dotenv/config scripts/dedup-parlamentares.ts
+          fi
+
+      - name: Resumo
+        if: always()
+        run: |
+          echo "## Dedup parlamentares" >> $GITHUB_STEP_SUMMARY
+          echo "- **Modo:** ${{ github.event.inputs.dry_run == 'true' && 'Dry run' || 'Real' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horario:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY

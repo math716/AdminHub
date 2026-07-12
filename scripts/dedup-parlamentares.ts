@@ -1,0 +1,119 @@
+/**
+ * Deduplica parlamentares com o mesmo nome no banco.
+ *
+ * Causa comum: o import federal cria parlamentares via nome com prefixo
+ * "PORTAL:", enquanto scripts antigos (sync-deputados-federais, etc.) criavam
+ * os mesmos via código da Câmara/Senado com prefixo diferente — gerando dois
+ * registros para a mesma pessoa.
+ *
+ * Estratégia:
+ *   1. Agrupa parlamentares pelo nome normalizado (sem acento, maiúsculo)
+ *   2. Para cada grupo com > 1 membro, elege um "canônico":
+ *      - Prefere quem tem idPortal com prefixo "PORTAL:" (em uso pelo import atual)
+ *      - Desempate: quem tem mais emendas
+ *   3. Reassinala emendas e transferências do(s) duplicado(s) para o canônico
+ *   4. Deleta o(s) duplicado(s)
+ *
+ * Uso:
+ *   npx tsx --require dotenv/config scripts/dedup-parlamentares.ts
+ *   npx tsx --require dotenv/config scripts/dedup-parlamentares.ts --dry-run
+ */
+import { PrismaClient } from '@prisma/client';
+
+const DRY_RUN = process.argv.includes('--dry-run');
+
+const dbUrl = (() => {
+  const raw = process.env.DATABASE_URL ?? '';
+  return raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=5';
+})();
+const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+
+function normalizar(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function main() {
+  console.log(`\n🔍 Dedup parlamentares${DRY_RUN ? ' [DRY RUN]' : ''}\n`);
+
+  const todos = await prisma.parlamentar.findMany({
+    select: {
+      id: true, nome: true, idPortal: true, cargo: true, uf: true, partido: true,
+      _count: { select: { emendas: true } },
+    },
+  });
+
+  console.log(`   ${todos.length} parlamentares no banco`);
+
+  // Agrupa por nome normalizado
+  const grupos = new Map<string, typeof todos>();
+  for (const p of todos) {
+    const chave = normalizar(p.nome);
+    if (!grupos.has(chave)) grupos.set(chave, []);
+    grupos.get(chave)!.push(p);
+  }
+
+  const duplicados = [...grupos.values()].filter((g) => g.length > 1);
+  console.log(`   ${duplicados.length} grupos com duplicatas\n`);
+
+  if (duplicados.length === 0) {
+    console.log('✅ Nenhuma duplicata encontrada.');
+    return;
+  }
+
+  let mergeados = 0;
+  let deletados = 0;
+
+  for (const grupo of duplicados) {
+    // Elege canônico: prefere PORTAL:, depois quem tem mais emendas
+    const canonico = grupo.slice().sort((a, b) => {
+      const aPortal = a.idPortal?.startsWith('PORTAL:') ? 1 : 0;
+      const bPortal = b.idPortal?.startsWith('PORTAL:') ? 1 : 0;
+      if (bPortal !== aPortal) return bPortal - aPortal;
+      return b._count.emendas - a._count.emendas;
+    })[0];
+
+    const duplicatas = grupo.filter((p) => p.id !== canonico.id);
+
+    console.log(`  [merge] "${canonico.nome}" (${canonico.cargo})`);
+    console.log(`     canônico : ${canonico.id} idPortal=${canonico.idPortal} emendas=${canonico._count.emendas}`);
+
+    for (const dup of duplicatas) {
+      console.log(`     duplicata: ${dup.id} idPortal=${dup.idPortal} emendas=${dup._count.emendas}`);
+
+      if (!DRY_RUN) {
+        // Reassinala emendas
+        const emendas = await prisma.emendaParlamentar.updateMany({
+          where: { parlamentarId: dup.id },
+          data: { parlamentarId: canonico.id },
+        });
+        // Reassinala transferências
+        const pix = await prisma.transferenciaPix.updateMany({
+          where: { parlamentarId: dup.id },
+          data: { parlamentarId: canonico.id },
+        });
+        console.log(`       → ${emendas.count} emendas e ${pix.count} transferências migradas`);
+
+        // Deleta duplicata
+        await prisma.parlamentar.delete({ where: { id: dup.id } });
+        console.log(`       → deletado`);
+      }
+
+      mergeados++;
+      deletados++;
+    }
+  }
+
+  console.log(`\n${DRY_RUN ? '[dry-run] ' : ''}✅ Concluído:`);
+  console.log(`   ${mergeados} duplicatas mergeadas`);
+  console.log(`   ${deletados} registros que seriam deletados`);
+}
+
+main()
+  .catch((e) => { console.error('\n❌', e.message); process.exit(1); })
+  .finally(() => prisma.$disconnect());
