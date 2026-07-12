@@ -95,17 +95,36 @@ async function main() {
       console.log(`     duplicata: ${dup.id} idPortal=${dup.idPortal} emendas=${dup._count.emendas}`);
 
       if (!DRY_RUN) {
-        // Reassinala emendas
-        const emendas = await prisma.emendaParlamentar.updateMany({
+        // Reassinala emendas uma a uma para evitar conflito no unique (parlamentarId, ano, numero)
+        const emendasDup = await prisma.emendaParlamentar.findMany({
           where: { parlamentarId: dup.id },
-          data: { parlamentarId: canonico.id },
+          select: { id: true, ano: true, numero: true },
         });
-        // Reassinala transferências
+        let emMigradas = 0;
+        let emConflito = 0;
+        for (const emenda of emendasDup) {
+          let conflito = false;
+          if (emenda.numero) {
+            const existing = await prisma.emendaParlamentar.findUnique({
+              where: { parlamentarId_ano_numero: { parlamentarId: canonico.id, ano: emenda.ano, numero: emenda.numero } },
+              select: { id: true },
+            });
+            if (existing) { conflito = true; }
+          }
+          if (conflito) {
+            await prisma.emendaParlamentar.delete({ where: { id: emenda.id } });
+            emConflito++;
+          } else {
+            await prisma.emendaParlamentar.update({ where: { id: emenda.id }, data: { parlamentarId: canonico.id } });
+            emMigradas++;
+          }
+        }
+        // Reassinala transferências (sem unique constraint composta — updateMany é seguro)
         const pix = await prisma.transferenciaPix.updateMany({
           where: { parlamentarId: dup.id },
           data: { parlamentarId: canonico.id },
         });
-        console.log(`       → ${emendas.count} emendas e ${pix.count} transferências migradas`);
+        console.log(`       → ${emMigradas} emendas migradas, ${emConflito} duplicatas removidas, ${pix.count} pix migrados`);
 
         // Deleta duplicata
         await prisma.parlamentar.delete({ where: { id: dup.id } });
