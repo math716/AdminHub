@@ -1,0 +1,131 @@
+name: Import estadual - Minas Gerais
+
+on:
+  schedule:
+    - cron: '0 4 * * 0'  # Domingo 4h UTC (sábado 1h Brasília)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (não grava no banco)'
+        required: false
+        default: false
+        type: boolean
+      discover:
+        description: 'Discover (só imprime colunas do arquivo, sem importar)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  import-mg:
+    name: Import MG
+    if: github.repository == 'math716/AdminHub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Criar diretorio de dados
+        run: mkdir -p data/estados
+
+      - name: Descobrir e baixar arquivo do portal MG
+        run: |
+          PAGE_URL="https://www.emendas.mg.gov.br/transparencia/"
+          DEST="data/estados/mg-emendas.xlsx"
+
+          echo "=== Baixando página do portal MG ==="
+          HTML=$(curl -s --max-time 30 \
+            -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36" \
+            "$PAGE_URL")
+
+          if [ -z "$HTML" ]; then
+            echo "ERRO: não foi possível acessar $PAGE_URL"
+            exit 1
+          fi
+
+          # Extrai o href do XLSX de emendas (exclui dicionário)
+          HREF=$(echo "$HTML" | grep -oiE \
+            'https?://[^"'"'"' >]*DADOS_EMENDAS[^"'"'"' >]*\.xlsx' \
+            | grep -iv 'dicionario\|2019\|2020\|2021\|2022' \
+            | head -1)
+
+          # Fallback: qualquer XLSX de dados de emendas
+          if [ -z "$HREF" ]; then
+            HREF=$(echo "$HTML" | grep -oiE \
+              'https?://[^"'"'"' >]*DADOS_EMENDAS[^"'"'"' >]*\.xlsx' \
+              | grep -iv 'dicionario' \
+              | head -1)
+          fi
+
+          if [ -z "$HREF" ]; then
+            echo "ERRO: link do XLSX não encontrado na página"
+            echo "--- HTML (primeiras 200 linhas) ---"
+            echo "$HTML" | head -200
+            exit 1
+          fi
+
+          echo "URL encontrada: $HREF"
+          HTTP_CODE=$(curl -L \
+            --retry 3 --retry-delay 10 \
+            --max-time 300 \
+            -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36" \
+            -w "%{http_code}" \
+            -o "$DEST" \
+            "$HREF")
+          echo "HTTP: $HTTP_CODE — $(stat -c%s "$DEST" 2>/dev/null || echo 0) bytes"
+
+          if [ "$HTTP_CODE" != "200" ] || [ ! -s "$DEST" ]; then
+            echo "ERRO: download falhou (HTTP $HTTP_CODE)"
+            rm -f "$DEST"
+            exit 1
+          fi
+
+          echo "Arquivo salvo: $DEST"
+
+      - name: Importar dados no banco
+        if: ${{ github.event.inputs.dry_run != 'true' && github.event.inputs.discover != 'true' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "=== Importando MG ==="
+          npx tsx --require dotenv/config scripts/estados/import-mg.ts \
+            --file data/estados/mg-emendas.xlsx
+
+      - name: Dry run
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "=== [DRY RUN] MG ==="
+          npx tsx --require dotenv/config scripts/estados/import-mg.ts \
+            --file data/estados/mg-emendas.xlsx \
+            --dry-run
+
+      - name: Discover (inspecionar colunas)
+        if: ${{ github.event.inputs.discover == 'true' }}
+        run: |
+          echo "=== [DISCOVER] Colunas do arquivo MG ==="
+          npx tsx --require dotenv/config scripts/estados/import-mg.ts \
+            --file data/estados/mg-emendas.xlsx \
+            --discover
+
+      - name: Resumo
+        if: always()
+        run: |
+          echo "## Import MG concluido" >> $GITHUB_STEP_SUMMARY
+          echo "- **Modo:** ${{ github.event.inputs.discover == 'true' && 'Discover' || github.event.inputs.dry_run == 'true' && 'Dry run' || 'Real' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Horario:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
