@@ -22,19 +22,35 @@ interface MunicipiosResult {
   mapSemEspaco: Map<string, string>; // normalizado-sem-espaço → código (fallback para "Doeste" vs "D Oeste")
 }
 
-async function fetchMunicipiosUF(uf: string): Promise<MunicipiosResult> {
-  const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
-  if (!res.ok) throw new Error(`IBGE HTTP ${res.status} para UF=${uf}`);
-  const data = await res.json() as Array<{ id: number; nome: string }>;
-  const map = new Map<string, string>();
-  const mapSemEspaco = new Map<string, string>();
-  for (const m of data) {
-    const norm = normalizeNome(m.nome);
-    const id   = String(m.id);
-    map.set(norm, id);
-    mapSemEspaco.set(norm.replace(/\s/g, ''), id);
+async function fetchMunicipiosUF(uf: string, tentativas = 4): Promise<MunicipiosResult> {
+  let lastErr: unknown;
+  for (let i = 1; i <= tentativas; i++) {
+    try {
+      const res = await fetch(
+        `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`,
+        { signal: AbortSignal.timeout(20_000) },
+      );
+      if (!res.ok) throw new Error(`IBGE HTTP ${res.status} para UF=${uf}`);
+      const data = await res.json() as Array<{ id: number; nome: string }>;
+      const map = new Map<string, string>();
+      const mapSemEspaco = new Map<string, string>();
+      for (const m of data) {
+        const norm = normalizeNome(m.nome);
+        const id   = String(m.id);
+        map.set(norm, id);
+        mapSemEspaco.set(norm.replace(/\s/g, ''), id);
+      }
+      return { map, mapSemEspaco };
+    } catch (err) {
+      lastErr = err;
+      if (i < tentativas) {
+        const delay = i * 5_000;
+        console.warn(`  [IBGE] tentativa ${i} falhou — aguardando ${delay / 1000}s antes de tentar novamente...`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
   }
-  return { map, mapSemEspaco };
+  throw lastErr;
 }
 
 async function main() {
