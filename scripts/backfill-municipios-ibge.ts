@@ -49,7 +49,7 @@ async function main() {
         esfera: 'ESTADUAL',
         ...(UF_FILTER ? { uf: UF_FILTER.toUpperCase() } : {}),
       },
-      select: { id: true, uf: true, municipioNome: true },
+      select: { uf: true, municipioNome: true },
     });
 
     if (semIbge.length === 0) {
@@ -74,29 +74,25 @@ async function main() {
       console.log(`\n[${uf}] ${registros.length} registros — buscando municípios no IBGE...`);
       const { map: municipiosMap, mapSemEspaco } = await fetchMunicipiosUF(uf);
 
-      // Agrupa por municipioNome único
-      const porNome = new Map<string, string[]>();
-      for (const e of registros) {
-        const nome = e.municipioNome!.trim(); // remove espaços invisíveis
-        if (!porNome.has(nome)) porNome.set(nome, []);
-        porNome.get(nome)!.push(e.id);
-      }
+      // Coleta nomes únicos de municípios
+      const nomesUnicos = new Set(registros.map((e) => e.municipioNome!.trim()));
 
       let ufAtualizados = 0;
       let ufSemMatch = 0;
 
-      for (const [nome, ids] of porNome) {
+      for (const nome of nomesUnicos) {
         const norm   = normalizeNome(nome);
         // Tenta match exato; fallback sem espaços (resolve "Doeste" vs "D Oeste")
         const codigo = municipiosMap.get(norm) ?? mapSemEspaco.get(norm.replace(/\s/g, ''));
         if (!codigo) {
           console.warn(`  [sem match] "${nome}"`);
-          ufSemMatch += ids.length;
+          ufSemMatch++;
           continue;
         }
 
+        // Usa municipioNome + uf no where — evita IN com lista grande de IDs
         const { count } = await prisma.emendaParlamentar.updateMany({
-          where: { id: { in: ids } },
+          where: { municipioNome: nome, uf, codigoIbge: null, esfera: 'ESTADUAL' },
           data: { codigoIbge: codigo },
         });
         ufAtualizados += count;
