@@ -822,9 +822,12 @@ model EmendaNaoRealizada {
   favorecido    String
   municipio     String?
   uf            String?
-  valor         Float    @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  valor             Float    @default(0)
+  observacao        String?
+  documentoBase64   String?
+  documentoNome     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@index([gabineteId, parlamentarId, ano])
   @@map("emendas_nao_realizadas")

@@ -74,13 +74,18 @@ export async function POST(req: NextRequest) {
   if (!gabineteId) return NextResponse.json({ error: 'Sem gabinete' }, { status: 403 });
 
   const body = await req.json();
-  const { ano, parlamentarId, numero, tipo, area, favorecido, municipio, uf, valor } = body;
+  const { ano, parlamentarId, numero, tipo, area, favorecido, municipio, uf, valor, observacao, documentoBase64, documentoNome } = body;
 
   if (!favorecido?.trim()) {
     return NextResponse.json({ error: 'Favorecido é obrigatório' }, { status: 400 });
   }
   if (!parlamentarId?.trim()) {
     return NextResponse.json({ error: 'Parlamentar não identificado' }, { status: 400 });
+  }
+
+  const MAX_DOC_BYTES = 10 * 1024 * 1024; // 10MB base64 ~= 7.5MB binário
+  if (typeof documentoBase64 === 'string' && documentoBase64.length > MAX_DOC_BYTES) {
+    return NextResponse.json({ error: 'Documento muito grande (máx. 7MB)' }, { status: 400 });
   }
 
   const item = await prisma.emendaNaoRealizada.create({
@@ -95,6 +100,9 @@ export async function POST(req: NextRequest) {
       municipio: municipio?.trim() || null,
       uf: uf?.trim()?.toUpperCase() || null,
       valor: Number(valor) || 0,
+      observacao: observacao?.trim() || null,
+      documentoBase64: documentoBase64 || null,
+      documentoNome: documentoNome?.trim() || null,
     },
   });
 

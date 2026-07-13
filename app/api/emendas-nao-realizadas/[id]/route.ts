@@ -25,10 +25,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!existing) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
 
   const body = await req.json();
-  const { numero, tipo, area, favorecido, municipio, uf, valor } = body;
+  const { numero, tipo, area, favorecido, municipio, uf, valor, observacao, documentoBase64, documentoNome } = body;
 
   if (!favorecido?.trim()) {
     return NextResponse.json({ error: 'Favorecido é obrigatório' }, { status: 400 });
+  }
+
+  const MAX_DOC_BYTES = 10 * 1024 * 1024;
+  if (typeof documentoBase64 === 'string' && documentoBase64.length > MAX_DOC_BYTES) {
+    return NextResponse.json({ error: 'Documento muito grande (máx. 7MB)' }, { status: 400 });
   }
 
   const updated = await prisma.emendaNaoRealizada.update({
@@ -41,6 +46,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       municipio: municipio?.trim() || null,
       uf: uf?.trim()?.toUpperCase() || null,
       valor: Number(valor) || 0,
+      observacao: observacao?.trim() || null,
+      documentoBase64: documentoBase64 !== undefined ? (documentoBase64 || null) : existing.documentoBase64,
+      documentoNome: documentoNome !== undefined ? (documentoNome?.trim() || null) : existing.documentoNome,
     },
   });
 
