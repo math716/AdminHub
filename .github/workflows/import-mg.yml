@@ -5,11 +5,6 @@ on:
     - cron: '0 4 * * 0'  # Domingo 4h UTC (sábado 1h Brasília)
   workflow_dispatch:
     inputs:
-      download_url:
-        description: 'URL direta do XLSX (opcional — use quando o portal bloquear o download automático)'
-        required: false
-        default: ''
-        type: string
       dry_run:
         description: 'Dry run (não grava no banco)'
         required: false
@@ -41,123 +36,18 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      - name: Instalar Playwright (Chromium)
+        run: npx playwright install chromium --with-deps
+
       - name: Gerar Prisma Client
         run: npx prisma generate
 
       - name: Criar diretorio de dados
         run: mkdir -p data/estados
 
-      - name: Baixar arquivo XLSX
-        run: |
-          DEST="data/estados/mg-emendas.xlsx"
-          YEAR=$(date +%Y)
-          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-          DOWNLOAD_URL="${{ github.event.inputs.download_url }}"
-
-          # ── 1. URL fornecida manualmente ──────────────────────────────────────
-          if [ -n "$DOWNLOAD_URL" ]; then
-            echo "=== Usando URL fornecida manualmente ==="
-            echo "URL: $DOWNLOAD_URL"
-            HTTP_CODE=$(curl -L \
-              --retry 3 --retry-delay 10 \
-              --max-time 300 \
-              -H "User-Agent: $UA" \
-              -w "%{http_code}" \
-              -o "$DEST" \
-              "$DOWNLOAD_URL")
-            echo "HTTP: $HTTP_CODE — $(stat -c%s "$DEST" 2>/dev/null || echo 0) bytes"
-            if [ "$HTTP_CODE" != "200" ] || [ ! -s "$DEST" ]; then
-              echo "ERRO: download da URL fornecida falhou (HTTP $HTTP_CODE)"
-              rm -f "$DEST"
-              exit 1
-            fi
-            echo "Arquivo salvo: $DEST"
-            exit 0
-          fi
-
-          # ── 2. Scraping automático da página do portal ────────────────────────
-          PAGE_URL="https://www.emendas.mg.gov.br/transparencia/"
-          echo "=== Tentando scraping da página do portal MG ==="
-          HTML=$(curl -s --max-time 30 \
-            -H "User-Agent: $UA" \
-            -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
-            -H "Accept-Language: pt-BR,pt;q=0.9,en;q=0.8" \
-            -H "Accept-Encoding: gzip, deflate, br" \
-            -H "Connection: keep-alive" \
-            --compressed \
-            "$PAGE_URL" 2>/dev/null)
-
-          HREF=""
-
-          if [ -n "$HTML" ] && ! echo "$HTML" | grep -qi "403 Forbidden"; then
-            HREF=$(echo "$HTML" | grep -oiE \
-              'https?://[^"'"'"' >]*DADOS_EMENDAS[^"'"'"' >]*\.xlsx' \
-              | grep -iv 'dicionario\|2019\|2020\|2021\|2022' \
-              | head -1)
-            if [ -z "$HREF" ]; then
-              HREF=$(echo "$HTML" | grep -oiE \
-                'https?://[^"'"'"' >]*DADOS_EMENDAS[^"'"'"' >]*\.xlsx' \
-                | grep -iv 'dicionario' \
-                | head -1)
-            fi
-          else
-            echo "Scraping bloqueado (403 ou resposta vazia) — tentando URL direta"
-          fi
-
-          # ── 3. Fallback: URL direta pelo padrão conhecido do portal ──────────
-          if [ -z "$HREF" ]; then
-            echo "=== Tentando URL direta (fallback) ==="
-            for CANDIDATE_YEAR in $YEAR $((YEAR - 1)); do
-              CANDIDATE="https://www.emendas.mg.gov.br/wp-content/dados-emendas/${CANDIDATE_YEAR}_Marcel/DADOS_EMENDAS_${CANDIDATE_YEAR}.xlsx"
-              echo "Testando: $CANDIDATE"
-              HTTP_TEST=$(curl -L --head -s --max-time 20 \
-                -H "User-Agent: $UA" \
-                -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*" \
-                -H "Accept-Language: pt-BR,pt;q=0.9,en;q=0.8" \
-                --compressed \
-                -w "%{http_code}" -o /dev/null "$CANDIDATE")
-              echo "  HTTP: $HTTP_TEST"
-              if [ "$HTTP_TEST" = "200" ]; then
-                HREF="$CANDIDATE"
-                break
-              fi
-            done
-          fi
-
-          # ── 4. Sem URL encontrada → falha com instruções ──────────────────────
-          if [ -z "$HREF" ]; then
-            echo ""
-            echo "ERRO: não foi possível baixar o arquivo automaticamente."
-            echo ""
-            echo "O portal emendas.mg.gov.br está bloqueando requests do GitHub Actions."
-            echo "Para rodar manualmente:"
-            echo "  1. Baixe o arquivo em https://www.emendas.mg.gov.br/transparencia/"
-            echo "  2. Faça upload em algum lugar público (ex: GitHub Release)"
-            echo "  3. Rode este workflow novamente com o campo 'download_url' preenchido"
-            echo ""
-            exit 1
-          fi
-
-          echo "URL encontrada: $HREF"
-          HTTP_CODE=$(curl -L \
-            --retry 3 --retry-delay 10 \
-            --max-time 300 \
-            -H "User-Agent: $UA" \
-            -H "Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*" \
-            -H "Accept-Language: pt-BR,pt;q=0.9,en;q=0.8" \
-            --compressed \
-            -w "%{http_code}" \
-            -o "$DEST" \
-            "$HREF")
-          echo "HTTP: $HTTP_CODE — $(stat -c%s "$DEST" 2>/dev/null || echo 0) bytes"
-
-          if [ "$HTTP_CODE" != "200" ] || [ ! -s "$DEST" ]; then
-            echo "ERRO: download falhou (HTTP $HTTP_CODE)"
-            rm -f "$DEST"
-            exit 1
-          fi
-
-          echo "Arquivo salvo: $DEST"
+      - name: Baixar XLSX via Playwright
+        run: npx tsx scripts/estados/download-mg.ts
+        timeout-minutes: 10
 
       - name: Importar dados no banco
         if: ${{ github.event.inputs.dry_run != 'true' && github.event.inputs.discover != 'true' }}
