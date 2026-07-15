@@ -1560,9 +1560,6 @@ export default function MapaCampanhaPage() {
       });
 
       if (res.ok) {
-        if (projecao?.id) {
-          await loadParcerias(projecao.id);
-        }
         setShowParceriaModal(false);
         setSelectedParceria(null);
         setParceriaForm({
@@ -1578,6 +1575,9 @@ export default function MapaCampanhaPage() {
           ativa: true
         });
         toast.success('Parceria salva com sucesso!');
+        if (projecao?.id) {
+          loadParcerias(projecao.id).catch(() => {});
+        }
       } else {
         const errData = await res.json().catch(() => ({}));
         toast.error(errData?.error || 'Erro ao salvar parceria');
