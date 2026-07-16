@@ -31,6 +31,7 @@ function SpDistritosMapComponent({ votesData, selectedDistrito, onDistritoClick,
   const geoLayerRef = useRef<any>(null);
   const voteLabelsGroupRef = useRef<any>(null);
   const selectedLayerRef = useRef<any>(null);
+  const hoveredLayerRef = useRef<any>(null);
   const selectedDistritoRef = useRef<string | null>(selectedDistrito ?? null);
   const onDistritoClickRef = useRef(onDistritoClick);
   const votesDataRef = useRef(votesData);
@@ -217,9 +218,13 @@ function SpDistritosMapComponent({ votesData, selectedDistrito, onDistritoClick,
           });
 
           layer.on('mouseover', () => {
+            if (hoveredLayerRef.current && hoveredLayerRef.current !== layer) {
+              const prev = hoveredLayerRef.current;
+              if (prev !== selectedLayerRef.current) prev.setStyle(style(prev.feature, false));
+            }
+            hoveredLayerRef.current = layer;
             if (selectedDistritoRef.current !== nome) {
               layer.setStyle({ weight: 2, fillOpacity: 0.18, color: '#4a9ede' });
-              layer.bringToFront();
             }
             const v = getVotos(nome);
             tooltipEl.innerHTML = [
@@ -248,6 +253,7 @@ function SpDistritosMapComponent({ votesData, selectedDistrito, onDistritoClick,
           });
 
           layer.on('mouseout', () => {
+            if (hoveredLayerRef.current === layer) hoveredLayerRef.current = null;
             if (selectedDistritoRef.current !== nome) {
               layer.setStyle(style(feature, false));
             }

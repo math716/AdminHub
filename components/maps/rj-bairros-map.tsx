@@ -34,6 +34,7 @@ function RjBairrosMapComponent({ votesData, selectedBairro, onBairroClick, heigh
   const geoLayerRef = useRef<any>(null);
   const voteLabelsGroupRef = useRef<any>(null);
   const selectedLayerRef = useRef<any>(null);
+  const hoveredLayerRef = useRef<any>(null);
   const selectedBairroRef = useRef<string | null>(selectedBairro ?? null);
   const onBairroClickRef = useRef(onBairroClick);
   const votesDataRef = useRef(votesData);
@@ -219,9 +220,13 @@ function RjBairrosMapComponent({ votesData, selectedBairro, onBairroClick, heigh
           });
 
           layer.on('mouseover', () => {
+            if (hoveredLayerRef.current && hoveredLayerRef.current !== layer) {
+              const prev = hoveredLayerRef.current;
+              if (prev !== selectedLayerRef.current) prev.setStyle(style(prev.feature, false));
+            }
+            hoveredLayerRef.current = layer;
             if (selectedBairroRef.current !== nome) {
               layer.setStyle({ weight: 2, fillOpacity: 0.18, color: '#4a9ede' });
-              layer.bringToFront();
             }
             const v = getVotos(nome);
             tooltipEl.innerHTML = [
@@ -249,6 +254,7 @@ function RjBairrosMapComponent({ votesData, selectedBairro, onBairroClick, heigh
           });
 
           layer.on('mouseout', () => {
+            if (hoveredLayerRef.current === layer) hoveredLayerRef.current = null;
             if (selectedBairroRef.current !== nome) {
               layer.setStyle(style(feature, false));
             }

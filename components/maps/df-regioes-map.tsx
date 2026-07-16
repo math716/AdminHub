@@ -36,6 +36,7 @@ function DfRegioesMapComponent({ votesData, selectedRegiao, onRegiaoClick, heigh
   const geoLayerRef = useRef<any>(null);
   const voteLabelsGroupRef = useRef<any>(null);
   const selectedLayerRef = useRef<any>(null);
+  const hoveredLayerRef = useRef<any>(null);
   const selectedRegiaoRef = useRef<string | null>(selectedRegiao ?? null);
   const onRegiaoClickRef = useRef(onRegiaoClick);
   const votesDataRef = useRef(votesData);
@@ -219,9 +220,13 @@ function DfRegioesMapComponent({ votesData, selectedRegiao, onRegiaoClick, heigh
           });
 
           layer.on('mouseover', () => {
+            if (hoveredLayerRef.current && hoveredLayerRef.current !== layer) {
+              const prev = hoveredLayerRef.current;
+              if (prev !== selectedLayerRef.current) prev.setStyle(style(prev.feature, false));
+            }
+            hoveredLayerRef.current = layer;
             if (selectedRegiaoRef.current !== nome) {
               layer.setStyle({ weight: 2.5, fillOpacity: 0.18, color: '#4a9ede' });
-              layer.bringToFront();
             }
             const v = getVotos(nome);
             tooltipEl.innerHTML = [
@@ -250,6 +255,7 @@ function DfRegioesMapComponent({ votesData, selectedRegiao, onRegiaoClick, heigh
           });
 
           layer.on('mouseout', () => {
+            if (hoveredLayerRef.current === layer) hoveredLayerRef.current = null;
             if (selectedRegiaoRef.current !== nome) {
               layer.setStyle(style(feature, false));
             }

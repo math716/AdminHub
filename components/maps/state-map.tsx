@@ -147,6 +147,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
   
   // Ref para hover (evita re-renders)
   const hoveredItemRef = useRef<string | null>(null);
+  const hoveredMunLayerRef = useRef<any>(null);
   const [hoveredItemDisplay, setHoveredItemDisplay] = useState<string | null>(null);
 
   useEffect(() => {
@@ -604,6 +605,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       cleanupMap();
       municipioSelectedLayerRef.current = null;
       selectedMunicipioRef.current = null;
+      hoveredMunLayerRef.current = null;
 
       if (!mapRef.current) {
         isInitializingRef.current = false;
@@ -850,6 +852,17 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           });
 
           layer.on('mouseover', (e: any) => {
+            if (hoveredMunLayerRef.current && hoveredMunLayerRef.current !== layer) {
+              const prev = hoveredMunLayerRef.current;
+              if (prev !== municipioSelectedLayerRef.current) {
+                if (disableSubdivisaoRef.current && municipioSelectedLayerRef.current) {
+                  prev.setStyle(spotlightDimStyle(darkModeRef.current));
+                } else {
+                  geoLayer.resetStyle(prev);
+                }
+              }
+            }
+            hoveredMunLayerRef.current = layer;
             if (selectedMunicipioRef.current !== nome) {
               e.target.setStyle({
                 weight: 2.5,
@@ -857,15 +870,14 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
                 fillOpacity: 0.1
               });
             }
-            e.target.bringToFront();
             if (subdivisaoLayerRef.current) subdivisaoLayerRef.current.bringToFront();
-            // labelsLayerRef é um LayerGroup — não tem bringToFront; traz cada layer individualmente
             if (labelsLayerRef.current) {
               try { (labelsLayerRef.current as any).bringToFront?.(); } catch (_) {}
             }
           });
 
           layer.on('mouseout', (e: any) => {
+            if (hoveredMunLayerRef.current === layer) hoveredMunLayerRef.current = null;
             if (selectedMunicipioRef.current === nome) return;
             if (disableSubdivisaoRef.current && municipioSelectedLayerRef.current) {
               e.target.setStyle(spotlightDimStyle(darkModeRef.current));
