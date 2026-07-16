@@ -2668,7 +2668,7 @@ export default function MapaCampanhaPage() {
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
                       activeTab === 'historico'
                         ? 'bg-cyan-500 text-white shadow'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-white'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <BarChart3 className="h-4 w-4" />
@@ -2680,7 +2680,7 @@ export default function MapaCampanhaPage() {
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
                     activeTab === 'projecao'
                       ? `${cenarioConfig[cenarioAtivo].bg} text-white shadow`
-                      : 'text-slate-600 dark:text-slate-400 hover:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <Target className="h-4 w-4" />

@@ -172,6 +172,7 @@ function RoleSelect({
   })();
 
   const openDrop = () => {
+    if (open) { setOpen(false); return; }
     if (!btnRef.current) return;
     const r = btnRef.current.getBoundingClientRect();
     setDropPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
@@ -1427,7 +1428,7 @@ export default function UsuariosPage() {
                 </button>
                 <button onClick={confirmEditPermissions} disabled={savingPerms}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg,#9333ea,#a855f7)', color: 'var(--text-primary)' }}>
+                  style={{ background: 'linear-gradient(135deg,#9333ea,#a855f7)', color: '#ffffff' }}>
                   {savingPerms ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   {savingPerms ? 'Salvando...' : 'Salvar'}
                 </button>
