@@ -1239,27 +1239,27 @@ export default function MapaPage() {
           <AnimatePresence>
             {selectedSpDistrito && isSaoPauloCapital && spVisualizacao === 'distritos' && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <Card className="border-violet-500/30">
+                <Card className="border-violet-300 dark:border-violet-500/30">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center justify-between text-base">
                       <span className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-violet-400" />
-                        <span className="text-violet-300 truncate max-w-[150px]" title={selectedSpDistrito}>
+                        <Building2 className="h-4 w-4 text-violet-500 dark:text-violet-400" />
+                        <span className="text-violet-700 dark:text-violet-300 truncate max-w-[150px]" title={selectedSpDistrito}>
                           {selectedSpDistrito}
                         </span>
                       </span>
                       <button
                         onClick={() => setSelectedSpDistrito(null)}
-                        className="text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors flex-shrink-0"
+                        className="text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
                       </button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-violet-500/10 rounded-lg border border-violet-500/20">
+                    <div className="flex items-center justify-between p-2 bg-violet-50 dark:bg-violet-500/10 rounded-lg border border-violet-200 dark:border-violet-500/20">
                       <span className="text-slate-600 dark:text-slate-400 text-xs">Votos no distrito</span>
-                      <span className="text-violet-300 font-bold">
+                      <span className="text-violet-700 dark:text-violet-300 font-bold">
                         {(spDistritosVotes[selectedSpDistrito] ?? 0).toLocaleString('pt-BR')}
                       </span>
                     </div>
@@ -1271,7 +1271,7 @@ export default function MapaPage() {
                         </span>
                       </div>
                     )}
-                    <p className="text-slate-600 text-[10px] text-center pt-1">Distrito Municipal — GeoSampa</p>
+                    <p className="text-slate-500 dark:text-slate-600 text-[10px] text-center pt-1">Distrito Municipal — GeoSampa</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -1282,27 +1282,27 @@ export default function MapaPage() {
           <AnimatePresence>
             {selectedDfRegiao && selectedUf === 'DF' && dfVisualizacao === 'bairros' && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <Card className="border-sky-500/30">
+                <Card className="border-sky-300 dark:border-sky-500/30">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center justify-between text-base">
                       <span className="flex items-center gap-2">
-                        <Layers className="h-4 w-4 text-sky-400" />
-                        <span className="text-sky-300 truncate max-w-[150px]" title={selectedDfRegiao}>
+                        <Layers className="h-4 w-4 text-sky-500 dark:text-sky-400" />
+                        <span className="text-sky-700 dark:text-sky-300 truncate max-w-[150px]" title={selectedDfRegiao}>
                           {selectedDfRegiao}
                         </span>
                       </span>
                       <button
                         onClick={() => setSelectedDfRegiao(null)}
-                        className="text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors flex-shrink-0"
+                        className="text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
                       </button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-sky-500/10 rounded-lg border border-sky-500/20">
+                    <div className="flex items-center justify-between p-2 bg-sky-50 dark:bg-sky-500/10 rounded-lg border border-sky-200 dark:border-sky-500/20">
                       <span className="text-slate-600 dark:text-slate-400 text-xs">Votos na Região</span>
-                      <span className="text-sky-300 font-bold">
+                      <span className="text-sky-700 dark:text-sky-300 font-bold">
                         {(dfRegioesVotes[selectedDfRegiao] ?? 0).toLocaleString('pt-BR')}
                       </span>
                     </div>
@@ -1314,7 +1314,7 @@ export default function MapaPage() {
                         </span>
                       </div>
                     )}
-                    <p className="text-slate-600 text-[10px] text-center pt-1">Região Administrativa — DF</p>
+                    <p className="text-slate-500 dark:text-slate-600 text-[10px] text-center pt-1">Região Administrativa — DF</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -1325,7 +1325,7 @@ export default function MapaPage() {
           <AnimatePresence>
             {selectedRjBairro && isRioDeJaneiro && rjVisualizacao === 'bairros' && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <Card className="border-emerald-500/30">
+                <Card className="border-emerald-300 dark:border-emerald-500/30">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center justify-between text-base">
                       <span className="flex items-center gap-2">
@@ -1336,14 +1336,14 @@ export default function MapaPage() {
                       </span>
                       <button
                         onClick={() => setSelectedRjBairro(null)}
-                        className="text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors flex-shrink-0"
+                        className="text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
                       </button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                    <div className="flex items-center justify-between p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg border border-emerald-200 dark:border-emerald-500/20">
                       <span className="text-slate-600 dark:text-slate-400 text-xs">Votos no bairro</span>
                       <span className="text-[color:var(--success)] font-bold">
                         {(rjBairrosVotes[selectedRjBairro] ?? 0).toLocaleString('pt-BR')}
@@ -1357,7 +1357,7 @@ export default function MapaPage() {
                         </span>
                       </div>
                     )}
-                    <p className="text-slate-600 text-[10px] text-center pt-1">Bairro — Rio de Janeiro</p>
+                    <p className="text-slate-500 dark:text-slate-600 text-[10px] text-center pt-1">Bairro — Rio de Janeiro</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -1368,27 +1368,27 @@ export default function MapaPage() {
           <AnimatePresence>
             {selectedCeBairro && isFortalezaCe && ceVisualizacao === 'bairros' && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <Card className="border-orange-500/30">
+                <Card className="border-orange-300 dark:border-orange-500/30">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center justify-between text-base">
                       <span className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-orange-400" />
-                        <span className="text-orange-300 truncate max-w-[150px]" title={selectedCeBairro}>
+                        <MapPin className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+                        <span className="text-orange-700 dark:text-orange-300 truncate max-w-[150px]" title={selectedCeBairro}>
                           {selectedCeBairro}
                         </span>
                       </span>
                       <button
                         onClick={() => setSelectedCeBairro(null)}
-                        className="text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors flex-shrink-0"
+                        className="text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
                       </button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                    <div className="flex items-center justify-between p-2 bg-orange-50 dark:bg-orange-500/10 rounded-lg border border-orange-200 dark:border-orange-500/20">
                       <span className="text-slate-600 dark:text-slate-400 text-xs">Votos no bairro</span>
-                      <span className="text-orange-300 font-bold">
+                      <span className="text-orange-700 dark:text-orange-300 font-bold">
                         {(selectedCeVotos).toLocaleString('pt-BR')}
                       </span>
                     </div>
@@ -1400,7 +1400,7 @@ export default function MapaPage() {
                         </span>
                       </div>
                     )}
-                    <p className="text-slate-600 text-[10px] text-center pt-1">Bairro — Fortaleza</p>
+                    <p className="text-slate-500 dark:text-slate-600 text-[10px] text-center pt-1">Bairro — Fortaleza</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -1411,18 +1411,18 @@ export default function MapaPage() {
           <AnimatePresence>
             {selectedBairro && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <Card className="border-green-500/30">
+                <Card className="border-green-300 dark:border-green-500/30">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center justify-between text-base">
                       <span className="flex items-center gap-2">
-                        <HomeIcon className="h-4 w-4 text-green-400" />
-                        <span className="text-green-300 truncate max-w-[150px]" title={selectedBairro}>
+                        <HomeIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        <span className="text-green-700 dark:text-green-300 truncate max-w-[150px]" title={selectedBairro}>
                           {selectedBairro}
                         </span>
                       </span>
                       <button
                         onClick={() => setSelectedBairro(null)}
-                        className="text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors flex-shrink-0"
+                        className="text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -1430,9 +1430,9 @@ export default function MapaPage() {
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {/* Total de votos do bairro */}
-                    <div className="flex items-center justify-between p-2 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-500/10 rounded-lg border border-green-200 dark:border-green-500/20">
                       <span className="text-slate-600 dark:text-slate-400 text-xs">Total no bairro</span>
-                      <span className="text-green-400 font-bold">
+                      <span className="text-green-700 dark:text-green-400 font-bold">
                         {selectedBairroVotos.toLocaleString('pt-BR')} votos
                       </span>
                     </div>
