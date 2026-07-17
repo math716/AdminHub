@@ -29,7 +29,7 @@ const UF_IBGE_PREFIX: Record<string, string> = {
 function normalizarNomeParlamentar(nome: string, nomeUrna?: string | null): string {
   if (nomeUrna) return nomeUrna;
   return nome.replace(/\s*\(.*\)\s*$/, '').trim()
-    .toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+    .toLowerCase().replace(/(^|[\s-])(\S)/g, (_, sep, c) => sep + c.toUpperCase());
 }
 
 export async function GET(request: NextRequest) {

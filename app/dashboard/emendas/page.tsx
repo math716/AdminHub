@@ -232,8 +232,10 @@ export default function EmendasPage() {
   const [parlamentarQuery, setParlamentarQuery] = useState('');
   const [parlamentarResults, setParlamentarResults] = useState<PortalParlamentar[]>([]);
   const [searchingParlamentar, setSearchingParlamentar] = useState(false);
+  const [parlamentarDropOpen, setParlamentarDropOpen] = useState(false);
   const [municipioQuery, setMunicipioQuery] = useState('');
   const [municipioResults, setMunicipioResults] = useState<Array<{ codigoIbge: string; nome: string }>>([]);
+  const [municipioDropOpen, setMunicipioDropOpen] = useState(false);
   const [selectedParlamentar, setSelectedParlamentar] = useState<PortalParlamentar | null>(null);
   const [parlamentarEmendas, setParlamentarEmendas] = useState<PortalEmenda[]>([]);
   const [parlamentarPix, setParlamentarPix] = useState<TransferenciaPix[]>([]);
@@ -1064,7 +1066,7 @@ export default function EmendasPage() {
               {(['TODAS', 'FEDERAL', 'ESTADUAL'] as const).map((e) => (
                 <button
                   key={e}
-                  onClick={() => setEsfera(e)}
+                  onClick={() => { setEsfera(e); setParlamentarDropOpen(false); setMunicipioDropOpen(false); }}
                   className="px-3 py-2.5 text-xs font-medium transition-colors"
                   style={esfera === e
                     ? { background: 'var(--brand-cobalt-soft)', color: 'var(--brand-cobalt-text)' }
@@ -1079,7 +1081,8 @@ export default function EmendasPage() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-500" />
               <input
                 value={parlamentarQuery}
-                onChange={(e) => setParlamentarQuery(e.target.value)}
+                onChange={(e) => { setParlamentarQuery(e.target.value); setParlamentarDropOpen(true); }}
+                onFocus={() => { if (parlamentarQuery.length >= 2) setParlamentarDropOpen(true); }}
                 placeholder="Pesquisar parlamentar…"
                 className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm text-[color:var(--text-primary)] placeholder:text-[color:var(--text-tertiary)] outline-none transition-colors"
                 style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}
@@ -1116,7 +1119,8 @@ export default function EmendasPage() {
               <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-500" />
               <input
                 value={municipioQuery}
-                onChange={(e) => setMunicipioQuery(e.target.value)}
+                onChange={(e) => { setMunicipioQuery(e.target.value); setMunicipioDropOpen(true); }}
+                onFocus={() => { if (municipioQuery.length >= 2) setMunicipioDropOpen(true); }}
                 placeholder="Município…"
                 className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm text-[color:var(--text-primary)] placeholder:text-[color:var(--text-tertiary)] outline-none transition-colors"
                 style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}
@@ -1150,7 +1154,7 @@ export default function EmendasPage() {
               ))}
             </div>
           )}
-          {parlamentarQuery.length >= 2 && parlamentarResults.length > 0 && (
+          {parlamentarDropOpen && parlamentarQuery.length >= 2 && parlamentarResults.length > 0 && (
             <div
               className="absolute top-full left-0 right-0 mt-1 z-[500] rounded-xl overflow-hidden"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-raised)' }}
@@ -1158,7 +1162,7 @@ export default function EmendasPage() {
               {parlamentarResults.map((p) => (
                 <button
                   key={p.idPortal}
-                  onClick={() => { setSelectedParlamentar(p); setParlamentarQuery(''); setParlamentarResults([]); }}
+                  onClick={() => { setSelectedParlamentar(p); setParlamentarQuery(''); setParlamentarResults([]); setParlamentarDropOpen(false); }}
                   className="w-full text-left px-4 py-2.5 hover:bg-[var(--tint-06)] transition-colors border-b border-[var(--tint-06)] last:border-0"
                 >
                   <p className="text-sm text-[color:var(--text-primary)] font-medium">{p.nome}</p>
@@ -1167,7 +1171,7 @@ export default function EmendasPage() {
               ))}
             </div>
           )}
-          {municipioQuery.length >= 2 && municipioResults.length > 0 && (
+          {municipioDropOpen && municipioQuery.length >= 2 && municipioResults.length > 0 && (
             <div
               className="absolute top-full left-0 right-0 mt-1 z-[500] rounded-xl overflow-hidden"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-raised)' }}
@@ -1175,7 +1179,7 @@ export default function EmendasPage() {
               {municipioResults.map((m) => (
                 <button
                   key={m.codigoIbge}
-                  onClick={() => { handleMunicipioClick(m.codigoIbge, m.nome); setMunicipioQuery(''); setMunicipioResults([]); }}
+                  onClick={() => { handleMunicipioClick(m.codigoIbge, m.nome); setMunicipioQuery(''); setMunicipioResults([]); setMunicipioDropOpen(false); }}
                   className="w-full text-left px-4 py-2.5 hover:bg-[var(--tint-06)] transition-colors border-b border-[var(--tint-06)] last:border-0"
                 >
                   <p className="text-sm text-[color:var(--text-primary)] font-medium">{m.nome}</p>
