@@ -1156,7 +1156,7 @@ export default function EmendasPage() {
           )}
           {parlamentarDropOpen && parlamentarQuery.length >= 2 && parlamentarResults.length > 0 && (
             <div
-              className="absolute top-full left-0 right-0 mt-1 z-[500] rounded-xl overflow-hidden"
+              className="absolute top-full left-0 right-0 mt-1 z-[600] rounded-xl overflow-hidden"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-raised)' }}
             >
               {parlamentarResults.map((p) => (
@@ -1173,7 +1173,7 @@ export default function EmendasPage() {
           )}
           {municipioDropOpen && municipioQuery.length >= 2 && municipioResults.length > 0 && (
             <div
-              className="absolute top-full left-0 right-0 mt-1 z-[500] rounded-xl overflow-hidden"
+              className="absolute top-full left-0 right-0 mt-1 z-[600] rounded-xl overflow-hidden"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-raised)' }}
             >
               {municipioResults.map((m) => (
