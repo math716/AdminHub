@@ -48,13 +48,15 @@ function normalizeCnpj(v?: string | null): string | null {
   return d.length === 14 ? d : null;
 }
 
-function inferCargo(tipo?: string | null, cargoStr?: string | null): ParlamentarCargo {
+function inferCargo(tipo?: string | null, cargoStr?: string | null, esfera?: 'FEDERAL' | 'ESTADUAL'): ParlamentarCargo {
   const s = ((cargoStr ?? tipo) ?? '').toUpperCase();
-  if (s.includes('SENADOR'))               return 'SENADOR';
-  if (s.includes('DEP') && s.includes('ESTADUAL')) return 'DEPUTADO_ESTADUAL';
-  if (s.includes('ESTADUAL'))              return 'DEPUTADO_ESTADUAL';
-  if (s.includes('VEREADOR'))              return 'VEREADOR';
-  return 'DEPUTADO_FEDERAL';
+  if (s.includes('SENADOR'))                           return 'SENADOR';
+  if (s.includes('DEP') && s.includes('ESTADUAL'))    return 'DEPUTADO_ESTADUAL';
+  if (s.includes('ESTADUAL'))                          return 'DEPUTADO_ESTADUAL';
+  if (s.includes('DEP') && s.includes('FEDERAL'))     return 'DEPUTADO_FEDERAL';
+  if (s.includes('FEDERAL'))                           return 'DEPUTADO_FEDERAL';
+  if (s.includes('VEREADOR'))                          return 'VEREADOR';
+  return esfera === 'ESTADUAL' ? 'DEPUTADO_ESTADUAL' : 'DEPUTADO_FEDERAL';
 }
 
 function toFloat(v: unknown): number {
@@ -106,7 +108,7 @@ export async function POST(req: NextRequest) {
       const ano = row.anoEmenda || anoGlobal;
       const uf  = (row.uf || ufGlobal) ?? null;
       const cpf = normalizeCpf(row.cpfAutor);
-      const cargo = inferCargo(row.tipo, row.cargo);
+      const cargo = inferCargo(row.tipo, row.cargo, esfera);
       const area = classificarArea(null, row.funcao) as EmendaArea;
 
       // ── Upsert Parlamentar ───────────────────────────────────
