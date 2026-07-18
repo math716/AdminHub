@@ -67,135 +67,125 @@ export async function GET(request: NextRequest) {
 
 // Separa o cálculo da resposta HTTP para permitir cache via unstable_cache.
 // esferaKey é string pois unstable_cache serializa os args como chave de cache.
+//
+// Estratégia: 4 queries paralelas com GROUP BY no banco em vez de um findMany
+// de 50k linhas → JS. Cada query usa o índice (uf, ano, esfera) e retorna
+// apenas os agregados necessários.
 async function computeResumoBanco(uf: string, ano: number, esferaKey: string) {
   const esfera = esferaKey === 'FEDERAL' || esferaKey === 'ESTADUAL' ? esferaKey as 'FEDERAL' | 'ESTADUAL' : null;
   const where = esfera ? { uf, ano, esfera } : { uf, ano };
-  const emendas = await prisma.emendaParlamentar.findMany({
-    where,
-    select: {
-      id: true,
-      area: true,
-      valorEmpenhado: true,
-      valorPago: true,
-      codigoIbge: true,
-      municipioNome: true,
-      parlamentar: {
-        select: { id: true, cpf: true, idPortal: true, nome: true, nomeUrna: true, cargo: true, partido: true },
-      },
-    },
-  });
 
-  // Agrega valores de EmendaDocumento por emenda+fase — mais preciso que o scalar,
-  // que pode estar desatualizado (lag do portal federal).
-  const emendaIds = emendas.map((e) => e.id);
-  const docAggs = emendaIds.length > 0
-    ? await prisma.emendaDocumento.groupBy({
-        by: ['emendaId', 'fase'],
-        where: { emendaId: { in: emendaIds } },
-        _sum: { valor: true },
+  const [totAgg, porAreaRaw, porMunicipioRaw, porParlamentarRaw] = await Promise.all([
+    // 1. Totais globais
+    prisma.emendaParlamentar.aggregate({
+      where,
+      _sum: { valorEmpenhado: true, valorPago: true },
+      _count: { _all: true },
+    }),
+    // 2. Por área
+    prisma.emendaParlamentar.groupBy({
+      by: ['area'],
+      where,
+      _sum: { valorEmpenhado: true },
+    }),
+    // 3. Por município (apenas com codigoIbge preenchido)
+    prisma.emendaParlamentar.groupBy({
+      by: ['codigoIbge', 'municipioNome'],
+      where: { ...where, codigoIbge: { not: null } },
+      _sum: { valorEmpenhado: true },
+      _count: { _all: true },
+    }),
+    // 4. Por parlamentarId — depois resolve detalhes em batch
+    prisma.emendaParlamentar.groupBy({
+      by: ['parlamentarId'],
+      where: { ...where, parlamentarId: { not: null } },
+      _sum: { valorEmpenhado: true },
+      _count: { _all: true },
+    }),
+  ]);
+
+  // Resolver detalhes dos parlamentares em uma única query por ID
+  const parlamentarIds = porParlamentarRaw
+    .map(p => p.parlamentarId)
+    .filter((id): id is string => id !== null);
+  const parlamentaresDetalhes = parlamentarIds.length > 0
+    ? await prisma.parlamentar.findMany({
+        where: { id: { in: parlamentarIds } },
+        select: { id: true, cpf: true, idPortal: true, nome: true, nomeUrna: true, cargo: true, partido: true },
       })
     : [];
+  const parlamentaresMap = new Map(parlamentaresDetalhes.map(p => [p.id, p]));
 
-  const docValMap = new Map<string, { empenhado: number; pago: number }>();
-  for (const d of docAggs) {
-    const cur = docValMap.get(d.emendaId) ?? { empenhado: 0, pago: 0 };
-    const fase = d.fase.toLowerCase();
-    if (fase.includes('empenho')) cur.empenhado += d._sum.valor ?? 0;
-    else if (fase.includes('pagamento')) cur.pago += d._sum.valor ?? 0;
-    docValMap.set(d.emendaId, cur);
+  const totalEmpenhado = totAgg._sum.valorEmpenhado ?? 0;
+  const totalPago      = totAgg._sum.valorPago      ?? 0;
+  const totalEmendas   = totAgg._count._all;
+
+  // Municípios — totalMunicipalizado inclui tudo com codigoIbge;
+  // valorPorMunicipio filtra pelo prefixo IBGE do estado
+  const ibgePrefix = UF_IBGE_PREFIX[uf];
+  let totalMunicipalizado = 0;
+  const porMunicipioMap = new Map<string, { codigoIbge: string; nome: string; total: number; qtd: number }>();
+
+  for (const m of porMunicipioRaw) {
+    const ibge = m.codigoIbge!;
+    const val  = m._sum.valorEmpenhado ?? 0;
+    totalMunicipalizado += val;
+    if (!ibgePrefix || ibge.startsWith(ibgePrefix)) {
+      const cur = porMunicipioMap.get(ibge) ?? { codigoIbge: ibge, nome: m.municipioNome ?? ibge, total: 0, qtd: 0 };
+      cur.total += val;
+      cur.qtd   += m._count._all;
+      porMunicipioMap.set(ibge, cur);
+    }
   }
 
-  let totalEmpenhado      = 0;
-  let totalPago           = 0;
-  let totalMunicipalizado = 0;
-
-  const porMunicipio = new Map<string, { codigoIbge: string; nome: string; total: number; qtd: number }>();
-  const porArea = new Map<string, number>();
-  const porParlamentar = new Map<string, {
-    cpf: string | null; idPortal: string; nome: string; nomeUrna: string | null; cargo: string; partido: string | null; total: number; qtd: number;
-  }>();
-
-  emendas.forEach((e) => {
-    const docVals = docValMap.get(e.id);
-    const valor = docVals ? docVals.empenhado : (e.valorEmpenhado ?? 0);
-    totalEmpenhado += valor;
-    totalPago += docVals ? docVals.pago : (e.valorPago ?? 0);
-
-    if (e.codigoIbge) {
-      totalMunicipalizado += valor;
-      const ibgePrefix = UF_IBGE_PREFIX[uf];
-      if (!ibgePrefix || e.codigoIbge.startsWith(ibgePrefix)) {
-        const cur = porMunicipio.get(e.codigoIbge) ?? {
-          codigoIbge: e.codigoIbge,
-          nome: e.municipioNome ?? e.codigoIbge,
-          total: 0, qtd: 0,
-        };
-        cur.total += valor;
-        cur.qtd++;
-        porMunicipio.set(e.codigoIbge, cur);
-      }
-    }
-
-    porArea.set(e.area, (porArea.get(e.area) ?? 0) + valor);
-
-    if (e.parlamentar) {
-      const pk = e.parlamentar.cpf ?? e.parlamentar.idPortal ?? e.parlamentar.nome;
-      const curP = porParlamentar.get(pk) ?? {
-        cpf:      e.parlamentar.cpf,
-        idPortal: e.parlamentar.idPortal ?? e.parlamentar.nome,
-        nome:     normalizarNomeParlamentar(e.parlamentar.nome, e.parlamentar.nomeUrna),
-        nomeUrna: e.parlamentar.nomeUrna ?? null,
-        cargo:    e.parlamentar.cargo,
-        partido:  e.parlamentar.partido,
-        total:    0, qtd: 0,
-      };
-      curP.total += valor;
-      curP.qtd++;
-      porParlamentar.set(pk, curP);
-    }
-  });
-
-  const topMunicipios = Array.from(porMunicipio.values())
+  const topMunicipios = Array.from(porMunicipioMap.values())
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
 
-  const valorPorMunicipio: Record<string, number> = {};
+  const valorPorMunicipio: Record<string, number>     = {};
   const valorPorMunicipioNome: Record<string, number> = {};
-  porMunicipio.forEach((v) => {
+  porMunicipioMap.forEach(v => {
     valorPorMunicipio[v.codigoIbge] = v.total;
-    if (v.nome && v.nome !== v.codigoIbge) {
-      valorPorMunicipioNome[v.nome.toUpperCase()] = v.total;
-    }
+    if (v.nome && v.nome !== v.codigoIbge) valorPorMunicipioNome[v.nome.toUpperCase()] = v.total;
   });
 
-  const areas = Array.from(porArea.entries())
-    .map(([area, total]) => ({ area, total }))
-    .sort((a, b) => b.total - a.total);
-
-  const CARGOS_FEDERAIS = new Set(['DEPUTADO_FEDERAL', 'SENADOR']);
-  const parlamentares = Array.from(porParlamentar.values())
-    .filter(p => esfera !== 'ESTADUAL' || !CARGOS_FEDERAIS.has(p.cargo))
-    .sort((a, b) => b.total - a.total);
-
-  const municipiosLista = Array.from(porMunicipio.values())
+  const municipiosLista = Array.from(porMunicipioMap.values())
     .sort((a, b) => b.total - a.total)
     .map(v => ({ codigoIbge: v.codigoIbge, nome: v.nome }));
 
+  const areas = porAreaRaw
+    .map(a => ({ area: a.area, total: a._sum.valorEmpenhado ?? 0 }))
+    .sort((a, b) => b.total - a.total);
+
+  const CARGOS_FEDERAIS = new Set(['DEPUTADO_FEDERAL', 'SENADOR']);
+  const parlamentares = porParlamentarRaw
+    .map(p => {
+      if (!p.parlamentarId) return null;
+      const parl = parlamentaresMap.get(p.parlamentarId);
+      if (!parl) return null;
+      return {
+        cpf:      parl.cpf,
+        idPortal: parl.idPortal ?? parl.nome,
+        nome:     normalizarNomeParlamentar(parl.nome, parl.nomeUrna),
+        nomeUrna: parl.nomeUrna ?? null,
+        cargo:    parl.cargo,
+        partido:  parl.partido,
+        total:    p._sum.valorEmpenhado ?? 0,
+        qtd:      p._count._all,
+      };
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null)
+    .filter(p => esfera !== 'ESTADUAL' || !CARGOS_FEDERAIS.has(p.cargo))
+    .sort((a, b) => b.total - a.total);
+
   return {
-    uf,
-    ano,
+    uf, ano,
     esfera: esfera ?? 'TODAS',
-    totalEmpenhado,
-    totalPago,
-    totalMunicipalizado,
+    totalEmpenhado, totalPago, totalMunicipalizado,
     totalEstadual: totalEmpenhado - totalMunicipalizado,
-    totalEmendas: emendas.length,
-    topMunicipios,
-    valorPorMunicipio,
-    valorPorMunicipioNome,
-    municipiosLista,
-    areas,
-    parlamentares,
+    totalEmendas,
+    topMunicipios, valorPorMunicipio, valorPorMunicipioNome, municipiosLista,
+    areas, parlamentares,
     mock: false,
     fonte: 'banco' as const,
   };
