@@ -303,7 +303,7 @@ export default function EmendasPage() {
       .catch((e: any) => {
         if (e?.name !== 'AbortError') console.error('Erro ao buscar resumo:', e);
       })
-      .finally(() => setLoadingResumo(false));
+      .finally(() => { if (!ctrl.signal.aborted) setLoadingResumo(false); });
     return () => ctrl.abort();
   }, [view, selectedUf, ano, esfera, fetchResumo]);
 
