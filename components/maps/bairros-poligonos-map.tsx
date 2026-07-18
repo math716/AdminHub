@@ -35,6 +35,54 @@ function fmtVotos(v: number): string {
   return String(v);
 }
 
+// Centroide geométrico de um anel de coordenadas GeoJSON [lng, lat].
+// Usa a fórmula de Shoelace — garante que o ponto seja o baricentro
+// da área, não o centro do bounding box (que pode cair fora de polígonos côncavos).
+function ringCentroid(ring: [number, number][]): [number, number] {
+  let area = 0, cx = 0, cy = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const cross = ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1];
+    area += cross;
+    cx += (ring[i][0] + ring[j][0]) * cross;
+    cy += (ring[i][1] + ring[j][1]) * cross;
+  }
+  area /= 2;
+  return [cx / (6 * area), cy / (6 * area)];
+}
+
+// Retorna o centroide do polígono/multipolígono mais largo (em GeoJSON).
+// Para MultiPolygon, escolhe o anel exterior de maior área absoluta.
+// Retorna { lat, lng } já no formato Leaflet.
+function featureCentroid(geometry: { type: string; coordinates: any }): { lat: number; lng: number } | null {
+  try {
+    let rings: [number, number][][];
+    if (geometry.type === 'Polygon') {
+      rings = [geometry.coordinates[0]];
+    } else if (geometry.type === 'MultiPolygon') {
+      rings = (geometry.coordinates as [number, number][][][]).map(p => p[0]);
+    } else {
+      return null;
+    }
+
+    // Escolhe o anel com maior área absoluta
+    let maxArea = 0;
+    let bestRing = rings[0];
+    for (const ring of rings) {
+      let a = 0;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        a += ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1];
+      }
+      if (Math.abs(a) > maxArea) { maxArea = Math.abs(a); bestRing = ring; }
+    }
+
+    const [lng, lat] = ringCentroid(bestRing);
+    if (!isFinite(lat) || !isFinite(lng)) return null;
+    return { lat, lng };
+  } catch {
+    return null;
+  }
+}
+
 function BairrosPoligonosMapComponent({
   municipio,
   uf,
@@ -140,9 +188,9 @@ function BairrosPoligonosMapComponent({
       const votos = getEffectiveVotes(nome);
       if (!votos) return;
       try {
-        const bounds = layer.getBounds?.();
-        if (!bounds?.isValid()) return;
-        const center = bounds.getCenter();
+        const geom = layer.feature?.geometry;
+        const center = geom ? featureCentroid(geom) : null;
+        if (!center) return;
         const label = fmtVotos(votos);
         const sz = label.length <= 2 ? 28 : label.length <= 3 ? 32 : label.length <= 4 ? 36 : 40;
         const fs = sz <= 28 ? 9 : 10;

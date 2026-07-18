@@ -45,13 +45,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Buscar informações dos locais de votação para cada zona
+    // Buscar informações dos locais de votação — query única para todos os municípios
+    const municipiosNomes = Object.keys(votosPorMunicipio);
     const zonasInfo: Record<string, Array<{ zona: number; locais: any[] }>> = {};
-    
-    for (const municipioNome of Object.keys(votosPorMunicipio)) {
-      const locaisVotacao = await prisma.localVotacao.findMany({
+
+    if (municipiosNomes.length > 0) {
+      const todosLocais = await prisma.localVotacao.findMany({
         where: {
-          nomeMunicipio: { equals: municipioNome, mode: 'insensitive' }
+          OR: municipiosNomes.map(nome => ({
+            nomeMunicipio: { equals: nome, mode: 'insensitive' as const },
+          })),
         },
         select: {
           zona: true,
@@ -59,23 +62,26 @@ export async function GET(request: NextRequest) {
           endereco: true,
           bairro: true,
           latitude: true,
-          longitude: true
-        }
+          longitude: true,
+          nomeMunicipio: true,
+        },
       });
 
-      // Agrupar locais por zona
-      const locaisPorZona: Record<number, any[]> = {};
-      for (const local of locaisVotacao) {
-        if (!locaisPorZona[local.zona]) {
-          locaisPorZona[local.zona] = [];
+      // Agrupar por município e zona
+      for (const municipioNome of municipiosNomes) {
+        const locaisMun = todosLocais.filter(
+          l => l.nomeMunicipio.toLowerCase() === municipioNome.toLowerCase()
+        );
+        const locaisPorZona: Record<number, any[]> = {};
+        for (const local of locaisMun) {
+          if (!locaisPorZona[local.zona]) locaisPorZona[local.zona] = [];
+          locaisPorZona[local.zona].push(local);
         }
-        locaisPorZona[local.zona].push(local);
+        zonasInfo[municipioNome] = Object.entries(locaisPorZona).map(([zona, locais]) => ({
+          zona: parseInt(zona),
+          locais,
+        }));
       }
-
-      zonasInfo[municipioNome] = Object.entries(locaisPorZona).map(([zona, locais]) => ({
-        zona: parseInt(zona),
-        locais
-      }));
     }
 
     return NextResponse.json({
