@@ -1,8 +1,8 @@
-export const dynamic = 'force-dynamic';
-// Quando lê do banco, é < 2s. Mantemos 60s pelo fallback ao Portal.
+export const dynamic = 'force-dynamic'; // auth usa cookies — rota dinâmica; cache fica na camada de dados
 export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
@@ -64,9 +64,11 @@ export async function GET(request: NextRequest) {
 // ─────────────────────────────────────────────────────────────────────────
 // Resumo a partir do banco (instantâneo)
 // ─────────────────────────────────────────────────────────────────────────
-async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTADUAL' | null = null) {
-  // Carregamos os campos mínimos pra agregar em memória.
-  // 5k-50k registros por UF/ano é trivial pro Postgres.
+
+// Separa o cálculo da resposta HTTP para permitir cache via unstable_cache.
+// esferaKey é string pois unstable_cache serializa os args como chave de cache.
+async function computeResumoBanco(uf: string, ano: number, esferaKey: string) {
+  const esfera = esferaKey === 'FEDERAL' || esferaKey === 'ESTADUAL' ? esferaKey as 'FEDERAL' | 'ESTADUAL' : null;
   const where = esfera ? { uf, ano, esfera } : { uf, ano };
   const emendas = await prisma.emendaParlamentar.findMany({
     where,
@@ -84,8 +86,7 @@ async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTAD
   });
 
   // Agrega valores de EmendaDocumento por emenda+fase — mais preciso que o scalar,
-  // que pode estar desatualizado (lag do portal federal). State emendas sem documentos
-  // ficam fora do map e usam o scalar normalmente.
+  // que pode estar desatualizado (lag do portal federal).
   const emendaIds = emendas.map((e) => e.id);
   const docAggs = emendaIds.length > 0
     ? await prisma.emendaDocumento.groupBy({
@@ -122,7 +123,6 @@ async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTAD
 
     if (e.codigoIbge) {
       totalMunicipalizado += valor;
-      // Só acumula no mapa se o município realmente pertence ao estado consultado
       const ibgePrefix = UF_IBGE_PREFIX[uf];
       if (!ibgePrefix || e.codigoIbge.startsWith(ibgePrefix)) {
         const cur = porMunicipio.get(e.codigoIbge) ?? {
@@ -172,13 +172,6 @@ async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTAD
     .map(([area, total]) => ({ area, total }))
     .sort((a, b) => b.total - a.total);
 
-  // Retorna TODOS os parlamentares que tiveram emendas no estado no ano.
-  // A UI usa essa lista pra (1) autocompletar a busca por nome — se
-  // limitarmos aqui, parlamentares de "cauda longa" ficam invisíveis na
-  // pesquisa. O TOP 5 e similares são fatiados na própria UI.
-  // Quando esfera=ESTADUAL, exclui Deputados Federais e Senadores: emendas
-  // estaduais nunca são de parlamentares federais — se aparecem, são dados
-  // incorretos no banco (import com cargo errado).
   const CARGOS_FEDERAIS = new Set(['DEPUTADO_FEDERAL', 'SENADOR']);
   const parlamentares = Array.from(porParlamentar.values())
     .filter(p => esfera !== 'ESTADUAL' || !CARGOS_FEDERAIS.has(p.cargo))
@@ -188,7 +181,7 @@ async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTAD
     .sort((a, b) => b.total - a.total)
     .map(v => ({ codigoIbge: v.codigoIbge, nome: v.nome }));
 
-  return NextResponse.json({
+  return {
     uf,
     ano,
     esfera: esfera ?? 'TODAS',
@@ -205,7 +198,20 @@ async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTAD
     parlamentares,
     mock: false,
     fonte: 'banco' as const,
-  });
+  };
+}
+
+// Cache de 5 min por (uf, ano, esfera) — elimina o custo de re-processar
+// 50k registros a cada requisição para o mesmo estado/ano/filtro.
+const getCachedResumoBanco = unstable_cache(
+  computeResumoBanco,
+  ['resumo-banco'],
+  { revalidate: 300 },
+);
+
+async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTADUAL' | null = null) {
+  const data = await getCachedResumoBanco(uf, ano, esfera ?? 'TODAS');
+  return NextResponse.json(data);
 }
 
 // ─────────────────────────────────────────────────────────────────────────

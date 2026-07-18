@@ -652,10 +652,12 @@ model EmendaParlamentar {
   @@index([ano])
   @@index([codigoIbge])
   @@index([codigoIbge, ano])
+  @@index([codigoIbge, ano, esfera])
   @@index([parlamentarId])
   @@index([parlamentarId, ano])
   @@index([area])
   @@index([uf, ano])
+  @@index([uf, ano, esfera])
   // Impede que a mesma emenda (mesmo parlamentar + ano + numero) seja importada
   // duas vezes com idPortal diferente — root cause das duplicatas visuais.
   @@unique([parlamentarId, ano, numero])

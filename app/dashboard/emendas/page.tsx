@@ -270,14 +270,15 @@ export default function EmendasPage() {
     return res.json();
   }, []);
 
+  // Fetch primário — ano atual, controla o overlay de carregamento do mapa.
   useEffect(() => {
     if (view !== 'estado' || !selectedUf) return;
     const ctrl = new AbortController();
     setLoadingResumo(true);
-    Promise.all([fetchResumo(selectedUf, ano, ctrl.signal, esfera), fetchResumo(selectedUf, ano - 1, ctrl.signal)])
-      .then(([atual, anterior]) => {
+    fetchResumo(selectedUf, ano, ctrl.signal, esfera)
+      .then((atual) => {
+        if (ctrl.signal.aborted) return;
         setResumo(atual);
-        setResumoAnterior(anterior);
         // Auto-seleciona favorito pendente (navegação entre estados)
         const pf = pendingFavoritoRef.current;
         if (pf && pf.uf === selectedUf && pf.ano === ano && atual?.parlamentares) {
@@ -306,6 +307,17 @@ export default function EmendasPage() {
       .finally(() => { if (!ctrl.signal.aborted) setLoadingResumo(false); });
     return () => ctrl.abort();
   }, [view, selectedUf, ano, esfera, fetchResumo]);
+
+  // Fetch secundário — ano anterior para o comparativo por área.
+  // Roda em background sem bloquear o overlay do mapa.
+  useEffect(() => {
+    if (view !== 'estado' || !selectedUf) return;
+    const ctrl = new AbortController();
+    fetchResumo(selectedUf, ano - 1, ctrl.signal)
+      .then((anterior) => { if (!ctrl.signal.aborted) setResumoAnterior(anterior); })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [view, selectedUf, ano, fetchResumo]);
 
   // ----- Stats + emendas do município selecionado -----
   useEffect(() => {
