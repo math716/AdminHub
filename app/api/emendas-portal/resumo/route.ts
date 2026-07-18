@@ -176,7 +176,12 @@ async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTAD
   // A UI usa essa lista pra (1) autocompletar a busca por nome — se
   // limitarmos aqui, parlamentares de "cauda longa" ficam invisíveis na
   // pesquisa. O TOP 5 e similares são fatiados na própria UI.
+  // Quando esfera=ESTADUAL, exclui Deputados Federais e Senadores: emendas
+  // estaduais nunca são de parlamentares federais — se aparecem, são dados
+  // incorretos no banco (import com cargo errado).
+  const CARGOS_FEDERAIS = new Set(['DEPUTADO_FEDERAL', 'SENADOR']);
   const parlamentares = Array.from(porParlamentar.values())
+    .filter(p => esfera !== 'ESTADUAL' || !CARGOS_FEDERAIS.has(p.cargo))
     .sort((a, b) => b.total - a.total);
 
   const municipiosLista = Array.from(porMunicipio.values())
