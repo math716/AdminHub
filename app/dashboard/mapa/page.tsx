@@ -277,6 +277,9 @@ export default function MapaPage() {
   const [candidatosHomonimos, setCandidatosHomonimos] = useState<CandidatoHomonimo[]>([]);
   const [mensagemHomonimos, setMensagemHomonimos] = useState('');
 
+  // Busca rápida de município no painel lateral (view === 'estado')
+  const [municSearch, setMunicSearch] = useState('');
+
   // Zonas eleitorais do município selecionado
   const [locaisPorZona, setLocaisPorZona] = useState<any[]>([]);
   const [loadingZonas, setLoadingZonas] = useState(false);
@@ -519,6 +522,24 @@ export default function MapaPage() {
       s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
     return norm(selectedMunicipio.nome) === 'FORTALEZA';
   }, [selectedUf, selectedMunicipio]);
+
+  // Lista de municípios ordenada por votos — usada na busca do painel lateral
+  const municipiosOrdenados = useMemo(() => {
+    if (!electoralData?.votosPorNomeMunicipio) return [];
+    return Object.entries(electoralData.votosPorNomeMunicipio)
+      .sort(([, a], [, b]) => b - a)
+      .map(([nome, votos]) => ({ nome, votos }));
+  }, [electoralData?.votosPorNomeMunicipio]);
+
+  const municipiosFiltrados = useMemo(() => {
+    const normalize = (s: string) =>
+      s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+    const q = normalize(municSearch.trim());
+    const list = q
+      ? municipiosOrdenados.filter(({ nome }) => normalize(nome).includes(q))
+      : municipiosOrdenados;
+    return list.slice(0, 8);
+  }, [municipiosOrdenados, municSearch]);
 
   // Computa votos por bairro de Fortaleza usando CE_ZONA_BAIRRO_MAP
   useEffect(() => {
@@ -765,6 +786,7 @@ export default function MapaPage() {
 
   const handleMunicipioClick = async (codigo: string, nome: string) => {
     if (!electoralData) return;
+    setMunicSearch('');
     setSelectedMunicipio({ codigo, nome });
     setSelectedBairro(null);
     setBairrosLoaded(false);
@@ -784,6 +806,7 @@ export default function MapaPage() {
 
   const handleSearch = async () => {
     if (!candidateName?.trim?.()) { setSearchError('Digite o nome do candidato'); return; }
+    setMunicSearch('');
     setSearching(true);
     setSearchError('');
     setCandidatosHomonimos([]);
@@ -1231,6 +1254,68 @@ export default function MapaPage() {
                     )}
                   </CardContent>
                 </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Busca rápida de município (view estado com dados carregados) */}
+          <AnimatePresence>
+            {electoralData && view === 'estado' && municipiosOrdenados.length > 1 && (
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
+                <div
+                  className="rounded-xl p-3 space-y-2"
+                  style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.15)' }}
+                >
+                  <div className="flex items-center gap-2 pb-1.5" style={{ borderBottom: '1px solid var(--tint-06)' }}>
+                    <div className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.25)' }}>
+                      <MapPin className="h-3 w-3 text-[#4a9ede]" />
+                    </div>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-[color:var(--text-primary)]">
+                      Ir para município
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none" style={{ color: '#4a7a9b' }} />
+                    <Input
+                      placeholder="Buscar município..."
+                      value={municSearch}
+                      onChange={(e) => setMunicSearch(e.target.value)}
+                      className="pl-8 text-sm"
+                    />
+                    {municSearch && (
+                      <button
+                        onClick={() => setMunicSearch('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                        style={{ color: '#4a7a9b' }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-0.5 max-h-44 overflow-y-auto scrollbar-dark">
+                    {municipiosFiltrados.length === 0 ? (
+                      <p className="text-xs text-center py-2" style={{ color: '#4a7a9b' }}>Nenhum município encontrado</p>
+                    ) : municipiosFiltrados.map(({ nome, votos }) => {
+                      const nomeExibido = nome.toLowerCase().replace(/(^|\s)(\S)/g, (_: string, sep: string, c: string) => sep + c.toUpperCase());
+                      return (
+                        <button
+                          key={nome}
+                          onClick={() => { setMunicSearch(''); handleMunicipioClick('', nomeExibido); }}
+                          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors text-left"
+                          style={{ color: 'var(--text-primary)' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(74,158,222,0.08)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+                        >
+                          <span className="text-xs font-medium truncate">{nomeExibido}</span>
+                          <span className="text-xs font-semibold flex-shrink-0 ml-2" style={{ color: '#4a9ede' }}>
+                            {votos.toLocaleString('pt-BR')}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
