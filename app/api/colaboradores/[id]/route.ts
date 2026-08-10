@@ -9,8 +9,7 @@ const SELECT = {
   id: true, nome: true, telefone: true, email: true,
   endereco: true, lat: true, lng: true, funcao: true,
   observacao: true, status: true, padrinhoId: true,
-  padrinho: { select: { id: true, nome: true } },
-  apadrinhados: { select: { id: true, nome: true } },
+  padrinho: { select: { id: true, nome: true, cargo: true, partido: true } },
   regioes: { select: { id: true, regiaoNome: true, uf: true, tipo: true } },
   createdAt: true,
 } as const;

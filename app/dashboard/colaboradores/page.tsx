@@ -35,12 +35,19 @@ interface Colaborador {
   lng: number | null;
   funcao: string | null;
   padrinhoId: string | null;
-  padrinho: { id: string; nome: string } | null;
-  apadrinhados: { id: string; nome: string }[];
+  padrinho: { id: string; nome: string; cargo: string; partido: string } | null;
   observacao: string | null;
   status: 'ATIVO' | 'INATIVO';
   regioes: ColaboradorRegiao[];
   createdAt: string;
+}
+
+interface Padrinho {
+  id: string;
+  nome: string;
+  cargo: string;
+  partido: string;
+  _count: { colaboradores: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -69,6 +76,28 @@ const DF_ZONA_COORDS: Record<number, [number, number]> = {
   19: [-15.7672, -47.7540],  // Paranoá / Itapoã
   20: [-15.8400, -48.0272],  // Águas Claras / Vicente Pires
   21: [-15.7494, -47.9300],  // Estrutural / Varjão
+};
+
+const DF_ZONA_NOMES: Record<number, string> = {
+  1:  'Plano Piloto / Asa Sul',
+  2:  'Asa Norte / Lago Norte',
+  3:  'Cruzeiro / Sudoeste',
+  4:  'Taguatinga',
+  5:  'Ceilândia Norte',
+  6:  'Ceilândia Sul',
+  8:  'Samambaia',
+  9:  'Lago Sul / Riacho Fundo',
+  10: 'Guará',
+  11: 'Santa Maria',
+  13: 'Planaltina',
+  14: 'Sobradinho',
+  15: 'Gama',
+  16: 'Brazlândia',
+  17: 'Recanto das Emas',
+  18: 'São Sebastião',
+  19: 'Paranoá / Itapoã',
+  20: 'Águas Claras / Vicente Pires',
+  21: 'Estrutural / Varjão',
 };
 
 function getZoneMarkerHtml(zona: number, count: number, isSelected: boolean): string {
@@ -587,6 +616,11 @@ export default function ColaboradoresPage() {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [geoRegioes, setGeoRegioes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [padrinhos, setPadrinhos] = useState<Padrinho[]>([]);
+  const [padrinhoSearch, setPadrinhoSearch] = useState('');
+  const [showNovoPadrinho, setShowNovoPadrinho] = useState(false);
+  const [novoPadrinho, setNovoPadrinho] = useState({ nome: '', cargo: '', partido: '' });
+  const [savingPadrinho, setSavingPadrinho] = useState(false);
 
   // ── UI state ──
   const [activeTab, setActiveTab] = useState<'mapa' | 'lista'>('mapa');
@@ -633,9 +667,17 @@ export default function ColaboradoresPage() {
     }
   }, []);
 
+  const fetchPadrinhos = useCallback(async () => {
+    try {
+      const res = await fetch('/api/padrinhos');
+      if (res.ok) setPadrinhos(await res.json());
+    } catch {}
+  }, []);
+
   useEffect(() => {
     if (status === 'authenticated') {
       fetchColaboradores();
+      fetchPadrinhos();
       // Load GeoJSON region names
       fetch('/geojson/df-regioes-administrativas.geojson')
         .then(r => r.json())
@@ -793,6 +835,9 @@ export default function ColaboradoresPage() {
       if (!res.ok) throw new Error('Erro ao salvar');
       toast.success(editingColaborador ? 'Colaborador atualizado!' : 'Colaborador criado!');
       setShowFormModal(false);
+      setShowNovoPadrinho(false);
+      setNovoPadrinho({ nome: '', cargo: '', partido: '' });
+      setPadrinhoSearch('');
       fetchColaboradores();
     } catch {
       toast.error('Erro ao salvar colaborador');
@@ -966,11 +1011,32 @@ export default function ColaboradoresPage() {
     }));
   };
 
-  // Padrinho candidates (exclude self when editing)
-  const padrinhoOptions = useMemo(() =>
-    colaboradores.filter(c => c.id !== editingColaborador?.id),
-    [colaboradores, editingColaborador]
-  );
+  const handleCriarPadrinho = async () => {
+    if (!novoPadrinho.nome.trim() || !novoPadrinho.cargo.trim() || !novoPadrinho.partido.trim()) {
+      toast.error('Preencha Nome, Cargo e Partido do padrinho');
+      return;
+    }
+    setSavingPadrinho(true);
+    try {
+      const res = await fetch('/api/padrinhos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novoPadrinho),
+      });
+      if (!res.ok) throw new Error();
+      const criado: Padrinho = await res.json();
+      setPadrinhos(prev => [...prev, criado].sort((a, b) => a.nome.localeCompare(b.nome)));
+      setForm(f => ({ ...f, padrinhoId: criado.id }));
+      setShowNovoPadrinho(false);
+      setNovoPadrinho({ nome: '', cargo: '', partido: '' });
+      setPadrinhoSearch(criado.nome);
+      toast.success('Padrinho criado!');
+    } catch {
+      toast.error('Erro ao criar padrinho');
+    } finally {
+      setSavingPadrinho(false);
+    }
+  };
 
   if (!mounted) return null;
   if (status === 'loading') {
@@ -1153,6 +1219,11 @@ export default function ColaboradoresPage() {
                     </div>
                     {c.funcao && (
                       <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{c.funcao}</p>
+                    )}
+                    {c.padrinho && (
+                      <span className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
+                        ↑ {c.padrinho.nome} · {c.padrinho.cargo}
+                      </span>
                     )}
                     {c.regioes.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1.5">
@@ -1369,7 +1440,7 @@ export default function ColaboradoresPage() {
                             <div className="flex items-center gap-2 mb-2">
                               <MapPin className="w-4 h-4" style={{ color: '#a78bfa' }} />
                               <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                                Zona Eleitoral {selectedZona}
+                                Zona {selectedZona} — {DF_ZONA_NOMES[selectedZona] ?? ''}
                               </h3>
                               <span
                                 className="text-xs px-2 py-0.5 rounded-full"
@@ -1514,6 +1585,9 @@ export default function ColaboradoresPage() {
                                       style={{ color: isSelected ? '#c4b5fd' : 'var(--text-primary)' }}
                                     >
                                       Zona {zona}
+                                    </p>
+                                    <p className="text-[10px] truncate" style={{ color: isSelected ? '#a78bfa' : 'var(--text-tertiary)' }}>
+                                      {DF_ZONA_NOMES[zona] ?? ''}
                                     </p>
                                     <p
                                       className="text-[11px]"
@@ -1736,7 +1810,12 @@ export default function ColaboradoresPage() {
                     </h2>
                   </div>
                   <button
-                    onClick={() => setShowFormModal(false)}
+                    onClick={() => {
+                      setShowFormModal(false);
+                      setShowNovoPadrinho(false);
+                      setNovoPadrinho({ nome: '', cargo: '', partido: '' });
+                      setPadrinhoSearch('');
+                    }}
                     className="p-2 rounded-lg transition-all"
                     style={{ color: 'var(--text-tertiary)' }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--tint-08)')}
@@ -1858,25 +1937,131 @@ export default function ColaboradoresPage() {
                     </div>
                   </div>
 
-                  {/* Padrinho */}
+                  {/* Padrinho Político */}
                   <div>
                     <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                       Padrinho Político
                     </label>
-                    <div className="relative">
-                      <select
-                        value={form.padrinhoId}
-                        onChange={e => setForm(f => ({ ...f, padrinhoId: e.target.value }))}
-                        className="w-full px-3 py-2.5 rounded-xl text-sm outline-none appearance-none pr-8"
-                        style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
-                      >
-                        <option value="">Nenhum</option>
-                        {padrinhoOptions.map(c => (
-                          <option key={c.id} value={c.id}>{c.nome}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-tertiary)' }} />
-                    </div>
+
+                    {/* Selected padrinho chip */}
+                    {form.padrinhoId && !showNovoPadrinho && (() => {
+                      const p = padrinhos.find(x => x.id === form.padrinhoId);
+                      return p ? (
+                        <div className="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(167,139,250,0.10)', border: '1px solid rgba(167,139,250,0.25)' }}>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{p.nome}</p>
+                            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{p.cargo} · {p.partido}</p>
+                          </div>
+                          <button onClick={() => { setForm(f => ({ ...f, padrinhoId: '' })); setPadrinhoSearch(''); }}>
+                            <X className="w-3.5 h-3.5" style={{ color: 'var(--text-tertiary)' }} />
+                          </button>
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {/* Search existing padrinhos */}
+                    {!form.padrinhoId && !showNovoPadrinho && (
+                      <div className="space-y-1.5">
+                        <input
+                          type="text"
+                          placeholder="Buscar padrinho..."
+                          value={padrinhoSearch}
+                          onChange={e => setPadrinhoSearch(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                          style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                        />
+                        {padrinhoSearch.trim() && (
+                          <div className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--tint-10)', maxHeight: 160, overflowY: 'auto' }}>
+                            {padrinhos
+                              .filter(p => p.nome.toLowerCase().includes(padrinhoSearch.toLowerCase()) ||
+                                           p.cargo.toLowerCase().includes(padrinhoSearch.toLowerCase()) ||
+                                           p.partido.toLowerCase().includes(padrinhoSearch.toLowerCase()))
+                              .map(p => (
+                                <div
+                                  key={p.id}
+                                  onClick={() => { setForm(f => ({ ...f, padrinhoId: p.id })); setPadrinhoSearch(p.nome); }}
+                                  className="px-3 py-2 cursor-pointer"
+                                  style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--tint-06)' }}
+                                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--tint-04)'}
+                                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'}
+                                >
+                                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{p.nome}</p>
+                                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{p.cargo} · {p.partido}</p>
+                                </div>
+                              ))}
+                            {padrinhos.filter(p =>
+                              p.nome.toLowerCase().includes(padrinhoSearch.toLowerCase()) ||
+                              p.cargo.toLowerCase().includes(padrinhoSearch.toLowerCase()) ||
+                              p.partido.toLowerCase().includes(padrinhoSearch.toLowerCase())
+                            ).length === 0 && (
+                              <div className="px-3 py-2 text-xs" style={{ color: 'var(--text-tertiary)', background: 'var(--bg-card)' }}>
+                                Nenhum padrinho encontrado
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => { setShowNovoPadrinho(true); setNovoPadrinho({ nome: padrinhoSearch, cargo: '', partido: '' }); }}
+                          className="flex items-center gap-1.5 text-xs font-semibold"
+                          style={{ color: '#a78bfa' }}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Cadastrar novo padrinho
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Create new padrinho inline */}
+                    {showNovoPadrinho && (
+                      <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--tint-04)', border: '1px solid rgba(167,139,250,0.2)' }}>
+                        <p className="text-xs font-bold" style={{ color: '#a78bfa' }}>Novo Padrinho</p>
+                        <input
+                          type="text"
+                          placeholder="Nome completo *"
+                          value={novoPadrinho.nome}
+                          onChange={e => setNovoPadrinho(p => ({ ...p, nome: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                          style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Cargo (ex: Deputado Federal) *"
+                          value={novoPadrinho.cargo}
+                          onChange={e => setNovoPadrinho(p => ({ ...p, cargo: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                          style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Partido (ex: MDB) *"
+                          value={novoPadrinho.partido}
+                          onChange={e => setNovoPadrinho(p => ({ ...p, partido: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                          style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                        />
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => { setShowNovoPadrinho(false); setNovoPadrinho({ nome: '', cargo: '', partido: '' }); }}
+                            className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                            style={{ background: 'var(--tint-06)', color: 'var(--text-secondary)' }}
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCriarPadrinho}
+                            disabled={savingPadrinho}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                            style={{ background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)' }}
+                          >
+                            {savingPadrinho && <Loader2 className="w-3 h-3 animate-spin" />}
+                            Salvar Padrinho
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Regiões & Zonas */}
@@ -2011,7 +2196,12 @@ export default function ColaboradoresPage() {
                   style={{ borderTop: '1px solid var(--tint-08)' }}
                 >
                   <button
-                    onClick={() => setShowFormModal(false)}
+                    onClick={() => {
+                      setShowFormModal(false);
+                      setShowNovoPadrinho(false);
+                      setNovoPadrinho({ nome: '', cargo: '', partido: '' });
+                      setPadrinhoSearch('');
+                    }}
                     className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
                     style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-secondary)' }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--tint-10)')}

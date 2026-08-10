@@ -117,6 +117,7 @@ model Gabinete {
   contatos             Contato[]
   colaboradores        Colaborador[]
   emendasNaoRealizadas EmendaNaoRealizada[]
+  padrinhos            Padrinho[]
 
   @@map("gabinetes")
 }
@@ -549,10 +550,9 @@ model Colaborador {
   observacao   String?
   status       ColaboradorStatus @default(ATIVO)
 
-  // Auto-referência: padrinho político (hierarquia entre colaboradores)
+  // Padrinho político (entidade separada com Nome, Cargo e Partido)
   padrinhoId   String?
-  padrinho     Colaborador?      @relation("Padrinho", fields: [padrinhoId], references: [id], onDelete: SetNull)
-  apadrinhados Colaborador[]     @relation("Padrinho")
+  padrinho     Padrinho?         @relation(fields: [padrinhoId], references: [id], onDelete: SetNull)
 
   gabineteId   String
   gabinete     Gabinete          @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
@@ -570,6 +570,23 @@ model Colaborador {
   @@index([status])
   @@index([gabineteId, status])
   @@map("colaboradores")
+}
+
+/// Padrinho Político — figura política que indica colaboradores de campanha
+model Padrinho {
+  id            String        @id @default(cuid())
+  nome          String
+  cargo         String
+  partido       String
+  gabineteId    String
+  gabinete      Gabinete      @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+  colaboradores Colaborador[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([gabineteId])
+  @@index([nome])
+  @@map("padrinhos")
 }
 
 /// Regiões de atuação de um Colaborador (N:N via join table)
