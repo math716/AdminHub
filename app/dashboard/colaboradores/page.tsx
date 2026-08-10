@@ -619,6 +619,7 @@ export default function ColaboradoresPage() {
   const [padrinhos, setPadrinhos] = useState<Padrinho[]>([]);
   const [padrinhoSearch, setPadrinhoSearch] = useState('');
   const [showNovoPadrinho, setShowNovoPadrinho] = useState(false);
+  const [openFuncaoDropdown, setOpenFuncaoDropdown] = useState(false);
   const [novoPadrinho, setNovoPadrinho] = useState({ nome: '', cargo: '', partido: '' });
   const [savingPadrinho, setSavingPadrinho] = useState(false);
 
@@ -1965,17 +1966,37 @@ export default function ColaboradoresPage() {
                         Função
                       </label>
                       <div className="relative">
-                        <select
-                          value={form.funcao}
-                          onChange={e => setForm(f => ({ ...f, funcao: e.target.value }))}
-                          className="w-full px-3 py-2.5 rounded-xl text-sm outline-none appearance-none pr-8"
+                        <button
+                          type="button"
+                          onClick={() => setOpenFuncaoDropdown(o => !o)}
+                          className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-left"
                           style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
                         >
-                          {FUNCOES.map(fn => (
-                            <option key={fn.value} value={fn.value}>{fn.label}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-tertiary)' }} />
+                          <span>{FUNCOES.find(f => f.value === form.funcao)?.label ?? 'Sem função definida'}</span>
+                          <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
+                        </button>
+                        {openFuncaoDropdown && (
+                          <div
+                            className="absolute z-50 w-full mt-1 rounded-xl overflow-hidden shadow-lg"
+                            style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)' }}
+                          >
+                            {FUNCOES.map(fn => (
+                              <div
+                                key={fn.value}
+                                onClick={() => { setForm(f => ({ ...f, funcao: fn.value })); setOpenFuncaoDropdown(false); }}
+                                className="px-3 py-2.5 text-sm cursor-pointer"
+                                style={{
+                                  color: form.funcao === fn.value ? '#4a9ede' : 'var(--text-primary)',
+                                  background: form.funcao === fn.value ? 'var(--tint-06)' : 'transparent',
+                                }}
+                                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--tint-06)'}
+                                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = form.funcao === fn.value ? 'var(--tint-06)' : 'transparent'}
+                              >
+                                {fn.label}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div>
