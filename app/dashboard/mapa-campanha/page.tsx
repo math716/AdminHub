@@ -2450,9 +2450,9 @@ export default function MapaCampanhaPage() {
   ];
 
   const cenarioConfig = {
-    conservador: { label: 'Conservador', icon: Shield, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500', border: 'border-amber-500', hex: '#F59E0B' },
-    possivel: { label: 'Realista', icon: Gauge, color: 'text-cyan-600 dark:text-cyan-300', bg: 'bg-cyan-500', border: 'border-cyan-500', hex: '#22D3EE' },
-    arrojado: { label: 'Otimista', icon: Rocket, color: 'text-[color:var(--success)]', bg: 'bg-emerald-500', border: 'border-emerald-500', hex: '#10B981' }
+    conservador: { label: 'Conservador', icon: Shield, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500', border: 'border-amber-500', hex: '#F59E0B', bgInactive: 'bg-amber-50 dark:bg-amber-500/20 border-amber-400/60', textInactive: 'text-amber-700 dark:text-amber-300' },
+    possivel:    { label: 'Realista',    icon: Gauge,  color: 'text-cyan-600 dark:text-cyan-300',   bg: 'bg-cyan-500',    border: 'border-cyan-500',    hex: '#22D3EE', bgInactive: 'bg-cyan-50 dark:bg-cyan-500/20 border-cyan-400/60',    textInactive: 'text-cyan-700 dark:text-cyan-300'   },
+    arrojado:    { label: 'Otimista',   icon: Rocket, color: 'text-[color:var(--success)]',         bg: 'bg-emerald-500', border: 'border-emerald-500', hex: '#10B981', bgInactive: 'bg-emerald-50 dark:bg-emerald-500/20 border-emerald-400/60', textInactive: 'text-emerald-700 dark:text-emerald-300' }
   };
 
   return (
@@ -2737,7 +2737,7 @@ export default function MapaCampanhaPage() {
                           className={`flex items-center gap-2.5 px-2 py-1.5 2xl:px-3 2xl:py-2.5 rounded-lg transition-all w-full text-left border ${
                             isActive
                               ? `${config.bg} text-white shadow-md border-transparent`
-                              : 'border-[var(--border-default)] text-[color:var(--text-secondary)] hover:border-[var(--tint-20)] hover:text-[color:var(--text-primary)]'
+                              : `${config.bgInactive} ${config.textInactive} hover:opacity-90`
                           }`}
                         >
                           <div className={`p-1 rounded-md flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-[var(--bg-card-subtle)]'}`}>
@@ -4399,40 +4399,40 @@ export default function MapaCampanhaPage() {
           )}
 
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-amber-900/20 rounded-lg p-3 border border-amber-500/30">
+            <div className="bg-amber-50 dark:bg-amber-500/20 rounded-lg p-3 border border-amber-400/70 dark:border-amber-400/50">
               <div className="flex items-center gap-1 mb-2">
-                <Shield className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
-                <span className="text-[color:var(--brand-cobalt)] text-xs font-medium">Conservadora</span>
+                <Shield className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-amber-700 dark:text-amber-300 text-xs font-semibold">Conservadora</span>
               </div>
               <Input
                 type="number"
                 value={novoMetaConservadora}
                 onChange={(e) => setNovoMetaConservadora(parseInt(e.target.value) || 0)}
-                className="bg-[var(--bg-card-subtle)] border-amber-500/50 text-[color:var(--text-primary)]"
+                className="bg-white dark:bg-[var(--bg-card-subtle)] border-amber-400/60 text-[color:var(--text-primary)]"
               />
             </div>
-            <div className="bg-cyan-900/20 rounded-lg p-3 border border-cyan-500/30">
+            <div className="bg-cyan-50 dark:bg-cyan-500/20 rounded-lg p-3 border border-cyan-400/70 dark:border-cyan-400/50">
               <div className="flex items-center gap-1 mb-2">
-                <Gauge className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
-                <span className="text-[color:var(--brand-cobalt)] text-xs font-medium">Realista</span>
+                <Gauge className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />
+                <span className="text-cyan-700 dark:text-cyan-300 text-xs font-semibold">Realista</span>
               </div>
               <Input
                 type="number"
                 value={novoMetaPossivel}
                 onChange={(e) => setNovoMetaPossivel(parseInt(e.target.value) || 0)}
-                className="bg-[var(--bg-card-subtle)] border-cyan-500/50 text-[color:var(--text-primary)]"
+                className="bg-white dark:bg-[var(--bg-card-subtle)] border-cyan-400/60 text-[color:var(--text-primary)]"
               />
             </div>
-            <div className="bg-emerald-900/20 rounded-lg p-3 border border-emerald-500/30">
+            <div className="bg-emerald-50 dark:bg-emerald-500/20 rounded-lg p-3 border border-emerald-400/70 dark:border-emerald-400/50">
               <div className="flex items-center gap-1 mb-2">
-                <Rocket className="h-4 w-4 text-[color:var(--success)]" />
-                <span className="text-[color:var(--success)] text-xs font-medium">Otimista</span>
+                <Rocket className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-emerald-700 dark:text-emerald-300 text-xs font-semibold">Otimista</span>
               </div>
               <Input
                 type="number"
                 value={novoMetaArrojada}
                 onChange={(e) => setNovoMetaArrojada(parseInt(e.target.value) || 0)}
-                className="bg-[var(--bg-card-subtle)] border-emerald-500/50 text-[color:var(--text-primary)]"
+                className="bg-white dark:bg-[var(--bg-card-subtle)] border-emerald-400/60 text-[color:var(--text-primary)]"
               />
             </div>
           </div>
