@@ -452,6 +452,8 @@ export default function ColaboradoresPage() {
   // ── Import state ──
   const [importStep, setImportStep] = useState<1 | 2 | 3>(1);
   const [importPreview, setImportPreview] = useState<Array<Record<string, string>>>([]);
+  const [allImportRows, setAllImportRows] = useState<Array<Record<string, string>>>([]);
+  const [importHeaders, setImportHeaders] = useState<string[]>([]);
   const [importCols, setImportCols] = useState<DetectedColabCols>({ nome: '', telefone: '', email: '', endereco: '', funcao: '', observacao: '', regioes: '' });
   const [totalImportRows, setTotalImportRows] = useState(0);
   const [importing, setImporting] = useState(false);
@@ -709,6 +711,8 @@ export default function ColaboradoresPage() {
       setImportCols(cols);
       setTotalImportRows(rows.length);
       setImportPreview(rows.slice(0, 10));
+      setAllImportRows(rows);
+      setImportHeaders(headers);
       setImportStep(2);
     } catch {
       setImportError('Erro ao processar arquivo. Verifique o formato.');
@@ -719,9 +723,8 @@ export default function ColaboradoresPage() {
     setImporting(true);
     setImportError('');
     try {
-      // Re-read all rows (we only have preview — re-read from preview as proxy)
       const body = {
-        colaboradores: importPreview
+        colaboradores: allImportRows
           .filter(row => importCols.nome && row[importCols.nome]?.trim())
           .map(row => ({
             nome: importCols.nome ? row[importCols.nome]?.trim() : '',
@@ -756,6 +759,8 @@ export default function ColaboradoresPage() {
     setShowImportModal(false);
     setImportStep(1);
     setImportPreview([]);
+    setAllImportRows([]);
+    setImportHeaders([]);
     setImportCols({ nome: '', telefone: '', email: '', endereco: '', funcao: '', observacao: '', regioes: '' });
     setTotalImportRows(0);
     setImportResult(null);
@@ -1937,50 +1942,85 @@ export default function ColaboradoresPage() {
 
                   {importStep === 2 && (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
+                      {/* Row count + column detection status */}
+                      <div className="flex items-center justify-between flex-wrap gap-2">
                         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                           {totalImportRows} linha{totalImportRows !== 1 ? 's' : ''} detectada{totalImportRows !== 1 ? 's' : ''}
                           {totalImportRows > 10 && <span style={{ color: 'var(--text-tertiary)' }}> · exibindo as 10 primeiras</span>}
                         </p>
+                        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                          {importHeaders.length} coluna{importHeaders.length !== 1 ? 's' : ''} no arquivo
+                        </span>
                       </div>
 
-                      {/* Column mapping summary */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {(Object.entries(importCols) as [keyof DetectedColabCols, string][]).map(([field, col]) => (
-                          col ? (
-                            <div key={field} className="rounded-lg px-3 py-2 text-xs" style={{ background: 'rgba(74,158,222,0.08)', border: '1px solid rgba(74,158,222,0.15)' }}>
-                              <p className="font-semibold" style={{ color: '#4a9ede' }}>{field}</p>
-                              <p className="truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{col}</p>
-                            </div>
-                          ) : null
-                        ))}
-                      </div>
+                      {/* Column detection summary */}
+                      {importCols.nome ? (
+                        <div className="rounded-xl p-3" style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                          <p className="text-xs font-semibold mb-2" style={{ color: '#22c55e' }}>Colunas reconhecidas automaticamente:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {(Object.entries(importCols) as [keyof DetectedColabCols, string][]).map(([field, col]) =>
+                              col ? (
+                                <span key={field} className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede', border: '1px solid rgba(74,158,222,0.2)' }}>
+                                  {field} → <span style={{ color: 'var(--text-secondary)' }}>{col}</span>
+                                </span>
+                              ) : null
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-2 rounded-xl px-4 py-3" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
+                          <div>
+                            <p className="text-sm font-semibold" style={{ color: '#ef4444' }}>Coluna "nome" não reconhecida</p>
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                              Verifique os cabeçalhos da planilha. O sistema busca colunas com "nome" ou "name" no título.
+                              Colunas encontradas: {importHeaders.join(', ')}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-                      {/* Preview table */}
-                      <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid var(--tint-08)' }}>
-                        <table className="w-full text-xs">
-                          <thead style={{ background: 'var(--tint-06)' }}>
-                            <tr>
-                              {importCols.nome && <th className="px-3 py-2 text-left font-semibold" style={{ color: 'var(--text-secondary)' }}>Nome</th>}
-                              {importCols.telefone && <th className="px-3 py-2 text-left font-semibold" style={{ color: 'var(--text-secondary)' }}>Telefone</th>}
-                              {importCols.email && <th className="px-3 py-2 text-left font-semibold" style={{ color: 'var(--text-secondary)' }}>Email</th>}
-                              {importCols.funcao && <th className="px-3 py-2 text-left font-semibold" style={{ color: 'var(--text-secondary)' }}>Função</th>}
-                              {importCols.regioes && <th className="px-3 py-2 text-left font-semibold" style={{ color: 'var(--text-secondary)' }}>Regiões</th>}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {importPreview.map((row, i) => (
-                              <tr key={i} style={{ borderTop: '1px solid var(--tint-06)' }}>
-                                {importCols.nome && <td className="px-3 py-2" style={{ color: 'var(--text-primary)' }}>{row[importCols.nome] ?? '—'}</td>}
-                                {importCols.telefone && <td className="px-3 py-2" style={{ color: 'var(--text-secondary)' }}>{row[importCols.telefone] ?? '—'}</td>}
-                                {importCols.email && <td className="px-3 py-2" style={{ color: 'var(--text-secondary)' }}>{row[importCols.email] ?? '—'}</td>}
-                                {importCols.funcao && <td className="px-3 py-2" style={{ color: 'var(--text-secondary)' }}>{row[importCols.funcao] ?? '—'}</td>}
-                                {importCols.regioes && <td className="px-3 py-2 max-w-[140px] truncate" style={{ color: 'var(--text-secondary)' }}>{row[importCols.regioes] ?? '—'}</td>}
+                      {/* Preview table — shows ALL file columns */}
+                      {importHeaders.length > 0 && (
+                        <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid var(--tint-08)' }}>
+                          <table className="w-full text-xs">
+                            <thead style={{ background: 'var(--tint-06)' }}>
+                              <tr>
+                                {importHeaders.slice(0, 7).map(h => {
+                                  const detectedAs = (Object.entries(importCols) as [string, string][]).find(([, v]) => v === h)?.[0];
+                                  return (
+                                    <th key={h} className="px-3 py-2 text-left font-semibold whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
+                                      {h}
+                                      {detectedAs && (
+                                        <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase" style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}>
+                                          {detectedAs}
+                                        </span>
+                                      )}
+                                    </th>
+                                  );
+                                })}
+                                {importHeaders.length > 7 && (
+                                  <th className="px-3 py-2 text-left font-semibold" style={{ color: 'var(--text-tertiary)' }}>
+                                    +{importHeaders.length - 7} col.
+                                  </th>
+                                )}
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody>
+                              {importPreview.map((row, i) => (
+                                <tr key={i} style={{ borderTop: '1px solid var(--tint-06)' }}>
+                                  {importHeaders.slice(0, 7).map(h => (
+                                    <td key={h} className="px-3 py-2 max-w-[150px] truncate" style={{ color: 'var(--text-primary)' }}>
+                                      {row[h] || <span style={{ color: 'var(--text-tertiary)' }}>—</span>}
+                                    </td>
+                                  ))}
+                                  {importHeaders.length > 7 && <td className="px-3 py-2" />}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
 
                       {importError && (
                         <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444' }}>
@@ -2041,11 +2081,12 @@ export default function ColaboradoresPage() {
                       <button
                         onClick={handleImport}
                         disabled={importing || !importCols.nome}
-                        className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-60"
+                        className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50"
                         style={{ background: 'linear-gradient(135deg, #1d6fd8, #4a9ede)', boxShadow: '0 4px 14px rgba(74,158,222,0.35)' }}
+                        title={!importCols.nome ? 'Coluna "nome" não detectada — verifique os cabeçalhos da planilha' : ''}
                       >
                         {importing && <Loader2 className="w-4 h-4 animate-spin" />}
-                        Importar {totalImportRows} colaborador{totalImportRows !== 1 ? 'es' : ''}
+                        Importar {allImportRows.length} colaborador{allImportRows.length !== 1 ? 'es' : ''}
                       </button>
                     </>
                   )}
