@@ -1087,22 +1087,22 @@ export default function ColaboradoresPage() {
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: 'Total', value: colaboradores.length, icon: Users2, color: '#4a9ede' },
-          { label: 'RAs cobertas', value: `${regioesCobertasCount} / 33`, icon: MapPin, color: '#22c55e' },
-          { label: 'Zonas cobertas', value: `${zonasCobertasCount} / 19`, icon: MapPin, color: '#a78bfa' },
-          { label: 'Ativos', value: ativosCount, icon: UserCheck, color: '#22c55e' },
-        ].map(({ label, value, icon: Icon, color }) => (
+          { label: 'Total', value: colaboradores.length, icon: Users2, color: '#3b82f6', grad: 'from-blue-500/10 to-blue-600/5' },
+          { label: 'RAs cobertas', value: `${regioesCobertasCount} / 33`, icon: MapPin, color: '#10b981', grad: 'from-emerald-500/10 to-emerald-600/5' },
+          { label: 'Zonas cobertas', value: `${zonasCobertasCount} / 19`, icon: MapPin, color: '#8b5cf6', grad: 'from-violet-500/10 to-violet-600/5' },
+          { label: 'Ativos', value: ativosCount, icon: UserCheck, color: '#10b981', grad: 'from-emerald-500/10 to-emerald-600/5' },
+        ].map(({ label, value, icon: Icon, color, grad }) => (
           <div
             key={label}
-            className="rounded-xl p-4 flex items-center gap-3"
-            style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.15)' }}
+            className={`rounded-xl p-4 flex items-center gap-3 bg-gradient-to-br ${grad}`}
+            style={{ border: `1px solid ${color}35` }}
           >
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${color}1a` }}>
-              <Icon className="w-4 h-4" style={{ color }} />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}22` }}>
+              <Icon className="w-5 h-5" style={{ color }} />
             </div>
             <div>
-              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
-              <p className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{loading ? '—' : value}</p>
+              <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
+              <p className="text-xl font-bold" style={{ color }}>{loading ? '—' : value}</p>
             </div>
           </div>
         ))}
@@ -1776,7 +1776,7 @@ export default function ColaboradoresPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="absolute inset-0"
+                className="fixed inset-0"
                 style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
                 onClick={() => setShowFormModal(false)}
               />
