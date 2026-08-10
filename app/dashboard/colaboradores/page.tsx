@@ -636,6 +636,12 @@ export default function ColaboradoresPage() {
   const [editingColaborador, setEditingColaborador] = useState<Colaborador | null>(null);
   const [formRegiaoTab, setFormRegiaoTab] = useState<'ra' | 'zona'>('ra');
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showPadrinhosModal, setShowPadrinhosModal] = useState(false);
+  const [confirmDeletePadrinhoId, setConfirmDeletePadrinhoId] = useState<string | null>(null);
+  const [deletingPadrinho, setDeletingPadrinho] = useState(false);
+  const [editingPadrinho, setEditingPadrinho] = useState<Padrinho | null>(null);
+  const [editPadrinhoForm, setEditPadrinhoForm] = useState({ nome: '', cargo: '', partido: '' });
+  const [savingEditPadrinho, setSavingEditPadrinho] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -1042,6 +1048,43 @@ export default function ColaboradoresPage() {
     }
   };
 
+  const handleDeletePadrinho = async (id: string) => {
+    setDeletingPadrinho(true);
+    try {
+      const res = await fetch(`/api/padrinhos/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      setPadrinhos(prev => prev.filter(p => p.id !== id));
+      setConfirmDeletePadrinhoId(null);
+      toast.success('Padrinho removido');
+      fetchColaboradores();
+    } catch {
+      toast.error('Erro ao remover padrinho');
+    } finally {
+      setDeletingPadrinho(false);
+    }
+  };
+
+  const handleSaveEditPadrinho = async () => {
+    if (!editingPadrinho) return;
+    setSavingEditPadrinho(true);
+    try {
+      const res = await fetch(`/api/padrinhos/${editingPadrinho.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editPadrinhoForm),
+      });
+      if (!res.ok) throw new Error();
+      const updated: Padrinho = await res.json();
+      setPadrinhos(prev => prev.map(p => p.id === updated.id ? updated : p).sort((a, b) => a.nome.localeCompare(b.nome)));
+      setEditingPadrinho(null);
+      toast.success('Padrinho atualizado');
+    } catch {
+      toast.error('Erro ao atualizar padrinho');
+    } finally {
+      setSavingEditPadrinho(false);
+    }
+  };
+
   if (!mounted) return null;
   if (status === 'loading') {
     return (
@@ -1073,6 +1116,25 @@ export default function ColaboradoresPage() {
             >
               <FileUp className="w-4 h-4" />
               Importar CSV
+            </button>
+            <button
+              onClick={() => setShowPadrinhosModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150"
+              style={{
+                background: 'rgba(109,40,217,0.12)',
+                border: '1px solid rgba(109,40,217,0.35)',
+                color: '#8b5cf6',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(109,40,217,0.2)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(109,40,217,0.12)')}
+            >
+              <User className="w-4 h-4" />
+              Padrinhos
+              {padrinhos.length > 0 && (
+                <span className="ml-0.5 text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(109,40,217,0.2)' }}>
+                  {padrinhos.length}
+                </span>
+              )}
             </button>
             <button
               onClick={openNew}
@@ -2534,6 +2596,156 @@ export default function ColaboradoresPage() {
         onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
         onCancel={() => !deleting && setConfirmDeleteId(null)}
       />
+
+      {/* ── Padrinhos modal ── */}
+      <ConfirmDialog
+        open={!!confirmDeletePadrinhoId}
+        title="Remover padrinho"
+        message="O padrinho será desvinculado de todos os colaboradores e removido. Esta ação não pode ser desfeita."
+        confirmLabel="Remover"
+        cancelLabel="Cancelar"
+        variant="danger"
+        loading={deletingPadrinho}
+        onConfirm={() => confirmDeletePadrinhoId && handleDeletePadrinho(confirmDeletePadrinhoId)}
+        onCancel={() => !deletingPadrinho && setConfirmDeletePadrinhoId(null)}
+      />
+
+      {showPadrinhosModal && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[9000] flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0"
+              style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+              onClick={() => { if (!editingPadrinho) setShowPadrinhosModal(false); }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 20 }}
+              transition={{ type: 'spring', damping: 24, stiffness: 260 }}
+              className="relative w-full max-w-lg"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', borderRadius: 20, boxShadow: 'var(--shadow-raised)', color: 'var(--text-primary)' }}
+              onClick={e => e.stopPropagation()}
+            >
+              <span className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(109,40,217,0.7), transparent)' }} />
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid var(--tint-06)' }}>
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4" style={{ color: '#8b5cf6' }} />
+                  <h2 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>Padrinhos Políticos</h2>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(109,40,217,0.15)', color: '#8b5cf6' }}>
+                    {padrinhos.length}
+                  </span>
+                </div>
+                <button onClick={() => setShowPadrinhosModal(false)}>
+                  <X className="w-5 h-5" style={{ color: 'var(--text-tertiary)' }} />
+                </button>
+              </div>
+
+              {/* List */}
+              <div className="overflow-y-auto" style={{ maxHeight: '60vh' }}>
+                {padrinhos.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <User className="w-10 h-10" style={{ color: 'var(--text-tertiary)' }} />
+                    <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Nenhum padrinho cadastrado ainda.</p>
+                  </div>
+                ) : (
+                  padrinhos.map(p => (
+                    <div key={p.id}>
+                      {editingPadrinho?.id === p.id ? (
+                        /* Edit inline */
+                        <div className="px-6 py-4 space-y-2" style={{ borderBottom: '1px solid var(--tint-06)', background: 'rgba(109,40,217,0.05)' }}>
+                          <input
+                            type="text" placeholder="Nome *" value={editPadrinhoForm.nome}
+                            onChange={e => setEditPadrinhoForm(f => ({ ...f, nome: e.target.value }))}
+                            className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                            style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text" placeholder="Cargo" value={editPadrinhoForm.cargo}
+                              onChange={e => setEditPadrinhoForm(f => ({ ...f, cargo: e.target.value }))}
+                              className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                              style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                            />
+                            <input
+                              type="text" placeholder="Partido" value={editPadrinhoForm.partido}
+                              onChange={e => setEditPadrinhoForm(f => ({ ...f, partido: e.target.value }))}
+                              className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                              style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                            />
+                          </div>
+                          <div className="flex gap-2 pt-1">
+                            <button onClick={() => setEditingPadrinho(null)}
+                              className="flex-1 py-1.5 rounded-lg text-xs font-semibold"
+                              style={{ background: 'var(--tint-06)', color: 'var(--text-secondary)' }}>
+                              Cancelar
+                            </button>
+                            <button onClick={handleSaveEditPadrinho} disabled={savingEditPadrinho}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold text-white"
+                              style={{ background: 'linear-gradient(135deg,#6d28d9,#8b5cf6)' }}>
+                              {savingEditPadrinho && <Loader2 className="w-3 h-3 animate-spin" />}
+                              Salvar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Row */
+                        <div className="flex items-center gap-3 px-6 py-3.5" style={{ borderBottom: '1px solid var(--tint-06)' }}>
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold" style={{ background: 'rgba(109,40,217,0.15)', color: '#8b5cf6' }}>
+                            {p.nome.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{p.nome}</p>
+                            <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
+                              {p.cargo}{p.partido ? ` · ${p.partido}` : ''}
+                              {p._count.colaboradores > 0 && (
+                                <span className="ml-2 font-semibold" style={{ color: '#8b5cf6' }}>
+                                  {p._count.colaboradores} colaborador{p._count.colaboradores !== 1 ? 'es' : ''}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <button
+                              onClick={() => { setEditingPadrinho(p); setEditPadrinhoForm({ nome: p.nome, cargo: p.cargo, partido: p.partido }); }}
+                              className="p-1.5 rounded-lg transition-colors"
+                              style={{ color: 'var(--text-tertiary)' }}
+                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--tint-06)')}
+                              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeletePadrinhoId(p.id)}
+                              className="p-1.5 rounded-lg transition-colors"
+                              style={{ color: '#ef4444' }}
+                              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
+                              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4" style={{ borderTop: '1px solid var(--tint-06)' }}>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  Para cadastrar novos padrinhos, use o formulário de criação de colaborador.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
