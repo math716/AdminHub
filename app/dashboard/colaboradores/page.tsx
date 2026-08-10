@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PERMISSIONS, hasPermission } from '@/lib/permissions';
+import GradientCard from '@/components/charts/gradient-card';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1197,33 +1198,39 @@ export default function ColaboradoresPage() {
       />
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {[
-          { label: 'Total',          value: colaboradores.length,           icon: Users2,    rgb: '37,99,235'   },
-          { label: 'RAs cobertas',   value: `${regioesCobertasCount} / 33`, icon: MapPin,    rgb: '22,163,74'   },
-          { label: 'Zonas cobertas', value: `${zonasCobertasCount} / 19`,   icon: MapPin,    rgb: '124,58,237'  },
-          { label: 'Ativos',         value: ativosCount,                    icon: UserCheck, rgb: '22,163,74'   },
-        ].map(({ label, value, icon: Icon, rgb }) => (
-          <div
-            key={label}
-            className="rounded-xl p-4 flex items-center gap-3"
-            style={{
-              background: `rgba(${rgb},0.18)`,
-              border: `1px solid rgba(${rgb},0.55)`,
-            }}
-          >
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: `rgba(${rgb},0.28)` }}
-            >
-              <Icon className="w-4 h-4" style={{ color: `rgb(${rgb})` }} />
-            </div>
-            <div>
-              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
-              <p className="text-lg font-bold" style={{ color: `rgb(${rgb})` }}>{loading ? '—' : value}</p>
-            </div>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <GradientCard
+          title="Total"
+          value={loading ? '—' : colaboradores.length}
+          subtitle="Colaboradores cadastrados"
+          icon={Users2}
+          gradient="blue"
+          delay={0.05}
+        />
+        <GradientCard
+          title="RAs cobertas"
+          value={loading ? '—' : `${regioesCobertasCount} / 33`}
+          subtitle="Regiões administrativas"
+          icon={MapPin}
+          gradient="teal"
+          delay={0.1}
+        />
+        <GradientCard
+          title="Zonas cobertas"
+          value={loading ? '—' : `${zonasCobertasCount} / 19`}
+          subtitle="Zonas eleitorais do DF"
+          icon={MapPin}
+          gradient="purple"
+          delay={0.15}
+        />
+        <GradientCard
+          title="Ativos"
+          value={loading ? '—' : ativosCount}
+          subtitle="Colaboradores ativos"
+          icon={UserCheck}
+          gradient="orange"
+          delay={0.2}
+        />
       </div>
 
       {/* ── Main grid ── */}
