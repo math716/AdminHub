@@ -1091,31 +1091,28 @@ export default function ColaboradoresPage() {
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: 'Total', value: colaboradores.length, icon: Users2, color: '#2563eb', dark: '#3b82f6' },
-          { label: 'RAs cobertas', value: `${regioesCobertasCount} / 33`, icon: MapPin, color: '#059669', dark: '#10b981' },
-          { label: 'Zonas cobertas', value: `${zonasCobertasCount} / 19`, icon: MapPin, color: '#7c3aed', dark: '#8b5cf6' },
-          { label: 'Ativos', value: ativosCount, icon: UserCheck, color: '#059669', dark: '#10b981' },
-        ].map(({ label, value, icon: Icon, color, dark }) => (
+          { label: 'Total',         value: colaboradores.length,           icon: Users2,    color: '#1d4ed8' },
+          { label: 'RAs cobertas',  value: `${regioesCobertasCount} / 33`, icon: MapPin,    color: '#15803d' },
+          { label: 'Zonas cobertas',value: `${zonasCobertasCount} / 19`,   icon: MapPin,    color: '#6d28d9' },
+          { label: 'Ativos',        value: ativosCount,                    icon: UserCheck, color: '#15803d' },
+        ].map(({ label, value, icon: Icon, color }) => (
           <div
             key={label}
-            className="rounded-xl p-4 flex items-center gap-3 relative overflow-hidden"
+            className="rounded-xl p-4 flex items-center gap-3"
             style={{
-              background: `linear-gradient(135deg, ${color}28 0%, ${color}10 100%)`,
-              border: `1.5px solid ${color}70`,
-              boxShadow: `0 2px 12px ${color}20`,
+              background: `color-mix(in srgb, ${color} 14%, var(--bg-card))`,
+              border: `1px solid color-mix(in srgb, ${color} 55%, transparent)`,
             }}
           >
-            {/* vivid left accent bar */}
-            <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full" style={{ background: color }} />
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `${color}30`, border: `1px solid ${color}60` }}
+              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: `color-mix(in srgb, ${color} 22%, transparent)` }}
             >
-              <Icon className="w-5 h-5" style={{ color: dark }} />
+              <Icon className="w-4 h-4" style={{ color }} />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: `${dark}cc` }}>{label}</p>
-              <p className="text-2xl font-extrabold leading-tight" style={{ color: dark }}>{loading ? '—' : value}</p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
+              <p className="text-lg font-bold" style={{ color }}>{loading ? '—' : value}</p>
             </div>
           </div>
         ))}
