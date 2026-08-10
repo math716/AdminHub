@@ -652,6 +652,9 @@ export default function ColaboradoresPage() {
   // ── UI state ──
   const [activeTab, setActiveTab] = useState<'mapa' | 'lista'>('mapa');
   const [dfVisualizacao, setDfVisualizacao] = useState<'regioes' | 'zonas'>('regioes');
+  const [districtSearch, setDistrictSearch] = useState('');
+  const [showDistrictSuggestions, setShowDistrictSuggestions] = useState(false);
+  const districtSearchRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'TODOS' | 'ATIVO' | 'INATIVO'>('TODOS');
   const [selectedColaboradorId, setSelectedColaboradorId] = useState<string | null>(null);
@@ -729,6 +732,17 @@ export default function ColaboradoresPage() {
         .catch(() => {});
     }
   }, [status, fetchColaboradores]);
+
+  // close district search dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (districtSearchRef.current && !districtSearchRef.current.contains(e.target as Node)) {
+        setShowDistrictSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   // ── Derived data ──
   const colaboradoresByRegiao = useMemo(() => {
@@ -942,6 +956,7 @@ export default function ColaboradoresPage() {
   const clearRegionFilter = () => {
     setSelectedRegiao(null);
     setSelectedColaboradorId(null);
+    setDistrictSearch('');
   };
 
   const handleZonaClick = (zona: number) => {
@@ -952,6 +967,7 @@ export default function ColaboradoresPage() {
   const clearZonaFilter = () => {
     setSelectedZona(null);
     setSelectedColaboradorId(null);
+    setDistrictSearch('');
   };
 
   const switchVisualizacao = (v: 'regioes' | 'zonas') => {
@@ -1423,6 +1439,85 @@ export default function ColaboradoresPage() {
                 </button>
               ))}
             </div>
+
+            {/* District / Zone search bar — only in Mapa tab */}
+            {activeTab === 'mapa' && (
+              <div ref={districtSearchRef} className="relative flex-1 max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-tertiary)' }} />
+                <input
+                  type="text"
+                  value={districtSearch}
+                  onChange={e => { setDistrictSearch(e.target.value); setShowDistrictSuggestions(true); }}
+                  onFocus={() => setShowDistrictSuggestions(true)}
+                  placeholder={dfVisualizacao === 'regioes' ? 'Buscar distrito…' : 'Buscar zona eleitoral…'}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl text-sm outline-none"
+                  style={{
+                    background: 'var(--tint-06)',
+                    border: '1px solid var(--tint-10)',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+                {showDistrictSuggestions && districtSearch.trim() && (() => {
+                  const q = districtSearch.toLowerCase();
+                  const suggestions = dfVisualizacao === 'regioes'
+                    ? geoRegioes.filter(n => n.toLowerCase().includes(q)).slice(0, 8)
+                    : DF_ZONAS
+                        .filter(z => {
+                          const nome = DF_ZONA_NOMES[z] ?? '';
+                          return String(z).includes(q) || nome.toLowerCase().includes(q);
+                        })
+                        .slice(0, 8);
+                  if (suggestions.length === 0) return null;
+                  return (
+                    <div
+                      className="absolute top-full mt-1 left-0 right-0 rounded-xl overflow-hidden shadow-xl z-[2000]"
+                      style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)' }}
+                    >
+                      {dfVisualizacao === 'regioes'
+                        ? (suggestions as string[]).map(nome => (
+                          <button
+                            key={nome}
+                            onMouseDown={() => {
+                              handleRegionClick(nome);
+                              setDistrictSearch(nome);
+                              setShowDistrictSuggestions(false);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm transition-colors"
+                            style={{ color: 'var(--text-primary)', borderBottom: '1px solid var(--tint-06)' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--tint-06)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <span className="font-medium">{nome}</span>
+                            <span className="ml-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                              {colaboradoresByRegiao[nome]?.length ?? 0} colab.
+                            </span>
+                          </button>
+                        ))
+                        : (suggestions as number[]).map(z => (
+                          <button
+                            key={z}
+                            onMouseDown={() => {
+                              handleZonaClick(z);
+                              setDistrictSearch(`Zona ${z} — ${DF_ZONA_NOMES[z] ?? ''}`);
+                              setShowDistrictSuggestions(false);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm transition-colors"
+                            style={{ color: 'var(--text-primary)', borderBottom: '1px solid var(--tint-06)' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--tint-06)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <span className="font-medium">Zona {z}</span>
+                            <span className="ml-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                              {DF_ZONA_NOMES[z]} · {colaboradoresByZona[z]?.length ?? 0} colab.
+                            </span>
+                          </button>
+                        ))
+                      }
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             {/* Sub-toggle: Regiões Admin. | Zonas Eleitorais — only in Mapa tab */}
             {activeTab === 'mapa' && (
