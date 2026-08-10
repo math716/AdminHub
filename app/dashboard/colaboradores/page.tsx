@@ -371,11 +371,11 @@ function ColaboradoresMapInner({
   }, []);
 
   const HEAT_COLORS = [
-    { fill: '#bfdbfe', border: '#93c5fd' }, // tier 1 — muito baixo
+    { fill: '#93c5fd', border: '#60a5fa' }, // tier 1 — muito baixo
     { fill: '#60a5fa', border: '#3b82f6' }, // tier 2 — baixo
-    { fill: '#2563eb', border: '#1d4ed8' }, // tier 3 — médio
-    { fill: '#1e3a8a', border: '#1d4ed8' }, // tier 4 — alto
-    { fill: '#0f172a', border: '#1e3a8a' }, // tier 5 — muito alto
+    { fill: '#3b82f6', border: '#2563eb' }, // tier 3 — médio
+    { fill: '#2563eb', border: '#1d4ed8' }, // tier 4 — alto
+    { fill: '#1d4ed8', border: '#1e40af' }, // tier 5 — muito alto
   ];
 
   const getHeatTier = useCallback((nome: string): number => {
@@ -404,7 +404,7 @@ function ColaboradoresMapInner({
       return { fillColor: '#cbd5e1', fillOpacity: 0.12, color: '#94a3b8', weight: 1, opacity: 0.5 };
     }
     const { fill, border } = HEAT_COLORS[tier - 1];
-    return { fillColor: fill, fillOpacity: 0.55 + tier * 0.06, color: border, weight: 1.5, opacity: 1 };
+    return { fillColor: fill, fillOpacity: 0.75, color: border, weight: 1.5, opacity: 1 };
   }, [getHeatTier]);
 
   useEffect(() => {
@@ -588,11 +588,11 @@ function ColaboradoresMapInner({
         <div className="flex flex-col gap-1.5">
           {[
             { color: '#cbd5e1', opacity: 0.4,  label: 'Sem colaboradores' },
-            { color: '#bfdbfe', opacity: 1,     label: 'Muito baixo' },
+            { color: '#93c5fd', opacity: 1,     label: 'Muito baixo' },
             { color: '#60a5fa', opacity: 1,     label: 'Baixo' },
-            { color: '#2563eb', opacity: 1,     label: 'Médio' },
-            { color: '#1e3a8a', opacity: 1,     label: 'Alto' },
-            { color: '#0f172a', opacity: 1,     label: 'Muito alto' },
+            { color: '#3b82f6', opacity: 1,     label: 'Médio' },
+            { color: '#2563eb', opacity: 1,     label: 'Alto' },
+            { color: '#1d4ed8', opacity: 1,     label: 'Muito alto' },
           ].map(({ color, opacity, label }) => (
             <div key={label} className="flex items-center gap-2">
               <div className="w-5 h-3.5 rounded-sm flex-shrink-0" style={{ background: color, opacity }} />
