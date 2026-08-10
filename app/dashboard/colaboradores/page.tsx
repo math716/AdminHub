@@ -1901,7 +1901,7 @@ export default function ColaboradoresPage() {
                 <div className="p-6 space-y-5">
                   {/* Nome */}
                   <div>
-                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)', opacity: 0.75 }}>
                       Nome <span style={{ color: '#ef4444' }}>*</span>
                     </label>
                     <input
@@ -1910,14 +1910,14 @@ export default function ColaboradoresPage() {
                       value={form.nome}
                       onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
                       className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                      style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                      style={{ background: 'var(--tint-06)', border: '1px solid rgba(148,163,184,0.2)', color: 'var(--text-primary)' }}
                     />
                   </div>
 
                   {/* Telefone + Email */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                      <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)', opacity: 0.75 }}>
                         Telefone
                       </label>
                       <input
@@ -1926,11 +1926,11 @@ export default function ColaboradoresPage() {
                         value={form.telefone}
                         onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))}
                         className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                        style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                        style={{ background: 'var(--tint-06)', border: '1px solid rgba(148,163,184,0.2)', color: 'var(--text-primary)' }}
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                      <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)', opacity: 0.75 }}>
                         Email
                       </label>
                       <input
@@ -1939,14 +1939,14 @@ export default function ColaboradoresPage() {
                         value={form.email}
                         onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                         className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                        style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                        style={{ background: 'var(--tint-06)', border: '1px solid rgba(148,163,184,0.2)', color: 'var(--text-primary)' }}
                       />
                     </div>
                   </div>
 
                   {/* Endereço */}
                   <div>
-                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)', opacity: 0.75 }}>
                       Endereço
                     </label>
                     <input
@@ -1955,14 +1955,14 @@ export default function ColaboradoresPage() {
                       value={form.endereco}
                       onChange={e => setForm(f => ({ ...f, endereco: e.target.value }))}
                       className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                      style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                      style={{ background: 'var(--tint-06)', border: '1px solid rgba(148,163,184,0.2)', color: 'var(--text-primary)' }}
                     />
                   </div>
 
                   {/* Função + Status */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                      <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)', opacity: 0.75 }}>
                         Função
                       </label>
                       <div className="relative">
@@ -1970,7 +1970,7 @@ export default function ColaboradoresPage() {
                           type="button"
                           onClick={() => setOpenFuncaoDropdown(o => !o)}
                           className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-left"
-                          style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                          style={{ background: 'var(--tint-06)', border: '1px solid rgba(148,163,184,0.2)', color: 'var(--text-primary)' }}
                         >
                           <span>{FUNCOES.find(f => f.value === form.funcao)?.label ?? 'Sem função definida'}</span>
                           <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
@@ -2000,7 +2000,7 @@ export default function ColaboradoresPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                      <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)', opacity: 0.75 }}>
                         Status
                       </label>
                       <div className="flex gap-2">
@@ -2009,17 +2009,22 @@ export default function ColaboradoresPage() {
                             key={s}
                             type="button"
                             onClick={() => setForm(f => ({ ...f, status: s }))}
-                            className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
                             style={{
                               background: form.status === s
-                                ? (s === 'ATIVO' ? 'rgba(34,197,94,0.2)' : 'rgba(100,116,139,0.15)')
+                                ? (s === 'ATIVO'
+                                    ? 'linear-gradient(135deg, #15803d, #16a34a)'
+                                    : 'linear-gradient(135deg, #b91c1c, #dc2626)')
                                 : 'var(--tint-06)',
-                              color: form.status === s
-                                ? (s === 'ATIVO' ? '#22c55e' : '#94a3b8')
-                                : 'var(--text-secondary)',
+                              color: form.status === s ? '#fff' : 'var(--text-secondary)',
                               border: '1px solid ' + (form.status === s
-                                ? (s === 'ATIVO' ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.2)')
+                                ? (s === 'ATIVO' ? 'rgba(22,163,74,0.6)' : 'rgba(220,38,38,0.6)')
                                 : 'var(--tint-10)'),
+                              boxShadow: form.status === s
+                                ? (s === 'ATIVO'
+                                    ? '0 2px 8px rgba(22,163,74,0.35)'
+                                    : '0 2px 8px rgba(220,38,38,0.35)')
+                                : 'none',
                             }}
                           >
                             {s === 'ATIVO' ? 'Ativo' : 'Inativo'}
@@ -2031,7 +2036,7 @@ export default function ColaboradoresPage() {
 
                   {/* Padrinho Político */}
                   <div>
-                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)', opacity: 0.75 }}>
                       Padrinho Político
                     </label>
 
@@ -2159,7 +2164,7 @@ export default function ColaboradoresPage() {
                   {/* Regiões & Zonas */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                      <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)', opacity: 0.75 }}>
                         Áreas de Atuação
                         {(form.regioes.length + form.zonas.length) > 0 && (
                           <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}>
@@ -2268,7 +2273,7 @@ export default function ColaboradoresPage() {
 
                   {/* Observação */}
                   <div>
-                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)', opacity: 0.75 }}>
                       Observação
                     </label>
                     <textarea
@@ -2277,7 +2282,7 @@ export default function ColaboradoresPage() {
                       value={form.observacao}
                       onChange={e => setForm(f => ({ ...f, observacao: e.target.value }))}
                       className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-none"
-                      style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                      style={{ background: 'var(--tint-06)', border: '1px solid rgba(148,163,184,0.2)', color: 'var(--text-primary)' }}
                     />
                   </div>
                 </div>
