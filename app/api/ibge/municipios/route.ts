@@ -2,23 +2,42 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 
+// Regiões Administrativas oficiais do DF (33 RAs)
+const DF_REGIOES_ADMINISTRATIVAS = [
+  'Águas Claras', 'Arniqueira', 'Asa Norte', 'Asa Sul',
+  'Brazlândia', 'Candangolândia', 'Ceilândia', 'Cruzeiro',
+  'Estrutural / SCIA', 'Fercal', 'Gama', 'Guará',
+  'Itapoã', 'Jardim Botânico', 'Lago Norte', 'Lago Sul',
+  'Núcleo Bandeirante', 'Octogonal', 'Park Way', 'Paranoá',
+  'Planaltina', 'Plano Piloto', 'Recanto das Emas', 'Riacho Fundo',
+  'Riacho Fundo II', 'Samambaia', 'Santa Maria', 'São Sebastião',
+  'SIA', 'Sobradinho', 'Sobradinho II', 'Sol Nascente / Pôr do Sol',
+  'Sudoeste / Octogonal', 'Taguatinga', 'Varjão', 'Vicente Pires',
+].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const uf = searchParams.get('uf');
+    const uf = searchParams.get('uf')?.toUpperCase() ?? '';
 
     if (!uf) {
       return NextResponse.json({ error: 'UF é obrigatório' }, { status: 400 });
     }
 
+    // DF: IBGE só retorna "Brasília" — usamos as RAs oficiais no lugar
+    if (uf === 'DF') {
+      const municipios = DF_REGIOES_ADMINISTRATIVAS.map((nome, i) => ({ id: 5300108 + i, nome }));
+      return NextResponse.json(municipios);
+    }
+
     const ufCodes: Record<string, number> = {
-      'AC': 12, 'AL': 27, 'AP': 16, 'AM': 13, 'BA': 29, 'CE': 23, 'DF': 53,
+      'AC': 12, 'AL': 27, 'AP': 16, 'AM': 13, 'BA': 29, 'CE': 23,
       'ES': 32, 'GO': 52, 'MA': 21, 'MT': 51, 'MS': 50, 'MG': 31, 'PA': 15,
       'PB': 25, 'PR': 41, 'PE': 26, 'PI': 22, 'RJ': 33, 'RN': 24, 'RS': 43,
       'RO': 11, 'RR': 14, 'SC': 42, 'SP': 35, 'SE': 28, 'TO': 17
     };
 
-    const ufCode = ufCodes[uf?.toUpperCase?.() ?? ''];
+    const ufCode = ufCodes[uf];
     if (!ufCode) {
       return NextResponse.json({ error: 'UF inválido' }, { status: 400 });
     }
@@ -28,15 +47,12 @@ export async function GET(request: NextRequest) {
       { next: { revalidate: 86400 } }
     );
 
-    if (!res.ok) {
-      throw new Error('Erro ao buscar municípios');
-    }
+    if (!res.ok) throw new Error('Erro ao buscar municípios');
 
     const data = await res.json();
-    const municipios = (data ?? [])?.map?.((m: any) => ({
-      id: m?.id ?? 0,
-      nome: m?.nome ?? ''
-    }))?.sort?.((a: any, b: any) => (a?.nome ?? '')?.localeCompare?.(b?.nome ?? '', 'pt-BR')) ?? [];
+    const municipios = (data ?? [])
+      .map((m: any) => ({ id: m?.id ?? 0, nome: m?.nome ?? '' }))
+      .sort((a: any, b: any) => (a?.nome ?? '').localeCompare(b?.nome ?? '', 'pt-BR'));
 
     return NextResponse.json(municipios);
   } catch (error) {
