@@ -52,13 +52,14 @@ export function getRoleLabel(role: string): string {
 // ─── Permissões granulares por feature ──────────────────────────────────────
 
 export const PERMISSIONS = {
-  MAPA_GABINETE:    'MAPA_GABINETE',
-  CONTATOS:         'CONTATOS',
-  AGENDA:           'AGENDA',
-  DEMANDAS:         'DEMANDAS',
-  PROJETO_CAMPANHA: 'PROJETO_CAMPANHA',
-  MAPA_ELEITORAL:   'MAPA_ELEITORAL',
-  EMENDAS_MAPA:     'EMENDAS_MAPA',
+  MAPA_GABINETE:          'MAPA_GABINETE',
+  CONTATOS:               'CONTATOS',
+  AGENDA:                 'AGENDA',
+  DEMANDAS:               'DEMANDAS',
+  PROJETO_CAMPANHA:       'PROJETO_CAMPANHA',
+  MAPA_ELEITORAL:         'MAPA_ELEITORAL',
+  EMENDAS_MAPA:           'EMENDAS_MAPA',
+  COLABORADORES_CAMPANHA: 'COLABORADORES_CAMPANHA',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -66,26 +67,28 @@ export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 export const ALL_PERMISSIONS: Permission[] = Object.values(PERMISSIONS);
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
-  MAPA_GABINETE:    'Mapa do Gabinete',
-  CONTATOS:         'Contatos',
-  AGENDA:           'Agenda',
-  DEMANDAS:         'Demandas',
-  PROJETO_CAMPANHA: 'Projeto de Campanha',
-  MAPA_ELEITORAL:   'Mapa Eleitoral',
-  EMENDAS_MAPA:     'Mapa de Emendas',
+  MAPA_GABINETE:          'Mapa do Gabinete',
+  CONTATOS:               'Contatos',
+  AGENDA:                 'Agenda',
+  DEMANDAS:               'Demandas',
+  PROJETO_CAMPANHA:       'Projeto de Campanha',
+  MAPA_ELEITORAL:         'Mapa Eleitoral',
+  EMENDAS_MAPA:           'Mapa de Emendas',
+  COLABORADORES_CAMPANHA: 'Colaboradores de Campanha',
 };
 
 // Mapeia prefixo de rota → permissão exigida. Rotas não listadas (/dashboard,
 // /dashboard/configuracoes, /dashboard/usuarios, /dashboard/favoritos) são livres
 // para qualquer usuário autenticado — checagens de role acontecem nas próprias páginas.
 export const PATH_PERMISSIONS: { prefix: string; permission: Permission }[] = [
-  { prefix: '/dashboard/mapa-demandas', permission: PERMISSIONS.MAPA_GABINETE    },
-  { prefix: '/dashboard/contatos',      permission: PERMISSIONS.CONTATOS         },
-  { prefix: '/dashboard/agenda',        permission: PERMISSIONS.AGENDA           },
-  { prefix: '/dashboard/demandas',      permission: PERMISSIONS.DEMANDAS         },
-  { prefix: '/dashboard/mapa-campanha', permission: PERMISSIONS.PROJETO_CAMPANHA },
-  { prefix: '/dashboard/mapa',          permission: PERMISSIONS.MAPA_ELEITORAL   },
-  { prefix: '/dashboard/emendas',       permission: PERMISSIONS.EMENDAS_MAPA     },
+  { prefix: '/dashboard/mapa-demandas',   permission: PERMISSIONS.MAPA_GABINETE          },
+  { prefix: '/dashboard/contatos',        permission: PERMISSIONS.CONTATOS               },
+  { prefix: '/dashboard/agenda',          permission: PERMISSIONS.AGENDA                 },
+  { prefix: '/dashboard/demandas',        permission: PERMISSIONS.DEMANDAS               },
+  { prefix: '/dashboard/mapa-campanha',   permission: PERMISSIONS.PROJETO_CAMPANHA       },
+  { prefix: '/dashboard/mapa',            permission: PERMISSIONS.MAPA_ELEITORAL         },
+  { prefix: '/dashboard/emendas',         permission: PERMISSIONS.EMENDAS_MAPA           },
+  { prefix: '/dashboard/colaboradores',   permission: PERMISSIONS.COLABORADORES_CAMPANHA },
 ];
 
 export function requiredPermissionForPath(pathname: string): Permission | null {

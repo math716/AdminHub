@@ -9,6 +9,7 @@ import {
   Map,
   FileText,
   Users,
+  Users2,
   LogOut,
   Target,
   MapPin,
@@ -48,9 +49,10 @@ const navigation: { section: string; items: NavItem[] }[] = [
   {
     section: 'Dados Políticos',
     items: [
-      { name: 'Mapa Eleitoral',         href: '/dashboard/mapa'         , icon: Map,      permission: PERMISSIONS.MAPA_ELEITORAL   },
-      { name: 'Projeto de Campanha',    href: '/dashboard/mapa-campanha', icon: Target,   permission: PERMISSIONS.PROJETO_CAMPANHA },
-      { name: 'Emendas Parlamentares',  href: '/dashboard/emendas'      , icon: Landmark, permission: PERMISSIONS.EMENDAS_MAPA     },
+      { name: 'Mapa Eleitoral',              href: '/dashboard/mapa'          , icon: Map,     permission: PERMISSIONS.MAPA_ELEITORAL         },
+      { name: 'Projeto de Campanha',         href: '/dashboard/mapa-campanha' , icon: Target,  permission: PERMISSIONS.PROJETO_CAMPANHA        },
+      { name: 'Emendas Parlamentares',       href: '/dashboard/emendas'       , icon: Landmark,permission: PERMISSIONS.EMENDAS_MAPA            },
+      { name: 'Colaboradores de Campanha',   href: '/dashboard/colaboradores' , icon: Users2,  permission: PERMISSIONS.COLABORADORES_CAMPANHA  },
     ],
   },
   {

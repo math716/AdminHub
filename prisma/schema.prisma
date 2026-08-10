@@ -87,6 +87,11 @@ enum ParlamentarCargo {
   RELATOR
 }
 
+enum ColaboradorStatus {
+  ATIVO
+  INATIVO
+}
+
 // ============== MODELS ==============
 
 /// Gabinete/Secretaria
@@ -110,6 +115,7 @@ model Gabinete {
   demands              Demand[]
   agendaEvents         AgendaEvent[]
   contatos             Contato[]
+  colaboradores        Colaborador[]
   emendasNaoRealizadas EmendaNaoRealizada[]
 
   @@map("gabinetes")
@@ -142,6 +148,7 @@ model User {
   demands       Demand[]          @relation("CreatedBy")
   agendaEvents  AgendaEvent[]     @relation("AgendaCreatedBy")
   contatos      Contato[]         @relation("ContatoCreatedBy")
+  colaboradores Colaborador[]     @relation("ColaboradorCreatedBy")
   favorites     Favorite[]
   anotacoesEmenda EmendaAnotacao[]
   projecoes     ProjecaoCampanha[]
@@ -527,6 +534,56 @@ model Contato {
   @@index([createdAt])
   @@index([gabineteId, createdAt])
   @@map("contatos")
+}
+
+/// Colaborador de Campanha — responsável por uma ou mais regiões geográficas
+model Colaborador {
+  id           String            @id @default(cuid())
+  nome         String
+  telefone     String?
+  email        String?
+  endereco     String?
+  lat          Float?
+  lng          Float?
+  funcao       String?
+  observacao   String?
+  status       ColaboradorStatus @default(ATIVO)
+
+  // Auto-referência: padrinho político (hierarquia entre colaboradores)
+  padrinhoId   String?
+  padrinho     Colaborador?      @relation("Padrinho", fields: [padrinhoId], references: [id], onDelete: SetNull)
+  apadrinhados Colaborador[]     @relation("Padrinho")
+
+  gabineteId   String
+  gabinete     Gabinete          @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+
+  createdById  String
+  createdBy    User              @relation("ColaboradorCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  regioes      ColaboradorRegiao[]
+
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([gabineteId])
+  @@index([padrinhoId])
+  @@index([status])
+  @@index([gabineteId, status])
+  @@map("colaboradores")
+}
+
+/// Regiões de atuação de um Colaborador (N:N via join table)
+model ColaboradorRegiao {
+  id            String      @id @default(cuid())
+  colaboradorId String
+  colaborador   Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  uf            String
+  regiaoNome    String
+
+  @@unique([colaboradorId, regiaoNome])
+  @@index([colaboradorId])
+  @@index([regiaoNome])
+  @@map("colaboradores_regioes")
 }
 
 /// Parcerias de uma Projeção
