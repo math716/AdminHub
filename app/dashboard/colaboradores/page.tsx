@@ -1100,7 +1100,7 @@ export default function ColaboradoresPage() {
       {/* ── Header ── */}
       <PageHeader
         icon={Users2}
-        title="Colaboradores de Campanha"
+        title="Colaboradores"
         subtitle="Gerencie sua equipe por regiões administrativas do DF"
         actions={
           <>
@@ -1412,72 +1412,6 @@ export default function ColaboradoresPage() {
                 {/* ── Regiões Administrativas view ── */}
                 {dfVisualizacao === 'regioes' && (
                   <>
-                    {/* Region detail card */}
-                    {selectedRegiao && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        className="rounded-xl p-4"
-                        style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <MapPin className="w-4 h-4" style={{ color: '#4a9ede' }} />
-                              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                                {selectedRegiao}
-                              </h3>
-                              <span
-                                className="text-xs px-2 py-0.5 rounded-full"
-                                style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
-                              >
-                                {regiaoColaboradores.length} colaborador{regiaoColaboradores.length !== 1 ? 'es' : ''}
-                              </span>
-                            </div>
-                            {regiaoColaboradores.length > 0 ? (
-                              <div className="flex flex-wrap gap-2">
-                                {regiaoColaboradores.map(c => (
-                                  <div
-                                    key={c.id}
-                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs"
-                                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
-                                  >
-                                    <User className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
-                                    <span style={{ color: 'var(--text-primary)' }}>{c.nome}</span>
-                                    {c.funcao && (
-                                      <span style={{ color: 'var(--text-tertiary)' }}>· {c.funcao}</span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                                Nenhum colaborador nesta região ainda.
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <button
-                              onClick={() => {
-                                setForm({ ...EMPTY_FORM, regioes: [selectedRegiao], zonas: [] });
-                                setEditingColaborador(null);
-                                setShowFormModal(true);
-                              }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
-                              style={{ background: 'linear-gradient(135deg, #1d6fd8, #4a9ede)' }}
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                              Adicionar
-                            </button>
-                            <button onClick={clearRegionFilter}>
-                              <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
-                            </button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-
                     {/* Polygon map */}
                     <div
                       className="rounded-xl overflow-hidden"
