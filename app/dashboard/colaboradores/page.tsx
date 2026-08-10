@@ -131,8 +131,8 @@ function detectColabColumns(headers: string[]): DetectedColabCols {
     else if (!result.email && /email/.test(n)) result.email = h;
     else if (!result.endereco && /endereco|rua|logradouro|address/.test(n)) result.endereco = h;
     else if (!result.funcao && /funcao|cargo|role|funcoes/.test(n)) result.funcao = h;
-    else if (!result.observacao && /observacao|obs|notas|notes/.test(n)) result.observacao = h;
-    else if (!result.regioes && /regiao|regioes|region|regions|ra/.test(n)) result.regioes = h;
+    else if (!result.observacao && /observacao|obs|notas|notes|apelido|alcunha|alias/.test(n)) result.observacao = h;
+    else if (!result.regioes && /regiao|regioes|region|regions|\bra\b|cidade|city/.test(n)) result.regioes = h;
   }
   return result;
 }
@@ -702,9 +702,30 @@ export default function ColaboradoresPage() {
         const buffer = await file.arrayBuffer();
         const wb = XLSX.read(buffer, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' });
-        rows = data.map(r => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, String(v)])));
-        headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+
+        // Read raw arrays so we can find the actual header row
+        // (handles spreadsheets that have a title row before the real headers)
+        const rawAll = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '' });
+
+        // Score each of the first 5 rows: count how many cells look like field names
+        const FIELD_RE = /nome|name|celular|telefone|email|endereco|cidade|city|regiao|region|funcao|cargo|apelido|id$/;
+        let headerIdx = 0;
+        let bestScore = -1;
+        for (let i = 0; i < Math.min(5, rawAll.length); i++) {
+          const cells = (rawAll[i] as unknown[]).map(v => normStr(String(v)));
+          const score = cells.filter(c => FIELD_RE.test(c)).length;
+          if (score > bestScore) { bestScore = score; headerIdx = i; }
+        }
+
+        const rawHeaders = (rawAll[headerIdx] as unknown[]).map(v => String(v).trim());
+        headers = rawHeaders.map((h, i) => h || `_col${i}`);
+        rows = rawAll.slice(headerIdx + 1)
+          .filter(row => (row as unknown[]).some(v => String(v).trim() !== ''))
+          .map(row => {
+            const obj: Record<string, string> = {};
+            headers.forEach((h, i) => { obj[h] = String((row as unknown[])[i] ?? '').trim(); });
+            return obj;
+          });
       }
 
       const cols = detectColabColumns(headers);
@@ -1926,9 +1947,11 @@ export default function ColaboradoresPage() {
                       <div className="w-full rounded-xl p-4 text-sm" style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
                         <p className="font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Dicas de formatação:</p>
                         <ul className="space-y-1" style={{ color: 'var(--text-tertiary)' }}>
-                          <li>• Coluna <code className="px-1 rounded" style={{ background: 'var(--tint-10)' }}>nome</code> é obrigatória</li>
-                          <li>• Coluna <code className="px-1 rounded" style={{ background: 'var(--tint-10)' }}>regioes</code> aceita nomes separados por vírgula</li>
-                          <li>• Nomes de região devem corresponder às RAs do DF (ex: "Plano Piloto", "Taguatinga")</li>
+                          <li>• Coluna <code className="px-1 rounded" style={{ background: 'var(--tint-10)' }}>nome</code> ou <code className="px-1 rounded" style={{ background: 'var(--tint-10)' }}>nome completo</code> é obrigatória</li>
+                          <li>• <code className="px-1 rounded" style={{ background: 'var(--tint-10)' }}>celular</code> / <code className="px-1 rounded" style={{ background: 'var(--tint-10)' }}>telefone</code> → campo Telefone</li>
+                          <li>• <code className="px-1 rounded" style={{ background: 'var(--tint-10)' }}>cidade</code> → Regiões de atuação (RA do DF)</li>
+                          <li>• <code className="px-1 rounded" style={{ background: 'var(--tint-10)' }}>apelido</code> → Observação</li>
+                          <li>• Linhas de título antes do cabeçalho são ignoradas automaticamente</li>
                         </ul>
                       </div>
                       {importError && (
