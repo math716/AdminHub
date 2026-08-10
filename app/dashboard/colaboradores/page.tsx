@@ -1489,7 +1489,7 @@ export default function ColaboradoresPage() {
                           >
                             <span className="font-medium">{nome}</span>
                             <span className="ml-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                              {colaboradoresByRegiao[nome]?.length ?? 0} colab.
+                              {(Object.entries(colaboradoresByRegiao).find(([k]) => normalizeRegiao(k) === normalizeRegiao(nome))?.[1]?.length ?? 0)} colab.
                             </span>
                           </button>
                         ))
