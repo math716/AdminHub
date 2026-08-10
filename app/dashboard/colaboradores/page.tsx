@@ -1091,22 +1091,31 @@ export default function ColaboradoresPage() {
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: 'Total', value: colaboradores.length, icon: Users2, color: '#3b82f6', grad: 'from-blue-500/10 to-blue-600/5' },
-          { label: 'RAs cobertas', value: `${regioesCobertasCount} / 33`, icon: MapPin, color: '#10b981', grad: 'from-emerald-500/10 to-emerald-600/5' },
-          { label: 'Zonas cobertas', value: `${zonasCobertasCount} / 19`, icon: MapPin, color: '#8b5cf6', grad: 'from-violet-500/10 to-violet-600/5' },
-          { label: 'Ativos', value: ativosCount, icon: UserCheck, color: '#10b981', grad: 'from-emerald-500/10 to-emerald-600/5' },
-        ].map(({ label, value, icon: Icon, color, grad }) => (
+          { label: 'Total', value: colaboradores.length, icon: Users2, color: '#2563eb', dark: '#3b82f6' },
+          { label: 'RAs cobertas', value: `${regioesCobertasCount} / 33`, icon: MapPin, color: '#059669', dark: '#10b981' },
+          { label: 'Zonas cobertas', value: `${zonasCobertasCount} / 19`, icon: MapPin, color: '#7c3aed', dark: '#8b5cf6' },
+          { label: 'Ativos', value: ativosCount, icon: UserCheck, color: '#059669', dark: '#10b981' },
+        ].map(({ label, value, icon: Icon, color, dark }) => (
           <div
             key={label}
-            className={`rounded-xl p-4 flex items-center gap-3 bg-gradient-to-br ${grad}`}
-            style={{ border: `1px solid ${color}35` }}
+            className="rounded-xl p-4 flex items-center gap-3 relative overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${color}28 0%, ${color}10 100%)`,
+              border: `1.5px solid ${color}70`,
+              boxShadow: `0 2px 12px ${color}20`,
+            }}
           >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}22` }}>
-              <Icon className="w-5 h-5" style={{ color }} />
+            {/* vivid left accent bar */}
+            <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full" style={{ background: color }} />
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: `${color}30`, border: `1px solid ${color}60` }}
+            >
+              <Icon className="w-5 h-5" style={{ color: dark }} />
             </div>
             <div>
-              <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
-              <p className="text-xl font-bold" style={{ color }}>{loading ? '—' : value}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: `${dark}cc` }}>{label}</p>
+              <p className="text-2xl font-extrabold leading-tight" style={{ color: dark }}>{loading ? '—' : value}</p>
             </div>
           </div>
         ))}
