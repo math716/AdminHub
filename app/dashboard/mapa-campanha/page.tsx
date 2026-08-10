@@ -2842,7 +2842,10 @@ export default function MapaCampanhaPage() {
                             ? "Pesquisar bairro..."
                             : "Pesquisar município..."}
                           value={searchMunicipio}
-                          onChange={(e) => setSearchMunicipio(e.target.value)}
+                          onChange={(e) => {
+                            setSearchMunicipio(e.target.value);
+                            if (e.target.value && municipiosDisponiveis.length === 0) loadMunicipiosDisponiveis();
+                          }}
                           className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg pl-9 pr-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                         />
                       </div>
@@ -3462,11 +3465,63 @@ export default function MapaCampanhaPage() {
                               </div>
                             );
                           })}
-                        {getFilteredMunicipios().length === 0 && (
-                          <div className="p-4 text-center text-slate-600 dark:text-slate-400 text-sm">
-                            Nenhum município encontrado
-                          </div>
-                        )}
+                        {getFilteredMunicipios().length === 0 && (() => {
+                          if (!searchMunicipio.trim()) {
+                            return (
+                              <div className="p-4 text-center text-slate-600 dark:text-slate-400 text-sm">
+                                Nenhum município encontrado
+                              </div>
+                            );
+                          }
+                          const q = searchMunicipio.toLowerCase();
+                          const sugestoes = municipiosDisponiveis
+                            .filter(nome => nome.toLowerCase().includes(q))
+                            .filter(nome => !projecao?.municipios.some(m => m.municipio.toUpperCase() === nome.toUpperCase()))
+                            .slice(0, 8);
+                          if (sugestoes.length === 0) {
+                            return (
+                              <div className="p-4 text-center text-slate-600 dark:text-slate-400 text-sm">
+                                Nenhum município encontrado
+                              </div>
+                            );
+                          }
+                          return (
+                            <div>
+                              <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                Adicionar à projeção
+                              </p>
+                              {sugestoes.map(nome => (
+                                <div
+                                  key={nome}
+                                  className="px-3 py-2 flex items-center justify-between gap-2 hover:bg-[var(--bg-card-subtle)]/70 cursor-pointer border-b border-[var(--border-default)]"
+                                  onClick={() => {
+                                    if (!projecao) return;
+                                    setProjecao(prev => {
+                                      if (!prev) return prev;
+                                      return {
+                                        ...prev,
+                                        municipios: [...prev.municipios, {
+                                          municipio: nome.toUpperCase(),
+                                          votosBase: 0,
+                                          metaConservadora: 0,
+                                          metaPossivel: 0,
+                                          metaArrojada: 0,
+                                          prioridade: 'MEDIA',
+                                          dobradaAtiva: false,
+                                        }],
+                                      };
+                                    });
+                                    setSearchMunicipio('');
+                                    toast.success(`${nome} adicionado à projeção`);
+                                  }}
+                                >
+                                  <span className="text-sm text-[color:var(--text-primary)] font-medium">{nome}</span>
+                                  <span className="text-[10px] text-emerald-400 font-semibold flex-shrink-0">+ Adicionar</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                   </CardContent>
