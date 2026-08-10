@@ -1105,14 +1105,13 @@ export default function ColaboradoresPage() {
           <>
             <button
               onClick={() => setShowImportModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-150"
               style={{
-                background: 'var(--tint-06)',
-                border: '1px solid var(--tint-10)',
-                color: 'var(--text-secondary)',
+                background: 'linear-gradient(135deg, #15803d, #16a34a)',
+                boxShadow: '0 4px 14px rgba(21,128,61,0.35)',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--tint-10)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'var(--tint-06)')}
+              onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
+              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
             >
               <FileUp className="w-4 h-4" />
               Importar CSV
@@ -1153,28 +1152,28 @@ export default function ColaboradoresPage() {
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: 'Total',         value: colaboradores.length,           icon: Users2,    color: '#1d4ed8' },
-          { label: 'RAs cobertas',  value: `${regioesCobertasCount} / 33`, icon: MapPin,    color: '#15803d' },
-          { label: 'Zonas cobertas',value: `${zonasCobertasCount} / 19`,   icon: MapPin,    color: '#6d28d9' },
-          { label: 'Ativos',        value: ativosCount,                    icon: UserCheck, color: '#15803d' },
-        ].map(({ label, value, icon: Icon, color }) => (
+          { label: 'Total',          value: colaboradores.length,           icon: Users2,    rgb: '37,99,235'   },
+          { label: 'RAs cobertas',   value: `${regioesCobertasCount} / 33`, icon: MapPin,    rgb: '22,163,74'   },
+          { label: 'Zonas cobertas', value: `${zonasCobertasCount} / 19`,   icon: MapPin,    rgb: '124,58,237'  },
+          { label: 'Ativos',         value: ativosCount,                    icon: UserCheck, rgb: '22,163,74'   },
+        ].map(({ label, value, icon: Icon, rgb }) => (
           <div
             key={label}
             className="rounded-xl p-4 flex items-center gap-3"
             style={{
-              background: `color-mix(in srgb, ${color} 14%, var(--bg-card))`,
-              border: `1px solid color-mix(in srgb, ${color} 55%, transparent)`,
+              background: `rgba(${rgb},0.18)`,
+              border: `1px solid rgba(${rgb},0.55)`,
             }}
           >
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: `color-mix(in srgb, ${color} 22%, transparent)` }}
+              style={{ background: `rgba(${rgb},0.28)` }}
             >
-              <Icon className="w-4 h-4" style={{ color }} />
+              <Icon className="w-4 h-4" style={{ color: `rgb(${rgb})` }} />
             </div>
             <div>
               <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
-              <p className="text-lg font-bold" style={{ color }}>{loading ? '—' : value}</p>
+              <p className="text-lg font-bold" style={{ color: `rgb(${rgb})` }}>{loading ? '—' : value}</p>
             </div>
           </div>
         ))}
