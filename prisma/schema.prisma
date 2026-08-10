@@ -579,8 +579,9 @@ model ColaboradorRegiao {
   colaborador   Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
   uf            String
   regiaoNome    String
+  tipo          String      @default("RA")   // "RA" = Região Administrativa | "ZONA" = Zona Eleitoral
 
-  @@unique([colaboradorId, regiaoNome])
+  @@unique([colaboradorId, regiaoNome, tipo])
   @@index([colaboradorId])
   @@index([regiaoNome])
   @@map("colaboradores_regioes")

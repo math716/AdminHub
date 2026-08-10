@@ -11,7 +11,7 @@ const SELECT = {
   observacao: true, status: true, padrinhoId: true,
   padrinho: { select: { id: true, nome: true } },
   apadrinhados: { select: { id: true, nome: true } },
-  regioes: { select: { id: true, regiaoNome: true, uf: true } },
+  regioes: { select: { id: true, regiaoNome: true, uf: true, tipo: true } },
   createdAt: true,
 } as const;
 
@@ -39,11 +39,16 @@ export async function PATCH(
     if (!existing) return NextResponse.json({ error: 'Colaborador não encontrado' }, { status: 404 });
 
     const body = await request.json();
-    const { nome, telefone, email, endereco, lat, lng, funcao, padrinhoId, observacao, status, regioes } = body ?? {};
+    const { nome, telefone, email, endereco, lat, lng, funcao, padrinhoId, observacao, status, regioes, zonas } = body ?? {};
+
+    const hasRegioesUpdate = Array.isArray(regioes) || Array.isArray(zonas);
+    const raItems = Array.isArray(regioes) ? regioes.map((r: string) => ({ uf: 'DF', regiaoNome: r, tipo: 'RA' })) : [];
+    const zonaItems = Array.isArray(zonas) ? zonas.map((z: string) => ({ uf: 'DF', regiaoNome: `Zona ${z}`, tipo: 'ZONA' })) : [];
+    const allRegioes = [...raItems, ...zonaItems];
 
     const colaborador = await prisma.$transaction(async (tx) => {
       // Atualiza as regiões: delete todas e recria
-      if (Array.isArray(regioes)) {
+      if (hasRegioesUpdate) {
         await tx.colaboradorRegiao.deleteMany({ where: { colaboradorId: params.id } });
       }
 
@@ -60,10 +65,8 @@ export async function PATCH(
           ...(observacao !== undefined && { observacao: observacao?.trim() || null }),
           ...(status !== undefined && { status: status === 'INATIVO' ? 'INATIVO' : 'ATIVO' }),
           ...(padrinhoId !== undefined && { padrinhoId: padrinhoId || null }),
-          ...(Array.isArray(regioes) && {
-            regioes: {
-              create: regioes.map((r: string) => ({ uf: 'DF', regiaoNome: r })),
-            },
+          ...(hasRegioesUpdate && allRegioes.length > 0 && {
+            regioes: { create: allRegioes },
           }),
         },
         select: SELECT,

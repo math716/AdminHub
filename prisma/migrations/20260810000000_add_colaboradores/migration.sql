@@ -28,6 +28,7 @@ CREATE TABLE "colaboradores_regioes" (
     "colaboradorId" TEXT NOT NULL,
     "uf"            TEXT NOT NULL,
     "regiaoNome"    TEXT NOT NULL,
+    "tipo"          TEXT NOT NULL DEFAULT 'RA',
 
     CONSTRAINT "colaboradores_regioes_pkey" PRIMARY KEY ("id")
 );
@@ -55,7 +56,7 @@ CREATE INDEX "colaboradores_padrinhoId_idx" ON "colaboradores"("padrinhoId");
 CREATE INDEX "colaboradores_status_idx" ON "colaboradores"("status");
 CREATE INDEX "colaboradores_gabineteId_status_idx" ON "colaboradores"("gabineteId", "status");
 
-CREATE UNIQUE INDEX "colaboradores_regioes_colaboradorId_regiaoNome_key"
-    ON "colaboradores_regioes"("colaboradorId", "regiaoNome");
+CREATE UNIQUE INDEX "colaboradores_regioes_colaboradorId_regiaoNome_tipo_key"
+    ON "colaboradores_regioes"("colaboradorId", "regiaoNome", "tipo");
 CREATE INDEX "colaboradores_regioes_colaboradorId_idx" ON "colaboradores_regioes"("colaboradorId");
 CREATE INDEX "colaboradores_regioes_regiaoNome_idx" ON "colaboradores_regioes"("regiaoNome");

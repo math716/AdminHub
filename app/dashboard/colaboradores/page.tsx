@@ -22,6 +22,7 @@ interface ColaboradorRegiao {
   id: string;
   regiaoNome: string;
   uf: string;
+  tipo: string; // 'RA' | 'ZONA'
 }
 
 interface Colaborador {
@@ -45,6 +46,8 @@ interface Colaborador {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
+const DF_ZONAS = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+
 const FUNCOES = [
   { value: '', label: 'Sem função definida' },
   { value: 'Coordenador Geral', label: 'Coordenador Geral' },
@@ -62,7 +65,8 @@ const EMPTY_FORM = {
   padrinhoId: '',
   observacao: '',
   status: 'ATIVO' as 'ATIVO' | 'INATIVO',
-  regioes: [] as string[],
+  regioes: [] as string[], // RA names
+  zonas: [] as string[],   // zone numbers as strings e.g. ['1', '3']
 };
 
 // ---------------------------------------------------------------------------
@@ -427,14 +431,17 @@ export default function ColaboradoresPage() {
 
   // ── UI state ──
   const [activeTab, setActiveTab] = useState<'mapa' | 'lista'>('mapa');
+  const [dfVisualizacao, setDfVisualizacao] = useState<'regioes' | 'zonas'>('regioes');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'TODOS' | 'ATIVO' | 'INATIVO'>('TODOS');
   const [selectedColaboradorId, setSelectedColaboradorId] = useState<string | null>(null);
   const [selectedRegiao, setSelectedRegiao] = useState<string | null>(null);
+  const [selectedZona, setSelectedZona] = useState<number | null>(null);
 
   // ── Modals ──
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingColaborador, setEditingColaborador] = useState<Colaborador | null>(null);
+  const [formRegiaoTab, setFormRegiaoTab] = useState<'ra' | 'zona'>('ra');
   const [showImportModal, setShowImportModal] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
@@ -487,8 +494,24 @@ export default function ColaboradoresPage() {
     const map: Record<string, Colaborador[]> = {};
     for (const c of colaboradores) {
       for (const r of c.regioes) {
+        if (r.tipo !== 'RA') continue;
         if (!map[r.regiaoNome]) map[r.regiaoNome] = [];
         map[r.regiaoNome].push(c);
+      }
+    }
+    return map;
+  }, [colaboradores]);
+
+  const colaboradoresByZona = useMemo(() => {
+    const map: Record<number, Colaborador[]> = {};
+    for (const c of colaboradores) {
+      for (const r of c.regioes) {
+        if (r.tipo !== 'ZONA') continue;
+        const num = parseInt(r.regiaoNome.replace('Zona ', ''), 10);
+        if (!isNaN(num)) {
+          if (!map[num]) map[num] = [];
+          map[num].push(c);
+        }
       }
     }
     return map;
@@ -497,9 +520,24 @@ export default function ColaboradoresPage() {
   const regioesCobertasCount = useMemo(() => {
     const nomes = new Set<string>();
     for (const c of colaboradores) {
-      for (const r of c.regioes) nomes.add(r.regiaoNome);
+      for (const r of c.regioes) {
+        if (r.tipo === 'RA') nomes.add(r.regiaoNome);
+      }
     }
     return nomes.size;
+  }, [colaboradores]);
+
+  const zonasCobertasCount = useMemo(() => {
+    const nums = new Set<number>();
+    for (const c of colaboradores) {
+      for (const r of c.regioes) {
+        if (r.tipo === 'ZONA') {
+          const num = parseInt(r.regiaoNome.replace('Zona ', ''), 10);
+          if (!isNaN(num)) nums.add(num);
+        }
+      }
+    }
+    return nums.size;
   }, [colaboradores]);
 
   const ativosCount = useMemo(() => colaboradores.filter(c => c.status === 'ATIVO').length, [colaboradores]);
@@ -510,7 +548,12 @@ export default function ColaboradoresPage() {
     let list = colaboradores;
     if (selectedRegiao) {
       list = list.filter(c =>
-        c.regioes.some(r => normalizeRegiao(r.regiaoNome) === normalizeRegiao(selectedRegiao))
+        c.regioes.some(r => r.tipo === 'RA' && normalizeRegiao(r.regiaoNome) === normalizeRegiao(selectedRegiao))
+      );
+    }
+    if (selectedZona !== null) {
+      list = list.filter(c =>
+        c.regioes.some(r => r.tipo === 'ZONA' && r.regiaoNome === `Zona ${selectedZona}`)
       );
     }
     if (statusFilter !== 'TODOS') list = list.filter(c => c.status === statusFilter);
@@ -519,25 +562,32 @@ export default function ColaboradoresPage() {
       list = list.filter(c => normStr(c.nome).includes(q));
     }
     return list;
-  }, [colaboradores, selectedRegiao, statusFilter, search]);
+  }, [colaboradores, selectedRegiao, selectedZona, statusFilter, search]);
 
   const regiaoColaboradores = useMemo(() => {
     if (!selectedRegiao) return [];
     const norm = normalizeRegiao(selectedRegiao);
     return colaboradores.filter(c =>
-      c.regioes.some(r => normalizeRegiao(r.regiaoNome) === norm)
+      c.regioes.some(r => r.tipo === 'RA' && normalizeRegiao(r.regiaoNome) === norm)
     );
   }, [colaboradores, selectedRegiao]);
+
+  const zonaColaboradores = useMemo(() => {
+    if (selectedZona === null) return [];
+    return colaboradoresByZona[selectedZona] ?? [];
+  }, [colaboradoresByZona, selectedZona]);
 
   // ── Handlers ──
   const openNew = () => {
     setEditingColaborador(null);
     setForm({ ...EMPTY_FORM });
+    setFormRegiaoTab('ra');
     setShowFormModal(true);
   };
 
   const openEdit = (c: Colaborador) => {
     setEditingColaborador(c);
+    const hasZonas = c.regioes.some(r => r.tipo === 'ZONA');
     setForm({
       nome: c.nome,
       telefone: c.telefone ?? '',
@@ -547,8 +597,10 @@ export default function ColaboradoresPage() {
       padrinhoId: c.padrinhoId ?? '',
       observacao: c.observacao ?? '',
       status: c.status,
-      regioes: c.regioes.map(r => r.regiaoNome),
+      regioes: c.regioes.filter(r => r.tipo === 'RA').map(r => r.regiaoNome),
+      zonas: c.regioes.filter(r => r.tipo === 'ZONA').map(r => r.regiaoNome.replace('Zona ', '')),
     });
+    setFormRegiaoTab(hasZonas ? 'zona' : 'ra');
     setShowFormModal(true);
   };
 
@@ -566,6 +618,7 @@ export default function ColaboradoresPage() {
         observacao: form.observacao || undefined,
         status: form.status,
         regioes: form.regioes,
+        zonas: form.zonas,
       };
       const url = editingColaborador
         ? `/api/colaboradores/${editingColaborador.id}`
@@ -607,6 +660,23 @@ export default function ColaboradoresPage() {
 
   const clearRegionFilter = () => {
     setSelectedRegiao(null);
+    setSelectedColaboradorId(null);
+  };
+
+  const handleZonaClick = (zona: number) => {
+    setSelectedZona(prev => prev === zona ? null : zona);
+    setSelectedColaboradorId(null);
+  };
+
+  const clearZonaFilter = () => {
+    setSelectedZona(null);
+    setSelectedColaboradorId(null);
+  };
+
+  const switchVisualizacao = (v: 'regioes' | 'zonas') => {
+    setDfVisualizacao(v);
+    if (v === 'zonas') setSelectedRegiao(null);
+    if (v === 'regioes') setSelectedZona(null);
     setSelectedColaboradorId(null);
   };
 
@@ -702,6 +772,15 @@ export default function ColaboradoresPage() {
     }));
   };
 
+  const toggleZona = (num: string) => {
+    setForm(f => ({
+      ...f,
+      zonas: f.zonas.includes(num)
+        ? f.zonas.filter(z => z !== num)
+        : [...f.zonas, num],
+    }));
+  };
+
   // Padrinho candidates (exclude self when editing)
   const padrinhoOptions = useMemo(() =>
     colaboradores.filter(c => c.id !== editingColaborador?.id),
@@ -755,12 +834,12 @@ export default function ColaboradoresPage() {
       />
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: 'Total', value: colaboradores.length, icon: Users2, color: '#4a9ede' },
-          { label: 'Regiões cobertas', value: `${regioesCobertasCount} / 33`, icon: MapPin, color: '#22c55e' },
+          { label: 'RAs cobertas', value: `${regioesCobertasCount} / 33`, icon: MapPin, color: '#22c55e' },
+          { label: 'Zonas cobertas', value: `${zonasCobertasCount} / 19`, icon: MapPin, color: '#a78bfa' },
           { label: 'Ativos', value: ativosCount, icon: UserCheck, color: '#22c55e' },
-          { label: 'Inativos', value: inativosCount, icon: UserX, color: '#94a3b8' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div
             key={label}
@@ -826,9 +905,20 @@ export default function ColaboradoresPage() {
               className="flex items-center justify-between rounded-lg px-3 py-2 text-xs"
               style={{ background: 'rgba(29,78,216,0.12)', border: '1px solid rgba(29,78,216,0.3)' }}
             >
-              <span style={{ color: '#60a5fa' }}>Região: {selectedRegiao}</span>
+              <span style={{ color: '#60a5fa' }}>RA: {selectedRegiao}</span>
               <button onClick={clearRegionFilter}>
                 <X className="w-3.5 h-3.5" style={{ color: '#60a5fa' }} />
+              </button>
+            </div>
+          )}
+          {selectedZona !== null && (
+            <div
+              className="flex items-center justify-between rounded-lg px-3 py-2 text-xs"
+              style={{ background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.3)' }}
+            >
+              <span style={{ color: '#a78bfa' }}>Zona Eleitoral {selectedZona}</span>
+              <button onClick={clearZonaFilter}>
+                <X className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />
               </button>
             </div>
           )}
@@ -885,7 +975,9 @@ export default function ColaboradoresPage() {
                           <span
                             key={r.id}
                             className="text-[10px] px-1.5 py-0.5 rounded"
-                            style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
+                            style={r.tipo === 'ZONA'
+                              ? { background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }
+                              : { background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
                           >
                             {r.regiaoNome}
                           </span>
@@ -928,28 +1020,55 @@ export default function ColaboradoresPage() {
 
         {/* Right main area */}
         <div className="md:col-span-3 flex flex-col gap-3">
-          {/* Tab switcher */}
-          <div
-            className="flex items-center gap-1 p-1 rounded-xl self-start"
-            style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
-          >
-            {([
-              { id: 'mapa', label: 'Mapa', icon: MapIcon },
-              { id: 'lista', label: 'Lista', icon: List },
-            ] as const).map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150"
-                style={{
-                  background: activeTab === id ? 'linear-gradient(135deg, #1d6fd8, #4a9ede)' : 'transparent',
-                  color: activeTab === id ? '#fff' : 'var(--text-secondary)',
-                }}
+          {/* Tab switcher row */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div
+              className="flex items-center gap-1 p-1 rounded-xl"
+              style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
+            >
+              {([
+                { id: 'mapa', label: 'Mapa', icon: MapIcon },
+                { id: 'lista', label: 'Lista', icon: List },
+              ] as const).map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150"
+                  style={{
+                    background: activeTab === id ? 'linear-gradient(135deg, #1d6fd8, #4a9ede)' : 'transparent',
+                    color: activeTab === id ? '#fff' : 'var(--text-secondary)',
+                  }}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Sub-toggle: Regiões Admin. | Zonas Eleitorais — only in Mapa tab */}
+            {activeTab === 'mapa' && (
+              <div
+                className="flex items-center gap-1 p-1 rounded-xl"
+                style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
               >
-                <Icon className="w-4 h-4" />
-                {label}
-              </button>
-            ))}
+                {([
+                  { id: 'regioes', label: 'Regiões Admin.' },
+                  { id: 'zonas', label: 'Zonas Eleitorais' },
+                ] as const).map(({ id, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => switchVisualizacao(id)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150"
+                    style={{
+                      background: dfVisualizacao === id ? 'linear-gradient(135deg, #6d28d9, #8b5cf6)' : 'transparent',
+                      color: dfVisualizacao === id ? '#fff' : 'var(--text-secondary)',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <AnimatePresence mode="wait">
@@ -962,86 +1081,249 @@ export default function ColaboradoresPage() {
                 transition={{ duration: 0.15 }}
                 className="flex flex-col gap-3"
               >
-                {/* Region detail card */}
-                {selectedRegiao && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="rounded-xl p-4"
-                    style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <MapPin className="w-4 h-4" style={{ color: '#4a9ede' }} />
-                          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                            {selectedRegiao}
-                          </h3>
-                          <span
-                            className="text-xs px-2 py-0.5 rounded-full"
-                            style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
-                          >
-                            {regiaoColaboradores.length} colaborador{regiaoColaboradores.length !== 1 ? 'es' : ''}
-                          </span>
-                        </div>
-                        {regiaoColaboradores.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {regiaoColaboradores.map(c => (
-                              <div
-                                key={c.id}
-                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs"
-                                style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
+                {/* ── Regiões Administrativas view ── */}
+                {dfVisualizacao === 'regioes' && (
+                  <>
+                    {/* Region detail card */}
+                    {selectedRegiao && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="rounded-xl p-4"
+                        style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <MapPin className="w-4 h-4" style={{ color: '#4a9ede' }} />
+                              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                                {selectedRegiao}
+                              </h3>
+                              <span
+                                className="text-xs px-2 py-0.5 rounded-full"
+                                style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
                               >
-                                <User className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
-                                <span style={{ color: 'var(--text-primary)' }}>{c.nome}</span>
-                                {c.funcao && (
-                                  <span style={{ color: 'var(--text-tertiary)' }}>· {c.funcao}</span>
-                                )}
+                                {regiaoColaboradores.length} colaborador{regiaoColaboradores.length !== 1 ? 'es' : ''}
+                              </span>
+                            </div>
+                            {regiaoColaboradores.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {regiaoColaboradores.map(c => (
+                                  <div
+                                    key={c.id}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs"
+                                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
+                                  >
+                                    <User className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
+                                    <span style={{ color: 'var(--text-primary)' }}>{c.nome}</span>
+                                    {c.funcao && (
+                                      <span style={{ color: 'var(--text-tertiary)' }}>· {c.funcao}</span>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
-                            ))}
+                            ) : (
+                              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                Nenhum colaborador nesta região ainda.
+                              </p>
+                            )}
                           </div>
-                        ) : (
-                          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                            Nenhum colaborador nesta região ainda.
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <button
-                          onClick={() => {
-                            setForm({ ...EMPTY_FORM, regioes: [selectedRegiao] });
-                            setEditingColaborador(null);
-                            setShowFormModal(true);
-                          }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
-                          style={{ background: 'linear-gradient(135deg, #1d6fd8, #4a9ede)' }}
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          Adicionar Colaborador
-                        </button>
-                        <button onClick={clearRegionFilter}>
-                          <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
-                        </button>
-                      </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                setForm({ ...EMPTY_FORM, regioes: [selectedRegiao], zonas: [] });
+                                setEditingColaborador(null);
+                                setShowFormModal(true);
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
+                              style={{ background: 'linear-gradient(135deg, #1d6fd8, #4a9ede)' }}
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              Adicionar
+                            </button>
+                            <button onClick={clearRegionFilter}>
+                              <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Polygon map */}
+                    <div
+                      className="rounded-xl overflow-hidden"
+                      style={{ border: '1px solid rgba(74,158,222,0.15)' }}
+                    >
+                      <ColaboradoresMapInner
+                        regioes={geoRegioes}
+                        colaboradoresByRegiao={colaboradoresByRegiao}
+                        selectedRegiao={selectedRegiao}
+                        selectedColaboradorId={selectedColaboradorId}
+                        onRegiaoClick={handleRegionClick}
+                        height="calc(100vh - 340px)"
+                      />
                     </div>
-                  </motion.div>
+                  </>
                 )}
 
-                {/* Map */}
-                <div
-                  className="rounded-xl overflow-hidden"
-                  style={{ border: '1px solid rgba(74,158,222,0.15)' }}
-                >
-                  <ColaboradoresMapInner
-                    regioes={geoRegioes}
-                    colaboradoresByRegiao={colaboradoresByRegiao}
-                    selectedRegiao={selectedRegiao}
-                    selectedColaboradorId={selectedColaboradorId}
-                    onRegiaoClick={handleRegionClick}
-                    height="calc(100vh - 340px)"
-                  />
-                </div>
+                {/* ── Zonas Eleitorais view ── */}
+                {dfVisualizacao === 'zonas' && (
+                  <>
+                    {/* Zone detail card */}
+                    {selectedZona !== null && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="rounded-xl p-4"
+                        style={{ background: 'var(--bg-card)', border: '1px solid rgba(167,139,250,0.2)' }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <MapPin className="w-4 h-4" style={{ color: '#a78bfa' }} />
+                              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                                Zona Eleitoral {selectedZona}
+                              </h3>
+                              <span
+                                className="text-xs px-2 py-0.5 rounded-full"
+                                style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}
+                              >
+                                {zonaColaboradores.length} colaborador{zonaColaboradores.length !== 1 ? 'es' : ''}
+                              </span>
+                            </div>
+                            {zonaColaboradores.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {zonaColaboradores.map(c => (
+                                  <div
+                                    key={c.id}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs"
+                                    style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
+                                  >
+                                    <User className="w-3 h-3" style={{ color: 'var(--text-tertiary)' }} />
+                                    <span style={{ color: 'var(--text-primary)' }}>{c.nome}</span>
+                                    {c.funcao && (
+                                      <span style={{ color: 'var(--text-tertiary)' }}>· {c.funcao}</span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                Nenhum colaborador nesta zona ainda.
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                setForm({ ...EMPTY_FORM, regioes: [], zonas: [String(selectedZona)] });
+                                setEditingColaborador(null);
+                                setFormRegiaoTab('zona');
+                                setShowFormModal(true);
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
+                              style={{ background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)' }}
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              Adicionar
+                            </button>
+                            <button onClick={clearZonaFilter}>
+                              <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Zone card grid */}
+                    <div
+                      className="rounded-xl p-5"
+                      style={{ background: 'var(--bg-card)', border: '1px solid rgba(167,139,250,0.15)', minHeight: 'calc(100vh - 340px)' }}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                            Zonas Eleitorais do DF
+                          </h3>
+                          <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                            {zonasCobertasCount} de 19 zonas com colaboradores — clique para filtrar
+                          </p>
+                        </div>
+                        {selectedZona !== null && (
+                          <button
+                            onClick={clearZonaFilter}
+                            className="text-xs px-3 py-1 rounded-lg"
+                            style={{ background: 'rgba(167,139,250,0.12)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.2)' }}
+                          >
+                            Limpar seleção
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 gap-2.5">
+                        {DF_ZONAS.map(zona => {
+                          const colabs = colaboradoresByZona[zona] ?? [];
+                          const ativos = colabs.filter(c => c.status === 'ATIVO').length;
+                          const isSelected = selectedZona === zona;
+                          const hasColabs = colabs.length > 0;
+                          return (
+                            <button
+                              key={zona}
+                              onClick={() => handleZonaClick(zona)}
+                              className="flex flex-col items-center justify-center py-3 px-2 rounded-xl transition-all duration-150 hover:scale-105"
+                              style={{
+                                background: isSelected
+                                  ? 'rgba(109,40,217,0.18)'
+                                  : hasColabs
+                                    ? 'rgba(139,92,246,0.08)'
+                                    : 'var(--tint-04)',
+                                border: `1px solid ${isSelected
+                                  ? 'rgba(109,40,217,0.5)'
+                                  : hasColabs
+                                    ? 'rgba(139,92,246,0.25)'
+                                    : 'var(--tint-08)'}`,
+                              }}
+                            >
+                              <span
+                                className="text-xl font-bold leading-none"
+                                style={{
+                                  color: isSelected ? '#c4b5fd' : hasColabs ? '#a78bfa' : 'var(--text-tertiary)',
+                                }}
+                              >
+                                {zona}
+                              </span>
+                              <span
+                                className="text-[10px] mt-1.5 font-medium"
+                                style={{ color: isSelected ? '#ddd6fe' : 'var(--text-tertiary)' }}
+                              >
+                                {colabs.length === 0
+                                  ? 'vazia'
+                                  : `${ativos} ativo${ativos !== 1 ? 's' : ''}`}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Legend */}
+                      <div className="flex items-center gap-4 mt-5 pt-4" style={{ borderTop: '1px solid var(--tint-06)' }}>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-4 h-3 rounded-sm" style={{ background: 'rgba(109,40,217,0.4)', border: '1px solid rgba(109,40,217,0.5)' }} />
+                          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Selecionada</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-4 h-3 rounded-sm" style={{ background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.3)' }} />
+                          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Com colaboradores</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-4 h-3 rounded-sm" style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-08)' }} />
+                          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Vazia</span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </motion.div>
             ) : (
               <motion.div
@@ -1381,54 +1663,114 @@ export default function ColaboradoresPage() {
                     </div>
                   </div>
 
-                  {/* Regiões */}
+                  {/* Regiões & Zonas */}
                   <div>
-                    <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Regiões de Atuação
-                      {form.regioes.length > 0 && (
-                        <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}>
-                          {form.regioes.length} selecionada{form.regioes.length !== 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </label>
-                    <div
-                      className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-52 overflow-y-auto p-3 rounded-xl scrollbar-dark"
-                      style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}
-                    >
-                      {geoRegioes.length === 0 ? (
-                        <div className="col-span-full text-center py-4">
-                          <Loader2 className="w-4 h-4 animate-spin mx-auto" style={{ color: '#4a9ede' }} />
-                        </div>
-                      ) : (
-                        geoRegioes.map(nome => {
-                          const selected = form.regioes.includes(nome);
-                          return (
-                            <button
-                              key={nome}
-                              type="button"
-                              onClick={() => toggleRegiao(nome)}
-                              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-all"
-                              style={{
-                                background: selected ? 'rgba(29,78,216,0.15)' : 'var(--tint-06)',
-                                border: '1px solid ' + (selected ? 'rgba(29,78,216,0.4)' : 'var(--tint-10)'),
-                                color: selected ? '#60a5fa' : 'var(--text-secondary)',
-                              }}
-                            >
-                              <div
-                                className="w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0"
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                        Áreas de Atuação
+                        {(form.regioes.length + form.zonas.length) > 0 && (
+                          <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}>
+                            {form.regioes.length + form.zonas.length} selecionada{(form.regioes.length + form.zonas.length) !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </label>
+                      {/* Tab switcher inside modal */}
+                      <div
+                        className="flex items-center gap-0.5 p-0.5 rounded-lg"
+                        style={{ background: 'var(--tint-08)', border: '1px solid var(--tint-10)' }}
+                      >
+                        {([
+                          { id: 'ra', label: 'Regiões Admin.' },
+                          { id: 'zona', label: 'Zonas Eleitorais' },
+                        ] as const).map(({ id, label }) => (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => setFormRegiaoTab(id)}
+                            className="px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all"
+                            style={{
+                              background: formRegiaoTab === id
+                                ? (id === 'ra' ? 'linear-gradient(135deg, #1d6fd8, #4a9ede)' : 'linear-gradient(135deg, #6d28d9, #8b5cf6)')
+                                : 'transparent',
+                              color: formRegiaoTab === id ? '#fff' : 'var(--text-tertiary)',
+                            }}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* RA checkbox grid */}
+                    {formRegiaoTab === 'ra' && (
+                      <div
+                        className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-52 overflow-y-auto p-3 rounded-xl scrollbar-dark"
+                        style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}
+                      >
+                        {geoRegioes.length === 0 ? (
+                          <div className="col-span-full text-center py-4">
+                            <Loader2 className="w-4 h-4 animate-spin mx-auto" style={{ color: '#4a9ede' }} />
+                          </div>
+                        ) : (
+                          geoRegioes.map(nome => {
+                            const selected = form.regioes.includes(nome);
+                            return (
+                              <button
+                                key={nome}
+                                type="button"
+                                onClick={() => toggleRegiao(nome)}
+                                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-all"
                                 style={{
-                                  background: selected ? '#1d4ed8' : 'var(--tint-08)',
-                                  border: '1px solid ' + (selected ? '#3b82f6' : 'var(--tint-15)'),
+                                  background: selected ? 'rgba(29,78,216,0.15)' : 'var(--tint-06)',
+                                  border: '1px solid ' + (selected ? 'rgba(29,78,216,0.4)' : 'var(--tint-10)'),
+                                  color: selected ? '#60a5fa' : 'var(--text-secondary)',
                                 }}
                               >
-                                {selected && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
-                              </div>
-                              <span className="truncate">{nome}</span>
+                                <div
+                                  className="w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0"
+                                  style={{
+                                    background: selected ? '#1d4ed8' : 'var(--tint-08)',
+                                    border: '1px solid ' + (selected ? '#3b82f6' : 'var(--tint-15)'),
+                                  }}
+                                >
+                                  {selected && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
+                                </div>
+                                <span className="truncate">{nome}</span>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+
+                    {/* Zone checkbox grid */}
+                    {formRegiaoTab === 'zona' && (
+                      <div
+                        className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 max-h-52 overflow-y-auto p-3 rounded-xl scrollbar-dark"
+                        style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}
+                      >
+                        {DF_ZONAS.map(num => {
+                          const key = String(num);
+                          const selected = form.zonas.includes(key);
+                          return (
+                            <button
+                              key={num}
+                              type="button"
+                              onClick={() => toggleZona(key)}
+                              className="flex flex-col items-center justify-center py-2.5 rounded-lg text-xs font-bold transition-all"
+                              style={{
+                                background: selected ? 'rgba(109,40,217,0.18)' : 'var(--tint-06)',
+                                border: '1px solid ' + (selected ? 'rgba(109,40,217,0.45)' : 'var(--tint-10)'),
+                                color: selected ? '#c4b5fd' : 'var(--text-secondary)',
+                              }}
+                            >
+                              <span className="text-base leading-none">{num}</span>
+                              {selected && <CheckCircle2 className="w-2.5 h-2.5 mt-1" style={{ color: '#a78bfa' }} />}
                             </button>
                           );
-                        })
-                      )}
-                    </div>
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {/* Observação */}

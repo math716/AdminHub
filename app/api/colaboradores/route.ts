@@ -11,7 +11,7 @@ const SELECT = {
   observacao: true, status: true, padrinhoId: true,
   padrinho: { select: { id: true, nome: true } },
   apadrinhados: { select: { id: true, nome: true } },
-  regioes: { select: { id: true, regiaoNome: true, uf: true } },
+  regioes: { select: { id: true, regiaoNome: true, uf: true, tipo: true } },
   createdAt: true,
 } as const;
 
@@ -53,9 +53,13 @@ export async function POST(request: NextRequest) {
     if (!gabineteId || !userId) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 400 });
 
     const body = await request.json();
-    const { nome, telefone, email, endereco, lat, lng, funcao, padrinhoId, observacao, status, regioes } = body ?? {};
+    const { nome, telefone, email, endereco, lat, lng, funcao, padrinhoId, observacao, status, regioes, zonas } = body ?? {};
 
     if (!nome?.trim()) return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
+
+    const raItems = Array.isArray(regioes) ? regioes.map((r: string) => ({ uf: 'DF', regiaoNome: r, tipo: 'RA' })) : [];
+    const zonaItems = Array.isArray(zonas) ? zonas.map((z: string) => ({ uf: 'DF', regiaoNome: `Zona ${z}`, tipo: 'ZONA' })) : [];
+    const allRegioes = [...raItems, ...zonaItems];
 
     const colaborador = await prisma.colaborador.create({
       data: {
@@ -71,9 +75,7 @@ export async function POST(request: NextRequest) {
         padrinhoId: padrinhoId || null,
         gabineteId,
         createdById: userId,
-        regioes: Array.isArray(regioes) && regioes.length > 0 ? {
-          create: regioes.map((r: string) => ({ uf: 'DF', regiaoNome: r })),
-        } : undefined,
+        regioes: allRegioes.length > 0 ? { create: allRegioes } : undefined,
       },
       select: SELECT,
     });
