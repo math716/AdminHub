@@ -2299,7 +2299,9 @@ export default function ColaboradoresPage() {
                         title={!importCols.nome ? 'Coluna "nome" não detectada — verifique os cabeçalhos da planilha' : ''}
                       >
                         {importing && <Loader2 className="w-4 h-4 animate-spin" />}
-                        Importar {allImportRows.length} colaborador{allImportRows.length !== 1 ? 'es' : ''}
+                        {importing
+                          ? `Importando... aguarde`
+                          : `Importar ${allImportRows.length} colaborador${allImportRows.length !== 1 ? 'es' : ''}`}
                       </button>
                     </>
                   )}

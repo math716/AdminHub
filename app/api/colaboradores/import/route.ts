@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 
 const MAX_IMPORT = 500;
+const BATCH_SIZE = 20;
 
 async function getGabineteAndUser(session: any): Promise<{ gabineteId: string; userId: string } | null> {
   const userId = (session.user as any)?.id;
@@ -13,16 +14,6 @@ async function getGabineteAndUser(session: any): Promise<{ gabineteId: string; u
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { gabineteId: true } });
   if (!user?.gabineteId) return null;
   return { gabineteId: user.gabineteId, userId };
-}
-
-async function geocode(endereco: string): Promise<{ lat: number; lng: number } | null> {
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}&limit=1&countrycodes=br`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'AdminHub/1.0' } });
-    const data = await res.json();
-    if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-  } catch {}
-  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -42,49 +33,50 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Máximo ${MAX_IMPORT} colaboradores por importação` }, { status: 400 });
     }
 
+    const valid = colaboradores.filter(c => c.nome?.trim());
+    const skipped = colaboradores.length - valid.length;
+
     let imported = 0;
     let errors = 0;
-    let geocodificados = 0;
 
-    for (const c of colaboradores) {
-      if (!c.nome?.trim()) { errors++; continue; }
-      try {
-        let lat: number | null = null;
-        let lng: number | null = null;
-        if (c.endereco?.trim()) {
-          const geo = await geocode(c.endereco.trim());
-          if (geo) { lat = geo.lat; lng = geo.lng; geocodificados++; }
-          await new Promise(r => setTimeout(r, 250)); // rate limit Nominatim
-        }
+    // Process in parallel batches to avoid overloading the connection pool
+    for (let i = 0; i < valid.length; i += BATCH_SIZE) {
+      const batch = valid.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(c => {
+          const regioes: string[] = typeof c.regioes === 'string'
+            ? c.regioes.split(',').map((r: string) => r.trim()).filter(Boolean)
+            : [];
 
-        const regioes: string[] = typeof c.regioes === 'string'
-          ? c.regioes.split(',').map((r: string) => r.trim()).filter(Boolean)
-          : [];
+          return prisma.colaborador.create({
+            data: {
+              nome: c.nome.trim(),
+              telefone: c.telefone?.trim() || null,
+              email: c.email?.trim() || null,
+              endereco: c.endereco?.trim() || null,
+              lat: null,
+              lng: null,
+              funcao: c.funcao?.trim() || null,
+              observacao: c.observacao?.trim() || null,
+              status: 'ATIVO',
+              gabineteId: ctx.gabineteId,
+              createdById: ctx.userId,
+              regioes: regioes.length > 0 ? {
+                create: regioes.map(r => ({ uf: 'DF', regiaoNome: r, tipo: 'RA' })),
+              } : undefined,
+            },
+            select: { id: true },
+          });
+        })
+      );
 
-        await prisma.colaborador.create({
-          data: {
-            nome: c.nome.trim(),
-            telefone: c.telefone?.trim() || null,
-            email: c.email?.trim() || null,
-            endereco: c.endereco?.trim() || null,
-            lat, lng,
-            funcao: c.funcao?.trim() || null,
-            observacao: c.observacao?.trim() || null,
-            status: 'ATIVO',
-            gabineteId: ctx.gabineteId,
-            createdById: ctx.userId,
-            regioes: regioes.length > 0 ? {
-              create: regioes.map(r => ({ uf: 'DF', regiaoNome: r })),
-            } : undefined,
-          },
-        });
-        imported++;
-      } catch {
-        errors++;
+      for (const r of results) {
+        if (r.status === 'fulfilled') imported++;
+        else errors++;
       }
     }
 
-    return NextResponse.json({ imported, errors, geocodificados });
+    return NextResponse.json({ imported, errors: errors + skipped });
   } catch (error) {
     console.error('POST /api/colaboradores/import error:', error);
     return NextResponse.json({ error: 'Erro na importação' }, { status: 500 });
