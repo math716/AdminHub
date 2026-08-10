@@ -97,9 +97,7 @@ function RoleSelect({ userId, current, sessionRole, onChanged, adminOnly }: { us
   const dropRef = useRef<HTMLDivElement>(null);
   const roles   = adminOnly
     ? (sessionRole === 'SUPER_ADMIN' ? ['SUPER_ADMIN', 'ADMIN'] : ['ADMIN'])
-    : (sessionRole === 'SUPER_ADMIN'
-      ? ['SUPER_ADMIN', 'ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR']
-      : ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR']);
+    : ['AGENTE_POLITICO', 'CHEFE', 'ASSESSOR'];
 
   const openDrop = () => {
     if (!btnRef.current) return;
@@ -262,7 +260,7 @@ function SolicitacaoCard({ sol, onAcao }: { sol: Solicitacao; onAcao: () => void
       </div>
 
       {expanded && (
-        <div style={{ borderTop:'1px solid var(--tint-06)', padding:'1rem 1.25rem', background:'rgba(0,0,0,0.15)' }}>
+        <div style={{ borderTop:'1px solid var(--tint-06)', padding:'1rem 1.25rem', background:'var(--tint-04)' }}>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.65rem', marginBottom:'1rem' }}>
             <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', fontSize:'0.8rem', color:'var(--tint-65)' }}>
               <User size={13} color="var(--tint-35)" /><span>{sol.userName}</span>
