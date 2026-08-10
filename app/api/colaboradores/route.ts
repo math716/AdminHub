@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { derivarZonasDeRas } from '@/lib/colaboradores-zonas';
 
 const SELECT = {
   id: true, nome: true, telefone: true, email: true,
@@ -56,9 +57,15 @@ export async function POST(request: NextRequest) {
 
     if (!nome?.trim()) return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
 
-    const raItems = Array.isArray(regioes) ? regioes.map((r: string) => ({ uf: 'DF', regiaoNome: r, tipo: 'RA' })) : [];
-    const zonaItems = Array.isArray(zonas) ? zonas.map((z: string) => ({ uf: 'DF', regiaoNome: `Zona ${z}`, tipo: 'ZONA' })) : [];
-    const allRegioes = [...raItems, ...zonaItems];
+    const raNames: string[] = Array.isArray(regioes) ? regioes : [];
+    const raItems = raNames.map((r: string) => ({ uf: 'DF', regiaoNome: r, tipo: 'RA' }));
+    const zonaItemsManual = Array.isArray(zonas) ? zonas.map((z: string) => ({ uf: 'DF', regiaoNome: `Zona ${z}`, tipo: 'ZONA' })) : [];
+    const zonaItemsAuto = derivarZonasDeRas(raNames);
+    // Merge manual zones + auto-derived zones, deduplicate by name
+    const allZonas = [...zonaItemsManual, ...zonaItemsAuto].filter(
+      (z, i, arr) => arr.findIndex(x => x.regiaoNome === z.regiaoNome) === i
+    );
+    const allRegioes = [...raItems, ...allZonas];
 
     const colaborador = await prisma.colaborador.create({
       data: {
