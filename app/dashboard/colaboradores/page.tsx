@@ -155,6 +155,21 @@ function normalizeRegiao(nome: string): string {
   return nome.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 }
 
+// RAs oficiais do DF (normalizadas) — usadas para filtrar contagem no stat card
+const DF_RAS_OFICIAIS = new Set([
+  'PLANO PILOTO','BRASILIA','ASA SUL','ASA NORTE','LAGO SUL','LAGO NORTE',
+  'CRUZEIRO','SUDOESTE','OCTOGONAL','SUDOESTE E OCTOGONAL',
+  'TAGUATINGA','CEILANDIA','CEILANDIA NORTE','CEILANDIA SUL',
+  'SAMAMBAIA','NUCLEO BANDEIRANTE','RIACHO FUNDO','RIACHO FUNDO II',
+  'GUARA','PARK WAY','SIA','SANTA MARIA',
+  'PLANALTINA','ARAPOANGA','FERCAL',
+  'SOBRADINHO','SOBRADINHO II','GAMA','BRAZLANDIA',
+  'RECANTO DAS EMAS','SAO SEBASTIAO','JARDIM BOTANICO',
+  'SOL NASCENTE','SOL NASCENTE/POR DO SOL',
+  'PARANOA','ITAPOA','AGUAS CLARAS','VICENTE PIRES',
+  'ESTRUTURAL','SCIA','VARJAO','CANDANGOLANDIA',
+]);
+
 // ---------------------------------------------------------------------------
 // CSV / XLSX helpers
 // ---------------------------------------------------------------------------
@@ -404,7 +419,7 @@ function ColaboradoresMapInner({
       return { fillColor: '#cbd5e1', fillOpacity: 0.12, color: '#94a3b8', weight: 1, opacity: 0.5 };
     }
     const { fill, border } = HEAT_COLORS[tier - 1];
-    return { fillColor: fill, fillOpacity: 0.75, color: border, weight: 1.5, opacity: 1 };
+    return { fillColor: fill, fillOpacity: 0.92, color: border, weight: 1.5, opacity: 1 };
   }, [getHeatTier]);
 
   useEffect(() => {
@@ -747,7 +762,9 @@ export default function ColaboradoresPage() {
     const nomes = new Set<string>();
     for (const c of colaboradores) {
       for (const r of c.regioes) {
-        if (r.tipo === 'RA') nomes.add(r.regiaoNome);
+        if (r.tipo === 'RA' && DF_RAS_OFICIAIS.has(normalizeRegiao(r.regiaoNome))) {
+          nomes.add(normalizeRegiao(r.regiaoNome));
+        }
       }
     }
     return nomes.size;
