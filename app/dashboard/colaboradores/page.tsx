@@ -8,6 +8,7 @@ import {
   Users2, Plus, Trash2, Loader2, X, Search, FileUp, Upload,
   CheckCircle2, AlertCircle, Map as MapIcon, List, Pencil,
   Phone, MapPin, User, UserCheck, UserX, ChevronDown,
+  Send, Mail, MessageCircle, AtSign,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -645,6 +646,10 @@ export default function ColaboradoresPage() {
   const [savingEditPadrinho, setSavingEditPadrinho] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [viewingColaborador, setViewingColaborador] = useState<Colaborador | null>(null);
+  const [colabMsgText, setColabMsgText] = useState('');
+  const [colabMsgStatus, setColabMsgStatus] = useState<'idle' | 'sending' | 'ok' | 'err'>('idle');
+  const [colabMsgError, setColabMsgError] = useState('');
 
   // ── Form state ──
   const [form, setForm] = useState({ ...EMPTY_FORM });
@@ -867,6 +872,38 @@ export default function ColaboradoresPage() {
       toast.error('Erro ao remover colaborador');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  function normalizeWA(n: string): string {
+    const d = n.replace(/\D/g, '');
+    if (d.startsWith('55') && d.length >= 12) return d;
+    if (d.length >= 10) return `55${d}`;
+    return d;
+  }
+
+  const handleSendColabMsg = async () => {
+    if (!viewingColaborador?.telefone || !colabMsgText.trim() || colabMsgStatus === 'sending') return;
+    setColabMsgStatus('sending');
+    setColabMsgError('');
+    try {
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ numero: viewingColaborador.telefone, message: colabMsgText }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setColabMsgStatus('ok');
+        setColabMsgText('');
+        toast.success('Mensagem enviada!');
+      } else {
+        setColabMsgStatus('err');
+        setColabMsgError(data.error ?? 'Erro ao enviar');
+      }
+    } catch {
+      setColabMsgStatus('err');
+      setColabMsgError('Falha de rede');
     }
   };
 
@@ -1268,7 +1305,7 @@ export default function ColaboradoresPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.15 }}
-                    onClick={() => setSelectedColaboradorId(prev => prev === c.id ? null : c.id)}
+                    onClick={() => { setViewingColaborador(c); setSelectedColaboradorId(c.id); setColabMsgStatus('idle'); setColabMsgText(''); }}
                     className="rounded-xl p-3 cursor-pointer transition-all duration-150"
                     style={{
                       background: selectedColaboradorId === c.id ? 'rgba(29,78,216,0.12)' : 'var(--tint-04)',
@@ -1318,25 +1355,6 @@ export default function ColaboradoresPage() {
                             +{c.regioes.length - 3}
                           </span>
                         )}
-                      </div>
-                    )}
-                    {/* Actions (show on selection) */}
-                    {selectedColaboradorId === c.id && (
-                      <div className="flex gap-1 mt-2 pt-2" style={{ borderTop: '1px solid var(--tint-08)' }}>
-                        <button
-                          onClick={e => { e.stopPropagation(); openEdit(c); }}
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all"
-                          style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
-                        >
-                          <Pencil className="w-3 h-3" /> Editar
-                        </button>
-                        <button
-                          onClick={e => { e.stopPropagation(); setConfirmDeleteId(c.id); }}
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all"
-                          style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444' }}
-                        >
-                          <Trash2 className="w-3 h-3" /> Remover
-                        </button>
                       </div>
                     )}
                   </motion.div>
@@ -2568,6 +2586,186 @@ export default function ColaboradoresPage() {
         onConfirm={() => confirmDeletePadrinhoId && handleDeletePadrinho(confirmDeletePadrinhoId)}
         onCancel={() => !deletingPadrinho && setConfirmDeletePadrinhoId(null)}
       />
+
+      {/* ── Colaborador detail modal ── */}
+      {viewingColaborador && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center sm:px-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0"
+              style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+              onClick={() => { setViewingColaborador(null); setSelectedColaboradorId(null); }}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              className="relative w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col"
+              style={{ background: 'var(--bg-card)', maxHeight: '90vh' }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between px-6 pt-5 pb-4" style={{ borderBottom: '1px solid var(--tint-06)' }}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-base font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>
+                      {viewingColaborador.nome}
+                    </h2>
+                    <span
+                      className="text-[10px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0"
+                      style={{
+                        background: viewingColaborador.status === 'ATIVO' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)',
+                        color: viewingColaborador.status === 'ATIVO' ? '#22c55e' : '#ef4444',
+                      }}
+                    >
+                      {viewingColaborador.status === 'ATIVO' ? 'Ativo' : 'Inativo'}
+                    </span>
+                  </div>
+                  {viewingColaborador.funcao && (
+                    <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{viewingColaborador.funcao}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => { setViewingColaborador(null); setSelectedColaboradorId(null); }}
+                  className="ml-3 flex-shrink-0 p-1 rounded-lg transition-colors"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="overflow-y-auto flex-1 px-6 py-4 flex flex-col gap-4">
+                {/* Contact info */}
+                <div className="flex flex-col gap-2">
+                  {viewingColaborador.telefone && (
+                    <div className="flex items-center gap-2.5">
+                      <Phone className="w-4 h-4 flex-shrink-0" style={{ color: '#4a9ede' }} />
+                      <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{viewingColaborador.telefone}</span>
+                    </div>
+                  )}
+                  {viewingColaborador.email && (
+                    <div className="flex items-center gap-2.5">
+                      <AtSign className="w-4 h-4 flex-shrink-0" style={{ color: '#4a9ede' }} />
+                      <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{viewingColaborador.email}</span>
+                    </div>
+                  )}
+                  {viewingColaborador.endereco && (
+                    <div className="flex items-start gap-2.5">
+                      <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#4a9ede' }} />
+                      <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{viewingColaborador.endereco}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Padrinho */}
+                {viewingColaborador.padrinho && (
+                  <div className="rounded-xl p-3" style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>Padrinho Político</p>
+                    <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{viewingColaborador.padrinho.nome}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                      {viewingColaborador.padrinho.cargo}{viewingColaborador.padrinho.partido ? ` · ${viewingColaborador.padrinho.partido}` : ''}
+                    </p>
+                  </div>
+                )}
+
+                {/* Regiões */}
+                {viewingColaborador.regioes.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>Regiões</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewingColaborador.regioes.map(r => (
+                        <span
+                          key={r.id}
+                          className="text-xs px-2 py-0.5 rounded-lg"
+                          style={r.tipo === 'ZONA'
+                            ? { background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }
+                            : { background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
+                        >
+                          {r.regiaoNome}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Observação */}
+                {viewingColaborador.observacao && (
+                  <div className="rounded-xl p-3" style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>Observação</p>
+                    <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>{viewingColaborador.observacao}</p>
+                  </div>
+                )}
+
+                {/* WhatsApp message */}
+                {viewingColaborador.telefone ? (
+                  <div className="rounded-xl p-4" style={{ background: 'var(--tint-06)', border: '1px solid rgba(37,211,102,0.2)' }}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <MessageCircle className="w-4 h-4" style={{ color: '#25d366' }} />
+                      <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Enviar mensagem WhatsApp</p>
+                    </div>
+                    <textarea
+                      value={colabMsgText}
+                      onChange={e => { setColabMsgText(e.target.value); setColabMsgStatus('idle'); }}
+                      rows={3}
+                      placeholder="Digite a mensagem..."
+                      disabled={colabMsgStatus === 'sending'}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm outline-none resize-none placeholder-[color:var(--text-tertiary)] disabled:opacity-50"
+                      style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                    />
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{colabMsgText.length} caracteres</span>
+                      {colabMsgStatus === 'ok' && (
+                        <span className="text-xs flex items-center gap-1" style={{ color: '#22c55e' }}>
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Enviado
+                        </span>
+                      )}
+                      {colabMsgStatus === 'err' && (
+                        <span className="text-xs flex items-center gap-1" style={{ color: '#ef4444' }}>
+                          <AlertCircle className="w-3.5 h-3.5" /> {colabMsgError || 'Erro'}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleSendColabMsg}
+                      disabled={!colabMsgText.trim() || colabMsgStatus === 'sending'}
+                      className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg, #128c7e, #25d366)' }}
+                    >
+                      {colabMsgStatus === 'sending'
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Enviando...</>
+                        : <><Send className="w-4 h-4" /> Enviar</>}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-center py-2" style={{ color: 'var(--text-tertiary)' }}>
+                    Sem telefone cadastrado para envio de mensagem.
+                  </p>
+                )}
+              </div>
+
+              {/* Footer actions */}
+              <div className="px-6 py-4 flex gap-2" style={{ borderTop: '1px solid var(--tint-06)' }}>
+                <button
+                  onClick={() => { setViewingColaborador(null); openEdit(viewingColaborador); }}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
+                >
+                  <Pencil className="w-4 h-4" /> Editar
+                </button>
+                <button
+                  onClick={() => { setConfirmDeleteId(viewingColaborador.id); setViewingColaborador(null); }}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444' }}
+                >
+                  <Trash2 className="w-4 h-4" /> Remover
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {showPadrinhosModal && createPortal(
         <AnimatePresence>
