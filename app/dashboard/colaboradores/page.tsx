@@ -369,35 +369,42 @@ function ColaboradoresMapInner({
       .catch(() => setLoading(false));
   }, []);
 
-  const getRegionColor = useCallback((nome: string) => {
+  const HEAT_COLORS = [
+    { fill: '#bfdbfe', border: '#93c5fd' }, // tier 1 — muito baixo
+    { fill: '#60a5fa', border: '#3b82f6' }, // tier 2 — baixo
+    { fill: '#2563eb', border: '#1d4ed8' }, // tier 3 — médio
+    { fill: '#1e3a8a', border: '#1d4ed8' }, // tier 4 — alto
+    { fill: '#0f172a', border: '#1e3a8a' }, // tier 5 — muito alto
+  ];
+
+  const getHeatTier = useCallback((nome: string): number => {
     const data = colabRef.current;
     const norm = normalizeRegiao(nome);
     let count = 0;
     for (const [k, v] of Object.entries(data)) {
       if (normalizeRegiao(k) === norm) { count = v.length; break; }
     }
-    if (count === 0) return 'rgba(30,58,95,0.15)';
+    if (count === 0) return 0;
     const maxCount = Math.max(...Object.values(data).map(v => v.length), 1);
-    const intensity = count / maxCount;
-    const lightness = Math.round(55 - intensity * 20);
-    const saturation = 80;
-    return `hsl(210, ${saturation}%, ${lightness}%)`;
+    const ratio = count / maxCount;
+    if (ratio <= 0.2) return 1;
+    if (ratio <= 0.4) return 2;
+    if (ratio <= 0.65) return 3;
+    if (ratio <= 0.85) return 4;
+    return 5;
   }, []);
 
   const getRegionStyle = useCallback((nome: string, isSelected: boolean) => {
-    const norm = normalizeRegiao(nome);
-    let hasColabs = false;
-    for (const [k, v] of Object.entries(colabRef.current)) {
-      if (normalizeRegiao(k) === norm && v.length > 0) { hasColabs = true; break; }
-    }
     if (isSelected) {
-      return { fillColor: '#1d4ed8', fillOpacity: 0.55, color: '#60a5fa', weight: 2.5, opacity: 1 };
+      return { fillColor: '#1d4ed8', fillOpacity: 0.65, color: '#60a5fa', weight: 2.5, opacity: 1 };
     }
-    if (hasColabs) {
-      return { fillColor: getRegionColor(nome), fillOpacity: 0.45, color: '#4a9ede', weight: 1.5, opacity: 1 };
+    const tier = getHeatTier(nome);
+    if (tier === 0) {
+      return { fillColor: '#cbd5e1', fillOpacity: 0.12, color: '#94a3b8', weight: 1, opacity: 0.5 };
     }
-    return { fillColor: 'rgba(30,58,95,0.15)', fillOpacity: 0.15, color: '#9ab8d4', weight: 1, opacity: 0.6 };
-  }, [getRegionColor]);
+    const { fill, border } = HEAT_COLORS[tier - 1];
+    return { fillColor: fill, fillOpacity: 0.55 + tier * 0.06, color: border, weight: 1.5, opacity: 1 };
+  }, [getHeatTier]);
 
   useEffect(() => {
     if (!geoData || !mapRef.current || isInitRef.current) return;
@@ -478,7 +485,7 @@ function ColaboradoresMapInner({
               ? normalizeRegiao(nome) === normalizeRegiao(selectedRef.current)
               : false;
             if (!isSelected) {
-              layer.setStyle({ weight: 2.5, fillOpacity: 0.35, color: '#60a5fa' });
+              layer.setStyle({ weight: 2.5, fillOpacity: 0.75, color: '#60a5fa' });
             }
             tooltipEl.innerHTML = [
               `<strong style="color:#7dd3fc;font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
@@ -575,20 +582,22 @@ function ColaboradoresMapInner({
         className="w-full h-full rounded-xl overflow-hidden"
         style={{ background: '#f0f4f8' }}
       />
-      <div className="absolute bottom-3 left-3 z-[1000] bg-white/90 backdrop-blur-md rounded-xl border border-gray-200 px-4 py-2.5 text-xs shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-3 rounded-sm" style={{ background: '#1d4ed8', opacity: 0.7 }} />
-            <span className="text-gray-600">Selecionada</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-3 rounded-sm" style={{ background: 'hsl(210,80%,45%)', opacity: 0.7 }} />
-            <span className="text-gray-600">Com colaboradores</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-3 rounded-sm" style={{ background: 'rgba(30,58,95,0.25)' }} />
-            <span className="text-gray-600">Vazia</span>
-          </div>
+      <div className="absolute bottom-3 left-3 z-[1000] rounded-xl border border-gray-200/80 px-3.5 py-2.5 text-xs shadow-lg" style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(8px)' }}>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Mapa de Calor</p>
+        <div className="flex flex-col gap-1.5">
+          {[
+            { color: '#cbd5e1', opacity: 0.4,  label: 'Sem colaboradores' },
+            { color: '#bfdbfe', opacity: 1,     label: 'Muito baixo' },
+            { color: '#60a5fa', opacity: 1,     label: 'Baixo' },
+            { color: '#2563eb', opacity: 1,     label: 'Médio' },
+            { color: '#1e3a8a', opacity: 1,     label: 'Alto' },
+            { color: '#0f172a', opacity: 1,     label: 'Muito alto' },
+          ].map(({ color, opacity, label }) => (
+            <div key={label} className="flex items-center gap-2">
+              <div className="w-5 h-3.5 rounded-sm flex-shrink-0" style={{ background: color, opacity }} />
+              <span className="text-gray-600">{label}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
