@@ -105,9 +105,9 @@ function getZoneMarkerHtml(zona: number, count: number, isSelected: boolean): st
   const bg = isSelected
     ? 'linear-gradient(135deg,#6d28d9,#a78bfa)'
     : count === 0
-      ? 'rgba(30,58,95,0.60)'
-      : 'linear-gradient(135deg,#0f5198,#2d9de8)';
-  const border = isSelected ? '#c4b5fd' : count === 0 ? 'rgba(148,163,184,0.4)' : '#93c5fd';
+      ? 'rgba(109,40,217,0.52)'
+      : 'linear-gradient(135deg,#6d28d9,#8b5cf6)';
+  const border = isSelected ? '#c4b5fd' : count === 0 ? 'rgba(167,139,250,0.55)' : '#a78bfa';
   const label = count === 0
     ? String(zona)
     : count >= 1000 ? `${(count / 1000).toFixed(1)}k` : String(count);
@@ -1637,15 +1637,15 @@ export default function ColaboradoresPage() {
                                     className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
                                     style={{
                                       background: isSelected
-                                        ? 'rgba(109,40,217,0.25)'
+                                        ? 'rgba(109,40,217,0.35)'
                                         : colabs.length > 0
-                                          ? 'rgba(15,81,152,0.18)'
-                                          : 'var(--tint-06)',
+                                          ? 'rgba(109,40,217,0.25)'
+                                          : 'rgba(109,40,217,0.14)',
                                       color: isSelected
                                         ? '#c4b5fd'
                                         : colabs.length > 0
-                                          ? '#4a9ede'
-                                          : 'var(--text-tertiary)',
+                                          ? '#a78bfa'
+                                          : '#8b5cf6',
                                     }}
                                   >
                                     {zona}
@@ -1657,12 +1657,12 @@ export default function ColaboradoresPage() {
                                     >
                                       Zona {zona}
                                     </p>
-                                    <p className="text-[10px] truncate" style={{ color: isSelected ? '#a78bfa' : 'var(--text-tertiary)' }}>
+                                    <p className="text-[10px] truncate" style={{ color: isSelected ? '#a78bfa' : '#8b5cf6' }}>
                                       {DF_ZONA_NOMES[zona] ?? ''}
                                     </p>
                                     <p
                                       className="text-[11px]"
-                                      style={{ color: isSelected ? '#a78bfa' : 'var(--text-tertiary)' }}
+                                      style={{ color: isSelected ? '#a78bfa' : 'rgba(139,92,246,0.7)' }}
                                     >
                                       {colabs.length > 0
                                         ? `${colabs.length} colaborador${colabs.length !== 1 ? 'es' : ''}`
