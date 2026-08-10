@@ -48,6 +48,50 @@ interface Colaborador {
 // ---------------------------------------------------------------------------
 const DF_ZONAS = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
+// Approximate geographic centers of each DF electoral zone
+const DF_ZONA_COORDS: Record<number, [number, number]> = {
+  1:  [-15.7941, -47.8822],  // Plano Piloto / Asa Sul
+  2:  [-15.7229, -47.8816],  // Asa Norte / Lago Norte
+  3:  [-15.7942, -47.9372],  // Cruzeiro / Sudoeste
+  4:  [-15.8316, -48.0554],  // Taguatinga
+  5:  [-15.8150, -48.1005],  // Ceilândia Norte
+  6:  [-15.8501, -48.1009],  // Ceilândia Sul
+  8:  [-15.8831, -48.0810],  // Samambaia
+  9:  [-15.8600, -47.9850],  // Lago Sul / Riacho Fundo
+  10: [-15.8314, -47.9813],  // Guará
+  11: [-16.0202, -48.0196],  // Santa Maria
+  13: [-15.6189, -47.6540],  // Planaltina
+  14: [-15.6524, -47.7910],  // Sobradinho
+  15: [-16.0177, -48.0629],  // Gama
+  16: [-15.6731, -48.2038],  // Brazlândia
+  17: [-15.9112, -48.0609],  // Recanto das Emas
+  18: [-15.9098, -47.8028],  // São Sebastião
+  19: [-15.7672, -47.7540],  // Paranoá / Itapoã
+  20: [-15.8400, -48.0272],  // Águas Claras / Vicente Pires
+  21: [-15.7494, -47.9300],  // Estrutural / Varjão
+};
+
+function getZoneMarkerHtml(zona: number, count: number, isSelected: boolean): string {
+  const size = count === 0 ? 36 : Math.min(36 + Math.sqrt(count) * 5, 58);
+  const bg = isSelected
+    ? 'linear-gradient(135deg,#6d28d9,#a78bfa)'
+    : count === 0
+      ? 'rgba(30,58,95,0.60)'
+      : 'linear-gradient(135deg,#0f5198,#2d9de8)';
+  const border = isSelected ? '#c4b5fd' : count === 0 ? 'rgba(148,163,184,0.4)' : '#93c5fd';
+  const label = count === 0
+    ? String(zona)
+    : count >= 1000 ? `${(count / 1000).toFixed(1)}k` : String(count);
+  return `<div style="
+    width:${size}px;height:${size}px;border-radius:50%;
+    background:${bg};border:2.5px solid ${border};
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:${size > 44 ? 14 : 11}px;font-family:system-ui,sans-serif;
+    box-shadow:0 2px 10px rgba(0,0,0,0.35);cursor:pointer;
+    transform:translate(-50%,-50%);
+  ">${label}</div>`;
+}
+
 const FUNCOES = [
   { value: '', label: 'Sem função definida' },
   { value: 'Coordenador Geral', label: 'Coordenador Geral' },
@@ -151,6 +195,121 @@ interface ColaboradoresMapProps {
   height?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Zonas electoral map — Leaflet map with zone markers
+// ---------------------------------------------------------------------------
+interface ZonasMapProps {
+  colaboradoresByZona: Record<number, Colaborador[]>;
+  selectedZona: number | null;
+  onZonaClick: (zona: number) => void;
+}
+
+function ZonasMapInner({ colaboradoresByZona, selectedZona, onZonaClick }: ZonasMapProps) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markersRef = useRef<Record<number, any>>({});
+  const isInitRef = useRef(false);
+
+  const colabRef = useRef(colaboradoresByZona);
+  const selectedRef = useRef(selectedZona);
+  const onClickRef = useRef(onZonaClick);
+
+  useEffect(() => { colabRef.current = colaboradoresByZona; }, [colaboradoresByZona]);
+  useEffect(() => { selectedRef.current = selectedZona; }, [selectedZona]);
+  useEffect(() => { onClickRef.current = onZonaClick; }, [onZonaClick]);
+
+  useEffect(() => {
+    if (!mapRef.current || isInitRef.current) return;
+    isInitRef.current = true;
+    let cancelled = false;
+
+    const initMap = async () => {
+      const L = (await import('leaflet')).default;
+      if (cancelled || !mapRef.current) { isInitRef.current = false; return; }
+
+      if (mapInstanceRef.current) {
+        try { mapInstanceRef.current.remove(); } catch (_) {}
+        mapInstanceRef.current = null;
+        markersRef.current = {};
+      }
+
+      const map = L.map(mapRef.current, {
+        center: [-15.8267, -48.0],
+        zoom: 10,
+        zoomControl: true,
+        scrollWheelZoom: true,
+        attributionControl: true,
+      });
+      mapInstanceRef.current = map;
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19,
+      }).addTo(map);
+
+      DF_ZONAS.forEach(zona => {
+        const coords = DF_ZONA_COORDS[zona];
+        if (!coords) return;
+        const count = (colabRef.current[zona] ?? []).length;
+        const isSelected = selectedRef.current === zona;
+
+        const icon = L.divIcon({
+          html: getZoneMarkerHtml(zona, count, isSelected),
+          className: '',
+          iconSize: [0, 0],
+          iconAnchor: [0, 0],
+        });
+
+        const marker = L.marker(coords, { icon })
+          .addTo(map)
+          .on('click', () => onClickRef.current(zona));
+
+        markersRef.current[zona] = marker;
+      });
+
+      isInitRef.current = false;
+    };
+
+    initMap().catch(() => { isInitRef.current = false; });
+
+    return () => {
+      cancelled = true;
+      isInitRef.current = false;
+      if (mapInstanceRef.current) {
+        try { mapInstanceRef.current.remove(); } catch (_) {}
+        mapInstanceRef.current = null;
+        markersRef.current = {};
+      }
+    };
+  }, []);
+
+  // Update markers when collaborator data or selection changes
+  useEffect(() => {
+    if (Object.keys(markersRef.current).length === 0) return;
+    import('leaflet').then(({ default: L }) => {
+      DF_ZONAS.forEach(zona => {
+        const marker = markersRef.current[zona];
+        if (!marker) return;
+        const count = (colaboradoresByZona[zona] ?? []).length;
+        marker.setIcon(L.divIcon({
+          html: getZoneMarkerHtml(zona, count, selectedZona === zona),
+          className: '',
+          iconSize: [0, 0],
+          iconAnchor: [0, 0],
+        }));
+      });
+    });
+  }, [colaboradoresByZona, selectedZona]);
+
+  return (
+    <div ref={mapRef} className="w-full h-full" style={{ background: '#f0f4f8' }} />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RA polygon map
+// ---------------------------------------------------------------------------
 function ColaboradoresMapInner({
   colaboradoresByRegiao,
   selectedRegiao,
@@ -1263,88 +1422,119 @@ export default function ColaboradoresPage() {
                       </motion.div>
                     )}
 
-                    {/* Zone card grid */}
+                    {/* Map + zone list (mirrors Mapa Eleitoral zones layout) */}
                     <div
-                      className="rounded-xl p-5"
-                      style={{ background: 'var(--bg-card)', border: '1px solid rgba(167,139,250,0.15)', minHeight: 'calc(100vh - 340px)' }}
+                      className="flex rounded-xl overflow-hidden"
+                      style={{
+                        height: 'calc(100vh - 340px)',
+                        minHeight: 480,
+                        border: '1px solid rgba(167,139,250,0.15)',
+                      }}
                     >
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                            Zonas Eleitorais do DF
-                          </h3>
-                          <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                            {zonasCobertasCount} de 19 zonas com colaboradores — clique para filtrar
-                          </p>
-                        </div>
-                        {selectedZona !== null && (
-                          <button
-                            onClick={clearZonaFilter}
-                            className="text-xs px-3 py-1 rounded-lg"
-                            style={{ background: 'rgba(167,139,250,0.12)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.2)' }}
-                          >
-                            Limpar seleção
-                          </button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 gap-2.5">
-                        {DF_ZONAS.map(zona => {
-                          const colabs = colaboradoresByZona[zona] ?? [];
-                          const ativos = colabs.filter(c => c.status === 'ATIVO').length;
-                          const isSelected = selectedZona === zona;
-                          const hasColabs = colabs.length > 0;
-                          return (
-                            <button
-                              key={zona}
-                              onClick={() => handleZonaClick(zona)}
-                              className="flex flex-col items-center justify-center py-3 px-2 rounded-xl transition-all duration-150 hover:scale-105"
-                              style={{
-                                background: isSelected
-                                  ? 'rgba(109,40,217,0.18)'
-                                  : hasColabs
-                                    ? 'rgba(139,92,246,0.08)'
-                                    : 'var(--tint-04)',
-                                border: `1px solid ${isSelected
-                                  ? 'rgba(109,40,217,0.5)'
-                                  : hasColabs
-                                    ? 'rgba(139,92,246,0.25)'
-                                    : 'var(--tint-08)'}`,
-                              }}
-                            >
-                              <span
-                                className="text-xl font-bold leading-none"
-                                style={{
-                                  color: isSelected ? '#c4b5fd' : hasColabs ? '#a78bfa' : 'var(--text-tertiary)',
-                                }}
-                              >
-                                {zona}
-                              </span>
-                              <span
-                                className="text-[10px] mt-1.5 font-medium"
-                                style={{ color: isSelected ? '#ddd6fe' : 'var(--text-tertiary)' }}
-                              >
-                                {colabs.length === 0
-                                  ? 'vazia'
-                                  : `${ativos} ativo${ativos !== 1 ? 's' : ''}`}
-                              </span>
-                            </button>
-                          );
-                        })}
+                      {/* Leaflet map with zone markers */}
+                      <div className="flex-1" style={{ minWidth: 0 }}>
+                        <ZonasMapInner
+                          colaboradoresByZona={colaboradoresByZona}
+                          selectedZona={selectedZona}
+                          onZonaClick={handleZonaClick}
+                        />
                       </div>
 
-                      {/* Legend */}
-                      <div className="flex items-center gap-4 mt-5 pt-4" style={{ borderTop: '1px solid var(--tint-06)' }}>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-4 h-3 rounded-sm" style={{ background: 'rgba(109,40,217,0.4)', border: '1px solid rgba(109,40,217,0.5)' }} />
-                          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Selecionada</span>
+                      {/* Right panel — zone list sorted by collaborator count */}
+                      <div
+                        className="w-60 flex flex-col flex-shrink-0"
+                        style={{ background: 'var(--bg-card)', borderLeft: '1px solid rgba(167,139,250,0.15)' }}
+                      >
+                        {/* Panel header */}
+                        <div
+                          className="flex items-center gap-2 px-3 py-2.5 flex-shrink-0"
+                          style={{ borderBottom: '1px solid var(--tint-06)' }}
+                        >
+                          <MapPin className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />
+                          <span
+                            className="text-[11px] font-bold uppercase tracking-widest"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            Zonas Eleitorais
+                          </span>
+                          <span
+                            className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                            style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}
+                          >
+                            {DF_ZONAS.length}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-4 h-3 rounded-sm" style={{ background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.3)' }} />
-                          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Com colaboradores</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-4 h-3 rounded-sm" style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-08)' }} />
-                          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Vazia</span>
+
+                        {/* Sorted zone list */}
+                        <div className="flex-1 overflow-y-auto scrollbar-dark">
+                          {[...DF_ZONAS]
+                            .sort((a, b) =>
+                              (colaboradoresByZona[b]?.length ?? 0) - (colaboradoresByZona[a]?.length ?? 0)
+                            )
+                            .map(zona => {
+                              const colabs = colaboradoresByZona[zona] ?? [];
+                              const isSelected = selectedZona === zona;
+                              return (
+                                <div
+                                  key={zona}
+                                  onClick={() => handleZonaClick(zona)}
+                                  className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer select-none"
+                                  style={{
+                                    background: isSelected ? 'rgba(109,40,217,0.12)' : 'transparent',
+                                    borderLeft: `3px solid ${isSelected ? '#a78bfa' : 'transparent'}`,
+                                    transition: 'background 0.1s',
+                                  }}
+                                  onMouseEnter={e => {
+                                    if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'var(--tint-04)';
+                                  }}
+                                  onMouseLeave={e => {
+                                    if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent';
+                                  }}
+                                >
+                                  <div
+                                    className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+                                    style={{
+                                      background: isSelected
+                                        ? 'rgba(109,40,217,0.25)'
+                                        : colabs.length > 0
+                                          ? 'rgba(15,81,152,0.18)'
+                                          : 'var(--tint-06)',
+                                      color: isSelected
+                                        ? '#c4b5fd'
+                                        : colabs.length > 0
+                                          ? '#4a9ede'
+                                          : 'var(--text-tertiary)',
+                                    }}
+                                  >
+                                    {zona}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p
+                                      className="text-xs font-semibold"
+                                      style={{ color: isSelected ? '#c4b5fd' : 'var(--text-primary)' }}
+                                    >
+                                      Zona {zona}
+                                    </p>
+                                    <p
+                                      className="text-[11px]"
+                                      style={{ color: isSelected ? '#a78bfa' : 'var(--text-tertiary)' }}
+                                    >
+                                      {colabs.length > 0
+                                        ? `${colabs.length} colaborador${colabs.length !== 1 ? 'es' : ''}`
+                                        : 'sem colaboradores'}
+                                    </p>
+                                  </div>
+                                  {colabs.length > 0 && (
+                                    <span
+                                      className="text-[11px] font-bold flex-shrink-0"
+                                      style={{ color: isSelected ? '#a78bfa' : '#4a9ede' }}
+                                    >
+                                      {colabs.length}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
                         </div>
                       </div>
                     </div>
