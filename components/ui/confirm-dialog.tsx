@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, HelpCircle } from 'lucide-react';
+import { AlertTriangle, HelpCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
@@ -12,6 +12,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: 'danger' | 'default';
+  loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -23,6 +24,7 @@ export function ConfirmDialog({
   confirmLabel = 'Confirmar',
   cancelLabel = 'Cancelar',
   variant = 'default',
+  loading = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -96,27 +98,30 @@ export function ConfirmDialog({
               <div className="flex gap-2 justify-end mt-6">
                 <button
                   onClick={onCancel}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150"
+                  disabled={loading}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 disabled:opacity-40"
                   style={{
                     background: 'var(--tint-06)',
                     color: 'var(--tint-75)',
                     border: '1px solid var(--tint-10)',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--tint-10)')}
+                  onMouseEnter={e => { if (!loading) (e.currentTarget.style.background = 'var(--tint-10)'); }}
                   onMouseLeave={e => (e.currentTarget.style.background = 'var(--tint-06)')}
                 >
                   {cancelLabel}
                 </button>
                 <button
                   onClick={onConfirm}
-                  className="px-4 py-2 rounded-lg text-sm font-bold transition-all duration-150 text-[color:var(--text-primary)]"
+                  disabled={loading}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-150 text-white disabled:opacity-80"
                   style={
                     isDanger
                       ? { background: 'linear-gradient(135deg, #dc2626, #ef4444)', boxShadow: '0 4px 14px rgba(220,38,38,0.35)' }
                       : { background: 'linear-gradient(135deg, #1d6fd8, #4a9ede)', boxShadow: '0 4px 14px rgba(74,158,222,0.35)' }
                   }
                 >
-                  {confirmLabel}
+                  {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {loading ? 'Removendo...' : confirmLabel}
                 </button>
               </div>
             </div>

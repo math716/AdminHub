@@ -637,6 +637,7 @@ export default function ColaboradoresPage() {
   const [formRegiaoTab, setFormRegiaoTab] = useState<'ra' | 'zona'>('ra');
   const [showImportModal, setShowImportModal] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // ── Form state ──
   const [form, setForm] = useState({ ...EMPTY_FORM });
@@ -847,6 +848,7 @@ export default function ColaboradoresPage() {
   };
 
   const handleDelete = async (id: string) => {
+    setDeleting(true);
     try {
       const res = await fetch(`/api/colaboradores/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Erro ao deletar');
@@ -856,6 +858,8 @@ export default function ColaboradoresPage() {
       fetchColaboradores();
     } catch {
       toast.error('Erro ao remover colaborador');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -2520,8 +2524,9 @@ export default function ColaboradoresPage() {
         confirmLabel="Remover"
         cancelLabel="Cancelar"
         variant="danger"
+        loading={deleting}
         onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
-        onCancel={() => setConfirmDeleteId(null)}
+        onCancel={() => !deleting && setConfirmDeleteId(null)}
       />
     </div>
   );
