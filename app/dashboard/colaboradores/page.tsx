@@ -660,6 +660,7 @@ export default function ColaboradoresPage() {
   const [selectedColaboradorId, setSelectedColaboradorId] = useState<string | null>(null);
   const [selectedRegiao, setSelectedRegiao] = useState<string | null>(null);
   const [selectedZona, setSelectedZona] = useState<number | null>(null);
+  const [selectedPadrinhoFilter, setSelectedPadrinhoFilter] = useState<string | null>(null);
 
   // ── Modals ──
   const [showFormModal, setShowFormModal] = useState(false);
@@ -745,9 +746,17 @@ export default function ColaboradoresPage() {
   }, []);
 
   // ── Derived data ──
+  // Base list respects padrinho filter for map heat and zone counts
+  const baseColaboradores = useMemo(() =>
+    selectedPadrinhoFilter
+      ? colaboradores.filter(c => c.padrinhoId === selectedPadrinhoFilter)
+      : colaboradores,
+    [colaboradores, selectedPadrinhoFilter]
+  );
+
   const colaboradoresByRegiao = useMemo(() => {
     const map: Record<string, Colaborador[]> = {};
-    for (const c of colaboradores) {
+    for (const c of baseColaboradores) {
       for (const r of c.regioes) {
         if (r.tipo !== 'RA') continue;
         if (!map[r.regiaoNome]) map[r.regiaoNome] = [];
@@ -755,11 +764,11 @@ export default function ColaboradoresPage() {
       }
     }
     return map;
-  }, [colaboradores]);
+  }, [baseColaboradores]);
 
   const colaboradoresByZona = useMemo(() => {
     const map: Record<number, Colaborador[]> = {};
-    for (const c of colaboradores) {
+    for (const c of baseColaboradores) {
       for (const r of c.regioes) {
         if (r.tipo !== 'ZONA') continue;
         const num = parseInt(r.regiaoNome.replace('Zona ', ''), 10);
@@ -770,7 +779,7 @@ export default function ColaboradoresPage() {
       }
     }
     return map;
-  }, [colaboradores]);
+  }, [baseColaboradores]);
 
   const regioesCobertasCount = useMemo(() => {
     const nomes = new Set<string>();
@@ -803,6 +812,7 @@ export default function ColaboradoresPage() {
   // Filtered list
   const filteredColaboradores = useMemo(() => {
     let list = colaboradores;
+    if (selectedPadrinhoFilter) list = list.filter(c => c.padrinhoId === selectedPadrinhoFilter);
     if (selectedRegiao) {
       list = list.filter(c =>
         c.regioes.some(r => r.tipo === 'RA' && normalizeRegiao(r.regiaoNome) === normalizeRegiao(selectedRegiao))
@@ -819,7 +829,7 @@ export default function ColaboradoresPage() {
       list = list.filter(c => normStr(c.nome).includes(q));
     }
     return list;
-  }, [colaboradores, selectedRegiao, selectedZona, statusFilter, search]);
+  }, [colaboradores, selectedPadrinhoFilter, selectedRegiao, selectedZona, statusFilter, search]);
 
   const regiaoColaboradores = useMemo(() => {
     if (!selectedRegiao) return [];
@@ -1307,6 +1317,62 @@ export default function ColaboradoresPage() {
               </button>
             ))}
           </div>
+
+          {/* Padrinho filter */}
+          {padrinhos.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
+                Filtrar por Padrinho
+              </p>
+              <div className="flex flex-col gap-1">
+                {padrinhos.map(p => {
+                  const count = colaboradores.filter(c => c.padrinhoId === p.id).length;
+                  const isSelected = selectedPadrinhoFilter === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => setSelectedPadrinhoFilter(prev => prev === p.id ? null : p.id)}
+                      className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all text-left"
+                      style={{
+                        background: isSelected ? 'linear-gradient(135deg, #6d28d9, #8b5cf6)' : 'var(--tint-06)',
+                        color: isSelected ? '#fff' : 'var(--text-secondary)',
+                        border: '1px solid ' + (isSelected ? 'transparent' : 'var(--tint-10)'),
+                      }}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <User className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate font-medium">{p.nome}</span>
+                      </div>
+                      <span
+                        className="flex-shrink-0 ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={{
+                          background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(139,92,246,0.15)',
+                          color: isSelected ? '#fff' : '#8b5cf6',
+                        }}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Padrinho active indicator */}
+          {selectedPadrinhoFilter && (
+            <div
+              className="flex items-center justify-between rounded-lg px-3 py-2 text-xs"
+              style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.35)' }}
+            >
+              <span className="truncate font-medium" style={{ color: '#a78bfa' }}>
+                ↑ {padrinhos.find(p => p.id === selectedPadrinhoFilter)?.nome}
+              </span>
+              <button onClick={() => setSelectedPadrinhoFilter(null)} className="ml-2 flex-shrink-0">
+                <X className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />
+              </button>
+            </div>
+          )}
 
           {/* Region filter indicator */}
           {selectedRegiao && (
