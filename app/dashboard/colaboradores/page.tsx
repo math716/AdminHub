@@ -646,14 +646,17 @@ function ColaboradoresMapInner({
       drawHeatRef.current = drawHeat;
       drawHeat();
 
-      map.on('moveend zoomend', drawHeat);
+      // Redraw after moveend — small delay lets Leaflet fully settle state before reading coordinates
+      map.on('moveend', () => {
+        if (!cancelled) setTimeout(() => { if (!cancelled) drawHeat(); }, 30);
+      });
       map.on('resize', () => {
         requestAnimationFrame(() => {
+          if (cancelled) return;
           const c = map.getContainer();
           const w = c.offsetWidth;
           const h = c.offsetHeight;
           if (w > 0 && h > 0) {
-            // Only reset dimensions if they actually changed (resetting clears the canvas)
             if (heatCanvas.width !== w || heatCanvas.height !== h) {
               heatCanvas.width  = w;
               heatCanvas.height = h;
@@ -664,17 +667,15 @@ function ColaboradoresMapInner({
       });
       // ───────────────────────────────────────────────────────────────────
 
-      // Redraw heat map at progressive delays (data may not be loaded yet on first draw)
-      setTimeout(() => { if (!cancelled) drawHeat(); }, 200);
-      setTimeout(() => { if (!cancelled) drawHeat(); }, 600);
-      setTimeout(() => { if (!cancelled) drawHeat(); }, 1400);
+      // Redraw at progressive delays: covers data loading async + animation settling
+      [200, 600, 1000, 1600, 2500].forEach(ms => {
+        setTimeout(() => { if (!cancelled) drawHeat(); }, ms);
+      });
 
-      // Keep in sync with container resize (only invalidateSize here, not in setTimeouts)
+      // Keep in sync with container resize
       if (typeof ResizeObserver !== 'undefined' && mapRef.current) {
         const ro = new ResizeObserver(() => {
-          if (!cancelled) {
-            map.invalidateSize({ animate: false });
-          }
+          if (!cancelled) map.invalidateSize({ animate: false });
         });
         ro.observe(mapRef.current);
       }
