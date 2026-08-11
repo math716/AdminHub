@@ -613,28 +613,46 @@ function ColaboradoresMapInner({
   }
 
   return (
-    <div className="relative w-full h-full" style={{ minHeight: 320 }}>
+    <div className="relative w-full h-full isolate" style={{ minHeight: 320 }}>
       <div
         ref={mapRef}
         className="w-full h-full rounded-xl overflow-hidden"
         style={{ background: '#f0f4f8' }}
       />
-      <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 z-[1000] rounded-xl border border-gray-200/80 px-2.5 py-2 sm:px-3.5 sm:py-2.5 text-[10px] sm:text-xs shadow-lg" style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(8px)' }}>
-        <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-1.5">Mapa de Calor</p>
-        <div className="flex flex-col gap-1">
+      {/* Legenda — versão compacta (bolinhas) no mobile, completa no sm+ */}
+      <div className="absolute bottom-2 left-2 z-[1000] rounded-xl border border-gray-200/80 shadow-lg" style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(8px)' }}>
+        {/* Mobile: linha horizontal de quadradinhos coloridos */}
+        <div className="flex sm:hidden items-center gap-1 px-2 py-1.5">
+          <span className="text-[8px] font-bold uppercase tracking-wide text-gray-400 mr-0.5">Calor</span>
           {[
-            { color: '#e2e8f0', opacity: 0.5,  label: 'Sem colaboradores' },
-            { color: '#fef08a', opacity: 1,     label: 'Muito baixo' },
-            { color: '#fbbf24', opacity: 1,     label: 'Baixo' },
-            { color: '#f97316', opacity: 1,     label: 'Médio' },
-            { color: '#ef4444', opacity: 1,     label: 'Alto' },
-            { color: '#b91c1c', opacity: 1,     label: 'Muito alto' },
-          ].map(({ color, opacity, label }) => (
-            <div key={label} className="flex items-center gap-1.5">
-              <div className="w-4 h-3 sm:w-5 sm:h-3.5 rounded-sm flex-shrink-0" style={{ background: color, opacity }} />
-              <span className="text-gray-600">{label}</span>
-            </div>
+            { color: '#e2e8f0', opacity: 0.5 },
+            { color: '#fef08a' },
+            { color: '#fbbf24' },
+            { color: '#f97316' },
+            { color: '#ef4444' },
+            { color: '#b91c1c' },
+          ].map(({ color, opacity = 1 }, i) => (
+            <div key={i} className="w-4 h-4 rounded-sm flex-shrink-0" style={{ background: color, opacity }} />
           ))}
+        </div>
+        {/* sm+: legenda vertical completa */}
+        <div className="hidden sm:block px-3.5 py-2.5 text-xs">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-1.5">Mapa de Calor</p>
+          <div className="flex flex-col gap-1">
+            {[
+              { color: '#e2e8f0', opacity: 0.5, label: 'Sem colaboradores' },
+              { color: '#fef08a', opacity: 1,   label: 'Muito baixo' },
+              { color: '#fbbf24', opacity: 1,   label: 'Baixo' },
+              { color: '#f97316', opacity: 1,   label: 'Médio' },
+              { color: '#ef4444', opacity: 1,   label: 'Alto' },
+              { color: '#b91c1c', opacity: 1,   label: 'Muito alto' },
+            ].map(({ color, opacity, label }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <div className="w-5 h-3.5 rounded-sm flex-shrink-0" style={{ background: color, opacity }} />
+                <span className="text-gray-600">{label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
