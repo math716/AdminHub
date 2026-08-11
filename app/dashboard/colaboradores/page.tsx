@@ -664,13 +664,18 @@ function ColaboradoresMapInner({
       });
       // ───────────────────────────────────────────────────────────────────
 
-      // Force redraw after CSS layout settles
-      setTimeout(() => { if (!cancelled) { map.invalidateSize(); drawHeat(); } }, 150);
-      setTimeout(() => { if (!cancelled) { map.invalidateSize(); drawHeat(); } }, 500);
+      // Redraw heat map at progressive delays (data may not be loaded yet on first draw)
+      setTimeout(() => { if (!cancelled) drawHeat(); }, 200);
+      setTimeout(() => { if (!cancelled) drawHeat(); }, 600);
+      setTimeout(() => { if (!cancelled) drawHeat(); }, 1400);
 
-      // Keep in sync with container resize
+      // Keep in sync with container resize (only invalidateSize here, not in setTimeouts)
       if (typeof ResizeObserver !== 'undefined' && mapRef.current) {
-        const ro = new ResizeObserver(() => { if (!cancelled) map.invalidateSize(); });
+        const ro = new ResizeObserver(() => {
+          if (!cancelled) {
+            map.invalidateSize({ animate: false });
+          }
+        });
         ro.observe(mapRef.current);
       }
 
