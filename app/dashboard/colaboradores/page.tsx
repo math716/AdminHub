@@ -1731,7 +1731,7 @@ export default function ColaboradoresPage() {
         {/* Right main area */}
         <div className="md:col-span-3 flex flex-col gap-3 order-1 md:order-2">
           {/* Tab switcher row */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
             {/* Regiões Admin. | Zonas Eleitorais */}
             <div
               className="flex items-center gap-1 p-1 rounded-xl self-start"
@@ -1756,7 +1756,7 @@ export default function ColaboradoresPage() {
             </div>
 
             {/* District / Zone search bar */}
-            <div ref={districtSearchRef} className="relative w-full sm:max-w-sm">
+            <div ref={districtSearchRef} className="relative w-full sm:max-w-sm md:max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-tertiary)' }} />
                 <input
                   type="text"
@@ -1840,7 +1840,7 @@ export default function ColaboradoresPage() {
                   <>
                     {/* Polygon map */}
                     <div
-                      className="rounded-xl overflow-hidden h-[55vw] min-h-[320px] md:h-[calc(100vh-340px)]"
+                      className="rounded-xl overflow-hidden h-[55vw] min-h-[320px] md:h-[calc(100vh-400px)]"
                       style={{ border: '1px solid rgba(74,158,222,0.15)' }}
                     >
                       <ColaboradoresMapInner
@@ -1860,7 +1860,7 @@ export default function ColaboradoresPage() {
                   <>
                     {/* Map + zone list — height lives on the container so children can use h-full */}
                     <div
-                      className="flex flex-col md:flex-row rounded-xl overflow-hidden md:h-[calc(100vh-340px)]"
+                      className="flex flex-col md:flex-row rounded-xl overflow-hidden md:h-[calc(100vh-400px)]"
                       style={{ border: '1px solid rgba(167,139,250,0.15)' }}
                     >
                       {/* Leaflet map with zone markers */}
