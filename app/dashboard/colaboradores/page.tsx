@@ -2182,8 +2182,8 @@ export default function ColaboradoresPage() {
                         <button
                           type="button"
                           onClick={() => { setShowNovoPadrinho(true); setNovoPadrinho({ nome: padrinhoSearch, cargo: '', partido: '' }); }}
-                          className="flex items-center gap-1.5 text-xs font-semibold"
-                          style={{ color: '#a78bfa' }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                          style={{ background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)', color: '#fff' }}
                         >
                           <Plus className="w-3.5 h-3.5" />
                           Cadastrar novo padrinho
@@ -2249,7 +2249,7 @@ export default function ColaboradoresPage() {
                       <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)', opacity: 0.75 }}>
                         Áreas de Atuação
                         {(form.regioes.length + form.zonas.length) > 0 && (
-                          <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}>
+                          <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: '#2563eb', color: '#fff' }}>
                             {form.regioes.length + form.zonas.length} selecionada{(form.regioes.length + form.zonas.length) !== 1 ? 's' : ''}
                           </span>
                         )}
@@ -2301,16 +2301,17 @@ export default function ColaboradoresPage() {
                                 onClick={() => toggleRegiao(nome)}
                                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-all"
                                 style={{
-                                  background: selected ? 'rgba(29,78,216,0.15)' : 'var(--tint-06)',
-                                  border: '1px solid ' + (selected ? 'rgba(29,78,216,0.4)' : 'var(--tint-10)'),
-                                  color: selected ? '#60a5fa' : 'var(--text-secondary)',
+                                  background: selected ? 'linear-gradient(135deg, #1d6fd8, #4a9ede)' : 'var(--tint-06)',
+                                  border: '1px solid ' + (selected ? 'transparent' : 'var(--tint-10)'),
+                                  color: selected ? '#fff' : 'var(--text-secondary)',
+                                  boxShadow: selected ? '0 2px 8px rgba(29,111,216,0.35)' : 'none',
                                 }}
                               >
                                 <div
                                   className="w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0"
                                   style={{
-                                    background: selected ? '#1d4ed8' : 'var(--tint-08)',
-                                    border: '1px solid ' + (selected ? '#3b82f6' : 'var(--tint-15)'),
+                                    background: selected ? 'rgba(255,255,255,0.25)' : 'var(--tint-08)',
+                                    border: '1px solid ' + (selected ? 'rgba(255,255,255,0.4)' : 'var(--tint-15)'),
                                   }}
                                 >
                                   {selected && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
@@ -2339,13 +2340,14 @@ export default function ColaboradoresPage() {
                               onClick={() => toggleZona(key)}
                               className="flex flex-col items-center justify-center py-2.5 rounded-lg text-xs font-bold transition-all"
                               style={{
-                                background: selected ? 'rgba(109,40,217,0.18)' : 'var(--tint-06)',
-                                border: '1px solid ' + (selected ? 'rgba(109,40,217,0.45)' : 'var(--tint-10)'),
-                                color: selected ? '#c4b5fd' : 'var(--text-secondary)',
+                                background: selected ? 'linear-gradient(135deg, #6d28d9, #8b5cf6)' : 'var(--tint-06)',
+                                border: '1px solid ' + (selected ? 'transparent' : 'var(--tint-10)'),
+                                color: selected ? '#fff' : 'var(--text-secondary)',
+                                boxShadow: selected ? '0 2px 8px rgba(109,40,217,0.4)' : 'none',
                               }}
                             >
                               <span className="text-base leading-none">{num}</span>
-                              {selected && <CheckCircle2 className="w-2.5 h-2.5 mt-1" style={{ color: '#a78bfa' }} />}
+                              {selected && <CheckCircle2 className="w-2.5 h-2.5 mt-1 text-white" />}
                             </button>
                           );
                         })}
