@@ -314,6 +314,16 @@ function ZonasMapInner({ colaboradoresByZona, selectedZona, onZonaClick }: Zonas
         markersRef.current[zona] = marker;
       });
 
+      // Force redraw after CSS layout settles
+      setTimeout(() => { if (!cancelled) map.invalidateSize(); }, 150);
+      setTimeout(() => { if (!cancelled) map.invalidateSize(); }, 500);
+
+      // Keep in sync with container resize (responsive layout)
+      if (typeof ResizeObserver !== 'undefined' && mapRef.current) {
+        const ro = new ResizeObserver(() => { if (!cancelled) map.invalidateSize(); });
+        ro.observe(mapRef.current);
+      }
+
       isInitRef.current = false;
     };
 
@@ -554,6 +564,17 @@ function ColaboradoresMapInner({
 
       const bounds = geoLayer.getBounds();
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
+
+      // Force redraw after CSS layout settles
+      setTimeout(() => { if (!cancelled) map.invalidateSize(); }, 150);
+      setTimeout(() => { if (!cancelled) map.invalidateSize(); }, 500);
+
+      // Keep in sync with container resize
+      if (typeof ResizeObserver !== 'undefined' && mapRef.current) {
+        const ro = new ResizeObserver(() => { if (!cancelled) map.invalidateSize(); });
+        ro.observe(mapRef.current);
+      }
+
       isInitRef.current = false;
     };
 
@@ -1810,8 +1831,8 @@ export default function ColaboradoresPage() {
                     >
                       {/* Leaflet map with zone markers */}
                       <div
-                        className="flex-1 h-[55vw] min-h-[300px] md:h-[calc(100vh-340px)]"
-                        style={{ minWidth: 0 }}
+                        className="flex-1 min-h-0 h-[55vw] min-h-[300px] md:h-[calc(100vh-340px)]"
+                        style={{ minWidth: 0, overflow: 'hidden' }}
                       >
                         <ZonasMapInner
                           colaboradoresByZona={colaboradoresByZona}
