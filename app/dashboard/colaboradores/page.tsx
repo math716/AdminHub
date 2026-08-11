@@ -386,11 +386,11 @@ function ColaboradoresMapInner({
   }, []);
 
   const HEAT_COLORS = [
-    { fill: '#93c5fd', border: '#60a5fa' }, // tier 1 — muito baixo
-    { fill: '#60a5fa', border: '#3b82f6' }, // tier 2 — baixo
-    { fill: '#3b82f6', border: '#2563eb' }, // tier 3 — médio
-    { fill: '#2563eb', border: '#1d4ed8' }, // tier 4 — alto
-    { fill: '#1d4ed8', border: '#1e40af' }, // tier 5 — muito alto
+    { fill: '#fef08a', border: '#fde047' }, // tier 1 — muito baixo
+    { fill: '#fbbf24', border: '#f59e0b' }, // tier 2 — baixo
+    { fill: '#f97316', border: '#ea580c' }, // tier 3 — médio
+    { fill: '#ef4444', border: '#dc2626' }, // tier 4 — alto
+    { fill: '#b91c1c', border: '#991b1b' }, // tier 5 — muito alto
   ];
 
   const getHeatTier = useCallback((nome: string): number => {
@@ -412,7 +412,7 @@ function ColaboradoresMapInner({
 
   const getRegionStyle = useCallback((nome: string, isSelected: boolean) => {
     if (isSelected) {
-      return { fillColor: '#1d4ed8', fillOpacity: 0.65, color: '#60a5fa', weight: 2.5, opacity: 1 };
+      return { fillColor: '#f97316', fillOpacity: 0.65, color: '#fbbf24', weight: 2.5, opacity: 1 };
     }
     const tier = getHeatTier(nome);
     if (tier === 0) {
@@ -501,7 +501,7 @@ function ColaboradoresMapInner({
               ? normalizeRegiao(nome) === normalizeRegiao(selectedRef.current)
               : false;
             if (!isSelected) {
-              layer.setStyle({ weight: 2.5, fillOpacity: 0.75, color: '#60a5fa' });
+              layer.setStyle({ weight: 2.5, fillOpacity: 0.75, color: '#fbbf24' });
             }
             tooltipEl.innerHTML = [
               `<strong style="color:#7dd3fc;font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
@@ -602,12 +602,12 @@ function ColaboradoresMapInner({
         <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-1.5">Mapa de Calor</p>
         <div className="flex flex-col gap-1">
           {[
-            { color: '#cbd5e1', opacity: 0.4,  label: 'Sem colaboradores' },
-            { color: '#93c5fd', opacity: 1,     label: 'Muito baixo' },
-            { color: '#60a5fa', opacity: 1,     label: 'Baixo' },
-            { color: '#3b82f6', opacity: 1,     label: 'Médio' },
-            { color: '#2563eb', opacity: 1,     label: 'Alto' },
-            { color: '#1d4ed8', opacity: 1,     label: 'Muito alto' },
+            { color: '#e2e8f0', opacity: 0.5,  label: 'Sem colaboradores' },
+            { color: '#fef08a', opacity: 1,     label: 'Muito baixo' },
+            { color: '#fbbf24', opacity: 1,     label: 'Baixo' },
+            { color: '#f97316', opacity: 1,     label: 'Médio' },
+            { color: '#ef4444', opacity: 1,     label: 'Alto' },
+            { color: '#b91c1c', opacity: 1,     label: 'Muito alto' },
           ].map(({ color, opacity, label }) => (
             <div key={label} className="flex items-center gap-1.5">
               <div className="w-4 h-3 sm:w-5 sm:h-3.5 rounded-sm flex-shrink-0" style={{ background: color, opacity }} />
