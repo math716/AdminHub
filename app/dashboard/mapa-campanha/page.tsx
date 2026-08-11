@@ -3638,7 +3638,7 @@ export default function MapaCampanhaPage() {
                           </button>
                         </div>
                       )}
-                      <Badge variant={activeTab === 'historico' ? 'info' : 'success'}>
+                      <Badge variant={activeTab === 'historico' ? 'info' : 'success'} className="hidden sm:inline-flex">
                         {electoralData.nomeUrna || electoralData.nome} - {electoralData.partido}
                       </Badge>
                     </div>

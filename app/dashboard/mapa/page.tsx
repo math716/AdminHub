@@ -1610,7 +1610,7 @@ export default function MapaPage() {
 
         {/* Mapa principal */}
         <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)]' : 'md:col-span-3'}>
-          <Card noPadding className={mapFullscreen ? 'h-full rounded-none border-0' : 'h-[400px] md:h-[750px]'}>
+          <Card noPadding className={mapFullscreen ? 'h-full rounded-none border-0 overflow-hidden' : 'h-[400px] md:h-[750px] overflow-hidden'}>
             <CardContent className="h-full p-1.5 relative">
               {/* Botão tela cheia */}
               <button
