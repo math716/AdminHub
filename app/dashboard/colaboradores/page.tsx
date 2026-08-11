@@ -582,7 +582,7 @@ function ColaboradoresMapInner({
 
       const drawHeat = () => {
         const hc = heatCanvasRef.current;
-        if (!hc) return;
+        if (!hc || hc.width === 0 || hc.height === 0) return;
         const ctx = hc.getContext('2d')!;
         const w = hc.width;
         const h = hc.height;
@@ -614,19 +614,21 @@ function ColaboradoresMapInner({
         }
 
         // Colorize: map alpha value → thermal color
-        const img = ctx.getImageData(0, 0, w, h);
-        const px = img.data;
-        for (let i = 0; i < px.length; i += 4) {
-          const a = px[i + 3];
-          if (a > 0) {
-            const pi = a * 4;
-            px[i]     = palette[pi];
-            px[i + 1] = palette[pi + 1];
-            px[i + 2] = palette[pi + 2];
-            px[i + 3] = palette[pi + 3];
+        try {
+          const img = ctx.getImageData(0, 0, w, h);
+          const px = img.data;
+          for (let i = 0; i < px.length; i += 4) {
+            const a = px[i + 3];
+            if (a > 0) {
+              const pi = a * 4;
+              px[i]     = palette[pi];
+              px[i + 1] = palette[pi + 1];
+              px[i + 2] = palette[pi + 2];
+              px[i + 3] = palette[pi + 3];
+            }
           }
-        }
-        ctx.putImageData(img, 0, 0);
+          ctx.putImageData(img, 0, 0);
+        } catch (_) {}
       };
 
       const heatCanvas = document.createElement('canvas');
@@ -641,10 +643,16 @@ function ColaboradoresMapInner({
 
       map.on('moveend zoomend', drawHeat);
       map.on('resize', () => {
-        const c = map.getContainer();
-        heatCanvas.width  = c.offsetWidth;
-        heatCanvas.height = c.offsetHeight;
-        drawHeat();
+        requestAnimationFrame(() => {
+          const c = map.getContainer();
+          const w = c.offsetWidth;
+          const h = c.offsetHeight;
+          if (w > 0 && h > 0) {
+            heatCanvas.width  = w;
+            heatCanvas.height = h;
+            drawHeat();
+          }
+        });
       });
       // ───────────────────────────────────────────────────────────────────
 
