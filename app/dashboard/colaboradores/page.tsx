@@ -538,26 +538,6 @@ function ColaboradoresMapInner({
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
 
       // ── Canvas smooth heat map ──────────────────────────────────────────
-      // Build a 256-entry RGBA palette (transparent → blue → cyan → green → yellow → orange → red → dark red)
-      const buildPalette = (): Uint8ClampedArray => {
-        const pc = document.createElement('canvas');
-        pc.width = 256; pc.height = 1;
-        const pcx = pc.getContext('2d')!;
-        const g = pcx.createLinearGradient(0, 0, 256, 0);
-        g.addColorStop(0,    'rgba(255,255,255,0)');
-        g.addColorStop(0.06, 'rgba(116,185,255,0.30)');
-        g.addColorStop(0.20, 'rgba(0,206,201,0.65)');
-        g.addColorStop(0.40, 'rgba(85,239,196,0.80)');
-        g.addColorStop(0.58, 'rgba(253,203,110,0.90)');
-        g.addColorStop(0.74, 'rgba(225,112,85,0.96)');
-        g.addColorStop(0.88, 'rgba(214,48,49,1)');
-        g.addColorStop(1.0,  'rgba(99,0,0,1)');
-        pcx.fillStyle = g;
-        pcx.fillRect(0, 0, 256, 1);
-        return pcx.getImageData(0, 0, 256, 1).data;
-      };
-      const palette = buildPalette();
-
       // Compute polygon centroids from GeoJSON features
       const centroids: Array<{ lat: number; lng: number; nome: string }> = [];
       ((geoData as any).features || []).forEach((f: any) => {
@@ -580,19 +560,46 @@ function ColaboradoresMapInner({
 
       const HEAT_RADIUS = 68;
 
+      // Interpolate thermal color from intensity [0..1]
+      const getHeatColor = (t: number): [number, number, number] => {
+        const stops: Array<[number, [number, number, number]]> = [
+          [0.00, [116, 185, 255]],
+          [0.20, [  0, 206, 201]],
+          [0.40, [ 85, 239, 196]],
+          [0.58, [253, 203, 110]],
+          [0.74, [225, 112,  85]],
+          [0.88, [214,  48,  49]],
+          [1.00, [ 99,   0,   0]],
+        ];
+        for (let i = 0; i < stops.length - 1; i++) {
+          if (t <= stops[i + 1][0]) {
+            const f = (t - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+            const [ar, ag, ab] = stops[i][1];
+            const [br, bg, bb] = stops[i + 1][1];
+            return [Math.round(ar + f * (br - ar)), Math.round(ag + f * (bg - ag)), Math.round(ab + f * (bb - ab))];
+          }
+        }
+        return stops[stops.length - 1][1];
+      };
+
       const drawHeat = () => {
         const hc = heatCanvasRef.current;
-        if (!hc || hc.width === 0 || hc.height === 0) return;
+        if (!hc) return;
 
         const data = colabRef.current;
-        // If there's no data at all, preserve any existing canvas content
         const hasAnyData = Object.values(data).some(v => v.length > 0);
         if (!hasAnyData) return;
 
+        // Always sync canvas size from the live container — fixes 0×0 canvas at init time
+        const mc2 = map.getContainer();
+        const cw = mc2.offsetWidth;
+        const ch = mc2.offsetHeight;
+        if (cw === 0 || ch === 0) return;
+        if (hc.width !== cw) hc.width = cw;
+        if (hc.height !== ch) hc.height = ch;
+
         const ctx = hc.getContext('2d')!;
-        const w = hc.width;
-        const h = hc.height;
-        ctx.clearRect(0, 0, w, h);
+        ctx.clearRect(0, 0, cw, ch);
 
         const maxCount = Math.max(...Object.values(data).map(v => v.length), 1);
 
@@ -605,70 +612,40 @@ function ColaboradoresMapInner({
           if (count === 0) continue;
 
           const intensity = count / maxCount;
+          const [r, g, b] = getHeatColor(intensity);
           const pt = map.latLngToContainerPoint([lat, lng]);
-          const x = pt.x; const y = pt.y; const r = HEAT_RADIUS;
+          const x = pt.x;
+          const y = pt.y;
+          const alpha = 0.20 + intensity * 0.60;
 
-          const grd = ctx.createRadialGradient(x, y, 0, x, y, r);
-          grd.addColorStop(0,   `rgba(0,0,0,${Math.min(intensity, 1).toFixed(3)})`);
-          grd.addColorStop(0.4, `rgba(0,0,0,${Math.min(intensity * 0.55, 1).toFixed(3)})`);
-          grd.addColorStop(1,   'rgba(0,0,0,0)');
+          const grd = ctx.createRadialGradient(x, y, 0, x, y, HEAT_RADIUS);
+          grd.addColorStop(0,   `rgba(${r},${g},${b},${alpha.toFixed(3)})`);
+          grd.addColorStop(0.5, `rgba(${r},${g},${b},${(alpha * 0.55).toFixed(3)})`);
+          grd.addColorStop(1,   `rgba(${r},${g},${b},0)`);
           ctx.beginPath();
           ctx.fillStyle = grd;
-          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.arc(x, y, HEAT_RADIUS, 0, Math.PI * 2);
           ctx.fill();
         }
-
-        // Colorize: map alpha value → thermal color
-        try {
-          const img = ctx.getImageData(0, 0, w, h);
-          const px = img.data;
-          for (let i = 0; i < px.length; i += 4) {
-            const a = px[i + 3];
-            if (a > 0) {
-              const pi = a * 4;
-              px[i]     = palette[pi];
-              px[i + 1] = palette[pi + 1];
-              px[i + 2] = palette[pi + 2];
-              px[i + 3] = palette[pi + 3];
-            }
-          }
-          ctx.putImageData(img, 0, 0);
-        } catch (_) {}
       };
 
       const heatCanvas = document.createElement('canvas');
       const mc = map.getContainer();
-      heatCanvas.width  = mc.offsetWidth;
-      heatCanvas.height = mc.offsetHeight;
       heatCanvas.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:300;';
       mc.appendChild(heatCanvas);
       heatCanvasRef.current = heatCanvas;
       drawHeatRef.current = drawHeat;
-      drawHeat();
 
-      // Redraw after moveend — small delay lets Leaflet fully settle state before reading coordinates
       map.on('moveend', () => {
-        if (!cancelled) setTimeout(() => { if (!cancelled) drawHeat(); }, 30);
+        if (!cancelled) setTimeout(() => { if (!cancelled) drawHeat(); }, 50);
       });
       map.on('resize', () => {
-        requestAnimationFrame(() => {
-          if (cancelled) return;
-          const c = map.getContainer();
-          const w = c.offsetWidth;
-          const h = c.offsetHeight;
-          if (w > 0 && h > 0) {
-            if (heatCanvas.width !== w || heatCanvas.height !== h) {
-              heatCanvas.width  = w;
-              heatCanvas.height = h;
-            }
-            drawHeat();
-          }
-        });
+        if (!cancelled) requestAnimationFrame(() => { if (!cancelled) drawHeat(); });
       });
       // ───────────────────────────────────────────────────────────────────
 
-      // Redraw at progressive delays: covers data loading async + animation settling
-      [200, 600, 1000, 1600, 2500].forEach(ms => {
+      // Progressive redraws — covers fitBounds animation + async layout settling
+      [100, 400, 900, 1600].forEach(ms => {
         setTimeout(() => { if (!cancelled) drawHeat(); }, ms);
       });
 
