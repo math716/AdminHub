@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   Users2, Plus, Trash2, Loader2, X, Search, FileUp, Upload,
-  CheckCircle2, AlertCircle, Map as MapIcon, List, Pencil,
+  CheckCircle2, AlertCircle, Pencil,
   Phone, MapPin, User, UserCheck, UserX, ChevronDown,
   Send, Mail, MessageCircle, AtSign, Copy, Check, MessageSquare, ExternalLink,
 } from 'lucide-react';
@@ -745,7 +745,6 @@ export default function ColaboradoresPage() {
   const [savingPadrinho, setSavingPadrinho] = useState(false);
 
   // ── UI state ──
-  const [activeTab, setActiveTab] = useState<'mapa' | 'lista'>('mapa');
   const [dfVisualizacao, setDfVisualizacao] = useState<'regioes' | 'zonas'>('regioes');
   const [districtSearch, setDistrictSearch] = useState('');
   const [showDistrictSuggestions, setShowDistrictSuggestions] = useState(false);
@@ -1733,60 +1732,31 @@ export default function ColaboradoresPage() {
         <div className="md:col-span-3 flex flex-col gap-3 order-1 md:order-2">
           {/* Tab switcher row */}
           <div className="flex flex-col gap-2">
-            {/* Row 1: view toggles (Mapa/Lista + Regiões/Zonas) */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div
-                className="flex items-center gap-1 p-1 rounded-xl"
-                style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
-              >
-                {([
-                  { id: 'mapa', label: 'Mapa', icon: MapIcon },
-                  { id: 'lista', label: 'Lista', icon: List },
-                ] as const).map(({ id, label, icon: Icon }) => (
-                  <button
-                    key={id}
-                    onClick={() => setActiveTab(id)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150"
-                    style={{
-                      background: activeTab === id ? 'linear-gradient(135deg, #1d6fd8, #4a9ede)' : 'transparent',
-                      color: activeTab === id ? '#fff' : 'var(--text-secondary)',
-                    }}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Sub-toggle: Regiões Admin. | Zonas Eleitorais — only in Mapa tab */}
-              {activeTab === 'mapa' && (
-                <div
-                  className="flex items-center gap-1 p-1 rounded-xl"
-                  style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
+            {/* Regiões Admin. | Zonas Eleitorais */}
+            <div
+              className="flex items-center gap-1 p-1 rounded-xl self-start"
+              style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
+            >
+              {([
+                { id: 'regioes', label: 'Regiões Admin.' },
+                { id: 'zonas', label: 'Zonas Eleitorais' },
+              ] as const).map(({ id, label }) => (
+                <button
+                  key={id}
+                  onClick={() => switchVisualizacao(id)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150"
+                  style={{
+                    background: dfVisualizacao === id ? 'linear-gradient(135deg, #6d28d9, #8b5cf6)' : 'transparent',
+                    color: dfVisualizacao === id ? '#fff' : 'var(--text-secondary)',
+                  }}
                 >
-                  {([
-                    { id: 'regioes', label: 'Regiões Admin.' },
-                    { id: 'zonas', label: 'Zonas Eleitorais' },
-                  ] as const).map(({ id, label }) => (
-                    <button
-                      key={id}
-                      onClick={() => switchVisualizacao(id)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150"
-                      style={{
-                        background: dfVisualizacao === id ? 'linear-gradient(135deg, #6d28d9, #8b5cf6)' : 'transparent',
-                        color: dfVisualizacao === id ? '#fff' : 'var(--text-secondary)',
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
+                  {label}
+                </button>
+              ))}
             </div>
 
-            {/* Row 2: District / Zone search bar — only in Mapa tab, full width on mobile */}
-            {activeTab === 'mapa' && (
-              <div ref={districtSearchRef} className="relative w-full sm:max-w-sm">
+            {/* District / Zone search bar */}
+            <div ref={districtSearchRef} className="relative w-full sm:max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-tertiary)' }} />
                 <input
                   type="text"
@@ -1861,20 +1831,10 @@ export default function ColaboradoresPage() {
                   );
                 })()}
               </div>
-            )}
 
           </div>
 
-          <AnimatePresence mode="wait">
-            {activeTab === 'mapa' ? (
-              <motion.div
-                key="mapa"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                className="flex flex-col gap-3"
-              >
+          <div className="flex flex-col gap-3">
                 {/* ── Regiões Administrativas view ── */}
                 {dfVisualizacao === 'regioes' && (
                   <>
@@ -2018,156 +1978,8 @@ export default function ColaboradoresPage() {
                     </div>
                   </>
                 )}
-              </motion.div>
-            ) : (
-              <motion.div
-                key="lista"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                className="rounded-xl overflow-hidden"
-                style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.15)' }}
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#4a9ede' }} />
-                  </div>
-                ) : filteredColaboradores.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 gap-3">
-                    <Users2 className="w-12 h-12 opacity-20" style={{ color: 'var(--text-tertiary)' }} />
-                    <p style={{ color: 'var(--text-tertiary)' }}>Nenhum colaborador encontrado</p>
-                    <button
-                      onClick={openNew}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white"
-                      style={{ background: 'linear-gradient(135deg, #1d6fd8, #4a9ede)' }}
-                    >
-                      <Plus className="w-4 h-4" /> Novo Colaborador
-                    </button>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid var(--tint-08)' }}>
-                          {['Nome', 'Função', 'Telefone', 'Email', 'Regiões', 'Padrinho', 'Status', ''].map(h => (
-                            <th
-                              key={h}
-                              className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
-                              style={{ color: 'var(--text-tertiary)' }}
-                            >
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredColaboradores.map((c, i) => (
-                          <tr
-                            key={c.id}
-                            style={{ borderBottom: i < filteredColaboradores.length - 1 ? '1px solid var(--tint-06)' : 'none' }}
-                            className="transition-colors duration-100"
-                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--tint-04)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                          >
-                            <td className="px-4 py-3">
-                              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{c.nome}</p>
-                              {c.observacao && (
-                                <p className="text-xs mt-0.5 truncate max-w-[180px]" style={{ color: 'var(--text-tertiary)' }}>{c.observacao}</p>
-                              )}
-                            </td>
-                            <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
-                              {c.funcao ?? <span style={{ color: 'var(--text-tertiary)' }}>—</span>}
-                            </td>
-                            <td className="px-4 py-3">
-                              {c.telefone ? (
-                                <a
-                                  href={`https://wa.me/55${c.telefone.replace(/\D/g, '')}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="flex items-center gap-1 text-xs"
-                                  style={{ color: '#4a9ede' }}
-                                >
-                                  <Phone className="w-3 h-3" /> {c.telefone}
-                                </a>
-                              ) : <span style={{ color: 'var(--text-tertiary)' }}>—</span>}
-                            </td>
-                            <td className="px-4 py-3">
-                              {c.email ? (
-                                <a href={`mailto:${c.email}`} className="text-xs" style={{ color: '#4a9ede' }}>
-                                  {c.email}
-                                </a>
-                              ) : <span style={{ color: 'var(--text-tertiary)' }}>—</span>}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex flex-wrap gap-1">
-                                {c.regioes.slice(0, 2).map(r => (
-                                  <span
-                                    key={r.id}
-                                    className="text-[10px] px-1.5 py-0.5 rounded"
-                                    style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede' }}
-                                  >
-                                    {r.regiaoNome}
-                                  </span>
-                                ))}
-                                {c.regioes.length > 2 && (
-                                  <span
-                                    className="text-[10px] px-1.5 py-0.5 rounded"
-                                    style={{ background: 'var(--tint-08)', color: 'var(--text-tertiary)' }}
-                                  >
-                                    +{c.regioes.length - 2}
-                                  </span>
-                                )}
-                                {c.regioes.length === 0 && <span style={{ color: 'var(--text-tertiary)' }}>—</span>}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
-                              {c.padrinho?.nome ?? <span style={{ color: 'var(--text-tertiary)' }}>—</span>}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className="text-xs px-2.5 py-1 rounded-full font-semibold"
-                                style={{
-                                  background: c.status === 'ATIVO' ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.15)',
-                                  color: c.status === 'ATIVO' ? '#22c55e' : '#94a3b8',
-                                }}
-                              >
-                                {c.status === 'ATIVO' ? 'Ativo' : 'Inativo'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => openEdit(c)}
-                                  className="p-1.5 rounded-lg transition-all"
-                                  style={{ color: 'var(--text-tertiary)' }}
-                                  onMouseEnter={e => (e.currentTarget.style.color = '#4a9ede')}
-                                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
-                                  title="Editar"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => setConfirmDeleteId(c.id)}
-                                  className="p-1.5 rounded-lg transition-all"
-                                  style={{ color: 'var(--text-tertiary)' }}
-                                  onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
-                                  title="Remover"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          </div>
+
         </div>
       </div>
 
