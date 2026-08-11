@@ -1469,7 +1469,7 @@ export default function ColaboradoresPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Left sidebar */}
         <div
-          className="md:col-span-1 rounded-xl flex flex-col gap-3 p-4 order-2 md:order-1"
+          className="md:col-span-1 rounded-xl flex flex-col gap-3 p-4 order-2 md:order-1 md:self-start"
           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.15)' }}
         >
           {/* Search */}
