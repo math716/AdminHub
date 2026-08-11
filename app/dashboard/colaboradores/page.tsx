@@ -583,12 +583,17 @@ function ColaboradoresMapInner({
       const drawHeat = () => {
         const hc = heatCanvasRef.current;
         if (!hc || hc.width === 0 || hc.height === 0) return;
+
+        const data = colabRef.current;
+        // If there's no data at all, preserve any existing canvas content
+        const hasAnyData = Object.values(data).some(v => v.length > 0);
+        if (!hasAnyData) return;
+
         const ctx = hc.getContext('2d')!;
         const w = hc.width;
         const h = hc.height;
         ctx.clearRect(0, 0, w, h);
 
-        const data = colabRef.current;
         const maxCount = Math.max(...Object.values(data).map(v => v.length), 1);
 
         for (const { lat, lng, nome } of centroids) {
@@ -648,8 +653,11 @@ function ColaboradoresMapInner({
           const w = c.offsetWidth;
           const h = c.offsetHeight;
           if (w > 0 && h > 0) {
-            heatCanvas.width  = w;
-            heatCanvas.height = h;
+            // Only reset dimensions if they actually changed (resetting clears the canvas)
+            if (heatCanvas.width !== w || heatCanvas.height !== h) {
+              heatCanvas.width  = w;
+              heatCanvas.height = h;
+            }
             drawHeat();
           }
         });
