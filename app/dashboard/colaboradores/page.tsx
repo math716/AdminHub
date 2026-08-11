@@ -584,6 +584,8 @@ function ColaboradoresMapInner({
       const heatPane = map.createPane('heatPane');
       heatPane.style.zIndex = '250';
       heatPane.style.pointerEvents = 'none';
+      // CSS blur turns solid circles into smooth gradient blobs — no visible rings
+      heatPane.style.filter = 'blur(18px)';
 
       const heatCircles: any[] = [];
 
@@ -605,32 +607,24 @@ function ColaboradoresMapInner({
           }
           if (count === 0) continue;
 
+          // sqrt boost so regiões com poucos colaboradores ficam visíveis
           const intensity = count / maxCount;
-          const [r, g, b] = getHeatColor(intensity);
-          const colorStr = `rgb(${r},${g},${b})`;
-          const baseAlpha = 0.15 + intensity * 0.65;
+          const eff = Math.pow(intensity, 0.55);
+          const [r, g, b] = getHeatColor(eff);
+          const alpha = 0.55 + eff * 0.45;      // 0.55..1.0
+          const radius = 38 + eff * 42;          // 38..80 px
 
-          // Concentric rings outer→inner with increasing opacity — simulates radial gradient
-          const rings = [
-            { radius: 90, af: 0.08 },
-            { radius: 68, af: 0.18 },
-            { radius: 48, af: 0.32 },
-            { radius: 32, af: 0.52 },
-            { radius: 16, af: 0.80 },
-          ];
-          rings.forEach(({ radius, af }) => {
-            heatCircles.push(
-              L.circleMarker([lat, lng] as [number, number], {
-                radius,
-                fillColor: colorStr,
-                fillOpacity: baseAlpha * af,
-                color: 'transparent',
-                weight: 0,
-                interactive: false,
-                pane: 'heatPane',
-              } as any).addTo(map)
-            );
-          });
+          heatCircles.push(
+            L.circleMarker([lat, lng] as [number, number], {
+              radius,
+              fillColor: `rgb(${r},${g},${b})`,
+              fillOpacity: alpha,
+              color: 'transparent',
+              weight: 0,
+              interactive: false,
+              pane: 'heatPane',
+            } as any).addTo(map)
+          );
         }
       };
 
