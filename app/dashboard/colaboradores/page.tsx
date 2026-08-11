@@ -537,7 +537,7 @@ function ColaboradoresMapInner({
       const bounds = geoLayer.getBounds();
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
 
-      // ── Canvas smooth heat map ──────────────────────────────────────────
+      // ── Heat map via Leaflet circleMarker (no canvas — Leaflet manages rendering) ──
       // Compute polygon centroids from GeoJSON features
       const centroids: Array<{ lat: number; lng: number; nome: string }> = [];
       ((geoData as any).features || []).forEach((f: any) => {
@@ -558,8 +558,6 @@ function ColaboradoresMapInner({
         }
       });
 
-      const HEAT_RADIUS = 68;
-
       // Interpolate thermal color from intensity [0..1]
       const getHeatColor = (t: number): [number, number, number] => {
         const stops: Array<[number, [number, number, number]]> = [
@@ -573,33 +571,29 @@ function ColaboradoresMapInner({
         ];
         for (let i = 0; i < stops.length - 1; i++) {
           if (t <= stops[i + 1][0]) {
-            const f = (t - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+            const f2 = (t - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
             const [ar, ag, ab] = stops[i][1];
             const [br, bg, bb] = stops[i + 1][1];
-            return [Math.round(ar + f * (br - ar)), Math.round(ag + f * (bg - ag)), Math.round(ab + f * (bb - ab))];
+            return [Math.round(ar + f2 * (br - ar)), Math.round(ag + f2 * (bg - ag)), Math.round(ab + f2 * (bb - ab))];
           }
         }
         return stops[stops.length - 1][1];
       };
 
+      // Custom pane sits below overlayPane (z:400) so heat is under polygon borders
+      const heatPane = map.createPane('heatPane');
+      heatPane.style.zIndex = '250';
+      heatPane.style.pointerEvents = 'none';
+
+      const heatCircles: any[] = [];
+
       const drawHeat = () => {
-        const hc = heatCanvasRef.current;
-        if (!hc) return;
+        heatCircles.forEach(c => { try { c.remove(); } catch (_) {} });
+        heatCircles.length = 0;
 
         const data = colabRef.current;
         const hasAnyData = Object.values(data).some(v => v.length > 0);
         if (!hasAnyData) return;
-
-        // Always sync canvas size from the live container — fixes 0×0 canvas at init time
-        const mc2 = map.getContainer();
-        const cw = mc2.offsetWidth;
-        const ch = mc2.offsetHeight;
-        if (cw === 0 || ch === 0) return;
-        if (hc.width !== cw) hc.width = cw;
-        if (hc.height !== ch) hc.height = ch;
-
-        const ctx = hc.getContext('2d')!;
-        ctx.clearRect(0, 0, cw, ch);
 
         const maxCount = Math.max(...Object.values(data).map(v => v.length), 1);
 
@@ -613,41 +607,35 @@ function ColaboradoresMapInner({
 
           const intensity = count / maxCount;
           const [r, g, b] = getHeatColor(intensity);
-          const pt = map.latLngToContainerPoint([lat, lng]);
-          const x = pt.x;
-          const y = pt.y;
-          const alpha = 0.20 + intensity * 0.60;
+          const colorStr = `rgb(${r},${g},${b})`;
+          const baseAlpha = 0.15 + intensity * 0.65;
 
-          const grd = ctx.createRadialGradient(x, y, 0, x, y, HEAT_RADIUS);
-          grd.addColorStop(0,   `rgba(${r},${g},${b},${alpha.toFixed(3)})`);
-          grd.addColorStop(0.5, `rgba(${r},${g},${b},${(alpha * 0.55).toFixed(3)})`);
-          grd.addColorStop(1,   `rgba(${r},${g},${b},0)`);
-          ctx.beginPath();
-          ctx.fillStyle = grd;
-          ctx.arc(x, y, HEAT_RADIUS, 0, Math.PI * 2);
-          ctx.fill();
+          // Concentric rings outer→inner with increasing opacity — simulates radial gradient
+          const rings = [
+            { radius: 90, af: 0.08 },
+            { radius: 68, af: 0.18 },
+            { radius: 48, af: 0.32 },
+            { radius: 32, af: 0.52 },
+            { radius: 16, af: 0.80 },
+          ];
+          rings.forEach(({ radius, af }) => {
+            heatCircles.push(
+              L.circleMarker([lat, lng] as [number, number], {
+                radius,
+                fillColor: colorStr,
+                fillOpacity: baseAlpha * af,
+                color: 'transparent',
+                weight: 0,
+                interactive: false,
+                pane: 'heatPane',
+              } as any).addTo(map)
+            );
+          });
         }
       };
 
-      const heatCanvas = document.createElement('canvas');
-      const mc = map.getContainer();
-      heatCanvas.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:300;';
-      mc.appendChild(heatCanvas);
-      heatCanvasRef.current = heatCanvas;
       drawHeatRef.current = drawHeat;
-
-      map.on('moveend', () => {
-        if (!cancelled) setTimeout(() => { if (!cancelled) drawHeat(); }, 50);
-      });
-      map.on('resize', () => {
-        if (!cancelled) requestAnimationFrame(() => { if (!cancelled) drawHeat(); });
-      });
-      // ───────────────────────────────────────────────────────────────────
-
-      // Progressive redraws — covers fitBounds animation + async layout settling
-      [100, 400, 900, 1600].forEach(ms => {
-        setTimeout(() => { if (!cancelled) drawHeat(); }, ms);
-      });
+      drawHeat();
 
       // Keep in sync with container resize
       if (typeof ResizeObserver !== 'undefined' && mapRef.current) {
@@ -664,10 +652,6 @@ function ColaboradoresMapInner({
     return () => {
       cancelled = true;
       isInitRef.current = false;
-      if (heatCanvasRef.current) {
-        try { heatCanvasRef.current.parentNode?.removeChild(heatCanvasRef.current); } catch (_) {}
-        heatCanvasRef.current = null;
-      }
       drawHeatRef.current = null;
       if (mapInstanceRef.current) {
         try { mapInstanceRef.current.remove(); } catch (_) {}
