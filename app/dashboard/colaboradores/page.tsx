@@ -383,6 +383,8 @@ function ColaboradoresMapInner({
   const colabRef = useRef(colaboradoresByRegiao);
   const selectedRef = useRef(selectedRegiao);
   const onClickRef = useRef(onRegiaoClick);
+  const heatCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawHeatRef = useRef<(() => void) | null>(null);
 
   useEffect(() => { colabRef.current = colaboradoresByRegiao; }, [colaboradoresByRegiao]);
   useEffect(() => { selectedRef.current = selectedRegiao; }, [selectedRegiao]);
@@ -395,42 +397,12 @@ function ColaboradoresMapInner({
       .catch(() => setLoading(false));
   }, []);
 
-  const HEAT_COLORS = [
-    { fill: '#fef08a', border: '#fde047' }, // tier 1 — muito baixo
-    { fill: '#fbbf24', border: '#f59e0b' }, // tier 2 — baixo
-    { fill: '#f97316', border: '#ea580c' }, // tier 3 — médio
-    { fill: '#ef4444', border: '#dc2626' }, // tier 4 — alto
-    { fill: '#b91c1c', border: '#991b1b' }, // tier 5 — muito alto
-  ];
-
-  const getHeatTier = useCallback((nome: string): number => {
-    const data = colabRef.current;
-    const norm = normalizeRegiao(nome);
-    let count = 0;
-    for (const [k, v] of Object.entries(data)) {
-      if (normalizeRegiao(k) === norm) { count = v.length; break; }
-    }
-    if (count === 0) return 0;
-    const maxCount = Math.max(...Object.values(data).map(v => v.length), 1);
-    const ratio = count / maxCount;
-    if (ratio <= 0.2) return 1;
-    if (ratio <= 0.4) return 2;
-    if (ratio <= 0.65) return 3;
-    if (ratio <= 0.85) return 4;
-    return 5;
-  }, []);
-
-  const getRegionStyle = useCallback((nome: string, isSelected: boolean) => {
+  const getRegionStyle = useCallback((_nome: string, isSelected: boolean) => {
     if (isSelected) {
-      return { fillColor: '#f97316', fillOpacity: 0.65, color: '#fbbf24', weight: 2.5, opacity: 1 };
+      return { fillColor: '#fff7ed', fillOpacity: 0.28, color: '#f97316', weight: 2.5, opacity: 1 };
     }
-    const tier = getHeatTier(nome);
-    if (tier === 0) {
-      return { fillColor: '#cbd5e1', fillOpacity: 0.12, color: '#94a3b8', weight: 1, opacity: 0.5 };
-    }
-    const { fill, border } = HEAT_COLORS[tier - 1];
-    return { fillColor: fill, fillOpacity: 0.92, color: border, weight: 1.5, opacity: 1 };
-  }, [getHeatTier]);
+    return { fillColor: 'transparent', fillOpacity: 0, color: 'rgba(80,100,120,0.45)', weight: 0.8, opacity: 1 };
+  }, []);
 
   useEffect(() => {
     if (!geoData || !mapRef.current || isInitRef.current) return;
@@ -511,7 +483,7 @@ function ColaboradoresMapInner({
               ? normalizeRegiao(nome) === normalizeRegiao(selectedRef.current)
               : false;
             if (!isSelected) {
-              layer.setStyle({ weight: 2.5, fillOpacity: 0.75, color: '#fbbf24' });
+              layer.setStyle({ fillOpacity: 0.1, fillColor: '#fbbf24', weight: 2, color: '#fbbf24', opacity: 0.9 });
             }
             tooltipEl.innerHTML = [
               `<strong style="color:#7dd3fc;font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
@@ -565,9 +537,120 @@ function ColaboradoresMapInner({
       const bounds = geoLayer.getBounds();
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
 
+      // ── Canvas smooth heat map ──────────────────────────────────────────
+      // Build a 256-entry RGBA palette (transparent → blue → cyan → green → yellow → orange → red → dark red)
+      const buildPalette = (): Uint8ClampedArray => {
+        const pc = document.createElement('canvas');
+        pc.width = 256; pc.height = 1;
+        const pcx = pc.getContext('2d')!;
+        const g = pcx.createLinearGradient(0, 0, 256, 0);
+        g.addColorStop(0,    'rgba(255,255,255,0)');
+        g.addColorStop(0.06, 'rgba(116,185,255,0.30)');
+        g.addColorStop(0.20, 'rgba(0,206,201,0.65)');
+        g.addColorStop(0.40, 'rgba(85,239,196,0.80)');
+        g.addColorStop(0.58, 'rgba(253,203,110,0.90)');
+        g.addColorStop(0.74, 'rgba(225,112,85,0.96)');
+        g.addColorStop(0.88, 'rgba(214,48,49,1)');
+        g.addColorStop(1.0,  'rgba(99,0,0,1)');
+        pcx.fillStyle = g;
+        pcx.fillRect(0, 0, 256, 1);
+        return pcx.getImageData(0, 0, 256, 1).data;
+      };
+      const palette = buildPalette();
+
+      // Compute polygon centroids from GeoJSON features
+      const centroids: Array<{ lat: number; lng: number; nome: string }> = [];
+      ((geoData as any).features || []).forEach((f: any) => {
+        const nome = f.properties?.nome || '';
+        const pts: number[][] = [];
+        const collect = (c: any) => {
+          if (typeof c[0] === 'number') pts.push(c);
+          else (c as any[]).forEach(collect);
+        };
+        if (f.geometry?.coordinates) collect(f.geometry.coordinates);
+        const n = pts.length;
+        if (n > 0) {
+          centroids.push({
+            lat: pts.reduce((s, c) => s + c[1], 0) / n,
+            lng: pts.reduce((s, c) => s + c[0], 0) / n,
+            nome,
+          });
+        }
+      });
+
+      const HEAT_RADIUS = 68;
+
+      const drawHeat = () => {
+        const hc = heatCanvasRef.current;
+        if (!hc) return;
+        const ctx = hc.getContext('2d')!;
+        const w = hc.width;
+        const h = hc.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const data = colabRef.current;
+        const maxCount = Math.max(...Object.values(data).map(v => v.length), 1);
+
+        for (const { lat, lng, nome } of centroids) {
+          const norm = normalizeRegiao(nome);
+          let count = 0;
+          for (const [k, v] of Object.entries(data)) {
+            if (normalizeRegiao(k) === norm) { count = v.length; break; }
+          }
+          if (count === 0) continue;
+
+          const intensity = count / maxCount;
+          const pt = map.latLngToContainerPoint([lat, lng]);
+          const x = pt.x; const y = pt.y; const r = HEAT_RADIUS;
+
+          const grd = ctx.createRadialGradient(x, y, 0, x, y, r);
+          grd.addColorStop(0,   `rgba(0,0,0,${Math.min(intensity, 1).toFixed(3)})`);
+          grd.addColorStop(0.4, `rgba(0,0,0,${Math.min(intensity * 0.55, 1).toFixed(3)})`);
+          grd.addColorStop(1,   'rgba(0,0,0,0)');
+          ctx.beginPath();
+          ctx.fillStyle = grd;
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Colorize: map alpha value → thermal color
+        const img = ctx.getImageData(0, 0, w, h);
+        const px = img.data;
+        for (let i = 0; i < px.length; i += 4) {
+          const a = px[i + 3];
+          if (a > 0) {
+            const pi = a * 4;
+            px[i]     = palette[pi];
+            px[i + 1] = palette[pi + 1];
+            px[i + 2] = palette[pi + 2];
+            px[i + 3] = palette[pi + 3];
+          }
+        }
+        ctx.putImageData(img, 0, 0);
+      };
+
+      const heatCanvas = document.createElement('canvas');
+      const mc = map.getContainer();
+      heatCanvas.width  = mc.offsetWidth;
+      heatCanvas.height = mc.offsetHeight;
+      heatCanvas.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:300;';
+      mc.appendChild(heatCanvas);
+      heatCanvasRef.current = heatCanvas;
+      drawHeatRef.current = drawHeat;
+      drawHeat();
+
+      map.on('moveend zoomend', drawHeat);
+      map.on('resize', () => {
+        const c = map.getContainer();
+        heatCanvas.width  = c.offsetWidth;
+        heatCanvas.height = c.offsetHeight;
+        drawHeat();
+      });
+      // ───────────────────────────────────────────────────────────────────
+
       // Force redraw after CSS layout settles
-      setTimeout(() => { if (!cancelled) map.invalidateSize(); }, 150);
-      setTimeout(() => { if (!cancelled) map.invalidateSize(); }, 500);
+      setTimeout(() => { if (!cancelled) { map.invalidateSize(); drawHeat(); } }, 150);
+      setTimeout(() => { if (!cancelled) { map.invalidateSize(); drawHeat(); } }, 500);
 
       // Keep in sync with container resize
       if (typeof ResizeObserver !== 'undefined' && mapRef.current) {
@@ -582,6 +665,11 @@ function ColaboradoresMapInner({
     return () => {
       cancelled = true;
       isInitRef.current = false;
+      if (heatCanvasRef.current) {
+        try { heatCanvasRef.current.parentNode?.removeChild(heatCanvasRef.current); } catch (_) {}
+        heatCanvasRef.current = null;
+      }
+      drawHeatRef.current = null;
       if (mapInstanceRef.current) {
         try { mapInstanceRef.current.remove(); } catch (_) {}
         mapInstanceRef.current = null;
@@ -590,18 +678,20 @@ function ColaboradoresMapInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geoData]);
 
-  // Update styles when colaboradores or selection changes
+  // Update polygon borders and heat canvas when data or selection changes
   useEffect(() => {
     const geoLayer = geoLayerRef.current;
-    if (!geoLayer) return;
-    geoLayer.eachLayer((l: any) => {
-      const nome = l.feature?.properties?.nome || '';
-      const isSelected = selectedRegiao
-        ? normalizeRegiao(nome) === normalizeRegiao(selectedRegiao)
-        : false;
-      l.setStyle(getRegionStyle(nome, isSelected));
-      if (isSelected) { l.bringToFront(); selectedLayerRef.current = l; }
-    });
+    if (geoLayer) {
+      geoLayer.eachLayer((l: any) => {
+        const nome = l.feature?.properties?.nome || '';
+        const isSelected = selectedRegiao
+          ? normalizeRegiao(nome) === normalizeRegiao(selectedRegiao)
+          : false;
+        l.setStyle(getRegionStyle(nome, isSelected));
+        if (isSelected) { l.bringToFront(); selectedLayerRef.current = l; }
+      });
+    }
+    drawHeatRef.current?.();
   }, [colaboradoresByRegiao, selectedRegiao, getRegionStyle]);
 
   if (loading) {
@@ -619,39 +709,20 @@ function ColaboradoresMapInner({
         className="w-full h-full rounded-xl overflow-hidden"
         style={{ background: '#f0f4f8' }}
       />
-      {/* Legenda — versão compacta (bolinhas) no mobile, completa no sm+ */}
+      {/* Legenda — barra de gradiente suave */}
       <div className="absolute bottom-2 left-2 z-[1000] rounded-xl border border-gray-200/80 shadow-lg" style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(8px)' }}>
-        {/* Mobile: linha horizontal de quadradinhos coloridos */}
-        <div className="flex sm:hidden items-center gap-1 px-2 py-1.5">
-          <span className="text-[8px] font-bold uppercase tracking-wide text-gray-400 mr-0.5">Calor</span>
-          {[
-            { color: '#e2e8f0', opacity: 0.5 },
-            { color: '#fef08a' },
-            { color: '#fbbf24' },
-            { color: '#f97316' },
-            { color: '#ef4444' },
-            { color: '#b91c1c' },
-          ].map(({ color, opacity = 1 }, i) => (
-            <div key={i} className="w-4 h-4 rounded-sm flex-shrink-0" style={{ background: color, opacity }} />
-          ))}
+        {/* Mobile: barra compacta */}
+        <div className="flex sm:hidden items-center gap-1.5 px-2 py-1.5">
+          <span className="text-[8px] font-bold uppercase tracking-wide text-gray-400">Calor</span>
+          <div className="w-20 h-3 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to right, rgba(116,185,255,0.5), #00cec9, #55efc4, #fdcb6e, #e17055, #d63031, #6c0000)' }} />
         </div>
-        {/* sm+: legenda vertical completa */}
-        <div className="hidden sm:block px-3.5 py-2.5 text-xs">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-1.5">Mapa de Calor</p>
-          <div className="flex flex-col gap-1">
-            {[
-              { color: '#e2e8f0', opacity: 0.5, label: 'Sem colaboradores' },
-              { color: '#fef08a', opacity: 1,   label: 'Muito baixo' },
-              { color: '#fbbf24', opacity: 1,   label: 'Baixo' },
-              { color: '#f97316', opacity: 1,   label: 'Médio' },
-              { color: '#ef4444', opacity: 1,   label: 'Alto' },
-              { color: '#b91c1c', opacity: 1,   label: 'Muito alto' },
-            ].map(({ color, opacity, label }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <div className="w-5 h-3.5 rounded-sm flex-shrink-0" style={{ background: color, opacity }} />
-                <span className="text-gray-600">{label}</span>
-              </div>
-            ))}
+        {/* sm+: barra com rótulos */}
+        <div className="hidden sm:block px-3.5 py-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Mapa de Calor</p>
+          <div className="h-3 rounded-full w-36" style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.3), rgba(116,185,255,0.6), #00cec9, #55efc4, #fdcb6e, #e17055, #d63031, #6c0000)' }} />
+          <div className="flex justify-between mt-1">
+            <span className="text-[9px] text-gray-400">Nenhum</span>
+            <span className="text-[9px] text-gray-600 font-semibold">Muito Alto</span>
           </div>
         </div>
       </div>
