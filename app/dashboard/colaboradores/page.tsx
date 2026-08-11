@@ -8,7 +8,7 @@ import {
   Users2, Plus, Trash2, Loader2, X, Search, FileUp, Upload,
   CheckCircle2, AlertCircle, Map as MapIcon, List, Pencil,
   Phone, MapPin, User, UserCheck, UserX, ChevronDown,
-  Send, Mail, MessageCircle, AtSign,
+  Send, Mail, MessageCircle, AtSign, Copy, Check, MessageSquare, ExternalLink,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -680,6 +680,15 @@ export default function ColaboradoresPage() {
   const [colabMsgStatus, setColabMsgStatus] = useState<'idle' | 'sending' | 'ok' | 'err'>('idle');
   const [colabMsgError, setColabMsgError] = useState('');
 
+  // ── Bulk messaging ──
+  const [selectedColabIds, setSelectedColabIds] = useState<Set<string>>(new Set());
+  const [showBulkMsg, setShowBulkMsg] = useState(false);
+  const [bulkMsgText, setBulkMsgText] = useState('');
+  const [bulkSendingApi, setBulkSendingApi] = useState(false);
+  const [bulkSendStatus, setBulkSendStatus] = useState<Record<string, 'idle' | 'sending' | 'ok' | 'err'>>({});
+  const [bulkSendErrors, setBulkSendErrors] = useState<Record<string, string>>({});
+  const [bulkCopied, setBulkCopied] = useState(false);
+
   // ── Form state ──
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
@@ -959,8 +968,17 @@ export default function ColaboradoresPage() {
   };
 
   const handleRegionClick = (nome: string) => {
-    setSelectedRegiao(prev => normalizeRegiao(prev ?? '') === normalizeRegiao(nome) ? null : nome);
+    const isToggleOff = normalizeRegiao(selectedRegiao ?? '') === normalizeRegiao(nome);
+    setSelectedRegiao(isToggleOff ? null : nome);
     setSelectedColaboradorId(null);
+    if (!isToggleOff) {
+      const ids = Object.entries(colaboradoresByRegiao)
+        .filter(([k]) => normalizeRegiao(k) === normalizeRegiao(nome))
+        .flatMap(([, cs]) => cs.map(c => c.id));
+      if (ids.length > 0) {
+        setSelectedColabIds(prev => { const n = new Set(prev); ids.forEach(id => n.add(id)); return n; });
+      }
+    }
   };
 
   const clearRegionFilter = () => {
@@ -970,8 +988,15 @@ export default function ColaboradoresPage() {
   };
 
   const handleZonaClick = (zona: number) => {
-    setSelectedZona(prev => prev === zona ? null : zona);
+    const isToggleOff = selectedZona === zona;
+    setSelectedZona(isToggleOff ? null : zona);
     setSelectedColaboradorId(null);
+    if (!isToggleOff) {
+      const ids = (colaboradoresByZona[zona] ?? []).map(c => c.id);
+      if (ids.length > 0) {
+        setSelectedColabIds(prev => { const n = new Set(prev); ids.forEach(id => n.add(id)); return n; });
+      }
+    }
   };
 
   const clearZonaFilter = () => {
@@ -979,6 +1004,75 @@ export default function ColaboradoresPage() {
     setSelectedColaboradorId(null);
     setDistrictSearch('');
   };
+
+  // ── Bulk messaging ──
+  const toggleColabSelection = (id: string) => {
+    setSelectedColabIds(prev => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+
+  const clearColabSelection = () => {
+    setSelectedColabIds(new Set());
+    setShowBulkMsg(false);
+    setBulkSendStatus({});
+    setBulkSendErrors({});
+    setBulkMsgText('');
+  };
+
+  const selectAllFiltered = () => {
+    setSelectedColabIds(prev => {
+      const n = new Set(prev);
+      filteredColaboradores.filter(c => c.telefone).forEach(c => n.add(c.id));
+      return n;
+    });
+  };
+
+  const handleBulkSend = async () => {
+    if (!bulkMsgText.trim() || bulkSendingApi) return;
+    const list = colaboradores.filter(c => selectedColabIds.has(c.id) && c.telefone);
+    setBulkSendingApi(true);
+    const statusMap: Record<string, 'idle' | 'sending' | 'ok' | 'err'> = {};
+    const errMap: Record<string, string> = {};
+    list.forEach(c => { statusMap[c.id] = 'idle'; });
+    setBulkSendStatus({ ...statusMap });
+    for (const c of list) {
+      setBulkSendStatus(prev => ({ ...prev, [c.id]: 'sending' }));
+      try {
+        const res = await fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ numero: c.telefone, message: bulkMsgText }),
+        });
+        const data = await res.json();
+        if (res.ok) { statusMap[c.id] = 'ok'; }
+        else { statusMap[c.id] = 'err'; errMap[c.id] = data.error ?? 'Erro desconhecido'; }
+      } catch {
+        statusMap[c.id] = 'err'; errMap[c.id] = 'Falha de rede';
+      }
+      setBulkSendStatus({ ...statusMap });
+      setBulkSendErrors({ ...errMap });
+      if (list.indexOf(c) < list.length - 1) await new Promise(r => setTimeout(r, 500));
+    }
+    setBulkSendingApi(false);
+  };
+
+  const copyBulkNumbers = async () => {
+    const nums = colaboradores
+      .filter(c => selectedColabIds.has(c.id) && c.telefone)
+      .map(c => normalizeWA(c.telefone!))
+      .join('\n');
+    await navigator.clipboard.writeText(nums);
+    setBulkCopied(true);
+    setTimeout(() => setBulkCopied(false), 2500);
+  };
+
+  const selectedColabList = useMemo(
+    () => colaboradores.filter(c => selectedColabIds.has(c.id)),
+    [colaboradores, selectedColabIds]
+  );
 
   const switchVisualizacao = (v: 'regioes' | 'zonas') => {
     setDfVisualizacao(v);
@@ -1398,8 +1492,24 @@ export default function ColaboradoresPage() {
             </div>
           )}
 
+          {/* Selection header */}
+          {filteredColaboradores.length > 0 && !loading && (
+            <div className="flex items-center justify-between text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+              <span>{filteredColaboradores.length} colaboradores</span>
+              {filteredColaboradores.filter(c => c.telefone).length > 0 && (
+                <button
+                  onClick={selectAllFiltered}
+                  className="font-semibold transition-colors hover:underline"
+                  style={{ color: '#4a9ede' }}
+                >
+                  Selecionar todos
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Collaborator list */}
-          <div className="flex-1 overflow-y-auto space-y-2 max-h-[calc(100vh-400px)] min-h-[200px] scrollbar-dark">
+          <div className="flex-1 overflow-y-auto space-y-2 max-h-[calc(100vh-420px)] min-h-[200px] scrollbar-dark">
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#4a9ede' }} />
@@ -1413,70 +1523,115 @@ export default function ColaboradoresPage() {
               </div>
             ) : (
               <AnimatePresence initial={false}>
-                {filteredColaboradores.map(c => (
-                  <motion.div
-                    key={c.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.15 }}
-                    onClick={() => { setViewingColaborador(c); setSelectedColaboradorId(c.id); setColabMsgStatus('idle'); setColabMsgText(''); }}
-                    className="rounded-xl p-3 cursor-pointer transition-all duration-150"
-                    style={{
-                      background: selectedColaboradorId === c.id ? 'rgba(29,78,216,0.12)' : 'var(--tint-04)',
-                      border: selectedColaboradorId === c.id
-                        ? '1px solid rgba(29,78,216,0.4)'
-                        : '1px solid var(--tint-08)',
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-1">
-                      <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>{c.nome}</p>
-                      <span
-                        className="flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                        style={{
-                          background: c.status === 'ATIVO' ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.15)',
-                          color: c.status === 'ATIVO' ? '#22c55e' : '#94a3b8',
-                        }}
+                {filteredColaboradores.map(c => {
+                  const isChecked = selectedColabIds.has(c.id);
+                  return (
+                    <motion.div
+                      key={c.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.15 }}
+                      className="rounded-xl p-3 transition-all duration-150 flex gap-2"
+                      style={{
+                        background: isChecked ? 'rgba(37,99,235,0.08)' : selectedColaboradorId === c.id ? 'rgba(29,78,216,0.12)' : 'var(--tint-04)',
+                        border: isChecked
+                          ? '1px solid rgba(37,99,235,0.4)'
+                          : selectedColaboradorId === c.id
+                            ? '1px solid rgba(29,78,216,0.4)'
+                            : '1px solid var(--tint-08)',
+                      }}
+                    >
+                      {/* Checkbox */}
+                      {c.telefone && (
+                        <button
+                          onClick={e => { e.stopPropagation(); toggleColabSelection(c.id); }}
+                          className="flex-shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-all"
+                          style={{
+                            borderColor: isChecked ? '#2563eb' : 'var(--tint-20)',
+                            background: isChecked ? '#2563eb' : 'transparent',
+                          }}
+                        >
+                          {isChecked && <Check className="w-2.5 h-2.5 text-white" />}
+                        </button>
+                      )}
+                      {/* Card body */}
+                      <div
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => { setViewingColaborador(c); setSelectedColaboradorId(c.id); setColabMsgStatus('idle'); setColabMsgText(''); }}
                       >
-                        {c.status === 'ATIVO' ? 'Ativo' : 'Inativo'}
-                      </span>
-                    </div>
-                    {c.funcao && (
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{c.funcao}</p>
-                    )}
-                    {c.padrinho && (
-                      <span className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
-                        ↑ {c.padrinho.nome} · {c.padrinho.cargo}
-                      </span>
-                    )}
-                    {c.regioes.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {c.regioes.slice(0, 3).map(r => (
+                        <div className="flex items-start justify-between gap-1">
+                          <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>{c.nome}</p>
                           <span
-                            key={r.id}
-                            className="text-[10px] px-1.5 py-0.5 rounded"
-                            style={r.tipo === 'ZONA'
-                              ? { background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }
-                              : { background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
+                            className="flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                            style={{
+                              background: c.status === 'ATIVO' ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.15)',
+                              color: c.status === 'ATIVO' ? '#22c55e' : '#94a3b8',
+                            }}
                           >
-                            {r.regiaoNome}
+                            {c.status === 'ATIVO' ? 'Ativo' : 'Inativo'}
                           </span>
-                        ))}
-                        {c.regioes.length > 3 && (
-                          <span
-                            className="text-[10px] px-1.5 py-0.5 rounded"
-                            style={{ background: 'var(--tint-08)', color: 'var(--text-tertiary)' }}
-                          >
-                            +{c.regioes.length - 3}
+                        </div>
+                        {c.funcao && (
+                          <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{c.funcao}</p>
+                        )}
+                        {c.padrinho && (
+                          <span className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
+                            ↑ {c.padrinho.nome} · {c.padrinho.cargo}
                           </span>
                         )}
+                        {c.regioes.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {c.regioes.slice(0, 3).map(r => (
+                              <span
+                                key={r.id}
+                                className="text-[10px] px-1.5 py-0.5 rounded"
+                                style={r.tipo === 'ZONA'
+                                  ? { background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }
+                                  : { background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
+                              >
+                                {r.regiaoNome}
+                              </span>
+                            ))}
+                            {c.regioes.length > 3 && (
+                              <span
+                                className="text-[10px] px-1.5 py-0.5 rounded"
+                                style={{ background: 'var(--tint-08)', color: 'var(--text-tertiary)' }}
+                              >
+                                +{c.regioes.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             )}
           </div>
+
+          {/* Disparar mensagem button */}
+          {selectedColabIds.size > 0 && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowBulkMsg(true); setBulkSendStatus({}); setBulkSendErrors({}); }}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                style={{ background: 'linear-gradient(135deg, #128c7e, #25d366)', color: '#fff' }}
+              >
+                <MessageSquare className="w-4 h-4" />
+                Disparar mensagem ({selectedColabIds.size})
+              </button>
+              <button
+                onClick={clearColabSelection}
+                className="px-3 py-2.5 rounded-xl text-xs font-semibold transition-all"
+                style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-secondary)' }}
+                title="Limpar seleção"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right main area */}
@@ -3029,6 +3184,166 @@ export default function ColaboradoresPage() {
                 <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                   Para cadastrar novos padrinhos, use o formulário de criação de colaborador.
                 </p>
+              </div>
+            </motion.div>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* ── Bulk messaging modal ── */}
+      {showBulkMsg && mounted && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[9100] flex items-end sm:items-center justify-center sm:px-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0"
+              style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+              onClick={() => { if (!bulkSendingApi) setShowBulkMsg(false); }}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              className="relative w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col"
+              style={{ background: 'var(--bg-card)', maxHeight: '90vh' }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 pt-5 pb-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(37,211,102,0.2)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(37,211,102,0.15)' }}>
+                    <MessageSquare className="w-4 h-4" style={{ color: '#25d366' }} />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                      Disparo via WhatsApp
+                    </h2>
+                    <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                      {selectedColabList.filter(c => c.telefone).length} colaborador(es) selecionado(s)
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { if (!bulkSendingApi) setShowBulkMsg(false); }}
+                  className="p-1.5 rounded-lg hover:bg-[var(--tint-10)] transition-colors"
+                >
+                  <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-dark">
+                {/* Message textarea */}
+                <textarea
+                  value={bulkMsgText}
+                  onChange={e => setBulkMsgText(e.target.value)}
+                  rows={4}
+                  placeholder="Digite a mensagem que será enviada para todos os colaboradores selecionados..."
+                  disabled={bulkSendingApi}
+                  className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none disabled:opacity-50"
+                  style={{
+                    background: 'var(--tint-06)',
+                    border: '1px solid var(--tint-10)',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+
+                {/* Contacts list with status */}
+                <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-dark">
+                  {selectedColabList.filter(c => c.telefone).map(c => {
+                    const st = bulkSendStatus[c.id];
+                    return (
+                      <div
+                        key={c.id}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
+                        style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-06)' }}
+                      >
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(37,211,102,0.12)' }}>
+                          <Phone className="w-3.5 h-3.5" style={{ color: '#25d366' }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{c.nome}</p>
+                          <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{c.telefone}</p>
+                          {st === 'err' && bulkSendErrors[c.id] && (
+                            <p className="text-[10px] mt-0.5 text-red-400">{bulkSendErrors[c.id]}</p>
+                          )}
+                        </div>
+                        {/* Status indicator */}
+                        {!st || st === 'idle' ? (
+                          bulkMsgText.trim() ? (
+                            <a
+                              href={`https://wa.me/${normalizeWA(c.telefone!)}?text=${encodeURIComponent(bulkMsgText)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium flex-shrink-0 transition-all hover:opacity-80"
+                              style={{ background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.25)', color: '#25d366' }}
+                            >
+                              <ExternalLink className="w-3 h-3" /> Abrir
+                            </a>
+                          ) : null
+                        ) : st === 'sending' ? (
+                          <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: '#4a9ede' }} />
+                        ) : st === 'ok' ? (
+                          <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-green-400" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
+                        )}
+                      </div>
+                    );
+                  })}
+                  {selectedColabList.filter(c => !c.telefone).length > 0 && (
+                    <p className="text-[10px] text-center py-1" style={{ color: 'var(--text-tertiary)' }}>
+                      {selectedColabList.filter(c => !c.telefone).length} colaborador(es) sem telefone serão ignorados
+                    </p>
+                  )}
+                </div>
+
+                {/* Summary after send */}
+                {!bulkSendingApi && Object.keys(bulkSendStatus).length > 0 && (
+                  <div className="rounded-xl px-4 py-3 text-xs flex items-center gap-4" style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
+                    <span className="text-green-400 font-semibold">
+                      ✓ {Object.values(bulkSendStatus).filter(s => s === 'ok').length} enviado{Object.values(bulkSendStatus).filter(s => s === 'ok').length !== 1 ? 's' : ''}
+                    </span>
+                    {Object.values(bulkSendStatus).filter(s => s === 'err').length > 0 && (
+                      <span className="text-red-400 font-semibold">
+                        ✗ {Object.values(bulkSendStatus).filter(s => s === 'err').length} com erro
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between px-6 py-4 flex-shrink-0 gap-3" style={{ borderTop: '1px solid rgba(37,211,102,0.15)' }}>
+                <button
+                  onClick={copyBulkNumbers}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
+                  style={{ background: 'rgba(74,158,222,0.1)', border: '1px solid rgba(74,158,222,0.2)', color: '#4a9ede' }}
+                >
+                  {bulkCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {bulkCopied ? 'Copiado!' : 'Copiar números'}
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { setShowBulkMsg(false); setBulkSendStatus({}); setBulkSendErrors({}); }}
+                    disabled={bulkSendingApi}
+                    className="px-4 py-2 text-sm font-medium transition-all hover:opacity-80 rounded-xl disabled:opacity-40"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Fechar
+                  </button>
+                  <button
+                    onClick={handleBulkSend}
+                    disabled={!bulkMsgText.trim() || bulkSendingApi || selectedColabList.filter(c => c.telefone).length === 0}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-40"
+                    style={{ background: 'linear-gradient(135deg, #128c7e, #25d366)', color: '#fff' }}
+                  >
+                    {bulkSendingApi
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Enviando…</>
+                      : <><Send className="w-4 h-4" /> Disparar via API</>}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
