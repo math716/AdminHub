@@ -2014,7 +2014,7 @@ function MunicipioPopup({
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 6 }}
-        className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-[450] rounded-xl px-4 py-3 pointer-events-auto min-w-[220px]"
+        className="absolute left-1/2 -translate-x-1/2 bottom-4 z-[450] rounded-xl px-4 py-3 pointer-events-auto w-[260px] max-w-[calc(100%-16px)]"
         style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border-default)',

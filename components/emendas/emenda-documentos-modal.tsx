@@ -398,7 +398,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                     <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">
                       Execução por fase
                     </p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {fasesFiltradas.map((f) => (
                         <div
                           key={f.fase}

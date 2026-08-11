@@ -592,15 +592,15 @@ function ColaboradoresMapInner({
   }
 
   return (
-    <div className="relative w-full" style={{ height, minHeight: 400 }}>
+    <div className="relative w-full h-full" style={{ minHeight: 320 }}>
       <div
         ref={mapRef}
         className="w-full h-full rounded-xl overflow-hidden"
         style={{ background: '#f0f4f8' }}
       />
-      <div className="absolute bottom-3 left-3 z-[1000] rounded-xl border border-gray-200/80 px-3.5 py-2.5 text-xs shadow-lg" style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(8px)' }}>
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Mapa de Calor</p>
-        <div className="flex flex-col gap-1.5">
+      <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 z-[1000] rounded-xl border border-gray-200/80 px-2.5 py-2 sm:px-3.5 sm:py-2.5 text-[10px] sm:text-xs shadow-lg" style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(8px)' }}>
+        <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-1.5">Mapa de Calor</p>
+        <div className="flex flex-col gap-1">
           {[
             { color: '#cbd5e1', opacity: 0.4,  label: 'Sem colaboradores' },
             { color: '#93c5fd', opacity: 1,     label: 'Muito baixo' },
@@ -609,8 +609,8 @@ function ColaboradoresMapInner({
             { color: '#2563eb', opacity: 1,     label: 'Alto' },
             { color: '#1d4ed8', opacity: 1,     label: 'Muito alto' },
           ].map(({ color, opacity, label }) => (
-            <div key={label} className="flex items-center gap-2">
-              <div className="w-5 h-3.5 rounded-sm flex-shrink-0" style={{ background: color, opacity }} />
+            <div key={label} className="flex items-center gap-1.5">
+              <div className="w-4 h-3 sm:w-5 sm:h-3.5 rounded-sm flex-shrink-0" style={{ background: color, opacity }} />
               <span className="text-gray-600">{label}</span>
             </div>
           ))}
@@ -1482,33 +1482,61 @@ export default function ColaboradoresPage() {
         {/* Right main area */}
         <div className="md:col-span-3 flex flex-col gap-3">
           {/* Tab switcher row */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div
-              className="flex items-center gap-1 p-1 rounded-xl"
-              style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
-            >
-              {([
-                { id: 'mapa', label: 'Mapa', icon: MapIcon },
-                { id: 'lista', label: 'Lista', icon: List },
-              ] as const).map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150"
-                  style={{
-                    background: activeTab === id ? 'linear-gradient(135deg, #1d6fd8, #4a9ede)' : 'transparent',
-                    color: activeTab === id ? '#fff' : 'var(--text-secondary)',
-                  }}
+          <div className="flex flex-col gap-2">
+            {/* Row 1: view toggles (Mapa/Lista + Regiões/Zonas) */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div
+                className="flex items-center gap-1 p-1 rounded-xl"
+                style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
+              >
+                {([
+                  { id: 'mapa', label: 'Mapa', icon: MapIcon },
+                  { id: 'lista', label: 'Lista', icon: List },
+                ] as const).map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150"
+                    style={{
+                      background: activeTab === id ? 'linear-gradient(135deg, #1d6fd8, #4a9ede)' : 'transparent',
+                      color: activeTab === id ? '#fff' : 'var(--text-secondary)',
+                    }}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Sub-toggle: Regiões Admin. | Zonas Eleitorais — only in Mapa tab */}
+              {activeTab === 'mapa' && (
+                <div
+                  className="flex items-center gap-1 p-1 rounded-xl"
+                  style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
                 >
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </button>
-              ))}
+                  {([
+                    { id: 'regioes', label: 'Regiões Admin.' },
+                    { id: 'zonas', label: 'Zonas Eleitorais' },
+                  ] as const).map(({ id, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => switchVisualizacao(id)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150"
+                      style={{
+                        background: dfVisualizacao === id ? 'linear-gradient(135deg, #6d28d9, #8b5cf6)' : 'transparent',
+                        color: dfVisualizacao === id ? '#fff' : 'var(--text-secondary)',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* District / Zone search bar — only in Mapa tab */}
+            {/* Row 2: District / Zone search bar — only in Mapa tab, full width on mobile */}
             {activeTab === 'mapa' && (
-              <div ref={districtSearchRef} className="relative flex-1 max-w-xs">
+              <div ref={districtSearchRef} className="relative w-full sm:max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-tertiary)' }} />
                 <input
                   type="text"
@@ -1585,30 +1613,6 @@ export default function ColaboradoresPage() {
               </div>
             )}
 
-            {/* Sub-toggle: Regiões Admin. | Zonas Eleitorais — only in Mapa tab */}
-            {activeTab === 'mapa' && (
-              <div
-                className="flex items-center gap-1 p-1 rounded-xl"
-                style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
-              >
-                {([
-                  { id: 'regioes', label: 'Regiões Admin.' },
-                  { id: 'zonas', label: 'Zonas Eleitorais' },
-                ] as const).map(({ id, label }) => (
-                  <button
-                    key={id}
-                    onClick={() => switchVisualizacao(id)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150"
-                    style={{
-                      background: dfVisualizacao === id ? 'linear-gradient(135deg, #6d28d9, #8b5cf6)' : 'transparent',
-                      color: dfVisualizacao === id ? '#fff' : 'var(--text-secondary)',
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           <AnimatePresence mode="wait">
@@ -1626,7 +1630,7 @@ export default function ColaboradoresPage() {
                   <>
                     {/* Polygon map */}
                     <div
-                      className="rounded-xl overflow-hidden"
+                      className="rounded-xl overflow-hidden h-[55vw] min-h-[320px] md:h-[calc(100vh-340px)]"
                       style={{ border: '1px solid rgba(74,158,222,0.15)' }}
                     >
                       <ColaboradoresMapInner
@@ -1635,7 +1639,7 @@ export default function ColaboradoresPage() {
                         selectedRegiao={selectedRegiao}
                         selectedColaboradorId={selectedColaboradorId}
                         onRegiaoClick={handleRegionClick}
-                        height="calc(100vh - 340px)"
+                        height="100%"
                       />
                     </div>
                   </>
@@ -1644,17 +1648,16 @@ export default function ColaboradoresPage() {
                 {/* ── Zonas Eleitorais view ── */}
                 {dfVisualizacao === 'zonas' && (
                   <>
-                    {/* Map + zone list (mirrors Mapa Eleitoral zones layout) */}
+                    {/* Map + zone list */}
                     <div
-                      className="flex rounded-xl overflow-hidden"
-                      style={{
-                        height: 'calc(100vh - 340px)',
-                        minHeight: 480,
-                        border: '1px solid rgba(167,139,250,0.15)',
-                      }}
+                      className="flex flex-col md:flex-row rounded-xl overflow-hidden"
+                      style={{ border: '1px solid rgba(167,139,250,0.15)' }}
                     >
                       {/* Leaflet map with zone markers */}
-                      <div className="flex-1" style={{ minWidth: 0 }}>
+                      <div
+                        className="flex-1 h-[55vw] min-h-[300px] md:h-[calc(100vh-340px)]"
+                        style={{ minWidth: 0 }}
+                      >
                         <ZonasMapInner
                           colaboradoresByZona={colaboradoresByZona}
                           selectedZona={selectedZona}
@@ -1662,10 +1665,10 @@ export default function ColaboradoresPage() {
                         />
                       </div>
 
-                      {/* Right panel — zone list sorted by collaborator count */}
+                      {/* Zone list panel */}
                       <div
-                        className="w-60 flex flex-col flex-shrink-0"
-                        style={{ background: 'var(--bg-card)', borderLeft: '1px solid rgba(167,139,250,0.15)' }}
+                        className="w-full md:w-60 h-44 md:h-auto flex flex-col flex-shrink-0"
+                        style={{ background: 'var(--bg-card)', borderTop: '1px solid rgba(167,139,250,0.15)', borderLeft: '1px solid rgba(167,139,250,0.15)' }}
                       >
                         {/* Panel header */}
                         <div
