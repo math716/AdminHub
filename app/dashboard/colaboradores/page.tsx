@@ -1898,14 +1898,14 @@ export default function ColaboradoresPage() {
                 {/* ── Zonas Eleitorais view ── */}
                 {dfVisualizacao === 'zonas' && (
                   <>
-                    {/* Map + zone list */}
+                    {/* Map + zone list — height lives on the container so children can use h-full */}
                     <div
-                      className="flex flex-col md:flex-row rounded-xl overflow-hidden"
+                      className="flex flex-col md:flex-row rounded-xl overflow-hidden md:h-[calc(100vh-340px)]"
                       style={{ border: '1px solid rgba(167,139,250,0.15)' }}
                     >
                       {/* Leaflet map with zone markers */}
                       <div
-                        className="flex-1 min-h-0 h-[55vw] min-h-[300px] md:h-[calc(100vh-340px)]"
+                        className="flex-1 min-h-0 h-[55vw] min-h-[300px] md:h-full"
                         style={{ minWidth: 0, overflow: 'hidden' }}
                       >
                         <ZonasMapInner
@@ -1917,7 +1917,7 @@ export default function ColaboradoresPage() {
 
                       {/* Zone list panel */}
                       <div
-                        className="w-full md:w-60 h-44 md:h-auto flex flex-col flex-shrink-0"
+                        className="w-full md:w-60 h-44 md:h-full flex flex-col flex-shrink-0"
                         style={{ background: 'var(--bg-card)', borderTop: '1px solid rgba(167,139,250,0.15)', borderLeft: '1px solid rgba(167,139,250,0.15)' }}
                       >
                         {/* Panel header */}
