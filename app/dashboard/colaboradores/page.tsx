@@ -1840,7 +1840,7 @@ export default function ColaboradoresPage() {
                   <>
                     {/* Polygon map */}
                     <div
-                      className="rounded-xl overflow-hidden h-[55vw] min-h-[320px] md:h-[calc(100vh-400px)]"
+                      className="rounded-xl overflow-hidden h-[55vw] min-h-[320px] md:h-[calc(100vh-360px)]"
                       style={{ border: '1px solid rgba(74,158,222,0.15)' }}
                     >
                       <ColaboradoresMapInner
@@ -1860,7 +1860,7 @@ export default function ColaboradoresPage() {
                   <>
                     {/* Map + zone list — height lives on the container so children can use h-full */}
                     <div
-                      className="flex flex-col md:flex-row rounded-xl overflow-hidden md:h-[calc(100vh-400px)]"
+                      className="flex flex-col md:flex-row rounded-xl overflow-hidden md:h-[calc(100vh-360px)]"
                       style={{ border: '1px solid rgba(167,139,250,0.15)' }}
                     >
                       {/* Leaflet map with zone markers */}
