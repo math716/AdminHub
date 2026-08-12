@@ -658,23 +658,6 @@ function ColaboradoresMapInner({
         className="w-full h-full rounded-xl overflow-hidden"
         style={{ background: '#f0f4f8' }}
       />
-      {/* Legenda — barra de gradiente suave */}
-      <div className="absolute bottom-2 left-2 z-[1000] rounded-xl border border-gray-200/80 shadow-lg" style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(8px)' }}>
-        {/* Mobile: barra compacta */}
-        <div className="flex sm:hidden items-center gap-1.5 px-2 py-1.5">
-          <span className="text-[8px] font-bold uppercase tracking-wide text-gray-400">Calor</span>
-          <div className="w-20 h-3 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to right, rgba(116,185,255,0.5), #00cec9, #55efc4, #fdcb6e, #e17055, #d63031, #6c0000)' }} />
-        </div>
-        {/* sm+: barra com rótulos */}
-        <div className="hidden sm:block px-3.5 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Mapa de Calor</p>
-          <div className="h-3 rounded-full w-36" style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.3), rgba(116,185,255,0.6), #00cec9, #55efc4, #fdcb6e, #e17055, #d63031, #6c0000)' }} />
-          <div className="flex justify-between mt-1">
-            <span className="text-[9px] text-gray-400">Nenhum</span>
-            <span className="text-[9px] text-gray-600 font-semibold">Muito Alto</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
