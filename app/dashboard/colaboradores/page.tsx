@@ -1340,10 +1340,8 @@ export default function ColaboradoresPage() {
       if (!res.ok) throw new Error();
       const criado: Padrinho = await res.json();
       setPadrinhos(prev => [...prev, criado].sort((a, b) => a.nome.localeCompare(b.nome)));
-      setForm(f => ({ ...f, padrinhoId: criado.id }));
       setShowNovoPadrinho(false);
       setNovoPadrinho({ nome: '', cargo: '', partido: '' });
-      setPadrinhoSearch(criado.nome);
       toast.success('Padrinho criado!');
     } catch {
       toast.error('Erro ao criar padrinho');
@@ -2218,7 +2216,7 @@ export default function ColaboradoresPage() {
                     </label>
 
                     {/* Selected padrinho chip */}
-                    {form.padrinhoId && !showNovoPadrinho && (() => {
+                    {form.padrinhoId && (() => {
                       const p = padrinhos.find(x => x.id === form.padrinhoId);
                       return p ? (
                         <div className="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(167,139,250,0.10)', border: '1px solid rgba(167,139,250,0.25)' }}>
@@ -2234,7 +2232,7 @@ export default function ColaboradoresPage() {
                     })()}
 
                     {/* Search existing padrinhos */}
-                    {!form.padrinhoId && !showNovoPadrinho && (
+                    {!form.padrinhoId && (
                       <div className="space-y-1.5">
                         <input
                           type="text"
@@ -2274,66 +2272,6 @@ export default function ColaboradoresPage() {
                             )}
                           </div>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => { setShowNovoPadrinho(true); setNovoPadrinho({ nome: padrinhoSearch, cargo: '', partido: '' }); }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                          style={{ background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)', color: '#fff' }}
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          Cadastrar novo padrinho
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Create new padrinho inline */}
-                    {showNovoPadrinho && (
-                      <div className="space-y-2 p-3 rounded-lg" style={{ background: 'var(--tint-04)', border: '1px solid rgba(167,139,250,0.2)' }}>
-                        <p className="text-xs font-bold" style={{ color: '#a78bfa' }}>Novo Padrinho</p>
-                        <input
-                          type="text"
-                          placeholder="Nome completo *"
-                          value={novoPadrinho.nome}
-                          onChange={e => setNovoPadrinho(p => ({ ...p, nome: e.target.value }))}
-                          className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                          style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Cargo (ex: Deputado Federal) *"
-                          value={novoPadrinho.cargo}
-                          onChange={e => setNovoPadrinho(p => ({ ...p, cargo: e.target.value }))}
-                          className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                          style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Partido (ex: MDB) *"
-                          value={novoPadrinho.partido}
-                          onChange={e => setNovoPadrinho(p => ({ ...p, partido: e.target.value }))}
-                          className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                          style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
-                        />
-                        <div className="flex gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => { setShowNovoPadrinho(false); setNovoPadrinho({ nome: '', cargo: '', partido: '' }); }}
-                            className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold"
-                            style={{ background: 'var(--tint-06)', color: 'var(--text-secondary)' }}
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleCriarPadrinho}
-                            disabled={savingPadrinho}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
-                            style={{ background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)' }}
-                          >
-                            {savingPadrinho && <Loader2 className="w-3 h-3 animate-spin" />}
-                            Salvar Padrinho
-                          </button>
-                        </div>
                       </div>
                     )}
                   </div>
@@ -3132,11 +3070,66 @@ export default function ColaboradoresPage() {
                 )}
               </div>
 
-              {/* Footer */}
+              {/* Footer — criar novo padrinho */}
               <div className="px-6 py-4" style={{ borderTop: '1px solid var(--tint-06)' }}>
-                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  Para cadastrar novos padrinhos, use o formulário de criação de colaborador.
-                </p>
+                {!showNovoPadrinho ? (
+                  <button
+                    onClick={() => { setShowNovoPadrinho(true); setNovoPadrinho({ nome: '', cargo: '', partido: '' }); }}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 w-full justify-center"
+                    style={{ background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)', color: '#fff' }}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Cadastrar novo padrinho
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold" style={{ color: '#a78bfa' }}>Novo Padrinho</p>
+                    <input
+                      type="text"
+                      placeholder="Nome completo *"
+                      value={novoPadrinho.nome}
+                      onChange={e => setNovoPadrinho(p => ({ ...p, nome: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                      style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        placeholder="Cargo *"
+                        value={novoPadrinho.cargo}
+                        onChange={e => setNovoPadrinho(p => ({ ...p, cargo: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                        style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Partido *"
+                        value={novoPadrinho.partido}
+                        onChange={e => setNovoPadrinho(p => ({ ...p, partido: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                        style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={() => { setShowNovoPadrinho(false); setNovoPadrinho({ nome: '', cargo: '', partido: '' }); }}
+                        className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                        style={{ background: 'var(--tint-06)', color: 'var(--text-secondary)' }}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleCriarPadrinho}
+                        disabled={savingPadrinho}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold text-white"
+                        style={{ background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)' }}
+                      >
+                        {savingPadrinho && <Loader2 className="w-3 h-3 animate-spin" />}
+                        Salvar Padrinho
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
