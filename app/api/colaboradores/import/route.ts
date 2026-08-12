@@ -8,6 +8,7 @@ import { derivarZonasDeRas } from '@/lib/colaboradores-zonas';
 
 const MAX_IMPORT = 500;
 const BATCH_SIZE = 20;
+const NOMINATIM_DELAY_MS = 1100; // Nominatim requires ≤1 req/s
 
 async function getGabineteAndUser(session: any): Promise<{ gabineteId: string; userId: string } | null> {
   const userId = (session.user as any)?.id;
@@ -21,8 +22,21 @@ function normName(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 }
 
-// Resolve padrinho name to an existing or newly created ID.
-// Strategy: exact norm match → prefix match → create new with name only.
+async function geocodeCity(city: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(city + ', Brasil')}`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'AdminHub/1.0 (gabinete@adminhub.app)' },
+    });
+    if (!res.ok) return null;
+    const data: any[] = await res.json();
+    if (!data[0]) return null;
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch {
+    return null;
+  }
+}
+
 async function resolvePadrinho(
   rawName: string,
   gabineteId: string,
@@ -32,13 +46,9 @@ async function resolvePadrinho(
   if (!key) return null;
   if (cache.has(key)) return cache.get(key)!;
 
-  // Look up all padrinhos for this gabinete
   const all = await prisma.padrinho.findMany({ where: { gabineteId }, select: { id: true, nome: true } });
 
-  // 1. Exact normalized match
   let found = all.find(p => normName(p.nome) === key);
-
-  // 2. Prefix match: CSV value is start of padrinho name, or vice versa
   if (!found) {
     found = all.find(p => {
       const pn = normName(p.nome);
@@ -51,7 +61,6 @@ async function resolvePadrinho(
     return found.id;
   }
 
-  // 3. Create new padrinho with just the name
   const created = await prisma.padrinho.create({
     data: { nome: rawName.trim(), cargo: '', partido: '', gabineteId },
     select: { id: true },
@@ -80,13 +89,37 @@ export async function POST(request: NextRequest) {
     const valid = colaboradores.filter(c => c.nome?.trim());
     const skipped = colaboradores.length - valid.length;
 
-    // Resolve all unique padrinho names upfront to avoid redundant DB calls
+    // Resolve all padrinho names upfront
     const padrinhoCache = new Map<string, string>();
-    const uniqueNames = [...new Set(
+    const uniquePadrinhoNames = [...new Set(
       valid.map(c => c.padrinhoNome?.trim()).filter(Boolean) as string[]
     )];
-    for (const name of uniqueNames) {
+    for (const name of uniquePadrinhoNames) {
       await resolvePadrinho(name, ctx.gabineteId, padrinhoCache);
+    }
+
+    // Pre-geocode cities that don't map to any known DF electoral zone
+    const geoCache = new Map<string, { lat: number; lng: number } | null>();
+    const citiesToGeocode: string[] = [];
+
+    for (const c of valid) {
+      if (!c.regioes) continue;
+      const firstCity = c.regioes.split(',')[0]?.trim();
+      if (!firstCity) continue;
+      const key = normName(firstCity);
+      if (!geoCache.has(key) && derivarZonasDeRas([firstCity]).length === 0) {
+        geoCache.set(key, null);
+        citiesToGeocode.push(firstCity);
+      }
+    }
+
+    for (let i = 0; i < citiesToGeocode.length; i++) {
+      const city = citiesToGeocode[i];
+      const coords = await geocodeCity(city);
+      geoCache.set(normName(city), coords);
+      if (i < citiesToGeocode.length - 1) {
+        await new Promise(r => setTimeout(r, NOMINATIM_DELAY_MS));
+      }
     }
 
     let imported = 0;
@@ -109,14 +142,23 @@ export async function POST(request: NextRequest) {
             ? padrinhoCache.get(normName(c.padrinhoNome.trim())) ?? null
             : null;
 
+          // Use geocoded coordinates for cities not mapped to DF zones
+          let lat: number | null = null;
+          let lng: number | null = null;
+          const firstCity = regioes[0];
+          if (firstCity && derivarZonasDeRas([firstCity]).length === 0) {
+            const coords = geoCache.get(normName(firstCity));
+            if (coords) { lat = coords.lat; lng = coords.lng; }
+          }
+
           return prisma.colaborador.create({
             data: {
               nome: c.nome.trim(),
               telefone: c.telefone?.trim() || null,
               email: c.email?.trim() || null,
               endereco: c.endereco?.trim() || null,
-              lat: null,
-              lng: null,
+              lat,
+              lng,
               funcao: c.funcao?.trim() || null,
               observacao: c.observacao?.trim() || null,
               status: 'ATIVO',
