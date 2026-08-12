@@ -17,6 +17,49 @@ async function getGabineteAndUser(session: any): Promise<{ gabineteId: string; u
   return { gabineteId: user.gabineteId, userId };
 }
 
+function normName(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+}
+
+// Resolve padrinho name to an existing or newly created ID.
+// Strategy: exact norm match → prefix match → create new with name only.
+async function resolvePadrinho(
+  rawName: string,
+  gabineteId: string,
+  cache: Map<string, string>
+): Promise<string | null> {
+  const key = normName(rawName);
+  if (!key) return null;
+  if (cache.has(key)) return cache.get(key)!;
+
+  // Look up all padrinhos for this gabinete
+  const all = await prisma.padrinho.findMany({ where: { gabineteId }, select: { id: true, nome: true } });
+
+  // 1. Exact normalized match
+  let found = all.find(p => normName(p.nome) === key);
+
+  // 2. Prefix match: CSV value is start of padrinho name, or vice versa
+  if (!found) {
+    found = all.find(p => {
+      const pn = normName(p.nome);
+      return pn.startsWith(key) || key.startsWith(pn);
+    });
+  }
+
+  if (found) {
+    cache.set(key, found.id);
+    return found.id;
+  }
+
+  // 3. Create new padrinho with just the name
+  const created = await prisma.padrinho.create({
+    data: { nome: rawName.trim(), cargo: '', partido: '', gabineteId },
+    select: { id: true },
+  });
+  cache.set(key, created.id);
+  return created.id;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -37,10 +80,18 @@ export async function POST(request: NextRequest) {
     const valid = colaboradores.filter(c => c.nome?.trim());
     const skipped = colaboradores.length - valid.length;
 
+    // Resolve all unique padrinho names upfront to avoid redundant DB calls
+    const padrinhoCache = new Map<string, string>();
+    const uniqueNames = [...new Set(
+      valid.map(c => c.padrinhoNome?.trim()).filter(Boolean) as string[]
+    )];
+    for (const name of uniqueNames) {
+      await resolvePadrinho(name, ctx.gabineteId, padrinhoCache);
+    }
+
     let imported = 0;
     let errors = 0;
 
-    // Process in parallel batches to avoid overloading the connection pool
     for (let i = 0; i < valid.length; i += BATCH_SIZE) {
       const batch = valid.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(
@@ -53,6 +104,10 @@ export async function POST(request: NextRequest) {
             ...regioes.map(r => ({ uf: 'DF', regiaoNome: r, tipo: 'RA' })),
             ...derivarZonasDeRas(regioes),
           ];
+
+          const padrinhoId = c.padrinhoNome?.trim()
+            ? padrinhoCache.get(normName(c.padrinhoNome.trim())) ?? null
+            : null;
 
           return prisma.colaborador.create({
             data: {
@@ -67,6 +122,7 @@ export async function POST(request: NextRequest) {
               status: 'ATIVO',
               gabineteId: ctx.gabineteId,
               createdById: ctx.userId,
+              padrinhoId: padrinhoId || null,
               regioes: regiaoRows.length > 0 ? { create: regiaoRows } : undefined,
             },
             select: { id: true },

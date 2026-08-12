@@ -210,10 +210,11 @@ interface DetectedColabCols {
   funcao: string;
   observacao: string;
   regioes: string;
+  padrinho: string;
 }
 
 function detectColabColumns(headers: string[]): DetectedColabCols {
-  const result: DetectedColabCols = { nome: '', telefone: '', email: '', endereco: '', funcao: '', observacao: '', regioes: '' };
+  const result: DetectedColabCols = { nome: '', telefone: '', email: '', endereco: '', funcao: '', observacao: '', regioes: '', padrinho: '' };
   for (const h of headers) {
     const n = normStr(h);
     if (!result.nome && /nome|name/.test(n)) result.nome = h;
@@ -223,6 +224,7 @@ function detectColabColumns(headers: string[]): DetectedColabCols {
     else if (!result.funcao && /funcao|cargo|role|funcoes/.test(n)) result.funcao = h;
     else if (!result.observacao && /observacao|obs|notas|notes|apelido|alcunha|alias/.test(n)) result.observacao = h;
     else if (!result.regioes && /regiao|regioes|region|regions|\bra\b|cidade|city/.test(n)) result.regioes = h;
+    else if (!result.padrinho && /padrinho|apadrinhado|sponsor|godfather/.test(n)) result.padrinho = h;
   }
   return result;
 }
@@ -794,7 +796,7 @@ export default function ColaboradoresPage() {
   const [importPreview, setImportPreview] = useState<Array<Record<string, string>>>([]);
   const [allImportRows, setAllImportRows] = useState<Array<Record<string, string>>>([]);
   const [importHeaders, setImportHeaders] = useState<string[]>([]);
-  const [importCols, setImportCols] = useState<DetectedColabCols>({ nome: '', telefone: '', email: '', endereco: '', funcao: '', observacao: '', regioes: '' });
+  const [importCols, setImportCols] = useState<DetectedColabCols>({ nome: '', telefone: '', email: '', endereco: '', funcao: '', observacao: '', regioes: '', padrinho: '' });
   const [totalImportRows, setTotalImportRows] = useState(0);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ imported: number; errors: number } | null>(null);
@@ -1226,7 +1228,7 @@ export default function ColaboradoresPage() {
         const rawAll = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '' });
 
         // Score each of the first 5 rows: count how many cells look like field names
-        const FIELD_RE = /nome|name|celular|telefone|email|endereco|cidade|city|regiao|region|funcao|cargo|apelido|id$/;
+        const FIELD_RE = /nome|name|celular|telefone|email|endereco|cidade|city|regiao|region|funcao|cargo|apelido|padrinho|id$/;
         let headerIdx = 0;
         let bestScore = -1;
         for (let i = 0; i < Math.min(5, rawAll.length); i++) {
@@ -1273,6 +1275,7 @@ export default function ColaboradoresPage() {
             funcao: importCols.funcao ? row[importCols.funcao]?.trim() : undefined,
             observacao: importCols.observacao ? row[importCols.observacao]?.trim() : undefined,
             regioes: importCols.regioes ? row[importCols.regioes]?.trim() : undefined,
+            padrinhoNome: importCols.padrinho ? row[importCols.padrinho]?.trim() : undefined,
           })),
       };
       const res = await fetch('/api/colaboradores/import', {
@@ -1300,7 +1303,7 @@ export default function ColaboradoresPage() {
     setImportPreview([]);
     setAllImportRows([]);
     setImportHeaders([]);
-    setImportCols({ nome: '', telefone: '', email: '', endereco: '', funcao: '', observacao: '', regioes: '' });
+    setImportCols({ nome: '', telefone: '', email: '', endereco: '', funcao: '', observacao: '', regioes: '', padrinho: '' });
     setTotalImportRows(0);
     setImportResult(null);
     setImportError('');
