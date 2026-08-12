@@ -769,6 +769,8 @@ export default function ColaboradoresPage() {
   const [savingEditPadrinho, setSavingEditPadrinho] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [viewingColaborador, setViewingColaborador] = useState<Colaborador | null>(null);
   const [colabMsgText, setColabMsgText] = useState('');
   const [colabMsgStatus, setColabMsgStatus] = useState<'idle' | 'sending' | 'ok' | 'err'>('idle');
@@ -1027,6 +1029,29 @@ export default function ColaboradoresPage() {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    const ids = Array.from(selectedColabIds);
+    let errors = 0;
+    await Promise.all(
+      ids.map(async id => {
+        try {
+          const res = await fetch(`/api/colaboradores/${id}`, { method: 'DELETE' });
+          if (!res.ok) errors++;
+        } catch {
+          errors++;
+        }
+      })
+    );
+    setBulkDeleting(false);
+    setConfirmBulkDelete(false);
+    setSelectedColabIds(new Set());
+    if (selectedColaboradorId && ids.includes(selectedColaboradorId)) setSelectedColaboradorId(null);
+    if (errors === 0) toast.success(`${ids.length} colaborador(es) removido(s)`);
+    else toast.error(`${errors} erro(s) ao remover colaboradores`);
+    fetchColaboradores();
   };
 
   function normalizeWA(n: string): string {
@@ -1705,7 +1730,7 @@ export default function ColaboradoresPage() {
             )}
           </div>
 
-          {/* Disparar mensagem button */}
+          {/* Ações em massa */}
           {selectedColabIds.size > 0 && (
             <div className="flex gap-2">
               <button
@@ -1715,6 +1740,14 @@ export default function ColaboradoresPage() {
               >
                 <MessageSquare className="w-4 h-4" />
                 Disparar mensagem ({selectedColabIds.size})
+              </button>
+              <button
+                onClick={() => setConfirmBulkDelete(true)}
+                className="px-3 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}
+                title={`Remover ${selectedColabIds.size} selecionado(s)`}
+              >
+                <Trash2 className="w-4 h-4" />
               </button>
               <button
                 onClick={clearColabSelection}
@@ -2766,6 +2799,19 @@ export default function ColaboradoresPage() {
         loading={deleting}
         onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
         onCancel={() => !deleting && setConfirmDeleteId(null)}
+      />
+
+      {/* ── Bulk delete confirmation ── */}
+      <ConfirmDialog
+        open={confirmBulkDelete}
+        title={`Remover ${selectedColabIds.size} colaborador(es)`}
+        message={`Você está prestes a remover permanentemente ${selectedColabIds.size} colaborador(es). Esta ação não pode ser desfeita.`}
+        confirmLabel="Remover todos"
+        cancelLabel="Cancelar"
+        variant="danger"
+        loading={bulkDeleting}
+        onConfirm={handleBulkDelete}
+        onCancel={() => !bulkDeleting && setConfirmBulkDelete(false)}
       />
 
       {/* ── Padrinhos modal ── */}
