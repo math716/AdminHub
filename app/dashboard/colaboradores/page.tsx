@@ -110,9 +110,6 @@ function getZoneMarkerHtml(zona: number, count: number, isSelected: boolean): st
       ? 'rgba(109,40,217,0.52)'
       : 'linear-gradient(135deg,#6d28d9,#8b5cf6)';
   const border = isSelected ? '#c4b5fd' : count === 0 ? 'rgba(167,139,250,0.55)' : '#a78bfa';
-  const label = count === 0
-    ? String(zona)
-    : count >= 1000 ? `${(count / 1000).toFixed(1)}k` : String(count);
   return `<div style="
     width:${size}px;height:${size}px;border-radius:50%;
     background:${bg};border:2px solid ${border};
@@ -120,7 +117,7 @@ function getZoneMarkerHtml(zona: number, count: number, isSelected: boolean): st
     color:#fff;font-weight:700;font-size:11px;font-family:system-ui,sans-serif;
     box-shadow:0 2px 8px rgba(0,0,0,0.28);cursor:pointer;
     transform:translate(-50%,-50%);
-  ">${label}</div>`;
+  ">${zona}</div>`;
 }
 
 const FUNCOES = [
@@ -314,6 +311,11 @@ function ZonasMapInner({ colaboradoresByZona, selectedZona, onZonaClick }: Zonas
           .addTo(map)
           .on('click', () => onClickRef.current(zona));
 
+        marker.bindTooltip(
+          `Zona ${zona} · ${count} colaborador${count !== 1 ? 'es' : ''}`,
+          { direction: 'top', offset: [0, -20], opacity: 0.95 }
+        );
+
         markersRef.current[zona] = marker;
       });
 
@@ -357,6 +359,7 @@ function ZonasMapInner({ colaboradoresByZona, selectedZona, onZonaClick }: Zonas
           iconSize: [0, 0],
           iconAnchor: [0, 0],
         }));
+        marker.setTooltipContent(`Zona ${zona} · ${count} colaborador${count !== 1 ? 'es' : ''}`);
       });
     });
   }, [colaboradoresByZona, selectedZona]);
