@@ -1529,57 +1529,19 @@ export default function ColaboradoresPage() {
             ))}
           </div>
 
-          {/* Padrinho filter */}
-          {padrinhos.length > 0 && (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
-                Filtrar por Padrinho
-              </p>
-              <div className="flex flex-col gap-1">
-                {padrinhos.map(p => {
-                  const count = colaboradores.filter(c => c.padrinhoId === p.id).length;
-                  const isSelected = selectedPadrinhoFilter === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => setSelectedPadrinhoFilter(prev => prev === p.id ? null : p.id)}
-                      className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all text-left"
-                      style={{
-                        background: isSelected ? 'linear-gradient(135deg, #6d28d9, #8b5cf6)' : 'var(--tint-06)',
-                        color: isSelected ? '#fff' : 'var(--text-secondary)',
-                        border: '1px solid ' + (isSelected ? 'transparent' : 'var(--tint-10)'),
-                      }}
-                    >
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <User className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate font-medium">{p.nome}</span>
-                      </div>
-                      <span
-                        className="flex-shrink-0 ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                        style={{
-                          background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(139,92,246,0.15)',
-                          color: isSelected ? '#fff' : '#8b5cf6',
-                        }}
-                      >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Padrinho active indicator */}
+          {/* Padrinho active filter indicator */}
           {selectedPadrinhoFilter && (
             <div
               className="flex items-center justify-between rounded-lg px-3 py-2 text-xs"
               style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.35)' }}
             >
-              <span className="truncate font-medium" style={{ color: '#a78bfa' }}>
-                ↑ {padrinhos.find(p => p.id === selectedPadrinhoFilter)?.nome}
-              </span>
-              <button onClick={() => setSelectedPadrinhoFilter(null)} className="ml-2 flex-shrink-0">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <User className="w-3 h-3 flex-shrink-0" style={{ color: '#a78bfa' }} />
+                <span className="truncate font-medium" style={{ color: '#a78bfa' }}>
+                  Padrinho: {padrinhos.find(p => p.id === selectedPadrinhoFilter)?.nome}
+                </span>
+              </div>
+              <button onClick={() => setSelectedPadrinhoFilter(null)} className="ml-2 flex-shrink-0" title="Remover filtro">
                 <X className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />
               </button>
             </div>
@@ -3027,13 +2989,29 @@ export default function ColaboradoresPage() {
                           </div>
                         </div>
                       ) : (
-                        /* Row */
-                        <div className="flex items-center gap-3 px-6 py-3.5" style={{ borderBottom: '1px solid var(--tint-06)' }}>
+                        /* Row — clique para filtrar */
+                        <div
+                          className="flex items-center gap-3 px-6 py-3.5 cursor-pointer transition-colors"
+                          style={{
+                            borderBottom: '1px solid var(--tint-06)',
+                            background: selectedPadrinhoFilter === p.id ? 'rgba(109,40,217,0.08)' : undefined,
+                          }}
+                          onClick={() => { setSelectedPadrinhoFilter(prev => prev === p.id ? null : p.id); setShowPadrinhosModal(false); }}
+                          onMouseEnter={e => { if (selectedPadrinhoFilter !== p.id) (e.currentTarget as HTMLElement).style.background = 'var(--tint-04)'; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = selectedPadrinhoFilter === p.id ? 'rgba(109,40,217,0.08)' : ''; }}
+                        >
                           <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold" style={{ background: 'rgba(109,40,217,0.15)', color: '#8b5cf6' }}>
                             {p.nome.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{p.nome}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{p.nome}</p>
+                              {selectedPadrinhoFilter === p.id && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(109,40,217,0.2)', color: '#8b5cf6' }}>
+                                  Filtrando
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
                               {p.cargo}{p.partido ? ` · ${p.partido}` : ''}
                               {p._count.colaboradores > 0 && (
@@ -3043,7 +3021,7 @@ export default function ColaboradoresPage() {
                               )}
                             </p>
                           </div>
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
                             <button
                               onClick={() => { setEditingPadrinho(p); setEditPadrinhoForm({ nome: p.nome, cargo: p.cargo, partido: p.partido }); }}
                               className="p-1.5 rounded-lg transition-colors"
