@@ -235,8 +235,9 @@ function detectColabColumns(headers: string[]): DetectedColabCols {
 // ---------------------------------------------------------------------------
 
 interface ColaboradoresMapProps {
-  regioes: string[];                          // all region names from GeoJSON
-  colaboradoresByRegiao: Record<string, Colaborador[]>; // regiaoNome → colabs
+  regioes: string[];
+  colaboradoresByRegiao: Record<string, Colaborador[]>;
+  colaboradores: Colaborador[];
   selectedRegiao: string | null;
   selectedColaboradorId: string | null;
   onRegiaoClick: (nome: string) => void;
@@ -370,6 +371,7 @@ function ZonasMapInner({ colaboradoresByZona, selectedZona, onZonaClick }: Zonas
 // ---------------------------------------------------------------------------
 function ColaboradoresMapInner({
   colaboradoresByRegiao,
+  colaboradores,
   selectedRegiao,
   onRegiaoClick,
   height = 'calc(100vh - 200px)',
@@ -382,13 +384,14 @@ function ColaboradoresMapInner({
   const isInitRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [geoData, setGeoData] = useState<any>(null);
-  const colabRef = useRef(colaboradoresByRegiao);
+  const colabsRef = useRef(colaboradores);
+  const colabsByRegioRef = useRef(colaboradoresByRegiao);
   const selectedRef = useRef(selectedRegiao);
   const onClickRef = useRef(onRegiaoClick);
-  const heatCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const drawHeatRef = useRef<(() => void) | null>(null);
+  const drawPinsRef = useRef<(() => void) | null>(null);
 
-  useEffect(() => { colabRef.current = colaboradoresByRegiao; }, [colaboradoresByRegiao]);
+  useEffect(() => { colabsRef.current = colaboradores; }, [colaboradores]);
+  useEffect(() => { colabsByRegioRef.current = colaboradoresByRegiao; }, [colaboradoresByRegiao]);
   useEffect(() => { selectedRef.current = selectedRegiao; }, [selectedRegiao]);
   useEffect(() => { onClickRef.current = onRegiaoClick; }, [onRegiaoClick]);
 
@@ -478,8 +481,8 @@ function ColaboradoresMapInner({
             hoveredLayerRef.current = layer;
             const norm = normalizeRegiao(nome);
             let colabs: Colaborador[] = [];
-            for (const [k, v] of Object.entries(colabRef.current)) {
-              if (normalizeRegiao(k) === norm) { colabs = v; break; }
+            for (const [k, v] of Object.entries(colabsByRegioRef.current)) {
+              if (normalizeRegiao(k) === norm) { colabs = v as Colaborador[]; break; }
             }
             const isSelected = selectedRef.current
               ? normalizeRegiao(nome) === normalizeRegiao(selectedRef.current)
@@ -539,107 +542,66 @@ function ColaboradoresMapInner({
       const bounds = geoLayer.getBounds();
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
 
-      // ── Heat map via Leaflet circleMarker (no canvas — Leaflet manages rendering) ──
-      // Compute polygon centroids from GeoJSON features
-      const centroids: Array<{ lat: number; lng: number; nome: string }> = [];
-      ((geoData as any).features || []).forEach((f: any) => {
-        const nome = f.properties?.nome || '';
-        const pts: number[][] = [];
-        const collect = (c: any) => {
-          if (typeof c[0] === 'number') pts.push(c);
-          else (c as any[]).forEach(collect);
-        };
-        if (f.geometry?.coordinates) collect(f.geometry.coordinates);
-        const n = pts.length;
-        if (n > 0) {
-          centroids.push({
-            lat: pts.reduce((s, c) => s + c[1], 0) / n,
-            lng: pts.reduce((s, c) => s + c[0], 0) / n,
-            nome,
-          });
-        }
-      });
+      // ── Individual pins — one per collaborator ──
+      const pinsPane = map.createPane('pinsPane');
+      pinsPane.style.zIndex = '350';
 
-      // Interpolate thermal color from intensity [0..1]
-      const getHeatColor = (t: number): [number, number, number] => {
-        const stops: Array<[number, [number, number, number]]> = [
-          [0.00, [116, 185, 255]],
-          [0.20, [  0, 206, 201]],
-          [0.40, [ 85, 239, 196]],
-          [0.58, [253, 203, 110]],
-          [0.74, [225, 112,  85]],
-          [0.88, [214,  48,  49]],
-          [1.00, [ 99,   0,   0]],
+      const pinMarkers: any[] = [];
+
+      // Deterministic jitter so same collaborator always lands at same offset
+      const jitterForId = (id: string, scale: number): [number, number] => {
+        let h = 0;
+        for (let i = 0; i < id.length; i++) h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;
+        return [
+          ((h & 0xff) / 255 - 0.5) * scale,
+          (((h >> 8) & 0xff) / 255 - 0.5) * scale,
         ];
-        for (let i = 0; i < stops.length - 1; i++) {
-          if (t <= stops[i + 1][0]) {
-            const f2 = (t - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
-            const [ar, ag, ab] = stops[i][1];
-            const [br, bg, bb] = stops[i + 1][1];
-            return [Math.round(ar + f2 * (br - ar)), Math.round(ag + f2 * (bg - ag)), Math.round(ab + f2 * (bb - ab))];
-          }
-        }
-        return stops[stops.length - 1][1];
       };
 
-      // Custom pane sits below overlayPane (z:400) so heat is under polygon borders
-      const heatPane = map.createPane('heatPane');
-      heatPane.style.zIndex = '250';
-      heatPane.style.pointerEvents = 'none';
+      const drawPins = () => {
+        pinMarkers.forEach(m => { try { m.remove(); } catch (_) {} });
+        pinMarkers.length = 0;
 
-      const heatCircles: any[] = [];
+        for (const c of colabsRef.current) {
+          let lat: number | null = null;
+          let lng: number | null = null;
 
-      const drawHeat = () => {
-        heatCircles.forEach(c => { try { c.remove(); } catch (_) {} });
-        heatCircles.length = 0;
-
-        const data = colabRef.current;
-        const hasAnyData = Object.values(data).some(v => v.length > 0);
-        if (!hasAnyData) return;
-
-        const maxCount = Math.max(...Object.values(data).map(v => v.length), 1);
-
-        for (const { lat, lng, nome } of centroids) {
-          const norm = normalizeRegiao(nome);
-          let count = 0;
-          for (const [k, v] of Object.entries(data)) {
-            if (normalizeRegiao(k) === norm) { count = v.length; break; }
+          if (c.lat && c.lng) {
+            lat = c.lat;
+            lng = c.lng;
+          } else {
+            const zona = c.regioes.find((r: any) => r.tipo === 'ZONA');
+            if (zona) {
+              const num = parseInt(zona.regiaoNome.replace('Zona ', ''), 10);
+              const coords = DF_ZONA_COORDS[num];
+              if (coords) {
+                const [jx, jy] = jitterForId(c.id, 0.028);
+                lat = coords[0] + jx;
+                lng = coords[1] + jy;
+              }
+            }
           }
-          if (count === 0) continue;
 
-          const intensity = count / maxCount;
-          // Boost para regiões com baixa densidade ficarem mais visíveis
-          const eff = Math.pow(intensity, 0.6);
-          const [r, g, b] = getHeatColor(eff);
-          const colorStr = `rgb(${r},${g},${b})`;
-          const baseAlpha = 0.35 + eff * 0.55; // 0.35..0.90
+          if (lat === null || lng === null) continue;
 
-          // Anéis concêntricos do maior/mais transparente ao menor/mais opaco
-          const rings = [
-            { radius: 90, af: 0.10 },
-            { radius: 68, af: 0.24 },
-            { radius: 48, af: 0.42 },
-            { radius: 32, af: 0.64 },
-            { radius: 16, af: 0.90 },
-          ];
-          rings.forEach(({ radius, af }) => {
-            heatCircles.push(
-              L.circleMarker([lat, lng] as [number, number], {
-                radius,
-                fillColor: colorStr,
-                fillOpacity: baseAlpha * af,
-                color: 'transparent',
-                weight: 0,
-                interactive: false,
-                pane: 'heatPane',
-              } as any).addTo(map)
-            );
-          });
+          const marker = L.circleMarker([lat, lng] as [number, number], {
+            radius: 4,
+            fillColor: '#8b5cf6',
+            fillOpacity: 0.82,
+            color: '#5b21b6',
+            weight: 1,
+            interactive: true,
+            pane: 'pinsPane',
+          } as any);
+
+          marker.bindTooltip(c.nome, { direction: 'top', offset: [0, -5], opacity: 0.95 });
+          marker.addTo(map);
+          pinMarkers.push(marker);
         }
       };
 
-      drawHeatRef.current = drawHeat;
-      drawHeat();
+      drawPinsRef.current = drawPins;
+      drawPins();
 
       // Keep in sync with container resize
       if (typeof ResizeObserver !== 'undefined' && mapRef.current) {
@@ -656,7 +618,7 @@ function ColaboradoresMapInner({
     return () => {
       cancelled = true;
       isInitRef.current = false;
-      drawHeatRef.current = null;
+      drawPinsRef.current = null;
       if (mapInstanceRef.current) {
         try { mapInstanceRef.current.remove(); } catch (_) {}
         mapInstanceRef.current = null;
@@ -678,8 +640,8 @@ function ColaboradoresMapInner({
         if (isSelected) { l.bringToFront(); selectedLayerRef.current = l; }
       });
     }
-    drawHeatRef.current?.();
-  }, [colaboradoresByRegiao, selectedRegiao, getRegionStyle]);
+    drawPinsRef.current?.();
+  }, [colaboradores, selectedRegiao, getRegionStyle]);
 
   if (loading) {
     return (
@@ -1853,6 +1815,7 @@ export default function ColaboradoresPage() {
                       <ColaboradoresMapInner
                         regioes={geoRegioes}
                         colaboradoresByRegiao={colaboradoresByRegiao}
+                        colaboradores={baseColaboradores}
                         selectedRegiao={selectedRegiao}
                         selectedColaboradorId={selectedColaboradorId}
                         onRegiaoClick={handleRegionClick}
