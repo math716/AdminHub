@@ -103,7 +103,7 @@ const DF_ZONA_NOMES: Record<number, string> = {
 };
 
 function getZoneMarkerHtml(zona: number, count: number, isSelected: boolean): string {
-  const size = count === 0 ? 36 : Math.min(36 + Math.sqrt(count) * 5, 58);
+  const size = 36;
   const bg = isSelected
     ? 'linear-gradient(135deg,#6d28d9,#a78bfa)'
     : count === 0
@@ -115,10 +115,10 @@ function getZoneMarkerHtml(zona: number, count: number, isSelected: boolean): st
     : count >= 1000 ? `${(count / 1000).toFixed(1)}k` : String(count);
   return `<div style="
     width:${size}px;height:${size}px;border-radius:50%;
-    background:${bg};border:2.5px solid ${border};
+    background:${bg};border:2px solid ${border};
     display:flex;align-items:center;justify-content:center;
-    color:#fff;font-weight:700;font-size:${size > 44 ? 14 : 11}px;font-family:system-ui,sans-serif;
-    box-shadow:0 2px 10px rgba(0,0,0,0.35);cursor:pointer;
+    color:#fff;font-weight:700;font-size:11px;font-family:system-ui,sans-serif;
+    box-shadow:0 2px 8px rgba(0,0,0,0.28);cursor:pointer;
     transform:translate(-50%,-50%);
   ">${label}</div>`;
 }
