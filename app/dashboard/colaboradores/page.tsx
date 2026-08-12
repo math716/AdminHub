@@ -1530,22 +1530,33 @@ export default function ColaboradoresPage() {
           </div>
 
           {/* Padrinho active filter indicator */}
-          {selectedPadrinhoFilter && (
-            <div
-              className="flex items-center justify-between rounded-lg px-3 py-2 text-xs"
-              style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.35)' }}
-            >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <User className="w-3 h-3 flex-shrink-0" style={{ color: '#a78bfa' }} />
-                <span className="truncate font-medium" style={{ color: '#a78bfa' }}>
-                  Padrinho: {padrinhos.find(p => p.id === selectedPadrinhoFilter)?.nome}
-                </span>
+          {selectedPadrinhoFilter && (() => {
+            const p = padrinhos.find(x => x.id === selectedPadrinhoFilter);
+            return (
+              <div
+                className="rounded-xl px-3 py-2.5"
+                style={{ background: 'linear-gradient(135deg, #4c1d95, #6d28d9)', border: '1px solid rgba(167,139,250,0.4)', boxShadow: '0 0 12px rgba(109,40,217,0.35)' }}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'rgba(221,214,254,0.7)' }}>
+                    Filtrando por padrinho
+                  </span>
+                  <button onClick={() => setSelectedPadrinhoFilter(null)} title="Remover filtro" className="flex-shrink-0 rounded-md p-0.5 transition-colors hover:bg-white/10">
+                    <X className="w-3.5 h-3.5" style={{ color: 'rgba(221,214,254,0.8)' }} />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}>
+                    {p?.nome.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold truncate" style={{ color: '#fff' }}>{p?.nome}</p>
+                    {p?.cargo && <p className="text-[10px] truncate" style={{ color: 'rgba(221,214,254,0.7)' }}>{p.cargo}{p.partido ? ` · ${p.partido}` : ''}</p>}
+                  </div>
+                </div>
               </div>
-              <button onClick={() => setSelectedPadrinhoFilter(null)} className="ml-2 flex-shrink-0" title="Remover filtro">
-                <X className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />
-              </button>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Region filter indicator */}
           {selectedRegiao && (
