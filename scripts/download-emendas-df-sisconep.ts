@@ -64,37 +64,38 @@ async function downloadAnoTentativa(ano: number, tentativa: number): Promise<boo
     await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 60_000 });
     console.log(`[${ano}] Página carregada.`);
 
-    // ── Aguarda o vscomp estar visível e estável antes de tentar clicar ──────
+    // ── Abre o vscomp e verifica que as opções ficaram visíveis ─────────────
+    // Clica até 4 vezes: se após o clique a opção do ano não aparecer em 3s,
+    // o dropdown não abriu de verdade e tentamos de novo.
     const dropdownSelectors = ['.vscomp-wrapper', 'vscomp-element', '[class*="vscomp"]'];
     let dropdownAberto = false;
 
-    for (const sel of dropdownSelectors) {
-      try {
-        // Espera o elemento estar visível (até 15s) antes de clicar
-        await page.locator(sel).first().waitFor({ state: 'visible', timeout: 15_000 });
-        await page.locator(sel).first().click({ timeout: 5_000 });
-        dropdownAberto = true;
-        console.log(`[${ano}] Dropdown aberto via "${sel}"`);
-        break;
-      } catch { /* tenta próximo */ }
+    for (let tentDrop = 1; tentDrop <= 4 && !dropdownAberto; tentDrop++) {
+      for (const sel of dropdownSelectors) {
+        try {
+          await page.locator(sel).first().waitFor({ state: 'visible', timeout: 15_000 });
+          await page.locator(sel).first().click({ timeout: 5_000 });
+          // Verifica se alguma opção de ano ficou visível (prova que abriu)
+          await page.locator(`[data-value="${ano}"]`).first()
+            .waitFor({ state: 'visible', timeout: 3_000 });
+          dropdownAberto = true;
+          console.log(`[${ano}] Dropdown aberto via "${sel}" (clique ${tentDrop})`);
+          break;
+        } catch { /* opção não apareceu — tenta próximo seletor ou reclica */ }
+      }
+      if (!dropdownAberto && tentDrop < 4) {
+        console.log(`[${ano}] Dropdown não abriu na tentativa ${tentDrop}, aguardando 1s...`);
+        await page.waitForTimeout(1_000);
+      }
     }
 
     if (!dropdownAberto) {
-      try {
-        await page.getByText(/exerc[íi]cio/i).first().waitFor({ state: 'visible', timeout: 5_000 });
-        await page.getByText(/exerc[íi]cio/i).first().click({ timeout: 5_000 });
-        dropdownAberto = true;
-        console.log(`[${ano}] Dropdown aberto via texto "Exercício"`);
-      } catch { /* continua */ }
-    }
-
-    if (!dropdownAberto) {
-      console.error(`[${ano}] ✗ Não foi possível abrir o dropdown de ano — abortando tentativa.`);
+      console.error(`[${ano}] ✗ Dropdown não abriu após 4 cliques — abortando tentativa.`);
       await page.screenshot({ path: `data/estados/debug-df-${ano}-t${tentativa}.png`, fullPage: true }).catch(() => {});
       return false;
     }
 
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(300);
 
     // ── Selecionar o ano ───────────────────────────────────────────────────
     let anoSelecionado = false;
