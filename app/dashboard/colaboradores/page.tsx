@@ -1515,7 +1515,7 @@ export default function ColaboradoresPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Left sidebar */}
         <div
-          className="md:col-span-1 rounded-xl flex flex-col gap-3 p-4 order-2 md:order-1 md:self-start"
+          className="md:col-span-1 rounded-xl flex flex-col gap-3 p-4 order-2 md:order-1"
           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.15)' }}
         >
           {/* Search */}
@@ -1623,7 +1623,7 @@ export default function ColaboradoresPage() {
           )}
 
           {/* Collaborator list */}
-          <div className="flex-1 overflow-y-auto space-y-2 max-h-[calc(100vh-420px)] min-h-[200px] scrollbar-dark">
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-2 scrollbar-dark">
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#4a9ede' }} />
