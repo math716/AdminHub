@@ -1411,14 +1411,14 @@ export default function ColaboradoresPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="p-4 lg:p-6 space-y-4">
       {/* ── Header ── */}
       <PageHeader
         icon={Users2}
         title="Colaboradores"
         subtitle="Gerencie sua equipe por regiões administrativas do DF"
         actions={
-          <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-2 lg:flex items-center gap-2 w-full lg:w-auto">
             <button
               onClick={() => setShowImportModal(true)}
               className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-150"
@@ -1476,7 +1476,7 @@ export default function ColaboradoresPage() {
       />
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <GradientCard
           title="Total"
           value={loading ? '—' : colaboradores.length}
@@ -1512,10 +1512,10 @@ export default function ColaboradoresPage() {
       </div>
 
       {/* ── Main grid ── */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Left sidebar */}
         <div
-          className="md:col-span-1 rounded-xl flex flex-col gap-3 p-4 h-[60vh] md:h-[calc(100vh-203px)]"
+          className="lg:col-span-1 rounded-xl flex flex-col gap-3 p-4 h-[60vh] lg:h-[calc(100vh-203px)]"
           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.15)' }}
         >
           {/* Search */}
@@ -1752,9 +1752,9 @@ export default function ColaboradoresPage() {
         </div>
 
         {/* Right main area */}
-        <div className="md:col-span-3 flex flex-col gap-3 order-2 md:order-2">
+        <div className="lg:col-span-3 flex flex-col gap-3 order-2">
           {/* Tab switcher row */}
-          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
             {/* Regiões Admin. | Zonas Eleitorais */}
             <div
               className="flex items-center gap-1 p-1 rounded-xl self-start"
@@ -1863,7 +1863,7 @@ export default function ColaboradoresPage() {
                   <>
                     {/* Polygon map */}
                     <div
-                      className="rounded-xl overflow-hidden h-[55vw] min-h-[320px] md:h-[calc(100vh-255px)]"
+                      className="rounded-xl overflow-hidden h-[55vw] min-h-[320px] lg:h-[calc(100vh-255px)]"
                       style={{ border: '1px solid rgba(74,158,222,0.15)' }}
                     >
                       <ColaboradoresMapInner
@@ -1884,12 +1884,12 @@ export default function ColaboradoresPage() {
                   <>
                     {/* Map + zone list — height lives on the container so children can use h-full */}
                     <div
-                      className="flex flex-col md:flex-row rounded-xl overflow-hidden md:h-[calc(100vh-255px)]"
+                      className="flex flex-col lg:flex-row rounded-xl overflow-hidden lg:h-[calc(100vh-255px)]"
                       style={{ border: '1px solid rgba(167,139,250,0.15)' }}
                     >
                       {/* Leaflet map with zone markers */}
                       <div
-                        className="flex-1 min-h-0 h-[55vw] min-h-[300px] md:h-full"
+                        className="flex-1 min-h-0 h-[55vw] min-h-[300px] lg:h-full"
                         style={{ minWidth: 0, overflow: 'hidden' }}
                       >
                         <ZonasMapInner
@@ -1901,7 +1901,7 @@ export default function ColaboradoresPage() {
 
                       {/* Zone list panel */}
                       <div
-                        className="w-full md:w-60 h-44 md:h-full flex flex-col flex-shrink-0"
+                        className="w-full lg:w-60 h-44 lg:h-full flex flex-col flex-shrink-0"
                         style={{ background: 'var(--bg-card)', borderTop: '1px solid rgba(167,139,250,0.15)', borderLeft: '1px solid rgba(167,139,250,0.15)' }}
                       >
                         {/* Panel header */}
