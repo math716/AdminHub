@@ -1515,7 +1515,7 @@ export default function ColaboradoresPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Left sidebar */}
         <div
-          className="md:col-span-1 rounded-xl flex flex-col gap-3 p-4 order-2 md:order-1 md:h-[calc(100vh-203px)]"
+          className="md:col-span-1 rounded-xl flex flex-col gap-3 p-4 md:h-[calc(100vh-203px)]"
           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.15)' }}
         >
           {/* Search */}
@@ -1752,7 +1752,7 @@ export default function ColaboradoresPage() {
         </div>
 
         {/* Right main area */}
-        <div className="md:col-span-3 flex flex-col gap-3 order-1 md:order-2">
+        <div className="md:col-span-3 flex flex-col gap-3 order-2 md:order-2">
           {/* Tab switcher row */}
           <div className="flex flex-col gap-2 md:flex-row md:items-center">
             {/* Regiões Admin. | Zonas Eleitorais */}
