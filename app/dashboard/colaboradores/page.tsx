@@ -738,7 +738,7 @@ export default function ColaboradoresPage() {
   // ── Modal de disparo ──
   const [showMsgModal, setShowMsgModal] = useState(false);
   const [msgStep, setMsgStep] = useState<1 | 2>(1);
-  const [msgFilter, setMsgFilter] = useState<'atual' | 'regiao' | 'padrinho' | 'selecionados'>('atual');
+  const [msgFilter, setMsgFilter] = useState<'regiao' | 'padrinho'>('regiao');
   const [msgFilterRegiaoTab, setMsgFilterRegiaoTab] = useState<'ra' | 'zona'>('ra');
   const [msgFilterRegioes, setMsgFilterRegioes] = useState<string[]>([]);
   const [msgFilterPadrinhoId, setMsgFilterPadrinhoId] = useState<string | null>(null);
@@ -913,15 +913,13 @@ export default function ColaboradoresPage() {
 
   const msgRecipients = useMemo(() => {
     let list: Colaborador[] = [];
-    if (msgFilter === 'atual') list = filteredColaboradores;
-    else if (msgFilter === 'selecionados') list = colaboradores.filter(c => selectedColabIds.has(c.id));
-    else if (msgFilter === 'padrinho' && msgFilterPadrinhoId) list = colaboradores.filter(c => c.padrinhoId === msgFilterPadrinhoId);
+    if (msgFilter === 'padrinho' && msgFilterPadrinhoId) list = colaboradores.filter(c => c.padrinhoId === msgFilterPadrinhoId);
     else if (msgFilter === 'regiao' && msgFilterRegioes.length > 0) {
       const normalizedSelected = msgFilterRegioes.map(r => normalizeRegiao(r));
       list = colaboradores.filter(c => c.regioes.some(r => normalizedSelected.includes(normalizeRegiao(r.regiaoNome))));
     }
     return list.filter(c => c.telefone);
-  }, [msgFilter, msgFilterRegioes, msgFilterPadrinhoId, colaboradores, filteredColaboradores, selectedColabIds]);
+  }, [msgFilter, msgFilterRegioes, msgFilterPadrinhoId, colaboradores]);
 
   // ── Handlers ──
   const openNew = () => {
@@ -1154,7 +1152,7 @@ export default function ColaboradoresPage() {
 
   const openMsgModal = () => {
     setMsgStep(1);
-    setMsgFilter('atual');
+    setMsgFilter('regiao');
     setMsgFilterRegiaoTab('ra');
     setMsgFilterRegioes([]);
     setMsgFilterPadrinhoId(null);
@@ -3363,8 +3361,6 @@ export default function ColaboradoresPage() {
                     <>
                       <div className="grid grid-cols-2 gap-2">
                         {([
-                          { id: 'atual' as const, label: 'Filtro atual', desc: `${filteredColaboradores.filter(c => c.telefone).length} contatos` },
-                          { id: 'selecionados' as const, label: 'Selecionados', desc: `${colaboradores.filter(c => selectedColabIds.has(c.id) && c.telefone).length} contatos` },
                           { id: 'regiao' as const, label: 'Por Região', desc: 'Selecionar RAs ou zonas' },
                           { id: 'padrinho' as const, label: 'Por Padrinho', desc: 'Selecionar um padrinho' },
                         ]).map(opt => (
