@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import anthropic from '@/lib/anthropic';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 
 export async function GET() {
   const results: Record<string, unknown> = {};
