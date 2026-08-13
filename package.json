@@ -36,6 +36,7 @@
     "typescript": "5.2.2"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.116.0",
     "@floating-ui/react": "0.26.0",
     "@headlessui/react": "1.7.18",
     "@hookform/resolvers": "3.9.0",

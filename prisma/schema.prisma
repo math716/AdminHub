@@ -118,6 +118,7 @@ model Gabinete {
   colaboradores        Colaborador[]
   emendasNaoRealizadas EmendaNaoRealizada[]
   padrinhos            Padrinho[]
+  agentUsages          AgentUsage[]
 
   @@map("gabinetes")
 }
@@ -156,6 +157,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   passwordResetLogs PasswordResetLog[]
+  agentUsages       AgentUsage[]
 
   @@index([email])
   @@index([gabineteId])
@@ -827,6 +829,25 @@ model EmendaNaoRealizada {
 
   @@index([gabineteId, parlamentarId, ano])
   @@map("emendas_nao_realizadas")
+}
+
+/// Registro de uso da IA (Gabi) — para monitorar custos por gabinete
+model AgentUsage {
+  id           String   @id @default(cuid())
+  userId       String
+  gabineteId   String?
+  model        String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gabinete Gabinete? @relation(fields: [gabineteId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([gabineteId])
+  @@index([createdAt])
+  @@map("agent_usage")
 }
 
 model PasswordResetLog {
