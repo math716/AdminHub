@@ -15,9 +15,9 @@ const BASE_URL = 'https://sistemas.df.gov.br/SISCONEPCIDADAO/';
 const DEST_DIR = path.join('data', 'estados');
 const ANOS = (process.env.ANOS ?? '2025,2026').split(',').map(Number).filter(Boolean);
 
-async function downloadAno(ano: number): Promise<boolean> {
+async function downloadAnoTentativa(ano: number, tentativa: number): Promise<boolean> {
   const destFile = path.join(DEST_DIR, `Emendas_DF_${ano}.json`);
-  console.log(`\n[${ano}] Abrindo SISCONEP: ${BASE_URL}`);
+  console.log(`\n[${ano}] Abrindo SISCONEP (tentativa ${tentativa}): ${BASE_URL}`);
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
@@ -64,52 +64,85 @@ async function downloadAno(ano: number): Promise<boolean> {
     await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 60_000 });
     console.log(`[${ano}] Página carregada.`);
 
-    // ── Selecionar ano no vscomp ───────────────────────────────────────────
+    // ── Aguarda o vscomp estar visível e estável antes de tentar clicar ──────
+    const dropdownSelectors = ['.vscomp-wrapper', 'vscomp-element', '[class*="vscomp"]'];
     let dropdownAberto = false;
-    for (const sel of ['vscomp-element', '.vscomp-wrapper', '[class*="vscomp"]']) {
+
+    for (const sel of dropdownSelectors) {
       try {
+        // Espera o elemento estar visível (até 15s) antes de clicar
+        await page.locator(sel).first().waitFor({ state: 'visible', timeout: 15_000 });
         await page.locator(sel).first().click({ timeout: 5_000 });
         dropdownAberto = true;
         console.log(`[${ano}] Dropdown aberto via "${sel}"`);
         break;
       } catch { /* tenta próximo */ }
     }
+
     if (!dropdownAberto) {
       try {
+        await page.getByText(/exerc[íi]cio/i).first().waitFor({ state: 'visible', timeout: 5_000 });
         await page.getByText(/exerc[íi]cio/i).first().click({ timeout: 5_000 });
         dropdownAberto = true;
         console.log(`[${ano}] Dropdown aberto via texto "Exercício"`);
       } catch { /* continua */ }
     }
 
-    if (dropdownAberto) {
-      await page.waitForTimeout(500);
-      let anoSelecionado = false;
-      for (const sel of [`[data-value="${ano}"]`, `vs-option[data-value="${ano}"]`, `.vscomp-option[data-value="${ano}"]`]) {
-        try {
-          await page.locator(sel).first().click({ timeout: 3_000 });
-          anoSelecionado = true;
-          console.log(`[${ano}] Ano ${ano} selecionado via "${sel}"`);
-          break;
-        } catch { /* tenta próximo */ }
-      }
-      if (!anoSelecionado) {
-        try {
-          await page.getByText(String(ano), { exact: true }).first().click({ timeout: 3_000 });
-          console.log(`[${ano}] Ano ${ano} selecionado via texto exato`);
-        } catch { console.warn(`[${ano}] Não foi possível selecionar o ano`); }
-      }
+    if (!dropdownAberto) {
+      console.error(`[${ano}] ✗ Não foi possível abrir o dropdown de ano — abortando tentativa.`);
+      await page.screenshot({ path: `data/estados/debug-df-${ano}-t${tentativa}.png`, fullPage: true }).catch(() => {});
+      return false;
+    }
+
+    await page.waitForTimeout(800);
+
+    // ── Selecionar o ano ───────────────────────────────────────────────────
+    let anoSelecionado = false;
+    for (const sel of [
+      `[data-value="${ano}"]`,
+      `vs-option[data-value="${ano}"]`,
+      `.vscomp-option[data-value="${ano}"]`,
+    ]) {
+      try {
+        await page.locator(sel).first().waitFor({ state: 'visible', timeout: 5_000 });
+        await page.locator(sel).first().click({ timeout: 3_000 });
+        anoSelecionado = true;
+        console.log(`[${ano}] Ano ${ano} selecionado via "${sel}"`);
+        break;
+      } catch { /* tenta próximo */ }
+    }
+    if (!anoSelecionado) {
+      try {
+        await page.getByText(String(ano), { exact: true }).first().click({ timeout: 3_000 });
+        anoSelecionado = true;
+        console.log(`[${ano}] Ano ${ano} selecionado via texto exato`);
+      } catch { /* continua */ }
+    }
+
+    if (!anoSelecionado) {
+      console.error(`[${ano}] ✗ Não foi possível selecionar o ano ${ano} — abortando tentativa.`);
+      await page.screenshot({ path: `data/estados/debug-df-${ano}-t${tentativa}.png`, fullPage: true }).catch(() => {});
+      return false;
     }
 
     await page.waitForTimeout(500);
 
     // ── Clicar em Buscar ──────────────────────────────────────────────────
+    let buscarClicado = false;
     for (const sel of ['button:has-text("Buscar")', 'input[value="Buscar"]', '[class*="buscar"]']) {
       try {
+        await page.locator(sel).first().waitFor({ state: 'visible', timeout: 5_000 });
         await page.locator(sel).first().click({ timeout: 5_000 });
+        buscarClicado = true;
         console.log(`[${ano}] Buscar clicado.`);
         break;
       } catch { /* tenta próximo */ }
+    }
+
+    if (!buscarClicado) {
+      console.error(`[${ano}] ✗ Botão Buscar não encontrado — abortando tentativa.`);
+      await page.screenshot({ path: `data/estados/debug-df-${ano}-t${tentativa}.png`, fullPage: true }).catch(() => {});
+      return false;
     }
 
     // Aguarda carregamento inicial dos dados
@@ -117,6 +150,7 @@ async function downloadAno(ano: number): Promise<boolean> {
     await page.waitForTimeout(15_000);
 
     // ── Clicar em Excel ───────────────────────────────────────────────────
+    let excelClicado = false;
     for (const sel of [
       'a:has-text("Excel")',
       'button:has-text("Excel")',
@@ -129,9 +163,16 @@ async function downloadAno(ano: number): Promise<boolean> {
         const el = page.locator(sel).first();
         await el.waitFor({ timeout: 5_000 });
         await el.click();
+        excelClicado = true;
         console.log(`[${ano}] Excel clicado via "${sel}" — aguardando geração (300s)...`);
         break;
       } catch { /* tenta próximo */ }
+    }
+
+    if (!excelClicado) {
+      console.error(`[${ano}] ✗ Botão Excel não encontrado — abortando tentativa.`);
+      await page.screenshot({ path: `data/estados/debug-df-${ano}-t${tentativa}.png`, fullPage: true }).catch(() => {});
+      return false;
     }
 
     // ── Aguarda até 300s pelo arquivo interceptado ────────────────────────
@@ -145,7 +186,7 @@ async function downloadAno(ano: number): Promise<boolean> {
     process.stdout.write('\n');
 
     if (!fileBuffer) {
-      await page.screenshot({ path: `data/estados/debug-df-${ano}.png`, fullPage: true }).catch(() => {});
+      await page.screenshot({ path: `data/estados/debug-df-${ano}-t${tentativa}.png`, fullPage: true }).catch(() => {});
       console.error(`[${ano}] ✗ Arquivo não recebido após 300s (screenshot salvo)`);
       return false;
     }
@@ -171,12 +212,26 @@ async function downloadAno(ano: number): Promise<boolean> {
     return true;
   } catch (e) {
     console.error(`[${ano}] ✗ Erro:`, e);
-    await page.screenshot({ path: `data/estados/debug-df-${ano}.png`, fullPage: true }).catch(() => {});
+    await page.screenshot({ path: `data/estados/debug-df-${ano}-t${tentativa}.png`, fullPage: true }).catch(() => {});
     return false;
   } finally {
     await context.close();
     await browser.close();
   }
+}
+
+async function downloadAno(ano: number): Promise<boolean> {
+  const MAX_TENTATIVAS = 3;
+  for (let t = 1; t <= MAX_TENTATIVAS; t++) {
+    const ok = await downloadAnoTentativa(ano, t);
+    if (ok) return true;
+    if (t < MAX_TENTATIVAS) {
+      console.log(`[${ano}] Aguardando 15s antes da tentativa ${t + 1}...`);
+      await new Promise(r => setTimeout(r, 15_000));
+    }
+  }
+  console.error(`[${ano}] ✗ Falhou após ${MAX_TENTATIVAS} tentativas.`);
+  return false;
 }
 
 async function main() {
