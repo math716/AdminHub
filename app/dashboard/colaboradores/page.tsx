@@ -1418,10 +1418,10 @@ export default function ColaboradoresPage() {
         title="Colaboradores"
         subtitle="Gerencie sua equipe por regiões administrativas do DF"
         actions={
-          <>
+          <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => setShowImportModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-150"
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-150"
               style={{
                 background: 'linear-gradient(135deg, #15803d, #16a34a)',
                 boxShadow: '0 4px 14px rgba(21,128,61,0.35)',
@@ -1434,7 +1434,7 @@ export default function ColaboradoresPage() {
             </button>
             <button
               onClick={() => setShowPadrinhosModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150"
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150"
               style={{
                 background: 'rgba(109,40,217,0.12)',
                 border: '1px solid rgba(109,40,217,0.35)',
@@ -1453,7 +1453,7 @@ export default function ColaboradoresPage() {
             </button>
             <button
               onClick={openMsgModal}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-150"
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-150"
               style={{ background: 'linear-gradient(135deg, #128c7e, #25d366)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
               onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
               onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
@@ -1463,7 +1463,7 @@ export default function ColaboradoresPage() {
             </button>
             <button
               onClick={openNew}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all duration-150"
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all duration-150"
               style={{ background: 'linear-gradient(135deg, #1d6fd8, #4a9ede)', boxShadow: '0 4px 14px rgba(74,158,222,0.35)' }}
               onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
               onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
@@ -1471,7 +1471,7 @@ export default function ColaboradoresPage() {
               <Plus className="w-4 h-4" />
               Novo Colaborador
             </button>
-          </>
+          </div>
         }
       />
 
