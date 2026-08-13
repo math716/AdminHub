@@ -224,6 +224,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   .landscape-content {
     padding-top: 3rem !important;
   }
+  .colabs-sidebar {
+    height: 88vh !important;
+  }
   .select-item {
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
