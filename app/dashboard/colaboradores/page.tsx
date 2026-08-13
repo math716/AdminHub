@@ -735,6 +735,18 @@ export default function ColaboradoresPage() {
   const [bulkSendErrors, setBulkSendErrors] = useState<Record<string, string>>({});
   const [bulkCopied, setBulkCopied] = useState(false);
 
+  // ── Modal de disparo ──
+  const [showMsgModal, setShowMsgModal] = useState(false);
+  const [msgStep, setMsgStep] = useState<1 | 2>(1);
+  const [msgFilter, setMsgFilter] = useState<'atual' | 'regiao' | 'padrinho' | 'selecionados'>('atual');
+  const [msgFilterRegiaoTab, setMsgFilterRegiaoTab] = useState<'ra' | 'zona'>('ra');
+  const [msgFilterRegioes, setMsgFilterRegioes] = useState<string[]>([]);
+  const [msgFilterPadrinhoId, setMsgFilterPadrinhoId] = useState<string | null>(null);
+  const [msgText, setMsgText] = useState('');
+  const [msgSendingApi, setMsgSendingApi] = useState(false);
+  const [msgSendStatus, setMsgSendStatus] = useState<Record<string, 'idle' | 'sending' | 'ok' | 'err'>>({});
+  const [msgSendErrors, setMsgSendErrors] = useState<Record<string, string>>({});
+
   // ── Form state ──
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
@@ -898,6 +910,17 @@ export default function ColaboradoresPage() {
     if (selectedZona === null) return [];
     return colaboradoresByZona[selectedZona] ?? [];
   }, [colaboradoresByZona, selectedZona]);
+
+  const msgRecipients = useMemo(() => {
+    let list: Colaborador[] = [];
+    if (msgFilter === 'atual') list = filteredColaboradores;
+    else if (msgFilter === 'selecionados') list = colaboradores.filter(c => selectedColabIds.has(c.id));
+    else if (msgFilter === 'padrinho' && msgFilterPadrinhoId) list = colaboradores.filter(c => c.padrinhoId === msgFilterPadrinhoId);
+    else if (msgFilter === 'regiao' && msgFilterRegioes.length > 0) {
+      list = colaboradores.filter(c => c.regioes.some(r => msgFilterRegioes.includes(r.regiaoNome)));
+    }
+    return list.filter(c => c.telefone);
+  }, [msgFilter, msgFilterRegioes, msgFilterPadrinhoId, colaboradores, filteredColaboradores, selectedColabIds]);
 
   // ── Handlers ──
   const openNew = () => {
@@ -1126,6 +1149,47 @@ export default function ColaboradoresPage() {
       if (list.indexOf(c) < list.length - 1) await new Promise(r => setTimeout(r, 500));
     }
     setBulkSendingApi(false);
+  };
+
+  const openMsgModal = () => {
+    setMsgStep(1);
+    setMsgFilter('atual');
+    setMsgFilterRegiaoTab('ra');
+    setMsgFilterRegioes([]);
+    setMsgFilterPadrinhoId(null);
+    setMsgText('');
+    setMsgSendStatus({});
+    setMsgSendErrors({});
+    setMsgSendingApi(false);
+    setShowMsgModal(true);
+  };
+
+  const handleMsgSend = async () => {
+    if (!msgText.trim() || msgSendingApi || msgRecipients.length === 0) return;
+    setMsgSendingApi(true);
+    const statusMap: Record<string, 'idle' | 'sending' | 'ok' | 'err'> = {};
+    const errMap: Record<string, string> = {};
+    msgRecipients.forEach(c => { statusMap[c.id] = 'idle'; });
+    setMsgSendStatus({ ...statusMap });
+    for (const c of msgRecipients) {
+      setMsgSendStatus(prev => ({ ...prev, [c.id]: 'sending' }));
+      try {
+        const res = await fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ numero: c.telefone, message: msgText }),
+        });
+        const data = await res.json();
+        if (res.ok) statusMap[c.id] = 'ok';
+        else { statusMap[c.id] = 'err'; errMap[c.id] = data.error ?? 'Erro desconhecido'; }
+      } catch {
+        statusMap[c.id] = 'err'; errMap[c.id] = 'Falha de rede';
+      }
+      setMsgSendStatus({ ...statusMap });
+      setMsgSendErrors({ ...errMap });
+      if (msgRecipients.indexOf(c) < msgRecipients.length - 1) await new Promise(r => setTimeout(r, 500));
+    }
+    setMsgSendingApi(false);
   };
 
   const copyBulkNumbers = async () => {
@@ -1387,6 +1451,16 @@ export default function ColaboradoresPage() {
                   {padrinhos.length}
                 </span>
               )}
+            </button>
+            <button
+              onClick={openMsgModal}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-150"
+              style={{ background: 'linear-gradient(135deg, #128c7e, #25d366)', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
+              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Disparar Mensagem
             </button>
             <button
               onClick={openNew}
@@ -1655,14 +1729,9 @@ export default function ColaboradoresPage() {
           {/* Ações em massa */}
           {selectedColabIds.size > 0 && (
             <div className="flex gap-2">
-              <button
-                onClick={() => { setShowBulkMsg(true); setBulkSendStatus({}); setBulkSendErrors({}); }}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg, #128c7e, #25d366)', color: '#fff' }}
-              >
-                <MessageSquare className="w-4 h-4" />
-                Disparar mensagem ({selectedColabIds.size})
-              </button>
+              <div className="flex-1 flex items-center px-3 py-2 rounded-xl text-xs" style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-secondary)' }}>
+                <span>{selectedColabIds.size} selecionado{selectedColabIds.size !== 1 ? 's' : ''}</span>
+              </div>
               <button
                 onClick={() => setConfirmBulkDelete(true)}
                 className="px-3 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
@@ -3234,6 +3303,271 @@ export default function ColaboradoresPage() {
               </div>
             </motion.div>
           </div>
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* ── Modal Disparar Mensagem ── */}
+      {typeof window !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showMsgModal && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 16 }}
+                transition={{ duration: 0.2 }}
+                className="w-full max-w-lg rounded-2xl flex flex-col overflow-hidden"
+                style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,211,102,0.2)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)', maxHeight: '90vh' }}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(37,211,102,0.12)' }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(37,211,102,0.12)' }}>
+                      <MessageSquare className="w-4 h-4" style={{ color: '#25d366' }} />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Disparar Mensagem</h2>
+                      <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                        {msgStep === 1 ? 'Selecione os destinatários' : `${msgRecipients.length} destinatário${msgRecipients.length !== 1 ? 's' : ''} com telefone`}
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => { if (!msgSendingApi) setShowMsgModal(false); }} className="p-1.5 rounded-lg hover:bg-[var(--tint-10)] transition-colors">
+                    <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+                  </button>
+                </div>
+
+                {/* Step indicator */}
+                <div className="flex items-center gap-2 px-6 py-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--tint-08)' }}>
+                  {([1, 2] as const).map(s => (
+                    <div key={s} className="flex items-center gap-1.5">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all" style={{
+                        background: msgStep >= s ? 'linear-gradient(135deg,#128c7e,#25d366)' : 'var(--tint-08)',
+                        color: msgStep >= s ? '#fff' : 'var(--text-tertiary)',
+                      }}>{s}</div>
+                      <span className="text-[11px] font-medium" style={{ color: msgStep >= s ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
+                        {s === 1 ? 'Destinatários' : 'Mensagem'}
+                      </span>
+                      {s < 2 && <div className="w-6 h-px mx-1" style={{ background: 'var(--tint-10)' }} />}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Body */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-dark">
+
+                  {/* Step 1: filter selection */}
+                  {msgStep === 1 && (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        {([
+                          { id: 'atual' as const, label: 'Filtro atual', desc: `${filteredColaboradores.filter(c => c.telefone).length} contatos` },
+                          { id: 'selecionados' as const, label: 'Selecionados', desc: `${colaboradores.filter(c => selectedColabIds.has(c.id) && c.telefone).length} contatos` },
+                          { id: 'regiao' as const, label: 'Por Região', desc: 'Selecionar RAs ou zonas' },
+                          { id: 'padrinho' as const, label: 'Por Padrinho', desc: 'Selecionar um padrinho' },
+                        ]).map(opt => (
+                          <button
+                            key={opt.id}
+                            onClick={() => { setMsgFilter(opt.id); setMsgFilterRegioes([]); setMsgFilterPadrinhoId(null); }}
+                            className="flex flex-col items-start gap-1 p-3 rounded-xl text-left transition-all"
+                            style={{
+                              background: msgFilter === opt.id ? 'rgba(37,211,102,0.1)' : 'var(--tint-06)',
+                              border: msgFilter === opt.id ? '1.5px solid rgba(37,211,102,0.4)' : '1px solid var(--tint-10)',
+                            }}
+                          >
+                            <span className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{opt.label}</span>
+                            <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{opt.desc}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Sub-selection: por região */}
+                      {msgFilter === 'regiao' && (
+                        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--tint-10)' }}>
+                          <div className="flex" style={{ borderBottom: '1px solid var(--tint-10)' }}>
+                            {([{ id: 'ra' as const, label: 'Regiões Admin.' }, { id: 'zona' as const, label: 'Zonas Eleitorais' }]).map(t => (
+                              <button key={t.id} onClick={() => setMsgFilterRegiaoTab(t.id)}
+                                className="flex-1 py-2 text-xs font-semibold transition-all"
+                                style={{
+                                  background: msgFilterRegiaoTab === t.id ? 'rgba(37,211,102,0.08)' : 'transparent',
+                                  color: msgFilterRegiaoTab === t.id ? '#25d366' : 'var(--text-secondary)',
+                                  borderRight: t.id === 'ra' ? '1px solid var(--tint-10)' : 'none',
+                                }}>
+                                {t.label}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="p-3 max-h-48 overflow-y-auto scrollbar-dark">
+                            {msgFilterRegiaoTab === 'ra' ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {geoRegioes.map(ra => {
+                                  const active = msgFilterRegioes.includes(ra);
+                                  return (
+                                    <button key={ra} onClick={() => setMsgFilterRegioes(prev => active ? prev.filter(r => r !== ra) : [...prev, ra])}
+                                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all"
+                                      style={{
+                                        background: active ? 'rgba(37,211,102,0.15)' : 'var(--tint-06)',
+                                        border: active ? '1px solid rgba(37,211,102,0.35)' : '1px solid var(--tint-10)',
+                                        color: active ? '#25d366' : 'var(--text-secondary)',
+                                      }}>
+                                      {ra}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-1.5">
+                                {DF_ZONAS.map(z => {
+                                  const label = `Zona ${z}`;
+                                  const active = msgFilterRegioes.includes(label);
+                                  return (
+                                    <button key={z} onClick={() => setMsgFilterRegioes(prev => active ? prev.filter(r => r !== label) : [...prev, label])}
+                                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all"
+                                      style={{
+                                        background: active ? 'rgba(109,40,217,0.15)' : 'var(--tint-06)',
+                                        border: active ? '1px solid rgba(109,40,217,0.35)' : '1px solid var(--tint-10)',
+                                        color: active ? '#a78bfa' : 'var(--text-secondary)',
+                                      }}>
+                                      Zona {z}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                          {msgFilterRegioes.length > 0 && (
+                            <div className="px-3 py-2 text-[10px] flex items-center justify-between" style={{ borderTop: '1px solid var(--tint-08)', color: 'var(--text-tertiary)' }}>
+                              <span>{msgFilterRegioes.length} região(ões) selecionada(s)</span>
+                              <button onClick={() => setMsgFilterRegioes([])} className="hover:underline" style={{ color: '#ef4444' }}>Limpar</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Sub-selection: por padrinho */}
+                      {msgFilter === 'padrinho' && (
+                        <div className="space-y-2 max-h-52 overflow-y-auto scrollbar-dark">
+                          {padrinhos.length === 0 ? (
+                            <p className="text-xs text-center py-4" style={{ color: 'var(--text-tertiary)' }}>Nenhum padrinho cadastrado</p>
+                          ) : padrinhos.map(p => (
+                            <button key={p.id} onClick={() => setMsgFilterPadrinhoId(p.id === msgFilterPadrinhoId ? null : p.id)}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
+                              style={{
+                                background: msgFilterPadrinhoId === p.id ? 'rgba(109,40,217,0.1)' : 'var(--tint-04)',
+                                border: msgFilterPadrinhoId === p.id ? '1.5px solid rgba(109,40,217,0.4)' : '1px solid var(--tint-08)',
+                              }}>
+                              <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold" style={{ background: 'rgba(109,40,217,0.15)', color: '#8b5cf6' }}>
+                                {p.nome.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{p.nome}</p>
+                                {p.cargo && <p className="text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>{p.cargo}{p.partido ? ` · ${p.partido}` : ''}</p>}
+                              </div>
+                              <span className="text-[10px] flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>
+                                {colaboradores.filter(c => c.padrinhoId === p.id && c.telefone).length} contatos
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Step 2: message */}
+                  {msgStep === 2 && (
+                    <>
+                      <textarea
+                        value={msgText}
+                        onChange={e => setMsgText(e.target.value)}
+                        rows={4}
+                        placeholder="Digite a mensagem que será enviada..."
+                        disabled={msgSendingApi}
+                        className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none disabled:opacity-50"
+                        style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
+                        autoFocus
+                      />
+
+                      <div className="space-y-1.5 max-h-52 overflow-y-auto scrollbar-dark">
+                        {msgRecipients.map(c => {
+                          const st = msgSendStatus[c.id];
+                          return (
+                            <div key={c.id} className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-06)' }}>
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(37,211,102,0.12)' }}>
+                                <Phone className="w-3 h-3" style={{ color: '#25d366' }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{c.nome}</p>
+                                <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{c.telefone}</p>
+                                {st === 'err' && msgSendErrors[c.id] && <p className="text-[10px] mt-0.5 text-red-400">{msgSendErrors[c.id]}</p>}
+                              </div>
+                              {st === 'sending' && <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" style={{ color: '#4a9ede' }} />}
+                              {st === 'ok' && <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-green-400" />}
+                              {st === 'err' && <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 text-red-400" />}
+                            </div>
+                          );
+                        })}
+                        {msgRecipients.length === 0 && (
+                          <p className="text-xs text-center py-4" style={{ color: 'var(--text-tertiary)' }}>Nenhum destinatário com telefone cadastrado</p>
+                        )}
+                      </div>
+
+                      {!msgSendingApi && Object.keys(msgSendStatus).length > 0 && (
+                        <div className="rounded-xl px-4 py-3 text-xs flex items-center gap-4" style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
+                          <span className="text-green-400 font-semibold">
+                            ✓ {Object.values(msgSendStatus).filter(s => s === 'ok').length} enviado{Object.values(msgSendStatus).filter(s => s === 'ok').length !== 1 ? 's' : ''}
+                          </span>
+                          {Object.values(msgSendStatus).filter(s => s === 'err').length > 0 && (
+                            <span className="text-red-400 font-semibold">
+                              ✗ {Object.values(msgSendStatus).filter(s => s === 'err').length} com erro
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between px-6 py-4 flex-shrink-0 gap-3" style={{ borderTop: '1px solid var(--tint-08)' }}>
+                  <button
+                    onClick={() => { if (msgStep === 2 && !msgSendingApi) { setMsgStep(1); setMsgSendStatus({}); setMsgSendErrors({}); } else setShowMsgModal(false); }}
+                    disabled={msgSendingApi}
+                    className="px-4 py-2 text-sm font-medium transition-all hover:opacity-80 rounded-xl disabled:opacity-40"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {msgStep === 1 ? 'Cancelar' : 'Voltar'}
+                  </button>
+
+                  {msgStep === 1 ? (
+                    <button
+                      onClick={() => setMsgStep(2)}
+                      disabled={
+                        (msgFilter === 'regiao' && msgFilterRegioes.length === 0) ||
+                        (msgFilter === 'padrinho' && !msgFilterPadrinhoId) ||
+                        msgRecipients.length === 0
+                      }
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-40"
+                      style={{ background: 'linear-gradient(135deg, #128c7e, #25d366)', color: '#fff' }}
+                    >
+                      Próximo · {msgRecipients.length} contato{msgRecipients.length !== 1 ? 's' : ''}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleMsgSend}
+                      disabled={!msgText.trim() || msgSendingApi || msgRecipients.length === 0}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-40"
+                      style={{ background: 'linear-gradient(135deg, #128c7e, #25d366)', color: '#fff' }}
+                    >
+                      {msgSendingApi
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Enviando…</>
+                        : <><Send className="w-4 h-4" /> Disparar</>}
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          )}
         </AnimatePresence>,
         document.body
       )}
