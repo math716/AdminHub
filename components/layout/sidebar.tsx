@@ -277,7 +277,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
           title={open ? 'Recolher menu' : 'Abrir menu'}
           animate={{ left: open ? 260 : 8 }}
           transition={{ type: 'spring', damping: 26, stiffness: 240 }}
-          className="fixed top-1/2 -translate-y-1/2 w-6 h-12 flex items-center justify-center z-50 transition-colors"
+          className="hidden lg:flex fixed top-1/2 -translate-y-1/2 w-6 h-12 items-center justify-center z-50 transition-colors"
           style={{
             background: '#0F2240',
             border: '1px solid rgba(148,163,184,0.18)',
