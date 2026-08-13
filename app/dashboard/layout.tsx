@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
+import { GabiFAB } from '@/components/gabi/gabi-fab';
 
 export default function DashboardLayout({
   children,
@@ -82,6 +83,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}>
       <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)} />
+      <GabiFAB />
       <main className={`transition-[padding] duration-300 ease-out ${sidebarOpen ? 'lg:pl-[260px]' : 'lg:pl-6'}`}>
         <div className="px-2 py-4 md:p-4 lg:p-8 landscape-content max-w-[1920px] mx-auto">
           {children}
