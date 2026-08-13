@@ -53,6 +53,13 @@ async function fetchMunicipiosUF(uf: string, tentativas = 4): Promise<Municipios
   throw lastErr;
 }
 
+// Mapa de aliases: normalizado(nome-no-banco) → normalizado(nome-no-ibge)
+// Acrescente aqui sempre que aparecer um novo "sem match"
+const ALIASES: Record<string, string> = {
+  'SAO LUIS DO PARAITINGA': 'SAO LUIZ DO PARAITINGA', // banco: "Luis" (s), IBGE: "Luiz" (z)
+  'LUIZ ANTONIO':           'LUIS ANTONIO',            // banco: "Luiz" (z), IBGE: "Luís" (s)
+};
+
 async function main() {
   const prisma = new PrismaClient({ datasources: { db: { url: buildPrismaUrl() } } });
 
@@ -97,7 +104,7 @@ async function main() {
       let ufSemMatch = 0;
 
       for (const nome of nomesUnicos) {
-        const norm   = normalizeNome(nome);
+        const norm   = ALIASES[normalizeNome(nome)] ?? normalizeNome(nome);
         // Tenta match exato; fallback sem espaços (resolve "Doeste" vs "D Oeste")
         const codigo = municipiosMap.get(norm) ?? mapSemEspaco.get(norm.replace(/\s/g, ''));
         if (!codigo) {

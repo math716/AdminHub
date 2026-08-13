@@ -118,14 +118,14 @@ export async function GET(request: NextRequest) {
 
   if (ano && (candidatoId || nome)) {
     const candidatos = loadCandidatos(ano, uf);
+    let cand: CandidatoJson | undefined;
+
     if (candidatos) {
-      let cand: CandidatoJson | undefined;
       if (candidatoId) {
         cand = candidatos.find(c => c.id === candidatoId);
       } else if (nome) {
         const q = normalizar(nome);
         cand = candidatos.find(c => normalizar(c.nomeUrna).includes(q) || normalizar(c.nome).includes(q));
-        // Fallback: busca por palavras individuais (ex: "JAIR BOLSONARO" → busca "jair" E "bolsonaro")
         if (!cand) {
           const palavras = q.split(' ').filter(p => p.length > 2);
           if (palavras.length > 0) {
@@ -137,13 +137,20 @@ export async function GET(request: NextRequest) {
           }
         }
       }
+    }
 
-      if (cand) {
-        // Somar votos por zona apenas para este município
-        for (const z of cand.zonas) {
-          if (normalizar(z.municipio) === munNorm) {
-            votosPorZona.set(z.zona, (votosPorZona.get(z.zona) ?? 0) + z.votos);
-          }
+    // Fallback: candidatos nacionais (presidente/senado) estão em BR.json mas não em UF.json
+    if (!cand && candidatoId) {
+      const brCandidatos = loadCandidatos(ano, 'BR');
+      if (brCandidatos) {
+        cand = brCandidatos.find(c => c.id === candidatoId);
+      }
+    }
+
+    if (cand) {
+      for (const z of cand.zonas) {
+        if (normalizar(z.municipio) === munNorm) {
+          votosPorZona.set(z.zona, (votosPorZona.get(z.zona) ?? 0) + z.votos);
         }
       }
     }
