@@ -917,7 +917,8 @@ export default function ColaboradoresPage() {
     else if (msgFilter === 'selecionados') list = colaboradores.filter(c => selectedColabIds.has(c.id));
     else if (msgFilter === 'padrinho' && msgFilterPadrinhoId) list = colaboradores.filter(c => c.padrinhoId === msgFilterPadrinhoId);
     else if (msgFilter === 'regiao' && msgFilterRegioes.length > 0) {
-      list = colaboradores.filter(c => c.regioes.some(r => msgFilterRegioes.includes(r.regiaoNome)));
+      const normalizedSelected = msgFilterRegioes.map(r => normalizeRegiao(r));
+      list = colaboradores.filter(c => c.regioes.some(r => normalizedSelected.includes(normalizeRegiao(r.regiaoNome))));
     }
     return list.filter(c => c.telefone);
   }, [msgFilter, msgFilterRegioes, msgFilterPadrinhoId, colaboradores, filteredColaboradores, selectedColabIds]);
