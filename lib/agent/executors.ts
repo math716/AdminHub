@@ -89,7 +89,6 @@ export async function executarBuscarVotacao(
     candidato_nome: string;
     ano?: number;
     uf?: string;
-    municipio?: string;
     cargo?: string;
   },
   _session: UserSession,
@@ -97,45 +96,10 @@ export async function executarBuscarVotacao(
   const anoStr  = args.ano ? String(args.ano) : '2022';
   const ufQuery = args.uf?.toUpperCase();
 
-  // --- 1. Tentar DB (candidatos legislativos importados) ---
-  const candidatos = await prisma.candidato.findMany({
-    where: {
-      nome: { contains: args.candidato_nome, mode: 'insensitive' },
-      ...(args.ano && { ano: Number(args.ano) }),
-      ...(ufQuery && ufQuery !== 'BR' && { uf: ufQuery }),
-      ...(args.cargo && { cargo: { contains: args.cargo, mode: 'insensitive' } }),
-    },
-    include: {
-      votos: args.municipio
-        ? { where: { municipio: { contains: args.municipio, mode: 'insensitive' } } }
-        : { orderBy: { votos: 'desc' }, take: 20 },
-    },
-    orderBy: { totalVotos: 'desc' },
-    take: 5,
-  });
-
-  if (candidatos.length > 0) {
-    return {
-      encontrado: true,
-      candidatos: candidatos.map(c => ({
-        nome: c.nome,
-        nomeUrna: c.nomeUrna,
-        partido: c.partido,
-        cargo: c.cargo,
-        ano: c.ano,
-        uf: c.uf,
-        situacao: c.situacao,
-        totalVotos: c.totalVotos,
-        votosPorMunicipio: c.votos.map(v => ({ municipio: v.municipio, votos: v.votos })),
-      })),
-    };
-  }
-
-  // --- 2. Fallback: arquivos JSON.gz do TSE ---
   const cargoNorm      = args.cargo ? normalizarTextoTse(args.cargo) : '';
   const isPresidencial = cargoNorm.includes('president') || ufQuery === 'BR';
 
-  // Para presidentes sempre busca BR; para outros tenta o estado, depois BR
+  // Para presidentes busca BR; para outros tenta o estado, depois BR
   const ufsParaBuscar = isPresidencial
     ? ['BR']
     : ufQuery
@@ -154,7 +118,6 @@ export async function executarBuscarVotacao(
 
     return {
       encontrado: true,
-      fonte: 'arquivo_tse',
       candidatos: resultados.map(c => ({
         nome: c.nome,
         nomeUrna: c.nomeUrna,
