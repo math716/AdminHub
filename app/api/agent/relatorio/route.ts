@@ -174,6 +174,16 @@ function parseBrNum(s: string): number | null {
   return isNaN(n) ? null : n;
 }
 
+function stripEmoji(s: string): string {
+  return s
+    .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
+    .replace(/[\u{1F000}-\u{1F02F}]/gu, '')
+    .replace(/[\u{2600}-\u{27FF}]/gu, '')
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, '')
+    .replace(/�/g, '')
+    .trim();
+}
+
 // ─── SVG Donut chart ──────────────────────────────────────────────────────────
 
 function donutSegment(
@@ -281,10 +291,22 @@ function parseBlocks(text: string): Block[] {
   return text.split('\n').map(line => {
     const t = line.trim();
     if (!t) return null;
-    if (/^#{1,3}\s/.test(t)) return { type: 'h', text: t.replace(/^#+\s*/, '').replace(/\*\*/g, '') };
-    if (/^[-*•]\s/.test(t)) return { type: 'li', text: t.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '') };
-    if (/^\d+[.)]\s/.test(t)) return { type: 'li', text: t.replace(/^\d+[.)]\s*/, '').replace(/\*\*/g, '') };
-    return { type: 'p', text: t.replace(/\*\*/g, '') };
+    if (t.startsWith('|')) return null;                   // linhas de tabela markdown
+    if (/^[-=*_]{3,}$/.test(t)) return null;              // separadores --- / *** / ===
+    if (/^#{1,3}\s/.test(t)) {
+      const cleaned = stripEmoji(t.replace(/^#+\s*/, '').replace(/\*\*/g, '')).trim();
+      return cleaned ? { type: 'h', text: cleaned } : null;
+    }
+    if (/^[-*•]\s/.test(t)) {
+      const cleaned = stripEmoji(t.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '')).trim();
+      return cleaned ? { type: 'li', text: cleaned } : null;
+    }
+    if (/^\d+[.)]\s/.test(t)) {
+      const cleaned = stripEmoji(t.replace(/^\d+[.)]\s*/, '').replace(/\*\*/g, '')).trim();
+      return cleaned ? { type: 'li', text: cleaned } : null;
+    }
+    const cleaned = stripEmoji(t.replace(/\*\*/g, '')).trim();
+    return cleaned ? { type: 'p', text: cleaned } : null;
   }).filter(Boolean) as Block[];
 }
 
@@ -319,7 +341,10 @@ function HeaderBand({ titulo, tipo, geradoEm }: { titulo: string; tipo: string; 
     React.createElement(View, { style: S.badge }, React.createElement(Text, { style: S.badgeText }, 'G')),
     React.createElement(View, { style: S.headerMeta },
       React.createElement(Text, { style: S.headerSup }, 'Relatório preparado pela Gabi · AdminHub'),
-      React.createElement(Text, { style: S.headerTitle }, titulo.length > 80 ? titulo.slice(0, 78) + '…' : titulo),
+      React.createElement(Text, { style: S.headerTitle }, (() => {
+        const t = stripEmoji(titulo);
+        return t.length > 80 ? t.slice(0, 78) + '…' : t;
+      })()),
     ),
     React.createElement(View, { style: S.headerPills },
       React.createElement(View, { style: S.pill },
@@ -364,9 +389,11 @@ function layoutEleitoral(vis: Vis[], conteudo: string): React.ReactNode {
       ...donutItems.map((item, i) => {
         const pct = totalVotos ? ((item.valor / totalVotos) * 100).toFixed(1) : '0';
         const color = item.color || PALETTE[i % PALETTE.length];
+        const name = stripEmoji(item.label);
+        const nameShort = name.length > 20 ? name.slice(0, 18) + '…' : name;
         return React.createElement(View, { key: i, style: S.legendRow },
           React.createElement(View, { style: [S.legendDot, { backgroundColor: color }] }),
-          React.createElement(Text, { style: S.legendLabel }, item.label.length > 28 ? item.label.slice(0, 26) + '…' : item.label),
+          React.createElement(Text, { style: S.legendLabel }, nameShort),
           React.createElement(Text, { style: S.legendPct }, `${pct}%`),
           React.createElement(Text, { style: S.legendVal }, fmtNum(item.valor)),
         );
@@ -461,9 +488,11 @@ function layoutEmendas(vis: Vis[], conteudo: string): React.ReactNode {
       ...donutItems.map((item, i) => {
         const pct = total ? ((item.valor / total) * 100).toFixed(1) : '0';
         const color = PALETTE[i % PALETTE.length];
+        const name = stripEmoji(item.label);
+        const nameShort = name.length > 20 ? name.slice(0, 18) + '…' : name;
         return React.createElement(View, { key: i, style: S.legendRow },
           React.createElement(View, { style: [S.legendDot, { backgroundColor: color }] }),
-          React.createElement(Text, { style: [S.legendLabel, { fontSize: 8 }] }, item.label),
+          React.createElement(Text, { style: [S.legendLabel, { fontSize: 8 }] }, nameShort),
           React.createElement(Text, { style: S.legendPct }, `${pct}%`),
           React.createElement(Text, { style: S.legendVal }, fmtNum(item.valor, true)),
         );
