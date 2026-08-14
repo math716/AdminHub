@@ -231,7 +231,7 @@ export function VisualizacoesCard({
 
   const isMoney = !!(tools?.includes('buscar_emendas') || tools?.includes('comparar_parlamentares'));
 
-  const titulo = donut?.titulo ?? barras?.titulo ?? serie?.titulo ?? visualizacoes[0]?.titulo;
+  const tituloCard = titulo ?? donut?.titulo ?? barras?.titulo ?? serie?.titulo ?? visualizacoes[0]?.titulo;
   const totalVal = donut?.dados?.itens?.reduce((s: number, it: any) => s + (it.valor ?? 0), 0) ?? 0;
   const pillLabel = isMoney ? fmtMoney(totalVal) : fmtCount(totalVal);
 
@@ -249,7 +249,7 @@ export function VisualizacoesCard({
         style={{ borderBottom: '1px solid rgba(74,158,222,0.12)', background: 'rgba(74,158,222,0.06)' }}
       >
         <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: '#64748b' }}>
-          {titulo || 'Dados'}
+          {tituloCard || 'Dados'}
         </p>
         {totalVal > 0 && (
           <span
