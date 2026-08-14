@@ -120,6 +120,7 @@ model Gabinete {
   emendasNaoRealizadas EmendaNaoRealizada[]
   padrinhos            Padrinho[]
   agentUsages          AgentUsage[]
+  gabiConversas        GabiConversa[]
 
   @@map("gabinetes")
 }
@@ -865,4 +866,16 @@ model PasswordResetLog {
   @@index([userId])
   @@index([createdAt])
   @@map("password_reset_logs")
+}
+
+model GabiConversa {
+  id         String   @id @default(cuid())
+  gabineteId String
+  gabinete   Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+  titulo     String?
+  mensagens  Json     @default("[]")
+  criadaEm   DateTime @default(now())
+
+  @@index([gabineteId, criadaEm(sort: Desc)])
+  @@map("gabi_conversas")
 }
