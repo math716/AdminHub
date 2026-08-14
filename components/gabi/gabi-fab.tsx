@@ -13,6 +13,7 @@ const Cell          = dynamic(() => import('recharts').then(m => m.Cell),       
 const XAxis         = dynamic(() => import('recharts').then(m => m.XAxis),         { ssr: false });
 const YAxis         = dynamic(() => import('recharts').then(m => m.YAxis),         { ssr: false });
 const Tooltip       = dynamic(() => import('recharts').then(m => m.Tooltip),       { ssr: false });
+const Legend        = dynamic(() => import('recharts').then(m => m.Legend),        { ssr: false });
 const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false });
 const LineChart     = dynamic(() => import('recharts').then(m => m.LineChart),     { ssr: false });
 const Line          = dynamic(() => import('recharts').then(m => m.Line),          { ssr: false });
@@ -199,6 +200,19 @@ const COLORS = ['#4a9ede', '#22d3ee', '#a78bfa', '#34d399', '#f87171', '#fbbf24'
 
 function VisualizacaoCard({ vis }: { vis: Visualizacao }) {
   const { tipo, titulo, dados } = vis;
+
+  // Auto-detecta chaves numéricas para barras (suporte a multi-série)
+  const barKeys: string[] = (() => {
+    if (!dados?.itens?.length) return ['valor'];
+    const keys = Object.keys(dados.itens[0]).filter(
+      (k) => k !== 'label' && k !== 'cor' && typeof dados.itens[0][k] === 'number',
+    );
+    return keys.length > 0 ? keys : ['valor'];
+  })();
+  const isMulti = barKeys.length > 1;
+
+  const tooltipStyle = { background: '#0d1b2a', border: '1px solid #1b4965', borderRadius: 8, fontSize: 12 };
+
   return (
     <div className="mt-3 rounded-xl overflow-hidden" style={{ background: 'rgba(74,158,222,0.06)', border: '1px solid rgba(74,158,222,0.15)' }}>
       {titulo && (
@@ -206,53 +220,89 @@ function VisualizacaoCard({ vis }: { vis: Visualizacao }) {
           <p className="text-xs font-semibold" style={{ color: '#4a9ede' }}>{titulo}</p>
         </div>
       )}
-      {tipo === 'barras' && dados?.itens && (
-        <div className="px-3 pb-3" style={{ height: 200 }}>
+
+      {/* ── Barras (simples ou multi-série) ── */}
+      {tipo === 'barras' && dados?.itens?.length > 0 && (
+        <div className="px-3 pb-3" style={{ height: isMulti ? 230 : 200 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dados.itens} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94a3b8' }} interval={0} />
-              <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
-              <Tooltip contentStyle={{ background: '#0d1b2a', border: '1px solid #1b4965', borderRadius: 8, fontSize: 12 }} cursor={{ fill: 'rgba(74,158,222,0.1)' }} />
-              <Bar dataKey="valor" radius={[4, 4, 0, 0]}>
-                {dados.itens.map((_: any, i: number) => <Cell key={i} fill={dados.itens[i]?.cor || COLORS[i % COLORS.length]} />)}
-              </Bar>
+            <BarChart data={dados.itens} margin={{ top: 8, right: 8, left: -16, bottom: isMulti ? 16 : 0 }}>
+              <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#94a3b8' }} interval={0} />
+              <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} width={48} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(74,158,222,0.08)' }} />
+              {isMulti && <Legend wrapperStyle={{ fontSize: 10, color: '#94a3b8', paddingTop: 4 }} />}
+              {barKeys.map((key, ki) => (
+                <Bar key={key} dataKey={key} name={key} fill={COLORS[ki % COLORS.length]} radius={[4, 4, 0, 0]}>
+                  {!isMulti && dados.itens.map((_: any, i: number) => (
+                    <Cell key={i} fill={dados.itens[i]?.cor || COLORS[i % COLORS.length]} />
+                  ))}
+                </Bar>
+              ))}
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
-      {tipo === 'donut' && dados?.itens && (
-        <div className="px-3 pb-3 flex items-center gap-3" style={{ height: 180 }}>
-          <ResponsiveContainer width="50%" height="100%">
-            <PieChart>
-              <Pie data={dados.itens} dataKey="valor" nameKey="label" cx="50%" cy="50%" innerRadius="52%" outerRadius="78%">
-                {dados.itens.map((_: any, i: number) => <Cell key={i} fill={dados.itens[i]?.cor || COLORS[i % COLORS.length]} />)}
-              </Pie>
-              <Tooltip contentStyle={{ background: '#0d1b2a', border: '1px solid #1b4965', borderRadius: 8, fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex-1 space-y-1.5 overflow-hidden">
-            {dados.itens.slice(0, 7).map((item: any, i: number) => (
-              <div key={i} className="flex items-center gap-2 text-xs" style={{ color: '#94a3b8' }}>
-                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.cor || COLORS[i % COLORS.length] }} />
-                <span className="truncate">{item.label}</span>
-                <span className="ml-auto flex-shrink-0 font-medium">{item.valor?.toLocaleString('pt-BR')}</span>
-              </div>
-            ))}
+
+      {/* ── Donut / Pizza ── */}
+      {tipo === 'donut' && dados?.itens?.length > 0 && (() => {
+        const total = dados.itens.reduce((s: number, it: any) => s + (it.valor ?? 0), 0);
+        return (
+          <div className="px-3 pb-3 flex items-center gap-4" style={{ height: 200 }}>
+            <ResponsiveContainer width="45%" height="100%">
+              <PieChart>
+                <Pie
+                  data={dados.itens}
+                  dataKey="valor"
+                  nameKey="label"
+                  cx="50%" cy="50%"
+                  innerRadius="48%" outerRadius="80%"
+                  paddingAngle={2}
+                >
+                  {dados.itens.map((_: any, i: number) => (
+                    <Cell key={i} fill={dados.itens[i]?.cor || COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  formatter={(val: any) => [val?.toLocaleString('pt-BR'), '']}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex-1 space-y-2 overflow-hidden">
+              {dados.itens.map((item: any, i: number) => {
+                const pct = total > 0 ? ((item.valor / total) * 100).toFixed(1) : '0';
+                return (
+                  <div key={i}>
+                    <div className="flex items-center gap-2 text-xs mb-0.5">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.cor || COLORS[i % COLORS.length] }} />
+                      <span className="truncate font-medium" style={{ color: '#e2e8f0' }}>{item.label}</span>
+                      <span className="ml-auto flex-shrink-0 font-bold" style={{ color: item.cor || COLORS[i % COLORS.length] }}>{pct}%</span>
+                    </div>
+                    <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: item.cor || COLORS[i % COLORS.length] }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
+      {/* ── Série temporal ── */}
       {tipo === 'serie_temporal' && dados?.pontos && (
         <div className="px-3 pb-3" style={{ height: 180 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={dados.pontos} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-              <XAxis dataKey="data" tick={{ fontSize: 10, fill: '#94a3b8' }} />
-              <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
-              <Tooltip contentStyle={{ background: '#0d1b2a', border: '1px solid #1b4965', borderRadius: 8, fontSize: 12 }} />
+              <XAxis dataKey="data" tick={{ fontSize: 9, fill: '#94a3b8' }} />
+              <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} />
+              <Tooltip contentStyle={tooltipStyle} />
               <Line type="monotone" dataKey="valor" stroke="#4a9ede" strokeWidth={2} dot={{ r: 3, fill: '#4a9ede' }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
       )}
+
+      {/* ── Cards KPI ── */}
       {tipo === 'cards_kpi' && dados?.cards && (
         <div className="px-4 pb-4 grid grid-cols-2 gap-3">
           {dados.cards.slice(0, 6).map((card: any, i: number) => (
@@ -270,6 +320,8 @@ function VisualizacaoCard({ vis }: { vis: Visualizacao }) {
           ))}
         </div>
       )}
+
+      {/* ── Tabela ── */}
       {tipo === 'tabela' && dados?.colunas && dados?.linhas && (
         <div className="overflow-x-auto px-3 pb-3">
           <table className="w-full text-xs">
