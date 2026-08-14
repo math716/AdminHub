@@ -41,6 +41,13 @@ export async function PATCH(
     const body = await request.json();
     const { nome, telefone, email, endereco, lat, lng, funcao, padrinhoId, observacao, status, cor, regioes, zonas } = body ?? {};
 
+    // Se padrinho mudou e não veio uma cor explícita, herda a cor do novo padrinho
+    let corFinal = cor;
+    if (padrinhoId !== undefined && padrinhoId && cor === undefined) {
+      const padrinho = await prisma.padrinho.findUnique({ where: { id: padrinhoId }, select: { cor: true } });
+      if (padrinho?.cor) corFinal = padrinho.cor;
+    }
+
     const hasRegioesUpdate = Array.isArray(regioes) || Array.isArray(zonas);
     const raNames: string[] = Array.isArray(regioes) ? regioes : [];
     const zonaStrings: string[] = Array.isArray(zonas) ? zonas : [];
@@ -74,7 +81,7 @@ export async function PATCH(
           ...(funcao !== undefined && { funcao: funcao?.trim() || null }),
           ...(observacao !== undefined && { observacao: observacao?.trim() || null }),
           ...(status !== undefined && { status: status === 'INATIVO' ? 'INATIVO' : 'ATIVO' }),
-          ...(cor !== undefined && { cor: cor || '#8b5cf6' }),
+          ...(corFinal !== undefined && { cor: corFinal || '#8b5cf6' }),
           ...(padrinhoId !== undefined && { padrinhoId: padrinhoId || null }),
           ...(hasRegioesUpdate && allRegioes.length > 0 && {
             regioes: { create: allRegioes },

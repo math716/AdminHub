@@ -57,6 +57,13 @@ export async function POST(request: NextRequest) {
 
     if (!nome?.trim()) return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
 
+    // Se um padrinho for atribuído, usa a cor dele (a menos que uma cor explícita tenha sido enviada)
+    let corFinal = cor || '#8b5cf6';
+    if (padrinhoId && !cor) {
+      const padrinho = await prisma.padrinho.findUnique({ where: { id: padrinhoId }, select: { cor: true } });
+      if (padrinho?.cor) corFinal = padrinho.cor;
+    }
+
     const raNames: string[] = Array.isArray(regioes) ? regioes : [];
     const zonaStrings: string[] = Array.isArray(zonas) ? zonas : [];
     const raItems = raNames.map((r: string) => ({ uf: 'DF', regiaoNome: r, tipo: 'RA' }));
@@ -83,7 +90,7 @@ export async function POST(request: NextRequest) {
         funcao: funcao?.trim() || null,
         observacao: observacao?.trim() || null,
         status: status === 'INATIVO' ? 'INATIVO' : 'ATIVO',
-        cor: cor || '#8b5cf6',
+        cor: corFinal,
         padrinhoId: padrinhoId || null,
         gabineteId,
         createdById: userId,

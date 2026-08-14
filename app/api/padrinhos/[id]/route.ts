@@ -73,6 +73,14 @@ export async function PATCH(
       select: { id: true, nome: true, cargo: true, partido: true, cor: true, _count: { select: { colaboradores: true } } },
     });
 
+    // Propaga nova cor para todos os apadrinhados
+    if (cor !== undefined) {
+      await prisma.colaborador.updateMany({
+        where: { padrinhoId: params.id },
+        data: { cor: cor || '#8b5cf6' },
+      });
+    }
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error('PATCH /api/padrinhos/[id] error:', error);
