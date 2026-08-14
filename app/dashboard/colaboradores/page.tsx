@@ -137,6 +137,7 @@ const EMPTY_FORM = {
   padrinhoId: '',
   observacao: '',
   status: 'ATIVO' as 'ATIVO' | 'INATIVO',
+  cor: '#8b5cf6',
   regioes: [] as string[], // RA names
   zonas: [] as string[],   // zone numbers as strings e.g. ['1', '3']
 };
@@ -587,11 +588,12 @@ function ColaboradoresMapInner({
 
           if (lat === null || lng === null) continue;
 
+          const markerCor = (c as any).cor || '#8b5cf6';
           const marker = L.circleMarker([lat, lng] as [number, number], {
             radius: 4,
-            fillColor: '#8b5cf6',
-            fillOpacity: 0.82,
-            color: '#5b21b6',
+            fillColor: markerCor,
+            fillOpacity: 0.88,
+            color: '#00000066',
             weight: 1,
             interactive: true,
             pane: 'pinsPane',
@@ -941,6 +943,7 @@ export default function ColaboradoresPage() {
       padrinhoId: c.padrinhoId ?? '',
       observacao: c.observacao ?? '',
       status: c.status,
+      cor: (c as any).cor ?? '#8b5cf6',
       regioes: c.regioes.filter(r => r.tipo === 'RA').map(r => r.regiaoNome),
       zonas: c.regioes.filter(r => r.tipo === 'ZONA').map(r => r.regiaoNome.replace('Zona ', '')),
     });
@@ -961,6 +964,7 @@ export default function ColaboradoresPage() {
         padrinhoId: form.padrinhoId || undefined,
         observacao: form.observacao || undefined,
         status: form.status,
+        cor: form.cor || '#8b5cf6',
         regioes: form.regioes,
         zonas: form.zonas,
       };
@@ -2125,6 +2129,44 @@ export default function ColaboradoresPage() {
                       className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
                       style={{ background: 'var(--tint-06)', border: '1px solid rgba(148,163,184,0.2)', color: 'var(--text-primary)' }}
                     />
+                  </div>
+
+                  {/* Cor do marcador */}
+                  <div>
+                    <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-primary)', opacity: 0.75 }}>
+                      Cor no mapa
+                    </label>
+                    <div className="flex items-center gap-3">
+                      {/* Swatches de cores predefinidas */}
+                      <div className="flex gap-1.5 flex-wrap">
+                        {['#8b5cf6','#3b82f6','#22c55e','#ef4444','#f97316','#ec4899','#eab308','#14b8a6','#6366f1','#64748b'].map(cor => (
+                          <button
+                            key={cor}
+                            type="button"
+                            onClick={() => setForm(f => ({ ...f, cor }))}
+                            title={cor}
+                            className="rounded-full transition-transform hover:scale-110"
+                            style={{
+                              width: 20, height: 20,
+                              background: cor,
+                              border: form.cor === cor ? '2.5px solid #fff' : '2px solid transparent',
+                              boxShadow: form.cor === cor ? `0 0 0 2px ${cor}` : 'none',
+                            }}
+                          />
+                        ))}
+                      </div>
+                      {/* Input color nativo para cor personalizada */}
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="color"
+                          value={form.cor}
+                          onChange={e => setForm(f => ({ ...f, cor: e.target.value }))}
+                          className="rounded cursor-pointer"
+                          style={{ width: 28, height: 28, padding: 2, background: 'var(--tint-06)', border: '1px solid rgba(148,163,184,0.2)' }}
+                        />
+                        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>personalizar</span>
+                      </label>
+                    </div>
                   </div>
 
                   {/* Função + Status */}

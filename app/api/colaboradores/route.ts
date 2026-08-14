@@ -9,7 +9,7 @@ import { derivarZonasDeRas } from '@/lib/colaboradores-zonas';
 const SELECT = {
   id: true, nome: true, telefone: true, email: true,
   endereco: true, lat: true, lng: true, funcao: true,
-  observacao: true, status: true, padrinhoId: true,
+  observacao: true, status: true, cor: true, padrinhoId: true,
   padrinho: { select: { id: true, nome: true, cargo: true, partido: true } },
   regioes: { select: { id: true, regiaoNome: true, uf: true, tipo: true } },
   createdAt: true,
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     if (!gabineteId || !userId) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 400 });
 
     const body = await request.json();
-    const { nome, telefone, email, endereco, lat, lng, funcao, padrinhoId, observacao, status, regioes, zonas } = body ?? {};
+    const { nome, telefone, email, endereco, lat, lng, funcao, padrinhoId, observacao, status, cor, regioes, zonas } = body ?? {};
 
     if (!nome?.trim()) return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
 
@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
         funcao: funcao?.trim() || null,
         observacao: observacao?.trim() || null,
         status: status === 'INATIVO' ? 'INATIVO' : 'ATIVO',
+        cor: cor || '#8b5cf6',
         padrinhoId: padrinhoId || null,
         gabineteId,
         createdById: userId,

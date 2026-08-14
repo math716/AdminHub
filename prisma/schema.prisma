@@ -470,6 +470,7 @@ model Colaborador {
   funcao       String?
   observacao   String?
   status       ColaboradorStatus @default(ATIVO)
+  cor          String?           @default("#8b5cf6")
 
   // Padrinho político (entidade separada com Nome, Cargo e Partido)
   padrinhoId   String?

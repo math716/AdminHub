@@ -9,7 +9,7 @@ import { derivarZonasDeRas } from '@/lib/colaboradores-zonas';
 const SELECT = {
   id: true, nome: true, telefone: true, email: true,
   endereco: true, lat: true, lng: true, funcao: true,
-  observacao: true, status: true, padrinhoId: true,
+  observacao: true, status: true, cor: true, padrinhoId: true,
   padrinho: { select: { id: true, nome: true, cargo: true, partido: true } },
   regioes: { select: { id: true, regiaoNome: true, uf: true, tipo: true } },
   createdAt: true,
@@ -39,7 +39,7 @@ export async function PATCH(
     if (!existing) return NextResponse.json({ error: 'Colaborador não encontrado' }, { status: 404 });
 
     const body = await request.json();
-    const { nome, telefone, email, endereco, lat, lng, funcao, padrinhoId, observacao, status, regioes, zonas } = body ?? {};
+    const { nome, telefone, email, endereco, lat, lng, funcao, padrinhoId, observacao, status, cor, regioes, zonas } = body ?? {};
 
     const hasRegioesUpdate = Array.isArray(regioes) || Array.isArray(zonas);
     const raNames: string[] = Array.isArray(regioes) ? regioes : [];
@@ -69,6 +69,7 @@ export async function PATCH(
           ...(funcao !== undefined && { funcao: funcao?.trim() || null }),
           ...(observacao !== undefined && { observacao: observacao?.trim() || null }),
           ...(status !== undefined && { status: status === 'INATIVO' ? 'INATIVO' : 'ATIVO' }),
+          ...(cor !== undefined && { cor: cor || '#8b5cf6' }),
           ...(padrinhoId !== undefined && { padrinhoId: padrinhoId || null }),
           ...(hasRegioesUpdate && allRegioes.length > 0 && {
             regioes: { create: allRegioes },
