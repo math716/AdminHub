@@ -61,6 +61,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Última mensagem deve ser do usuário' }, { status: 400 });
     }
 
+    // ── Verifica limite mensal de tokens do gabinete ─────────────────────────
+    const gabineteId = (session.user as any)?.gabineteId as string | null;
+    if (gabineteId) {
+      const gabinete = await prisma.gabinete.findUnique({
+        where: { id: gabineteId },
+        select: { limiteTokensMes: true },
+      });
+      if (gabinete?.limiteTokensMes) {
+        const agora  = new Date();
+        const inicio = new Date(agora.getFullYear(), agora.getMonth(), 1);
+        const fim    = new Date(agora.getFullYear(), agora.getMonth() + 1, 1);
+        const uso    = await prisma.agentUsage.aggregate({
+          where: { gabineteId, createdAt: { gte: inicio, lt: fim } },
+          _sum: { inputTokens: true, outputTokens: true },
+        });
+        const totalUsado = (uso._sum.inputTokens ?? 0) + (uso._sum.outputTokens ?? 0);
+        if (totalUsado >= gabinete.limiteTokensMes) {
+          return NextResponse.json(
+            { error: 'Limite mensal de tokens atingido para este gabinete.' },
+            { status: 429 },
+          );
+        }
+      }
+    }
+
     // ── Monta o histórico no formato Anthropic ───────────────────────────────
     const anthropicMessages: any[] = msgs.map((m, i) => {
       // Aplica cache_control na penúltima mensagem do usuário (contexto histórico mais longo)

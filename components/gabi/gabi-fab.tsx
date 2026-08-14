@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, Loader2, MessageSquare } from 'lucide-react';
+import { X, Send, Bot, Loader2, MessageSquare, FileDown } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 
@@ -177,6 +177,7 @@ export function GabiFAB() {
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [input, setInput]     = useState('');
   const [loading, setLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
   const bottomRef  = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLTextAreaElement>(null);
@@ -213,6 +214,7 @@ export function GabiFAB() {
       if (!res.ok) {
         const errMsg =
           res.status === 402 ? 'Créditos insuficientes na conta Anthropic.' :
+          res.status === 429 ? 'Limite mensal de tokens atingido para este gabinete.' :
           res.status === 503 ? 'API temporariamente sobrecarregada. Aguarde e tente novamente.' :
           data.error ?? 'Erro ao contatar a Gabi.';
         setError(errMsg);
@@ -232,6 +234,33 @@ export function GabiFAB() {
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  };
+
+  const exportarPDF = async () => {
+    if (pdfLoading || messages.length <= 1) return;
+    setPdfLoading(true);
+    try {
+      const res = await fetch('/api/agent/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          titulo: 'Conversa com a Gabi',
+        }),
+      });
+      if (!res.ok) { setError('Erro ao gerar PDF.'); return; }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `gabi-${Date.now()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Falha ao gerar PDF.');
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   return (
@@ -270,6 +299,20 @@ export function GabiFAB() {
                 <p className="text-sm font-bold text-white leading-tight">Gabi</p>
                 <p className="text-[10px]" style={{ color: '#94A3B8' }}>Assistente IA · AdminHub</p>
               </div>
+              {messages.length > 1 && (
+                <button
+                  onClick={exportarPDF}
+                  disabled={pdfLoading}
+                  title="Exportar conversa em PDF"
+                  className="p-1 rounded-lg transition-colors hover:bg-white/10"
+                  style={{ color: '#94A3B8' }}
+                >
+                  {pdfLoading
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <FileDown className="w-4 h-4" />
+                  }
+                </button>
+              )}
               <button
                 onClick={() => setOpen(false)}
                 className="p-1 rounded-lg transition-colors hover:bg-white/10"

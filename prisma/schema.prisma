@@ -102,6 +102,7 @@ model Gabinete {
   ativo     Boolean  @default(true)
 
   whatsappInstanceId String?
+  limiteTokensMes    Int?    // limite mensal de tokens da Gabi (null = sem limite)
 
   deletedAt     DateTime?
   deletedById   String?
