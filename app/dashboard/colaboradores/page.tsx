@@ -1392,6 +1392,7 @@ export default function ColaboradoresPage() {
   const handleSaveEditPadrinho = async () => {
     if (!editingPadrinho) return;
     setSavingEditPadrinho(true);
+    const corMudou = (editPadrinhoForm.cor || '#8b5cf6') !== (editingPadrinho.cor || '#8b5cf6');
     try {
       const res = await fetch(`/api/padrinhos/${editingPadrinho.id}`, {
         method: 'PATCH',
@@ -1403,6 +1404,8 @@ export default function ColaboradoresPage() {
       setPadrinhos(prev => prev.map(p => p.id === updated.id ? updated : p).sort((a, b) => a.nome.localeCompare(b.nome)));
       setEditingPadrinho(null);
       toast.success('Padrinho atualizado');
+      // Recarrega colaboradores para refletir a nova cor no mapa e na lista
+      if (corMudou) fetchColaboradores();
     } catch {
       toast.error('Erro ao atualizar padrinho');
     } finally {
