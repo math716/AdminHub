@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { loadStaticTseData, buscarCandidatoNoJson, normalizarTextoTse } from '@/lib/tse-static';
 import type { Session } from 'next-auth';
 
 type UserSession = Session & { user: any };
@@ -93,11 +94,15 @@ export async function executarBuscarVotacao(
   },
   _session: UserSession,
 ) {
+  const anoStr  = args.ano ? String(args.ano) : '2022';
+  const ufQuery = args.uf?.toUpperCase();
+
+  // --- 1. Tentar DB (candidatos legislativos importados) ---
   const candidatos = await prisma.candidato.findMany({
     where: {
       nome: { contains: args.candidato_nome, mode: 'insensitive' },
       ...(args.ano && { ano: Number(args.ano) }),
-      ...(args.uf && { uf: args.uf.toUpperCase() }),
+      ...(ufQuery && ufQuery !== 'BR' && { uf: ufQuery }),
       ...(args.cargo && { cargo: { contains: args.cargo, mode: 'insensitive' } }),
     },
     include: {
@@ -109,27 +114,70 @@ export async function executarBuscarVotacao(
     take: 5,
   });
 
-  if (candidatos.length === 0) {
-    return { encontrado: false, mensagem: 'Nenhum candidato encontrado com esses filtros.' };
+  if (candidatos.length > 0) {
+    return {
+      encontrado: true,
+      candidatos: candidatos.map(c => ({
+        nome: c.nome,
+        nomeUrna: c.nomeUrna,
+        partido: c.partido,
+        cargo: c.cargo,
+        ano: c.ano,
+        uf: c.uf,
+        situacao: c.situacao,
+        totalVotos: c.totalVotos,
+        votosPorMunicipio: c.votos.map(v => ({ municipio: v.municipio, votos: v.votos })),
+      })),
+    };
   }
 
-  return {
-    encontrado: true,
-    candidatos: candidatos.map(c => ({
-      nome: c.nome,
-      nomeUrna: c.nomeUrna,
-      partido: c.partido,
-      cargo: c.cargo,
-      ano: c.ano,
-      uf: c.uf,
-      situacao: c.situacao,
-      totalVotos: c.totalVotos,
-      votosPorMunicipio: c.votos.map(v => ({
-        municipio: v.municipio,
-        votos: v.votos,
+  // --- 2. Fallback: arquivos JSON.gz do TSE ---
+  const cargoNorm      = args.cargo ? normalizarTextoTse(args.cargo) : '';
+  const isPresidencial = cargoNorm.includes('president') || ufQuery === 'BR';
+
+  // Para presidentes sempre busca BR; para outros tenta o estado, depois BR
+  const ufsParaBuscar = isPresidencial
+    ? ['BR']
+    : ufQuery
+    ? [ufQuery, 'BR']
+    : ['BR'];
+
+  for (const uf of ufsParaBuscar) {
+    const staticData = loadStaticTseData(anoStr, uf);
+    if (!staticData) continue;
+
+    const resultados = buscarCandidatoNoJson(staticData, args.candidato_nome, args.cargo)
+      .sort((a, b) => b.totalVotos - a.totalVotos)
+      .slice(0, 5);
+
+    if (resultados.length === 0) continue;
+
+    return {
+      encontrado: true,
+      fonte: 'arquivo_tse',
+      candidatos: resultados.map(c => ({
+        nome: c.nome,
+        nomeUrna: c.nomeUrna,
+        partido: c.partido,
+        cargo: c.cargo,
+        ano: parseInt(anoStr),
+        uf,
+        situacao: c.situacao,
+        totalVotos: c.totalVotos,
+        votosPorMunicipio: uf === 'BR'
+          ? Object.entries(c.votosPorEstado ?? {})
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 10)
+              .map(([estado, votos]) => ({ municipio: estado, votos }))
+          : Object.entries(c.votos ?? {})
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 20)
+              .map(([municipio, votos]) => ({ municipio, votos })),
       })),
-    })),
-  };
+    };
+  }
+
+  return { encontrado: false, mensagem: 'Nenhum candidato encontrado com esses filtros.' };
 }
 
 // ---------------------------------------------------------------------------
