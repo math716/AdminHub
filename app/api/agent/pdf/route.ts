@@ -349,8 +349,24 @@ interface Msg { role: 'user' | 'assistant'; content: string }
 
 const WELCOME = 'Olá, Sou a Gabi! Assessora Virtual do seu Gabinete, como posso te ajudar hoje?';
 
+// Agrupa pares (pergunta → resposta)
+function agruparPares(msgs: Msg[]): Array<{ pergunta: string | null; resposta: string }> {
+  const pares: Array<{ pergunta: string | null; resposta: string }> = [];
+  let perguntaPendente: string | null = null;
+
+  for (const msg of msgs) {
+    if (msg.role === 'user') {
+      perguntaPendente = msg.content;
+    } else if (msg.role === 'assistant' && msg.content.trim() !== WELCOME) {
+      pares.push({ pergunta: perguntaPendente, resposta: msg.content });
+      perguntaPendente = null;
+    }
+  }
+  return pares;
+}
+
 function GabiPDF({ titulo, messages, geradoEm }: { titulo: string; messages: Msg[]; geradoEm: string }) {
-  const msgs = messages.filter(m => !(m.role === 'assistant' && m.content.trim() === WELCOME));
+  const pares = agruparPares(messages);
 
   return React.createElement(Document, null,
     React.createElement(Page, { size: 'A4', style: S.page },
@@ -358,33 +374,48 @@ function GabiPDF({ titulo, messages, geradoEm }: { titulo: string; messages: Msg
       // Header
       React.createElement(View, { style: S.header },
         React.createElement(View, null,
-          React.createElement(Text, { style: S.headerTitle }, 'Gabi — Assistente IA'),
-          React.createElement(Text, { style: S.headerSub }, 'AdminHub · Exportação de Conversa'),
+          React.createElement(Text, { style: S.headerTitle }, 'Relatório — Gabi IA'),
+          React.createElement(Text, { style: S.headerSub }, 'AdminHub · Análise gerada por Inteligência Artificial'),
         ),
         React.createElement(Text, { style: S.headerDate }, geradoEm),
       ),
 
-      // Título
-      titulo
-        ? React.createElement(Text, { style: { fontSize: 12, fontFamily: 'Helvetica-Bold', color: DARK, marginBottom: 12 } }, titulo)
-        : null,
+      // Título da consulta (primeira pergunta ou título passado)
+      React.createElement(Text, {
+        style: { fontSize: 13, fontFamily: 'Helvetica-Bold', color: DARK, marginBottom: 16 },
+      }, titulo || (pares[0]?.pergunta ?? 'Relatório de Dados')),
 
-      // Mensagens
-      ...msgs.map((msg, i) => {
-        if (msg.role === 'user') {
-          return React.createElement(View, { key: i, style: S.question },
-            React.createElement(Text, { style: S.questionLabel }, 'VOCÊ'),
-            React.createElement(Text, { style: S.questionText }, msg.content),
-          );
-        }
-        return React.createElement(View, { key: i, style: S.answer },
-          ...renderContent(msg.content),
-        );
-      }),
+      // Seções: uma por par pergunta→resposta
+      ...pares.map((par, i) =>
+        React.createElement(View, { key: i },
+          // Linha separadora entre seções (a partir da segunda)
+          i > 0
+            ? React.createElement(View, { style: { ...S.hr, marginVertical: 14 } })
+            : null,
+
+          // Label da consulta (se há mais de uma seção ou se não é a primeira)
+          par.pergunta && (pares.length > 1 || i > 0)
+            ? React.createElement(View, {
+                style: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 6 },
+              },
+              React.createElement(View, { style: { width: 3, height: 12, backgroundColor: BLUE, borderRadius: 2 } }),
+              React.createElement(Text, {
+                style: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: GRAY, textTransform: 'uppercase', letterSpacing: 0.8 },
+              }, 'Consulta'),
+              React.createElement(Text, {
+                style: { fontSize: 8.5, color: GRAY, fontStyle: 'italic', flex: 1 },
+              }, par.pergunta.length > 120 ? par.pergunta.slice(0, 120) + '…' : par.pergunta),
+            )
+            : null,
+
+          // Conteúdo da resposta
+          ...renderContent(par.resposta),
+        )
+      ),
 
       // Rodapé
       React.createElement(View, { style: S.footer, fixed: true },
-        React.createElement(Text, { style: S.footerText }, 'AdminHub — Gabi IA'),
+        React.createElement(Text, { style: S.footerText }, 'AdminHub — Gabi IA · Gerado por IA, verifique as informações'),
         React.createElement(Text, {
           style: S.footerText,
           render: ({ pageNumber, totalPages }: any) => `Página ${pageNumber} de ${totalPages}`,
