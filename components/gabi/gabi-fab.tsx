@@ -169,7 +169,7 @@ function VisualizacaoCard({ vis }: { vis: Visualizacao }) {
 // ---------------------------------------------------------------------------
 const WELCOME: Message = {
   role: 'assistant',
-  content: 'Olá! Sou a Gabi, sua assistente de IA no AdminHub. Posso consultar emendas, votações, demandas e dados de municípios. Como posso ajudar?',
+  content: 'Olá, Sou a Gabi! Assessora Virtual do seu Gabinete, como posso te ajudar hoje?',
 };
 
 export function GabiFAB() {
