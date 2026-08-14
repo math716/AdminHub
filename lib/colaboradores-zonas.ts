@@ -1,4 +1,5 @@
 // Mapeamento RA do DF → Zonas Eleitorais correspondentes (TSE-DF)
+// e o inverso: Zona → RA principal (para auto-derivação quando só a zona é conhecida)
 const RA_TO_ZONAS_RAW: Record<string, number[]> = {
   'PLANO PILOTO':       [1, 2],
   'BRASILIA':           [1, 2],
@@ -44,6 +45,29 @@ const RA_TO_ZONAS_RAW: Record<string, number[]> = {
   'CANDANGOLANDIA':     [21],
 };
 
+// Zona → RA principal (uma por zona, a mais representativa)
+const ZONA_TO_RA_PRIMARY: Record<number, string> = {
+  1:  'PLANO PILOTO',
+  2:  'PLANO PILOTO',
+  3:  'CRUZEIRO',
+  4:  'TAGUATINGA',
+  5:  'CEILANDIA',
+  6:  'CEILANDIA',
+  8:  'SAMAMBAIA',
+  9:  'NUCLEO BANDEIRANTE',
+  10: 'GUARA',
+  11: 'SANTA MARIA',
+  13: 'PLANALTINA',
+  14: 'SOBRADINHO',
+  15: 'GAMA',
+  16: 'BRAZLANDIA',
+  17: 'RECANTO DAS EMAS',
+  18: 'SAO SEBASTIAO',
+  19: 'PARANOA',
+  20: 'RIACHO FUNDO II',
+  21: 'ESTRUTURAL',
+};
+
 function normRA(s: string): string {
   return s
     .toUpperCase()
@@ -66,4 +90,22 @@ export function derivarZonasDeRas(
   const zonasSet = new Set<number>();
   raNames.forEach(r => zonasParaRA(r).forEach(z => zonasSet.add(z)));
   return Array.from(zonasSet).map(z => ({ uf: 'DF', regiaoNome: `Zona ${z}`, tipo: 'ZONA' }));
+}
+
+/**
+ * Dado um array de strings de zona ("8", "Zona 8"), retorna os registros de RA
+ * (tipo RA) a criar no banco, sem duplicatas.
+ * Usado para auto-derivar a RA quando só a zona eleitoral é conhecida.
+ */
+export function derivarRasDeZonas(
+  zonaStrings: string[]
+): { uf: string; regiaoNome: string; tipo: string }[] {
+  const rasSet = new Set<string>();
+  for (const z of zonaStrings) {
+    const num = parseInt(z.replace(/\D/g, ''), 10);
+    if (!isNaN(num) && ZONA_TO_RA_PRIMARY[num]) {
+      rasSet.add(ZONA_TO_RA_PRIMARY[num]);
+    }
+  }
+  return Array.from(rasSet).map(ra => ({ uf: 'DF', regiaoNome: ra, tipo: 'RA' }));
 }

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { derivarZonasDeRas } from '@/lib/colaboradores-zonas';
+import { derivarZonasDeRas, derivarRasDeZonas } from '@/lib/colaboradores-zonas';
 
 const SELECT = {
   id: true, nome: true, telefone: true, email: true,
@@ -58,14 +58,19 @@ export async function POST(request: NextRequest) {
     if (!nome?.trim()) return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
 
     const raNames: string[] = Array.isArray(regioes) ? regioes : [];
+    const zonaStrings: string[] = Array.isArray(zonas) ? zonas : [];
     const raItems = raNames.map((r: string) => ({ uf: 'DF', regiaoNome: r, tipo: 'RA' }));
-    const zonaItemsManual = Array.isArray(zonas) ? zonas.map((z: string) => ({ uf: 'DF', regiaoNome: `Zona ${z}`, tipo: 'ZONA' })) : [];
+    const raItemsAutoDeZonas = derivarRasDeZonas(zonaStrings); // RA derivada das zonas selecionadas
+    const zonaItemsManual = zonaStrings.map((z: string) => ({ uf: 'DF', regiaoNome: `Zona ${z}`, tipo: 'ZONA' }));
     const zonaItemsAuto = derivarZonasDeRas(raNames);
-    // Merge manual zones + auto-derived zones, deduplicate by name
+    // Merge e deduplica por nome
+    const allRas = [...raItems, ...raItemsAutoDeZonas].filter(
+      (r, i, arr) => arr.findIndex(x => x.regiaoNome === r.regiaoNome) === i
+    );
     const allZonas = [...zonaItemsManual, ...zonaItemsAuto].filter(
       (z, i, arr) => arr.findIndex(x => x.regiaoNome === z.regiaoNome) === i
     );
-    const allRegioes = [...raItems, ...allZonas];
+    const allRegioes = [...allRas, ...allZonas];
 
     const colaborador = await prisma.colaborador.create({
       data: {
