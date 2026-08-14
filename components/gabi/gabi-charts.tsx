@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   PieChart, Pie, Cell,
   BarChart, Bar, LabelList,
@@ -7,7 +8,7 @@ import {
   XAxis, YAxis, Tooltip, Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { FileDown, Map, BarChart2 } from 'lucide-react';
+import { FileDown, Map, BarChart2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -188,12 +189,39 @@ function SeriePanel({ vis, isMoney }: { vis: Visualizacao; isMoney: boolean }) {
 export function VisualizacoesCard({
   visualizacoes,
   tools,
-  onExportPDF,
+  titulo,
+  conteudo,
 }: {
   visualizacoes: Visualizacao[];
   tools?: string[];
-  onExportPDF: () => void;
+  titulo?: string;
+  conteudo?: string;
 }) {
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const gerarRelatorio = async () => {
+    if (pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      const res = await fetch('/api/agent/relatorio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, conteudo, visualizacoes, tools }),
+      });
+      if (!res.ok) { alert('Erro ao gerar relatório.'); return; }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gabi-relatorio-${Date.now()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Falha ao gerar relatório.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
   if (!visualizacoes || visualizacoes.length === 0) return null;
 
   const donut  = visualizacoes.find(v => v.tipo === 'donut');
@@ -376,12 +404,15 @@ export function VisualizacoesCard({
         style={{ borderTop: '1px solid rgba(74,158,222,0.1)' }}
       >
         <button
-          onClick={onExportPDF}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:opacity-90"
+          onClick={gerarRelatorio}
+          disabled={pdfLoading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:opacity-90 disabled:opacity-60"
           style={{ background: 'linear-gradient(135deg, #1d6fd8, #4a9ede)', color: '#fff' }}
         >
-          <FileDown className="w-3.5 h-3.5" />
-          Gerar relatório PDF
+          {pdfLoading
+            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            : <FileDown className="w-3.5 h-3.5" />}
+          {pdfLoading ? 'Gerando…' : 'Gerar relatório PDF'}
         </button>
         {(hasVotacao || !hasEmendas) && (
           <Link

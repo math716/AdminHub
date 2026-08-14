@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Send, Loader2, MessageSquare, FileDown, Clock, Plus, Trash2, ChevronLeft } from 'lucide-react';
+import { X, Send, Loader2, MessageSquare, Clock, Plus, Trash2, ChevronLeft, ScrollText } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 
@@ -23,6 +23,7 @@ interface Message {
   content: string;
   visualizacoes?: Visualizacao[];
   tools?: string[];
+  userQuestion?: string;
 }
 
 interface GabiConversa {
@@ -367,6 +368,7 @@ export function GabiFAB() {
             content: data.content,
             visualizacoes: data.visualizacoes,
             tools: data.tools,
+            userQuestion: text,
           },
         ]);
       }
@@ -465,8 +467,8 @@ export function GabiFAB() {
                       <Clock className="w-4 h-4" />
                     </ActionBtn>
                     {temConversa && (
-                      <ActionBtn onClick={exportarPDF} title="Baixar PDF" disabled={pdfLoading}>
-                        {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                      <ActionBtn onClick={exportarPDF} title="Exportar conversa completa" disabled={pdfLoading}>
+                        {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScrollText className="w-4 h-4" />}
                       </ActionBtn>
                     )}
                   </div>
@@ -575,7 +577,8 @@ export function GabiFAB() {
                             <VisualizacoesCard
                               visualizacoes={msg.visualizacoes}
                               tools={msg.tools}
-                              onExportPDF={exportarPDF}
+                              titulo={msg.userQuestion}
+                              conteudo={msg.content}
                             />
                           )}
                         </div>
