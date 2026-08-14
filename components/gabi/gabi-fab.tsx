@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Send, Bot, Loader2, MessageSquare, FileDown, Clock, Plus, Trash2, ChevronLeft } from 'lucide-react';
+import { X, Send, Bot, Loader2, MessageSquare, FileDown, Clock, Plus, Trash2, ChevronLeft, Map, BarChart2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 
 const BarChart      = dynamic(() => import('recharts').then(m => m.BarChart),      { ssr: false });
 const Bar           = dynamic(() => import('recharts').then(m => m.Bar),           { ssr: false });
+const LabelList     = dynamic(() => import('recharts').then(m => m.LabelList),     { ssr: false });
 const PieChart      = dynamic(() => import('recharts').then(m => m.PieChart),      { ssr: false });
 const Pie           = dynamic(() => import('recharts').then(m => m.Pie),           { ssr: false });
 const Cell          = dynamic(() => import('recharts').then(m => m.Cell),          { ssr: false });
@@ -20,16 +22,17 @@ const Line          = dynamic(() => import('recharts').then(m => m.Line),       
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-  visualizacao?: Visualizacao;
-}
-
 interface Visualizacao {
   tipo: 'barras' | 'donut' | 'serie_temporal' | 'cards_kpi' | 'tabela';
   titulo?: string;
   dados: any;
+}
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  visualizacoes?: Visualizacao[];
+  tools?: string[];
 }
 
 interface GabiConversa {
@@ -109,7 +112,7 @@ function parseMarkdown(text: string): Block[] {
   return blocks;
 }
 
-// ─── Inline renderer (bold, italic) ──────────────────────────────────────────
+// ─── Inline renderer ──────────────────────────────────────────────────────────
 
 function Inline({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
@@ -198,150 +201,308 @@ function MarkdownContent({ content }: { content: string }) {
 
 const COLORS = ['#4a9ede', '#22d3ee', '#a78bfa', '#34d399', '#f87171', '#fbbf24', '#fb923c', '#e879f9'];
 
-function VisualizacaoCard({ vis }: { vis: Visualizacao }) {
-  const { tipo, titulo, dados } = vis;
+function fmtVal(val: number): string {
+  if (val >= 1_000_000_000) return `R$ ${(val / 1_000_000_000).toFixed(1)}B`;
+  if (val >= 1_000_000)     return `R$ ${(val / 1_000_000).toFixed(1)}M`;
+  if (val >= 1_000)         return `R$ ${(val / 1_000).toFixed(0)}K`;
+  if (val > 0 && val < 100) return `${val.toFixed(0)}%`;
+  return val.toLocaleString('pt-BR');
+}
 
-  // Auto-detecta chaves numéricas para barras (suporte a multi-série)
+function fmtCurrency(val: number): string {
+  return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+const tooltipStyle = {
+  background: '#0d1b2a',
+  border: '1px solid rgba(74,158,222,0.3)',
+  borderRadius: 8,
+  fontSize: 11,
+  color: '#e2e8f0',
+};
+
+// ── Donut panel ───────────────────────────────────────────────────────────────
+
+function DonutPanel({ vis }: { vis: Visualizacao }) {
+  const { dados } = vis;
+  const items = dados?.itens ?? [];
+  const total = items.reduce((s: number, it: any) => s + (it.valor ?? 0), 0);
+
+  return (
+    <div style={{ width: '42%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: 150 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={items} dataKey="valor" nameKey="label"
+              cx="50%" cy="50%" innerRadius="42%" outerRadius="72%" paddingAngle={2}>
+              {items.map((_: any, i: number) => (
+                <Cell key={i} fill={items[i]?.cor || COLORS[i % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [fmtCurrency(v), '']} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="space-y-1.5 px-1 mt-1">
+        {items.map((item: any, i: number) => {
+          const pct = total > 0 ? ((item.valor / total) * 100).toFixed(0) : '0';
+          const color = item.cor || COLORS[i % COLORS.length];
+          return (
+            <div key={i}>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
+                <span className="flex-1 text-[10px] truncate" style={{ color: '#cbd5e1' }}>{item.label}</span>
+                <span className="text-[10px] font-bold flex-shrink-0" style={{ color }}>{pct}%</span>
+              </div>
+              <div className="h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Bar panel ─────────────────────────────────────────────────────────────────
+
+function BarPanel({ vis }: { vis: Visualizacao }) {
+  const { dados } = vis;
+  const items = dados?.itens ?? [];
+
   const barKeys: string[] = (() => {
-    if (!dados?.itens?.length) return ['valor'];
-    const keys = Object.keys(dados.itens[0]).filter(
-      (k) => k !== 'label' && k !== 'cor' && typeof dados.itens[0][k] === 'number',
+    if (!items.length) return ['valor'];
+    const keys = Object.keys(items[0]).filter(
+      k => k !== 'label' && k !== 'cor' && typeof items[0][k] === 'number',
     );
     return keys.length > 0 ? keys : ['valor'];
   })();
   const isMulti = barKeys.length > 1;
 
-  const tooltipStyle = { background: '#0d1b2a', border: '1px solid #1b4965', borderRadius: 8, fontSize: 12 };
+  return (
+    <div style={{ flex: 1 }}>
+      <div style={{ height: 180 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={items} margin={{ top: 28, right: 4, left: -24, bottom: 0 }}>
+            <XAxis dataKey="label" tick={{ fontSize: 8, fill: '#94a3b8' }} interval={0} />
+            <YAxis hide />
+            <Tooltip contentStyle={tooltipStyle}
+              formatter={(v: any) => [typeof v === 'number' && v > 1000 ? fmtCurrency(v) : v?.toLocaleString('pt-BR'), '']} />
+            {isMulti && <Legend wrapperStyle={{ fontSize: 9, color: '#94a3b8', paddingTop: 4 }} />}
+            {barKeys.map((key, ki) => (
+              <Bar key={key} dataKey={key} name={key} fill={COLORS[ki % COLORS.length]} radius={[4, 4, 0, 0]}>
+                <LabelList dataKey={key} position="top"
+                  formatter={(v: any) => typeof v === 'number' ? fmtVal(v) : v}
+                  style={{ fontSize: 8, fill: '#94a3b8' }} />
+                {!isMulti && items.map((_: any, i: number) => (
+                  <Cell key={i} fill={items[i]?.cor || COLORS[i % COLORS.length]} />
+                ))}
+              </Bar>
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+// ── Série temporal ────────────────────────────────────────────────────────────
+
+function SeriePanel({ vis }: { vis: Visualizacao }) {
+  const { dados } = vis;
+  return (
+    <div style={{ height: 180 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={dados?.pontos ?? []} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+          <XAxis dataKey="data" tick={{ fontSize: 9, fill: '#94a3b8' }} />
+          <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} />
+          <Tooltip contentStyle={tooltipStyle} />
+          <Line type="monotone" dataKey="valor" stroke="#4a9ede" strokeWidth={2} dot={{ r: 3, fill: '#4a9ede' }} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ── Combined visualizations card ──────────────────────────────────────────────
+
+function VisualizacoesCard({
+  visualizacoes,
+  tools,
+  onExportPDF,
+}: {
+  visualizacoes: Visualizacao[];
+  tools?: string[];
+  onExportPDF: () => void;
+}) {
+  if (!visualizacoes || visualizacoes.length === 0) return null;
+
+  const donut  = visualizacoes.find(v => v.tipo === 'donut');
+  const barras = visualizacoes.find(v => v.tipo === 'barras');
+  const serie  = visualizacoes.find(v => v.tipo === 'serie_temporal');
+  const kpi    = visualizacoes.find(v => v.tipo === 'cards_kpi');
+
+  const titulo = donut?.titulo ?? barras?.titulo ?? serie?.titulo ?? visualizacoes[0]?.titulo;
+  const totalVal = donut?.dados?.itens?.reduce((s: number, it: any) => s + (it.valor ?? 0), 0) ?? 0;
+
+  const hasVotacao = tools?.includes('buscar_votacao');
+  const hasEmendas = tools?.includes('buscar_emendas');
 
   return (
-    <div className="mt-3 rounded-xl overflow-hidden" style={{ background: 'rgba(74,158,222,0.06)', border: '1px solid rgba(74,158,222,0.15)' }}>
-      {titulo && (
-        <div className="px-4 pt-3 pb-1">
-          <p className="text-xs font-semibold" style={{ color: '#4a9ede' }}>{titulo}</p>
-        </div>
-      )}
+    <div className="mt-3 rounded-xl overflow-hidden"
+      style={{ background: 'rgba(10,18,35,0.9)', border: '1px solid rgba(74,158,222,0.22)' }}>
 
-      {/* ── Barras (simples ou multi-série) ── */}
-      {tipo === 'barras' && dados?.itens?.length > 0 && (
-        <div className="px-3 pb-3" style={{ height: isMulti ? 230 : 200 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dados.itens} margin={{ top: 8, right: 8, left: -16, bottom: isMulti ? 16 : 0 }}>
-              <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#94a3b8' }} interval={0} />
-              <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} width={48} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(74,158,222,0.08)' }} />
-              {isMulti && <Legend wrapperStyle={{ fontSize: 10, color: '#94a3b8', paddingTop: 4 }} />}
-              {barKeys.map((key, ki) => (
-                <Bar key={key} dataKey={key} name={key} fill={COLORS[ki % COLORS.length]} radius={[4, 4, 0, 0]}>
-                  {!isMulti && dados.itens.map((_: any, i: number) => (
-                    <Cell key={i} fill={dados.itens[i]?.cor || COLORS[i % COLORS.length]} />
-                  ))}
-                </Bar>
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      {/* Card header */}
+      <div className="flex items-center justify-between px-4 py-2.5"
+        style={{ borderBottom: '1px solid rgba(74,158,222,0.12)', background: 'rgba(74,158,222,0.06)' }}>
+        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: '#64748b' }}>
+          {titulo || 'Dados'}
+        </p>
+        {totalVal > 0 && (
+          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+            style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}>
+            {fmtVal(totalVal)}
+          </span>
+        )}
+      </div>
 
-      {/* ── Donut / Pizza ── */}
-      {tipo === 'donut' && dados?.itens?.length > 0 && (() => {
-        const total = dados.itens.reduce((s: number, it: any) => s + (it.valor ?? 0), 0);
-        return (
-          <div className="px-3 pb-3 flex items-center gap-4" style={{ height: 200 }}>
-            <ResponsiveContainer width="45%" height="100%">
-              <PieChart>
-                <Pie
-                  data={dados.itens}
-                  dataKey="valor"
-                  nameKey="label"
-                  cx="50%" cy="50%"
-                  innerRadius="48%" outerRadius="80%"
-                  paddingAngle={2}
-                >
-                  {dados.itens.map((_: any, i: number) => (
-                    <Cell key={i} fill={dados.itens[i]?.cor || COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={tooltipStyle}
-                  formatter={(val: any) => [val?.toLocaleString('pt-BR'), '']}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex-1 space-y-2 overflow-hidden">
-              {dados.itens.map((item: any, i: number) => {
-                const pct = total > 0 ? ((item.valor / total) * 100).toFixed(1) : '0';
-                return (
-                  <div key={i}>
-                    <div className="flex items-center gap-2 text-xs mb-0.5">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.cor || COLORS[i % COLORS.length] }} />
-                      <span className="truncate font-medium" style={{ color: '#e2e8f0' }}>{item.label}</span>
-                      <span className="ml-auto flex-shrink-0 font-bold" style={{ color: item.cor || COLORS[i % COLORS.length] }}>{pct}%</span>
-                    </div>
-                    <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: item.cor || COLORS[i % COLORS.length] }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      {/* Chart body */}
+      <div className="p-4">
+        {/* Donut + Barras side by side */}
+        {donut && barras && (
+          <div className="flex gap-3 items-start">
+            <DonutPanel vis={donut} />
+            <div className="self-stretch w-px" style={{ background: 'rgba(74,158,222,0.1)' }} />
+            <BarPanel vis={barras} />
           </div>
-        );
-      })()}
+        )}
 
-      {/* ── Série temporal ── */}
-      {tipo === 'serie_temporal' && dados?.pontos && (
-        <div className="px-3 pb-3" style={{ height: 180 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={dados.pontos} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-              <XAxis dataKey="data" tick={{ fontSize: 9, fill: '#94a3b8' }} />
-              <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Line type="monotone" dataKey="valor" stroke="#4a9ede" strokeWidth={2} dot={{ r: 3, fill: '#4a9ede' }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+        {/* Only donut */}
+        {donut && !barras && (
+          <div className="flex gap-4 items-start">
+            <DonutPanel vis={donut} />
+          </div>
+        )}
 
-      {/* ── Cards KPI ── */}
-      {tipo === 'cards_kpi' && dados?.cards && (
-        <div className="px-4 pb-4 grid grid-cols-2 gap-3">
-          {dados.cards.slice(0, 6).map((card: any, i: number) => (
-            <div key={i} className="rounded-lg p-3" style={{ background: 'rgba(74,158,222,0.08)', border: '1px solid rgba(74,158,222,0.15)' }}>
-              <p className="text-[10px] uppercase tracking-wide mb-1" style={{ color: '#94a3b8' }}>{card.label}</p>
-              <p className="text-base font-bold" style={{ color: '#e2e8f0' }}>
-                {card.valor}{card.unidade ? <span className="text-xs font-normal ml-1" style={{ color: '#94a3b8' }}>{card.unidade}</span> : null}
-              </p>
-              {card.variacao !== undefined && (
-                <p className="text-xs mt-1" style={{ color: card.variacao >= 0 ? '#4ade80' : '#f87171' }}>
-                  {card.variacao >= 0 ? '+' : ''}{card.variacao}%
+        {/* Only barras */}
+        {!donut && barras && <BarPanel vis={barras} />}
+
+        {/* Série temporal */}
+        {serie && !donut && !barras && <SeriePanel vis={serie} />}
+
+        {/* Donut + Serie side by side */}
+        {donut && serie && !barras && (
+          <div className="flex gap-3 items-start">
+            <DonutPanel vis={donut} />
+            <div className="self-stretch w-px" style={{ background: 'rgba(74,158,222,0.1)' }} />
+            <div style={{ flex: 1 }}><SeriePanel vis={serie} /></div>
+          </div>
+        )}
+
+        {/* KPI cards */}
+        {kpi?.dados?.cards && (
+          <div className="grid grid-cols-2 gap-2 mt-1">
+            {kpi.dados.cards.slice(0, 6).map((card: any, i: number) => (
+              <div key={i} className="rounded-lg p-2.5"
+                style={{ background: 'rgba(74,158,222,0.08)', border: '1px solid rgba(74,158,222,0.12)' }}>
+                <p className="text-[9px] uppercase tracking-wide mb-0.5" style={{ color: '#64748b' }}>{card.label}</p>
+                <p className="text-sm font-bold" style={{ color: '#e2e8f0' }}>{card.valor}
+                  {card.unidade && <span className="text-xs font-normal ml-1" style={{ color: '#94a3b8' }}>{card.unidade}</span>}
                 </p>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+                {card.variacao !== undefined && (
+                  <p className="text-[10px] mt-0.5" style={{ color: card.variacao >= 0 ? '#4ade80' : '#f87171' }}>
+                    {card.variacao >= 0 ? '+' : ''}{card.variacao}%
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
-      {/* ── Tabela ── */}
-      {tipo === 'tabela' && dados?.colunas && dados?.linhas && (
-        <div className="overflow-x-auto px-3 pb-3">
-          <table className="w-full text-xs">
-            <thead>
-              <tr>
-                {dados.colunas.map((col: string, i: number) => (
-                  <th key={i} className="text-left px-3 py-2 font-semibold" style={{ color: '#4a9ede', borderBottom: '1px solid rgba(74,158,222,0.2)' }}>{col}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {dados.linhas.slice(0, 10).map((linha: any[], i: number) => (
-                <tr key={i} style={{ borderBottom: '1px solid rgba(74,158,222,0.06)' }}>
-                  {linha.map((cel, j) => <td key={j} className="px-3 py-1.5" style={{ color: '#94a3b8' }}>{String(cel ?? '')}</td>)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        {/* Tabela (fallback) */}
+        {visualizacoes.find(v => v.tipo === 'tabela') && !donut && !barras && !serie && !kpi && (() => {
+          const t = visualizacoes.find(v => v.tipo === 'tabela')!;
+          return (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr>
+                    {t.dados?.colunas?.map((col: string, i: number) => (
+                      <th key={i} className="text-left px-2 py-1.5 font-semibold"
+                        style={{ color: '#4a9ede', borderBottom: '1px solid rgba(74,158,222,0.2)' }}>{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {t.dados?.linhas?.slice(0, 10).map((linha: any[], i: number) => (
+                    <tr key={i} style={{ borderBottom: '1px solid rgba(74,158,222,0.06)' }}>
+                      {linha.map((cel, j) => (
+                        <td key={j} className="px-2 py-1" style={{ color: '#94a3b8' }}>{String(cel ?? '')}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex items-center gap-2 px-4 py-3 flex-wrap"
+        style={{ borderTop: '1px solid rgba(74,158,222,0.1)' }}>
+        <button
+          onClick={onExportPDF}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:opacity-90"
+          style={{ background: 'linear-gradient(135deg, #1d6fd8, #4a9ede)', color: '#fff' }}
+        >
+          <FileDown className="w-3.5 h-3.5" />
+          Gerar relatório PDF
+        </button>
+        {(hasVotacao || !hasEmendas) && (
+          <Link href="/mapa-eleitoral"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:bg-white/5"
+            style={{ color: '#94a3b8', border: '1px solid rgba(74,158,222,0.15)' }}>
+            <Map className="w-3.5 h-3.5" />
+            Ver no mapa
+          </Link>
+        )}
+        {(hasEmendas || !hasVotacao) && (
+          <Link href="/emendas"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:bg-white/5"
+            style={{ color: '#94a3b8', border: '1px solid rgba(74,158,222,0.15)' }}>
+            <BarChart2 className="w-3.5 h-3.5" />
+            Abrir em Emendas
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Tool chips ────────────────────────────────────────────────────────────────
+
+const TOOL_LABELS: Record<string, string> = {
+  buscar_emendas:        'buscar_emendas',
+  buscar_votacao:        'buscar_votacao',
+  buscar_demandas:       'buscar_demandas',
+  dados_municipio:       'dados_municipio',
+  comparar_parlamentares:'comparar_parlamentares',
+};
+
+function ToolChips({ tools }: { tools?: string[] }) {
+  if (!tools || tools.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 mb-2">
+      {tools.map(t => (
+        <span key={t}
+          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium"
+          style={{ background: 'rgba(74,158,222,0.1)', color: '#4a9ede', border: '1px solid rgba(74,158,222,0.2)' }}>
+          <span style={{ fontSize: 8 }}>◆</span>
+          {TOOL_LABELS[t] ?? t}
+        </span>
+      ))}
     </div>
   );
 }
@@ -493,7 +654,15 @@ export function GabiFAB() {
           data.error ?? 'Erro ao contatar a Gabi.'
         );
       } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.content, visualizacao: data.visualizacao }]);
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: data.content,
+            visualizacoes: data.visualizacoes,
+            tools: data.tools,
+          },
+        ]);
       }
     } catch {
       setError('Falha de conexão. Tente novamente.');
@@ -570,8 +739,9 @@ export function GabiFAB() {
                 className="flex items-center gap-3 px-5 py-4 flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #0c1d38 0%, #162d55 100%)', borderBottom: '1px solid rgba(74,158,222,0.18)' }}
               >
-                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #1d6fd8, #22d3ee)' }}>
-                  <Bot className="w-5 h-5 text-white" />
+                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-white text-base"
+                  style={{ background: 'linear-gradient(135deg, #1d6fd8, #22d3ee)' }}>
+                  G
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-white leading-tight">Gabi</p>
@@ -662,18 +832,24 @@ export function GabiFAB() {
                   >
                     {messages.map((msg, i) => (
                       <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                        {/* Avatar */}
+                        {/* Avatar Gabi */}
                         {msg.role === 'assistant' && (
-                          <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5" style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)' }}>
-                            <Bot className="w-4 h-4 text-white" />
+                          <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 font-bold text-white text-sm"
+                            style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)' }}>
+                            G
                           </div>
                         )}
 
-                        {/* Balão */}
+                        {/* Conteúdo */}
                         <div className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[82%]`}>
                           <span className="text-[11px] font-medium px-1" style={{ color: '#64748b' }}>
                             {msg.role === 'user' ? 'Você' : 'Gabi'}
                           </span>
+
+                          {/* Tool chips — acima do balão, apenas para mensagens da Gabi */}
+                          {msg.role === 'assistant' && <ToolChips tools={msg.tools} />}
+
+                          {/* Balão */}
                           <div
                             className="rounded-2xl px-4 py-3"
                             style={
@@ -687,7 +863,15 @@ export function GabiFAB() {
                               : <MarkdownContent content={msg.content} />
                             }
                           </div>
-                          {msg.visualizacao && <VisualizacaoCard vis={msg.visualizacao} />}
+
+                          {/* Visualizações combinadas */}
+                          {msg.visualizacoes && msg.visualizacoes.length > 0 && (
+                            <VisualizacoesCard
+                              visualizacoes={msg.visualizacoes}
+                              tools={msg.tools}
+                              onExportPDF={exportarPDF}
+                            />
+                          )}
                         </div>
                       </div>
                     ))}
@@ -695,8 +879,9 @@ export function GabiFAB() {
                     {/* Digitando */}
                     {loading && (
                       <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)' }}>
-                          <Bot className="w-4 h-4 text-white" />
+                        <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-white text-sm"
+                          style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)' }}>
+                          G
                         </div>
                         <div className="rounded-2xl px-4 py-3 mt-5" style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', borderBottomLeftRadius: 6 }}>
                           <div className="flex items-center gap-1.5">

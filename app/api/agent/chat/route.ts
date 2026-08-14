@@ -107,7 +107,8 @@ export async function POST(request: NextRequest) {
 
     let totalInputTokens  = 0;
     let totalOutputTokens = 0;
-    let visualizacao: Visualizacao | null = null;
+    const visualizacoes: Visualizacao[] = [];
+    const toolsUsed = new Set<string>();
     let resposta = '';
 
     // ── Loop agentic de tool use ─────────────────────────────────────────────
@@ -162,9 +163,10 @@ export async function POST(request: NextRequest) {
               session as any,
             );
 
-            // Captura visualizações geradas
             if (block.name === 'gerar_visualizacao') {
-              visualizacao = resultado as Visualizacao;
+              visualizacoes.push(resultado as Visualizacao);
+            } else {
+              toolsUsed.add(block.name);
             }
           } catch (err) {
             resultado = { erro: `Erro ao executar ${block.name}: ${String(err)}` };
@@ -190,7 +192,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       content: resposta || 'Não obtive resposta. Tente reformular a pergunta.',
-      visualizacao: visualizacao ?? undefined,
+      visualizacoes: visualizacoes.length > 0 ? visualizacoes : undefined,
+      tools: toolsUsed.size > 0 ? [...toolsUsed] : undefined,
     });
 
   } catch (err: any) {
