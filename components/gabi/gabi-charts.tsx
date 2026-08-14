@@ -88,7 +88,7 @@ function DonutPanel({ vis, isMoney }: { vis: Visualizacao; isMoney: boolean }) {
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
                 <span className="flex-1 text-[10px] truncate" style={{ color: '#cbd5e1' }}>{item.label}</span>
-                <span className="text-[10px] font-bold flex-shrink-0ml-1" style={{ color }}>{pct}%</span>
+                <span className="text-[10px] font-bold flex-shrink-0 ml-1" style={{ color }}>{pct}%</span>
               </div>
               <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
@@ -189,11 +189,13 @@ function SeriePanel({ vis, isMoney }: { vis: Visualizacao; isMoney: boolean }) {
 export function VisualizacoesCard({
   visualizacoes,
   tools,
+  dadosBrutos,
   titulo,
   conteudo,
 }: {
   visualizacoes: Visualizacao[];
   tools?: string[];
+  dadosBrutos?: Record<string, any>;
   titulo?: string;
   conteudo?: string;
 }) {
@@ -206,7 +208,7 @@ export function VisualizacoesCard({
       const res = await fetch('/api/agent/relatorio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titulo, conteudo, visualizacoes, tools }),
+        body: JSON.stringify({ titulo, conteudo, visualizacoes, tools, dadosBrutos }),
       });
       if (!res.ok) { alert('Erro ao gerar relatório.'); return; }
       const blob = await res.blob();

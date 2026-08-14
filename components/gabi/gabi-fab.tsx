@@ -23,6 +23,7 @@ interface Message {
   content: string;
   visualizacoes?: Visualizacao[];
   tools?: string[];
+  dadosBrutos?: Record<string, any>;
   userQuestion?: string;
 }
 
@@ -368,6 +369,7 @@ export function GabiFAB() {
             content: data.content,
             visualizacoes: data.visualizacoes,
             tools: data.tools,
+            dadosBrutos: data.dadosBrutos,
             userQuestion: text,
           },
         ]);
@@ -577,6 +579,7 @@ export function GabiFAB() {
                             <VisualizacoesCard
                               visualizacoes={msg.visualizacoes}
                               tools={msg.tools}
+                              dadosBrutos={msg.dadosBrutos}
                               titulo={msg.userQuestion}
                               conteudo={msg.content}
                             />

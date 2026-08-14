@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
     let totalOutputTokens = 0;
     const visualizacoes: Visualizacao[] = [];
     const toolsUsed = new Set<string>();
+    const dadosBrutos: Record<string, unknown> = {}; // saídas cruas p/ alimentar o relatório PDF
     let resposta = '';
 
     // ── Loop agentic de tool use ─────────────────────────────────────────────
@@ -167,6 +168,7 @@ export async function POST(request: NextRequest) {
               visualizacoes.push(resultado as Visualizacao);
             } else {
               toolsUsed.add(block.name);
+              dadosBrutos[block.name] = resultado; // guarda a última chamada de cada ferramenta
             }
           } catch (err) {
             resultado = { erro: `Erro ao executar ${block.name}: ${String(err)}` };
@@ -194,6 +196,7 @@ export async function POST(request: NextRequest) {
       content: resposta || 'Não obtive resposta. Tente reformular a pergunta.',
       visualizacoes: visualizacoes.length > 0 ? visualizacoes : undefined,
       tools: toolsUsed.size > 0 ? [...toolsUsed] : undefined,
+      dadosBrutos: Object.keys(dadosBrutos).length > 0 ? dadosBrutos : undefined,
     });
 
   } catch (err: any) {
