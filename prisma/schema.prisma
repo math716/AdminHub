@@ -501,6 +501,7 @@ model Padrinho {
   nome          String
   cargo         String
   partido       String
+  cor           String?       @default("#8b5cf6")
   gabineteId    String
   gabinete      Gabinete      @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
   colaboradores Colaborador[]

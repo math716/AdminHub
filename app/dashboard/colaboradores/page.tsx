@@ -49,6 +49,7 @@ interface Padrinho {
   nome: string;
   cargo: string;
   partido: string;
+  cor?: string;
   _count: { colaboradores: number };
 }
 
@@ -693,7 +694,7 @@ export default function ColaboradoresPage() {
   const [padrinhoSearch, setPadrinhoSearch] = useState('');
   const [showNovoPadrinho, setShowNovoPadrinho] = useState(false);
   const [openFuncaoDropdown, setOpenFuncaoDropdown] = useState(false);
-  const [novoPadrinho, setNovoPadrinho] = useState({ nome: '', cargo: '', partido: '' });
+  const [novoPadrinho, setNovoPadrinho] = useState({ nome: '', cargo: '', partido: '', cor: '#8b5cf6' });
   const [savingPadrinho, setSavingPadrinho] = useState(false);
 
   // ── UI state ──
@@ -717,7 +718,7 @@ export default function ColaboradoresPage() {
   const [confirmDeletePadrinhoId, setConfirmDeletePadrinhoId] = useState<string | null>(null);
   const [deletingPadrinho, setDeletingPadrinho] = useState(false);
   const [editingPadrinho, setEditingPadrinho] = useState<Padrinho | null>(null);
-  const [editPadrinhoForm, setEditPadrinhoForm] = useState({ nome: '', cargo: '', partido: '' });
+  const [editPadrinhoForm, setEditPadrinhoForm] = useState({ nome: '', cargo: '', partido: '', cor: '#8b5cf6' });
   const [savingEditPadrinho, setSavingEditPadrinho] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -981,7 +982,7 @@ export default function ColaboradoresPage() {
       toast.success(editingColaborador ? 'Colaborador atualizado!' : 'Colaborador criado!');
       setShowFormModal(false);
       setShowNovoPadrinho(false);
-      setNovoPadrinho({ nome: '', cargo: '', partido: '' });
+      setNovoPadrinho({ nome: '', cargo: '', partido: '', cor: '#8b5cf6' });
       setPadrinhoSearch('');
       fetchColaboradores();
     } catch {
@@ -1353,13 +1354,13 @@ export default function ColaboradoresPage() {
       const res = await fetch('/api/padrinhos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(novoPadrinho),
+        body: JSON.stringify({ ...novoPadrinho, cor: novoPadrinho.cor || '#8b5cf6' }),
       });
       if (!res.ok) throw new Error();
       const criado: Padrinho = await res.json();
       setPadrinhos(prev => [...prev, criado].sort((a, b) => a.nome.localeCompare(b.nome)));
       setShowNovoPadrinho(false);
-      setNovoPadrinho({ nome: '', cargo: '', partido: '' });
+      setNovoPadrinho({ nome: '', cargo: '', partido: '', cor: '#8b5cf6' });
       toast.success('Padrinho criado!');
     } catch {
       toast.error('Erro ao criar padrinho');
@@ -1391,7 +1392,7 @@ export default function ColaboradoresPage() {
       const res = await fetch(`/api/padrinhos/${editingPadrinho.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editPadrinhoForm),
+        body: JSON.stringify({ ...editPadrinhoForm, cor: editPadrinhoForm.cor || '#8b5cf6' }),
       });
       if (!res.ok) throw new Error();
       const updated: Padrinho = await res.json();
@@ -2057,7 +2058,7 @@ export default function ColaboradoresPage() {
                     onClick={() => {
                       setShowFormModal(false);
                       setShowNovoPadrinho(false);
-                      setNovoPadrinho({ nome: '', cargo: '', partido: '' });
+                      setNovoPadrinho({ nome: '', cargo: '', partido: '', cor: '#8b5cf6' });
                       setPadrinhoSearch('');
                     }}
                     className="p-2 rounded-lg transition-all"
@@ -2448,7 +2449,7 @@ export default function ColaboradoresPage() {
                     onClick={() => {
                       setShowFormModal(false);
                       setShowNovoPadrinho(false);
-                      setNovoPadrinho({ nome: '', cargo: '', partido: '' });
+                      setNovoPadrinho({ nome: '', cargo: '', partido: '', cor: '#8b5cf6' });
                       setPadrinhoSearch('');
                     }}
                     className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
@@ -3047,6 +3048,27 @@ export default function ColaboradoresPage() {
                               style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
                             />
                           </div>
+                          {/* Cor do padrinho */}
+                          <div className="flex items-center gap-2">
+                            <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Cor:</p>
+                            <div className="flex gap-1.5 flex-wrap">
+                              {['#8b5cf6','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#f97316','#64748b','#1e293b'].map(c => (
+                                <button
+                                  key={c} type="button"
+                                  onClick={() => setEditPadrinhoForm(f => ({ ...f, cor: c }))}
+                                  className="w-5 h-5 rounded-full transition-transform hover:scale-110 flex-shrink-0"
+                                  style={{ background: c, outline: editPadrinhoForm.cor === c ? `2px solid ${c}` : 'none', outlineOffset: 2 }}
+                                />
+                              ))}
+                              <input
+                                type="color" value={editPadrinhoForm.cor}
+                                onChange={e => setEditPadrinhoForm(f => ({ ...f, cor: e.target.value }))}
+                                className="w-5 h-5 rounded-full cursor-pointer border-0 p-0"
+                                style={{ background: 'none' }}
+                                title="Cor personalizada"
+                              />
+                            </div>
+                          </div>
                           <div className="flex gap-2 pt-1">
                             <button onClick={() => setEditingPadrinho(null)}
                               className="flex-1 py-1.5 rounded-lg text-xs font-semibold"
@@ -3073,7 +3095,7 @@ export default function ColaboradoresPage() {
                           onMouseEnter={e => { if (selectedPadrinhoFilter !== p.id) (e.currentTarget as HTMLElement).style.background = 'var(--tint-04)'; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = selectedPadrinhoFilter === p.id ? 'rgba(109,40,217,0.08)' : ''; }}
                         >
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold" style={{ background: 'rgba(109,40,217,0.15)', color: '#8b5cf6' }}>
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold" style={{ background: `${p.cor || '#8b5cf6'}22`, color: p.cor || '#8b5cf6' }}>
                             {p.nome.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -3096,7 +3118,7 @@ export default function ColaboradoresPage() {
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
                             <button
-                              onClick={() => { setEditingPadrinho(p); setEditPadrinhoForm({ nome: p.nome, cargo: p.cargo, partido: p.partido }); }}
+                              onClick={() => { setEditingPadrinho(p); setEditPadrinhoForm({ nome: p.nome, cargo: p.cargo, partido: p.partido, cor: p.cor || '#8b5cf6' }); }}
                               className="p-1.5 rounded-lg transition-colors"
                               style={{ color: 'var(--text-tertiary)' }}
                               onMouseEnter={e => (e.currentTarget.style.background = 'var(--tint-06)')}
@@ -3125,7 +3147,7 @@ export default function ColaboradoresPage() {
               <div className="px-6 py-4" style={{ borderTop: '1px solid var(--tint-06)' }}>
                 {!showNovoPadrinho ? (
                   <button
-                    onClick={() => { setShowNovoPadrinho(true); setNovoPadrinho({ nome: '', cargo: '', partido: '' }); }}
+                    onClick={() => { setShowNovoPadrinho(true); setNovoPadrinho({ nome: '', cargo: '', partido: '', cor: '#8b5cf6' }); }}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 w-full justify-center"
                     style={{ background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)', color: '#fff' }}
                   >
@@ -3161,9 +3183,30 @@ export default function ColaboradoresPage() {
                         style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', color: 'var(--text-primary)' }}
                       />
                     </div>
+                    {/* Cor do padrinho */}
+                    <div className="flex items-center gap-2">
+                      <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Cor:</p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {['#8b5cf6','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#f97316','#64748b','#1e293b'].map(c => (
+                          <button
+                            key={c} type="button"
+                            onClick={() => setNovoPadrinho(p => ({ ...p, cor: c }))}
+                            className="w-5 h-5 rounded-full transition-transform hover:scale-110 flex-shrink-0"
+                            style={{ background: c, outline: novoPadrinho.cor === c ? `2px solid ${c}` : 'none', outlineOffset: 2 }}
+                          />
+                        ))}
+                        <input
+                          type="color" value={novoPadrinho.cor}
+                          onChange={e => setNovoPadrinho(p => ({ ...p, cor: e.target.value }))}
+                          className="w-5 h-5 rounded-full cursor-pointer border-0 p-0"
+                          style={{ background: 'none' }}
+                          title="Cor personalizada"
+                        />
+                      </div>
+                    </div>
                     <div className="flex gap-2 pt-1">
                       <button
-                        onClick={() => { setShowNovoPadrinho(false); setNovoPadrinho({ nome: '', cargo: '', partido: '' }); }}
+                        onClick={() => { setShowNovoPadrinho(false); setNovoPadrinho({ nome: '', cargo: '', partido: '', cor: '#8b5cf6' }); }}
                         className="flex-1 py-2 rounded-xl text-xs font-semibold"
                         style={{ background: 'var(--tint-06)', color: 'var(--text-secondary)' }}
                       >

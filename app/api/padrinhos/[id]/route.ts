@@ -59,7 +59,7 @@ export async function PATCH(
     if (!existing) return NextResponse.json({ error: 'Padrinho não encontrado' }, { status: 404 });
 
     const body = await request.json();
-    const { nome, cargo, partido } = body ?? {};
+    const { nome, cargo, partido, cor } = body ?? {};
     if (!nome?.trim()) return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
 
     const updated = await prisma.padrinho.update({
@@ -68,8 +68,9 @@ export async function PATCH(
         ...(nome !== undefined && { nome: nome.trim() }),
         ...(cargo !== undefined && { cargo: cargo.trim() }),
         ...(partido !== undefined && { partido: partido.trim() }),
+        ...(cor !== undefined && { cor: cor || '#8b5cf6' }),
       },
-      select: { id: true, nome: true, cargo: true, partido: true, _count: { select: { colaboradores: true } } },
+      select: { id: true, nome: true, cargo: true, partido: true, cor: true, _count: { select: { colaboradores: true } } },
     });
 
     return NextResponse.json(updated);
