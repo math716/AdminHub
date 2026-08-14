@@ -1327,12 +1327,16 @@ export default function ColaboradoresPage() {
 
   // ── Toggle region in form ──
   const toggleRegiao = (nome: string) => {
-    setForm(f => ({
-      ...f,
-      regioes: f.regioes.includes(nome)
-        ? f.regioes.filter(r => r !== nome)
-        : [...f.regioes, nome],
-    }));
+    setForm(f => {
+      const norm = normalizeRegiao(nome);
+      const exists = f.regioes.some(r => normalizeRegiao(r) === norm);
+      return {
+        ...f,
+        regioes: exists
+          ? f.regioes.filter(r => normalizeRegiao(r) !== norm)
+          : [...f.regioes, nome],
+      };
+    });
   };
 
   const toggleZona = (num: string) => {
@@ -2362,7 +2366,7 @@ export default function ColaboradoresPage() {
                           </div>
                         ) : (
                           geoRegioes.map(nome => {
-                            const selected = form.regioes.includes(nome);
+                            const selected = form.regioes.some(r => normalizeRegiao(r) === normalizeRegiao(nome));
                             return (
                               <button
                                 key={nome}
