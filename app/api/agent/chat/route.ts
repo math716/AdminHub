@@ -63,27 +63,31 @@ export async function POST(request: NextRequest) {
 
     // ── Verifica limite mensal de tokens do gabinete ─────────────────────────
     const gabineteId = (session.user as any)?.gabineteId as string | null;
-    if (gabineteId) {
-      const gabinete = await prisma.gabinete.findUnique({
-        where: { id: gabineteId },
-        select: { limiteTokensMes: true },
-      });
-      if (gabinete?.limiteTokensMes) {
-        const agora  = new Date();
-        const inicio = new Date(agora.getFullYear(), agora.getMonth(), 1);
-        const fim    = new Date(agora.getFullYear(), agora.getMonth() + 1, 1);
-        const uso    = await prisma.agentUsage.aggregate({
-          where: { gabineteId, createdAt: { gte: inicio, lt: fim } },
-          _sum: { inputTokens: true, outputTokens: true },
+    try {
+      if (gabineteId) {
+        const gabinete = await prisma.gabinete.findUnique({
+          where: { id: gabineteId },
+          select: { limiteTokensMes: true },
         });
-        const totalUsado = (uso._sum.inputTokens ?? 0) + (uso._sum.outputTokens ?? 0);
-        if (totalUsado >= gabinete.limiteTokensMes) {
-          return NextResponse.json(
-            { error: 'Limite mensal de tokens atingido para este gabinete.' },
-            { status: 429 },
-          );
+        if (gabinete?.limiteTokensMes) {
+          const agora  = new Date();
+          const inicio = new Date(agora.getFullYear(), agora.getMonth(), 1);
+          const fim    = new Date(agora.getFullYear(), agora.getMonth() + 1, 1);
+          const uso    = await prisma.agentUsage.aggregate({
+            where: { gabineteId, createdAt: { gte: inicio, lt: fim } },
+            _sum: { inputTokens: true, outputTokens: true },
+          });
+          const totalUsado = (uso._sum.inputTokens ?? 0) + (uso._sum.outputTokens ?? 0);
+          if (totalUsado >= gabinete.limiteTokensMes) {
+            return NextResponse.json(
+              { error: 'Limite mensal de tokens atingido para este gabinete.' },
+              { status: 429 },
+            );
+          }
         }
       }
+    } catch {
+      // coluna ainda não existe no banco — ignora e continua
     }
 
     // ── Monta o histórico no formato Anthropic ───────────────────────────────
