@@ -46,6 +46,9 @@ export const AGENT_TOOLS: Tool[] = [
     name: 'buscar_votacao',
     description:
       'Busca resultados eleitorais de candidatos. Retorna votos totais e por município. ' +
+      'Ao informar "municipio", retorna também a quebra por ZONA ELEITORAL daquele município, ' +
+      'com os bairros que cada zona cobre (útil para eleições municipais). O TSE agrega até zona/seção — ' +
+      'não existe contagem exata por bairro. ' +
       'Use para perguntas sobre desempenho eleitoral, comparação de votação ou distribuição geográfica de votos.',
     input_schema: {
       type: 'object' as const,
@@ -64,11 +67,14 @@ export const AGENT_TOOLS: Tool[] = [
         },
         municipio: {
           type: 'string',
-          description: 'Filtrar votos de um município específico.',
+          description:
+            'Nome do município. Ao informar, o retorno inclui a quebra de votos por ZONA ELEITORAL ' +
+            'desse município (campo votosPorZona), com os bairros que cada zona cobre. ' +
+            'Use quando o usuário pedir votos por bairro/zona em eleições municipais.',
         },
         cargo: {
           type: 'string',
-          description: 'Cargo disputado (ex: DEPUTADO_FEDERAL, DEPUTADO_ESTADUAL, SENADOR, GOVERNADOR).',
+          description: 'Cargo disputado (ex: DEPUTADO_FEDERAL, DEPUTADO_ESTADUAL, SENADOR, GOVERNADOR, PREFEITO, VEREADOR).',
         },
       },
       required: ['candidato_nome'],

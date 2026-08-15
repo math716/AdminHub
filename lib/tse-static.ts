@@ -55,6 +55,51 @@ export function loadStaticTseData(ano: string, uf: string): CandidatoJson[] | nu
   }
 }
 
+// ── Locais de votação (mapeiam zona → bairros) ──────────────────────────────
+export interface LocalVotacao {
+  municipio: string; zona: number; codLocal: string;
+  nome: string; endereco: string; bairro: string; lat: number; lng: number;
+}
+
+const locaisCache = new Map<string, LocalVotacao[] | null>();
+
+export function loadLocaisTse(uf: string): LocalVotacao[] | null {
+  if (locaisCache.has(uf)) return locaisCache.get(uf)!;
+
+  const base = path.join(process.cwd(), 'public', 'data', 'tse', 'locais', uf);
+  const gzPath = `${base}.json.gz`;
+  const jsonPath = `${base}.json`;
+
+  let data: LocalVotacao[] | null = null;
+  try {
+    if (fs.existsSync(gzPath)) {
+      data = JSON.parse(zlib.gunzipSync(fs.readFileSync(gzPath) as any).toString('utf8'));
+    } else if (fs.existsSync(jsonPath)) {
+      data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    }
+  } catch {
+    data = null;
+  }
+  locaisCache.set(uf, data);
+  return data;
+}
+
+/**
+ * Mapa `zona → bairros` de um município (a partir dos locais de votação).
+ * Permite relacionar os votos por zona eleitoral aos bairros correspondentes.
+ */
+export function bairrosPorZona(uf: string, municipio: string, maxBairros = 12): Record<number, string[]> {
+  const locais = loadLocaisTse(uf);
+  if (!locais) return {};
+  const muniNorm = normalizarTextoTse(municipio);
+  const sets: Record<number, Set<string>> = {};
+  for (const l of locais) {
+    if (!l.bairro || normalizarTextoTse(l.municipio) !== muniNorm) continue;
+    (sets[l.zona] = sets[l.zona] || new Set()).add(l.bairro);
+  }
+  return Object.fromEntries(Object.entries(sets).map(([z, s]) => [Number(z), [...s].slice(0, maxBairros)]));
+}
+
 export function buscarCandidatoNoJson(
   data: CandidatoJson[],
   query: string,

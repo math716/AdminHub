@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { loadStaticTseData, buscarCandidatoNoJson, normalizarTextoTse } from '@/lib/tse-static';
+import { loadStaticTseData, buscarCandidatoNoJson, normalizarTextoTse, bairrosPorZona } from '@/lib/tse-static';
 import type { Session } from 'next-auth';
 
 type UserSession = Session & { user: any };
@@ -89,6 +89,7 @@ export async function executarBuscarVotacao(
     candidato_nome: string;
     ano?: number;
     uf?: string;
+    municipio?: string;
     cargo?: string;
   },
   _session: UserSession,
@@ -116,8 +117,15 @@ export async function executarBuscarVotacao(
 
     if (resultados.length === 0) continue;
 
+    // Quebra por zona eleitoral (+ bairros de cada zona) quando um município
+    // é informado. Dados do TSE vão até a zona/seção — não há contagem por
+    // bairro; os bairros vêm dos locais de votação de cada zona.
+    const muniNorm = args.municipio ? normalizarTextoTse(args.municipio) : '';
+    const bairrosZona = muniNorm && uf !== 'BR' ? bairrosPorZona(uf, args.municipio!) : {};
+
     return {
       encontrado: true,
+      granularidade: muniNorm ? 'zona_eleitoral' : 'municipio',
       candidatos: resultados.map(c => ({
         nome: c.nome,
         nomeUrna: c.nomeUrna,
@@ -136,6 +144,14 @@ export async function executarBuscarVotacao(
               .sort((a, b) => b[1] - a[1])
               .slice(0, 20)
               .map(([municipio, votos]) => ({ municipio, votos })),
+        // Detalhe por zona eleitoral do município solicitado (com bairros)
+        votosPorZona: muniNorm
+          ? (c.zonas ?? [])
+              .filter(z => normalizarTextoTse(z.municipio) === muniNorm)
+              .sort((a, b) => b.votos - a.votos)
+              .slice(0, 30)
+              .map(z => ({ zona: z.zona, votos: z.votos, bairros: bairrosZona[z.zona] ?? [] }))
+          : undefined,
       })),
     };
   }
