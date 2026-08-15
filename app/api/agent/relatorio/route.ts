@@ -469,10 +469,10 @@ function layoutEleitoral(input: ReportInput, mapa: MapaResult | null): React.Rea
     candidatos.find(c => stripEmoji(label).toLowerCase().includes((c.nomeUrna || c.nome || '').toLowerCase().split(' ')[0]))?.situacao;
 
   // ── Coluna donut + legenda ──
-  const donutCol = React.createElement(View, { style: [S.col, { maxWidth: 240 }] },
+  const donutCol = React.createElement(View, { style: [S.col, { maxWidth: 218 }] },
     React.createElement(Text, { style: S.secTitle }, donut?.titulo || 'Distribuição de votos'),
     React.createElement(View, { style: S.card },
-      React.createElement(View, { style: { alignItems: 'center', marginBottom: 12 } }, DonutSVG({ items: donutItems, size: 140 })),
+      React.createElement(View, { style: { alignItems: 'center', marginBottom: 12 } }, DonutSVG({ items: donutItems, size: 126 })),
       ...donutItems.map((item, i) => {
         const pct = totalVotos ? ((item.valor / totalVotos) * 100).toFixed(1) : '0';
         const color = item.color || PALETTE[i % PALETTE.length];
@@ -496,7 +496,7 @@ function layoutEleitoral(input: ReportInput, mapa: MapaResult | null): React.Rea
   );
 
   // ── Coluna mapa (se disponível) ──
-  const mapCol = mapa ? React.createElement(View, { style: [S.col, { maxWidth: 320 }] },
+  const mapCol = mapa ? React.createElement(View, { style: [S.col, { maxWidth: 288 }] },
     React.createElement(Text, { style: S.secTitle }, 'Mapa — vencedor por região'),
     React.createElement(View, { style: [S.card, { alignItems: 'center' }] },
       React.createElement(Svg, { width: mapa.width, height: mapa.height },
@@ -514,7 +514,7 @@ function layoutEleitoral(input: ReportInput, mapa: MapaResult | null): React.Rea
   // ── Coluna barras + análise ──
   const rightContent: React.ReactNode[] = [];
   if (barItems.length > 0 && barKeys.length > 0) {
-    const CHART_W = mapa ? 200 : 390;
+    const CHART_W = mapa ? 185 : 390;
     const CHART_H = barKeys.length > 1 ? 120 : 100;
     rightContent.push(
       React.createElement(Text, { key: 'bt', style: S.secTitle }, barras?.titulo || 'Top municípios'),
@@ -667,7 +667,7 @@ export async function POST(request: NextRequest) {
     if (isEleitoral) {
       const cand = body.dadosBrutos?.buscar_votacao?.candidatos?.[0];
       if (cand) {
-        mapa = await renderMapaEleitoral({ uf: cand.uf, ano: Number(cand.ano), cargo: cand.cargo, width: 290, height: 300 });
+        mapa = await renderMapaEleitoral({ uf: cand.uf, ano: Number(cand.ano), cargo: cand.cargo, width: 232, height: 250 });
       }
     }
 
