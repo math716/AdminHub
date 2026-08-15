@@ -14,17 +14,16 @@ const UF_CODES: Record<string, number> = {
 const CODE_TO_UF: Record<string, string> =
   Object.fromEntries(Object.entries(UF_CODES).map(([uf, code]) => [String(code), uf]));
 
-// ── Cores por partido ───────────────────────────────────────────────────────
-const PARTY_COLOR: Record<string, string> = {
-  PT: '#ef4444', PL: '#1d4ed8', MDB: '#f59e0b', PSDB: '#0ea5e9', PSOL: '#a855f7',
-  REPUBLICANOS: '#22c55e', PSD: '#3b82f6', UNIÃO: '#06b6d4', UNIAO: '#06b6d4',
-  PP: '#f97316', PDT: '#e11d48', PODE: '#14b8a6', PODEMOS: '#14b8a6',
-  PSB: '#f43f5e', PCdoB: '#dc2626', PV: '#65a30d', CIDADANIA: '#ec4899',
-  SOLIDARIEDADE: '#f59e0b', PROS: '#84cc16', AVANTE: '#8b5cf6', PATRIOTA: '#0891b2',
-  NOVO: '#ea580c', PRTB: '#7c3aed', PMN: '#db2777', 'PC do B': '#dc2626',
-};
-const PALETTE_FALLBACK = ['#6366f1', '#14b8a6', '#f59e0b', '#ec4899', '#84cc16', '#0ea5e9'];
-const NEUTRAL = '#e2e8f0';
+// ── Cores por afiliação política (definido pelo cliente) ────────────────────
+//   PT / PSOL                    → vermelho
+//   PL / PSD / REPUBLICANOS      → azul
+//   demais                       → amarelo
+const COR_VERMELHO = '#ef4444';
+const COR_AZUL     = '#1d4ed8';
+const COR_AMARELO  = '#f59e0b';
+const NEUTRAL      = '#e2e8f0'; // município sem vencedor / sem dado
+const PARTIDOS_VERMELHO = new Set(['PT', 'PSOL']);
+const PARTIDOS_AZUL     = new Set(['PL', 'PSD', 'REPUBLICANOS']);
 
 // Faixas de valor (heatmap azul) para o mapa de emendas — igual ao dashboard
 const SEM_EMENDA = '#e8eef6';
@@ -35,15 +34,11 @@ const EMENDA_BUCKETS: { max: number; cor: string; label: string }[] = [
   { max: Infinity,  cor: '#1e3a8a', label: 'Acima de R$ 2 mi' },
 ];
 
-function corDoPartido(partido: string, seen: Map<string, string>): string {
+function corDoPartido(partido: string): string {
   const p = (partido || '').trim().toUpperCase();
-  if (!p) return NEUTRAL;
-  const known = PARTY_COLOR[partido] || PARTY_COLOR[p];
-  if (known) return known;
-  if (seen.has(p)) return seen.get(p)!;
-  const cor = PALETTE_FALLBACK[seen.size % PALETTE_FALLBACK.length];
-  seen.set(p, cor);
-  return cor;
+  if (PARTIDOS_VERMELHO.has(p)) return COR_VERMELHO;
+  if (PARTIDOS_AZUL.has(p)) return COR_AZUL;
+  return COR_AMARELO;
 }
 
 // ── Fetch com timeout ───────────────────────────────────────────────────────
@@ -72,9 +67,11 @@ function municipiosUrl(uf: string): string {
 }
 
 // ── Vencedores por região a partir do TSE ───────────────────────────────────
-type Winner = { partido: string; votos: number };
+// Cada região guarda o CANDIDATO vencedor (nome de urna) e o partido dele.
+type Winner = { candidato: string; partido: string; votos: number };
+export type Vencedor = { candidato: string; partido: string };
 
-function winnersPorMunicipio(ano: number, uf: string, cargo?: string): Record<string, string> {
+function winnersPorMunicipio(ano: number, uf: string, cargo?: string): Record<string, Vencedor> {
   const data = loadStaticTseData(String(ano), uf);
   if (!data) return {};
   const cargoNorm = cargo ? normalizarTextoTse(cargo) : '';
@@ -83,13 +80,13 @@ function winnersPorMunicipio(ano: number, uf: string, cargo?: string): Record<st
     if (cargoNorm && !normalizarTextoTse(c.cargo).includes(cargoNorm)) continue;
     for (const [muni, votos] of Object.entries(c.votos ?? {})) {
       const key = normalizarTextoTse(muni);
-      if (!best[key] || votos > best[key].votos) best[key] = { partido: c.partido, votos };
+      if (!best[key] || votos > best[key].votos) best[key] = { candidato: c.nomeUrna || c.nome, partido: c.partido, votos };
     }
   }
-  return Object.fromEntries(Object.entries(best).map(([k, v]) => [k, v.partido]));
+  return Object.fromEntries(Object.entries(best).map(([k, v]) => [k, { candidato: v.candidato, partido: v.partido }]));
 }
 
-function winnersPorEstado(ano: number, cargo?: string): Record<string, string> {
+function winnersPorEstado(ano: number, cargo?: string): Record<string, Vencedor> {
   const data = loadStaticTseData(String(ano), 'BR');
   if (!data) return {};
   const cargoNorm = cargo ? normalizarTextoTse(cargo) : '';
@@ -98,10 +95,10 @@ function winnersPorEstado(ano: number, cargo?: string): Record<string, string> {
     if (cargoNorm && !normalizarTextoTse(c.cargo).includes(cargoNorm)) continue;
     for (const [ufKey, votos] of Object.entries(c.votosPorEstado ?? {})) {
       const key = ufKey.toUpperCase();
-      if (!best[key] || votos > best[key].votos) best[key] = { partido: c.partido, votos };
+      if (!best[key] || votos > best[key].votos) best[key] = { candidato: c.nomeUrna || c.nome, partido: c.partido, votos };
     }
   }
-  return Object.fromEntries(Object.entries(best).map(([k, v]) => [k, v.partido]));
+  return Object.fromEntries(Object.entries(best).map(([k, v]) => [k, { candidato: v.candidato, partido: v.partido }]));
 }
 
 // ── codarea (7 díg) → nome normalizado, via IBGE localidades ─────────────────
@@ -126,7 +123,7 @@ export interface MapaResult {
   width: number;
   height: number;
   paths: { d: string; fill: string }[];
-  legend: { partido: string; cor: string }[];
+  legend: { label: string; cor: string }[];
 }
 
 function buildPaths(
@@ -170,8 +167,10 @@ function buildPaths(
 }
 
 /**
- * Monta o mapa eleitoral colorido por partido vencedor. Retorna `null` se não
- * houver escopo geográfico ou se a malha do IBGE falhar (fallback silencioso).
+ * Monta o mapa eleitoral: cada região é colorida pelo CANDIDATO vencedor,
+ * usando a cor da afiliação política dele (PT/PSOL vermelho, PL/PSD/
+ * REPUBLICANOS azul, demais amarelo). A legenda lista os candidatos vencedores.
+ * Retorna `null` se não houver escopo geográfico ou se a malha do IBGE falhar.
  */
 export async function renderMapaEleitoral(params: {
   uf?: string;
@@ -184,27 +183,32 @@ export async function renderMapaEleitoral(params: {
   const W = params.width ?? 300;
   const H = params.height ?? 300;
   const ufUp = params.uf?.toUpperCase();
-  const seen = new Map<string, string>();
-  const usados = new Map<string, string>(); // partido → cor (para legenda)
+  const conta = new Map<string, { cor: string; n: number }>(); // candidato → {cor, nº de regiões}
+
+  const registra = (candidato: string, cor: string) => {
+    const e = conta.get(candidato);
+    if (e) e.n++;
+    else conta.set(candidato, { cor, n: 1 });
+  };
 
   try {
     if (!ufUp || ufUp === 'BR') {
-      // ── Mapa do Brasil, colorido por UF vencedora ──
+      // ── Mapa do Brasil, colorido pelo candidato vencedor por UF ──
       const geo = await fetchJson(malhaBrasilUrl());
       const winners = winnersPorEstado(params.ano, params.cargo);
       const fillFor = (codarea: string) => {
         const uf = CODE_TO_UF[codarea];
-        const partido = uf ? winners[uf] : '';
-        if (!partido) return NEUTRAL;
-        const cor = corDoPartido(partido, seen);
-        usados.set(partido.toUpperCase(), cor);
+        const w = uf ? winners[uf] : null;
+        if (!w) return NEUTRAL;
+        const cor = corDoPartido(w.partido);
+        registra(w.candidato, cor);
         return cor;
       };
       const paths = buildPaths(geo.features ?? [], W, H, fillFor);
-      return { width: W, height: H, paths, legend: legendaDe(usados) };
+      return { width: W, height: H, paths, legend: legendaDe(conta) };
     }
 
-    // ── Mapa do estado, colorido por município vencedor ──
+    // ── Mapa do estado, colorido pelo candidato vencedor por município ──
     const ufCode = UF_CODES[ufUp];
     if (!ufCode) return null;
     const [geo, nomePorCod] = await Promise.all([
@@ -214,23 +218,37 @@ export async function renderMapaEleitoral(params: {
     const winners = winnersPorMunicipio(params.ano, ufUp, params.cargo);
     const fillFor = (codarea: string) => {
       const nome = nomePorCod[codarea];
-      const partido = nome ? winners[nome] : '';
-      if (!partido) return NEUTRAL;
-      const cor = corDoPartido(partido, seen);
-      usados.set(partido.toUpperCase(), cor);
+      const w = nome ? winners[nome] : null;
+      if (!w) return NEUTRAL;
+      const cor = corDoPartido(w.partido);
+      registra(w.candidato, cor);
       return cor;
     };
     const paths = buildPaths(geo.features ?? [], W, H, fillFor);
     if (paths.length === 0) return null;
-    return { width: W, height: H, paths, legend: legendaDe(usados) };
+    return { width: W, height: H, paths, legend: legendaDe(conta) };
   } catch (err) {
     console.warn('[geo-map] mapa indisponível — gerando sem mapa:', String(err));
     return null;
   }
 }
 
-function legendaDe(usados: Map<string, string>): { partido: string; cor: string }[] {
-  return [...usados.entries()].slice(0, 6).map(([partido, cor]) => ({ partido, cor }));
+// Legenda = candidatos vencedores (mais regiões primeiro), no máx. 6.
+function legendaDe(conta: Map<string, { cor: string; n: number }>): { label: string; cor: string }[] {
+  return [...conta.entries()]
+    .sort((a, b) => b[1].n - a[1].n)
+    .slice(0, 6)
+    .map(([candidato, v]) => ({ label: tituloCaso(candidato), cor: v.cor }));
+}
+
+// "DELEGADO DA CUNHA" → "Delegado da Cunha"
+function tituloCaso(s: string): string {
+  const minusculas = new Set(['da', 'de', 'do', 'das', 'dos', 'e']);
+  return (s || '')
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w, i) => (i > 0 && minusculas.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(' ');
 }
 
 /**
@@ -276,7 +294,7 @@ export async function renderMapaEmendas(params: {
 
     const paths = buildPaths(geo.features ?? [], W, H, fillFor);
     if (paths.length === 0) return null;
-    const legend = EMENDA_BUCKETS.filter(b => usados.has(b.label)).map(b => ({ partido: b.label, cor: b.cor }));
+    const legend = EMENDA_BUCKETS.filter(b => usados.has(b.label)).map(b => ({ label: b.label, cor: b.cor }));
     return { width: W, height: H, paths, legend };
   } catch (err) {
     console.warn('[geo-map] mapa de emendas indisponível — gerando sem mapa:', String(err));

@@ -38,7 +38,7 @@ function MapSection(mapa: MapaResult): React.ReactNode {
       mapa.legend.length > 0 ? React.createElement(View, { style: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 8 } },
         ...mapa.legend.map((l, i) => React.createElement(View, { key: i, style: { flexDirection: 'row', alignItems: 'center', gap: 4 } },
           React.createElement(View, { style: { width: 9, height: 9, borderRadius: 2, backgroundColor: l.cor } }),
-          React.createElement(Text, { style: { fontSize: 8, color: C.gray } }, l.partido),
+          React.createElement(Text, { style: { fontSize: 8, color: C.gray } }, l.label),
         )),
       ) : null,
     ),
