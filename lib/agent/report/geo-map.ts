@@ -45,9 +45,10 @@ function familiaDoPartido(partido: string): Familia {
   if (PARTIDOS_AZUL.has(p)) return 'dir';
   return 'out';
 }
+// Direita: VERDE é a cor principal; azul entra como 2ª (segundo partido de direita).
 const PALETA: Record<Familia, string[]> = {
   esq: [COR_VERMELHO, '#b91c1c', '#f87171', '#7f1d1d', '#fca5a5'],
-  dir: [COR_AZUL, '#16a34a', '#0ea5e9', '#059669', '#60a5fa', '#22c55e', '#1e3a8a'],
+  dir: ['#16a34a', COR_AZUL, '#0ea5e9', '#22c55e', '#059669', '#60a5fa', '#1e3a8a'],
   out: [COR_AMARELO, '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#eab308', '#06b6d4', '#84cc16', '#db2777'],
 };
 
