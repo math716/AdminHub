@@ -482,11 +482,11 @@ function layoutEleitoral(input: ReportInput, mapa: MapaResult | null): React.Rea
   const situacaoDe = (label: string) =>
     candidatos.find(c => stripEmoji(label).toLowerCase().includes((c.nomeUrna || c.nome || '').toLowerCase().split(' ')[0]))?.situacao;
 
-  // ── Coluna donut + legenda ──
-  const donutCol = React.createElement(View, { style: [S.col, { maxWidth: 218 }] },
+  // ── Card: donut + legenda ──
+  const donutCol = React.createElement(View, { style: [S.col, { maxWidth: 228 }] },
     React.createElement(Text, { style: S.secTitle }, donut?.titulo || 'Distribuição de votos'),
     React.createElement(View, { style: S.card },
-      React.createElement(View, { style: { alignItems: 'center', marginBottom: 12 } }, DonutSVG({ items: donutItems, size: 126 })),
+      React.createElement(View, { style: { alignItems: 'center', marginBottom: 10 } }, DonutSVG({ items: donutItems, size: 142 })),
       ...donutItems.map((item, i) => {
         const pct = totalVotos ? ((item.valor / totalVotos) * 100).toFixed(1) : '0';
         const color = item.color || PALETTE[i % PALETTE.length];
@@ -498,60 +498,66 @@ function layoutEleitoral(input: ReportInput, mapa: MapaResult | null): React.Rea
             React.createElement(Text, { style: S.legendPct }, `${pct}%`),
             React.createElement(Text, { style: S.legendVal }, fmtNum(item.valor)),
           ),
-          sit ? React.createElement(Text, { style: { fontSize: 6.5, color: GREEN, marginLeft: 14, fontFamily: 'Helvetica-Bold' } }, String(sit)) : null,
+          sit ? React.createElement(Text, { style: { fontSize: 7, color: GREEN, marginLeft: 14, fontFamily: 'Helvetica-Bold' } }, String(sit)) : null,
         );
       }),
       donutItems.length === 2 ? React.createElement(View, { style: { marginTop: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: BORDER } },
-        React.createElement(Text, { style: { fontSize: 7.5, color: GRAY } }, 'Diferença'),
-        React.createElement(Text, { style: { fontSize: 10, fontFamily: 'Helvetica-Bold', color: DARK } },
+        React.createElement(Text, { style: { fontSize: 8, color: GRAY } }, 'Diferença'),
+        React.createElement(Text, { style: { fontSize: 12, fontFamily: 'Helvetica-Bold', color: DARK } },
           fmtNum(Math.abs(donutItems[0].valor - donutItems[1].valor)) + ' votos'),
       ) : null,
     ),
   );
 
-  // ── Coluna mapa (se disponível) ──
-  const mapCol = mapa ? React.createElement(View, { style: [S.col, { maxWidth: 288 }] },
+  // ── Card: mapa (se disponível) ──
+  const mapCol = mapa ? React.createElement(View, { style: [S.col, { maxWidth: 268 }] },
     React.createElement(Text, { style: S.secTitle }, 'Mapa — vencedor por região'),
-    React.createElement(View, { style: [S.card, { alignItems: 'center' }] },
+    React.createElement(View, { style: [S.card, { alignItems: 'center', paddingVertical: 12 }] },
       React.createElement(Svg, { width: mapa.width, height: mapa.height },
         ...mapa.paths.map((p, i) => React.createElement(Path, { key: i, d: p.d, fill: p.fill, stroke: WHITE, strokeWidth: 0.3 })),
       ),
-      mapa.legend.length > 0 ? React.createElement(View, { style: S.chartLegendRow },
+      mapa.legend.length > 0 ? React.createElement(View, { style: [S.chartLegendRow, { justifyContent: 'center' }] },
         ...mapa.legend.map((l, i) => React.createElement(View, { key: i, style: S.chartLegendItem },
-          React.createElement(View, { style: { width: 8, height: 8, borderRadius: 2, backgroundColor: l.cor } }),
-          React.createElement(Text, { style: { fontSize: 7, color: GRAY } }, l.partido),
+          React.createElement(View, { style: { width: 9, height: 9, borderRadius: 2, backgroundColor: l.cor } }),
+          React.createElement(Text, { style: { fontSize: 7.5, color: GRAY } }, l.partido),
         )),
       ) : null,
     ),
   ) : null;
 
-  // ── Coluna barras + análise ──
-  const rightContent: React.ReactNode[] = [];
+  // ── Card: análise ──
+  const analiseCol = React.createElement(View, { style: S.col },
+    React.createElement(Text, { style: S.secTitle }, 'Análise da Gabi'),
+    conteudo
+      ? React.createElement(View, { style: [S.card, { borderLeftWidth: 3, borderLeftColor: BLUE }] }, ...renderBlocks(conteudo, 560))
+      : React.createElement(View, { style: S.card }),
+  );
+
+  // ── Linha superior: donut · mapa · análise ──
+  const topCols: React.ReactNode[] = [donutCol];
+  if (mapCol) { topCols.push(React.createElement(View, { style: S.dividerV }), mapCol); }
+  topCols.push(React.createElement(View, { style: S.dividerV }), analiseCol);
+  const topRow = React.createElement(View, { style: S.row }, ...topCols);
+
+  // ── Linha inferior: barras em largura total (não deforma) ──
+  let bottomRow: React.ReactNode = null;
   if (barItems.length > 0 && barKeys.length > 0) {
-    const CHART_W = mapa ? 185 : 390;
-    const CHART_H = barKeys.length > 1 ? 120 : 100;
-    rightContent.push(
-      React.createElement(Text, { key: 'bt', style: S.secTitle }, barras?.titulo || 'Top municípios'),
-      React.createElement(View, { key: 'bc', style: S.card },
-        BarSVG({ items: barItems, barKeys, width: CHART_W, height: CHART_H }),
-        xLabels(barItems),
+    bottomRow = React.createElement(View, { style: { marginTop: 12 } },
+      React.createElement(Text, { style: S.secTitle }, barras?.titulo || 'Top municípios'),
+      React.createElement(View, { style: S.card },
+        BarSVG({ items: barItems, barKeys, width: 735, height: 88 }),
+        xLabels(barItems, 10),
         barKeys.length > 1 ? React.createElement(View, { style: S.chartLegendRow },
           ...barKeys.map((key, ki) => React.createElement(View, { key: ki, style: S.chartLegendItem },
-            React.createElement(View, { style: { width: 8, height: 8, borderRadius: 2, backgroundColor: PALETTE[ki % PALETTE.length] } }),
-            React.createElement(Text, { style: { fontSize: 7.5, color: GRAY } }, key),
+            React.createElement(View, { style: { width: 9, height: 9, borderRadius: 2, backgroundColor: PALETTE[ki % PALETTE.length] } }),
+            React.createElement(Text, { style: { fontSize: 8, color: GRAY } }, key),
           )),
         ) : null,
       ),
     );
   }
-  if (conteudo) rightContent.push(React.createElement(View, { key: 'ab', style: { marginTop: barItems.length ? 10 : 0 } }, AnalysisBox({ conteudo, maxChars: mapa ? 400 : 600 })));
-  const rightCol = React.createElement(View, { style: S.col }, ...rightContent);
 
-  const cols: React.ReactNode[] = [donutCol];
-  if (mapCol) { cols.push(React.createElement(View, { style: S.dividerV }), mapCol); }
-  cols.push(React.createElement(View, { style: S.dividerV }), rightCol);
-
-  return React.createElement(View, { style: S.row }, ...cols);
+  return React.createElement(View, null, topRow, bottomRow);
 }
 
 // ─── LAYOUT: GENÉRICO ────────────────────────────────────────────────────────
@@ -681,7 +687,7 @@ export async function POST(request: NextRequest) {
     if (isEleitoral) {
       const cand = body.dadosBrutos?.buscar_votacao?.candidatos?.[0];
       if (cand) {
-        mapa = await renderMapaEleitoral({ uf: cand.uf, ano: Number(cand.ano), cargo: cand.cargo, width: 232, height: 250 });
+        mapa = await renderMapaEleitoral({ uf: cand.uf, ano: Number(cand.ano), cargo: cand.cargo, width: 215, height: 215 });
       }
     } else if (isEmendas) {
       const emendas: any[] = body.dadosBrutos?.buscar_emendas?.emendas ?? [];
