@@ -11,7 +11,7 @@ import React from 'react';
 import { prisma } from '@/lib/db';
 import DashboardReport from '@/components/pdf/dashboard-report';
 import { buildDemandasStats } from '@/lib/reports/demandas-stats';
-import { renderMapaEleitoral, type MapaResult } from '@/lib/agent/report/geo-map';
+import { renderMapaEleitoral, renderMapaEmendas, type MapaResult } from '@/lib/agent/report/geo-map';
 import fs from 'fs';
 import path from 'path';
 
@@ -358,7 +358,35 @@ function resumoEmendas(emendas: any[]) {
 
 // ─── LAYOUT: EMENDAS ─────────────────────────────────────────────────────────
 
-function layoutEmendas(input: ReportInput): React.ReactNode {
+function topGrupos(emendas: any[], chave: (e: any) => string, limite = 5): { label: string; valor: number }[] {
+  const acc: Record<string, number> = {};
+  emendas.forEach(e => {
+    const k = (chave(e) || '').trim();
+    if (!k) return;
+    acc[k] = (acc[k] ?? 0) + (e.valorEmpenhado || 0);
+  });
+  return Object.entries(acc)
+    .map(([label, valor]) => ({ label, valor }))
+    .sort((a, b) => b.valor - a.valor)
+    .slice(0, limite);
+}
+
+function TopPanel({ titulo, itens, cor }: { titulo: string; itens: { label: string; valor: number }[]; cor: string }): React.ReactNode {
+  return React.createElement(View, { style: { marginBottom: 12 } },
+    React.createElement(Text, { style: S.secTitle }, titulo),
+    React.createElement(View, { style: S.card },
+      ...(itens.length ? itens.map((it, i) =>
+        React.createElement(View, { key: i, style: { flexDirection: 'row', alignItems: 'center', marginBottom: i === itens.length - 1 ? 0 : 6, width: '100%' } },
+          React.createElement(Text, { style: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: GRAY, width: 14 } }, `${i + 1}.`),
+          React.createElement(Text, { style: { fontSize: 8.5, color: '#334155', flex: 1 } }, clip(it.label, 20)),
+          React.createElement(Text, { style: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: cor, marginLeft: 4 } }, fmtNum(it.valor, true)),
+        ),
+      ) : [React.createElement(Text, { key: 'e', style: { fontSize: 8, color: GRAY } }, 'Sem dados')]),
+    ),
+  );
+}
+
+function layoutEmendas(input: ReportInput, mapa: MapaResult | null): React.ReactNode {
   const conteudo = input.conteudo ?? '';
   const emendas: any[] = input.dadosBrutos?.buscar_emendas?.emendas ?? [];
 
@@ -368,15 +396,15 @@ function layoutEmendas(input: ReportInput): React.ReactNode {
   }
 
   const R = resumoEmendas(emendas);
+  const totalArea = R.areaItems.reduce((s, it) => s + it.valor, 0);
 
-  // KPIs
+  // ── KPIs (faixa compacta) ──
   const kpis = [
     { label: `Total em ${R.ano ?? ''}`.trim(), value: fmtNum(R.totalEmp, true), sub: R.variacao != null ? `${R.variacao >= 0 ? '▲ +' : '▼ '}${R.variacao}% vs ${R.anos[0]}` : '', green: R.variacao != null && R.variacao >= 0 },
     { label: 'Valor pago', value: fmtNum(R.totalPago, true), sub: `${R.exec}% de execução`, green: false },
     { label: 'Municípios', value: String(R.municipios), sub: '', green: false },
     { label: `Concentração em ${clip(R.topAreaLabel, 14)}`, value: `${R.topAreaPct}%`, sub: 'da carteira', green: false },
   ];
-
   const kpiRow = React.createElement(View, { style: S.kpiRow },
     ...kpis.map((k, i) => React.createElement(View, { key: i, style: [S.kpiCard, { borderLeftWidth: 3, borderLeftColor: PALETTE[i % PALETTE.length] }] },
       React.createElement(Text, { style: S.kpiLabel }, k.label),
@@ -385,17 +413,16 @@ function layoutEmendas(input: ReportInput): React.ReactNode {
     )),
   );
 
-  // Coluna 1 — donut por área
-  const totalArea = R.areaItems.reduce((s, it) => s + it.valor, 0);
-  const donutCol = React.createElement(View, { style: [S.col, { maxWidth: 250 }] },
-    React.createElement(Text, { style: S.secTitle }, 'Distribuição por área'),
+  // ── Coluna 1 — donut por área + análise ──
+  const donutCol = React.createElement(View, { style: [S.col, { maxWidth: 218 }] },
+    React.createElement(Text, { style: S.secTitle }, 'Emendas por área'),
     React.createElement(View, { style: S.card },
-      React.createElement(View, { style: { alignItems: 'center', marginBottom: 10 } }, DonutSVG({ items: R.areaItems, size: 120 })),
+      React.createElement(View, { style: { alignItems: 'center', marginBottom: 10 } }, DonutSVG({ items: R.areaItems, size: 118 })),
       ...R.areaItems.slice(0, 6).map((item, i) => {
         const pct = totalArea ? ((item.valor / totalArea) * 100).toFixed(1) : '0';
         return React.createElement(View, { key: i, style: S.legendRow },
           React.createElement(View, { style: [S.legendDot, { backgroundColor: PALETTE[i % PALETTE.length] }] }),
-          React.createElement(Text, { style: S.legendLabel }, clip(item.label, 18)),
+          React.createElement(Text, { style: S.legendLabel }, clip(item.label, 16)),
           React.createElement(Text, { style: S.legendPct }, `${pct}%`),
           React.createElement(Text, { style: S.legendVal }, fmtNum(item.valor, true)),
         );
@@ -403,49 +430,36 @@ function layoutEmendas(input: ReportInput): React.ReactNode {
     ),
   );
 
-  // Coluna 2 — evolução anual + análise
-  const midContent: React.ReactNode[] = [];
-  if (R.evolucao.length > 0) {
-    midContent.push(
-      React.createElement(Text, { key: 'et', style: S.secTitle }, 'Evolução anual (empenhado)'),
-      React.createElement(View, { key: 'ec', style: S.card },
-        BarSVG({ items: R.evolucao, barKeys: ['valor'], width: 230, height: 120 }),
-        xLabels(R.evolucao),
+  // ── Coluna 2 — mapa do estado (heatmap por valor) ──
+  const mapCol = mapa ? React.createElement(View, { style: [S.col, { maxWidth: 288 }] },
+    React.createElement(Text, { style: S.secTitle }, 'Emendas por município'),
+    React.createElement(View, { style: [S.card, { alignItems: 'center' }] },
+      React.createElement(Svg, { width: mapa.width, height: mapa.height },
+        ...mapa.paths.map((p, i) => React.createElement(Path, { key: i, d: p.d, fill: p.fill, stroke: WHITE, strokeWidth: 0.3 })),
       ),
-    );
-  }
-  if (conteudo) midContent.push(React.createElement(View, { key: 'ab' }, AnalysisBox({ conteudo, maxChars: 460 })));
-  const midCol = React.createElement(View, { style: S.col }, ...midContent);
-
-  // Coluna 3 — tabela por favorecido
-  const tableCol = React.createElement(View, { style: [S.col, { maxWidth: 300 }] },
-    React.createElement(Text, { style: S.secTitle }, `Detalhamento por favorecido${R.ano ? ` · ${R.ano}` : ''}`),
-    React.createElement(View, { style: [S.card, { padding: 0, overflow: 'hidden' }] },
-      React.createElement(View, { style: S.tableHead },
-        React.createElement(Text, { style: [S.tableHeadCell, { flex: 3 }] }, 'Favorecido'),
-        React.createElement(Text, { style: [S.tableHeadCell, { flex: 2 }] }, 'Município'),
-        React.createElement(Text, { style: [S.tableHeadCell, { flex: 2, textAlign: 'right' }] }, 'Empenhado'),
-        React.createElement(Text, { style: [S.tableHeadCell, { width: 34, textAlign: 'right' }] }, 'Exec.'),
-      ),
-      ...R.favorecidos.map((f, i) => {
-        const ok = f.exec >= 100;
-        const cor = ok ? GREEN : f.exec > 0 ? AMBER : GRAY;
-        return React.createElement(View, { key: i, style: [S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}] },
-          React.createElement(Text, { style: [S.tableCellBold, { flex: 3 }] }, clip(f.favorecido, 26)),
-          React.createElement(Text, { style: [S.tableCell, { flex: 2 }] }, clip(f.municipio, 14)),
-          React.createElement(Text, { style: [S.tableCellBold, { flex: 2, textAlign: 'right' }] }, fmtNum(f.empenhado, true)),
-          React.createElement(View, { style: { width: 34, alignItems: 'flex-end', paddingRight: 6, paddingTop: 4 } },
-            React.createElement(View, { style: [S.execBadge, { backgroundColor: `${cor}22` }] },
-              React.createElement(Text, { style: [S.execBadgeTxt, { color: cor }] }, `${f.exec}%`)),
-          ),
-        );
-      }),
+      mapa.legend.length > 0 ? React.createElement(View, { style: S.chartLegendRow },
+        ...mapa.legend.map((l, i) => React.createElement(View, { key: i, style: S.chartLegendItem },
+          React.createElement(View, { style: { width: 8, height: 8, borderRadius: 2, backgroundColor: l.cor } }),
+          React.createElement(Text, { style: { fontSize: 6.5, color: GRAY } }, l.partido),
+        )),
+      ) : null,
     ),
+  ) : null;
+
+  // ── Coluna 3 — Top 5 municípios + Top 5 parlamentares ──
+  const topMuni = topGrupos(emendas, e => e.municipio);
+  const topParl = topGrupos(emendas, e => e.parlamentar);
+  const rightCol = React.createElement(View, { style: [S.col, { maxWidth: 230 }] },
+    TopPanel({ titulo: 'Top 5 municípios', itens: topMuni, cor: BLUE }),
+    TopPanel({ titulo: 'Top 5 parlamentares', itens: topParl, cor: BLUE }),
+    conteudo ? AnalysisBox({ conteudo, maxChars: 300 }) : null,
   );
 
-  const body = React.createElement(View, { style: S.row },
-    donutCol, React.createElement(View, { style: S.dividerV }), midCol, React.createElement(View, { style: S.dividerV }), tableCol);
+  const cols: React.ReactNode[] = [donutCol];
+  if (mapCol) { cols.push(React.createElement(View, { style: S.dividerV }), mapCol); }
+  cols.push(React.createElement(View, { style: S.dividerV }), rightCol);
 
+  const body = React.createElement(View, { style: S.row }, ...cols);
   return React.createElement(View, null, kpiRow, body);
 }
 
@@ -596,7 +610,7 @@ function RelatorioPDF({ input, geradoEm, tipoLabel, mapa }: {
 
   let mainContent: React.ReactNode;
   if (isEleitoral) mainContent = layoutEleitoral(input, mapa);
-  else if (isEmendas) mainContent = layoutEmendas(input);
+  else if (isEmendas) mainContent = layoutEmendas(input, mapa);
   else mainContent = layoutGenerico(input.visualizacoes ?? [], conteudo);
 
   const reportTitle = titulo || conteudo.split('\n')[0]?.slice(0, 80) || 'Relatório de Dados';
@@ -662,12 +676,25 @@ export async function POST(request: NextRequest) {
       // sem gabinete → cai no genérico
     }
 
-    // ── ELEITORAL → pré-computa o mapa (com fallback silencioso) ──
+    // ── Pré-computa o mapa (com fallback silencioso) ──
     let mapa: MapaResult | null = null;
     if (isEleitoral) {
       const cand = body.dadosBrutos?.buscar_votacao?.candidatos?.[0];
       if (cand) {
         mapa = await renderMapaEleitoral({ uf: cand.uf, ano: Number(cand.ano), cargo: cand.cargo, width: 232, height: 250 });
+      }
+    } else if (isEmendas) {
+      const emendas: any[] = body.dadosBrutos?.buscar_emendas?.emendas ?? [];
+      if (emendas.length > 0) {
+        // UF predominante entre as emendas
+        const ufCount: Record<string, number> = {};
+        emendas.forEach(e => { if (e.uf) ufCount[e.uf] = (ufCount[e.uf] ?? 0) + 1; });
+        const uf = Object.entries(ufCount).sort((a, b) => b[1] - a[1])[0]?.[0];
+        const valores: Record<string, number> = {};
+        emendas.forEach(e => { if (e.municipio) valores[e.municipio] = (valores[e.municipio] ?? 0) + (e.valorEmpenhado || 0); });
+        if (uf && Object.keys(valores).length > 0) {
+          mapa = await renderMapaEmendas({ uf, valores, width: 232, height: 250 });
+        }
       }
     }
 

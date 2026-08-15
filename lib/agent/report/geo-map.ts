@@ -26,6 +26,15 @@ const PARTY_COLOR: Record<string, string> = {
 const PALETTE_FALLBACK = ['#6366f1', '#14b8a6', '#f59e0b', '#ec4899', '#84cc16', '#0ea5e9'];
 const NEUTRAL = '#e2e8f0';
 
+// Faixas de valor (heatmap azul) para o mapa de emendas — igual ao dashboard
+const SEM_EMENDA = '#e8eef6';
+const EMENDA_BUCKETS: { max: number; cor: string; label: string }[] = [
+  { max: 500_000,   cor: '#bfdbfe', label: 'Até R$ 500 mil' },
+  { max: 1_000_000, cor: '#60a5fa', label: 'R$ 500 mil–1 mi' },
+  { max: 2_000_000, cor: '#2563eb', label: 'R$ 1–2 mi' },
+  { max: Infinity,  cor: '#1e3a8a', label: 'Acima de R$ 2 mi' },
+];
+
 function corDoPartido(partido: string, seen: Map<string, string>): string {
   const p = (partido || '').trim().toUpperCase();
   if (!p) return NEUTRAL;
@@ -222,4 +231,55 @@ export async function renderMapaEleitoral(params: {
 
 function legendaDe(usados: Map<string, string>): { partido: string; cor: string }[] {
   return [...usados.entries()].slice(0, 6).map(([partido, cor]) => ({ partido, cor }));
+}
+
+/**
+ * Mapa de emendas: colore os municípios do estado por faixa de valor
+ * (heatmap azul, igual ao dashboard). `valores` é chaveado por nome de
+ * município (bruto — normalizado internamente). Retorna `null` em caso de
+ * falha da malha do IBGE (fallback silencioso).
+ */
+export async function renderMapaEmendas(params: {
+  uf: string;
+  valores: Record<string, number>;
+  width?: number;
+  height?: number;
+}): Promise<MapaResult | null> {
+  const W = params.width ?? 232;
+  const H = params.height ?? 250;
+  const ufUp = params.uf?.toUpperCase();
+  try {
+    const ufCode = UF_CODES[ufUp];
+    if (!ufCode) return null;
+
+    // normaliza chaves de valores → soma por município
+    const valNorm: Record<string, number> = {};
+    for (const [k, v] of Object.entries(params.valores)) {
+      const key = normalizarTextoTse(k);
+      valNorm[key] = (valNorm[key] ?? 0) + (v || 0);
+    }
+
+    const [geo, nomePorCod] = await Promise.all([
+      fetchJson(malhaEstadoUrl(ufCode)),
+      fetchMunicipiosNome(ufUp),
+    ]);
+
+    const usados = new Set<string>();
+    const fillFor = (codarea: string) => {
+      const nome = nomePorCod[codarea];
+      const val = nome ? (valNorm[nome] ?? 0) : 0;
+      if (val <= 0) return SEM_EMENDA;
+      const b = EMENDA_BUCKETS.find(b => val <= b.max) ?? EMENDA_BUCKETS[EMENDA_BUCKETS.length - 1];
+      usados.add(b.label);
+      return b.cor;
+    };
+
+    const paths = buildPaths(geo.features ?? [], W, H, fillFor);
+    if (paths.length === 0) return null;
+    const legend = EMENDA_BUCKETS.filter(b => usados.has(b.label)).map(b => ({ partido: b.label, cor: b.cor }));
+    return { width: W, height: H, paths, legend };
+  } catch (err) {
+    console.warn('[geo-map] mapa de emendas indisponível — gerando sem mapa:', String(err));
+    return null;
+  }
 }
