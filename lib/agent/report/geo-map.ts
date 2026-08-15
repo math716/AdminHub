@@ -34,11 +34,34 @@ const EMENDA_BUCKETS: { max: number; cor: string; label: string }[] = [
   { max: Infinity,  cor: '#1e3a8a', label: 'Acima de R$ 2 mi' },
 ];
 
-function corDoPartido(partido: string): string {
+// Famílias políticas → cor âncora. Cada candidato vencedor recebe uma cor
+// DISTINTA: o maior vencedor da família fica com a cor canônica (vermelho/
+// azul/amarelo) e os demais recebem cores adicionais da mesma família, para
+// nunca repetir a mesma cor entre candidatos diferentes.
+type Familia = 'esq' | 'dir' | 'out';
+function familiaDoPartido(partido: string): Familia {
   const p = (partido || '').trim().toUpperCase();
-  if (PARTIDOS_VERMELHO.has(p)) return COR_VERMELHO;
-  if (PARTIDOS_AZUL.has(p)) return COR_AZUL;
-  return COR_AMARELO;
+  if (PARTIDOS_VERMELHO.has(p)) return 'esq';
+  if (PARTIDOS_AZUL.has(p)) return 'dir';
+  return 'out';
+}
+const PALETA: Record<Familia, string[]> = {
+  esq: [COR_VERMELHO, '#b91c1c', '#f87171', '#7f1d1d', '#fca5a5'],
+  dir: [COR_AZUL, '#16a34a', '#0ea5e9', '#059669', '#60a5fa', '#22c55e', '#1e3a8a'],
+  out: [COR_AMARELO, '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#eab308', '#06b6d4', '#84cc16', '#db2777'],
+};
+
+// Recebe candidato → { partido, nº de regiões } e devolve candidato → cor única.
+function atribuirCores(info: Map<string, { partido: string; n: number }>): Map<string, string> {
+  const porFamilia: Record<Familia, Array<[string, number]>> = { esq: [], dir: [], out: [] };
+  for (const [cand, v] of info) porFamilia[familiaDoPartido(v.partido)].push([cand, v.n]);
+  const cor = new Map<string, string>();
+  (['esq', 'dir', 'out'] as Familia[]).forEach(fam => {
+    porFamilia[fam]
+      .sort((a, b) => b[1] - a[1]) // maior vencedor primeiro → cor canônica
+      .forEach(([cand], i) => cor.set(cand, PALETA[fam][i % PALETA[fam].length]));
+  });
+  return cor;
 }
 
 // ── Fetch com timeout ───────────────────────────────────────────────────────
@@ -183,29 +206,13 @@ export async function renderMapaEleitoral(params: {
   const W = params.width ?? 300;
   const H = params.height ?? 300;
   const ufUp = params.uf?.toUpperCase();
-  const conta = new Map<string, { cor: string; n: number }>(); // candidato → {cor, nº de regiões}
-
-  const registra = (candidato: string, cor: string) => {
-    const e = conta.get(candidato);
-    if (e) e.n++;
-    else conta.set(candidato, { cor, n: 1 });
-  };
 
   try {
     if (!ufUp || ufUp === 'BR') {
       // ── Mapa do Brasil, colorido pelo candidato vencedor por UF ──
       const geo = await fetchJson(malhaBrasilUrl());
       const winners = winnersPorEstado(params.ano, params.cargo);
-      const fillFor = (codarea: string) => {
-        const uf = CODE_TO_UF[codarea];
-        const w = uf ? winners[uf] : null;
-        if (!w) return NEUTRAL;
-        const cor = corDoPartido(w.partido);
-        registra(w.candidato, cor);
-        return cor;
-      };
-      const paths = buildPaths(geo.features ?? [], W, H, fillFor);
-      return { width: W, height: H, paths, legend: legendaDe(conta) };
+      return montarMapa(winners, (codarea) => CODE_TO_UF[codarea] ?? '', geo.features ?? [], W, H);
     }
 
     // ── Mapa do estado, colorido pelo candidato vencedor por município ──
@@ -216,29 +223,43 @@ export async function renderMapaEleitoral(params: {
       fetchMunicipiosNome(ufUp),
     ]);
     const winners = winnersPorMunicipio(params.ano, ufUp, params.cargo);
-    const fillFor = (codarea: string) => {
-      const nome = nomePorCod[codarea];
-      const w = nome ? winners[nome] : null;
-      if (!w) return NEUTRAL;
-      const cor = corDoPartido(w.partido);
-      registra(w.candidato, cor);
-      return cor;
-    };
-    const paths = buildPaths(geo.features ?? [], W, H, fillFor);
-    if (paths.length === 0) return null;
-    return { width: W, height: H, paths, legend: legendaDe(conta) };
+    const res = montarMapa(winners, (codarea) => nomePorCod[codarea] ?? '', geo.features ?? [], W, H);
+    return res.paths.length > 0 ? res : null;
   } catch (err) {
     console.warn('[geo-map] mapa indisponível — gerando sem mapa:', String(err));
     return null;
   }
 }
 
-// Legenda = candidatos vencedores (mais regiões primeiro), no máx. 6.
-function legendaDe(conta: Map<string, { cor: string; n: number }>): { label: string; cor: string }[] {
-  return [...conta.entries()]
+// Monta o mapa: (1) conta regiões por candidato, (2) atribui cor única por
+// candidato, (3) colore as regiões, (4) legenda pelos 6 mais vencedores.
+function montarMapa(
+  winners: Record<string, Vencedor>,
+  keyOf: (codarea: string) => string,
+  features: any[],
+  W: number,
+  H: number,
+): MapaResult {
+  const info = new Map<string, { partido: string; n: number }>();
+  for (const w of Object.values(winners)) {
+    const e = info.get(w.candidato);
+    if (e) e.n++;
+    else info.set(w.candidato, { partido: w.partido, n: 1 });
+  }
+  const cores = atribuirCores(info);
+
+  const fillFor = (codarea: string) => {
+    const w = winners[keyOf(codarea)];
+    return w ? (cores.get(w.candidato) ?? NEUTRAL) : NEUTRAL;
+  };
+  const paths = buildPaths(features, W, H, fillFor);
+
+  const legend = [...info.entries()]
     .sort((a, b) => b[1].n - a[1].n)
     .slice(0, 6)
-    .map(([candidato, v]) => ({ label: tituloCaso(candidato), cor: v.cor }));
+    .map(([cand]) => ({ label: tituloCaso(cand), cor: cores.get(cand) ?? NEUTRAL }));
+
+  return { width: W, height: H, paths, legend };
 }
 
 // "DELEGADO DA CUNHA" → "Delegado da Cunha"
