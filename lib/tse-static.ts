@@ -17,7 +17,15 @@ export interface CandidatoJson {
 }
 
 export function normalizarTextoTse(t: string): string {
-  return t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  // Trata "_" como espaço para casar enums do agente (ex.: DEPUTADO_FEDERAL)
+  // com o cargo do TSE ("Deputado Federal"), e colapsa espaços repetidos.
+  return (t ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 const fileCache = new Map<string, CandidatoJson[]>();
