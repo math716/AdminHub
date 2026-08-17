@@ -423,7 +423,7 @@ export function VisualizacoesCard({
         </button>
         {(hasVotacao || !hasEmendas) && (
           <Link
-            href="/mapa-eleitoral"
+            href="/dashboard/mapa"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:bg-white/5"
             style={{ color: '#94a3b8', border: '1px solid rgba(74,158,222,0.15)' }}
           >
@@ -433,7 +433,7 @@ export function VisualizacoesCard({
         )}
         {(hasEmendas || !hasVotacao) && (
           <Link
-            href="/emendas"
+            href="/dashboard/emendas"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:bg-white/5"
             style={{ color: '#94a3b8', border: '1px solid rgba(74,158,222,0.15)' }}
           >
