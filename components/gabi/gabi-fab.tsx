@@ -430,7 +430,7 @@ export function GabiFAB() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
             style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
             onClick={e => { if (e.target === e.currentTarget) setOpen(false); }}
           >
@@ -703,7 +703,7 @@ export function GabiFAB() {
         onClick={() => setOpen(o => !o)}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.94 }}
-        className="fixed bottom-6 right-4 sm:right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-lg"
+        className="fixed bottom-6 right-4 sm:right-6 z-[9990] w-14 h-14 rounded-full flex items-center justify-center shadow-lg"
         style={{
           background: open
             ? 'linear-gradient(135deg, #374151, #4b5563)'
