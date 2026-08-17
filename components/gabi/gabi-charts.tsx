@@ -107,7 +107,8 @@ function DonutPanel({ vis, isMoney }: { vis: Visualizacao; isMoney: boolean }) {
 // ─── Bar panel ────────────────────────────────────────────────────────────────
 
 function BarPanel({ vis, isMoney }: { vis: Visualizacao; isMoney: boolean }) {
-  const items = vis.dados?.itens ?? [];
+  const allItems = vis.dados?.itens ?? [];
+  const items = allItems.slice(0, 8); // limita a 8 barras para não amontoar
   const fmt = isMoney ? fmtMoney : fmtCount;
 
   const barKeys: string[] = (() => {
@@ -121,14 +122,18 @@ function BarPanel({ vis, isMoney }: { vis: Visualizacao; isMoney: boolean }) {
 
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ height: 200 }}>
+      <div style={{ height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={items} margin={{ top: 24, right: 8, left: -20, bottom: 0 }}>
+          <BarChart data={items} margin={{ top: 20, right: 8, left: -20, bottom: 8 }}>
             <XAxis
               dataKey="label"
               tick={{ fontSize: 8, fill: '#94a3b8' }}
               interval={0}
-              tickFormatter={(v: string) => v.length > 12 ? v.slice(0, 10) + '…' : v}
+              angle={-32}
+              textAnchor="end"
+              height={54}
+              tickMargin={4}
+              tickFormatter={(v: string) => v.length > 13 ? v.slice(0, 11) + '…' : v}
             />
             <YAxis hide />
             <Tooltip

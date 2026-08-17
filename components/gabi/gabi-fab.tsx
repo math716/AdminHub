@@ -434,7 +434,7 @@ export function GabiFAB() {
               transition={{ type: 'spring', damping: 30, stiffness: 320 }}
               className="relative flex flex-col w-full"
               style={{
-                maxWidth: 860,
+                maxWidth: 960,
                 height: 'min(740px, calc(100vh - 32px))',
                 background: 'var(--bg-card)',
                 border: '1px solid rgba(74,158,222,0.2)',
