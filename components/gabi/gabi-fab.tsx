@@ -171,7 +171,7 @@ function MarkdownContent({ content }: { content: string }) {
                     {block.rows.map((row, ri) => (
                       <tr key={ri} style={{ borderBottom: ri < block.rows.length - 1 ? '1px solid rgba(74,158,222,0.08)' : 'none', background: ri % 2 ? 'rgba(74,158,222,0.03)' : 'transparent' }}>
                         {row.map((cell, ci) => (
-                          <td key={ci} className="px-3 py-1.5" style={{ color: '#94a3b8' }}>
+                          <td key={ci} className="px-3 py-1.5" style={{ color: 'var(--text-secondary)' }}>
                             <Inline text={cell} />
                           </td>
                         ))}
@@ -653,7 +653,7 @@ export function GabiFAB() {
                         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                       </button>
                     </div>
-                    <p className="text-[10px] mt-2 text-center" style={{ color: '#475569' }}>
+                    <p className="text-[10px] mt-2 text-center" style={{ color: 'var(--text-tertiary)' }}>
                       Enter para enviar · Shift+Enter para nova linha
                     </p>
                   </div>

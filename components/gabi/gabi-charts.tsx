@@ -93,7 +93,7 @@ function DonutPanel({ vis, isMoney }: { vis: Visualizacao; isMoney: boolean }) {
               <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
               </div>
-              <p className="text-[9px] mt-0.5 text-right" style={{ color: '#475569' }}>
+              <p className="text-[9px] mt-0.5 text-right" style={{ color: '#94a3b8' }}>
                 {fmt(item.valor)}
               </p>
             </div>
@@ -338,7 +338,7 @@ export function VisualizacoesCard({
                     <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                       <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
                     </div>
-                    <p className="text-[10px] mt-0.5 text-right" style={{ color: '#475569' }}>
+                    <p className="text-[10px] mt-0.5 text-right" style={{ color: '#94a3b8' }}>
                       {isMoney ? fmtMoney(item.valor) : fmtCount(item.valor)}
                     </p>
                   </div>
