@@ -339,17 +339,27 @@ export function renderPizza(titulo: string, items: PieItem[]): React.ReactNode |
   const total = clean.reduce((s, i) => s + i.valor, 0);
 
   const size = 128, cx = size / 2, cy = size / 2, R = size * 0.46, r = size * 0.26;
-  const GAP = clean.length > 1 ? 0.03 : 0;
-  let angle = -Math.PI / 2;
-  const paths = clean.map((it, i) => {
-    const sweep = (it.valor / total) * 2 * Math.PI;
-    const cor = it.cor || PIE_PALETTE[i % PIE_PALETTE.length];
-    const el = sweep > 0.005
-      ? React.createElement(Path, { key: i, d: donutSeg(cx, cy, R, r, angle, angle + Math.max(sweep - GAP, 0.001)), fill: cor })
-      : null;
-    angle += sweep;
-    return el;
-  }).filter(Boolean);
+  let paths: React.ReactNode[];
+  if (clean.length === 1) {
+    // Fatia única (100%): anel completo (dois semicírculos) — evita arco degenerado
+    const cor = clean[0].cor || PIE_PALETTE[0];
+    paths = [
+      React.createElement(Path, { key: 0, d: donutSeg(cx, cy, R, r, -Math.PI / 2, Math.PI / 2), fill: cor }),
+      React.createElement(Path, { key: 1, d: donutSeg(cx, cy, R, r, Math.PI / 2, (3 * Math.PI) / 2), fill: cor }),
+    ];
+  } else {
+    const GAP = 0.03;
+    let angle = -Math.PI / 2;
+    paths = clean.map((it, i) => {
+      const sweep = (it.valor / total) * 2 * Math.PI;
+      const cor = it.cor || PIE_PALETTE[i % PIE_PALETTE.length];
+      const el = sweep > 0.005
+        ? React.createElement(Path, { key: i, d: donutSeg(cx, cy, R, r, angle, angle + Math.max(sweep - GAP, 0.001)), fill: cor })
+        : null;
+      angle += sweep;
+      return el;
+    }).filter(Boolean) as React.ReactNode[];
+  }
 
   const legend = clean.map((it, i) => {
     const pct = ((it.valor / total) * 100).toFixed(1).replace('.', ',');

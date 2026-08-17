@@ -37,13 +37,20 @@ interface ReportInput {
 
 // Monta o gráfico de pizza (distribuição) a partir dos dados estruturados.
 function buildPizza(input: ReportInput, isEleitoral: boolean, isEmendas: boolean): React.ReactNode | null {
-  // Eleições — distribuição de votos por candidato (cores consistentes com o mapa)
+  // Eleições
   if (isEleitoral) {
     const cands: any[] = input.dadosBrutos?.buscar_votacao?.candidatos ?? [];
-    if (cands.length > 0) {
+    // 2+ candidatos → distribuição por candidato (cores consistentes com o mapa)
+    if (cands.length >= 2) {
       const base = cands.map(c => ({ label: tituloCaso(c.nomeUrna || c.nome || ''), valor: c.totalVotos || 0, partido: c.partido || '' }));
       const cores = coresPorCandidato(base.map(b => ({ label: b.label, partido: b.partido, peso: b.valor })));
       return renderPizza('Distribuição de votos', base.map(b => ({ label: b.label, valor: b.valor, cor: cores[b.label] })));
+    }
+    // 1 candidato → distribuição dos votos DELE por município (útil, não "100%")
+    if (cands.length === 1) {
+      const muns = (cands[0].votosPorMunicipio ?? []).slice(0, 8)
+        .map((m: any) => ({ label: String(m.municipio || ''), valor: Number(m.votos) || 0 }));
+      return muns.length >= 2 ? renderPizza('Votos por município (principais)', muns) : null;
     }
   }
   // Emendas — distribuição por área temática
