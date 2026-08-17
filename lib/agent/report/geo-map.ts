@@ -282,53 +282,95 @@ export function tituloCaso(s: string): string {
     .join(' ');
 }
 
+type Faixa = { max: number; cor: string; label: string };
+
 /**
- * Mapa de emendas: colore os municípios do estado por faixa de valor
- * (heatmap azul, igual ao dashboard). `valores` é chaveado por nome de
- * município (bruto — normalizado internamente). Retorna `null` em caso de
- * falha da malha do IBGE (fallback silencioso).
+ * Mapa de calor genérico: colore cada região por FAIXA de valor.
+ * Suporta estado (por município) e Brasil (por UF, quando uf é omitido/'BR').
+ * `valores` é chaveado por nome de município (estado) ou sigla de UF (Brasil).
+ * Retorna `null` se a malha do IBGE falhar (fallback silencioso).
  */
-export async function renderMapaEmendas(params: {
-  uf: string;
+export async function renderMapaHeatmap(params: {
+  uf?: string;
   valores: Record<string, number>;
+  faixas: Faixa[];
+  semCor?: string;
   width?: number;
   height?: number;
 }): Promise<MapaResult | null> {
   const W = params.width ?? 232;
   const H = params.height ?? 250;
+  const semCor = params.semCor ?? '#e8eef6';
+  const faixas = params.faixas;
   const ufUp = params.uf?.toUpperCase();
+  const usadas = new Set<string>();
+
+  const corDe = (val: number): string => {
+    if (val <= 0) return semCor;
+    const f = faixas.find(f => val <= f.max) ?? faixas[faixas.length - 1];
+    usadas.add(f.label);
+    return f.cor;
+  };
+  const legenda = () => faixas.filter(f => usadas.has(f.label)).map(f => ({ label: f.label, cor: f.cor }));
+
   try {
+    if (!ufUp || ufUp === 'BR') {
+      // Mapa do Brasil, colorido por UF
+      const geo = await fetchJson(malhaBrasilUrl());
+      const valUF: Record<string, number> = {};
+      for (const [k, v] of Object.entries(params.valores)) {
+        const key = k.toUpperCase();
+        valUF[key] = (valUF[key] ?? 0) + (v || 0);
+      }
+      const fillFor = (codarea: string) => corDe(valUF[CODE_TO_UF[codarea] ?? ''] ?? 0);
+      const paths = buildPaths(geo.features ?? [], W, H, fillFor);
+      return { width: W, height: H, paths, legend: legenda() };
+    }
+
+    // Mapa do estado, colorido por município
     const ufCode = UF_CODES[ufUp];
     if (!ufCode) return null;
-
-    // normaliza chaves de valores → soma por município
     const valNorm: Record<string, number> = {};
     for (const [k, v] of Object.entries(params.valores)) {
       const key = normalizarTextoTse(k);
       valNorm[key] = (valNorm[key] ?? 0) + (v || 0);
     }
-
     const [geo, nomePorCod] = await Promise.all([
       fetchJson(malhaEstadoUrl(ufCode)),
       fetchMunicipiosNome(ufUp),
     ]);
-
-    const usados = new Set<string>();
-    const fillFor = (codarea: string) => {
-      const nome = nomePorCod[codarea];
-      const val = nome ? (valNorm[nome] ?? 0) : 0;
-      if (val <= 0) return SEM_EMENDA;
-      const b = EMENDA_BUCKETS.find(b => val <= b.max) ?? EMENDA_BUCKETS[EMENDA_BUCKETS.length - 1];
-      usados.add(b.label);
-      return b.cor;
-    };
-
+    const fillFor = (codarea: string) => corDe(valNorm[nomePorCod[codarea]] ?? 0);
     const paths = buildPaths(geo.features ?? [], W, H, fillFor);
     if (paths.length === 0) return null;
-    const legend = EMENDA_BUCKETS.filter(b => usados.has(b.label)).map(b => ({ label: b.label, cor: b.cor }));
-    return { width: W, height: H, paths, legend };
+    return { width: W, height: H, paths, legend: legenda() };
   } catch (err) {
-    console.warn('[geo-map] mapa de emendas indisponível — gerando sem mapa:', String(err));
+    console.warn('[geo-map] heatmap indisponível — gerando sem mapa:', String(err));
     return null;
   }
+}
+
+// Mapa de emendas (por valor empenhado) — faixas fixas iguais ao dashboard.
+export function renderMapaEmendas(params: { uf: string; valores: Record<string, number>; width?: number; height?: number }) {
+  return renderMapaHeatmap({ ...params, faixas: EMENDA_BUCKETS, semCor: SEM_EMENDA });
+}
+
+// Faixas de votos adaptativas ao maior valor (escala azul).
+function faixasDeVotos(max: number): Faixa[] {
+  const fmt = (n: number) =>
+    n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace('.', ',')} mi`
+    : n >= 1000     ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace('.', ',')} mil`
+    : String(Math.round(n));
+  const t1 = max * 0.1, t2 = max * 0.25, t3 = max * 0.5;
+  return [
+    { max: t1,       cor: '#bfdbfe', label: `até ${fmt(t1)}` },
+    { max: t2,       cor: '#60a5fa', label: `${fmt(t1)}–${fmt(t2)}` },
+    { max: t3,       cor: '#2563eb', label: `${fmt(t2)}–${fmt(t3)}` },
+    { max: Infinity, cor: '#1e3a8a', label: `+ de ${fmt(t3)}` },
+  ];
+}
+
+// Mapa de calor dos votos de UM candidato (onde ele teve mais votos).
+export function renderMapaVotos(params: { uf?: string; valores: Record<string, number>; width?: number; height?: number }) {
+  const max = Math.max(1, ...Object.values(params.valores));
+  return renderMapaHeatmap({ ...params, faixas: faixasDeVotos(max), semCor: '#eef2f7' });
 }

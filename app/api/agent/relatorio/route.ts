@@ -9,7 +9,7 @@ import {
   Document, Page, Text, View,
   HeaderBand, DocFooter, renderContent, renderPizza, docStyles as S, stripEmoji, C, type Pill,
 } from '@/lib/agent/report/doc-pdf';
-import { renderMapaEleitoral, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
+import { renderMapaEleitoral, renderMapaEmendas, renderMapaVotos, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -74,10 +74,10 @@ function buildPizza(input: ReportInput, isEleitoral: boolean, isEmendas: boolean
   return null;
 }
 
-// ─── Seção do mapa (apenas eleições) ─────────────────────────────────────────
-function MapSection(mapa: MapaResult): React.ReactNode {
+// ─── Seção do mapa ───────────────────────────────────────────────────────────
+function MapSection(mapa: MapaResult, titulo: string): React.ReactNode {
   return React.createElement(View, { style: { marginTop: 14 }, wrap: false },
-    React.createElement(Text, { style: S.h2 }, 'Mapa — vencedor por região'),
+    React.createElement(Text, { style: S.h2 }, titulo),
     React.createElement(View, { style: { alignItems: 'center', paddingVertical: 8, borderWidth: 1, borderColor: C.border, borderRadius: 6 } },
       React.createElement(Svg, { width: mapa.width, height: mapa.height },
         ...mapa.paths.map((p, i) => React.createElement(Path, { key: i, d: p.d, fill: p.fill, stroke: C.white, strokeWidth: 0.3 })),
@@ -93,8 +93,8 @@ function MapSection(mapa: MapaResult): React.ReactNode {
 }
 
 // ─── Documento ───────────────────────────────────────────────────────────────
-function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa }: {
-  input: ReportInput; tipoLabel: string; geradoEm: string; valorPill: Pill | null; mapa: MapaResult | null;
+function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitulo }: {
+  input: ReportInput; tipoLabel: string; geradoEm: string; valorPill: Pill | null; mapa: MapaResult | null; mapaTitulo: string;
 }) {
   const conteudo = input.conteudo ?? '';
   const reportTitle = clip(stripEmoji(input.titulo || conteudo.split('\n')[0] || 'Relatório de Dados'), 90);
@@ -115,7 +115,7 @@ function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa }: {
       HeaderBand({ titulo: reportTitle, pills }),
       pizza,
       ...renderContent(conteudo),
-      mapa ? MapSection(mapa) : null,
+      mapa ? MapSection(mapa, mapaTitulo) : null,
       DocFooter(),
     ),
   );
@@ -140,12 +140,40 @@ export async function POST(request: NextRequest) {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
 
-    // Mapa — apenas eleições (com fallback silencioso)
+    // Mapa (com fallback silencioso). Regra:
+    //  • eleição com 2+ candidatos → vencedor por região
+    //  • eleição com 1 candidato   → mapa de calor dos votos DELE
+    //  • emendas                   → mapa de calor por valor (município)
     let mapa: MapaResult | null = null;
+    let mapaTitulo = 'Mapa';
+    const W = 380, H = 300;
     if (isEleitoral) {
-      const cand = body.dadosBrutos?.buscar_votacao?.candidatos?.[0];
-      if (cand) {
-        mapa = await renderMapaEleitoral({ uf: cand.uf, ano: Number(cand.ano), cargo: cand.cargo, width: 380, height: 300 });
+      const cands: any[] = body.dadosBrutos?.buscar_votacao?.candidatos ?? [];
+      if (cands.length >= 2) {
+        const c = cands[0];
+        mapa = await renderMapaEleitoral({ uf: c.uf, ano: Number(c.ano), cargo: c.cargo, width: W, height: H });
+        mapaTitulo = 'Mapa — vencedor por região';
+      } else if (cands.length === 1) {
+        const c = cands[0];
+        const valores: Record<string, number> = {};
+        (c.votosPorMunicipio ?? []).forEach((m: any) => { if (m.municipio) valores[m.municipio] = m.votos; });
+        if (Object.keys(valores).length > 0) {
+          mapa = await renderMapaVotos({ uf: c.uf, valores, width: W, height: H });
+          mapaTitulo = c.uf === 'BR' ? 'Mapa — votos por estado' : 'Mapa — votos por município';
+        }
+      }
+    } else if (isEmendas) {
+      const emendas: any[] = body.dadosBrutos?.buscar_emendas?.emendas ?? [];
+      if (emendas.length > 0) {
+        const ufCount: Record<string, number> = {};
+        emendas.forEach(e => { if (e.uf) ufCount[e.uf] = (ufCount[e.uf] ?? 0) + 1; });
+        const uf = Object.entries(ufCount).sort((a, b) => b[1] - a[1])[0]?.[0];
+        const valores: Record<string, number> = {};
+        emendas.forEach(e => { if (e.municipio) valores[e.municipio] = (valores[e.municipio] ?? 0) + (e.valorEmpenhado || 0); });
+        if (uf && Object.keys(valores).length > 0) {
+          mapa = await renderMapaEmendas({ uf, valores, width: W, height: H });
+          mapaTitulo = 'Mapa — emendas por município';
+        }
       }
     }
 
@@ -157,7 +185,7 @@ export async function POST(request: NextRequest) {
     }
 
     const pdfBuffer = await renderToBuffer(
-      React.createElement(RelatorioDocPDF, { input: body, tipoLabel, geradoEm, valorPill, mapa }) as any,
+      React.createElement(RelatorioDocPDF, { input: body, tipoLabel, geradoEm, valorPill, mapa, mapaTitulo }) as any,
     );
 
     return new NextResponse(pdfBuffer as any, {
