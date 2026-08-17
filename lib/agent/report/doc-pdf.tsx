@@ -300,7 +300,10 @@ function renderBlock(block: Block, i: number): React.ReactNode {
     case 'table': {
       const hasNums = block.rows.some(r => r.slice(1).some(v => parseBrNum(v) !== null && parseBrNum(v)! > 0));
       const chart = hasNums ? renderBarChart(block.headers, block.rows) : null;
-      const colFlex = (ci: number) => (ci === 0 && block.headers.length > 2 ? 1.7 : 1);
+      // Coluna de posição/ranking (#, Nº, Posição, Rank): numera as linhas
+      // (1º, 2º…) — evita células vazias quando vieram medalhas 🥇🥈🥉 (removidas pelo stripEmoji).
+      const rankCol = /^(#|n[ºo.]?|pos(i[çc][aã]o)?|rank(ing)?)$/i.test((block.headers[0] || '').replace(/\*/g, '').trim());
+      const colFlex = (ci: number) => (ci === 0 && block.headers.length > 2 ? (rankCol ? 0.5 : 1.7) : 1);
 
       const tableEl = React.createElement(View, { style: S.tableWrap },
         React.createElement(View, { style: S.tableRow, wrap: false, minPresenceAhead: 48 },
@@ -311,7 +314,8 @@ function renderBlock(block: Block, i: number): React.ReactNode {
           React.createElement(View, { key: ri, wrap: false, style: [ri === block.rows.length - 1 ? S.tableRowLast : S.tableRow, ri % 2 === 1 ? S.tableRowAlt : {}] },
             ...row.map((cell, ci) =>
               React.createElement(View, { key: ci, style: { ...S.tableCell, flex: colFlex(ci) } },
-                React.createElement(Text, { style: ci === 0 ? S.tableCellBold : S.tableCellText }, ...parseInline(cell)))))));
+                React.createElement(Text, { style: ci === 0 ? S.tableCellBold : S.tableCellText },
+                  ...(rankCol && ci === 0 ? [`${ri + 1}º`] : parseInline(cell))))))));
 
       return React.createElement(View, { key: i }, tableEl, chart);
     }

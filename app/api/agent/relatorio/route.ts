@@ -9,7 +9,7 @@ import {
   Document, Page, Text, View,
   HeaderBand, DocFooter, renderContent, renderPizza, docStyles as S, stripEmoji, C, type Pill,
 } from '@/lib/agent/report/doc-pdf';
-import { renderMapaEleitoral, renderMapaEmendas, renderMapaVotos, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
+import { renderMapaEleitoral, renderMapaEmendasVencedor, renderMapaVotos, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -177,11 +177,10 @@ export async function POST(request: NextRequest) {
         const ufCount: Record<string, number> = {};
         emendas.forEach(e => { if (e.uf) ufCount[e.uf] = (ufCount[e.uf] ?? 0) + 1; });
         const uf = Object.entries(ufCount).sort((a, b) => b[1] - a[1])[0]?.[0];
-        const valores: Record<string, number> = {};
-        emendas.forEach(e => { if (e.municipio) valores[e.municipio] = (valores[e.municipio] ?? 0) + (e.valorEmpenhado || 0); });
-        if (uf && Object.keys(valores).length > 0) {
-          mapa = await renderMapaEmendas({ uf, valores, width: W, height: H });
-          mapaTitulo = 'Mapa — emendas por município';
+        if (uf) {
+          // Colore cada município pelo parlamentar que mais destinou ali.
+          mapa = await renderMapaEmendasVencedor({ uf, emendas, width: W, height: H });
+          mapaTitulo = 'Mapa — parlamentar que mais destinou por município';
         }
       }
     }

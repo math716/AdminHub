@@ -383,3 +383,50 @@ export function renderMapaVotos(params: { uf?: string; valores: Record<string, n
   const max = Math.max(1, ...Object.values(params.valores));
   return renderMapaHeatmap({ ...params, faixas: faixasDeVotos(max), semCor: '#eef2f7' });
 }
+
+/**
+ * Mapa de emendas colorido pelo PARLAMENTAR que mais destinou a cada município
+ * (cor distinta por parlamentar, âncora por partido — igual ao mapa eleitoral).
+ * `emendas` = lista com { municipio, parlamentar, partido, valorEmpenhado/valorPago }.
+ */
+export async function renderMapaEmendasVencedor(params: {
+  uf: string;
+  emendas: any[];
+  width?: number;
+  height?: number;
+}): Promise<MapaResult | null> {
+  const W = params.width ?? 232;
+  const H = params.height ?? 250;
+  const ufUp = params.uf?.toUpperCase();
+  try {
+    const ufCode = UF_CODES[ufUp];
+    if (!ufCode) return null;
+
+    // parlamentar vencedor (maior valor) por município
+    const acc: Record<string, Record<string, { valor: number; partido: string }>> = {};
+    for (const e of params.emendas) {
+      if (!e.municipio) continue;
+      const key = normalizarTextoTse(e.municipio);
+      const parl = (e.parlamentar || '—').trim();
+      const val = (e.valorEmpenhado || e.valorPago || 0);
+      acc[key] = acc[key] || {};
+      acc[key][parl] = { valor: (acc[key][parl]?.valor || 0) + val, partido: e.partido || '' };
+    }
+    const winners: Record<string, Vencedor> = {};
+    for (const [muni, parls] of Object.entries(acc)) {
+      const top = Object.entries(parls).sort((a, b) => b[1].valor - a[1].valor)[0];
+      if (top) winners[muni] = { candidato: top[0], partido: top[1].partido };
+    }
+    if (Object.keys(winners).length === 0) return null;
+
+    const [geo, nomePorCod] = await Promise.all([
+      fetchJson(malhaEstadoUrl(ufCode)),
+      fetchMunicipiosNome(ufUp),
+    ]);
+    const res = montarMapa(winners, (codarea) => nomePorCod[codarea] ?? '', geo.features ?? [], W, H);
+    return res.paths.length > 0 ? res : null;
+  } catch (err) {
+    console.warn('[geo-map] mapa de emendas (vencedor) indisponível:', String(err));
+    return null;
+  }
+}
