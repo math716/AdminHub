@@ -10,6 +10,14 @@ const VisualizacoesCard = dynamic(
   { ssr: false, loading: () => null },
 );
 
+// Personagem 3D (só carrega o three.js no cliente). Ativa quando
+// NEXT_PUBLIC_GABI_MODEL_URL está definido; senão usa o "G".
+const GabiAvatar3D = dynamic(
+  () => import('./gabi-avatar-3d').then(m => m.GabiAvatar3D),
+  { ssr: false, loading: () => null },
+);
+const HAS_GABI_3D = !!process.env.NEXT_PUBLIC_GABI_MODEL_URL;
+
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 interface Visualizacao {
@@ -456,12 +464,19 @@ export function GabiFAB() {
                 <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px"
                   style={{ background: 'linear-gradient(90deg, transparent, rgba(74,158,222,0.55), rgba(34,211,238,0.55), transparent)' }} />
 
-                {/* Avatar com anel + status online */}
+                {/* Avatar (personagem 3D quando configurada) + status online */}
                 <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-lg"
-                    style={{ background: 'linear-gradient(135deg, #1d6fd8, #22d3ee)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.18), 0 4px 16px rgba(34,211,238,0.40)' }}>
-                    G
-                  </div>
+                  {HAS_GABI_3D ? (
+                    <div className="w-14 h-14 rounded-full overflow-hidden"
+                      style={{ background: 'linear-gradient(135deg, #123a6b, #0e5e78)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.18), 0 4px 18px rgba(34,211,238,0.45)' }}>
+                      <GabiAvatar3D size={56} />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-lg"
+                      style={{ background: 'linear-gradient(135deg, #1d6fd8, #22d3ee)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.18), 0 4px 16px rgba(34,211,238,0.40)' }}>
+                      G
+                    </div>
+                  )}
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2"
                     style={{ background: '#22c55e', borderColor: '#0f2547' }}>
                     <span className="absolute inset-0 rounded-full animate-ping" style={{ background: 'rgba(34,197,94,0.55)' }} />

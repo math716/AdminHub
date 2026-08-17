@@ -23,7 +23,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://unpkg.com",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
-      "connect-src 'self' ws: wss: https://nominatim.openstreetmap.org https://*.nominatim.openstreetmap.org https://servicodados.ibge.gov.br https://*.servicodados.ibge.gov.br https://*.basemaps.cartocdn.com https://overpass-api.de",
+      "connect-src 'self' ws: wss: https://nominatim.openstreetmap.org https://*.nominatim.openstreetmap.org https://servicodados.ibge.gov.br https://*.servicodados.ibge.gov.br https://*.basemaps.cartocdn.com https://overpass-api.de https://models.readyplayer.me https://*.readyplayer.me",
       "worker-src blob:",
       "frame-ancestors 'none'",
     ].join('; '),
@@ -31,6 +31,7 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  transpilePackages: ['three', '@react-three/fiber', '@react-three/drei'],
   eslint: {
     ignoreDuringBuilds: true,
   },
