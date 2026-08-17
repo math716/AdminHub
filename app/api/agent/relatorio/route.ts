@@ -149,18 +149,27 @@ export async function POST(request: NextRequest) {
     const W = 380, H = 300;
     if (isEleitoral) {
       const cands: any[] = body.dadosBrutos?.buscar_votacao?.candidatos ?? [];
-      if (cands.length >= 2) {
-        const c = cands[0];
-        mapa = await renderMapaEleitoral({ uf: c.uf, ano: Number(c.ano), cargo: c.cargo, width: W, height: H });
-        mapaTitulo = 'Mapa — vencedor por região';
-      } else if (cands.length === 1) {
-        const c = cands[0];
+      const c = cands[0];
+      if (cands.length === 1) {
+        // 1 candidato → heatmap dos votos dele
         const valores: Record<string, number> = {};
         (c.votosPorMunicipio ?? []).forEach((m: any) => { if (m.municipio) valores[m.municipio] = m.votos; });
         if (Object.keys(valores).length > 0) {
           mapa = await renderMapaVotos({ uf: c.uf, valores, width: W, height: H });
           mapaTitulo = c.uf === 'BR' ? 'Mapa — votos por estado' : 'Mapa — votos por município';
         }
+      } else if (cands.length >= 2 && cands.length <= 6) {
+        // comparação de candidatos específicos → vencedor ENTRE eles
+        mapa = await renderMapaEleitoral({
+          uf: c.uf, ano: Number(c.ano), cargo: c.cargo,
+          candidatos: cands.map((x: any) => x.nomeUrna || x.nome),
+          width: W, height: H,
+        });
+        mapaTitulo = 'Mapa — vencedor por região (entre os candidatos)';
+      } else if (cands.length > 6) {
+        // lista geral (todos os candidatos) → vencedor geral da eleição
+        mapa = await renderMapaEleitoral({ uf: c.uf, ano: Number(c.ano), cargo: c.cargo, width: W, height: H });
+        mapaTitulo = 'Mapa — vencedor por região';
       }
     } else if (isEmendas) {
       const emendas: any[] = body.dadosBrutos?.buscar_emendas?.emendas ?? [];

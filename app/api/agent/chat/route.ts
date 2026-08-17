@@ -168,7 +168,17 @@ export async function POST(request: NextRequest) {
               visualizacoes.push(resultado as Visualizacao);
             } else {
               toolsUsed.add(block.name);
-              dadosBrutos[block.name] = resultado; // guarda a última chamada de cada ferramenta
+              // buscar_votacao pode ser chamada várias vezes numa comparação —
+              // acumula os candidatos (dedup por nome de urna) em vez de sobrescrever.
+              if (block.name === 'buscar_votacao' && dadosBrutos.buscar_votacao) {
+                const prev = (dadosBrutos.buscar_votacao as any)?.candidatos ?? [];
+                const novos = (resultado as any)?.candidatos ?? [];
+                const vistos = new Set(prev.map((c: any) => c.nomeUrna));
+                const candidatos = [...prev, ...novos.filter((c: any) => !vistos.has(c.nomeUrna))];
+                dadosBrutos.buscar_votacao = { ...(resultado as any), candidatos };
+              } else {
+                dadosBrutos[block.name] = resultado; // guarda a última chamada de cada ferramenta
+              }
             }
           } catch (err) {
             resultado = { erro: `Erro ao executar ${block.name}: ${String(err)}` };

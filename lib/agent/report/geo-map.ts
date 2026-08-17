@@ -104,13 +104,17 @@ function municipiosUrl(uf: string): string {
 type Winner = { candidato: string; partido: string; votos: number };
 export type Vencedor = { candidato: string; partido: string };
 
-function winnersPorMunicipio(ano: number, uf: string, cargo?: string): Record<string, Vencedor> {
+// `filtro` (opcional): quando informado, só considera esses candidatos
+// (nome de urna normalizado) — usado em comparações de N candidatos, para o
+// mapa mostrar o vencedor ENTRE eles, e não o vencedor geral da eleição.
+function winnersPorMunicipio(ano: number, uf: string, cargo?: string, filtro?: Set<string>): Record<string, Vencedor> {
   const data = loadStaticTseData(String(ano), uf);
   if (!data) return {};
   const cargoNorm = cargo ? normalizarTextoTse(cargo) : '';
   const best: Record<string, Winner> = {};
   for (const c of data) {
     if (cargoNorm && !normalizarTextoTse(c.cargo).includes(cargoNorm)) continue;
+    if (filtro && !filtro.has(normalizarTextoTse(c.nomeUrna || c.nome))) continue;
     for (const [muni, votos] of Object.entries(c.votos ?? {})) {
       const key = normalizarTextoTse(muni);
       if (!best[key] || votos > best[key].votos) best[key] = { candidato: c.nomeUrna || c.nome, partido: c.partido, votos };
@@ -119,13 +123,14 @@ function winnersPorMunicipio(ano: number, uf: string, cargo?: string): Record<st
   return Object.fromEntries(Object.entries(best).map(([k, v]) => [k, { candidato: v.candidato, partido: v.partido }]));
 }
 
-function winnersPorEstado(ano: number, cargo?: string): Record<string, Vencedor> {
+function winnersPorEstado(ano: number, cargo?: string, filtro?: Set<string>): Record<string, Vencedor> {
   const data = loadStaticTseData(String(ano), 'BR');
   if (!data) return {};
   const cargoNorm = cargo ? normalizarTextoTse(cargo) : '';
   const best: Record<string, Winner> = {};
   for (const c of data) {
     if (cargoNorm && !normalizarTextoTse(c.cargo).includes(cargoNorm)) continue;
+    if (filtro && !filtro.has(normalizarTextoTse(c.nomeUrna || c.nome))) continue;
     for (const [ufKey, votos] of Object.entries(c.votosPorEstado ?? {})) {
       const key = ufKey.toUpperCase();
       if (!best[key] || votos > best[key].votos) best[key] = { candidato: c.nomeUrna || c.nome, partido: c.partido, votos };
@@ -210,18 +215,22 @@ export async function renderMapaEleitoral(params: {
   ano: number;
   cargo?: string;
   municipio?: string;
+  candidatos?: string[]; // nomes de urna a comparar — vencedor ENTRE eles
   width?: number;
   height?: number;
 }): Promise<MapaResult | null> {
   const W = params.width ?? 300;
   const H = params.height ?? 300;
   const ufUp = params.uf?.toUpperCase();
+  const filtro = params.candidatos && params.candidatos.length > 0
+    ? new Set(params.candidatos.map(n => normalizarTextoTse(n)))
+    : undefined;
 
   try {
     if (!ufUp || ufUp === 'BR') {
       // ── Mapa do Brasil, colorido pelo candidato vencedor por UF ──
       const geo = await fetchJson(malhaBrasilUrl());
-      const winners = winnersPorEstado(params.ano, params.cargo);
+      const winners = winnersPorEstado(params.ano, params.cargo, filtro);
       return montarMapa(winners, (codarea) => CODE_TO_UF[codarea] ?? '', geo.features ?? [], W, H);
     }
 
@@ -232,7 +241,7 @@ export async function renderMapaEleitoral(params: {
       fetchJson(malhaEstadoUrl(ufCode)),
       fetchMunicipiosNome(ufUp),
     ]);
-    const winners = winnersPorMunicipio(params.ano, ufUp, params.cargo);
+    const winners = winnersPorMunicipio(params.ano, ufUp, params.cargo, filtro);
     const res = montarMapa(winners, (codarea) => nomePorCod[codarea] ?? '', geo.features ?? [], W, H);
     return res.paths.length > 0 ? res : null;
   } catch (err) {
