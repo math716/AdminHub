@@ -5,15 +5,15 @@ import { Canvas } from '@react-three/fiber';
 import { useGLTF, useAnimations, OrbitControls, Html } from '@react-three/drei';
 import type { Group } from 'three';
 
-// URL do modelo 3D da Gabi (Ready Player Me .glb). Defina em .env.local e na
-// Vercel: NEXT_PUBLIC_GABI_MODEL_URL=https://models.readyplayer.me/XXXX.glb
-export const GABI_MODEL_URL = process.env.NEXT_PUBLIC_GABI_MODEL_URL ?? '';
+// Modelo 3D da Gabi. Vem do próprio sistema (public/models/gabi.glb);
+// pode ser sobrescrito por NEXT_PUBLIC_GABI_MODEL_URL (ex.: uma URL hospedada).
+export const GABI_MODEL_URL = process.env.NEXT_PUBLIC_GABI_MODEL_URL || '/models/gabi.glb';
 export const GABI_3D_ENABLED = !!GABI_MODEL_URL;
 
-// Enquadramento (ajustável depois que virmos o modelo real)
-const CAM_POS: [number, number, number] = [0, 1.5, 0.95];
-const CAM_TARGET: [number, number, number] = [0, 1.48, 0];
-const CAM_FOV = 26;
+// Enquadramento: rosto/busto (cabeça no topo, ~y 1.8 no modelo Avaturn)
+const CAM_POS: [number, number, number] = [0, 1.6, 0.92];
+const CAM_TARGET: [number, number, number] = [0, 1.6, 0];
+const CAM_FOV = 28;
 
 function Model({ url }: { url: string }) {
   const group = useRef<Group>(null);

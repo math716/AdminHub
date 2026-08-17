@@ -16,7 +16,8 @@ const GabiAvatar3D = dynamic(
   () => import('./gabi-avatar-3d').then(m => m.GabiAvatar3D),
   { ssr: false, loading: () => null },
 );
-const HAS_GABI_3D = !!process.env.NEXT_PUBLIC_GABI_MODEL_URL;
+// Modelo embutido em public/models/gabi.glb (pode trocar por env var).
+const HAS_GABI_3D = true;
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -574,6 +575,17 @@ export function GabiFAB() {
                     className="flex-1 min-h-0 overflow-y-auto py-6 px-5 space-y-6"
                     style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(74,158,222,0.15) transparent' }}
                   >
+                    {/* Gabi 3D grande na tela inicial (sem conversa ainda) */}
+                    {HAS_GABI_3D && messages.length <= 1 && (
+                      <div className="flex flex-col items-center pt-2 pb-1">
+                        <div className="w-44 h-44 rounded-2xl overflow-hidden"
+                          style={{ background: 'radial-gradient(80% 80% at 50% 30%, rgba(34,211,238,0.12), transparent 70%)' }}>
+                          <GabiAvatar3D size={176} />
+                        </div>
+                        <p className="text-sm font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>Gabi</p>
+                        <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Sua assessora virtual · arraste para girar</p>
+                      </div>
+                    )}
                     {messages.map((msg, i) => (
                       <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         {/* Avatar Gabi */}
