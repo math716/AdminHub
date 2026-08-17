@@ -45,17 +45,19 @@ export const AGENT_TOOLS: Tool[] = [
   {
     name: 'buscar_votacao',
     description:
-      'Busca resultados eleitorais de candidatos. Retorna votos totais e por município. ' +
+      'Busca resultados eleitorais. Retorna votos totais e por município. ' +
+      'Se "candidato_nome" for OMITIDO, retorna TODOS os candidatos daquele cargo/UF/ano (com a contagem ' +
+      'total de candidatos) — use assim para "comparar todos os candidatos", "quantos candidatos houve" ou ' +
+      '"teve 2º turno" (o 2º turno ocorre quando o líder tem menos de 50% dos votos válidos). ' +
       'Ao informar "municipio", retorna também a quebra por ZONA ELEITORAL daquele município, ' +
-      'com os bairros que cada zona cobre (útil para eleições municipais). O TSE agrega até zona/seção — ' +
-      'não existe contagem exata por bairro. ' +
+      'com os bairros que cada zona cobre (útil para eleições municipais). ' +
       'Use para perguntas sobre desempenho eleitoral, comparação de votação ou distribuição geográfica de votos.',
     input_schema: {
       type: 'object' as const,
       properties: {
         candidato_nome: {
           type: 'string',
-          description: 'Nome ou parte do nome do candidato (busca parcial).',
+          description: 'Nome ou parte do nome do candidato (busca parcial). OPCIONAL — omita para listar todos os candidatos do cargo/UF/ano.',
         },
         ano: {
           type: 'integer',
@@ -74,10 +76,10 @@ export const AGENT_TOOLS: Tool[] = [
         },
         cargo: {
           type: 'string',
-          description: 'Cargo disputado (ex: DEPUTADO_FEDERAL, DEPUTADO_ESTADUAL, SENADOR, GOVERNADOR, PREFEITO, VEREADOR).',
+          description: 'Cargo disputado (ex: DEPUTADO_FEDERAL, DEPUTADO_ESTADUAL, SENADOR, GOVERNADOR, PREFEITO, VEREADOR). Obrigatório quando o nome do candidato não é informado.',
         },
       },
-      required: ['candidato_nome'],
+      required: [],
     },
   },
 

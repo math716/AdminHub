@@ -97,6 +97,12 @@ export async function executarBuscarVotacao(
   const anoStr  = args.ano ? String(args.ano) : '2022';
   const ufQuery = args.uf?.toUpperCase();
 
+  const semNome = !args.candidato_nome || String(args.candidato_nome).trim().length < 2;
+  // Sem nome exige cargo, senão misturaria todos os cargos
+  if (semNome && !args.cargo) {
+    return { encontrado: false, mensagem: 'Para listar/comparar todos os candidatos, informe o cargo (ex: Governador, Prefeito, Presidente).' };
+  }
+
   const cargoNorm      = args.cargo ? normalizarTextoTse(args.cargo) : '';
   const isPresidencial = cargoNorm.includes('president') || ufQuery === 'BR';
 
@@ -111,11 +117,17 @@ export async function executarBuscarVotacao(
     const staticData = loadStaticTseData(anoStr, uf);
     if (!staticData) continue;
 
-    const resultados = buscarCandidatoNoJson(staticData, args.candidato_nome, args.cargo)
-      .sort((a, b) => b.totalVotos - a.totalVotos)
-      .slice(0, 5);
+    const todos = buscarCandidatoNoJson(staticData, semNome ? '' : args.candidato_nome, args.cargo)
+      .sort((a, b) => b.totalVotos - a.totalVotos);
+    const resultados = todos.slice(0, semNome ? 12 : 5);
 
     if (resultados.length === 0) continue;
+
+    // Contexto da eleição inteira (para "quantos candidatos" e "houve 2º turno")
+    const totalVotosValidos = todos.reduce((s, c) => s + c.totalVotos, 0);
+    const pctLider = totalVotosValidos > 0 ? (todos[0].totalVotos / totalVotosValidos) * 100 : 0;
+    // 2º turno só existe em cargos majoritários (governador/prefeito/presidente)
+    const majoritario = /governador|prefeito|president/.test(cargoNorm);
 
     // Quebra por zona eleitoral (+ bairros de cada zona) quando um município
     // é informado. Dados do TSE vão até a zona/seção — não há contagem por
@@ -126,6 +138,9 @@ export async function executarBuscarVotacao(
     return {
       encontrado: true,
       granularidade: muniNorm ? 'zona_eleitoral' : 'municipio',
+      totalCandidatos: todos.length,
+      liderPercentualValidos: Math.round(pctLider * 10) / 10,
+      houveSegundoTurno: majoritario ? pctLider < 50 : false,
       candidatos: resultados.map(c => ({
         nome: c.nome,
         nomeUrna: c.nomeUrna,
