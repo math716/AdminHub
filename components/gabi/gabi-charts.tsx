@@ -124,7 +124,7 @@ function BarPanel({ vis, isMoney }: { vis: Visualizacao; isMoney: boolean }) {
     <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={items} margin={{ top: 20, right: 8, left: -20, bottom: 8 }}>
+          <BarChart data={items} margin={{ top: 20, right: 10, left: 16, bottom: 8 }}>
             <XAxis
               dataKey="label"
               tick={{ fontSize: 8, fill: '#94a3b8' }}
@@ -197,12 +197,14 @@ export function VisualizacoesCard({
   dadosBrutos,
   titulo,
   conteudo,
+  onNavigate,
 }: {
   visualizacoes: Visualizacao[];
   tools?: string[];
   dadosBrutos?: Record<string, any>;
   titulo?: string;
   conteudo?: string;
+  onNavigate?: () => void;
 }) {
   const [pdfLoading, setPdfLoading] = useState(false);
 
@@ -244,6 +246,17 @@ export function VisualizacoesCard({
 
   const hasVotacao = !!(tools?.includes('buscar_votacao'));
   const hasEmendas = !!(tools?.includes('buscar_emendas'));
+
+  // Deep-link do "Ver no mapa": leva o candidato consultado já pré-preenchido
+  // (a página /dashboard/mapa faz auto-busca a partir desses parâmetros).
+  const votCand = dadosBrutos?.buscar_votacao?.candidatos?.[0];
+  const mapaHref = votCand
+    ? `/dashboard/mapa?${new URLSearchParams({
+        candidato: votCand.nomeUrna || votCand.nome || '',
+        ano: String(votCand.ano ?? 2022),
+        uf: votCand.uf || 'BR',
+      }).toString()}`
+    : '/dashboard/mapa';
 
   return (
     <div
@@ -423,7 +436,8 @@ export function VisualizacoesCard({
         </button>
         {(hasVotacao || !hasEmendas) && (
           <Link
-            href="/dashboard/mapa"
+            href={mapaHref}
+            onClick={() => onNavigate?.()}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:bg-white/5"
             style={{ color: '#94a3b8', border: '1px solid rgba(74,158,222,0.15)' }}
           >
@@ -434,6 +448,7 @@ export function VisualizacoesCard({
         {(hasEmendas || !hasVotacao) && (
           <Link
             href="/dashboard/emendas"
+            onClick={() => onNavigate?.()}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:bg-white/5"
             style={{ color: '#94a3b8', border: '1px solid rgba(74,158,222,0.15)' }}
           >

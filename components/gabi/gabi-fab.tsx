@@ -582,6 +582,7 @@ export function GabiFAB() {
                               dadosBrutos={msg.dadosBrutos}
                               titulo={msg.userQuestion}
                               conteudo={msg.content}
+                              onNavigate={() => setOpen(false)}
                             />
                           )}
                         </div>
