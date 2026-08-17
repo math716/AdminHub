@@ -118,17 +118,28 @@ function DonutPanel({ vis, isMoney, t }: { vis: Visualizacao; isMoney: boolean; 
 
 // ─── Bar panel ────────────────────────────────────────────────────────────────
 
+// "claudioCastro" / "cláudio_castro" → "Cláudio Castro"
+function pretty(k: string): string {
+  return k
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
 function BarPanel({ vis, isMoney, t }: { vis: Visualizacao; isMoney: boolean; t: Paleta }) {
   const allItems = vis.dados?.itens ?? [];
-  const items = allItems.slice(0, 8); // limita a 8 barras para não amontoar
   const fmt = isMoney ? fmtMoney : fmtCount;
 
   const barKeys: string[] = (() => {
-    if (!items.length) return ['valor'];
-    const keys = Object.keys(items[0]).filter(k => k !== 'label' && k !== 'cor' && typeof items[0][k] === 'number');
+    if (!allItems.length) return ['valor'];
+    const keys = Object.keys(allItems[0]).filter(k => k !== 'label' && k !== 'cor' && typeof allItems[0][k] === 'number');
     return keys.length > 0 ? keys : ['valor'];
   })();
   const isMulti = barKeys.length > 1;
+  // Menos barras quando há várias séries (comparação), para não amontoar.
+  const items = allItems.slice(0, isMulti ? 6 : 8);
 
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
@@ -146,18 +157,21 @@ function BarPanel({ vis, isMoney, t }: { vis: Visualizacao; isMoney: boolean; t:
               tickFormatter={(v: string) => v.length > 13 ? v.slice(0, 11) + '…' : v}
             />
             <YAxis hide />
-            <Tooltip contentStyle={tooltipFor(t)} formatter={(v: any) => [fmt(v), '']} />
+            <Tooltip contentStyle={tooltipFor(t)} formatter={(v: any, n: any) => [fmt(v), isMulti ? n : '']} />
             {isMulti && (
               <Legend wrapperStyle={{ fontSize: 9, color: t.muted, paddingTop: 4 }} />
             )}
             {barKeys.map((key, ki) => (
-              <Bar key={key} dataKey={key} name={key} fill={COLORS[ki % COLORS.length]} radius={[4, 4, 0, 0]}>
-                <LabelList
-                  dataKey={key}
-                  position="top"
-                  formatter={(v: any) => typeof v === 'number' ? fmtCount(v) : v}
-                  style={{ fontSize: 8, fill: t.muted }}
-                />
+              <Bar key={key} dataKey={key} name={pretty(key)} fill={COLORS[ki % COLORS.length]} radius={[4, 4, 0, 0]}>
+                {/* Rótulos de valor só quando há UMA série — em comparações eles se empilham */}
+                {!isMulti && (
+                  <LabelList
+                    dataKey={key}
+                    position="top"
+                    formatter={(v: any) => typeof v === 'number' ? fmtCount(v) : v}
+                    style={{ fontSize: 8, fill: t.muted }}
+                  />
+                )}
                 {!isMulti && items.map((_: any, i: number) => (
                   <Cell key={i} fill={items[i]?.cor || COLORS[i % COLORS.length]} />
                 ))}

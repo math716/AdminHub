@@ -226,11 +226,17 @@ function renderBarChart(headers: string[], rows: string[][]): React.ReactNode | 
   if (numericCols.length === 0) return null;
 
   const seriesNames = numericCols.map(ci => headers[ci]);
-  const dataRows = linhas
+  const dataRowsAll = linhas
     .map(row => ({ label: stripEmoji(row[0]?.replace(/\*\*/g, '') ?? ''), nums: numericCols.map(ci => parseBrNum(row[ci] ?? '')) }))
     .filter(r => r.nums.some(v => v !== null && v > 0));
 
-  if (dataRows.length === 0) return null;
+  if (dataRowsAll.length === 0) return null;
+
+  // Limita a 6 grupos (os maiores) — evita amontoar/sobrepor rótulos no eixo X,
+  // independentemente de quantos municípios ou candidatos a tabela tenha.
+  const dataRows = [...dataRowsAll]
+    .sort((a, b) => Math.max(...b.nums.map(v => v ?? 0)) - Math.max(...a.nums.map(v => v ?? 0)))
+    .slice(0, 6);
 
   const allNums = dataRows.flatMap(r => r.nums.filter(v => v !== null) as number[]);
   const maxVal = Math.max(...allNums, 1);

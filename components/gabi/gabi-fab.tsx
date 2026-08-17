@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Loader2, MessageSquare, Clock, Plus, Trash2, ChevronLeft, ScrollText, Sparkles } from 'lucide-react';
+import { GabiAvatar } from './gabi-avatar';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 
@@ -458,9 +459,9 @@ export function GabiFAB() {
 
                 {/* Avatar com anel + status online */}
                 <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-lg"
-                    style={{ background: 'linear-gradient(135deg, #1d6fd8, #22d3ee)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.18), 0 4px 16px rgba(34,211,238,0.40)' }}>
-                    G
+                  <div className="w-10 h-10 rounded-full overflow-hidden"
+                    style={{ boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.18), 0 4px 16px rgba(34,211,238,0.40)' }}>
+                    <GabiAvatar size={40} />
                   </div>
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2"
                     style={{ background: '#22c55e', borderColor: '#0f2547' }}>
@@ -563,9 +564,8 @@ export function GabiFAB() {
                       <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         {/* Avatar Gabi */}
                         {msg.role === 'assistant' && (
-                          <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 font-bold text-white text-sm"
-                            style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)' }}>
-                            G
+                          <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mt-0.5">
+                            <GabiAvatar size={32} />
                           </div>
                         )}
 
@@ -611,9 +611,8 @@ export function GabiFAB() {
                     {/* Digitando */}
                     {loading && (
                       <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-white text-sm"
-                          style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)' }}>
-                          G
+                        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                          <GabiAvatar size={32} />
                         </div>
                         <div className="rounded-2xl px-4 py-3 mt-5" style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', borderBottomLeftRadius: 6 }}>
                           <div className="flex items-center gap-1.5">
