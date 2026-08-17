@@ -7,9 +7,9 @@ import { renderToBuffer, Svg, Path } from '@react-pdf/renderer';
 import React from 'react';
 import {
   Document, Page, Text, View,
-  HeaderBand, DocFooter, renderContent, docStyles as S, stripEmoji, C, type Pill,
+  HeaderBand, DocFooter, renderContent, renderPizza, docStyles as S, stripEmoji, C, type Pill,
 } from '@/lib/agent/report/doc-pdf';
-import { renderMapaEleitoral, type MapaResult } from '@/lib/agent/report/geo-map';
+import { renderMapaEleitoral, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -20,11 +20,51 @@ function fmtMoney(n: number): string {
   return `R$ ${n.toLocaleString('pt-BR')}`;
 }
 
+const AREA_LABEL: Record<string, string> = {
+  SAUDE: 'Saúde', EDUCACAO: 'Educação', SEGURANCA: 'Segurança', INFRAESTRUTURA: 'Infraestrutura',
+  ASSISTENCIA_SOCIAL: 'Assistência Social', AGRICULTURA: 'Agricultura', CULTURA: 'Cultura',
+  ESPORTE: 'Esporte', MEIO_AMBIENTE: 'Meio Ambiente', TRANSPORTE: 'Transporte',
+  HABITACAO: 'Habitação', SANEAMENTO: 'Saneamento', OUTROS: 'Outros',
+};
+
 interface ReportInput {
   titulo?: string;
   conteudo?: string;
   tools?: string[];
+  visualizacoes?: any[];
   dadosBrutos?: Record<string, any>;
+}
+
+// Monta o gráfico de pizza (distribuição) a partir dos dados estruturados.
+function buildPizza(input: ReportInput, isEleitoral: boolean, isEmendas: boolean): React.ReactNode | null {
+  // Eleições — distribuição de votos por candidato (cores consistentes com o mapa)
+  if (isEleitoral) {
+    const cands: any[] = input.dadosBrutos?.buscar_votacao?.candidatos ?? [];
+    if (cands.length > 0) {
+      const base = cands.map(c => ({ label: tituloCaso(c.nomeUrna || c.nome || ''), valor: c.totalVotos || 0, partido: c.partido || '' }));
+      const cores = coresPorCandidato(base.map(b => ({ label: b.label, partido: b.partido, peso: b.valor })));
+      return renderPizza('Distribuição de votos', base.map(b => ({ label: b.label, valor: b.valor, cor: cores[b.label] })));
+    }
+  }
+  // Emendas — distribuição por área temática
+  if (isEmendas) {
+    const emendas: any[] = input.dadosBrutos?.buscar_emendas?.emendas ?? [];
+    if (emendas.length > 0) {
+      const byArea: Record<string, number> = {};
+      emendas.forEach(e => { byArea[e.area] = (byArea[e.area] || 0) + (e.valorEmpenhado || 0); });
+      const itens = Object.entries(byArea).sort((a, b) => b[1] - a[1])
+        .map(([area, v]) => ({ label: AREA_LABEL[area] || area, valor: v, valorLabel: fmtMoney(v) }));
+      return renderPizza('Distribuição por área', itens);
+    }
+  }
+  // Fallback (inclui demandas) — usa o donut que a Gabi já gerou
+  const donut = input.visualizacoes?.find(v => v.tipo === 'donut');
+  if (donut?.dados?.itens?.length) {
+    return renderPizza(donut.titulo || 'Distribuição', donut.dados.itens.map((it: any) => ({
+      label: String(it.label), valor: Number(it.valor) || 0, cor: it.cor,
+    })));
+  }
+  return null;
 }
 
 // ─── Seção do mapa (apenas eleições) ─────────────────────────────────────────
@@ -52,6 +92,11 @@ function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa }: {
   const conteudo = input.conteudo ?? '';
   const reportTitle = clip(stripEmoji(input.titulo || conteudo.split('\n')[0] || 'Relatório de Dados'), 90);
 
+  const tools = input.tools ?? [];
+  const isEleitoral = tools.includes('buscar_votacao');
+  const isEmendas   = tools.includes('buscar_emendas') || tools.includes('comparar_parlamentares');
+  const pizza = buildPizza(input, isEleitoral, isEmendas);
+
   const pills: Pill[] = [
     { label: 'Tipo:', value: tipoLabel },
     ...(valorPill ? [valorPill] : []),
@@ -61,6 +106,7 @@ function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa }: {
   return React.createElement(Document, null,
     React.createElement(Page, { size: 'A4', style: S.page },
       HeaderBand({ titulo: reportTitle, pills }),
+      pizza,
       ...renderContent(conteudo),
       mapa ? MapSection(mapa) : null,
       DocFooter(),

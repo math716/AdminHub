@@ -5,7 +5,7 @@
 // da folha na virada de página).
 
 import {
-  Document, Page, Text, View, StyleSheet, Svg, Rect, Line,
+  Document, Page, Text, View, StyleSheet, Svg, Rect, Line, Path,
 } from '@react-pdf/renderer';
 import React from 'react';
 
@@ -102,6 +102,17 @@ const S = StyleSheet.create({
   legendItem:   { flexDirection: 'row', alignItems: 'center', marginRight: 14, marginTop: 3 },
   legendDot:    { width: 8, height: 8, borderRadius: 2, marginRight: 4 },
   legendText:   { fontSize: 7, color: C.gray },
+
+  // Card de visualização (pizza)
+  vizCard:      { borderWidth: 1, borderColor: C.border, borderRadius: 8, padding: 14, marginVertical: 8 },
+  vizTitle:     { fontSize: 8, fontFamily: 'Helvetica-Bold', color: C.gray, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 },
+  pieRow:       { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  pieLegend:    { flex: 1, gap: 5 },
+  pieLegendItem:{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
+  pieDot:       { width: 9, height: 9, borderRadius: 5, marginRight: 7 },
+  pieLabel:     { fontSize: 9, color: '#334155', flex: 1 },
+  piePct:       { fontSize: 9, fontFamily: 'Helvetica-Bold', color: C.dark, marginLeft: 4 },
+  pieVal:       { fontSize: 8, color: C.gray, marginLeft: 6 },
 
   // Rodapé
   footer: {
@@ -201,9 +212,22 @@ function parseBrNum(s: string): number | null {
 function renderBarChart(headers: string[], rows: string[][]): React.ReactNode | null {
   if (headers.length < 2) return null;
 
-  const seriesNames = headers.slice(1);
-  const dataRows = rows
-    .map(row => ({ label: stripEmoji(row[0]?.replace(/\*\*/g, '') ?? ''), nums: row.slice(1).map(parseBrNum) }))
+  // Só colunas realmente numéricas viram série (ignora "Partido", "Situação"…);
+  // ignora colunas de porcentagem (escala diferente) e a linha "Total".
+  const ehPct = (h: string) => /%|percent/i.test(h ?? '');
+  const ehTotal = (c: string) => (c ?? '').replace(/\*/g, '').trim().toLowerCase() === 'total';
+  const linhas = rows.filter(r => !ehTotal(r[0] ?? ''));
+
+  const numericCols: number[] = [];
+  for (let ci = 1; ci < headers.length; ci++) {
+    if (ehPct(headers[ci])) continue;
+    if (linhas.some(r => { const n = parseBrNum(r[ci] ?? ''); return n !== null && n > 0; })) numericCols.push(ci);
+  }
+  if (numericCols.length === 0) return null;
+
+  const seriesNames = numericCols.map(ci => headers[ci]);
+  const dataRows = linhas
+    .map(row => ({ label: stripEmoji(row[0]?.replace(/\*\*/g, '') ?? ''), nums: numericCols.map(ci => parseBrNum(row[ci] ?? '')) }))
     .filter(r => r.nums.some(v => v !== null && v > 0));
 
   if (dataRows.length === 0) return null;
@@ -290,6 +314,61 @@ function renderBlock(block: Block, i: number): React.ReactNode {
 
 export function renderContent(content: string): React.ReactNode[] {
   return parseMarkdown(content).map((b, i) => renderBlock(b, i)).filter(Boolean) as React.ReactNode[];
+}
+
+// ─── Gráfico de pizza (donut) ───────────────────────────────────────────────
+const PIE_PALETTE = ['#1d4ed8', '#ef4444', '#16a34a', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#fb923c'];
+
+function fp(n: number): string { return parseFloat(n.toFixed(2)).toString(); }
+
+function donutSeg(cx: number, cy: number, R: number, r: number, sa: number, ea: number): string {
+  const x1o = cx + R * Math.cos(sa), y1o = cy + R * Math.sin(sa);
+  const x2o = cx + R * Math.cos(ea), y2o = cy + R * Math.sin(ea);
+  const x1i = cx + r * Math.cos(ea), y1i = cy + r * Math.sin(ea);
+  const x2i = cx + r * Math.cos(sa), y2i = cy + r * Math.sin(sa);
+  const lg = ea - sa > Math.PI ? 1 : 0;
+  return `M${fp(x1o)} ${fp(y1o)} A${fp(R)} ${fp(R)} 0 ${lg} 1 ${fp(x2o)} ${fp(y2o)} L${fp(x1i)} ${fp(y1i)} A${fp(r)} ${fp(r)} 0 ${lg} 0 ${fp(x2i)} ${fp(y2i)}Z`;
+}
+
+export interface PieItem { label: string; valor: number; valorLabel?: string; cor?: string }
+
+/** Card com gráfico de pizza (donut) + legenda (label · % · valor). */
+export function renderPizza(titulo: string, items: PieItem[]): React.ReactNode | null {
+  const clean = (items ?? []).filter(i => (i.valor ?? 0) > 0);
+  if (clean.length === 0) return null;
+  const total = clean.reduce((s, i) => s + i.valor, 0);
+
+  const size = 128, cx = size / 2, cy = size / 2, R = size * 0.46, r = size * 0.26;
+  const GAP = clean.length > 1 ? 0.03 : 0;
+  let angle = -Math.PI / 2;
+  const paths = clean.map((it, i) => {
+    const sweep = (it.valor / total) * 2 * Math.PI;
+    const cor = it.cor || PIE_PALETTE[i % PIE_PALETTE.length];
+    const el = sweep > 0.005
+      ? React.createElement(Path, { key: i, d: donutSeg(cx, cy, R, r, angle, angle + Math.max(sweep - GAP, 0.001)), fill: cor })
+      : null;
+    angle += sweep;
+    return el;
+  }).filter(Boolean);
+
+  const legend = clean.map((it, i) => {
+    const pct = ((it.valor / total) * 100).toFixed(1).replace('.', ',');
+    const cor = it.cor || PIE_PALETTE[i % PIE_PALETTE.length];
+    return React.createElement(View, { key: i, style: S.pieLegendItem },
+      React.createElement(View, { style: { ...S.pieDot, backgroundColor: cor } }),
+      React.createElement(Text, { style: S.pieLabel }, it.label.length > 28 ? it.label.slice(0, 26) + '…' : it.label),
+      React.createElement(Text, { style: S.piePct }, `${pct}%`),
+      React.createElement(Text, { style: S.pieVal }, it.valorLabel ?? it.valor.toLocaleString('pt-BR')),
+    );
+  });
+
+  return React.createElement(View, { style: S.vizCard, wrap: false },
+    titulo ? React.createElement(Text, { style: S.vizTitle }, titulo) : null,
+    React.createElement(View, { style: S.pieRow },
+      React.createElement(Svg, { width: size, height: size }, ...paths),
+      React.createElement(View, { style: S.pieLegend }, ...legend),
+    ),
+  );
 }
 
 // ─── Componentes de página ──────────────────────────────────────────────────

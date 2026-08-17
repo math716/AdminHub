@@ -52,6 +52,15 @@ const PALETA: Record<Familia, string[]> = {
   out: [COR_AMARELO, '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#eab308', '#06b6d4', '#84cc16', '#db2777'],
 };
 
+// Versão pública: recebe candidatos (com partido e um peso p/ ordenar) e
+// devolve label → cor. Usa a mesma lógica do mapa, para a pizza do relatório
+// ficar consistente com o mapa (mesma âncora por família, cores distintas).
+export function coresPorCandidato(cands: { label: string; partido: string; peso: number }[]): Record<string, string> {
+  const info = new Map<string, { partido: string; n: number }>();
+  for (const c of cands) info.set(c.label, { partido: c.partido, n: c.peso });
+  return Object.fromEntries(atribuirCores(info));
+}
+
 // Recebe candidato → { partido, nº de regiões } e devolve candidato → cor única.
 function atribuirCores(info: Map<string, { partido: string; n: number }>): Map<string, string> {
   const porFamilia: Record<Familia, Array<[string, number]>> = { esq: [], dir: [], out: [] };
@@ -264,7 +273,7 @@ function montarMapa(
 }
 
 // "DELEGADO DA CUNHA" → "Delegado da Cunha"
-function tituloCaso(s: string): string {
+export function tituloCaso(s: string): string {
   const minusculas = new Set(['da', 'de', 'do', 'das', 'dos', 'e']);
   return (s || '')
     .toLowerCase()
