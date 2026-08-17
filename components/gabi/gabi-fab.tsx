@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Loader2, MessageSquare, Clock, Plus, Trash2, ChevronLeft, ScrollText, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
+import { getGabiFace, subscribeGabiFace } from './gabi-face-store';
 
 const VisualizacoesCard = dynamic(
   () => import('./gabi-charts').then(m => m.VisualizacoesCard),
@@ -246,6 +247,7 @@ function formatHistDate(iso: string): string {
 export function GabiFAB() {
   const [open, setOpen]         = useState(false);
   const [view, setView]         = useState<View>('chat');
+  const [gabiFace, setGabiFace] = useState<string | null>(getGabiFace());
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [input, setInput]       = useState('');
   const [loading, setLoading]   = useState(false);
@@ -267,6 +269,9 @@ export function GabiFAB() {
     const storedId = lsGet<string>(LS_ID);
     if (storedId) setSessaoId(storedId);
   }, []);
+
+  // ── Foto da Gabi 3D (capturada do canvas) para os avatares das mensagens ──
+  useEffect(() => subscribeGabiFace(() => setGabiFace(getGabiFace())), []);
 
   // ── Sincronizar no localStorage ────────────────────────────────────────────
 
@@ -583,16 +588,16 @@ export function GabiFAB() {
                           <GabiAvatar3D size={176} />
                         </div>
                         <p className="text-sm font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>Gabi</p>
-                        <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Sua assessora virtual · arraste para girar</p>
+                        <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Sua assessora virtual</p>
                       </div>
                     )}
                     {messages.map((msg, i) => (
                       <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         {/* Avatar Gabi */}
                         {msg.role === 'assistant' && (
-                          <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 font-bold text-white text-sm"
+                          <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center mt-0.5 font-bold text-white text-sm"
                             style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)' }}>
-                            G
+                            {gabiFace ? <img src={gabiFace} alt="Gabi" className="w-full h-full object-cover" /> : 'G'}
                           </div>
                         )}
 
@@ -638,9 +643,9 @@ export function GabiFAB() {
                     {/* Digitando */}
                     {loading && (
                       <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-white text-sm"
+                        <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-white text-sm"
                           style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)' }}>
-                          G
+                          {gabiFace ? <img src={gabiFace} alt="Gabi" className="w-full h-full object-cover" /> : 'G'}
                         </div>
                         <div className="rounded-2xl px-4 py-3 mt-5" style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', borderBottomLeftRadius: 6 }}>
                           <div className="flex items-center gap-1.5">
