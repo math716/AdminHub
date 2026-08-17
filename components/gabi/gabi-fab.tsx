@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Send, Loader2, MessageSquare, Clock, Plus, Trash2, ChevronLeft, ScrollText } from 'lucide-react';
+import { X, Send, Loader2, MessageSquare, Clock, Plus, Trash2, ChevronLeft, ScrollText, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 
@@ -446,17 +446,36 @@ export function GabiFAB() {
             >
               {/* Header */}
               <div
-                className="flex items-center gap-3 px-5 py-4 flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #0c1d38 0%, #162d55 100%)', borderBottom: '1px solid rgba(74,158,222,0.18)' }}
+                className="relative flex items-center gap-3 px-5 py-4 flex-shrink-0 overflow-hidden"
+                style={{ background: 'linear-gradient(135deg, #0a1a33 0%, #0f2547 55%, #17335c 100%)', borderBottom: '1px solid rgba(74,158,222,0.18)' }}
               >
-                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-white text-base"
-                  style={{ background: 'linear-gradient(135deg, #1d6fd8, #22d3ee)' }}>
-                  G
+                {/* brilho decorativo (esquerda) */}
+                <div className="pointer-events-none absolute top-0 bottom-0 left-0 w-56"
+                  style={{ background: 'radial-gradient(130px 90px at 44px 50%, rgba(34,211,238,0.22), transparent 72%)' }} />
+                {/* linha de destaque no rodapé */}
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px"
+                  style={{ background: 'linear-gradient(90deg, transparent, rgba(74,158,222,0.55), rgba(34,211,238,0.55), transparent)' }} />
+
+                {/* Avatar com anel + status online */}
+                <div className="relative flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-lg"
+                    style={{ background: 'linear-gradient(135deg, #1d6fd8, #22d3ee)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.18), 0 4px 16px rgba(34,211,238,0.40)' }}>
+                    G
+                  </div>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2"
+                    style={{ background: '#22c55e', borderColor: '#0f2547' }}>
+                    <span className="absolute inset-0 rounded-full animate-ping" style={{ background: 'rgba(34,197,94,0.55)' }} />
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-white leading-tight">Gabi</p>
-                  <p className="text-xs" style={{ color: '#64748b' }}>
-                    {view === 'history' ? 'Histórico de conversas' : 'Assistente IA · AdminHub'}
+
+                {/* Título */}
+                <div className="relative flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-bold text-white leading-tight tracking-tight text-[15px]">Gabi</p>
+                    <Sparkles className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22d3ee' }} />
+                  </div>
+                  <p className="text-[11px] font-medium truncate" style={{ color: 'rgba(226,232,240,0.62)' }}>
+                    {view === 'history' ? 'Histórico de conversas' : 'Assessora Virtual · AdminHub'}
                   </p>
                 </div>
 
