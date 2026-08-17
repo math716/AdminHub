@@ -85,9 +85,11 @@ const S = StyleSheet.create({
   bulletText: { fontSize: 9.5, lineHeight: 1.4, color: '#334155', flex: 1 },
 
   // Tabela (sem overflow/borderRadius p/ quebrar limpo entre páginas)
-  tableWrap:    { marginVertical: 6, borderWidth: 1, borderColor: C.border },
+  // Sem borda externa (evita sobreposição das linhas quando a tabela quebra
+  // de página no react-pdf). A estrutura vem do cabeçalho azul + linhas.
+  tableWrap:    { marginVertical: 6 },
   tableRow:     { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.border },
-  tableRowLast: { flexDirection: 'row' },
+  tableRowLast: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.border },
   tableRowAlt:  { backgroundColor: '#f8fafc' },
   tableHdrCell: { paddingVertical: 6, paddingHorizontal: 8, backgroundColor: C.blue },
   tableCell:    { paddingVertical: 5, paddingHorizontal: 8 },
@@ -301,7 +303,7 @@ function renderBlock(block: Block, i: number): React.ReactNode {
       const colFlex = (ci: number) => (ci === 0 && block.headers.length > 2 ? 1.7 : 1);
 
       const tableEl = React.createElement(View, { style: S.tableWrap },
-        React.createElement(View, { style: S.tableRow, wrap: false },
+        React.createElement(View, { style: S.tableRow, wrap: false, minPresenceAhead: 48 },
           ...block.headers.map((h, hi) =>
             React.createElement(View, { key: hi, style: { ...S.tableHdrCell, flex: colFlex(hi) } },
               React.createElement(Text, { style: S.tableHdrText }, stripEmoji(h.replace(/\*\*/g, '')))))),
