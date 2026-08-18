@@ -269,6 +269,8 @@ export function GabiFAB() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
+  // Espelha `sessaoId` para o autosave ler o valor atual dentro do debounce.
+  const sessaoIdRef = useRef<string | null>(null);
 
   // ── Restaurar sessão ───────────────────────────────────────────────────────
 
@@ -276,7 +278,9 @@ export function GabiFAB() {
     const storedMsgs = lsGet<Message[]>(LS_MSGS);
     if (Array.isArray(storedMsgs) && storedMsgs.length > 0) setMessages(storedMsgs);
     const storedId = lsGet<string>(LS_ID);
-    if (storedId) setSessaoId(storedId);
+    // Popula o ref junto do state: o autosave lê o ref e, sem isso, uma sessão
+    // restaurada seria gravada como conversa nova (duplicata no histórico).
+    if (storedId) { setSessaoId(storedId); sessaoIdRef.current = storedId; }
   }, []);
 
   // ── Foto da Gabi 3D (capturada do canvas) para os avatares das mensagens ──
@@ -300,38 +304,80 @@ export function GabiFAB() {
 
   // ── Salvar conversa no banco ───────────────────────────────────────────────
 
-  const salvarConversa = useCallback(async (msgs: Message[]): Promise<string | null> => {
+  // Cria (POST) ou atualiza (PUT) a conversa no banco. Devolve o id da sessão.
+  // O PUT é essencial: sem ele a conversa congela na primeira gravação e as
+  // mensagens seguintes — com os cards e os botões de relatório — se perdem.
+  const salvarConversa = useCallback(async (msgs: Message[], id: string | null): Promise<string | null> => {
     const userMsgs = msgs.filter(m => m.role === 'user');
-    if (userMsgs.length === 0) return null;
+    if (userMsgs.length === 0) return id;
+    const body = JSON.stringify({
+      titulo: userMsgs[0].content.slice(0, 100),
+      // Mensagem completa — sem isso os cards de dados somem ao reabrir
+      mensagens: msgs,
+    });
     try {
+      if (id) {
+        const res = await fetch(`/api/agent/conversas/${id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body,
+        });
+        if (res.ok) return id;
+        if (res.status !== 404) return id; // erro transitório — tenta de novo depois
+        // 404: a conversa foi apagada em outro dispositivo — recria abaixo.
+      }
       const res = await fetch('/api/agent/conversas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          titulo: userMsgs[0].content.slice(0, 100),
-          // Mensagem completa — sem isso os cards de dados somem ao reabrir
-          mensagens: msgs,
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
       });
       if (res.ok) return (await res.json()).id as string;
     } catch {}
-    return null;
+    return id;
   }, []);
+
+  // ── Autosave ──────────────────────────────────────────────────────────────
+  // A conversa é gravada sozinha após cada troca de mensagens. Antes só havia
+  // gravação ao clicar em "nova conversa", então fechar o chat ou recarregar a
+  // página perdia tudo — e o histórico reabria sem os cards.
+
+  useEffect(() => { sessaoIdRef.current = sessaoId; }, [sessaoId]);
+
+  // Serializa as gravações: duas em paralelo com a sessão ainda sem id criariam
+  // conversas duplicadas no histórico.
+  const gravacaoRef = useRef<Promise<void>>(Promise.resolve());
+
+  const gravar = useCallback((msgs: Message[]) => {
+    gravacaoRef.current = gravacaoRef.current.then(async () => {
+      const id = await salvarConversa(msgs, sessaoIdRef.current);
+      if (id && id !== sessaoIdRef.current) {
+        sessaoIdRef.current = id;
+        setSessaoId(id);
+        lsSet(LS_ID, id);
+      }
+    }).catch(() => {});
+    return gravacaoRef.current;
+  }, [salvarConversa]);
+
+  useEffect(() => {
+    if (loading) return;                       // espera a resposta terminar
+    if (messages.filter(m => m.role === 'user').length === 0) return;
+    const timer = setTimeout(() => { gravar(messages); }, 1200);
+    return () => clearTimeout(timer);
+  }, [messages, loading, gravar]);
 
   // ── Nova conversa ─────────────────────────────────────────────────────────
 
   const novaConversa = useCallback(async () => {
-    if (messages.length > 1 && !sessaoId) {
+    // Garante que a conversa atual está gravada antes de limpar a tela — o
+    // autosave pode ainda estar no debounce quando o usuário clica em "+".
+    if (messages.filter(m => m.role === 'user').length > 0) {
       setSaving(true);
-      const id = await salvarConversa(messages);
-      if (id) { setSessaoId(id); lsSet(LS_ID, id); }
+      await gravar(messages);
       setSaving(false);
     }
     setMessages([WELCOME]);
     setSessaoId(null);
+    sessaoIdRef.current = null;
     lsDel(LS_MSGS, LS_ID);
     setView('chat');
-  }, [messages, sessaoId, salvarConversa]);
+  }, [messages, gravar]);
 
   // ── Histórico ─────────────────────────────────────────────────────────────
 
@@ -361,6 +407,7 @@ export function GabiFAB() {
     const final = msgs.length > 0 ? msgs : [WELCOME];
     setMessages(final);
     setSessaoId(c.id);
+    sessaoIdRef.current = c.id; // o autosave passa a atualizar ESTA conversa
     lsSet(LS_MSGS, final);
     lsSet(LS_ID, c.id);
     setView('chat');
@@ -368,7 +415,7 @@ export function GabiFAB() {
 
   const deletarConversa = useCallback(async (id: string) => {
     setHistorico(prev => prev.filter(c => c.id !== id));
-    if (sessaoId === id) { setSessaoId(null); lsDel(LS_ID); }
+    if (sessaoId === id) { setSessaoId(null); sessaoIdRef.current = null; lsDel(LS_ID); }
     try { await fetch(`/api/agent/conversas/${id}`, { method: 'DELETE' }); } catch {}
   }, [sessaoId]);
 
