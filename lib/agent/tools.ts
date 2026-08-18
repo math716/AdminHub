@@ -65,7 +65,10 @@ export const AGENT_TOOLS: Tool[] = [
         },
         uf: {
           type: 'string',
-          description: 'Sigla do estado (ex: DF, SP).',
+          description:
+            'Sigla do estado (ex: DF, SP). OBRIGATÓRIA para cargos estaduais e municipais — sem a UF ' +
+            'o candidato NÃO é encontrado (a base nacional cobre apenas a eleição presidencial). ' +
+            'Deduza do contexto ou pergunte ao usuário antes de buscar.',
         },
         municipio: {
           type: 'string',

@@ -14,7 +14,7 @@
 import fs from 'fs';
 import path from 'path';
 import {
-  loadStaticTseData, loadLocaisTse, buscarCandidatoNoJson,
+  loadStaticTseData, loadLocaisTse, buscarCandidatoNoJson, buscarCandidatoTolerante,
   normalizarTextoTse, type CandidatoJson,
 } from '@/lib/tse-static';
 
@@ -205,31 +205,6 @@ export interface ResolucaoDeputados {
   faltantes: string[];
 }
 
-// Fallback tolerante: quando a busca exata falha, pontua os candidatos pelo
-// número de palavras do pedido presentes no nome (urna ou civil) e aceita se
-// bater quase tudo (pode "sobrar" 1 palavra — ex.: "Delegada Doutora Jane"
-// encontra "DOUTORA JANE", em que "Delegada" não faz parte do nome de urna).
-function buscarTolerante(data: CandidatoJson[], nome: string, cargo?: string): CandidatoJson | null {
-  const palavras = normalizarTextoTse(nome).split(' ').filter(p => p.length > 2);
-  if (palavras.length < 3) return null; // com 1–2 palavras não dá para relaxar com segurança
-  const cargoNorm = cargo ? normalizarTextoTse(cargo) : '';
-  const minScore = Math.max(2, palavras.length - 1);
-
-  let melhor: CandidatoJson | null = null;
-  let melhorScore = 0;
-  for (const c of data) {
-    if (cargoNorm && !normalizarTextoTse(c.cargo).includes(cargoNorm)) continue;
-    const alvo = `${normalizarTextoTse(c.nomeUrna)} ${normalizarTextoTse(c.nome)}`;
-    const score = palavras.reduce((s, p) => s + (alvo.includes(p) ? 1 : 0), 0);
-    if (score >= minScore && (score > melhorScore ||
-        (score === melhorScore && melhor && c.totalVotos > melhor.totalVotos))) {
-      melhor = c;
-      melhorScore = score;
-    }
-  }
-  return melhor;
-}
-
 export function resolverDeputados(
   nomes: string[], ano: number, uf = 'DF', cargo = 'Deputado Distrital',
 ): ResolucaoDeputados {
@@ -243,7 +218,7 @@ export function resolverDeputados(
       .sort((a, b) => b.totalVotos - a.totalVotos);
     const escolhido = res.find(c => !usados.has(c.id))
       ?? res[0]
-      ?? buscarTolerante(data, nome, cargo);
+      ?? buscarCandidatoTolerante(data, nome, cargo);
     if (escolhido) {
       usados.add(escolhido.id);
       encontrados.push({ nome, cand: escolhido });

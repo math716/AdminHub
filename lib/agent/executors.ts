@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { loadStaticTseData, buscarCandidatoNoJson, normalizarTextoTse, bairrosPorZona } from '@/lib/tse-static';
+import { loadStaticTseData, buscarCandidatoNoJson, buscarCandidatoTolerante, normalizarTextoTse, bairrosPorZona } from '@/lib/tse-static';
 import { resolverDeputados } from '@/lib/agent/report/df-territorial';
 import type { Session } from 'next-auth';
 
@@ -118,8 +118,14 @@ export async function executarBuscarVotacao(
     const staticData = loadStaticTseData(anoStr, uf);
     if (!staticData) continue;
 
-    const todos = buscarCandidatoNoJson(staticData, semNome ? '' : args.candidato_nome, args.cargo)
+    let todos = buscarCandidatoNoJson(staticData, semNome ? '' : args.candidato_nome, args.cargo)
       .sort((a, b) => b.totalVotos - a.totalVotos);
+    // Fallback tolerante: nomes com palavra extra ("Delegada Doutora Jane"
+    // → DOUTORA JANE) ou títulos que não fazem parte do nome de urna.
+    if (todos.length === 0 && !semNome) {
+      const t = buscarCandidatoTolerante(staticData, args.candidato_nome, args.cargo);
+      if (t) todos = [t];
+    }
     const resultados = todos.slice(0, semNome ? 12 : 5);
 
     if (resultados.length === 0) continue;
@@ -172,7 +178,15 @@ export async function executarBuscarVotacao(
     };
   }
 
-  return { encontrado: false, mensagem: 'Nenhum candidato encontrado com esses filtros.' };
+  // Sem UF, cargos estaduais/municipais são impossíveis de localizar (a base
+  // nacional só tem a eleição presidencial) — oriente a obter o estado.
+  const semUf = !ufQuery && !isPresidencial;
+  return {
+    encontrado: false,
+    mensagem: semUf
+      ? `Para localizar "${args.candidato_nome ?? ''}" preciso do ESTADO: os resultados de cargos estaduais/municipais são organizados por UF. Pergunte ao usuário de que estado é o candidato (ou deduza pelo contexto) e repita a busca informando "uf".`
+      : 'Nenhum candidato encontrado com esses filtros. Vale conferir a grafia do nome de urna, o ano e o cargo — ou repetir a busca sem o filtro de cargo.',
+  };
 }
 
 // ---------------------------------------------------------------------------
