@@ -10,7 +10,11 @@ import { SYSTEM_PROMPT } from '@/lib/agent/system-prompt';
 import { prisma } from '@/lib/db';
 import type { Session } from 'next-auth';
 
-const MODEL = 'claude-sonnet-4-6';
+// Sonnet 5: pensamento adaptativo LIGADO por padrão — o modelo raciocina antes
+// de escolher ferramentas/argumentos (menos "não entendeu o pedido"). O
+// max_tokens precisa acomodar pensamento + resposta (por isso 8192, não 4096).
+const MODEL = 'claude-sonnet-5';
+const MAX_TOKENS = 8192;
 const MAX_ITERATIONS = 8; // evita loops infinitos
 
 // ---------------------------------------------------------------------------
@@ -116,7 +120,7 @@ export async function POST(request: NextRequest) {
     for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
       const response = await anthropic.messages.create({
         model: MODEL,
-        max_tokens: 4096,
+        max_tokens: MAX_TOKENS,
         system: [
           {
             type: 'text',
