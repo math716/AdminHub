@@ -283,11 +283,27 @@ export default function EmendasPage() {
         const pf = pendingFavoritoRef.current;
         if (pf && pf.uf === selectedUf && pf.ano === ano && atual?.parlamentares) {
           pendingFavoritoRef.current = null;
-          const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-          const found = atual.parlamentares.find(
-            (p) => normalizar(p.nomeUrna ?? p.nome) === normalizar(pf.candidateName) ||
-                   normalizar(p.nome) === normalizar(pf.candidateName),
-          );
+          const normalizar = (s: string) => (s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+          const alvo = normalizar(pf.candidateName);
+          const nomesDe = (p: typeof atual.parlamentares[number]) =>
+            [normalizar(p.nomeUrna ?? ''), normalizar(p.nome)].filter(Boolean);
+          // 1) igualdade exata
+          let found = atual.parlamentares.find((p) => nomesDe(p).includes(alvo));
+          // 2) um contém o outro — o nome do cadastro local e o do Portal nem
+          //    sempre coincidem ("Alberto Fraga" × "FRAGA"), e sem isso o
+          //    deep-link abria o estado certo com o parlamentar em branco.
+          if (!found && alvo.length > 2) {
+            found = atual.parlamentares.find((p) =>
+              nomesDe(p).some((n) => n.includes(alvo) || alvo.includes(n)));
+          }
+          // 3) todas as palavras do alvo aparecem no nome (ordem indiferente)
+          if (!found) {
+            const palavras = alvo.split(/\s+/).filter((w) => w.length > 2);
+            if (palavras.length > 0) {
+              found = atual.parlamentares.find((p) =>
+                nomesDe(p).some((n) => palavras.every((w) => n.includes(w))));
+            }
+          }
           if (found) {
             setSelectedParlamentar({
               cpf: found.cpf,
@@ -436,6 +452,37 @@ export default function EmendasPage() {
   const [showFavDropdown, setShowFavDropdown] = useState(false);
   const favDropRef = useRef<HTMLDivElement>(null);
   const pendingFavoritoRef = useRef<{ candidateName: string; cargo: string; uf: string; ano: number } | null>(null);
+
+  // Deep-link vindo do chat da Gabi: /dashboard/emendas?uf=DF&ano=2026&parlamentar=...
+  // Aplica o mesmo recorte que a Gabi mostrou, em vez de abrir o mapa do Brasil
+  // vazio e obrigar o usuário a refazer os filtros. Reaproveita a pendência de
+  // favorito: assim que o resumo do estado carrega, o parlamentar é selecionado.
+  // Lê de window.location para não exigir um <Suspense> em volta da página.
+  const deepLinkAplicadoRef = useRef(false);
+  useEffect(() => {
+    if (deepLinkAplicadoRef.current) return;
+    deepLinkAplicadoRef.current = true;
+    const qs = new URLSearchParams(window.location.search);
+    const uf = (qs.get('uf') ?? '').toUpperCase();
+    const anoParam = Number(qs.get('ano'));
+    const parlamentar = qs.get('parlamentar') ?? '';
+    const cargo = qs.get('cargo') ?? '';
+    const esferaParam = (qs.get('esfera') ?? '').toUpperCase();
+    if (!uf && !parlamentar) return;
+
+    const anoAlvo = Number.isFinite(anoParam) && anoParam > 1990 ? anoParam : ANO_PADRAO;
+    if (anoAlvo !== ANO_PADRAO) setAno(anoAlvo);
+    if (esferaParam === 'FEDERAL' || esferaParam === 'ESTADUAL') setEsfera(esferaParam);
+
+    if (uf && ESTADOS_BRASIL.some((e) => e.sigla === uf)) {
+      setSelectedUf(uf);
+      setSelectedStateName(ESTADOS_BRASIL.find((e) => e.sigla === uf)?.nome ?? uf);
+      setView('estado');
+      if (parlamentar) {
+        pendingFavoritoRef.current = { candidateName: parlamentar, cargo, uf, ano: anoAlvo };
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!showFavDropdown) return;

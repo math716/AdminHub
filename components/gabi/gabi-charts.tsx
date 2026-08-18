@@ -290,6 +290,43 @@ export function VisualizacoesCard({
   const hasVotacao = !!(tools?.includes('buscar_votacao'));
   const hasEmendas = !!(tools?.includes('buscar_emendas'));
 
+  // Deep-link do "Abrir em Emendas": leva o recorte consultado (parlamentar, UF,
+  // ano, esfera) já aplicado — antes o botão caía no mapa do Brasil sem nenhum
+  // filtro, obrigando o usuário a refazer a busca na mão.
+  const emendasHref = (() => {
+    const lista: any[] = dadosBrutos?.buscar_emendas?.emendas ?? [];
+    if (lista.length === 0) return '/dashboard/emendas';
+    // A busca pode misturar recortes; usa o valor predominante de cada campo.
+    const maisComum = (campo: string): string => {
+      const cnt: Record<string, number> = {};
+      for (const e of lista) {
+        const v = String(e?.[campo] ?? '').trim();
+        if (v && v !== 'N/A') cnt[v] = (cnt[v] ?? 0) + 1;
+      }
+      return Object.entries(cnt).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+    };
+    const params = new URLSearchParams();
+    const uf = maisComum('uf');
+    const ano = maisComum('ano');
+    if (uf) params.set('uf', uf);
+    if (ano) params.set('ano', ano);
+    // O parlamentar só entra quando a consulta foi sobre UM nome. Num panorama
+    // do estado (vários parlamentares no ranking), fixar o mais frequente
+    // abriria a ficha de um só — o oposto do que a Gabi mostrou.
+    const nomes = new Set(lista.map(e => String(e?.parlamentar ?? '').trim()).filter(n => n && n !== 'N/A'));
+    if (nomes.size === 1) {
+      params.set('parlamentar', [...nomes][0]);
+      const cargo = maisComum('cargo');
+      if (cargo) params.set('cargo', cargo);
+    }
+    // Esfera só entra se TODAS as emendas forem da mesma — senão o filtro
+    // esconderia parte do que a Gabi mostrou.
+    const esferas = new Set(lista.map(e => e?.esfera).filter(Boolean));
+    if (esferas.size === 1) params.set('esfera', String([...esferas][0]));
+    const qs = params.toString();
+    return qs ? `/dashboard/emendas?${qs}` : '/dashboard/emendas';
+  })();
+
   // Deep-link do "Ver no mapa": leva o candidato consultado já pré-preenchido
   // (a página /dashboard/mapa faz auto-busca a partir desses parâmetros).
   const votCand = dadosBrutos?.buscar_votacao?.candidatos?.[0];
@@ -468,7 +505,7 @@ export function VisualizacoesCard({
         )}
         {(hasEmendas || !hasVotacao) && (
           <Link
-            href="/dashboard/emendas"
+            href={emendasHref}
             onClick={() => onNavigate?.()}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:opacity-80"
             style={{ color: t.btnText, border: `1px solid ${t.btnBorder}` }}
