@@ -10,6 +10,7 @@ import {
   HeaderBand, DocFooter, renderContent, renderPizza, docStyles as S, stripEmoji, C, type Pill,
 } from '@/lib/agent/report/doc-pdf';
 import { renderMapaEleitoral, renderMapaEmendasVencedor, renderMapaVotos, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
+import { montarRelatorioTerritorial } from '@/lib/agent/report/territorial-doc';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -127,7 +128,35 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const body: ReportInput = await request.json();
+    const body: ReportInput & { tipo?: string; ano?: number; uf?: string; cargo?: string; deputados?: string[] } =
+      await request.json();
+
+    // ── Relatório Territorial do DF (por Região Administrativa) ────────────
+    // Vive nesta mesma rota para não criar outra serverless function
+    // (limite de 12 no plano Hobby do Vercel).
+    if (body.tipo === 'territorial') {
+      const ano   = body.ano ? Number(body.ano) : 2022;
+      const uf    = (body.uf ?? 'DF').toUpperCase();
+      const cargo = body.cargo ?? 'Deputado Distrital';
+      const nomes = Array.isArray(body.deputados)
+        ? body.deputados.map((n: any) => String(n).trim()).filter((n: string) => n.length > 1)
+        : [];
+      if (uf !== 'DF') {
+        return NextResponse.json({ error: 'Relatório territorial disponível apenas para o DF.' }, { status: 400 });
+      }
+      if (nomes.length === 0) {
+        return NextResponse.json({ error: 'Informe ao menos um deputado.' }, { status: 400 });
+      }
+      const pdf = await montarRelatorioTerritorial({ ano, uf, cargo, nomes });
+      return new NextResponse(pdf as any, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="gabi-relatorio-territorial-${Date.now()}.pdf"`,
+        },
+      });
+    }
+
     const tools = body.tools ?? [];
 
     const isEleitoral = tools.includes('buscar_votacao');

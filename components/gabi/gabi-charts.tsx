@@ -465,10 +465,11 @@ export function RelatorioTerritorialCard({ payload }: { payload: any }) {
     if (loading) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/agent/relatorio-territorial', {
+      const res = await fetch('/api/agent/relatorio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          tipo: 'territorial',
           ano: payload.ano,
           uf: payload.uf,
           cargo: payload.cargo,

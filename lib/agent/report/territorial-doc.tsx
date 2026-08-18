@@ -3,8 +3,10 @@
 // top 5 + leitura), e ao final o COMPARATIVO entre todos (tabela, mapa "quem
 // domina cada RA", disputas territoriais e nota metodológica).
 
-import { renderToBuffer, StyleSheet, Svg, Path } from '@react-pdf/renderer';
+import { renderToBuffer, StyleSheet, Svg, Path, Image } from '@react-pdf/renderer';
 import React from 'react';
+import fs from 'fs';
+import path from 'path';
 import {
   Document, Page, Text, View,
   DocFooter, renderContent, docStyles as S, stripEmoji, C,
@@ -55,7 +57,12 @@ const T = StyleSheet.create({
   },
   chipLabel: { fontSize: 6.5, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.8 },
   chipValue: { fontSize: 7.5, color: C.white, fontFamily: 'Helvetica-Bold' },
-  watermark: { position: 'absolute', right: 22, top: 10, opacity: 1 },
+  flagBox: {
+    position: 'absolute', right: PAD_H, top: 18,
+    borderWidth: 1, borderColor: 'rgba(34,211,238,0.55)', borderRadius: 4,
+    padding: 2, backgroundColor: 'rgba(255,255,255,0.10)',
+  },
+  flagImg: { width: 74, height: 52, borderRadius: 2 },
 
   // KPIs
   kpiRow:   { flexDirection: 'row', gap: 8, marginBottom: 8 },
@@ -84,21 +91,30 @@ const T = StyleSheet.create({
   mapLegTxt:{ fontSize: 6.5, color: C.gray },
 });
 
-// ─── Cabeçalho hero (com marca-d'água do mapa do DF) ─────────────────────────
-function Hero({ titulo, sub, chips, iniciais, marca }: {
+// ─── Cabeçalho hero (com a bandeira do estado) ───────────────────────────────
+// A bandeira vem de public/flags/{UF}.png, embutida como buffer (o react-pdf
+// trataria um caminho string como URL). Sem o arquivo, o cabeçalho sai limpo
+// (fallback silencioso). Genérico para outras UFs no futuro.
+export type BandeiraSrc = { data: Buffer; format: 'png' } | null;
+export function caminhoBandeira(uf: string): BandeiraSrc {
+  try {
+    const fp = path.join(process.cwd(), 'public', 'flags', `${uf.toUpperCase()}.png`);
+    return { data: fs.readFileSync(fp), format: 'png' };
+  } catch {
+    return null;
+  }
+}
+
+function Hero({ titulo, sub, chips, iniciais, bandeira }: {
   titulo: string; sub: string;
   chips: { label: string; value: string }[];
   iniciais: string;
-  marca: MapaResult | null;
+  bandeira: BandeiraSrc;
 }): React.ReactNode {
   return React.createElement(View, { style: T.hero },
-    // marca-d'água: silhueta do DF por RA
-    marca ? React.createElement(View, { style: T.watermark },
-      React.createElement(Svg, { width: marca.width, height: marca.height },
-        ...marca.paths.map((p, i) => React.createElement(Path, {
-          key: i, d: p.d, fill: 'rgba(74,158,222,0.10)', stroke: 'rgba(34,211,238,0.28)', strokeWidth: 0.5,
-        })),
-      ),
+    // bandeira do estado (com moldura — o campo da bandeira do DF é branco)
+    bandeira ? React.createElement(View, { style: T.flagBox },
+      React.createElement(Image, { src: bandeira, style: T.flagImg }),
     ) : null,
     React.createElement(View, { style: T.heroTop },
       React.createElement(View, { style: T.heroBadge },
@@ -258,8 +274,8 @@ function leituraDeputado(m: DeputadoMetrics): string {
 }
 
 // ─── Página por deputado ──────────────────────────────────────────────────────
-function PaginaDeputado({ m, mapa, marca, ano, cargo }: {
-  m: DeputadoMetrics; mapa: MapaResult | null; marca: MapaResult | null; ano: number; cargo: string;
+function PaginaDeputado({ m, mapa, bandeira, ano, cargo }: {
+  m: DeputadoMetrics; mapa: MapaResult | null; bandeira: BandeiraSrc; ano: number; cargo: string;
 }): React.ReactNode {
   const chips = [
     { label: 'Cargo', value: cargo },
@@ -271,7 +287,7 @@ function PaginaDeputado({ m, mapa, marca, ano, cargo }: {
     Hero({
       titulo: tituloCaso(m.nomeUrna),
       sub: 'Análise territorial por Região Administrativa — Distrito Federal',
-      chips, iniciais: iniciaisDe(m.nomeUrna), marca,
+      chips, iniciais: iniciaisDe(m.nomeUrna), bandeira,
     }),
     KpiRow(m),
     React.createElement(View, { style: T.vizRow, wrap: false },
@@ -354,8 +370,8 @@ function notaMetodologica(faltantes: string[]): string {
   return linhas.join('\n');
 }
 
-function PaginasComparativo({ ms, mapa, marca, ano, cargo, faltantes }: {
-  ms: DeputadoMetrics[]; mapa: MapaResult | null; marca: MapaResult | null;
+function PaginasComparativo({ ms, mapa, bandeira, ano, cargo, faltantes }: {
+  ms: DeputadoMetrics[]; mapa: MapaResult | null; bandeira: BandeiraSrc;
   ano: number; cargo: string; faltantes: string[];
 }): React.ReactNode {
   const chips = [
@@ -367,7 +383,7 @@ function PaginasComparativo({ ms, mapa, marca, ano, cargo, faltantes }: {
     Hero({
       titulo: 'Comparativo Territorial',
       sub: 'Redutos, domínio proporcional e disputas entre os deputados analisados',
-      chips, iniciais: 'CT', marca,
+      chips, iniciais: 'CT', bandeira,
     }),
     mapa ? React.createElement(View, { wrap: false, style: { marginBottom: 8 } },
       MapaBox(mapa, 'Quem domina cada Região Administrativa (mais votos na RA, entre os analisados)'),
@@ -381,9 +397,9 @@ function PaginasComparativo({ ms, mapa, marca, ano, cargo, faltantes }: {
 }
 
 // ─── Página de aviso (nenhum deputado encontrado) ─────────────────────────────
-function PaginaVazia(faltantes: string[], marca: MapaResult | null): React.ReactNode {
+function PaginaVazia(faltantes: string[], bandeira: BandeiraSrc): React.ReactNode {
   return React.createElement(Page, { size: 'A4', style: S.page },
-    Hero({ titulo: 'Relatório Territorial do DF', sub: 'Distrito Federal — por Região Administrativa', chips: [], iniciais: 'DF', marca }),
+    Hero({ titulo: 'Relatório Territorial do DF', sub: 'Distrito Federal — por Região Administrativa', chips: [], iniciais: 'DF', bandeira }),
     ...renderContent(
       'Não foi possível localizar os deputados informados na base eleitoral do DF.\n\n' +
       (faltantes.length ? `Nomes consultados: ${faltantes.join(', ')}.\n\n` : '') +
@@ -400,8 +416,8 @@ export async function montarRelatorioTerritorial(params: {
   const { ano, uf, cargo, nomes } = params;
   const territorial: TerritorialData | null = carregarTerritorial(ano, uf, cargo);
 
-  // marca-d'água do cabeçalho (silhueta do DF) — calculada uma única vez
-  const marca = await renderMapaDF_RA({ valores: {}, width: 118, height: 92 });
+  // bandeira do estado no cabeçalho (public/flags/{UF}.png)
+  const bandeira = caminhoBandeira(uf);
 
   const paginas: React.ReactNode[] = [];
   let faltantes: string[] = nomes;
@@ -416,7 +432,7 @@ export async function montarRelatorioTerritorial(params: {
       const m = metricasDeputado(cand, votosRA, territorial.totalPorRA);
       metricas.push(m);
       const mapa = await renderMapaDF_RA({ valores: votosRA, width: 225, height: 170 });
-      paginas.push(PaginaDeputado({ m, mapa, marca, ano, cargo }));
+      paginas.push(PaginaDeputado({ m, mapa, bandeira, ano, cargo }));
     }
 
     // Comparativo final (2+ deputados): vencedor por RA entre os analisados
@@ -431,11 +447,11 @@ export async function montarRelatorioTerritorial(params: {
         }
       }
       const mapaVencedor = await renderMapaDF_RAVencedor({ winners, width: 275, height: 210 });
-      paginas.push(PaginasComparativo({ ms: metricas, mapa: mapaVencedor, marca, ano, cargo, faltantes }));
+      paginas.push(PaginasComparativo({ ms: metricas, mapa: mapaVencedor, bandeira, ano, cargo, faltantes }));
     }
   }
 
-  if (paginas.length === 0) paginas.push(PaginaVazia(faltantes, marca));
+  if (paginas.length === 0) paginas.push(PaginaVazia(faltantes, bandeira));
 
   return renderToBuffer(React.createElement(Document, null, ...paginas) as any) as unknown as Buffer;
 }
