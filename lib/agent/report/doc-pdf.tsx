@@ -15,7 +15,9 @@ export const C = {
   dark: '#0f172a', gray: '#64748b', light: '#f1f5f9',
   border: '#e2e8f0', white: '#ffffff',
 };
-const CHART_COLORS = ['#1d6fd8', '#10b981', '#f59e0b', '#ef4444', '#a78bfa', '#fb923c'];
+// Mesma paleta categórica dos cards do chat (ordem fixa) — o mesmo dado sai do
+// chat e do PDF, então as cores precisam bater.
+const CHART_COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
 
 // ─── Margens da página (A4 retrato) ─────────────────────────────────────────
 const PAD_TOP = 34;

@@ -22,7 +22,13 @@ export interface Visualizacao {
 
 // ─── Cores e utilitários ──────────────────────────────────────────────────────
 
-const COLORS = ['#4a9ede', '#22d3ee', '#a78bfa', '#34d399', '#f87171', '#fbbf24', '#fb923c', '#e879f9'];
+// Paleta categórica das séries — ordem FIXA, nunca embaralhada (a ordem é o que
+// garante a separação entre daltonismos). A anterior era pastel demais: as oito
+// cores ficavam abaixo de 3:1 de contraste sobre o card e três estouravam a
+// faixa de luminosidade. Estes tons são mais saturados e validados nos dois
+// temas (faixa de luminosidade, croma, separação protan/deutan e contraste).
+const SERIES_LIGHT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
+const SERIES_DARK  = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
 
 // Paleta que se adapta ao tema (claro/escuro)
 function paleta(isDark: boolean) {
@@ -37,6 +43,7 @@ function paleta(isDark: boolean) {
         pillBg: 'rgba(74,158,222,0.15)', pillText: '#4a9ede',
         btnText: '#94a3b8', btnBorder: 'rgba(74,158,222,0.18)',
         tableHead: '#4a9ede', tableBorder: 'rgba(74,158,222,0.2)',
+        serie: SERIES_DARK,
       }
     : {
         cardBg: '#f8fafc', cardBorder: '#e2e8f0',
@@ -48,6 +55,7 @@ function paleta(isDark: boolean) {
         pillBg: 'rgba(29,111,216,0.12)', pillText: '#1d6fd8',
         btnText: '#475569', btnBorder: '#cbd5e1',
         tableHead: '#1d6fd8', tableBorder: '#dbe6f2',
+        serie: SERIES_LIGHT,
       };
 }
 type Paleta = ReturnType<typeof paleta>;
@@ -103,7 +111,7 @@ function DonutPanel({ vis, isMoney, t }: { vis: Visualizacao; isMoney: boolean; 
           <PieChart>
             <Pie data={items} dataKey="valor" nameKey="label" cx="50%" cy="50%" innerRadius="38%" outerRadius="70%" paddingAngle={2}>
               {items.map((_: any, i: number) => (
-                <Cell key={i} fill={items[i]?.cor || COLORS[i % COLORS.length]} />
+                <Cell key={i} fill={items[i]?.cor || t.serie[i % t.serie.length]} />
               ))}
             </Pie>
             <Tooltip contentStyle={tooltipFor(t)} formatter={(v: any) => [fmt(v), '']} />
@@ -114,13 +122,13 @@ function DonutPanel({ vis, isMoney, t }: { vis: Visualizacao; isMoney: boolean; 
       <div className="space-y-2 px-2 mt-1">
         {items.map((item: any, i: number) => {
           const pct = total > 0 ? ((item.valor / total) * 100).toFixed(1) : '0';
-          const color = item.cor || COLORS[i % COLORS.length];
+          const color = item.cor || t.serie[i % t.serie.length];
           return (
             <div key={i}>
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
                 <span className="flex-1 text-[10px] truncate" style={{ color: t.label }}>{item.label}</span>
-                <span className="text-[10px] font-bold flex-shrink-0 ml-1" style={{ color }}>{pct}%</span>
+                <span className="text-[10px] font-bold flex-shrink-0 ml-1 tabular-nums" style={{ color: t.label }}>{pct}%</span>
               </div>
               <div className="h-1 rounded-full overflow-hidden" style={{ background: t.track }}>
                 <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
@@ -180,7 +188,7 @@ function BarPanel({ vis, isMoney, t }: { vis: Visualizacao; isMoney: boolean; t:
               <Legend wrapperStyle={{ fontSize: 9, color: t.muted, paddingTop: 4 }} />
             )}
             {barKeys.map((key, ki) => (
-              <Bar key={key} dataKey={key} name={pretty(key)} fill={COLORS[ki % COLORS.length]} radius={[4, 4, 0, 0]}>
+              <Bar key={key} dataKey={key} name={pretty(key)} fill={t.serie[ki % t.serie.length]} radius={[4, 4, 0, 0]}>
                 {/* Rótulos de valor só quando há UMA série — em comparações eles se empilham */}
                 {!isMulti && (
                   <LabelList
@@ -191,7 +199,7 @@ function BarPanel({ vis, isMoney, t }: { vis: Visualizacao; isMoney: boolean; t:
                   />
                 )}
                 {!isMulti && items.map((_: any, i: number) => (
-                  <Cell key={i} fill={items[i]?.cor || COLORS[i % COLORS.length]} />
+                  <Cell key={i} fill={items[i]?.cor || t.serie[i % t.serie.length]} />
                 ))}
               </Bar>
             ))}
@@ -334,7 +342,7 @@ export function VisualizacoesCard({
                   <PieChart>
                     <Pie data={donut.dados?.itens ?? []} dataKey="valor" nameKey="label" cx="50%" cy="50%" innerRadius="35%" outerRadius="72%" paddingAngle={2}>
                       {(donut.dados?.itens ?? []).map((_: any, i: number) => (
-                        <Cell key={i} fill={(donut.dados.itens[i]?.cor) || COLORS[i % COLORS.length]} />
+                        <Cell key={i} fill={(donut.dados.itens[i]?.cor) || t.serie[i % t.serie.length]} />
                       ))}
                     </Pie>
                     <Tooltip contentStyle={tooltipFor(t)} formatter={(v: any) => [isMoney ? fmtMoney(v) : fmtCount(v), '']} />
@@ -347,13 +355,13 @@ export function VisualizacoesCard({
               {(donut.dados?.itens ?? []).map((item: any, i: number) => {
                 const total = (donut.dados?.itens ?? []).reduce((s: number, x: any) => s + (x.valor ?? 0), 0);
                 const pct = total > 0 ? ((item.valor / total) * 100).toFixed(1) : '0';
-                const color = item.cor || COLORS[i % COLORS.length];
+                const color = item.cor || t.serie[i % t.serie.length];
                 return (
                   <div key={i}>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
                       <span className="flex-1 text-xs font-medium truncate" style={{ color: t.label }}>{item.label}</span>
-                      <span className="text-xs font-bold flex-shrink-0" style={{ color }}>{pct}%</span>
+                      <span className="text-xs font-bold flex-shrink-0 tabular-nums" style={{ color: t.label }}>{pct}%</span>
                     </div>
                     <div className="h-1.5 rounded-full overflow-hidden" style={{ background: t.track }}>
                       <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
