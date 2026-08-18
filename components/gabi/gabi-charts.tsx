@@ -64,6 +64,24 @@ function fmtMoney(val: number): string {
   return `R$ ${val.toLocaleString('pt-BR')}`;
 }
 
+// KPI vem do modelo como { valor, unidade } — o valor pode ser número cru
+// (ex.: 176207634) e a unidade "R$". Formata em pt-BR e trata moeda como
+// prefixo, senão sai "176207634 R$".
+function fmtKpi(valor: any, unidade?: string): { texto: string; sufixo?: string } {
+  const ehMoeda = !!unidade && /^R\$|BRL|reais/i.test(unidade.trim());
+  const num = typeof valor === 'number'
+    ? valor
+    : (typeof valor === 'string' && /^-?[\d.,]+$/.test(valor.trim())
+        ? Number(valor.replace(/\./g, '').replace(',', '.'))
+        : NaN);
+
+  if (!isNaN(num) && isFinite(num)) {
+    if (ehMoeda) return { texto: fmtMoney(num) };
+    return { texto: fmtCount(num), sufixo: unidade };
+  }
+  return { texto: String(valor ?? ''), sufixo: unidade };
+}
+
 function fmtCount(val: number): string {
   if (val >= 1_000_000_000) return `${(val / 1_000_000_000).toFixed(1).replace('.', ',')}B`;
   if (val >= 1_000_000)     return `${(val / 1_000_000).toFixed(1).replace('.', ',')}M`;
@@ -371,10 +389,15 @@ export function VisualizacoesCard({
             {kpi.dados.cards.slice(0, 6).map((card: any, i: number) => (
               <div key={i} className="rounded-lg p-2.5" style={{ background: t.kpiBg, border: `1px solid ${t.kpiBorder}` }}>
                 <p className="text-[9px] uppercase tracking-wide mb-0.5" style={{ color: t.title }}>{card.label}</p>
-                <p className="text-sm font-bold" style={{ color: t.label }}>
-                  {card.valor}
-                  {card.unidade && (<span className="text-xs font-normal ml-1" style={{ color: t.muted }}>{card.unidade}</span>)}
-                </p>
+                {(() => {
+                  const { texto, sufixo } = fmtKpi(card.valor, card.unidade);
+                  return (
+                    <p className="text-sm font-bold" style={{ color: t.label }}>
+                      {texto}
+                      {sufixo && (<span className="text-xs font-normal ml-1" style={{ color: t.muted }}>{sufixo}</span>)}
+                    </p>
+                  );
+                })()}
                 {card.variacao !== undefined && (
                   <p className="text-[10px] mt-0.5" style={{ color: card.variacao >= 0 ? '#16a34a' : '#ef4444' }}>
                     {card.variacao >= 0 ? '+' : ''}{card.variacao}%

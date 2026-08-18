@@ -372,9 +372,32 @@ export async function renderMapaHeatmap(params: {
   }
 }
 
-// Mapa de emendas (por valor empenhado) — faixas fixas iguais ao dashboard.
+// Faixas de dinheiro ADAPTATIVAS ao maior valor. As faixas fixas do dashboard
+// saturam quando um município concentra dezenas de milhões (tudo vira a cor
+// mais escura); escalonar pelo máximo mantém o mapa legível em qualquer volume.
+function fmtMoneyCurto(n: number): string {
+  if (n >= 1_000_000_000) return `R$ ${(n / 1_000_000_000).toFixed(1).replace('.', ',')} bi`;
+  if (n >= 1_000_000)     return `R$ ${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1).replace('.', ',')} mi`;
+  if (n >= 1_000)         return `R$ ${Math.round(n / 1_000)} mil`;
+  return `R$ ${Math.round(n)}`;
+}
+
+function faixasDeDinheiro(max: number): Faixa[] {
+  // Abaixo de R$ 2 mi as faixas fixas do dashboard já descrevem bem os valores.
+  if (max <= 2_000_000) return EMENDA_BUCKETS;
+  const t1 = max * 0.05, t2 = max * 0.15, t3 = max * 0.4;
+  return [
+    { max: t1,       cor: '#bfdbfe', label: `até ${fmtMoneyCurto(t1)}` },
+    { max: t2,       cor: '#60a5fa', label: `${fmtMoneyCurto(t1)}–${fmtMoneyCurto(t2)}` },
+    { max: t3,       cor: '#2563eb', label: `${fmtMoneyCurto(t2)}–${fmtMoneyCurto(t3)}` },
+    { max: Infinity, cor: '#1e3a8a', label: `+ de ${fmtMoneyCurto(t3)}` },
+  ];
+}
+
+// Mapa de calor de emendas por valor destinado a cada município.
 export function renderMapaEmendas(params: { uf: string; valores: Record<string, number>; width?: number; height?: number }) {
-  return renderMapaHeatmap({ ...params, faixas: EMENDA_BUCKETS, semCor: SEM_EMENDA });
+  const max = Math.max(0, ...Object.values(params.valores));
+  return renderMapaHeatmap({ ...params, faixas: faixasDeDinheiro(max), semCor: SEM_EMENDA });
 }
 
 // Faixas de votos adaptativas ao maior valor (escala azul).

@@ -10,7 +10,7 @@ import {
   HeaderBand, DocFooter, renderContent, renderPizza, docStyles as S, stripEmoji, C,
   type Pill, type BandeiraSrc,
 } from '@/lib/agent/report/doc-pdf';
-import { renderMapaEleitoral, renderMapaEmendasVencedor, renderMapaVotos, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
+import { renderMapaEleitoral, renderMapaEmendas, renderMapaEmendasVencedor, renderMapaVotos, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
 import { montarRelatorioTerritorial, caminhoBandeira } from '@/lib/agent/report/territorial-doc';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
@@ -222,9 +222,24 @@ export async function POST(request: NextRequest) {
         emendas.forEach(e => { if (e.uf) ufCount[e.uf] = (ufCount[e.uf] ?? 0) + 1; });
         const uf = Object.entries(ufCount).sort((a, b) => b[1] - a[1])[0]?.[0];
         if (uf) {
-          // Colore cada município pelo parlamentar que mais destinou ali.
-          mapa = await renderMapaEmendasVencedor({ uf, emendas, width: W, height: H });
-          mapaTitulo = 'Mapa — parlamentar que mais destinou por município';
+          // Poucos parlamentares → comparação: colore pelo que mais destinou.
+          // Panorama (muitos parlamentares) → mapa de CALOR por valor: com
+          // dezenas de nomes o mapa "por vencedor" vira um arco-íris ilegível.
+          const parls = new Set(emendas.map(e => (e.parlamentar || '').trim()).filter(Boolean));
+          if (parls.size >= 2 && parls.size <= 6) {
+            mapa = await renderMapaEmendasVencedor({ uf, emendas, width: W, height: H });
+            mapaTitulo = 'Mapa — parlamentar que mais destinou por município';
+          } else {
+            const valores: Record<string, number> = {};
+            emendas.forEach(e => {
+              if (!e.municipio) return;
+              valores[e.municipio] = (valores[e.municipio] ?? 0) + (e.valorEmpenhado || e.valorPago || 0);
+            });
+            if (Object.keys(valores).length > 0) {
+              mapa = await renderMapaEmendas({ uf, valores, width: W, height: H });
+              mapaTitulo = 'Mapa de calor — valor destinado por município';
+            }
+          }
         }
       }
     }

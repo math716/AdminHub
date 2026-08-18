@@ -45,7 +45,11 @@ interface Message {
 interface GabiConversa {
   id: string;
   titulo: string | null;
-  mensagens: Array<{ role: 'user' | 'assistant'; content: string }>;
+  // Guarda a mensagem COMPLETA (com visualizacoes/tools/dadosBrutos), para que
+  // os cards de gráficos e o botão de PDF continuem funcionando ao reabrir uma
+  // conversa do histórico. Conversas antigas só têm role/content — o histórico
+  // delas continua legível, apenas sem os cards.
+  mensagens: Message[];
   criadaEm: string;
 }
 
@@ -305,7 +309,8 @@ export function GabiFAB() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           titulo: userMsgs[0].content.slice(0, 100),
-          mensagens: msgs.map(m => ({ role: m.role, content: m.content })),
+          // Mensagem completa — sem isso os cards de dados somem ao reabrir
+          mensagens: msgs,
         }),
       });
       if (res.ok) return (await res.json()).id as string;
@@ -341,7 +346,18 @@ export function GabiFAB() {
   }, []);
 
   const carregarConversa = useCallback((c: GabiConversa) => {
-    const msgs: Message[] = (c.mensagens ?? []).map(m => ({ role: m.role, content: m.content }));
+    // Preserva visualizacoes/tools/dadosBrutos quando existirem (conversas
+    // salvas antes desta correção só têm role/content e reabrem sem cards).
+    const msgs: Message[] = (c.mensagens ?? [])
+      .filter(m => m && (m.role === 'user' || m.role === 'assistant'))
+      .map(m => ({
+        role: m.role,
+        content: m.content ?? '',
+        ...(m.visualizacoes ? { visualizacoes: m.visualizacoes } : {}),
+        ...(m.tools ? { tools: m.tools } : {}),
+        ...(m.dadosBrutos ? { dadosBrutos: m.dadosBrutos } : {}),
+        ...(m.userQuestion ? { userQuestion: m.userQuestion } : {}),
+      }));
     const final = msgs.length > 0 ? msgs : [WELCOME];
     setMessages(final);
     setSessaoId(c.id);
