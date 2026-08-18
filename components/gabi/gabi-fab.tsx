@@ -76,8 +76,14 @@ type Block =
   | { type: 'heading'; level: 1 | 2 | 3; text: string }
   | { type: 'hr' }
   | { type: 'paragraph'; text: string }
-  | { type: 'bullet'; text: string }
+  | { type: 'bullet'; text: string; ordem?: number }
   | { type: 'table'; headers: string[]; rows: string[][] };
+
+// Emojis decorativos no início de títulos ("📊 Dimensão absoluta") deixam a
+// resposta com cara de rascunho. O conteúdo é o mesmo sem eles.
+function semEmojiInicial(s: string): string {
+  return s.replace(/^(?:\s*(?:[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}])+)\s*/u, '').trim() || s.trim();
+}
 
 function parseMarkdown(text: string): Block[] {
   const lines  = text.split('\n');
@@ -88,13 +94,27 @@ function parseMarkdown(text: string): Block[] {
     const trimmed = lines[i].trim();
     if (!trimmed) { i++; continue; }
 
-    if (/^(-{3,}|\*{3,})$/.test(trimmed)) {
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
       blocks.push({ type: 'hr' }); i++; continue;
     }
 
-    const hm = trimmed.match(/^(#{1,3})\s+(.+)/);
+    // Até 6 "#": o modelo usa #### com frequência e, sem isso, os cerquilhas
+    // apareciam cruas no texto.
+    const hm = trimmed.match(/^(#{1,6})\s+(.+)/);
     if (hm) {
-      blocks.push({ type: 'heading', level: Math.min(hm[1].length, 3) as 1 | 2 | 3, text: hm[2] });
+      blocks.push({
+        type: 'heading',
+        level: Math.min(hm[1].length, 3) as 1 | 2 | 3,
+        text: semEmojiInicial(hm[2].replace(/\*\*/g, '')),
+      });
+      i++; continue;
+    }
+
+    // "**Título:**" sozinho numa linha funciona como subtítulo — o modelo usa
+    // muito esse formato e ele virava um parágrafo em negrito solto.
+    const sm = trimmed.match(/^\*\*([^*]+)\*\*:?$/);
+    if (sm) {
+      blocks.push({ type: 'heading', level: 3, text: semEmojiInicial(sm[1]) });
       i++; continue;
     }
 
@@ -114,8 +134,10 @@ function parseMarkdown(text: string): Block[] {
     const bm = trimmed.match(/^[-*•]\s+(.+)/);
     if (bm) { blocks.push({ type: 'bullet', text: bm[1] }); i++; continue; }
 
-    const nm = trimmed.match(/^\d+[.)]\s+(.+)/);
-    if (nm) { blocks.push({ type: 'bullet', text: nm[1] }); i++; continue; }
+    // Listas numeradas mantêm o número — em análise política a ordem costuma
+    // ser a própria prioridade da recomendação.
+    const nm = trimmed.match(/^(\d+)[.)]\s+(.+)/);
+    if (nm) { blocks.push({ type: 'bullet', text: nm[2], ordem: Number(nm[1]) }); i++; continue; }
 
     blocks.push({ type: 'paragraph', text: trimmed }); i++;
   }
@@ -126,12 +148,20 @@ function parseMarkdown(text: string): Block[] {
 // ─── Inline renderer ──────────────────────────────────────────────────────────
 
 function Inline({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
   return (
     <>
       {parts.map((p, i) => {
         if (p.startsWith('**') && p.endsWith('**'))
           return <strong key={i} className="font-semibold" style={{ color: 'var(--text-primary)' }}>{p.slice(2, -2)}</strong>;
+        // Números e valores destacados com crase — tabular para alinhar bem
+        if (p.startsWith('`') && p.endsWith('`'))
+          return (
+            <span key={i} className="px-1 py-px rounded tabular-nums text-[0.94em]"
+              style={{ background: 'var(--tint-06)', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+              {p.slice(1, -1)}
+            </span>
+          );
         if (p.startsWith('*') && p.endsWith('*'))
           return <em key={i}>{p.slice(1, -1)}</em>;
         return <span key={i}>{p}</span>;
@@ -140,47 +170,85 @@ function Inline({ text }: { text: string }) {
   );
 }
 
+// Célula numérica (R$, %, milhares) alinha à direita — regra básica de tabela
+// financeira; à esquerda os números ficam ilegíveis para comparação.
+const RE_NUMERICO = /^[\s]*(R\$\s*)?[\d.,]+\s*(%|mil|mi|bi|pts?)?\s*$/i;
+
 // ─── Block renderer ───────────────────────────────────────────────────────────
 
 function MarkdownContent({ content }: { content: string }) {
   const blocks = parseMarkdown(content);
   return (
-    <div className="space-y-2 text-sm leading-relaxed">
+    <div style={{ fontSize: 13.5, lineHeight: 1.68 }}>
       {blocks.map((block, i) => {
+        const primeiro = i === 0;
         switch (block.type) {
+          // Três níveis com pesos distintos: seção (régua fina acima),
+          // subseção e rótulo. Hierarquia de relatório, não de bloco de notas.
           case 'heading': {
-            const sizes = ['text-base', 'text-sm', 'text-sm'];
-            const colors = ['var(--text-primary)', 'var(--text-primary)', '#4a9ede'];
+            if (block.level === 1) {
+              return (
+                <p key={i} className="font-bold tracking-[-0.01em]"
+                  style={{ fontSize: 15, color: 'var(--text-primary)', marginTop: primeiro ? 0 : 20, marginBottom: 8 }}>
+                  <Inline text={block.text} />
+                </p>
+              );
+            }
+            if (block.level === 2) {
+              return (
+                <div key={i} style={{ marginTop: primeiro ? 0 : 18, marginBottom: 8 }}>
+                  {!primeiro && <div style={{ height: 1, background: 'var(--border-default)', opacity: 0.7, marginBottom: 10 }} />}
+                  <p className="font-bold tracking-[-0.01em]" style={{ fontSize: 13.5, color: 'var(--text-primary)' }}>
+                    <Inline text={block.text} />
+                  </p>
+                </div>
+              );
+            }
             return (
-              <p key={i} className={`font-bold ${sizes[block.level - 1]} mt-3 first:mt-0`} style={{ color: colors[block.level - 1] }}>
+              <p key={i} className="font-semibold uppercase tracking-[0.06em]"
+                style={{ fontSize: 10.5, color: 'var(--brand-cobalt-text)', marginTop: primeiro ? 0 : 16, marginBottom: 6 }}>
                 <Inline text={block.text} />
               </p>
             );
           }
           case 'hr':
-            return <hr key={i} className="my-2 border-0 border-t" style={{ borderColor: 'rgba(74,158,222,0.15)' }} />;
+            return <div key={i} style={{ height: 1, background: 'var(--border-default)', opacity: 0.7, margin: '14px 0' }} />;
           case 'paragraph':
             return (
-              <p key={i} style={{ color: 'var(--text-secondary)' }}>
+              <p key={i} style={{ color: 'var(--text-secondary)', marginTop: primeiro ? 0 : 8 }}>
                 <Inline text={block.text} />
               </p>
             );
           case 'bullet':
             return (
-              <div key={i} className="flex gap-2">
-                <span className="flex-shrink-0 mt-0.5 font-bold" style={{ color: '#4a9ede' }}>·</span>
-                <span style={{ color: 'var(--text-secondary)' }}><Inline text={block.text} /></span>
+              <div key={i} className="flex gap-2.5" style={{ marginTop: 6 }}>
+                {block.ordem !== undefined ? (
+                  <span className="flex-shrink-0 font-semibold tabular-nums text-right"
+                    style={{ fontSize: 11.5, color: 'var(--brand-cobalt-text)', minWidth: 14, lineHeight: '1.68' }}>
+                    {block.ordem}.
+                  </span>
+                ) : (
+                  <span className="flex-shrink-0 rounded-full"
+                    style={{ width: 4, height: 4, background: 'var(--brand-cobalt)', marginTop: 9, opacity: 0.85 }} />
+                )}
+                <span className="flex-1" style={{ color: 'var(--text-secondary)' }}><Inline text={block.text} /></span>
               </div>
             );
-          case 'table':
+          case 'table': {
+            // Coluna é numérica quando a maioria das células é número.
+            const numerica = block.headers.map((_, ci) => {
+              const vals = block.rows.map(r => r[ci] ?? '');
+              return vals.filter(v => RE_NUMERICO.test(v.replace(/\*\*/g, ''))).length > vals.length / 2;
+            });
             return (
-              <div key={i} className="overflow-x-auto rounded-lg my-2" style={{ border: '1px solid rgba(74,158,222,0.2)' }}>
-                <table className="w-full text-xs border-collapse">
+              <div key={i} className="overflow-x-auto rounded-lg" style={{ border: '1px solid var(--border-default)', marginTop: 12, marginBottom: 4 }}>
+                <table className="w-full border-collapse" style={{ fontSize: 12 }}>
                   <thead>
-                    <tr style={{ background: 'rgba(74,158,222,0.12)' }}>
+                    <tr style={{ background: 'var(--tint-06)' }}>
                       {block.headers.map((h, hi) => (
-                        <th key={hi} className="px-3 py-2 text-left font-semibold whitespace-nowrap"
-                          style={{ color: '#4a9ede', borderBottom: '1px solid rgba(74,158,222,0.2)' }}>
+                        <th key={hi}
+                          className={`px-3 py-2 font-semibold uppercase tracking-[0.05em] whitespace-nowrap ${numerica[hi] ? 'text-right' : 'text-left'}`}
+                          style={{ fontSize: 10, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-default)' }}>
                           {h.replace(/\*\*/g, '')}
                         </th>
                       ))}
@@ -188,9 +256,15 @@ function MarkdownContent({ content }: { content: string }) {
                   </thead>
                   <tbody>
                     {block.rows.map((row, ri) => (
-                      <tr key={ri} style={{ borderBottom: ri < block.rows.length - 1 ? '1px solid rgba(74,158,222,0.08)' : 'none', background: ri % 2 ? 'rgba(74,158,222,0.03)' : 'transparent' }}>
+                      <tr key={ri} style={{ borderTop: ri > 0 ? '1px solid var(--border-default)' : 'none' }}>
                         {row.map((cell, ci) => (
-                          <td key={ci} className="px-3 py-1.5" style={{ color: 'var(--text-secondary)' }}>
+                          <td key={ci}
+                            className={`px-3 py-2 ${numerica[ci] ? 'text-right tabular-nums whitespace-nowrap' : 'text-left'}`}
+                            style={{
+                              color: ci === 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
+                              fontWeight: ci === 0 ? 500 : 400,
+                              fontVariantNumeric: numerica[ci] ? 'tabular-nums' : undefined,
+                            }}>
                             <Inline text={cell} />
                           </td>
                         ))}
@@ -200,6 +274,7 @@ function MarkdownContent({ content }: { content: string }) {
                 </table>
               </div>
             );
+          }
           default:
             return null;
         }
@@ -210,24 +285,35 @@ function MarkdownContent({ content }: { content: string }) {
 
 // ─── Tool chips ────────────────────────────────────────────────────────────────
 
+// Rótulos que o PARLAMENTAR entende. Expor "buscar_votacao" mostra a mecânica
+// interna e passa impressão de protótipo — o chip serve para dizer DE ONDE vem
+// o dado, o que dá credibilidade à resposta.
 const TOOL_LABELS: Record<string, string> = {
-  buscar_emendas:        'buscar_emendas',
-  buscar_votacao:        'buscar_votacao',
-  buscar_demandas:       'buscar_demandas',
-  dados_municipio:       'dados_municipio',
-  comparar_parlamentares:'comparar_parlamentares',
+  buscar_emendas:               'Emendas parlamentares',
+  buscar_votacao:               'Resultados eleitorais',
+  buscar_demandas:              'Demandas do gabinete',
+  dados_municipio:              'Perfil do município',
+  comparar_parlamentares:       'Comparativo de emendas',
+  localizar_parlamentar:        'Base de parlamentares',
+  gerar_relatorio_territorial:  'Análise territorial',
 };
 
 function ToolChips({ tools }: { tools?: string[] }) {
-  if (!tools || tools.length === 0) return null;
+  // `gerar_visualizacao` só formata o que já foi buscado — citá-lo como fonte
+  // seria ruído.
+  const fontes = (tools ?? []).filter(t => t !== 'gerar_visualizacao');
+  if (fontes.length === 0) return null;
   return (
-    <div className="flex flex-wrap gap-1.5 mb-2">
-      {tools.map(t => (
+    <div className="flex flex-wrap items-center gap-1.5 mb-2">
+      <span className="text-[10px] font-medium uppercase tracking-[0.06em]" style={{ color: 'var(--text-tertiary)' }}>
+        Fontes
+      </span>
+      {fontes.map(t => (
         <span key={t}
-          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium"
-          style={{ background: 'rgba(74,158,222,0.1)', color: '#4a9ede', border: '1px solid rgba(74,158,222,0.2)' }}>
-          <span style={{ fontSize: 8 }}>◆</span>
-          {TOOL_LABELS[t] ?? t}
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10.5px] font-medium"
+          style={{ background: 'var(--tint-06)', color: 'var(--text-secondary)', border: '1px solid var(--border-default)' }}>
+          <span className="rounded-full" style={{ width: 4, height: 4, background: 'var(--brand-cobalt)' }} />
+          {TOOL_LABELS[t] ?? t.replace(/_/g, ' ')}
         </span>
       ))}
     </div>
@@ -288,7 +374,14 @@ export function GabiFAB() {
 
   // ── Sincronizar no localStorage ────────────────────────────────────────────
 
-  useEffect(() => { lsSet(LS_MSGS, messages); }, [messages]);
+  // Nunca persiste só a saudação. No primeiro ciclo de efeitos `messages` ainda
+  // é a mensagem de boas-vindas, e gravar aí apagava a sessão guardada antes de
+  // ela chegar ao state — a conversa sumia ao reabrir a página. Quem limpa a
+  // sessão é `novaConversa`, via lsDel.
+  useEffect(() => {
+    if (messages.length <= 1) return;
+    lsSet(LS_MSGS, messages);
+  }, [messages]);
 
   // ── Scroll e foco ─────────────────────────────────────────────────────────
 
@@ -600,10 +693,10 @@ export function GabiFAB() {
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   {histLoading ? (
                     <div className="flex items-center justify-center h-40">
-                      <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#4a9ede' }} />
+                      <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-cobalt)' }} />
                     </div>
                   ) : historico.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-48 gap-3" style={{ color: '#64748b' }}>
+                    <div className="flex flex-col items-center justify-center h-48 gap-3" style={{ color: 'var(--text-tertiary)' }}>
                       <Clock className="w-10 h-10 opacity-30" />
                       <p className="text-sm font-medium">Nenhuma conversa salva</p>
                       <p className="text-xs opacity-60">Use o botão + para iniciar uma nova conversa</p>
@@ -615,14 +708,14 @@ export function GabiFAB() {
                           key={c.id}
                           onClick={() => carregarConversa(c)}
                           className="w-full text-left px-5 py-3.5 flex items-start gap-3 transition-colors hover:bg-white/5 group"
-                          style={{ borderBottom: '1px solid rgba(74,158,222,0.06)' }}
+                          style={{ borderBottom: '1px solid var(--border-default)' }}
                         >
-                          <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0 opacity-40" style={{ color: '#4a9ede' }} />
+                          <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--brand-cobalt)', opacity: 0.55 }} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                               {c.titulo || 'Conversa sem título'}
                             </p>
-                            <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                               {formatHistDate(c.criadaEm)} · {(c.mensagens ?? []).length} mensagens
                             </p>
                           </div>
@@ -646,7 +739,7 @@ export function GabiFAB() {
                   {/* Mensagens */}
                   <div
                     className="flex-1 min-h-0 overflow-y-auto py-6 px-5 space-y-6"
-                    style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(74,158,222,0.15) transparent' }}
+                    style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--border-strong) transparent' }}
                   >
                     {/* Gabi 3D grande na tela inicial (sem conversa ainda) */}
                     {HAS_GABI_3D && messages.length <= 1 && (
@@ -663,15 +756,17 @@ export function GabiFAB() {
                       <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         {/* Avatar Gabi */}
                         {msg.role === 'assistant' && (
-                          <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center mt-0.5 font-bold text-white text-sm"
-                            style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)' }}>
+                          <div className="w-7 h-7 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center mt-6 font-semibold text-white text-[11px]"
+                            style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)', boxShadow: '0 0 0 1px var(--border-default)' }}>
                             {gabiFace ? <img src={gabiFace} alt="Gabi" className="w-full h-full object-cover" /> : 'G'}
                           </div>
                         )}
 
-                        {/* Conteúdo */}
-                        <div className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[82%]`}>
-                          <span className="text-[11px] font-medium px-1" style={{ color: '#64748b' }}>
+                        {/* Conteúdo — a resposta da Gabi ganha mais largura que
+                            a pergunta: ela carrega tabelas e análise. */}
+                        <div className={`flex flex-col gap-1 min-w-0 ${msg.role === 'user' ? 'items-end max-w-[85%]' : 'items-start max-w-[92%]'}`}>
+                          <span className="text-[10.5px] font-semibold uppercase tracking-[0.07em] px-0.5"
+                            style={{ color: 'var(--text-tertiary)' }}>
                             {msg.role === 'user' ? 'Você' : 'Gabi'}
                           </span>
 
@@ -680,15 +775,27 @@ export function GabiFAB() {
 
                           {/* Balão */}
                           <div
-                            className="rounded-2xl px-4 py-3"
+                            className="w-full"
                             style={
                               msg.role === 'user'
-                                ? { background: 'linear-gradient(135deg, #1d6fd8, #3b82f6)', color: '#fff', borderBottomRightRadius: 6 }
-                                : { background: 'var(--tint-06)', border: '1px solid var(--tint-10)', borderBottomLeftRadius: 6 }
+                                ? {
+                                    background: 'var(--brand-cobalt)', color: '#fff',
+                                    borderRadius: 14, borderTopRightRadius: 4,
+                                    padding: '10px 14px',
+                                    boxShadow: '0 1px 2px rgba(15,23,42,0.12)',
+                                  }
+                                : {
+                                    // tint-06 destaca o balão do painel nos dois
+                                    // temas (no claro, branco sobre branco some).
+                                    background: 'var(--tint-06)',
+                                    border: '1px solid var(--border-default)',
+                                    borderRadius: 14, borderTopLeftRadius: 4,
+                                    padding: '14px 16px',
+                                  }
                             }
                           >
                             {msg.role === 'user'
-                              ? <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                              ? <p className="whitespace-pre-wrap" style={{ fontSize: 13.5, lineHeight: 1.6 }}>{msg.content}</p>
                               : <MarkdownContent content={msg.content} />
                             }
                           </div>
@@ -716,16 +823,19 @@ export function GabiFAB() {
                     {/* Digitando */}
                     {loading && (
                       <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-white text-sm"
-                          style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)' }}>
+                        <div className="w-7 h-7 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-semibold text-white text-[11px]"
+                          style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)', boxShadow: '0 0 0 1px var(--border-default)' }}>
                           {gabiFace ? <img src={gabiFace} alt="Gabi" className="w-full h-full object-cover" /> : 'G'}
                         </div>
-                        <div className="rounded-2xl px-4 py-3 mt-5" style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)', borderBottomLeftRadius: 6 }}>
+                        <div className="flex items-center gap-2.5 px-4 py-3"
+                          style={{ background: 'var(--tint-06)', border: '1px solid var(--border-default)', borderRadius: 14, borderTopLeftRadius: 4 }}>
                           <div className="flex items-center gap-1.5">
                             {[0, 150, 300].map(delay => (
-                              <span key={delay} className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#4a9ede', animationDelay: `${delay}ms` }} />
+                              <span key={delay} className="rounded-full animate-bounce"
+                                style={{ width: 5, height: 5, background: 'var(--brand-cobalt)', animationDelay: `${delay}ms` }} />
                             ))}
                           </div>
+                          <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>Consultando as bases…</span>
                         </div>
                       </div>
                     )}
@@ -751,14 +861,17 @@ export function GabiFAB() {
                         placeholder="Pergunte sobre emendas, votos, demandas, candidatos..."
                         rows={1}
                         disabled={loading}
-                        className="flex-1 resize-none rounded-xl px-4 py-3 text-sm outline-none"
+                        className="flex-1 resize-none rounded-xl px-4 py-3 outline-none transition-colors"
                         style={{
                           background: 'var(--tint-06)',
-                          border: '1px solid var(--tint-10)',
+                          border: '1px solid var(--border-default)',
                           color: 'var(--text-primary)',
                           maxHeight: 120,
-                          lineHeight: '1.5',
+                          fontSize: 13.5,
+                          lineHeight: '1.55',
                         }}
+                        onFocus={e => { e.currentTarget.style.borderColor = 'var(--brand-cobalt)'; }}
+                        onBlur={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; }}
                         onInput={e => {
                           const el = e.currentTarget;
                           el.style.height = 'auto';
@@ -770,7 +883,7 @@ export function GabiFAB() {
                         disabled={!input.trim() || loading}
                         className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150"
                         style={{
-                          background: input.trim() && !loading ? 'linear-gradient(135deg, #1d6fd8, #4a9ede)' : 'var(--tint-08)',
+                          background: input.trim() && !loading ? 'var(--brand-cobalt)' : 'var(--tint-08)',
                           color: input.trim() && !loading ? '#fff' : 'var(--text-tertiary)',
                         }}
                       >
