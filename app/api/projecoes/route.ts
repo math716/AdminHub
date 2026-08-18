@@ -107,32 +107,32 @@ export async function POST(request: NextRequest) {
     });
 
     // Upsert municípios individualmente para preservar IDs existentes (e portanto as parcerias vinculadas)
+    // Nota: sem $transaction — Supabase usa PgBouncer em modo transaction, incompatível com
+    // transações interativas do Prisma (P2028). Os upserts são idempotentes, sem necessidade de atomicidade.
     if (municipios && Array.isArray(municipios) && municipios.length > 0) {
-      await prisma.$transaction(async (tx) => {
-        for (const mun of municipios as any[]) {
-          const munData = {
-            votosBase: mun.votosBase ?? 0,
-            metaConservadora: mun.metaConservadora ?? mun.votosBase ?? 0,
-            metaPossivel: mun.metaPossivel ?? mun.votosBase ?? 0,
-            metaArrojada: mun.metaArrojada ?? mun.votosBase ?? 0,
-            observacoes: mun.observacoes ?? null,
-            prioridade: mun.prioridade ?? null,
-            dobradaAtiva: mun.dobradaAtiva ?? false,
-            dobradaNome: mun.dobradaNome ?? null,
-            dobradaPartido: mun.dobradaPartido ?? null,
-            dobradaObservacoes: mun.dobradaObservacoes ?? null,
-          };
-          await tx.projecaoMunicipio.upsert({
-            where: { projecaoId_municipio: { projecaoId: projecao.id, municipio: mun.municipio } },
-            update: munData,
-            create: { projecaoId: projecao.id, municipio: mun.municipio, ...munData },
-          });
-        }
-        // Remove municípios que foram excluídos pelo usuário
-        const incomingNames = (municipios as any[]).map((m: any) => m.municipio as string);
-        await tx.projecaoMunicipio.deleteMany({
-          where: { projecaoId: projecao.id, municipio: { notIn: incomingNames } },
+      for (const mun of municipios as any[]) {
+        const munData = {
+          votosBase: mun.votosBase ?? 0,
+          metaConservadora: mun.metaConservadora ?? mun.votosBase ?? 0,
+          metaPossivel: mun.metaPossivel ?? mun.votosBase ?? 0,
+          metaArrojada: mun.metaArrojada ?? mun.votosBase ?? 0,
+          observacoes: mun.observacoes ?? null,
+          prioridade: mun.prioridade ?? null,
+          dobradaAtiva: mun.dobradaAtiva ?? false,
+          dobradaNome: mun.dobradaNome ?? null,
+          dobradaPartido: mun.dobradaPartido ?? null,
+          dobradaObservacoes: mun.dobradaObservacoes ?? null,
+        };
+        await prisma.projecaoMunicipio.upsert({
+          where: { projecaoId_municipio: { projecaoId: projecao.id, municipio: mun.municipio } },
+          update: munData,
+          create: { projecaoId: projecao.id, municipio: mun.municipio, ...munData },
         });
+      }
+      // Remove municípios que foram excluídos pelo usuário
+      const incomingNames = (municipios as any[]).map((m: any) => m.municipio as string);
+      await prisma.projecaoMunicipio.deleteMany({
+        where: { projecaoId: projecao.id, municipio: { notIn: incomingNames } },
       });
     }
 
