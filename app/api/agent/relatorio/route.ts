@@ -7,10 +7,11 @@ import { renderToBuffer, Svg, Path } from '@react-pdf/renderer';
 import React from 'react';
 import {
   Document, Page, Text, View,
-  HeaderBand, DocFooter, renderContent, renderPizza, docStyles as S, stripEmoji, C, type Pill,
+  HeaderBand, DocFooter, renderContent, renderPizza, docStyles as S, stripEmoji, C,
+  type Pill, type BandeiraSrc,
 } from '@/lib/agent/report/doc-pdf';
 import { renderMapaEleitoral, renderMapaEmendasVencedor, renderMapaVotos, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
-import { montarRelatorioTerritorial } from '@/lib/agent/report/territorial-doc';
+import { montarRelatorioTerritorial, caminhoBandeira } from '@/lib/agent/report/territorial-doc';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -94,8 +95,8 @@ function MapSection(mapa: MapaResult, titulo: string): React.ReactNode {
 }
 
 // ─── Documento ───────────────────────────────────────────────────────────────
-function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitulo }: {
-  input: ReportInput; tipoLabel: string; geradoEm: string; valorPill: Pill | null; mapa: MapaResult | null; mapaTitulo: string;
+function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitulo, bandeira }: {
+  input: ReportInput; tipoLabel: string; geradoEm: string; valorPill: Pill | null; mapa: MapaResult | null; mapaTitulo: string; bandeira: BandeiraSrc;
 }) {
   const conteudo = input.conteudo ?? '';
   const reportTitle = clip(stripEmoji(input.titulo || conteudo.split('\n')[0] || 'Relatório de Dados'), 90);
@@ -113,7 +114,7 @@ function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitu
 
   return React.createElement(Document, null,
     React.createElement(Page, { size: 'A4', style: S.page },
-      HeaderBand({ titulo: reportTitle, pills }),
+      HeaderBand({ titulo: reportTitle, pills, bandeira }),
       pizza,
       ...renderContent(conteudo),
       mapa ? MapSection(mapa, mapaTitulo) : null,
@@ -169,6 +170,20 @@ export async function POST(request: NextRequest) {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
 
+    // ── Bandeira do estado do relatório (public/flags/{UF}.png; BR = Brasil) ─
+    let ufRelatorio: string | undefined;
+    if (isEleitoral) {
+      ufRelatorio = body.dadosBrutos?.buscar_votacao?.candidatos?.[0]?.uf;
+    } else if (isEmendas) {
+      const ems: any[] = body.dadosBrutos?.buscar_emendas?.emendas ?? [];
+      const cnt: Record<string, number> = {};
+      ems.forEach(e => { if (e.uf) cnt[e.uf] = (cnt[e.uf] ?? 0) + 1; });
+      ufRelatorio = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0]?.[0];
+    } else if (body.dadosBrutos?.dados_municipio?.uf) {
+      ufRelatorio = body.dadosBrutos.dados_municipio.uf;
+    }
+    const bandeira = ufRelatorio ? caminhoBandeira(ufRelatorio) : null;
+
     // Mapa (com fallback silencioso). Regra:
     //  • eleição com 2+ candidatos → vencedor por região
     //  • eleição com 1 candidato   → mapa de calor dos votos DELE
@@ -222,7 +237,7 @@ export async function POST(request: NextRequest) {
     }
 
     const pdfBuffer = await renderToBuffer(
-      React.createElement(RelatorioDocPDF, { input: body, tipoLabel, geradoEm, valorPill, mapa, mapaTitulo }) as any,
+      React.createElement(RelatorioDocPDF, { input: body, tipoLabel, geradoEm, valorPill, mapa, mapaTitulo, bandeira }) as any,
     );
 
     return new NextResponse(pdfBuffer as any, {

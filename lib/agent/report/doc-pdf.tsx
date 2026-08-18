@@ -5,7 +5,7 @@
 // da folha na virada de página).
 
 import {
-  Document, Page, Text, View, StyleSheet, Svg, Rect, Line, Path,
+  Document, Page, Text, View, StyleSheet, Svg, Rect, Line, Path, Image,
 } from '@react-pdf/renderer';
 import React from 'react';
 
@@ -45,7 +45,15 @@ const S = StyleSheet.create({
     paddingHorizontal: PAD_H,
     paddingTop: 22,
     paddingBottom: 18,
+    position: 'relative',
   },
+  headerAccent: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, flexDirection: 'row' },
+  headerFlagBox: {
+    position: 'absolute', right: PAD_H, top: 16,
+    borderWidth: 1, borderColor: 'rgba(34,211,238,0.55)', borderRadius: 4,
+    padding: 2, backgroundColor: 'rgba(255,255,255,0.10)',
+  },
+  headerFlagImg: { width: 64, height: 45, borderRadius: 2 },
   headerTop: { flexDirection: 'row', alignItems: 'center' },
   headerBadge: {
     width: 32, height: 32, borderRadius: 16, backgroundColor: C.blue,
@@ -395,12 +403,19 @@ export function renderPizza(titulo: string, items: PieItem[]): React.ReactNode |
 
 // ─── Componentes de página ──────────────────────────────────────────────────
 export interface Pill { label: string; value: string }
+export type BandeiraSrc = { data: Buffer; format: 'png' } | null;
 
-export function HeaderBand({ titulo, pills }: { titulo: string; pills: Pill[] }): React.ReactNode {
+export function HeaderBand({ titulo, pills, bandeira }: {
+  titulo: string; pills: Pill[]; bandeira?: BandeiraSrc;
+}): React.ReactNode {
   return React.createElement(View, { style: S.headerBand },
+    // bandeira do estado do relatório (opcional, com moldura)
+    bandeira ? React.createElement(View, { style: S.headerFlagBox },
+      React.createElement(Image, { src: bandeira, style: S.headerFlagImg }),
+    ) : null,
     React.createElement(View, { style: S.headerTop },
       React.createElement(View, { style: S.headerBadge }, React.createElement(Text, { style: S.headerBadgeText }, 'G')),
-      React.createElement(View, { style: S.headerMeta },
+      React.createElement(View, { style: { ...S.headerMeta, ...(bandeira ? { paddingRight: 80 } : {}) } },
         React.createElement(Text, { style: S.headerLabel }, 'Relatório preparado pela Gabi · AdminHub'),
         React.createElement(Text, { style: S.headerTitle }, stripEmoji(titulo)),
       ),
@@ -411,6 +426,12 @@ export function HeaderBand({ titulo, pills }: { titulo: string; pills: Pill[] })
         React.createElement(Text, { style: S.pillValue }, p.value),
       )),
     ) : null,
+    // linha de destaque (azul → ciano → lilás)
+    React.createElement(View, { style: S.headerAccent },
+      React.createElement(View, { style: { flex: 3, backgroundColor: C.blue } }),
+      React.createElement(View, { style: { flex: 2, backgroundColor: C.cyan } }),
+      React.createElement(View, { style: { flex: 1, backgroundColor: '#a78bfa' } }),
+    ),
   );
 }
 
