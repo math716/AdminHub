@@ -174,9 +174,10 @@ export const AGENT_TOOLS: Tool[] = [
   {
     name: 'gerar_relatorio_territorial',
     description:
-      'Prepara um RELATÓRIO TERRITORIAL eleitoral por Região Administrativa (RA) do DF, para um ou mais deputados. ' +
+      'Prepara um RELATÓRIO TERRITORIAL eleitoral por Região Administrativa (RA) do DF, para um ou mais deputados — ' +
+      'DISTRITAIS ou FEDERAIS do DF (a ferramenta detecta o cargo automaticamente se o nome não for achado como distrital). ' +
       'Use SEMPRE que o usuário pedir: "relatório territorial", análise por região administrativa, redutos/força por RA, ' +
-      'ou quando ele COLAR um roteiro/script listando deputados distritais do DF para analisar por território. ' +
+      'ou quando ele COLAR um roteiro/script listando deputados do DF para analisar por território. ' +
       'Esta ferramenta apenas valida os nomes e prepara o relatório — a plataforma então exibe um botão para gerar o PDF completo ' +
       '(RA com mais votos, RA de maior domínio proporcional, top 5 regiões, concentração, redutos, regiões fracas e o mapa do DF por RA). ' +
       'Não a use para consultas simples de votação (para isso, use buscar_votacao).',

@@ -69,7 +69,8 @@ export async function executarBuscarEmendas(
       cargo: e.parlamentar?.cargo ?? '',
       ano: e.ano,
       area: e.area,
-      objeto: e.objeto ?? '',
+      // objeto completo pode ter parágrafos — 100 emendas estouravam o turno
+      objeto: (e.objeto ?? '').slice(0, 140),
       municipio: e.municipioNome ?? '',
       uf: e.uf ?? '',
       esfera: e.esfera,
@@ -381,15 +382,37 @@ export async function executarGerarRelatorioTerritorial(
     return { encontrado: false, mensagem: 'O relatório territorial por Região Administrativa está disponível para o DF.' };
   }
 
-  const { encontrados, faltantes } = resolverDeputados(nomes, ano, uf, cargo);
+  let cargoUsado = cargo;
+  let { encontrados, faltantes } = resolverDeputados(nomes, ano, uf, cargo);
+
+  // O DF elege deputados DISTRITAIS e FEDERAIS — ambos têm votos por zona,
+  // então o territorial funciona para os dois. Se nada foi achado no cargo
+  // pedido, tenta como Deputado Federal (ex.: "Alberto Fraga" → FRAGA).
+  if (encontrados.length === 0 && normalizarTextoTse(cargo).includes('distrital')) {
+    const fed = resolverDeputados(nomes, ano, uf, 'Deputado Federal');
+    if (fed.encontrados.length > 0) {
+      encontrados = fed.encontrados;
+      faltantes = fed.faltantes;
+      cargoUsado = 'Deputado Federal';
+    }
+  }
+
+  // Nomes não achados no cargo usado mas que existem no outro cargo — dica
+  // para a Gabi orientar (relatório mistura só um cargo por vez, pois o
+  // "domínio" compara com os votos válidos daquele cargo).
+  const outroCargo = normalizarTextoTse(cargoUsado).includes('distrital') ? 'Deputado Federal' : 'Deputado Distrital';
+  const noOutroCargo = faltantes.length > 0
+    ? resolverDeputados(faltantes, ano, uf, outroCargo).encontrados.map(e => `${e.nome} (${outroCargo})`)
+    : [];
 
   return {
     tipo: 'relatorio_territorial',
-    ano, uf, cargo,
+    ano, uf, cargo: cargoUsado,
     solicitados: nomes.length,
     deputados: nomes,                                  // reenviados ao endpoint do PDF
     encontrados: encontrados.map(e => e.cand.nomeUrna),
     faltantes,
+    encontradosEmOutroCargo: noOutroCargo.length > 0 ? noOutroCargo : undefined,
     prontoParaGerar: encontrados.length > 0,
   };
 }

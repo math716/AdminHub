@@ -14,7 +14,7 @@ import type { Session } from 'next-auth';
 // de escolher ferramentas/argumentos (menos "não entendeu o pedido"). O
 // max_tokens precisa acomodar pensamento + resposta (por isso 8192, não 4096).
 const MODEL = 'claude-sonnet-5';
-const MAX_TOKENS = 8192;
+const MAX_TOKENS = 12288; // pensamento adaptativo + respostas com tabelas longas
 const MAX_ITERATIONS = 8; // evita loops infinitos
 
 // ---------------------------------------------------------------------------
@@ -140,10 +140,11 @@ export async function POST(request: NextRequest) {
       totalInputTokens  += response.usage?.input_tokens  ?? 0;
       totalOutputTokens += response.usage?.output_tokens ?? 0;
 
-      // Fim do turno — extrai texto da resposta
-      if (response.stop_reason === 'end_turn') {
+      // Fim do turno — extrai texto da resposta. Também salva o texto parcial
+      // quando o max_tokens corta a geração (melhor resposta parcial que vazia).
+      if (response.stop_reason === 'end_turn' || response.stop_reason === 'max_tokens') {
         for (const block of response.content) {
-          if (block.type === 'text') {
+          if (block.type === 'text' && block.text.trim()) {
             resposta = block.text;
           }
         }
@@ -201,6 +202,33 @@ export async function POST(request: NextRequest) {
 
       // stop_reason inesperado — encerra
       break;
+    }
+
+    // O modelo pode esgotar as iterações insistindo em buscas (ex.: filtros
+    // sem resultado) e o loop terminar SEM texto — força um fechamento em
+    // texto com o que já foi apurado, sem permitir novas ferramentas.
+    if (!resposta) {
+      try {
+        const fechamento = await anthropic.messages.create({
+          model: MODEL,
+          max_tokens: MAX_TOKENS,
+          system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+          tools: AGENT_TOOLS as any,
+          tool_choice: { type: 'none' },
+          messages: [
+            ...anthropicMessages,
+            {
+              role: 'user',
+              content: 'Encerre agora: responda diretamente ao usuário com o que você já apurou nas buscas acima. Se algum dado não foi localizado, diga naturalmente o que há disponível e ofereça um caminho — sem mencionar ferramentas ou processo interno.',
+            },
+          ],
+        } as any);
+        totalInputTokens  += fechamento.usage?.input_tokens  ?? 0;
+        totalOutputTokens += fechamento.usage?.output_tokens ?? 0;
+        for (const block of fechamento.content) {
+          if (block.type === 'text' && block.text.trim()) resposta = block.text;
+        }
+      } catch { /* mantém o fallback padrão */ }
     }
 
     // Salva usage (async, não bloqueia a resposta)
