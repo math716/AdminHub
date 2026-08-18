@@ -55,6 +55,91 @@ export function loadStaticTseData(ano: string, uf: string): CandidatoJson[] | nu
   }
 }
 
+/**
+ * Anos de eleição disponíveis na base (opcionalmente para uma UF). Permite
+ * responder "não temos 2026, temos 2022 e 2018" em vez de "não encontrei".
+ */
+let anosCache: Record<string, number[]> | null = null;
+
+export function anosDisponiveisTse(uf?: string): number[] {
+  if (!anosCache) {
+    anosCache = {};
+    try {
+      const base = path.join(process.cwd(), 'public', 'data', 'tse');
+      for (const dir of fs.readdirSync(base)) {
+        if (!/^\d{4}$/.test(dir)) continue;
+        const ano = Number(dir);
+        for (const arq of fs.readdirSync(path.join(base, dir))) {
+          const sigla = arq.replace(/\.json(\.gz)?$/i, '').toUpperCase();
+          if (!/^[A-Z]{2}$/.test(sigla)) continue;
+          (anosCache[sigla] = anosCache[sigla] || []).push(ano);
+        }
+      }
+      for (const k of Object.keys(anosCache)) anosCache[k].sort((a, b) => b - a);
+    } catch { /* base ausente — devolve vazio */ }
+  }
+  if (uf) return anosCache[uf.toUpperCase()] ?? [];
+  return [...new Set(Object.values(anosCache).flat())].sort((a, b) => b - a);
+}
+
+/**
+ * UFs que têm dados num ano (para orientar quando a UF pedida não existe).
+ */
+export function ufsDisponiveisTse(ano: number): string[] {
+  anosDisponiveisTse(); // garante o cache preenchido
+  return Object.entries(anosCache ?? {})
+    .filter(([, anos]) => anos.includes(ano))
+    .map(([uf]) => uf)
+    .sort();
+}
+
+// Títulos/profissões que aparecem em MUITOS nomes de urna. Casar por eles gera
+// sugestão errada ("Delegado Alberto Fraga" achando "Delegado Fernando"), então
+// pesam pouco — o que identifica a pessoa é o nome próprio/sobrenome.
+const TITULOS_COMUNS = new Set([
+  'delegado', 'delegada', 'doutor', 'doutora', 'dr', 'dra', 'pastor', 'pastora',
+  'professor', 'professora', 'profa', 'prof', 'deputado', 'deputada', 'senador',
+  'senadora', 'vereador', 'vereadora', 'prefeito', 'prefeita', 'agente', 'sargento',
+  'capitao', 'coronel', 'major', 'tenente', 'soldado', 'cabo', 'juiz', 'juiza',
+  'promotor', 'advogado', 'advogada', 'padre', 'irmao', 'irma', 'tio', 'tia',
+  'enfermeira', 'enfermeiro', 'medico', 'medica', 'engenheiro', 'engenheira',
+  'policial', 'bombeiro', 'militar', 'federal', 'civil', 'neto', 'filho', 'junior',
+]);
+
+/**
+ * Nomes parecidos com a busca — usado para sugerir quando nada é encontrado
+ * ("você quis dizer FRAGA?"). Pontua por palavra, dando peso baixo a títulos
+ * genéricos e exigindo que ao menos uma palavra IDENTIFICADORA case.
+ */
+export function sugerirCandidatos(
+  data: CandidatoJson[], query: string, cargo?: string, limite = 5,
+): Array<{ nomeUrna: string; nome: string; cargo: string; partido: string; totalVotos: number }> {
+  const palavras = normalizarTextoTse(query).split(' ').filter(p => p.length > 2);
+  if (palavras.length === 0) return [];
+  const identificadoras = palavras.filter(p => !TITULOS_COMUNS.has(p));
+  const cargoNorm = cargo ? normalizarTextoTse(cargo) : '';
+
+  return data
+    .filter(c => !cargoNorm || normalizarTextoTse(c.cargo).includes(cargoNorm))
+    .map(c => {
+      const alvo = `${normalizarTextoTse(c.nomeUrna)} ${normalizarTextoTse(c.nome)}`;
+      // Se a busca tem palavras identificadoras, pelo menos uma precisa casar
+      const casouIdentificadora = identificadoras.length === 0
+        || identificadoras.some(p => alvo.includes(p));
+      if (!casouIdentificadora) return { c, score: 0 };
+      const score = palavras.reduce(
+        (s, p) => s + (alvo.includes(p) ? (TITULOS_COMUNS.has(p) ? 0.2 : 1) : 0), 0);
+      return { c, score };
+    })
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score || b.c.totalVotos - a.c.totalVotos)
+    .slice(0, limite)
+    .map(x => ({
+      nomeUrna: x.c.nomeUrna, nome: x.c.nome, cargo: x.c.cargo,
+      partido: x.c.partido, totalVotos: x.c.totalVotos,
+    }));
+}
+
 // ── Locais de votação (mapeiam zona → bairros) ──────────────────────────────
 export interface LocalVotacao {
   municipio: string; zona: number; codLocal: string;

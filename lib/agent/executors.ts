@@ -1,5 +1,8 @@
 import { prisma } from '@/lib/db';
-import { loadStaticTseData, buscarCandidatoNoJson, buscarCandidatoTolerante, normalizarTextoTse, bairrosPorZona } from '@/lib/tse-static';
+import {
+  loadStaticTseData, buscarCandidatoNoJson, buscarCandidatoTolerante, normalizarTextoTse,
+  bairrosPorZona, anosDisponiveisTse, sugerirCandidatos,
+} from '@/lib/tse-static';
 import { resolverDeputados } from '@/lib/agent/report/df-territorial';
 import type { Session } from 'next-auth';
 
@@ -8,15 +11,41 @@ type UserSession = Session & { user: any };
 // ---------------------------------------------------------------------------
 // buscar_emendas
 // ---------------------------------------------------------------------------
+type FiltrosEmendas = {
+  parlamentar_nome?: string;
+  uf?: string;
+  municipio?: string;
+  area?: string;
+  ano?: number;
+  esfera?: string;
+};
+
+// Casa o nome do parlamentar por PALAVRAS (todas presentes, em qualquer ordem):
+// "Alberto Fraga" acha "João Alberto Fraga Silva" e "Fraga, Alberto" — o
+// `contains` de frase inteira falhava nesses casos.
+function filtroNomeParlamentar(nome: string) {
+  const palavras = nome.trim().split(/\s+/).filter(p => p.length > 2);
+  if (palavras.length === 0) return { nome: { contains: nome, mode: 'insensitive' as const } };
+  return { AND: palavras.map(p => ({ nome: { contains: p, mode: 'insensitive' as const } })) };
+}
+
+function whereEmendas(a: FiltrosEmendas, ignorar: Set<string> = new Set()) {
+  return {
+    ...(a.parlamentar_nome && !ignorar.has('parlamentar') && { parlamentar: filtroNomeParlamentar(a.parlamentar_nome) }),
+    ...(a.uf && !ignorar.has('uf') && { uf: a.uf.toUpperCase() }),
+    ...(a.municipio && !ignorar.has('municipio') && { municipioNome: { contains: a.municipio, mode: 'insensitive' as const } }),
+    ...(a.area && !ignorar.has('area') && { area: a.area as any }),
+    ...(a.ano && !ignorar.has('ano') && { ano: Number(a.ano) }),
+    ...(a.esfera && !ignorar.has('esfera') && { esfera: a.esfera as any }),
+  } as any;
+}
+
+const ROTULO_FILTRO: Record<string, string> = {
+  ano: 'ano', area: 'área temática', municipio: 'município', parlamentar: 'parlamentar',
+};
+
 export async function executarBuscarEmendas(
-  args: {
-    parlamentar_nome?: string;
-    uf?: string;
-    municipio?: string;
-    area?: string;
-    ano?: number;
-    esfera?: string;
-  },
+  args: FiltrosEmendas,
   _session: UserSession,
 ) {
   // Exige pelo menos um filtro para evitar dumps desnecessários
@@ -24,32 +53,77 @@ export async function executarBuscarEmendas(
     return { erro: 'Informe ao menos um filtro (parlamentar, UF, município, área ou ano).' };
   }
 
-  const emendas = await prisma.emendaParlamentar.findMany({
-    where: {
-      ...(args.parlamentar_nome && {
-        parlamentar: {
-          nome: { contains: args.parlamentar_nome, mode: 'insensitive' },
-        },
-      }),
-      ...(args.uf && { uf: args.uf.toUpperCase() }),
-      ...(args.municipio && {
-        municipioNome: { contains: args.municipio, mode: 'insensitive' },
-      }),
-      ...(args.area && { area: args.area as any }),
-      ...(args.ano && { ano: Number(args.ano) }),
-      ...(args.esfera && { esfera: args.esfera as any }),
-    },
-    include: {
-      parlamentar: {
-        select: { nome: true, partido: true, uf: true, cargo: true },
-      },
-    },
+  const buscar = (ignorar: Set<string>) => prisma.emendaParlamentar.findMany({
+    where: whereEmendas(args, ignorar),
+    include: { parlamentar: { select: { nome: true, partido: true, uf: true, cargo: true } } },
     orderBy: { valorPago: 'desc' },
     take: 100,
   });
 
+  // Busca com os filtros pedidos. Se vier vazio, RELAXA progressivamente em vez
+  // de devolver "não encontrei": é quase sempre um filtro apertado demais
+  // (ano sem dado, área classificada como OUTROS, grafia do município).
+  let emendas = await buscar(new Set());
+  const filtrosIgnorados: string[] = [];
+
   if (emendas.length === 0) {
-    return { encontrado: false, mensagem: 'Nenhuma emenda encontrada com esses filtros.' };
+    const escada: string[][] = [['ano'], ['ano', 'area'], ['ano', 'area', 'municipio']];
+    for (const combo of escada) {
+      const aplicaveis = combo.filter(f =>
+        (f === 'ano' && args.ano) || (f === 'area' && args.area) || (f === 'municipio' && args.municipio));
+      if (aplicaveis.length === 0) continue;
+      const r = await buscar(new Set(aplicaveis));
+      if (r.length > 0) {
+        emendas = r;
+        filtrosIgnorados.push(...aplicaveis);
+        break;
+      }
+    }
+  }
+
+  if (emendas.length === 0) {
+    // Ainda vazio: em vez de um beco sem saída, devolve o que EXISTE por perto
+    // para a Gabi conduzir a conversa com dados concretos.
+    const [anosComDados, semelhantes] = await Promise.all([
+      prisma.emendaParlamentar.groupBy({
+        by: ['ano'],
+        where: whereEmendas(args, new Set(['ano', 'area', 'municipio'])) as any,
+        _count: { _all: true },
+        orderBy: { ano: 'desc' },
+        take: 8,
+      }).catch(() => [] as any[]),
+      args.parlamentar_nome
+        ? prisma.parlamentar.findMany({
+            where: filtroNomeParlamentar(args.parlamentar_nome) as any,
+            select: { nome: true, partido: true, uf: true, cargo: true },
+            take: 5,
+          }).catch(() => [] as any[])
+        : Promise.resolve([] as any[]),
+    ]);
+
+    // Nome não bateu nem por palavras: tenta por QUALQUER palavra (sobrenome)
+    let alternativos = semelhantes;
+    if (alternativos.length === 0 && args.parlamentar_nome) {
+      const palavras = args.parlamentar_nome.trim().split(/\s+/).filter(p => p.length > 2);
+      if (palavras.length > 0) {
+        alternativos = await prisma.parlamentar.findMany({
+          where: { OR: palavras.map(p => ({ nome: { contains: p, mode: 'insensitive' as const } })) } as any,
+          select: { nome: true, partido: true, uf: true, cargo: true },
+          take: 5,
+        }).catch(() => [] as any[]);
+      }
+    }
+
+    return {
+      encontrado: false,
+      anosComDados: anosComDados.map((a: any) => ({ ano: a.ano, emendas: a._count?._all ?? 0 })),
+      parlamentaresSemelhantes: alternativos,
+      orientacao:
+        'Não há registros para essa combinação exata de filtros. Use "anosComDados" e ' +
+        '"parlamentaresSemelhantes" para propor ao usuário o recorte mais próximo que EXISTE ' +
+        '(ex.: outro ano, ou o nome como está cadastrado) e refaça a busca — não responda que ' +
+        'os dados não existem sem antes oferecer essas alternativas concretas.',
+    };
   }
 
   const totalEmpenhado = emendas.reduce((s, e) => s + e.valorEmpenhado, 0);
@@ -60,6 +134,15 @@ export async function executarBuscarEmendas(
     total: emendas.length,
     totalEmpenhado,
     totalPago,
+    // Quando a busca exata falhou e o resultado veio de um filtro relaxado,
+    // avisa a Gabi para ela deixar isso claro na resposta (transparência sem
+    // expor mecânica: "não há registros de 2025; trouxe os de 2024").
+    ...(filtrosIgnorados.length > 0 && {
+      filtrosIgnorados,
+      aviso: `Sem registros para o(s) filtro(s) de ${filtrosIgnorados.map(f => ROTULO_FILTRO[f] ?? f).join(' e ')} ` +
+        'pedido(s). Estes resultados são do recorte mais próximo disponível — diga isso ao usuário ' +
+        'naturalmente, informando o período/escopo que os dados realmente cobrem.',
+    }),
     execucaoGeral: totalEmpenhado > 0
       ? Math.round((totalPago / totalEmpenhado) * 100)
       : 0,
@@ -182,11 +265,43 @@ export async function executarBuscarVotacao(
   // Sem UF, cargos estaduais/municipais são impossíveis de localizar (a base
   // nacional só tem a eleição presidencial) — oriente a obter o estado.
   const semUf = !ufQuery && !isPresidencial;
+  if (semUf) {
+    return {
+      encontrado: false,
+      anosDisponiveis: anosDisponiveisTse(),
+      orientacao: `Para localizar "${args.candidato_nome ?? ''}" é preciso o ESTADO: os resultados de cargos estaduais/municipais são organizados por UF. Deduza pelo contexto da conversa ou pergunte de forma natural de que estado é o candidato, e repita a busca informando "uf".`,
+    };
+  }
+
+  // Nada encontrado COM a UF: devolve o que existe por perto — nomes parecidos
+  // (grafia de urna costuma diferir) e os anos que a base realmente cobre.
+  const ufAlvo = ufQuery ?? 'BR';
+  const anosDisponiveis = anosDisponiveisTse(ufAlvo);
+  let sugestoes: any[] = [];
+  if (args.candidato_nome) {
+    for (const ano of [anoStr, ...anosDisponiveis.map(String)]) {
+      const base = loadStaticTseData(ano, ufAlvo);
+      if (!base) continue;
+      // Busca em TODOS os cargos, ordenada por relevância do nome: é comum a
+      // pessoa ter concorrido a outro cargo (ex.: pediram distrital, era
+      // federal), e filtrar por cargo esconderia justamente o nome certo.
+      const achados = sugerirCandidatos(base, args.candidato_nome, undefined, 5);
+      if (achados.length > 0) {
+        sugestoes = achados.map(x => ({ ...x, ano: Number(ano), uf: ufAlvo }));
+        break;
+      }
+    }
+  }
+
   return {
     encontrado: false,
-    mensagem: semUf
-      ? `Para localizar "${args.candidato_nome ?? ''}" preciso do ESTADO: os resultados de cargos estaduais/municipais são organizados por UF. Pergunte ao usuário de que estado é o candidato (ou deduza pelo contexto) e repita a busca informando "uf".`
-      : 'Nenhum candidato encontrado com esses filtros. Vale conferir a grafia do nome de urna, o ano e o cargo — ou repetir a busca sem o filtro de cargo.',
+    anosDisponiveis,
+    sugestoes,
+    orientacao:
+      'Não houve correspondência exata. Se "sugestoes" trouxer nomes, escolha o mais provável ' +
+      '(o nome de urna costuma ser diferente do nome civil, e o cargo pode ser outro) e REFAÇA a busca ' +
+      'com esse nome — ou confirme com o usuário citando as opções. Se o ano pedido não estiver em ' +
+      '"anosDisponiveis", proponha o ano mais próximo que existe. Nunca encerre dizendo apenas que não encontrou.',
   };
 }
 
@@ -360,6 +475,79 @@ export async function executarBuscarDemandas(
 }
 
 // ---------------------------------------------------------------------------
+// localizar_parlamentar — "onde essa pessoa aparece na base?"
+// Resolve pedidos vagos ANTES de buscar: descobre UF, cargo, grafia de urna e
+// anos com dados, para a Gabi montar a consulta certa em vez de errar o filtro.
+// ---------------------------------------------------------------------------
+export async function executarLocalizarParlamentar(
+  args: { nome: string; uf?: string },
+  _session: UserSession,
+) {
+  const nome = (args.nome ?? '').trim();
+  if (nome.length < 3) return { erro: 'Informe ao menos 3 caracteres do nome.' };
+
+  const palavras = nome.split(/\s+/).filter(p => p.length > 2);
+
+  // 1) Base de emendas — diz UF e cargo, e serve de bússola para a busca eleitoral
+  let registros: any[] = [];
+  try {
+    registros = await prisma.parlamentar.findMany({
+      where: palavras.length > 0
+        ? ({ AND: palavras.map(p => ({ nome: { contains: p, mode: 'insensitive' as const } })) } as any)
+        : ({ nome: { contains: nome, mode: 'insensitive' as const } } as any),
+      select: { id: true, nome: true, partido: true, uf: true, cargo: true },
+      take: 8,
+    });
+    if (registros.length === 0 && palavras.length > 0) {
+      registros = await prisma.parlamentar.findMany({
+        where: { OR: palavras.map(p => ({ nome: { contains: p, mode: 'insensitive' as const } })) } as any,
+        select: { id: true, nome: true, partido: true, uf: true, cargo: true },
+        take: 8,
+      });
+    }
+  } catch { registros = []; }
+
+  const emEmendas = await Promise.all(registros.map(async (p) => {
+    let anos: number[] = [];
+    try {
+      const g = await prisma.emendaParlamentar.groupBy({
+        by: ['ano'], where: { parlamentarId: p.id } as any, orderBy: { ano: 'desc' }, take: 10,
+      });
+      anos = g.map((x: any) => x.ano);
+    } catch { /* sem dados */ }
+    return { nome: p.nome, partido: p.partido ?? '', uf: p.uf ?? '', cargo: p.cargo ?? '', anosComEmendas: anos };
+  }));
+
+  // 2) Base eleitoral — busca na UF informada ou na que a base de emendas revelou
+  const ufBusca = (args.uf ?? registros.find(r => r.uf)?.uf ?? '').toUpperCase();
+  const emEleicoes: any[] = [];
+  if (ufBusca) {
+    for (const ano of anosDisponiveisTse(ufBusca)) {
+      const base = loadStaticTseData(String(ano), ufBusca);
+      if (!base) continue;
+      for (const s of sugerirCandidatos(base, nome, undefined, 3)) {
+        emEleicoes.push({ ...s, ano, uf: ufBusca });
+      }
+      if (emEleicoes.length >= 6) break;
+    }
+  }
+
+  return {
+    encontrado: emEmendas.length > 0 || emEleicoes.length > 0,
+    consultado: nome,
+    emEmendas,                                   // onde tem emendas (UF, cargo, anos)
+    emEleicoes,                                  // grafia de urna, cargo e ano reais
+    ufsEleitoraisDisponiveis: ufBusca ? undefined : 'informe a UF para localizar na base eleitoral',
+    orientacao:
+      'Use este retorno para montar a consulta CERTA: "emEleicoes" traz o nome de urna, o cargo e ' +
+      'o ano reais (use-os em buscar_votacao ou gerar_relatorio_territorial); "emEmendas" traz a UF, ' +
+      'o cargo e os anos com emendas (use-os em buscar_emendas). Se nada aparecer e faltar a UF, ' +
+      'pergunte o estado de forma natural. Depois de localizar, SIGA e entregue a análise — não devolva ' +
+      'a busca ao usuário como se fosse tarefa dele.',
+  };
+}
+
+// ---------------------------------------------------------------------------
 // gerar_relatorio_territorial — valida os nomes e prepara o relatório por RA.
 // NÃO devolve o dataset inteiro (evita estourar o turno) — o PDF é montado no
 // endpoint /api/agent/relatorio-territorial a partir destes parâmetros.
@@ -450,6 +638,8 @@ export async function executarTool(
       return executarDadosMunicipio(args as any, session);
     case 'buscar_demandas':
       return executarBuscarDemandas(args as any, session);
+    case 'localizar_parlamentar':
+      return executarLocalizarParlamentar(args as any, session);
     case 'gerar_relatorio_territorial':
       return executarGerarRelatorioTerritorial(args as any, session);
     case 'gerar_visualizacao':

@@ -172,6 +172,31 @@ export const AGENT_TOOLS: Tool[] = [
   },
 
   {
+    name: 'localizar_parlamentar',
+    description:
+      'Descobre ONDE uma pessoa aparece nas bases: nome de urna, cargo, UF, partido, anos de eleição ' +
+      'e anos com emendas. Use ANTES de buscar quando o pedido estiver incompleto ou impreciso — ' +
+      'nome parcial ou com título ("Dr.", "Delegado"), sem UF, sem ano, sem cargo, ou quando uma busca ' +
+      'anterior não encontrou nada. É a forma correta de resolver ambiguidade: localize primeiro, ' +
+      'depois refaça a busca certa com os dados retornados. Não peça ao usuário informações que esta ' +
+      'ferramenta pode descobrir sozinha.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        nome: {
+          type: 'string',
+          description: 'Nome (mesmo parcial ou com título) da pessoa a localizar.',
+        },
+        uf: {
+          type: 'string',
+          description: 'Sigla do estado, se conhecida. Acelera a busca eleitoral; se omitida, é inferida da base de emendas.',
+        },
+      },
+      required: ['nome'],
+    },
+  },
+
+  {
     name: 'gerar_relatorio_territorial',
     description:
       'Prepara um RELATÓRIO TERRITORIAL eleitoral por Região Administrativa (RA) do DF, para um ou mais deputados — ' +
