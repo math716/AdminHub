@@ -169,6 +169,40 @@ export const AGENT_TOOLS: Tool[] = [
   },
 
   {
+    name: 'gerar_relatorio_territorial',
+    description:
+      'Prepara um RELATÓRIO TERRITORIAL eleitoral por Região Administrativa (RA) do DF, para um ou mais deputados. ' +
+      'Use SEMPRE que o usuário pedir: "relatório territorial", análise por região administrativa, redutos/força por RA, ' +
+      'ou quando ele COLAR um roteiro/script listando deputados distritais do DF para analisar por território. ' +
+      'Esta ferramenta apenas valida os nomes e prepara o relatório — a plataforma então exibe um botão para gerar o PDF completo ' +
+      '(RA com mais votos, RA de maior domínio proporcional, top 5 regiões, concentração, redutos, regiões fracas e o mapa do DF por RA). ' +
+      'Não a use para consultas simples de votação (para isso, use buscar_votacao).',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        deputados: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Lista de nomes dos deputados a analisar (um ou mais). Extraia todos os nomes citados no pedido do usuário.',
+        },
+        ano: {
+          type: 'integer',
+          description: 'Ano da eleição (padrão 2022, se não informado).',
+        },
+        uf: {
+          type: 'string',
+          description: 'Sigla do estado. Atualmente disponível para DF (padrão).',
+        },
+        cargo: {
+          type: 'string',
+          description: 'Cargo disputado (padrão "Deputado Distrital").',
+        },
+      },
+      required: ['deputados'],
+    },
+  },
+
+  {
     name: 'gerar_visualizacao',
     description:
       'Formata dados para renderização visual no frontend (gráficos, cards de KPI, tabelas). ' +

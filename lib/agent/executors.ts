@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { loadStaticTseData, buscarCandidatoNoJson, normalizarTextoTse, bairrosPorZona } from '@/lib/tse-static';
+import { resolverDeputados } from '@/lib/agent/report/df-territorial';
 import type { Session } from 'next-auth';
 
 type UserSession = Session & { user: any };
@@ -344,6 +345,42 @@ export async function executarBuscarDemandas(
 }
 
 // ---------------------------------------------------------------------------
+// gerar_relatorio_territorial — valida os nomes e prepara o relatório por RA.
+// NÃO devolve o dataset inteiro (evita estourar o turno) — o PDF é montado no
+// endpoint /api/agent/relatorio-territorial a partir destes parâmetros.
+// ---------------------------------------------------------------------------
+export async function executarGerarRelatorioTerritorial(
+  args: { deputados?: string[]; ano?: number; uf?: string; cargo?: string },
+  _session: UserSession,
+) {
+  const ano   = args.ano ? Number(args.ano) : 2022;
+  const uf    = (args.uf ?? 'DF').toUpperCase();
+  const cargo = args.cargo ?? 'Deputado Distrital';
+  const nomes = Array.isArray(args.deputados)
+    ? args.deputados.map(n => String(n).trim()).filter(n => n.length > 1)
+    : [];
+
+  if (nomes.length === 0) {
+    return { encontrado: false, mensagem: 'Informe ao menos um deputado para o relatório territorial.' };
+  }
+  if (uf !== 'DF') {
+    return { encontrado: false, mensagem: 'O relatório territorial por Região Administrativa está disponível para o DF.' };
+  }
+
+  const { encontrados, faltantes } = resolverDeputados(nomes, ano, uf, cargo);
+
+  return {
+    tipo: 'relatorio_territorial',
+    ano, uf, cargo,
+    solicitados: nomes.length,
+    deputados: nomes,                                  // reenviados ao endpoint do PDF
+    encontrados: encontrados.map(e => e.cand.nomeUrna),
+    faltantes,
+    prontoParaGerar: encontrados.length > 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // gerar_visualizacao  — sem acesso ao banco, apenas formata o payload
 // ---------------------------------------------------------------------------
 export async function executarGerarVisualizacao(
@@ -376,6 +413,8 @@ export async function executarTool(
       return executarDadosMunicipio(args as any, session);
     case 'buscar_demandas':
       return executarBuscarDemandas(args as any, session);
+    case 'gerar_relatorio_territorial':
+      return executarGerarRelatorioTerritorial(args as any, session);
     case 'gerar_visualizacao':
       return executarGerarVisualizacao(args as any, session);
     default:

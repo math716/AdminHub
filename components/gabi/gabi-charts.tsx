@@ -9,7 +9,7 @@ import {
   XAxis, YAxis, Tooltip, Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { FileDown, Map, BarChart2, Loader2 } from 'lucide-react';
+import { FileDown, Map, BarChart2, Loader2, MapPinned } from 'lucide-react';
 import Link from 'next/link';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -446,6 +446,75 @@ export function VisualizacoesCard({
             Abrir em Emendas
           </Link>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Card do Relatório Territorial (por Região Administrativa) ──────────────────
+// Renderiza um botão que baixa o PDF territorial. Aparece quando a Gabi usa a
+// ferramenta gerar_relatorio_territorial (independente de haver visualizações).
+export function RelatorioTerritorialCard({ payload }: { payload: any }) {
+  const [loading, setLoading] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const t = paleta(resolvedTheme !== 'light');
+
+  if (!payload?.prontoParaGerar) return null;
+
+  const gerar = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/agent/relatorio-territorial', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ano: payload.ano,
+          uf: payload.uf,
+          cargo: payload.cargo,
+          deputados: payload.deputados,
+        }),
+      });
+      if (!res.ok) { alert('Erro ao gerar relatório territorial.'); return; }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gabi-relatorio-territorial-${Date.now()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Falha ao gerar relatório territorial.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const nEnc  = payload.encontrados?.length ?? 0;
+  const nFalt = payload.faltantes?.length ?? 0;
+
+  return (
+    <div className="mt-3 rounded-xl overflow-hidden w-full" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+      <div className="flex items-center gap-2 px-4 py-2.5" style={{ borderBottom: `1px solid ${t.headBorder}`, background: t.headBg }}>
+        <MapPinned className="w-3.5 h-3.5" style={{ color: t.pillText }} />
+        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.title }}>
+          Relatório Territorial · {payload.uf} {payload.ano}
+        </p>
+      </div>
+      <div className="p-4 flex items-center gap-3 flex-wrap">
+        <button
+          onClick={gerar}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:opacity-90 disabled:opacity-60"
+          style={{ background: 'linear-gradient(135deg, #1d6fd8, #4a9ede)', color: '#fff' }}
+        >
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+          {loading ? 'Gerando…' : 'Gerar Relatório Territorial (PDF)'}
+        </button>
+        <span className="text-[11px]" style={{ color: t.muted }}>
+          {nEnc} deputado{nEnc !== 1 ? 's' : ''} pronto{nEnc !== 1 ? 's' : ''}
+          {nFalt > 0 ? ` · ${nFalt} não localizado${nFalt !== 1 ? 's' : ''}` : ''}
+        </span>
       </div>
     </div>
   );

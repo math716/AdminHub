@@ -11,6 +11,11 @@ const VisualizacoesCard = dynamic(
   { ssr: false, loading: () => null },
 );
 
+const RelatorioTerritorialCard = dynamic(
+  () => import('./gabi-charts').then(m => m.RelatorioTerritorialCard),
+  { ssr: false, loading: () => null },
+);
+
 // Personagem 3D (só carrega o three.js no cliente). Ativa quando
 // NEXT_PUBLIC_GABI_MODEL_URL está definido; senão usa o "G".
 const GabiAvatar3D = dynamic(
@@ -635,6 +640,11 @@ export function GabiFAB() {
                               conteudo={msg.content}
                               onNavigate={() => setOpen(false)}
                             />
+                          )}
+
+                          {/* Relatório territorial (por Região Administrativa) */}
+                          {msg.role === 'assistant' && msg.dadosBrutos?.gerar_relatorio_territorial?.prontoParaGerar && (
+                            <RelatorioTerritorialCard payload={msg.dadosBrutos.gerar_relatorio_territorial} />
                           )}
                         </div>
                       </div>

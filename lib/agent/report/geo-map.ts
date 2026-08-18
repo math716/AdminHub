@@ -3,6 +3,8 @@
 // Retorna dados puros (paths SVG + legenda) — a construção dos elementos
 // <Svg>/<Path> fica na rota do relatório.
 
+import fs from 'fs';
+import path from 'path';
 import { loadStaticTseData, normalizarTextoTse } from '@/lib/tse-static';
 
 // ── Códigos IBGE das UFs ────────────────────────────────────────────────────
@@ -164,11 +166,13 @@ export interface MapaResult {
   legend: { label: string; cor: string }[];
 }
 
-function buildPaths(
+// Colore cada feature pela função `fillForFeature` (recebe a feature inteira,
+// para o chamador decidir a cor por `codarea` OU por `properties.nome` etc.).
+function buildPathsFeat(
   features: any[],
   W: number,
   H: number,
-  fillFor: (codarea: string) => string,
+  fillForFeature: (f: any) => string,
 ): { d: string; fill: string }[] {
   // 1) bbox em coords projetadas (equiretangular com correção de longitude)
   let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
@@ -200,8 +204,18 @@ function buildPaths(
       });
       d += 'Z';
     });
-    return { d, fill: fillFor(String(f.properties?.codarea ?? '')) };
+    return { d, fill: fillForFeature(f) };
   });
+}
+
+// Compatível: colore por `codarea` (mapas IBGE de município/UF).
+function buildPaths(
+  features: any[],
+  W: number,
+  H: number,
+  fillFor: (codarea: string) => string,
+): { d: string; fill: string }[] {
+  return buildPathsFeat(features, W, H, (f) => fillFor(String(f.properties?.codarea ?? '')));
 }
 
 /**
@@ -382,6 +396,94 @@ function faixasDeVotos(max: number): Faixa[] {
 export function renderMapaVotos(params: { uf?: string; valores: Record<string, number>; width?: number; height?: number }) {
   const max = Math.max(1, ...Object.values(params.valores));
   return renderMapaHeatmap({ ...params, faixas: faixasDeVotos(max), semCor: '#eef2f7' });
+}
+
+// ── Mapa do DF por Região Administrativa (geojson LOCAL, sem fetch) ──────────
+let dfGeoCache: any = null;
+function loadDFGeo(): any {
+  if (dfGeoCache) return dfGeoCache;
+  const fp = path.join(process.cwd(), 'public', 'geojson', 'df-regioes-administrativas.geojson');
+  dfGeoCache = JSON.parse(fs.readFileSync(fp, 'utf8'));
+  return dfGeoCache;
+}
+
+/**
+ * Mapa de calor do DF por Região Administrativa. `valores` é chaveado pelo NOME
+ * da RA exatamente como no geojson (ex.: "Ceilândia") — que é como o motor
+ * territorial (`df-territorial.ts`) devolve. Usa o geojson local (offline),
+ * então não depende do IBGE. Retorna `null` só em erro de leitura.
+ */
+export async function renderMapaDF_RA(params: {
+  valores: Record<string, number>;
+  width?: number;
+  height?: number;
+}): Promise<MapaResult | null> {
+  const W = params.width ?? 300;
+  const H = params.height ?? 260;
+  try {
+    const geo = loadDFGeo();
+    const vals = params.valores ?? {};
+    const max = Math.max(1, ...Object.values(vals));
+    const faixas = faixasDeVotos(max);
+    const usadas = new Set<string>();
+    const corDe = (v: number): string => {
+      if (v <= 0) return '#eef2f7';
+      const f = faixas.find(f => v <= f.max) ?? faixas[faixas.length - 1];
+      usadas.add(f.label);
+      return f.cor;
+    };
+    const paths = buildPathsFeat(geo.features ?? [], W, H, (f) => corDe(vals[f.properties?.nome ?? ''] ?? 0));
+    if (paths.length === 0) return null;
+    const legend = faixas.filter(f => usadas.has(f.label)).map(f => ({ label: f.label, cor: f.cor }));
+    return { width: W, height: H, paths, legend };
+  } catch (err) {
+    console.warn('[geo-map] mapa DF-RA indisponível:', String(err));
+    return null;
+  }
+}
+
+/**
+ * Mapa do DF colorido pelo DEPUTADO que domina cada Região Administrativa
+ * (mais votos na RA entre os deputados comparados). `winners` é chaveado pelo
+ * NOME da RA como no geojson. Cores distintas por deputado (âncora por
+ * partido, igual ao mapa eleitoral). Usa geojson local — sem fetch.
+ */
+export async function renderMapaDF_RAVencedor(params: {
+  winners: Record<string, Vencedor>;
+  width?: number;
+  height?: number;
+}): Promise<MapaResult | null> {
+  const W = params.width ?? 300;
+  const H = params.height ?? 250;
+  try {
+    const geo = loadDFGeo();
+    const winners = params.winners ?? {};
+
+    const info = new Map<string, { partido: string; n: number }>();
+    for (const w of Object.values(winners)) {
+      const e = info.get(w.candidato);
+      if (e) e.n++;
+      else info.set(w.candidato, { partido: w.partido, n: 1 });
+    }
+    if (info.size === 0) return null;
+    const cores = atribuirCores(info);
+
+    const paths = buildPathsFeat(geo.features ?? [], W, H, (f) => {
+      const w = winners[f.properties?.nome ?? ''];
+      return w ? (cores.get(w.candidato) ?? NEUTRAL) : NEUTRAL;
+    });
+    if (paths.length === 0) return null;
+
+    const legend = [...info.entries()]
+      .sort((a, b) => b[1].n - a[1].n)
+      .slice(0, 10)
+      .map(([cand, v]) => ({ label: `${tituloCaso(cand)} (${v.n})`, cor: cores.get(cand) ?? NEUTRAL }));
+
+    return { width: W, height: H, paths, legend };
+  } catch (err) {
+    console.warn('[geo-map] mapa DF-RA vencedor indisponível:', String(err));
+    return null;
+  }
 }
 
 /**
