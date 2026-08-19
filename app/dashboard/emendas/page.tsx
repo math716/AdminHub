@@ -3028,7 +3028,7 @@ function EmendasDetalhadasCard({
                         <span
                           title={tipo.hint}
                           className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap"
-                          style={{ background: isDark ? `${tipo.color}18` : `${tipo.color}22`, color: isDark ? tipo.color : shadeColor(tipo.color, -25), border: `1px solid ${isDark ? `${tipo.color}40` : `${tipo.color}70`}` }}
+                          style={{ background: isDark ? `${tipo.color}18` : `${tipo.color}22`, color: isDark ? tipo.color : tipo.colorLight, border: `1px solid ${isDark ? `${tipo.color}40` : `${tipo.color}70`}` }}
                         >
                           {tipo.label}
                         </span>
@@ -3106,7 +3106,7 @@ function EmendasDetalhadasCard({
                     >
                       <td className="py-2.5 px-3 font-mono text-[11px] whitespace-nowrap transition-colors" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#64748b' : '#475569' }}>{e.numero ?? '—'}</td>
                       <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
-                        <span title={tipo.hint} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap" style={{ background: isDark ? `${tipo.color}18` : `${tipo.color}22`, color: isDark ? tipo.color : shadeColor(tipo.color, -25), border: `1px solid ${isDark ? `${tipo.color}40` : `${tipo.color}70`}` }}>{tipo.label}</span>
+                        <span title={tipo.hint} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap" style={{ background: isDark ? `${tipo.color}18` : `${tipo.color}22`, color: isDark ? tipo.color : tipo.colorLight, border: `1px solid ${isDark ? `${tipo.color}40` : `${tipo.color}70`}` }}>{tipo.label}</span>
                       </td>
                       <td className="py-2.5 px-3 truncate max-w-[100px] md:max-w-[140px] transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#cbd5e1' : '#374151' }}>{e.funcao ?? '—'}</td>
                       <td className="py-2.5 px-3 truncate max-w-[200px] font-medium transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#f1f5f9' : '#111827' }}>
@@ -3140,16 +3140,6 @@ function EmendasDetalhadasCard({
   );
 }
 
-// Escurece uma cor hex em `amount` pontos (negativo = mais escuro)
-function shadeColor(hex: string, amount: number): string {
-  const n = parseInt(hex.replace('#', ''), 16);
-  const clamp = (v: number) => Math.min(255, Math.max(0, v));
-  const r = clamp((n >> 16) + amount);
-  const g = clamp(((n >> 8) & 0xff) + amount);
-  const b = clamp((n & 0xff) + amount);
-  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
-}
-
 // Extrai label curto do tipo de emenda (usado nos filtros e na tabela)
 function tipoCurtoLabel(tipo: string | null): string {
   const t = (tipo ?? '').toLowerCase();
@@ -3162,15 +3152,15 @@ function tipoCurtoLabel(tipo: string | null): string {
   return tipo ?? '—';
 }
 
-function tipoCurtoInfo(tipo: string | null): { label: string; color: string; hint: string } {
+function tipoCurtoInfo(tipo: string | null): { label: string; color: string; colorLight: string; hint: string } {
   const t = (tipo ?? '').toLowerCase();
-  if (t.includes('individual') && t.includes('especial'))   return { label: 'Individual / Especial',   color: '#a855f7', hint: 'Transferência Especial ("Emenda Pix") — parlamentar destina sem definir objeto.' };
-  if (t.includes('individual') && t.includes('finalidade')) return { label: 'Individual / Finalidade', color: '#3b82f6', hint: 'Transferência com Finalidade Definida — destinação para objeto específico.' };
-  if (t.includes('individual'))  return { label: 'Individual',  color: '#3b82f6', hint: 'Emenda Individual — cota anual de cada parlamentar.' };
-  if (t.includes('bancada'))     return { label: 'Bancada',     color: '#10b981', hint: 'Emenda de Bancada Estadual — proposta coletiva.' };
-  if (t.includes('comiss'))      return { label: 'Comissão',    color: '#f59e0b', hint: 'Emenda de Comissão — proposta por comissão temática.' };
-  if (t.includes('relator'))     return { label: 'Relator',     color: '#ec4899', hint: 'Emenda do Relator (RP9) — perdeu eficácia após STF 2022.' };
-  return { label: tipo ?? '—', color: '#94a3b8', hint: tipo ?? '' };
+  if (t.includes('individual') && t.includes('especial'))   return { label: 'Individual / Especial',   color: '#a855f7', colorLight: '#7c3aed', hint: 'Transferência Especial ("Emenda Pix") — parlamentar destina sem definir objeto.' };
+  if (t.includes('individual') && t.includes('finalidade')) return { label: 'Individual / Finalidade', color: '#3b82f6', colorLight: '#1d4ed8', hint: 'Transferência com Finalidade Definida — destinação para objeto específico.' };
+  if (t.includes('individual'))  return { label: 'Individual',  color: '#3b82f6', colorLight: '#1d4ed8', hint: 'Emenda Individual — cota anual de cada parlamentar.' };
+  if (t.includes('bancada'))     return { label: 'Bancada',     color: '#10b981', colorLight: '#047857', hint: 'Emenda de Bancada Estadual — proposta coletiva.' };
+  if (t.includes('comiss'))      return { label: 'Comissão',    color: '#f59e0b', colorLight: '#b45309', hint: 'Emenda de Comissão — proposta por comissão temática.' };
+  if (t.includes('relator'))     return { label: 'Relator',     color: '#ec4899', colorLight: '#be185d', hint: 'Emenda do Relator (RP9) — perdeu eficácia após STF 2022.' };
+  return { label: tipo ?? '—', color: '#94a3b8', colorLight: '#475569', hint: tipo ?? '' };
 }
 
 function MunicipiosBeneficiadosCard({
