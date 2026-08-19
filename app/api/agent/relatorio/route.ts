@@ -10,10 +10,11 @@ import {
   HeaderBand, DocFooter, renderContent, renderPizza, docStyles as S, stripEmoji, C,
   type Pill, type BandeiraSrc,
 } from '@/lib/agent/report/doc-pdf';
-import { renderMapaEleitoral, renderMapaEmendas, renderMapaEmendasVencedor, renderMapaVotos, renderMapaBairros, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
+import { renderMapaEleitoral, renderMapaEmendas, renderMapaEmendasVencedor, renderMapaVotos, renderMapaBairros, renderMapaDF_RA, renderMapaDF_RAVencedor, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
 import { montarRelatorioTerritorial, caminhoBandeira } from '@/lib/agent/report/territorial-doc';
 import { assuntoDoRelatorio } from '@/lib/agent/report/titulo';
 import { bairrosComVotos } from '@/lib/agent/report/mapa-bairros';
+import { mapaDoDF } from '@/lib/agent/report/mapa-df';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -235,8 +236,28 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // DF é um único município: o mapa por município pintava o Distrito
+      // Federal inteiro de uma cor, com o vencedor GERAL da eleição — que nem
+      // costuma estar entre os candidatos comparados. A divisão útil aqui é a
+      // Região Administrativa.
+      if (!mapa && c?.uf === 'DF') {
+        const df = mapaDoDF({
+          ano: Number(c.ano),
+          cargo: c.cargo,
+          candidatos: cands.map((x: any) => ({ nomeUrna: x.nomeUrna, nome: x.nome, partido: x.partido })),
+        });
+        if (df?.vencedores) {
+          mapa = await renderMapaDF_RAVencedor({ winners: df.vencedores, width: W, height: H });
+          mapaTitulo = 'Mapa do DF — quem lidera cada Região Administrativa';
+        } else if (df?.valores) {
+          mapa = await renderMapaDF_RA({ valores: df.valores, width: W, height: H });
+          mapaTitulo = 'Mapa do DF — votos por Região Administrativa';
+        }
+        if (!mapa) console.warn('[/api/agent/relatorio] mapa do DF por RA indisponível — usando o mapa padrão');
+      }
+
       if (mapa) {
-        // já resolvido pelo mapa de bairros
+        // já resolvido pelo mapa de bairros ou pelo mapa do DF por RA
       } else if (cands.length === 1) {
         // 1 candidato → heatmap dos votos dele
         const valores: Record<string, number> = {};

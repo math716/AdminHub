@@ -8,6 +8,42 @@ import { AGENT_TOOLS } from '@/lib/agent/tools';
 import { executarTool } from '@/lib/agent/executors';
 import { SYSTEM_PROMPT } from '@/lib/agent/system-prompt';
 
+import { prisma } from '@/lib/db';
+import type { Session } from 'next-auth';
+
+/**
+ * Resumo factual do que as ferramentas trouxeram, para quando o modelo termina
+ * o turno sem escrever nada. Sem isto, a tela mostrava "Não obtive resposta"
+ * logo acima dos gráficos com os dados — contradizendo a si mesma.
+ */
+function resumoDosDados(d: Record<string, unknown>): string {
+  const partes: string[] = [];
+  const num = (n: unknown) => Number(n ?? 0).toLocaleString('pt-BR');
+
+  const v = d.buscar_votacao as any;
+  if (v?.candidatos?.length) {
+    const c = v.candidatos;
+    const escopo = [c[0].uf !== 'BR' ? c[0].uf : '', c[0].ano].filter(Boolean).join(' ');
+    partes.push(c.length === 1
+      ? `**${c[0].nomeUrna || c[0].nome}** (${c[0].partido}) — ${num(c[0].totalVotos)} votos em ${escopo}.`
+      : `**${c.length} candidatos** em ${escopo}. Mais votado: **${c[0].nomeUrna || c[0].nome}** (${c[0].partido}), com ${num(c[0].totalVotos)} votos.`);
+  }
+  const e = d.buscar_emendas as any;
+  if (e?.emendas?.length) {
+    partes.push(`**${e.total} emendas**, R$ ${num(e.totalEmpenhado)} empenhados e ${e.execucaoGeral}% de execução.`);
+  }
+  const ag = d.buscar_agenda as any;
+  if (ag?.encontrado) partes.push(`**${ag.total} compromissos** na agenda do gabinete.`);
+  const ct = d.buscar_contatos as any;
+  if (ct?.encontrado) partes.push(`**${ct.total} contatos** na base do gabinete.`);
+  const dm = d.buscar_demandas as any;
+  if (dm?.total) partes.push(`**${dm.total} demandas** registradas.`);
+
+  if (partes.length === 0) return 'Não obtive resposta. Tente reformular a pergunta.';
+  const linhas = partes.map(p => `- ${p}`).join('\n');
+  return `Levantei os dados abaixo:\n\n${linhas}\n\nOs gráficos detalham o resultado. Quer que eu aprofunde algum ponto?`;
+}
+
 // A data vai num bloco PRÓPRIO do system: o prompt grande fica cacheado e não é
 // invalidado a cada virada de dia. Sem isso a Gabi não resolve "este ano" /
 // "este mês" — ela chutaria o ano ao chamar buscar_agenda.
@@ -25,8 +61,6 @@ function blocoDataAtual() {
       `"hoje", "este ano", "este mês", "ano passado" e afins ao montar filtros.`,
   };
 }
-import { prisma } from '@/lib/db';
-import type { Session } from 'next-auth';
 
 // Sonnet 5: pensamento adaptativo LIGADO por padrão — o modelo raciocina antes
 // de escolher ferramentas/argumentos (menos "não entendeu o pedido"). O
@@ -227,6 +261,7 @@ export async function POST(request: NextRequest) {
     // sem resultado) e o loop terminar SEM texto — força um fechamento em
     // texto com o que já foi apurado, sem permitir novas ferramentas.
     if (!resposta) {
+      console.warn(`[/api/agent/chat] turno terminou sem texto (ferramentas: ${[...toolsUsed].join(', ') || 'nenhuma'}) — tentando fechamento`);
       try {
         const fechamento = await anthropic.messages.create({
           model: MODEL,
@@ -247,14 +282,23 @@ export async function POST(request: NextRequest) {
         for (const block of fechamento.content) {
           if (block.type === 'text' && block.text.trim()) resposta = block.text;
         }
-      } catch { /* mantém o fallback padrão */ }
+      } catch (err) {
+        console.error('[/api/agent/chat] fechamento também falhou:', String(err).slice(0, 200));
+      }
+    }
+
+    // Último recurso: em vez de "não obtive resposta" logo acima dos gráficos
+    // com os dados — o que o usuário viu —, descreve o que as buscas trouxeram.
+    if (!resposta) {
+      console.warn('[/api/agent/chat] sem texto após o fechamento — respondendo com o resumo dos dados');
+      resposta = resumoDosDados(dadosBrutos);
     }
 
     // Salva usage (async, não bloqueia a resposta)
     salvarUsage(session, totalInputTokens, totalOutputTokens);
 
     return NextResponse.json({
-      content: resposta || 'Não obtive resposta. Tente reformular a pergunta.',
+      content: resposta,
       visualizacoes: visualizacoes.length > 0 ? visualizacoes : undefined,
       tools: toolsUsed.size > 0 ? [...toolsUsed] : undefined,
       dadosBrutos: Object.keys(dadosBrutos).length > 0 ? dadosBrutos : undefined,
