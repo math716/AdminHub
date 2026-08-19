@@ -176,6 +176,8 @@ export async function executarBuscarVotacao(
     uf?: string;
     municipio?: string;
     cargo?: string;
+    apenas_eleitos?: boolean;
+    limite?: number;
   },
   _session: UserSession,
 ) {
@@ -210,7 +212,20 @@ export async function executarBuscarVotacao(
       const t = buscarCandidatoTolerante(staticData, args.candidato_nome, args.cargo);
       if (t) todos = [t];
     }
-    const resultados = todos.slice(0, semNome ? 12 : 5);
+    // "eleitos" ≠ situacao.includes('eleito'): isso casaria "NÃO ELEITO"
+    // também. Os eleitos são os que a situação começa com ELEITO
+    // (ELEITO POR QP + ELEITO POR MÉDIA) — no RJ/2022, exatamente 70.
+    const totalNoCargo = todos.length;
+    const eleitos = todos.filter(c => /^eleito/.test(normalizarTextoTse(c.situacao)));
+    if (args.apenas_eleitos && eleitos.length > 0) todos = eleitos;
+
+    // Uma bancada inteira (ex.: 70 deputados estaduais) não cabia no corte fixo
+    // de 12. O teto é maior, mas ainda limitado para o turno não estourar.
+    const limitePedido = Number(args.limite);
+    const limite = semNome
+      ? Math.min(Number.isFinite(limitePedido) && limitePedido > 0 ? limitePedido : 12, 80)
+      : 5;
+    const resultados = todos.slice(0, limite);
 
     if (resultados.length === 0) continue;
 
@@ -226,10 +241,22 @@ export async function executarBuscarVotacao(
     const muniNorm = args.municipio ? normalizarTextoTse(args.municipio) : '';
     const bairrosZona = muniNorm && uf !== 'BR' ? bairrosPorZona(uf, args.municipio!) : {};
 
+    const detalheMunicipios =
+      resultados.length > 40 ? 2 :
+      resultados.length > 20 ? 3 :
+      resultados.length > 12 ? 6 : (uf === 'BR' ? 10 : 20);
+
     return {
       encontrado: true,
       granularidade: muniNorm ? 'zona_eleitoral' : 'municipio',
-      totalCandidatos: todos.length,
+      totalCandidatos: totalNoCargo,
+      totalEleitos: eleitos.length,
+      filtradoPorEleitos: !!args.apenas_eleitos && eleitos.length > 0,
+      exibidos: resultados.length,
+      ...(resultados.length < todos.length && {
+        avisoCorte: `Exibindo ${resultados.length} de ${todos.length}. Para mais, chame de novo ` +
+          'com "limite" maior (teto 80).',
+      }),
       liderPercentualValidos: Math.round(pctLider * 10) / 10,
       houveSegundoTurno: majoritario ? pctLider < 50 : false,
       candidatos: resultados.map(c => ({
@@ -241,14 +268,17 @@ export async function executarBuscarVotacao(
         uf,
         situacao: c.situacao,
         totalVotos: c.totalVotos,
+        // Quanto mais candidatos na resposta, menos municípios por candidato —
+        // 70 deputados × 20 municípios estouraria o limite do turno. Num
+        // ranking de bancada, o principal reduto de cada um já basta.
         votosPorMunicipio: uf === 'BR'
           ? Object.entries(c.votosPorEstado ?? {})
               .sort((a, b) => b[1] - a[1])
-              .slice(0, 10)
+              .slice(0, detalheMunicipios)
               .map(([estado, votos]) => ({ municipio: estado, votos }))
           : Object.entries(c.votos ?? {})
               .sort((a, b) => b[1] - a[1])
-              .slice(0, 20)
+              .slice(0, detalheMunicipios)
               .map(([municipio, votos]) => ({ municipio, votos })),
         // Detalhe por zona eleitoral do município solicitado (com bairros)
         votosPorZona: muniNorm

@@ -49,6 +49,10 @@ export const AGENT_TOOLS: Tool[] = [
       'Se "candidato_nome" for OMITIDO, retorna TODOS os candidatos daquele cargo/UF/ano (com a contagem ' +
       'total de candidatos) — use assim para "comparar todos os candidatos", "quantos candidatos houve" ou ' +
       '"teve 2º turno" (o 2º turno ocorre quando o líder tem menos de 50% dos votos válidos). ' +
+      'Para a BANCADA ELEITA ("os deputados eleitos", "os 70 da ALERJ", "ranking dos eleitos"), ' +
+      'passe apenas_eleitos=true e limite com o tamanho da bancada (ex.: 80) — sem isso vêm só os ' +
+      '12 mais votados, incluindo não eleitos. É também a ferramenta certa para COMPARAR VOTAÇÃO ' +
+      'entre vários candidatos (comparar_parlamentares é só para emendas). ' +
       'Ao informar "municipio", retorna também a quebra por ZONA ELEITORAL daquele município, ' +
       'com os bairros que cada zona cobre (útil para eleições municipais). ' +
       'Use para perguntas sobre desempenho eleitoral, comparação de votação ou distribuição geográfica de votos.',
@@ -81,6 +85,19 @@ export const AGENT_TOOLS: Tool[] = [
           type: 'string',
           description: 'Cargo disputado (ex: DEPUTADO_FEDERAL, DEPUTADO_ESTADUAL, SENADOR, GOVERNADOR, PREFEITO, VEREADOR). Obrigatório quando o nome do candidato não é informado.',
         },
+        apenas_eleitos: {
+          type: 'boolean',
+          description:
+            'True para trazer somente quem FOI ELEITO (eleito por quociente partidário ou por média), ' +
+            'excluindo suplentes e não eleitos. Use sempre que o pedido falar em "eleitos", "bancada", ' +
+            '"quem assumiu" ou citar o tamanho da casa legislativa.',
+        },
+        limite: {
+          type: 'integer',
+          description:
+            'Quantos candidatos retornar quando o nome é omitido (padrão 12, teto 80). Para uma ' +
+            'bancada inteira use o tamanho dela (ex.: 70 deputados estaduais no RJ → limite 80).',
+        },
       },
       required: [],
     },
@@ -89,9 +106,13 @@ export const AGENT_TOOLS: Tool[] = [
   {
     name: 'comparar_parlamentares',
     description:
-      'Compara emendas parlamentares de dois ou mais parlamentares lado a lado. ' +
+      'Compara EMENDAS PARLAMENTARES (orçamento) de dois ou mais parlamentares lado a lado. ' +
       'Retorna totais empenhados, pagos e execução por parlamentar. ' +
-      'Use quando o usuário quiser comparar desempenho entre parlamentares.',
+      'Use SOMENTE quando a comparação for sobre emendas/verbas/repasses/execução orçamentária. ' +
+      'NÃO use para comparar VOTAÇÃO, desempenho eleitoral, redutos ou ranking de votos — ' +
+      'para isso use `buscar_votacao`. Se o usuário pediu "compare esses candidatos" logo após ' +
+      'uma consulta de VOTOS, ele quer comparar VOTOS: mantenha o assunto em buscar_votacao e ' +
+      'só use esta ferramenta se ele mencionar emendas explicitamente.',
     input_schema: {
       type: 'object' as const,
       properties: {
