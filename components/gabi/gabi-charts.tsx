@@ -287,8 +287,20 @@ export function VisualizacoesCard({
   const totalVal = donut?.dados?.itens?.reduce((s: number, it: any) => s + (it.valor ?? 0), 0) ?? 0;
   const pillLabel = isMoney ? fmtMoney(totalVal) : fmtCount(totalVal);
 
-  const hasVotacao = !!(tools?.includes('buscar_votacao'));
-  const hasEmendas = !!(tools?.includes('buscar_emendas'));
+  const hasVotacao  = !!(tools?.includes('buscar_votacao'));
+  const hasEmendas  = !!(tools?.includes('buscar_emendas'));
+  const hasAgenda   = !!(tools?.includes('buscar_agenda'));
+  const hasContatos = !!(tools?.includes('buscar_contatos'));
+  const hasDemandas = !!(tools?.includes('buscar_demandas'));
+
+  // Atalho para o módulo de onde vieram os dados. Antes os botões apareciam por
+  // exclusão (`|| !hasEmendas`), então uma consulta de agenda mostrava "Ver no
+  // mapa" e "Abrir em Emendas" — os dois sem relação com o que foi perguntado.
+  const moduloDoDado: { href: string; label: string } | null =
+      hasAgenda   ? { href: '/dashboard/agenda',   label: 'Abrir na Agenda' }
+    : hasContatos ? { href: '/dashboard/contatos', label: 'Abrir em Contatos' }
+    : hasDemandas ? { href: '/dashboard/demandas', label: 'Abrir em Demandas' }
+    : null;
 
   // Deep-link do "Abrir em Emendas": leva o recorte consultado (parlamentar, UF,
   // ano, esfera) já aplicado — antes o botão caía no mapa do Brasil sem nenhum
@@ -492,7 +504,7 @@ export function VisualizacoesCard({
           {pdfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
           {pdfLoading ? 'Gerando…' : 'Gerar relatório PDF'}
         </button>
-        {(hasVotacao || !hasEmendas) && (
+        {hasVotacao && (
           <Link
             href={mapaHref}
             onClick={() => onNavigate?.()}
@@ -503,7 +515,7 @@ export function VisualizacoesCard({
             Ver no mapa
           </Link>
         )}
-        {(hasEmendas || !hasVotacao) && (
+        {hasEmendas && (
           <Link
             href={emendasHref}
             onClick={() => onNavigate?.()}
@@ -512,6 +524,17 @@ export function VisualizacoesCard({
           >
             <BarChart2 className="w-3.5 h-3.5" />
             Abrir em Emendas
+          </Link>
+        )}
+        {!hasVotacao && !hasEmendas && moduloDoDado && (
+          <Link
+            href={moduloDoDado.href}
+            onClick={() => onNavigate?.()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:opacity-80"
+            style={{ color: t.btnText, border: `1px solid ${t.btnBorder}` }}
+          >
+            <BarChart2 className="w-3.5 h-3.5" />
+            {moduloDoDado.label}
           </Link>
         )}
       </div>

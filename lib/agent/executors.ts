@@ -548,6 +548,202 @@ export async function executarLocalizarParlamentar(
 }
 
 // ---------------------------------------------------------------------------
+// buscar_agenda — compromissos do gabinete do usuário logado.
+// SEMPRE escopado por gabineteId, igual a buscar_demandas.
+// ---------------------------------------------------------------------------
+const MESES_PT = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+export async function executarBuscarAgenda(
+  args: {
+    ano?: number;
+    mes?: number;
+    data_inicio?: string;
+    data_fim?: string;
+    tipo?: string;
+    local?: string;
+    apenas_futuros?: boolean;
+  },
+  session: UserSession,
+) {
+  const user = session.user as any;
+  if (!user?.gabineteId) {
+    return { erro: 'Usuário sem gabinete associado — não é possível buscar a agenda.' };
+  }
+
+  // Janela de datas: ano/mês explícitos, intervalo livre, ou "daqui pra frente".
+  let inicio: Date | undefined;
+  let fim: Date | undefined;
+  if (args.data_inicio || args.data_fim) {
+    if (args.data_inicio) inicio = new Date(`${args.data_inicio}T00:00:00`);
+    if (args.data_fim) fim = new Date(`${args.data_fim}T23:59:59`);
+  } else if (args.ano) {
+    const m = args.mes ? Number(args.mes) : null;
+    if (m && m >= 1 && m <= 12) {
+      inicio = new Date(args.ano, m - 1, 1, 0, 0, 0);
+      fim = new Date(args.ano, m, 0, 23, 59, 59);
+    } else {
+      inicio = new Date(args.ano, 0, 1, 0, 0, 0);
+      fim = new Date(args.ano, 11, 31, 23, 59, 59);
+    }
+  }
+  if (args.apenas_futuros) {
+    const agora = new Date();
+    if (!inicio || inicio < agora) inicio = agora;
+  }
+
+  const where: any = {
+    gabineteId: user.gabineteId, // SEMPRE presente — nunca remove isso
+    ...(args.tipo && { tipo: args.tipo as any }),
+    ...(args.local && {
+      OR: [
+        { local: { contains: args.local, mode: 'insensitive' } },
+        { endereco: { contains: args.local, mode: 'insensitive' } },
+      ],
+    }),
+    ...((inicio || fim) && { data: { ...(inicio && { gte: inicio }), ...(fim && { lte: fim }) } }),
+  };
+
+  // `total` vem de count() — a lista é limitada, e usar o length dela faria a
+  // Gabi afirmar "50 compromissos" num ano com centenas.
+  const [total, eventos, porTipo] = await Promise.all([
+    prisma.agendaEvent.count({ where }),
+    prisma.agendaEvent.findMany({
+      where,
+      select: {
+        titulo: true, descricao: true, data: true, dataFim: true,
+        local: true, endereco: true, tipo: true,
+      },
+      orderBy: { data: 'desc' },
+      take: 60,
+    }),
+    prisma.agendaEvent.groupBy({ by: ['tipo'], where, _count: { _all: true } }),
+  ]);
+
+  if (total === 0) {
+    // Sem resultados: diz o que a agenda REALMENTE cobre, para a Gabi propor o
+    // recorte mais próximo em vez de responder "não encontrei".
+    const existentes = await prisma.agendaEvent.findMany({
+      where: { gabineteId: user.gabineteId },
+      select: { data: true },
+      orderBy: { data: 'desc' },
+      take: 500,
+    });
+    const anos = [...new Set(existentes.map(e => e.data.getFullYear()))].sort((a, b) => b - a);
+    return {
+      encontrado: false,
+      total: 0,
+      anosComAgenda: anos,
+      totalNoGabinete: existentes.length,
+      orientacao: anos.length > 0
+        ? 'Não há compromissos nesse recorte. Use "anosComAgenda" para oferecer o período mais ' +
+          'próximo que EXISTE e refaça a busca — não responda que os dados não existem.'
+        : 'A agenda deste gabinete ainda não tem compromissos registrados. Oriente o usuário a ' +
+          'cadastrá-los no módulo Agenda.',
+    };
+  }
+
+  const contagemPorTipo = Object.fromEntries(porTipo.map(t => [t.tipo, t._count._all]));
+  const contagemPorMes: Record<string, number> = {};
+  for (const e of eventos) {
+    const k = `${MESES_PT[e.data.getMonth()]}/${e.data.getFullYear()}`;
+    contagemPorMes[k] = (contagemPorMes[k] ?? 0) + 1;
+  }
+
+  const fmt = (d: Date) => d.toISOString().split('T')[0];
+  const hora = (d: Date) => d.toISOString().slice(11, 16);
+
+  return {
+    encontrado: true,
+    total,
+    exibidos: eventos.length,
+    periodo: { de: inicio ? fmt(inicio) : null, ate: fim ? fmt(fim) : null },
+    contagemPorTipo,
+    contagemPorMes,
+    compromissos: eventos.map(e => ({
+      titulo: e.titulo,
+      descricao: (e.descricao ?? '').slice(0, 160),
+      data: fmt(e.data),
+      hora: hora(e.data),
+      dataFim: e.dataFim ? fmt(e.dataFim) : null,
+      tipo: e.tipo,
+      local: e.local ?? '',
+      endereco: e.endereco ?? '',
+    })),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// buscar_contatos — base de contatos do gabinete do usuário logado.
+// SEMPRE escopado por gabineteId.
+// ---------------------------------------------------------------------------
+export async function executarBuscarContatos(
+  args: { nome?: string; termo?: string; com_email?: boolean; com_localizacao?: boolean },
+  session: UserSession,
+) {
+  const user = session.user as any;
+  if (!user?.gabineteId) {
+    return { erro: 'Usuário sem gabinete associado — não é possível buscar contatos.' };
+  }
+
+  const busca = args.nome ?? args.termo;
+  const where: any = {
+    gabineteId: user.gabineteId, // SEMPRE presente — nunca remove isso
+    ...(busca && {
+      OR: [
+        { nome: { contains: busca, mode: 'insensitive' } },
+        { email: { contains: busca, mode: 'insensitive' } },
+        { endereco: { contains: busca, mode: 'insensitive' } },
+        { numero: { contains: busca, mode: 'insensitive' } },
+      ],
+    }),
+    ...(args.com_email && { email: { not: null } }),
+    ...(args.com_localizacao && { lat: { not: null } }),
+  };
+
+  const [total, contatos, totalGabinete, comEmail, comLocalizacao] = await Promise.all([
+    prisma.contato.count({ where }),
+    prisma.contato.findMany({
+      where,
+      select: { nome: true, numero: true, email: true, endereco: true, lat: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: 60,
+    }),
+    prisma.contato.count({ where: { gabineteId: user.gabineteId } }),
+    prisma.contato.count({ where: { gabineteId: user.gabineteId, email: { not: null } } }),
+    prisma.contato.count({ where: { gabineteId: user.gabineteId, lat: { not: null } } }),
+  ]);
+
+  if (total === 0) {
+    return {
+      encontrado: false,
+      total: 0,
+      totalNoGabinete: totalGabinete,
+      orientacao: totalGabinete > 0
+        ? `Nenhum contato bate com esse filtro, mas o gabinete tem ${totalGabinete} contatos ` +
+          'cadastrados. Ofereça o panorama geral ou peça a grafia do nome.'
+        : 'A base de contatos deste gabinete está vazia. Oriente o usuário a cadastrar ou a ' +
+          'importar por planilha no módulo Importação.',
+    };
+  }
+
+  return {
+    encontrado: true,
+    total,
+    exibidos: contatos.length,
+    resumoDaBase: { totalNoGabinete: totalGabinete, comEmail, comLocalizacao },
+    contatos: contatos.map(c => ({
+      nome: c.nome,
+      telefone: c.numero,
+      email: c.email ?? '',
+      endereco: c.endereco ?? '',
+      temLocalizacao: c.lat != null,
+      cadastradoEm: c.createdAt.toISOString().split('T')[0],
+    })),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // gerar_relatorio_territorial — valida os nomes e prepara o relatório por RA.
 // NÃO devolve o dataset inteiro (evita estourar o turno) — o PDF é montado no
 // endpoint /api/agent/relatorio-territorial a partir destes parâmetros.
@@ -638,6 +834,10 @@ export async function executarTool(
       return executarDadosMunicipio(args as any, session);
     case 'buscar_demandas':
       return executarBuscarDemandas(args as any, session);
+    case 'buscar_agenda':
+      return executarBuscarAgenda(args as any, session);
+    case 'buscar_contatos':
+      return executarBuscarContatos(args as any, session);
     case 'localizar_parlamentar':
       return executarLocalizarParlamentar(args as any, session);
     case 'gerar_relatorio_territorial':

@@ -292,6 +292,8 @@ const TOOL_LABELS: Record<string, string> = {
   buscar_emendas:               'Emendas parlamentares',
   buscar_votacao:               'Resultados eleitorais',
   buscar_demandas:              'Demandas do gabinete',
+  buscar_agenda:                'Agenda do gabinete',
+  buscar_contatos:              'Contatos do gabinete',
   dados_municipio:              'Perfil do município',
   comparar_parlamentares:       'Comparativo de emendas',
   localizar_parlamentar:        'Base de parlamentares',

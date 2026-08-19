@@ -172,6 +172,82 @@ export const AGENT_TOOLS: Tool[] = [
   },
 
   {
+    name: 'buscar_agenda',
+    description:
+      'Busca os compromissos da AGENDA do gabinete do usuário logado (reuniões, visitas, eventos) — ' +
+      'SEMPRE escopado ao gabinete do usuário, nunca retorna dados de outros gabinetes. ' +
+      'Use para "minha agenda", "compromissos", "reuniões", "relatório de agenda", "o que tenho ' +
+      'marcado", "quantos eventos participei", agenda de um período/ano/mês ou por tipo. ' +
+      'Retorna o total real, a contagem por tipo e por mês, e a lista dos compromissos.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        ano: {
+          type: 'integer',
+          description: 'Ano dos compromissos (ex.: 2026). Use o ano corrente para "este ano".',
+        },
+        mes: {
+          type: 'integer',
+          description: 'Mês (1 a 12), combinado com "ano". Omita para o ano inteiro.',
+        },
+        data_inicio: {
+          type: 'string',
+          description: 'Início do período no formato AAAA-MM-DD (alternativa a ano/mês).',
+        },
+        data_fim: {
+          type: 'string',
+          description: 'Fim do período no formato AAAA-MM-DD.',
+        },
+        tipo: {
+          type: 'string',
+          enum: ['REUNIAO', 'VISITA', 'EVENTO', 'COMPROMISSO'],
+          description: 'Filtrar por tipo de compromisso.',
+        },
+        local: {
+          type: 'string',
+          description: 'Filtrar por local ou endereço (busca parcial).',
+        },
+        apenas_futuros: {
+          type: 'boolean',
+          description: 'True para trazer apenas compromissos a partir de hoje (agenda que vem pela frente).',
+        },
+      },
+      required: [],
+    },
+  },
+
+  {
+    name: 'buscar_contatos',
+    description:
+      'Busca a base de CONTATOS do gabinete do usuário logado — SEMPRE escopada ao gabinete do ' +
+      'usuário, nunca retorna dados de outros gabinetes. Use para "meus contatos", "quantos ' +
+      'contatos tenho", "procure o contato do fulano", "base de contatos", lideranças cadastradas. ' +
+      'Retorna o total real, um resumo da base (quantos têm e-mail e localização) e a lista.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        nome: {
+          type: 'string',
+          description: 'Nome (ou parte) do contato procurado.',
+        },
+        termo: {
+          type: 'string',
+          description: 'Busca livre por nome, e-mail, telefone ou endereço.',
+        },
+        com_email: {
+          type: 'boolean',
+          description: 'True para trazer apenas contatos que têm e-mail cadastrado.',
+        },
+        com_localizacao: {
+          type: 'boolean',
+          description: 'True para trazer apenas contatos com endereço geolocalizado (aparecem no mapa).',
+        },
+      },
+      required: [],
+    },
+  },
+
+  {
     name: 'localizar_parlamentar',
     description:
       'Descobre ONDE uma pessoa aparece nas bases: nome de urna, cargo, UF, partido, anos de eleição ' +

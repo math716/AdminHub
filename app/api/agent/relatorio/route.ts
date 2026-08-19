@@ -163,7 +163,10 @@ export async function POST(request: NextRequest) {
     const isEleitoral = tools.includes('buscar_votacao');
     const isEmendas   = tools.includes('buscar_emendas') || tools.includes('comparar_parlamentares');
     const isDemandas  = tools.includes('buscar_demandas');
-    const tipoLabel = isEleitoral ? 'Eleitoral' : isEmendas ? 'Emendas' : isDemandas ? 'Demandas' : 'Análise';
+    const isAgenda    = tools.includes('buscar_agenda');
+    const isContatos  = tools.includes('buscar_contatos');
+    const tipoLabel = isEleitoral ? 'Eleitoral' : isEmendas ? 'Emendas'
+      : isDemandas ? 'Demandas' : isAgenda ? 'Agenda' : isContatos ? 'Contatos' : 'Análise';
 
     const geradoEm = new Date().toLocaleString('pt-BR', {
       timeZone: 'America/Sao_Paulo',

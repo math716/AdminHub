@@ -7,6 +7,24 @@ import anthropic from '@/lib/anthropic';
 import { AGENT_TOOLS } from '@/lib/agent/tools';
 import { executarTool } from '@/lib/agent/executors';
 import { SYSTEM_PROMPT } from '@/lib/agent/system-prompt';
+
+// A data vai num bloco PRÓPRIO do system: o prompt grande fica cacheado e não é
+// invalidado a cada virada de dia. Sem isso a Gabi não resolve "este ano" /
+// "este mês" — ela chutaria o ano ao chamar buscar_agenda.
+function blocoDataAtual() {
+  const agora = new Date();
+  const fmt = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo', dateStyle: 'full',
+  }).format(agora);
+  const ano = Number(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo', year: 'numeric',
+  }).format(agora));
+  return {
+    type: 'text' as const,
+    text: `Data de hoje: ${fmt}. Ano corrente: ${ano}. Use isto para resolver ` +
+      `"hoje", "este ano", "este mês", "ano passado" e afins ao montar filtros.`,
+  };
+}
 import { prisma } from '@/lib/db';
 import type { Session } from 'next-auth';
 
@@ -127,6 +145,7 @@ export async function POST(request: NextRequest) {
             text: SYSTEM_PROMPT,
             cache_control: { type: 'ephemeral' }, // cacheia o system prompt
           },
+          blocoDataAtual(),
         ],
         tools: AGENT_TOOLS.map((t, i) =>
           // cacheia a lista de tools (muda raramente)
@@ -212,7 +231,7 @@ export async function POST(request: NextRequest) {
         const fechamento = await anthropic.messages.create({
           model: MODEL,
           max_tokens: MAX_TOKENS,
-          system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+          system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }, blocoDataAtual()],
           tools: AGENT_TOOLS as any,
           tool_choice: { type: 'none' },
           messages: [
