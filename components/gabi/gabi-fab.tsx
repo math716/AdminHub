@@ -354,6 +354,7 @@ export function GabiFAB() {
   const [saving, setSaving]     = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
   // Espelha `sessaoId` para o autosave ler o valor atual dentro do debounce.
   const sessaoIdRef = useRef<string | null>(null);
@@ -387,6 +388,20 @@ export function GabiFAB() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
   useEffect(() => { if (open && view === 'chat') setTimeout(() => inputRef.current?.focus(), 150); }, [open, view]);
+
+  // Ao abrir o chat (ou voltar do histórico), começa no FIM da conversa — na
+  // última mensagem —, não no topo. O painel entra com animação, então o
+  // container só existe/estabiliza um instante depois: salta direto pro fim
+  // (sem smooth) já com o layout pronto.
+  useEffect(() => {
+    if (!open || view !== 'chat') return;
+    const irAoFim = () => {
+      const el = chatScrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    };
+    const t = setTimeout(irAoFim, 120); // após a animação de entrada do painel
+    return () => clearTimeout(t);
+  }, [open, view]);
 
   // ── Bloquear scroll do body ────────────────────────────────────────────────
 
@@ -738,6 +753,7 @@ export function GabiFAB() {
                 <>
                   {/* Mensagens */}
                   <div
+                    ref={chatScrollRef}
                     className="flex-1 min-h-0 overflow-y-auto py-6 px-5 space-y-6"
                     style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--border-strong) transparent' }}
                   >
