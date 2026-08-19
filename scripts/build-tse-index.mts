@@ -9,13 +9,15 @@
  * Uso:  npx tsx scripts/build-tse-index.mts [ano...]
  *       (sem argumentos, gera para todos os anos encontrados)
  *
- * Saída: public/data/tse/<ano>/_index.json.gz
+ * Saída: public/data/tse-index/<ano>.json.gz
  */
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 
 const BASE = path.join(process.cwd(), 'public', 'data', 'tse');
+// O índice mora FORA de BASE: ver comentário em lib/tse-static.ts (loadIndice).
+const DEST = path.join(process.cwd(), 'public', 'data', 'tse-index');
 
 /** Registro enxuto — chaves curtas porque isto se repete centenas de milhares de vezes. */
 interface EntradaIndice {
@@ -89,9 +91,10 @@ function gerarAno(ano: string): void {
   }
   const municipal = total > LIMIAR_MUNICIPAL;
   if (municipal && !INCLUIR_MUNICIPAIS) {
-    const antigo = path.join(BASE, ano, '_index.json.gz');
+    const antigo = path.join(DEST, `${ano}.json.gz`);
     if (fs.existsSync(antigo)) fs.unlinkSync(antigo);
-    console.log(`${ano}: eleição municipal (${total} candidatos) — fora do índice por limite de tamanho   `);
+    console.log(`
+${ano}: eleição municipal (${total} candidatos) — fora do índice por limite de tamanho   `);
     return;
   }
   const filtrar = municipal;
@@ -117,7 +120,8 @@ function gerarAno(ano: string): void {
     process.stdout.write(`\r${ano}: eleição municipal — indexando só os ${entradas.length} eleitos de ${total}   `);
   }
 
-  const destino = path.join(BASE, ano, '_index.json.gz');
+  fs.mkdirSync(DEST, { recursive: true });
+  const destino = path.join(DEST, `${ano}.json.gz`);
   const buf = zlib.gzipSync(Buffer.from(JSON.stringify(entradas), 'utf8'), { level: 9 });
   fs.writeFileSync(destino, buf);
   console.log(`\r${ano}: ${entradas.length} candidatos → ${path.relative(process.cwd(), destino)} (${(buf.length / 1024 / 1024).toFixed(1)} MB)   `);

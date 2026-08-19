@@ -47,8 +47,12 @@ const nextConfig = {
     // 230 MB, e copiá-los para dentro da função estoura o limite de 250 MB da
     // Vercel (api/agent/chat foi a 263 MB e o build falhou). Esses arquivos já
     // chegam à função pelo diretório public/ do deploy — o include só duplica.
+    // O índice nacional vive em public/data/tse-index/ (fora da base do TSE)
+    // justamente para NÃO ser arrastado ao bundle do relatório, que não o usa.
+    // Aqui ele é garantido na rota que o consome — 1 MB, seguro.
     outputFileTracingIncludes: {
       '/api/tse/zonas': ['./public/data/tse/**/*'],
+      '/api/agent/chat': ['./public/data/tse-index/**/*'],
     },
   },
   async headers() {

@@ -2,8 +2,8 @@ import { prisma } from '@/lib/db';
 import {
   loadStaticTseData, buscarCandidatoNoJson, buscarCandidatoTolerante, normalizarTextoTse,
   bairrosPorZona, anosDisponiveisTse, sugerirCandidatos,
-  buscarCandidatoNacional, inferirUfPorNomes,
 } from '@/lib/tse-static';
+import { buscarCandidatoNacional, inferirUfPorNomes } from '@/lib/tse-index';
 import { resolverDeputados } from '@/lib/agent/report/df-territorial';
 import type { Session } from 'next-auth';
 
