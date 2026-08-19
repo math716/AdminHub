@@ -12,6 +12,7 @@ import {
 } from '@/lib/agent/report/doc-pdf';
 import { renderMapaEleitoral, renderMapaEmendas, renderMapaEmendasVencedor, renderMapaVotos, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
 import { montarRelatorioTerritorial, caminhoBandeira } from '@/lib/agent/report/territorial-doc';
+import { assuntoDoRelatorio } from '@/lib/agent/report/titulo';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -99,7 +100,12 @@ function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitu
   input: ReportInput; tipoLabel: string; geradoEm: string; valorPill: Pill | null; mapa: MapaResult | null; mapaTitulo: string; bandeira: BandeiraSrc;
 }) {
   const conteudo = input.conteudo ?? '';
-  const reportTitle = clip(stripEmoji(input.titulo || conteudo.split('\n')[0] || 'Relatório de Dados'), 90);
+  // Assunto derivado dos dados; a pergunta do usuário fica só como último
+  // recurso, quando a consulta não trouxe nada de que extrair o tema.
+  const reportTitle = clip(
+    stripEmoji(assuntoDoRelatorio(input) || input.titulo || conteudo.split('\n')[0] || 'Relatório de Dados'),
+    90,
+  );
 
   const tools = input.tools ?? [];
   const isEleitoral = tools.includes('buscar_votacao');

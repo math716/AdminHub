@@ -845,7 +845,7 @@ export function GabiFAB() {
                           style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)', boxShadow: '0 0 0 1px var(--border-default)' }}>
                           {gabiFace ? <img src={gabiFace} alt="Gabi" className="w-full h-full object-cover" /> : 'G'}
                         </div>
-                        <div className="flex items-center gap-2.5 px-4 py-3"
+                        <div className="flex items-center px-4 py-3"
                           style={{ background: 'var(--tint-06)', border: '1px solid var(--border-default)', borderRadius: 14, borderTopLeftRadius: 4 }}>
                           <div className="flex items-center gap-1.5">
                             {[0, 150, 300].map(delay => (
@@ -853,7 +853,6 @@ export function GabiFAB() {
                                 style={{ width: 5, height: 5, background: 'var(--brand-cobalt)', animationDelay: `${delay}ms` }} />
                             ))}
                           </div>
-                          <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>Consultando as bases…</span>
                         </div>
                       </div>
                     )}
