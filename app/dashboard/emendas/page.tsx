@@ -2192,6 +2192,8 @@ function ParlamentarDashboard({
   pixTotal: number;
   onMunicipioClick?: (m: ParlamentarPorMunicipio) => void;
 }) {
+  const { resolvedTheme } = useTheme();
+  const isDarkTheme = resolvedTheme === 'dark';
   const pctPago = totalAno > 0 ? (totalPago / totalAno) * 100 : 0;
   return (
     <div
