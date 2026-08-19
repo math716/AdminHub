@@ -2394,6 +2394,8 @@ function EmendasDetalhadasCard({
   destinosFlat: DestinoRow[];
   parlamentarId: string;
 }) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const { data: session } = useSession() || {};
 
   const semDadosPagamento = emendas.length > 0
@@ -3019,46 +3021,46 @@ function EmendasDetalhadasCard({
                       style={{ background: par ? 'transparent' : 'var(--tint-04)' }}
                       title="Clique para ver todos os documentos desta emenda"
                     >
-                      <td className="py-2.5 px-3 font-mono text-[11px] whitespace-nowrap transition-colors text-slate-600 dark:text-slate-500 group-hover:text-[color:var(--brand-cobalt-text)]" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 font-mono text-[11px] whitespace-nowrap transition-colors group-hover:text-[color:var(--brand-cobalt-text)]" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#64748b' : '#475569' }}>
                         {d.numeroEmenda ?? '—'}
                       </td>
                       <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span
                           title={tipo.hint}
                           className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap"
-                          style={{ background: `${tipo.color}18`, color: tipo.color, border: `1px solid ${tipo.color}33` }}
+                          style={{ background: isDark ? `${tipo.color}18` : `${tipo.color}22`, color: isDark ? tipo.color : shadeColor(tipo.color, -25), border: `1px solid ${isDark ? `${tipo.color}40` : `${tipo.color}70`}` }}
                         >
                           {tipo.label}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 truncate max-w-[80px] md:max-w-[110px] transition-colors text-slate-700 dark:text-slate-300 group-hover:text-[color:var(--brand-cobalt-text)]" title={d.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 truncate max-w-[80px] md:max-w-[110px] transition-colors group-hover:text-[color:var(--brand-cobalt-text)]" title={d.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#cbd5e1' : '#374151' }}>
                         {d.funcao ?? '—'}
                       </td>
                       <td className="py-2.5 px-3 truncate max-w-[140px] md:max-w-[220px]" title={d.nomeFavorecido ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
-                        <span className="font-medium transition-colors text-slate-800 dark:text-slate-200 group-hover:text-[color:var(--brand-cobalt-text)]">
-                          {d.nomeFavorecido ?? <span className="text-slate-600 italic font-normal">sem favorecido</span>}
+                        <span className="font-medium transition-colors group-hover:text-[color:var(--brand-cobalt-text)]" style={{ color: isDark ? '#f1f5f9' : '#111827' }}>
+                          {d.nomeFavorecido ?? <span className="italic font-normal" style={{ color: isDark ? '#64748b' : '#6b7280' }}>sem favorecido</span>}
                         </span>
                       </td>
                       <td className="py-2.5 px-3 truncate max-w-[100px] md:max-w-[150px]" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {d.municipio ? (
-                          <span className="transition-colors text-slate-600 dark:text-slate-400 group-hover:text-[color:var(--brand-cobalt-text)]">
+                          <span className="transition-colors group-hover:text-[color:var(--brand-cobalt-text)]" style={{ color: isDark ? '#94a3b8' : '#374151' }}>
                             {d.municipio}
-                            {d.uf && <span className="text-slate-500 ml-1 text-[10px]">/ {d.uf}</span>}
+                            {d.uf && <span className="ml-1 text-[10px]" style={{ color: isDark ? '#64748b' : '#6b7280' }}>/ {d.uf}</span>}
                           </span>
-                        ) : <span className="text-slate-600">—</span>}
+                        ) : <span style={{ color: isDark ? '#64748b' : '#9ca3af' }}>—</span>}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap transition-colors text-[color:var(--text-primary)] group-hover:text-[color:var(--brand-cobalt-text)]" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap transition-colors group-hover:text-[color:var(--brand-cobalt-text)]" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? 'var(--text-primary)' : '#1e40af' }}>
                         {formatBRLCompact(d.valorEmpenhado)}
                       </td>
-                      <td className="py-2.5 px-3 text-right text-[color:var(--success)] whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap font-semibold" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#10b981' : '#047857' }}>
                         {formatBRLCompact(d.valorPago)}
                       </td>
                       <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span
                           className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold"
                           style={{
-                            background: pct >= 80 ? 'rgba(16,185,129,0.12)' : pct >= 40 ? 'rgba(245,158,11,0.12)' : 'rgba(100,116,139,0.12)',
-                            color:      pct >= 80 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#64748b',
+                            background: pct >= 80 ? (isDark ? 'rgba(16,185,129,0.12)' : 'rgba(5,150,105,0.14)') : pct >= 40 ? (isDark ? 'rgba(245,158,11,0.12)' : 'rgba(180,83,9,0.12)') : (isDark ? 'rgba(100,116,139,0.12)' : 'rgba(71,85,105,0.1)'),
+                            color:      pct >= 80 ? (isDark ? '#10b981' : '#047857') : pct >= 40 ? (isDark ? '#f59e0b' : '#b45309') : (isDark ? '#64748b' : '#475569'),
                           }}
                         >
                           {pct.toFixed(0)}%
@@ -3102,18 +3104,21 @@ function EmendasDetalhadasCard({
                       style={{ background: par ? 'transparent' : 'rgba(255,255,255,0.015)' }}
                       title="Clique para ver favorecidos e breakdown por fase"
                     >
-                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-500 font-mono text-[11px] whitespace-nowrap group-hover:text-slate-700 dark:text-slate-300 transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>{e.numero ?? '—'}</td>
+                      <td className="py-2.5 px-3 font-mono text-[11px] whitespace-nowrap transition-colors" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#64748b' : '#475569' }}>{e.numero ?? '—'}</td>
                       <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
-                        <span title={tipo.hint} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap" style={{ background: `${tipo.color}18`, color: tipo.color, border: `1px solid ${tipo.color}33` }}>{tipo.label}</span>
+                        <span title={tipo.hint} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap" style={{ background: isDark ? `${tipo.color}18` : `${tipo.color}22`, color: isDark ? tipo.color : shadeColor(tipo.color, -25), border: `1px solid ${isDark ? `${tipo.color}40` : `${tipo.color}70`}` }}>{tipo.label}</span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 truncate max-w-[100px] md:max-w-[140px] transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>{e.funcao ?? '—'}</td>
-                      <td className="py-2.5 px-3 text-slate-800 dark:text-slate-200 truncate max-w-[200px] font-medium transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid var(--tint-04)' }}>
-                        {e.municipioNome ?? <span className="text-slate-600 italic font-normal">{e.objeto ?? 'sem destino'}</span>}
+                      <td className="py-2.5 px-3 truncate max-w-[100px] md:max-w-[140px] transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#cbd5e1' : '#374151' }}>{e.funcao ?? '—'}</td>
+                      <td className="py-2.5 px-3 truncate max-w-[200px] font-medium transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#f1f5f9' : '#111827' }}>
+                        {e.municipioNome ?? <span className="italic font-normal" style={{ color: isDark ? '#64748b' : '#6b7280' }}>{e.objeto ?? 'sem destino'}</span>}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-semibold text-[color:var(--text-primary)] whitespace-nowrap group-hover:text-[color:var(--brand-cobalt-text)] transition-colors" style={{ borderBottom: '1px solid var(--tint-04)' }}>{formatBRLCompact(e.valorEmpenhado)}</td>
-                      <td className="py-2.5 px-3 text-right text-[color:var(--success)] whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>{formatBRLCompact(e.valorPago)}</td>
+                      <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap group-hover:text-[color:var(--brand-cobalt-text)] transition-colors" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? 'var(--text-primary)' : '#1e40af' }}>{formatBRLCompact(e.valorEmpenhado)}</td>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap font-semibold" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#10b981' : '#047857' }}>{formatBRLCompact(e.valorPago)}</td>
                       <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: pct >= 80 ? 'rgba(16,185,129,0.12)' : pct >= 40 ? 'rgba(245,158,11,0.12)' : 'rgba(100,116,139,0.12)', color: pct >= 80 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#64748b' }}>{pct.toFixed(0)}%</span>
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{
+                          background: pct >= 80 ? (isDark ? 'rgba(16,185,129,0.12)' : 'rgba(5,150,105,0.14)') : pct >= 40 ? (isDark ? 'rgba(245,158,11,0.12)' : 'rgba(180,83,9,0.12)') : (isDark ? 'rgba(100,116,139,0.12)' : 'rgba(71,85,105,0.1)'),
+                          color:      pct >= 80 ? (isDark ? '#10b981' : '#047857') : pct >= 40 ? (isDark ? '#f59e0b' : '#b45309') : (isDark ? '#64748b' : '#475569'),
+                        }}>{pct.toFixed(0)}%</span>
                       </td>
                     </tr>
                   );
@@ -3133,6 +3138,16 @@ function EmendasDetalhadasCard({
       />
     </div>
   );
+}
+
+// Escurece uma cor hex em `amount` pontos (negativo = mais escuro)
+function shadeColor(hex: string, amount: number): string {
+  const n = parseInt(hex.replace('#', ''), 16);
+  const clamp = (v: number) => Math.min(255, Math.max(0, v));
+  const r = clamp((n >> 16) + amount);
+  const g = clamp(((n >> 8) & 0xff) + amount);
+  const b = clamp((n & 0xff) + amount);
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
 }
 
 // Extrai label curto do tipo de emenda (usado nos filtros e na tabela)
