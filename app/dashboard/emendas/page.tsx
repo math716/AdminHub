@@ -2883,13 +2883,14 @@ function EmendasDetalhadasCard({
             style={{
               background: funcaoFiltro ? 'rgba(99,102,241,0.12)' : 'var(--tint-04)',
               border: funcaoFiltro ? '1px solid rgba(99,102,241,0.4)' : '1px solid var(--tint-08)',
+              colorScheme: isDarkTheme ? 'dark' : 'light',
             }}
           >
-            <option value="" style={{ background: '#0a1f3d' }}>Todas as áreas</option>
-            {funcoes.map((f) => <option key={f} value={f} style={{ background: '#0a1f3d' }}>{f}</option>)}
+            <option value="">Todas as áreas</option>
+            {funcoes.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
           <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
-            <svg className="w-3 h-3 text-slate-600 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            <svg className="w-3 h-3" style={{ color: isDarkTheme ? '#64748b' : '#94a3b8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
           </div>
         </div>
 
@@ -2902,13 +2903,14 @@ function EmendasDetalhadasCard({
             style={{
               background: tipoFiltro ? 'rgba(16,185,129,0.1)' : 'var(--tint-04)',
               border: tipoFiltro ? '1px solid rgba(16,185,129,0.35)' : '1px solid var(--tint-08)',
+              colorScheme: isDarkTheme ? 'dark' : 'light',
             }}
           >
-            <option value="" style={{ background: '#0a1f3d' }}>Todos os tipos</option>
-            {tiposCurtos.map((t) => <option key={t} value={t} style={{ background: '#0a1f3d' }}>{t}</option>)}
+            <option value="">Todos os tipos</option>
+            {tiposCurtos.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
           <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
-            <svg className="w-3 h-3 text-slate-600 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            <svg className="w-3 h-3" style={{ color: isDarkTheme ? '#64748b' : '#94a3b8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
           </div>
         </div>
 
