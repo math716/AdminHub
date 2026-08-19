@@ -583,41 +583,47 @@ export async function executarLocalizarParlamentar(
     return { nome: p.nome, partido: p.partido ?? '', uf: p.uf ?? '', cargo: p.cargo ?? '', anosComEmendas: anos };
   }));
 
-  // 2) Base eleitoral — busca na UF informada ou na que a base de emendas revelou
-  const ufBusca = (args.uf ?? registros.find(r => r.uf)?.uf ?? '').toUpperCase();
+  // 2) Base eleitoral — o índice NACIONAL vem sempre primeiro.
+  //
+  // Antes ele era só um fallback para quando a busca na UF conhecida não
+  // achasse nada. Só que a busca por UF quase sempre acha ALGUMA coisa: ela
+  // devolve sugestões por semelhança. Procurando "André do Prado" com a UF
+  // errada, vinha "ANDRE CECILIANO" do RJ, o fallback nunca rodava, e a Gabi
+  // apresentava um suplente do RJ como se fosse o deputado de SP.
+  const nomeNorm = normalizarTextoTse(nome);
   const emEleicoes: any[] = [];
-  if (ufBusca) {
+
+  for (const ano of anosDisponiveisTse()) {
+    for (const c of buscarCandidatoNacional(nome, String(ano)) ?? []) {
+      emEleicoes.push({
+        nomeUrna: c.nomeUrna, nome: c.nome, cargo: c.cargo,
+        partido: c.partido, totalVotos: c.totalVotos, situacao: c.situacao,
+        ano, uf: c.uf,
+        // Nome de urna idêntico ao pedido é resposta, não palpite.
+        exato: normalizarTextoTse(c.nomeUrna) === nomeNorm || normalizarTextoTse(c.nome) === nomeNorm,
+      });
+    }
+  }
+  // Nome exato primeiro; depois por votação, entre TODOS os anos. Varrer ano a
+  // ano e cortar no primeiro deixava a eleição municipal (centenas de milhares
+  // de candidatos) dominar com homônimos irrelevantes.
+  emEleicoes.sort((a, b) => Number(b.exato) - Number(a.exato) || b.totalVotos - a.totalVotos);
+
+  // Só quando o índice nacional não conhece o nome (candidato de eleição
+  // municipal, que fica fora do índice) recorre às sugestões por UF.
+  const ufBusca = (args.uf ?? registros.find(r => r.uf)?.uf ?? '').toUpperCase();
+  if (emEleicoes.length === 0 && ufBusca) {
     for (const ano of anosDisponiveisTse(ufBusca)) {
       const base = loadStaticTseData(String(ano), ufBusca);
       if (!base) continue;
-      for (const s of sugerirCandidatos(base, nome, undefined, 3)) {
-        emEleicoes.push({ ...s, ano, uf: ufBusca });
+      for (const sug of sugerirCandidatos(base, nome, undefined, 3)) {
+        emEleicoes.push({ ...sug, ano, uf: ufBusca, exato: false });
       }
       if (emEleicoes.length >= 6) break;
     }
   }
 
-  // Sem UF conhecida (o caso comum: deputado estadual não aparece na base de
-  // emendas federais), procura o nome no índice NACIONAL. Antes, a ferramenta
-  // simplesmente devolvia "informe a UF" — e a Gabi repassava isso ao usuário.
-  if (emEleicoes.length === 0) {
-    const nacional: any[] = [];
-    for (const ano of anosDisponiveisTse()) {
-      for (const c of buscarCandidatoNacional(nome, String(ano)) ?? []) {
-        nacional.push({
-          nomeUrna: c.nomeUrna, nome: c.nome, cargo: c.cargo,
-          partido: c.partido, totalVotos: c.totalVotos, situacao: c.situacao,
-          ano, uf: c.uf,
-        });
-      }
-    }
-    // Ordena por votação entre TODOS os anos: varrer ano a ano e cortar no
-    // primeiro deixava o mais recente (eleição municipal, centenas de milhares
-    // de candidatos) dominar com homônimos irrelevantes.
-    nacional.sort((a, b) => b.totalVotos - a.totalVotos);
-    emEleicoes.push(...nacional.slice(0, 6));
-  }
-
+  emEleicoes.splice(6); // no máximo 6 no retorno
   const ufsEncontradas = [...new Set(emEleicoes.map((e: any) => e.uf).filter(Boolean))];
 
   return {

@@ -28,6 +28,15 @@ export function normalizarTextoTse(t: string): string {
     .trim();
 }
 
+/**
+ * Casa PALAVRA INTEIRA no nome. Com `includes`, "andre" casava dentro de
+ * "alexandre" e a busca por "André do Prado" devolvia "ALEXANDRE PRADO" —
+ * um suplente do RJ no lugar do deputado de SP.
+ */
+export function palavrasDoNome(c: { nomeUrna: string; nome: string }): string[] {
+  return `${normalizarTextoTse(c.nomeUrna)} ${normalizarTextoTse(c.nome)}`.split(' ').filter(Boolean);
+}
+
 const fileCache = new Map<string, CandidatoJson[]>();
 
 export function loadStaticTseData(ano: string, uf: string): CandidatoJson[] | null {
@@ -122,7 +131,7 @@ export function sugerirCandidatos(
   return data
     .filter(c => !cargoNorm || normalizarTextoTse(c.cargo).includes(cargoNorm))
     .map(c => {
-      const alvo = `${normalizarTextoTse(c.nomeUrna)} ${normalizarTextoTse(c.nome)}`;
+      const alvo = palavrasDoNome(c);
       // Se a busca tem palavras identificadoras, pelo menos uma precisa casar
       const casouIdentificadora = identificadoras.length === 0
         || identificadoras.some(p => alvo.includes(p));
@@ -234,11 +243,12 @@ export function buscarCandidatoNoJson(
      normalizarTextoTse(c.nome).includes(queryNorm))
   );
 
+  // 2ª passada, por palavras: exige PALAVRA INTEIRA. Com substring, buscar
+  // "André do Prado" trazia "ALEXANDRE PRADO" ("andre" dentro de "alexandre").
   if (resultados.length === 0 && palavras.length > 0) {
     resultados = data.filter(c => {
-      const nu = normalizarTextoTse(c.nomeUrna);
-      const nm = normalizarTextoTse(c.nome);
-      return matchCargo(c) && palavras.every(p => nu.includes(p) || nm.includes(p));
+      const alvo = palavrasDoNome(c);
+      return matchCargo(c) && palavras.every(p => alvo.includes(p));
     });
   }
 
