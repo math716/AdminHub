@@ -43,21 +43,12 @@ const nextConfig = {
   images: { unoptimized: true },
   experimental: {
     serverComponentsExternalPackages: ['@react-pdf/renderer'],
-    // Estes arquivos são lidos do DISCO em runtime (fs.readFileSync com caminho
-    // montado em tempo de execução). O tracing do Next não consegue detectá-los
-    // sozinho, então cada rota que os usa precisa declará-los — sem isso eles
-    // ficam fora do bundle da função e somem só em produção (foi o que deixou o
-    // relatório da Gabi sem bandeira do estado).
+    // NÃO declare './public/data/tse/**/*' aqui para as rotas do agente: são
+    // 230 MB, e copiá-los para dentro da função estoura o limite de 250 MB da
+    // Vercel (api/agent/chat foi a 263 MB e o build falhou). Esses arquivos já
+    // chegam à função pelo diretório public/ do deploy — o include só duplica.
     outputFileTracingIncludes: {
       '/api/tse/zonas': ['./public/data/tse/**/*'],
-      // Gabi: base eleitoral + índice nacional de nomes
-      '/api/agent/chat': ['./public/data/tse/**/*'],
-      // Relatórios em PDF: base eleitoral, bandeiras dos estados e malha das RAs
-      '/api/agent/relatorio': [
-        './public/data/tse/**/*',
-        './public/flags/**/*',
-        './public/geojson/df-regioes-administrativas.geojson',
-      ],
     },
   },
   async headers() {

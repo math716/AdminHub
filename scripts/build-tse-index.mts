@@ -54,17 +54,53 @@ function lerUf(ano: string, uf: string): any[] | null {
   return null;
 }
 
+const norm = (t: string) => (t ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+/**
+ * O bundle da função na Vercel já vive perto do teto de 250 MB, então o índice
+ * precisa ser enxuto. Anos de eleição municipal têm ~500 mil candidatos (quase
+ * todos vereadores com poucas centenas de votos) e sozinhos custariam ~18 MB;
+ * indexar só quem se elegeu derruba para ~2,5 MB. Quem é procurado pelo nome,
+ * sem contexto, é justamente quem tem mandato. Anos gerais (deputados,
+ * senadores, governadores) são pequenos e entram inteiros.
+ */
+const LIMIAR_MUNICIPAL = 150_000; // acima disto, é ano de eleição municipal
+
+// Anos municipais ficam de FORA por padrão: a função de chat já ocupa ~246 MB
+// dos 250 MB da Vercel, e nem indexando só os eleitos (2,5 MB) havia folga.
+// Quem pergunta por nome sem dizer o estado quase sempre fala de deputado,
+// senador ou governador — esses estão nos anos gerais, que custam 0,5 MB cada.
+// Com mais espaço (VERCEL_SUPPORT_LARGE_FUNCTIONS=1), rode com --municipais.
+const INCLUIR_MUNICIPAIS = process.argv.includes('--municipais');
+
 function gerarAno(ano: string): void {
   const ufs = ufsDoAno(ano);
   if (ufs.length === 0) { console.log(`${ano}: nenhuma UF — pulando`); return; }
 
-  const entradas: EntradaIndice[] = [];
+  // 1ª passada: quantos candidatos o ano tem, para decidir se filtra
+  let total = 0;
+  const porUf: Record<string, any[]> = {};
   for (const uf of ufs) {
-    // Um estado por vez, descartado logo em seguida: manter os 27 em memória
-    // é o que estourava o heap.
     const data = lerUf(ano, uf);
     if (!data) continue;
-    for (const c of data) {
+    porUf[uf] = data;
+    total += data.length;
+    process.stdout.write(`\r${ano}: lendo ${uf} — ${total} candidatos   `);
+  }
+  const municipal = total > LIMIAR_MUNICIPAL;
+  if (municipal && !INCLUIR_MUNICIPAIS) {
+    const antigo = path.join(BASE, ano, '_index.json.gz');
+    if (fs.existsSync(antigo)) fs.unlinkSync(antigo);
+    console.log(`${ano}: eleição municipal (${total} candidatos) — fora do índice por limite de tamanho   `);
+    return;
+  }
+  const filtrar = municipal;
+
+  const entradas: EntradaIndice[] = [];
+  for (const uf of ufs) {
+    for (const c of porUf[uf] ?? []) {
+      // "eleito" precisa casar o INÍCIO: `includes` pegaria "NÃO ELEITO".
+      if (filtrar && !/^eleito/.test(norm(c.situacao ?? ''))) continue;
       entradas.push({
         u: uf,
         n: c.nomeUrna ?? '',
@@ -75,7 +111,10 @@ function gerarAno(ano: string): void {
         s: c.situacao ?? '',
       });
     }
-    process.stdout.write(`\r${ano}: ${uf} — ${entradas.length} candidatos indexados   `);
+    delete porUf[uf]; // libera o estado já processado
+  }
+  if (filtrar) {
+    process.stdout.write(`\r${ano}: eleição municipal — indexando só os ${entradas.length} eleitos de ${total}   `);
   }
 
   const destino = path.join(BASE, ano, '_index.json.gz');
