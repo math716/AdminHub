@@ -2398,6 +2398,10 @@ function EmendasDetalhadasCard({
 }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+  // O popup nativo do <select> não herda a cor do tema só com colorScheme: o
+  // Chrome deriva o fundo das opções do background do select (um tint claro),
+  // deixando a lista branca no tema escuro. Pintar cada <option> resolve.
+  const optStyle = { backgroundColor: isDark ? '#142845' : '#ffffff', color: isDark ? '#e2e8f0' : '#0f172a' };
   const { data: session } = useSession() || {};
 
   const semDadosPagamento = emendas.length > 0
@@ -2890,8 +2894,8 @@ function EmendasDetalhadasCard({
               colorScheme: isDark ? 'dark' : 'light',
             }}
           >
-            <option value="">Todas as áreas</option>
-            {funcoes.map((f) => <option key={f} value={f}>{f}</option>)}
+            <option value="" style={optStyle}>Todas as áreas</option>
+            {funcoes.map((f) => <option key={f} value={f} style={optStyle}>{f}</option>)}
           </select>
           <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
             <svg className="w-3 h-3" style={{ color: isDark ? '#64748b' : '#94a3b8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
@@ -2910,8 +2914,8 @@ function EmendasDetalhadasCard({
               colorScheme: isDark ? 'dark' : 'light',
             }}
           >
-            <option value="">Todos os tipos</option>
-            {tiposCurtos.map((t) => <option key={t} value={t}>{t}</option>)}
+            <option value="" style={optStyle}>Todos os tipos</option>
+            {tiposCurtos.map((t) => <option key={t} value={t} style={optStyle}>{t}</option>)}
           </select>
           <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
             <svg className="w-3 h-3" style={{ color: isDark ? '#64748b' : '#94a3b8' }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
