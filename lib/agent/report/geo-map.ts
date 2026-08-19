@@ -428,6 +428,43 @@ export function renderMapaVotos(params: { uf?: string; valores: Record<string, n
   return renderMapaHeatmap({ ...params, faixas: faixasDeVotos(max), semCor: '#eef2f7' });
 }
 
+/**
+ * Mapa de calor de UM MUNICÍPIO por bairro. As feições vêm de fora (buscadas
+ * por HTTP em `mapa-bairros.ts`, para não inchar o bundle) e `valores` é
+ * chaveado pelo nome do bairro, como em `properties.NM_BAIRRO`.
+ */
+export function renderMapaBairros(params: {
+  features: any[];
+  valores: Record<string, number>;
+  width?: number;
+  height?: number;
+}): MapaResult | null {
+  const W = params.width ?? 380;
+  const H = params.height ?? 300;
+  try {
+    const vals = params.valores ?? {};
+    const max = Math.max(1, ...Object.values(vals));
+    const faixas = faixasDeVotos(max);
+    const usadas = new Set<string>();
+    const corDe = (v: number): string => {
+      if (v <= 0) return '#eef2f7';
+      const f = faixas.find(f => v <= f.max) ?? faixas[faixas.length - 1];
+      usadas.add(f.label);
+      return f.cor;
+    };
+    const paths = buildPathsFeat(params.features, W, H,
+      (f) => corDe(vals[f.properties?.NM_BAIRRO ?? ''] ?? 0));
+    if (paths.length === 0) return null;
+    return {
+      width: W, height: H, paths,
+      legend: faixas.filter(f => usadas.has(f.label)).map(f => ({ label: f.label, cor: f.cor })),
+    };
+  } catch (err) {
+    console.warn('[geo-map] mapa por bairros indisponível:', String(err));
+    return null;
+  }
+}
+
 // ── Mapa do DF por Região Administrativa (geojson LOCAL, sem fetch) ──────────
 let dfGeoCache: any = null;
 function loadDFGeo(): any {

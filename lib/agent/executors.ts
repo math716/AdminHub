@@ -250,6 +250,9 @@ export async function executarBuscarVotacao(
     return {
       encontrado: true,
       granularidade: muniNorm ? 'zona_eleitoral' : 'municipio',
+      // Nome do município consultado — o relatório usa para desenhar o mapa da
+      // cidade por bairros em vez do mapa do estado com um ponto pintado.
+      municipioConsultado: args.municipio ?? null,
       totalCandidatos: totalNoCargo,
       totalEleitos: eleitos.length,
       filtradoPorEleitos: !!args.apenas_eleitos && eleitos.length > 0,

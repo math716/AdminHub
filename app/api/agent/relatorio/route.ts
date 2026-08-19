@@ -10,9 +10,10 @@ import {
   HeaderBand, DocFooter, renderContent, renderPizza, docStyles as S, stripEmoji, C,
   type Pill, type BandeiraSrc,
 } from '@/lib/agent/report/doc-pdf';
-import { renderMapaEleitoral, renderMapaEmendas, renderMapaEmendasVencedor, renderMapaVotos, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
+import { renderMapaEleitoral, renderMapaEmendas, renderMapaEmendasVencedor, renderMapaVotos, renderMapaBairros, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
 import { montarRelatorioTerritorial, caminhoBandeira } from '@/lib/agent/report/territorial-doc';
 import { assuntoDoRelatorio } from '@/lib/agent/report/titulo';
+import { bairrosComVotos } from '@/lib/agent/report/mapa-bairros';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -209,7 +210,34 @@ export async function POST(request: NextRequest) {
     if (isEleitoral) {
       const cands: any[] = body.dadosBrutos?.buscar_votacao?.candidatos ?? [];
       const c = cands[0];
-      if (cands.length === 1) {
+
+      // Consulta a um MUNICÍPIO → mapa da cidade por bairros. O mapa do estado
+      // com um único ponto pintado não diz nada sobre onde estão os votos
+      // dentro da cidade. Cai no mapa estadual se a cidade não tiver malha.
+      const municipio = body.dadosBrutos?.buscar_votacao?.municipioConsultado;
+      if (municipio && c?.uf && c.uf !== 'BR' && (c.votosPorZona?.length ?? 0) > 0) {
+        const host  = request.headers.get('host') ?? 'localhost:3000';
+        const proto = host.startsWith('localhost') ? 'http' : 'https';
+        const bairros = await bairrosComVotos({
+          uf: c.uf,
+          municipio,
+          ano: Number(c.ano),
+          nomeUrna: c.nomeUrna || c.nome,
+          cargo: c.cargo,
+          zonas: (c.votosPorZona ?? []).map((z: any) => ({ zona: z.zona, votos: z.votos })),
+          baseUrl: `${proto}://${host}`,
+        });
+        if (bairros) {
+          mapa = renderMapaBairros({ ...bairros, width: W, height: H });
+          mapaTitulo = `Mapa de ${municipio} — votos por bairro`;
+        } else {
+          console.warn(`[/api/agent/relatorio] sem malha de bairros para ${municipio}/${c.uf} — usando o mapa do estado`);
+        }
+      }
+
+      if (mapa) {
+        // já resolvido pelo mapa de bairros
+      } else if (cands.length === 1) {
         // 1 candidato → heatmap dos votos dele
         const valores: Record<string, number> = {};
         (c.votosPorMunicipio ?? []).forEach((m: any) => { if (m.municipio) valores[m.municipio] = m.votos; });
