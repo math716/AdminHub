@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import {
   loadStaticTseData, buscarCandidatoNoJson, buscarCandidatoTolerante, normalizarTextoTse,
   bairrosPorZona, anosDisponiveisTse, sugerirCandidatos,
+  buscarCandidatoNacional, inferirUfPorNomes,
 } from '@/lib/tse-static';
 import { resolverDeputados } from '@/lib/agent/report/df-territorial';
 import type { Session } from 'next-auth';
@@ -292,14 +293,48 @@ export async function executarBuscarVotacao(
     };
   }
 
-  // Sem UF, cargos estaduais/municipais são impossíveis de localizar (a base
-  // nacional só tem a eleição presidencial) — oriente a obter o estado.
+  // Sem UF: em vez de devolver a tarefa ao usuário, DESCOBRE o estado pelo nome
+  // no índice nacional e refaz a busca sozinha. Pedir a UF de volta era a
+  // resposta mais comum e mais inútil da Gabi.
   const semUf = !ufQuery && !isPresidencial;
   if (semUf) {
+    const palpites = args.candidato_nome
+      ? buscarCandidatoNacional(args.candidato_nome, anoStr, args.cargo)
+      : null;
+
+    if (palpites && palpites.length > 0) {
+      const ufInferida = palpites[0].uf;
+      // Uma única tentativa com a UF descoberta — sem risco de recursão infinita.
+      const refeita: any = await executarBuscarVotacao(
+        { ...args, uf: ufInferida }, _session,
+      );
+      if (refeita?.encontrado) {
+        return {
+          ...refeita,
+          ufInferida,
+          // A Gabi precisa DIZER o recorte que assumiu, e oferecer trocar se
+          // houver o mesmo nome em outro estado.
+          avisoUf: `O estado não foi informado; localizei "${args.candidato_nome}" em ${ufInferida} ` +
+            'e usei esse recorte. Diga isso naturalmente ao usuário.',
+          ...(new Set(palpites.map(p => p.uf)).size > 1 && {
+            tambemEncontradoEm: [...new Set(palpites.map(p => p.uf))].filter(u => u !== ufInferida),
+          }),
+        };
+      }
+    }
+
     return {
       encontrado: false,
       anosDisponiveis: anosDisponiveisTse(),
-      orientacao: `Para localizar "${args.candidato_nome ?? ''}" é preciso o ESTADO: os resultados de cargos estaduais/municipais são organizados por UF. Deduza pelo contexto da conversa ou pergunte de forma natural de que estado é o candidato, e repita a busca informando "uf".`,
+      ...(palpites && palpites.length > 0 && {
+        candidatosParecidos: palpites.map(p => ({
+          nomeUrna: p.nomeUrna, uf: p.uf, cargo: p.cargo, partido: p.partido, totalVotos: p.totalVotos,
+        })),
+      }),
+      orientacao: palpites && palpites.length > 0
+        ? 'Não achei com esse recorte, mas "candidatosParecidos" mostra onde esse nome aparece — ' +
+          'escolha o mais provável e refaça a busca com a "uf" dele.'
+        : `Para localizar "${args.candidato_nome ?? ''}" é preciso o ESTADO: os resultados de cargos estaduais/municipais são organizados por UF. Deduza pelo contexto da conversa ou pergunte de forma natural de que estado é o candidato, e repita a busca informando "uf".`,
     };
   }
 
@@ -562,18 +597,41 @@ export async function executarLocalizarParlamentar(
     }
   }
 
+  // Sem UF conhecida (o caso comum: deputado estadual não aparece na base de
+  // emendas federais), procura o nome no índice NACIONAL. Antes, a ferramenta
+  // simplesmente devolvia "informe a UF" — e a Gabi repassava isso ao usuário.
+  if (emEleicoes.length === 0) {
+    const nacional: any[] = [];
+    for (const ano of anosDisponiveisTse()) {
+      for (const c of buscarCandidatoNacional(nome, String(ano)) ?? []) {
+        nacional.push({
+          nomeUrna: c.nomeUrna, nome: c.nome, cargo: c.cargo,
+          partido: c.partido, totalVotos: c.totalVotos, situacao: c.situacao,
+          ano, uf: c.uf,
+        });
+      }
+    }
+    // Ordena por votação entre TODOS os anos: varrer ano a ano e cortar no
+    // primeiro deixava o mais recente (eleição municipal, centenas de milhares
+    // de candidatos) dominar com homônimos irrelevantes.
+    nacional.sort((a, b) => b.totalVotos - a.totalVotos);
+    emEleicoes.push(...nacional.slice(0, 6));
+  }
+
+  const ufsEncontradas = [...new Set(emEleicoes.map((e: any) => e.uf).filter(Boolean))];
+
   return {
     encontrado: emEmendas.length > 0 || emEleicoes.length > 0,
     consultado: nome,
     emEmendas,                                   // onde tem emendas (UF, cargo, anos)
-    emEleicoes,                                  // grafia de urna, cargo e ano reais
-    ufsEleitoraisDisponiveis: ufBusca ? undefined : 'informe a UF para localizar na base eleitoral',
+    emEleicoes,                                  // grafia de urna, cargo, ano e UF reais
+    ufsEncontradas,                              // estados onde o nome aparece
     orientacao:
-      'Use este retorno para montar a consulta CERTA: "emEleicoes" traz o nome de urna, o cargo e ' +
-      'o ano reais (use-os em buscar_votacao ou gerar_relatorio_territorial); "emEmendas" traz a UF, ' +
-      'o cargo e os anos com emendas (use-os em buscar_emendas). Se nada aparecer e faltar a UF, ' +
-      'pergunte o estado de forma natural. Depois de localizar, SIGA e entregue a análise — não devolva ' +
-      'a busca ao usuário como se fosse tarefa dele.',
+      'Use este retorno para montar a consulta CERTA: "emEleicoes" traz o nome de urna, o cargo, o ' +
+      'ano e a UF reais (use-os em buscar_votacao ou gerar_relatorio_territorial); "emEmendas" traz ' +
+      'a UF, o cargo e os anos com emendas (use-os em buscar_emendas). Se "ufsEncontradas" tem UMA ' +
+      'entrada, use-a direto — NÃO pergunte o estado ao usuário, você já o descobriu. Depois de ' +
+      'localizar, SIGA e entregue a análise — não devolva a busca ao usuário como se fosse tarefa dele.',
   };
 }
 

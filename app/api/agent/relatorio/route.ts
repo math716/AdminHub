@@ -186,6 +186,12 @@ export async function POST(request: NextRequest) {
       ufRelatorio = body.dadosBrutos.dados_municipio.uf;
     }
     const bandeira = ufRelatorio ? caminhoBandeira(ufRelatorio) : null;
+    // Bandeira e mapa somem em produção quando os arquivos de public/ não
+    // entram no bundle da função. Registrar o motivo aqui evita ter de
+    // adivinhar olhando o PDF pronto.
+    if (ufRelatorio && !bandeira) {
+      console.warn(`[/api/agent/relatorio] bandeira de ${ufRelatorio} não encontrada em public/flags — PDF sai sem bandeira`);
+    }
 
     // Mapa (com fallback silencioso). Regra:
     //  • eleição com 2+ candidatos → vencedor por região
@@ -252,6 +258,10 @@ export async function POST(request: NextRequest) {
     if (isEmendas) {
       const tot = body.dadosBrutos?.buscar_emendas?.totalEmpenhado;
       if (typeof tot === 'number' && tot > 0) valorPill = { label: 'Empenhado:', value: fmtMoney(tot) };
+    }
+
+    if (!mapa && (isEleitoral || isEmendas)) {
+      console.warn(`[/api/agent/relatorio] sem mapa (tipo=${tipoLabel}, uf=${ufRelatorio ?? '—'}) — veja o aviso [geo-map] acima`);
     }
 
     const pdfBuffer = await renderToBuffer(

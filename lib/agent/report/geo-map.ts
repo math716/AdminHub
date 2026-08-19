@@ -77,13 +77,20 @@ function atribuirCores(info: Map<string, { partido: string; n: number }>): Map<s
 }
 
 // ── Fetch com timeout ───────────────────────────────────────────────────────
-async function fetchJson(url: string, ms = 8000): Promise<any> {
+// 8s era apertado para a malha do IBGE (~1 MB) num cold start de serverless —
+// e o timeout derrubava o mapa em silêncio.
+async function fetchJson(url: string, ms = 20000): Promise<any> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
+  const t0 = Date.now();
   try {
     const res = await fetch(url, { signal: ctrl.signal, next: { revalidate: 604800 } } as any);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status} em ${url}`);
     return await res.json();
+  } catch (err: any) {
+    // Sem isto, uma malha que não veio vira "PDF sem mapa" sem nenhum rastro.
+    const motivo = err?.name === 'AbortError' ? `timeout após ${ms}ms` : String(err?.message ?? err);
+    throw new Error(`${motivo} (${Date.now() - t0}ms) — ${url.slice(0, 90)}`);
   } finally {
     clearTimeout(timer);
   }
@@ -259,7 +266,7 @@ export async function renderMapaEleitoral(params: {
     const res = montarMapa(winners, (codarea) => nomePorCod[codarea] ?? '', geo.features ?? [], W, H);
     return res.paths.length > 0 ? res : null;
   } catch (err) {
-    console.warn('[geo-map] mapa indisponível — gerando sem mapa:', String(err));
+    console.warn('[geo-map] mapa eleitoral indisponível — PDF sai sem mapa:', String(err));
     return null;
   }
 }
@@ -367,7 +374,7 @@ export async function renderMapaHeatmap(params: {
     if (paths.length === 0) return null;
     return { width: W, height: H, paths, legend: legenda() };
   } catch (err) {
-    console.warn('[geo-map] heatmap indisponível — gerando sem mapa:', String(err));
+    console.warn('[geo-map] heatmap indisponível — PDF sai sem mapa:', String(err));
     return null;
   }
 }
