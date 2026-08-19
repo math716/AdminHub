@@ -744,8 +744,13 @@ export function formatBRL(n?: number | null): string {
 
 export function formatBRLCompact(n?: number | null): string {
   if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
-  if (n >= 1_000_000_000) return `R$ ${(n / 1_000_000_000).toFixed(2).replace('.', ',')}Bi`;
-  if (n >= 1_000_000)     return `R$ ${(n / 1_000_000).toFixed(1).replace('.', ',')}M`;
-  if (n >= 1_000)         return `R$ ${(n / 1_000).toFixed(0)}K`;
-  return `R$ ${n.toFixed(0)}`;
+  // Valores negativos (ex.: emenda remanejada, R$ -200000) precisam da mesma
+  // escala compacta: aplica a magnitude ao valor absoluto e recoloca o sinal —
+  // senão os comparadores `>=` não casam e sai o número cru.
+  const sinal = n < 0 ? '-' : '';
+  const a = Math.abs(n);
+  if (a >= 1_000_000_000) return `R$ ${sinal}${(a / 1_000_000_000).toFixed(2).replace('.', ',')}Bi`;
+  if (a >= 1_000_000)     return `R$ ${sinal}${(a / 1_000_000).toFixed(1).replace('.', ',')}M`;
+  if (a >= 1_000)         return `R$ ${sinal}${(a / 1_000).toFixed(0)}K`;
+  return `R$ ${sinal}${a.toFixed(0)}`;
 }
