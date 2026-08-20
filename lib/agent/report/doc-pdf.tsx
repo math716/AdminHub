@@ -437,9 +437,20 @@ export function HeaderBand({ titulo, pills, bandeira }: {
   );
 }
 
-export function DocFooter(): React.ReactNode {
+// Origem dos dados, por tipo de relatório. Dizer DE ONDE veio o número dá
+// credibilidade ao documento — mais do que o aviso genérico de IA que havia
+// aqui, que só levantava dúvida sobre o conteúdo.
+export type FonteRelatorio = 'emendas' | 'votos' | 'gabinete';
+
+const RODAPE_FONTE: Record<FonteRelatorio, string> = {
+  emendas:  'Base portais de transparência federal e estadual',
+  votos:    'Base de votos do TSE',
+  gabinete: 'Base do banco de dados do Gabinete',
+};
+
+export function DocFooter(fonte: FonteRelatorio = 'gabinete'): React.ReactNode {
   return React.createElement(View, { style: S.footer, fixed: true },
-    React.createElement(Text, { style: S.footerText }, 'AdminHub — Gabi IA · Gerado por IA, verifique as informações'),
+    React.createElement(Text, { style: S.footerText }, `AdminHub — Gabi IA · ${RODAPE_FONTE[fonte]}`),
     React.createElement(Text, { style: S.footerText, render: ({ pageNumber, totalPages }: any) => `Pág. ${pageNumber} / ${totalPages}` }),
   );
 }

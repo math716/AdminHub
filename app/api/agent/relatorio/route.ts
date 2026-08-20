@@ -8,7 +8,7 @@ import React from 'react';
 import {
   Document, Page, Text, View,
   HeaderBand, DocFooter, renderContent, renderPizza, docStyles as S, stripEmoji, C,
-  type Pill, type BandeiraSrc,
+  type Pill, type BandeiraSrc, type FonteRelatorio,
 } from '@/lib/agent/report/doc-pdf';
 import { renderMapaEleitoral, renderMapaEmendas, renderMapaEmendasVencedor, renderMapaVotos, renderMapaBairros, renderMapaDF_RA, renderMapaDF_RAVencedor, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
 import { montarRelatorioTerritorial, caminhoBandeira } from '@/lib/agent/report/territorial-doc';
@@ -113,6 +113,9 @@ function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitu
   const isEleitoral = tools.includes('buscar_votacao');
   const isEmendas   = tools.includes('buscar_emendas') || tools.includes('comparar_parlamentares');
   const pizza = buildPizza(input, isEleitoral, isEmendas);
+  // Rodapé cita a origem real dos números. Eleitoral tem precedência: quando a
+  // consulta cruza votos e emendas, o assunto do documento é o voto.
+  const fonte: FonteRelatorio = isEleitoral ? 'votos' : isEmendas ? 'emendas' : 'gabinete';
 
   const pills: Pill[] = [
     { label: 'Tipo:', value: tipoLabel },
@@ -126,7 +129,7 @@ function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitu
       pizza,
       ...renderContent(conteudo),
       mapa ? MapSection(mapa, mapaTitulo) : null,
-      DocFooter(),
+      DocFooter(fonte),
     ),
   );
 }

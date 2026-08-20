@@ -586,7 +586,13 @@ export function GabiFAB() {
       const res = await fetch('/api/agent/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: messages.map(m => ({ role: m.role, content: m.content })), titulo: 'Relatório — Gabi IA' }),
+        body: JSON.stringify({
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          titulo: 'Relatório — Gabi IA',
+          // Ferramentas usadas na conversa toda: é o que permite o rodapé citar
+          // a base certa (TSE, portais de transparência ou o banco do gabinete).
+          tools: [...new Set(messages.flatMap(m => m.tools ?? []))],
+        }),
       });
       if (!res.ok) { setError('Erro ao gerar PDF.'); return; }
       const blob = await res.blob();

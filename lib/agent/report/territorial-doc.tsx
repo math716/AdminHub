@@ -296,7 +296,7 @@ function PaginaDeputado({ m, mapa, bandeira, ano, cargo }: {
     ),
     TabelaTop5(m),
     ...renderContent(leituraDeputado(m)),
-    DocFooter(),
+    DocFooter('votos'),
   );
 }
 
@@ -392,7 +392,7 @@ function PaginasComparativo({ ms, mapa, bandeira, ano, cargo, faltantes }: {
     React.createElement(Text, { style: S.h3 }, 'Quadro comparativo'),
     TabelaComparativa(ms),
     ...renderContent(notaMetodologica(faltantes)),
-    DocFooter(),
+    DocFooter('votos'),
   );
 }
 
@@ -405,7 +405,7 @@ function PaginaVazia(faltantes: string[], bandeira: BandeiraSrc): React.ReactNod
       (faltantes.length ? `Nomes consultados: ${faltantes.join(', ')}.\n\n` : '') +
       'Verifique a grafia como aparece na urna e tente novamente.',
     ),
-    DocFooter(),
+    DocFooter('votos'),
   );
 }
 

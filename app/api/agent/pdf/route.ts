@@ -7,7 +7,7 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import React from 'react';
 import {
   Document, Page, Text, View,
-  HeaderBand, DocFooter, renderContent, docStyles as S, stripEmoji, type Pill,
+  HeaderBand, DocFooter, renderContent, docStyles as S, stripEmoji, type Pill, type FonteRelatorio,
 } from '@/lib/agent/report/doc-pdf';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
@@ -36,7 +36,7 @@ function extractFirstValue(text: string): string | null {
 }
 
 // ─── Documento ───────────────────────────────────────────────────────────────
-function GabiPDF({ titulo, messages, geradoEm }: { titulo: string; messages: Msg[]; geradoEm: string }) {
+function GabiPDF({ titulo, messages, geradoEm, fonte }: { titulo: string; messages: Msg[]; geradoEm: string; fonte: FonteRelatorio }) {
   const pares = agruparPares(messages);
 
   const firstQuestion = pares[0]?.pergunta ?? '';
@@ -67,7 +67,7 @@ function GabiPDF({ titulo, messages, geradoEm }: { titulo: string; messages: Msg
         ),
       ),
 
-      DocFooter(),
+      DocFooter(fonte),
     ),
   );
 }
@@ -81,6 +81,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const messages: Msg[] = Array.isArray(body?.messages) ? body.messages : [];
     const titulo = body?.titulo ?? 'Relatório — Gabi IA';
+    // A conversa pode cruzar assuntos; eleitoral tem precedência, como no
+    // relatório de dados. Sem ferramenta nenhuma, fica a base do gabinete.
+    const tools: string[] = Array.isArray(body?.tools) ? body.tools : [];
+    const fonte: FonteRelatorio =
+      tools.includes('buscar_votacao') || tools.includes('gerar_relatorio_territorial') ? 'votos'
+      : tools.includes('buscar_emendas') || tools.includes('comparar_parlamentares') ? 'emendas'
+      : 'gabinete';
 
     if (messages.length === 0) return NextResponse.json({ error: 'Sem mensagens para exportar' }, { status: 400 });
 
@@ -89,7 +96,7 @@ export async function POST(request: NextRequest) {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
 
-    const pdfBuffer = await renderToBuffer(React.createElement(GabiPDF, { titulo, messages, geradoEm }) as any);
+    const pdfBuffer = await renderToBuffer(React.createElement(GabiPDF, { titulo, messages, geradoEm, fonte }) as any);
 
     return new NextResponse(pdfBuffer as any, {
       status: 200,
