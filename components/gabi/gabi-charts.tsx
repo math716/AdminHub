@@ -352,19 +352,41 @@ export function VisualizacoesCard({
 
   return (
     <div
-      className="mt-3 rounded-xl overflow-hidden w-full"
-      style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}
+      className="mt-3 overflow-hidden w-full relative"
+      style={{
+        background: 'linear-gradient(180deg, var(--gabi-balao-de), var(--gabi-balao-para))',
+        border: '1px solid var(--gabi-balao-borda)',
+        borderRadius: 16,
+        boxShadow: 'var(--gabi-balao-sombra)',
+      }}
     >
+      {/* Realce de 1px no topo — dá volume ao cartão */}
+      <div aria-hidden className="absolute inset-x-0 top-0 pointer-events-none"
+        style={{ height: 1, background: 'var(--gabi-brilho-topo)' }} />
+
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 py-2.5"
-        style={{ borderBottom: `1px solid ${t.headBorder}`, background: t.headBg }}
+        className="flex items-center justify-between gap-3 px-4 py-3"
+        style={{
+          borderBottom: '1px solid var(--gabi-balao-borda)',
+          background: 'linear-gradient(180deg, var(--tint-04), transparent)',
+        }}
       >
-        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.title }}>
-          {tituloCard || 'Dados'}
-        </p>
+        <div className="flex items-center gap-2.5 min-w-0">
+          {/* Barra de acento: âncora visual do título */}
+          <span aria-hidden className="flex-shrink-0 rounded-full"
+            style={{ width: 3, height: 13, background: 'var(--gabi-envio)' }} />
+          <p className="text-[10px] font-bold tracking-[0.11em] uppercase truncate" style={{ color: t.title }}>
+            {tituloCard || 'Dados'}
+          </p>
+        </div>
         {totalVal > 0 && (
-          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: t.pillBg, color: t.pillText }}>
+          <span className="text-[11px] font-bold px-3 py-1 rounded-full flex-shrink-0 tabular-nums"
+            style={{
+              background: 'var(--brand-cobalt-soft)',
+              color: 'var(--brand-cobalt-text)',
+              border: '1px solid var(--gabi-balao-borda)',
+            }}>
             {pillLabel}
           </span>
         )}
@@ -377,7 +399,8 @@ export function VisualizacoesCard({
         {donut && barras && (
           <div className="flex gap-3 items-start">
             <DonutPanel vis={donut} isMoney={isMoney} t={t} />
-            <div className="self-stretch w-px flex-shrink-0" style={{ background: t.divider }} />
+            <div className="self-stretch w-px flex-shrink-0"
+              style={{ background: `linear-gradient(180deg, transparent, ${t.divider} 15%, ${t.divider} 85%, transparent)` }} />
             <BarPanel vis={barras} isMoney={isMoney} t={t} />
           </div>
         )}
@@ -435,7 +458,8 @@ export function VisualizacoesCard({
         {donut && serie && !barras && (
           <div className="flex gap-3 items-start">
             <DonutPanel vis={donut} isMoney={isMoney} t={t} />
-            <div className="self-stretch w-px flex-shrink-0" style={{ background: t.divider }} />
+            <div className="self-stretch w-px flex-shrink-0"
+              style={{ background: `linear-gradient(180deg, transparent, ${t.divider} 15%, ${t.divider} 85%, transparent)` }} />
             <SeriePanel vis={serie} isMoney={isMoney} t={t} />
           </div>
         )}
@@ -494,12 +518,15 @@ export function VisualizacoesCard({
       </div>
 
       {/* Action buttons */}
-      <div className="flex items-center gap-2 px-4 py-3 flex-wrap" style={{ borderTop: `1px solid ${t.divider}` }}>
+      <div className="flex items-center gap-2 px-4 py-3 flex-wrap relative"
+        style={{ background: 'linear-gradient(0deg, var(--tint-04), transparent)' }}>
+        <div aria-hidden className="absolute inset-x-0 top-0 pointer-events-none"
+          style={{ height: 1, background: `linear-gradient(90deg, transparent, ${t.divider} 15%, ${t.divider} 85%, transparent)` }} />
         <button
           onClick={gerarRelatorio}
           disabled={pdfLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:opacity-90 disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg, #1d6fd8, #4a9ede)', color: '#fff' }}
+          className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-semibold transition-all hover:opacity-90 disabled:opacity-60"
+          style={{ background: 'var(--gabi-envio)', color: '#fff', borderRadius: 10, boxShadow: 'var(--gabi-envio-sombra)' }}
         >
           {pdfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
           {pdfLoading ? 'Gerando…' : 'Gerar relatório PDF'}
@@ -508,8 +535,11 @@ export function VisualizacoesCard({
           <Link
             href={mapaHref}
             onClick={() => onNavigate?.()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:opacity-80"
-            style={{ color: t.btnText, border: `1px solid ${t.btnBorder}` }}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-medium transition-all hover:opacity-80"
+            style={{
+              color: t.btnText, border: '1px solid var(--gabi-balao-borda)',
+              borderRadius: 10, background: 'var(--gabi-campo)',
+            }}
           >
             <Map className="w-3.5 h-3.5" />
             Ver no mapa
@@ -519,8 +549,11 @@ export function VisualizacoesCard({
           <Link
             href={emendasHref}
             onClick={() => onNavigate?.()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:opacity-80"
-            style={{ color: t.btnText, border: `1px solid ${t.btnBorder}` }}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-medium transition-all hover:opacity-80"
+            style={{
+              color: t.btnText, border: '1px solid var(--gabi-balao-borda)',
+              borderRadius: 10, background: 'var(--gabi-campo)',
+            }}
           >
             <BarChart2 className="w-3.5 h-3.5" />
             Abrir em Emendas
@@ -530,8 +563,11 @@ export function VisualizacoesCard({
           <Link
             href={moduloDoDado.href}
             onClick={() => onNavigate?.()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:opacity-80"
-            style={{ color: t.btnText, border: `1px solid ${t.btnBorder}` }}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-medium transition-all hover:opacity-80"
+            style={{
+              color: t.btnText, border: '1px solid var(--gabi-balao-borda)',
+              borderRadius: 10, background: 'var(--gabi-campo)',
+            }}
           >
             <BarChart2 className="w-3.5 h-3.5" />
             {moduloDoDado.label}
@@ -586,10 +622,24 @@ export function RelatorioTerritorialCard({ payload }: { payload: any }) {
   const nFalt = payload.faltantes?.length ?? 0;
 
   return (
-    <div className="mt-3 rounded-xl overflow-hidden w-full" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
-      <div className="flex items-center gap-2 px-4 py-2.5" style={{ borderBottom: `1px solid ${t.headBorder}`, background: t.headBg }}>
-        <MapPinned className="w-3.5 h-3.5" style={{ color: t.pillText }} />
-        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.title }}>
+    <div className="mt-3 overflow-hidden w-full relative"
+      style={{
+        background: 'linear-gradient(180deg, var(--gabi-balao-de), var(--gabi-balao-para))',
+        border: '1px solid var(--gabi-balao-borda)',
+        borderRadius: 16,
+        boxShadow: 'var(--gabi-balao-sombra)',
+      }}>
+      <div aria-hidden className="absolute inset-x-0 top-0 pointer-events-none"
+        style={{ height: 1, background: 'var(--gabi-brilho-topo)' }} />
+      <div className="flex items-center gap-2.5 px-4 py-3"
+        style={{
+          borderBottom: '1px solid var(--gabi-balao-borda)',
+          background: 'linear-gradient(180deg, var(--tint-04), transparent)',
+        }}>
+        <span aria-hidden className="flex-shrink-0 rounded-full"
+          style={{ width: 3, height: 13, background: 'var(--gabi-envio)' }} />
+        <MapPinned className="w-3.5 h-3.5" style={{ color: 'var(--brand-cobalt-text)' }} />
+        <p className="text-[10px] font-bold tracking-[0.11em] uppercase" style={{ color: t.title }}>
           Relatório Territorial · {payload.uf} {payload.ano}
         </p>
       </div>
@@ -597,8 +647,8 @@ export function RelatorioTerritorialCard({ payload }: { payload: any }) {
         <button
           onClick={gerar}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:opacity-90 disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg, #1d6fd8, #4a9ede)', color: '#fff' }}
+          className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-semibold transition-all hover:opacity-90 disabled:opacity-60"
+          style={{ background: 'var(--gabi-envio)', color: '#fff', borderRadius: 10, boxShadow: 'var(--gabi-envio-sombra)' }}
         >
           {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
           {loading ? 'Gerando…' : 'Gerar Relatório Territorial (PDF)'}
