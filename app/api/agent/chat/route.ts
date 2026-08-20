@@ -7,6 +7,7 @@ import anthropic from '@/lib/anthropic';
 import { AGENT_TOOLS } from '@/lib/agent/tools';
 import { executarTool } from '@/lib/agent/executors';
 import { SYSTEM_PROMPT } from '@/lib/agent/system-prompt';
+import { visualizacoesAutomaticas } from '@/lib/agent/visualizacoes-auto';
 
 import { prisma } from '@/lib/db';
 import type { Session } from 'next-auth';
@@ -292,6 +293,15 @@ export async function POST(request: NextRequest) {
     if (!resposta) {
       console.warn('[/api/agent/chat] sem texto após o fechamento — respondendo com o resumo dos dados');
       resposta = resumoDosDados(dadosBrutos);
+    }
+
+    // Gráficos padrão montados AQUI, com os dados que as ferramentas já
+    // trouxeram. Antes o prompt exigia duas chamadas de `gerar_visualizacao`
+    // por turno — duas idas à API em que o modelo apenas REDIGITAVA dados que o
+    // servidor já tinha (~330 tokens de saída, uns 5,5s). Se ele mandou algo
+    // sob medida, o dele prevalece.
+    if (visualizacoes.length === 0) {
+      visualizacoes.push(...visualizacoesAutomaticas(dadosBrutos));
     }
 
     // Salva usage (async, não bloqueia a resposta)
