@@ -761,44 +761,14 @@ export function GabiFAB() {
                   >
                     {/* Gabi 3D grande na tela inicial (sem conversa ainda) */}
                     {HAS_GABI_3D && messages.length <= 1 && (
-                      <div className="flex flex-col items-center pt-3 pb-2">
-                        {/* Palco do avatar: halo atrás, superfície com leve
-                            gradiente e sombra de chão. Antes era um retângulo
-                            chapado — no tema claro a figura parecia recortada
-                            e colada sobre o branco. */}
-                        <div className="relative">
-                          <div
-                            aria-hidden
-                            className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
-                            style={{
-                              top: -14, width: 216, height: 216, borderRadius: '50%',
-                              background: `radial-gradient(circle at 50% 42%, var(--gabi-halo), transparent 68%)`,
-                              filter: 'blur(6px)',
-                            }}
-                          />
-                          <div
-                            className="relative w-44 h-44 overflow-hidden"
-                            style={{
-                              borderRadius: 26,
-                              background: 'linear-gradient(165deg, var(--gabi-palco-de), var(--gabi-palco-para))',
-                              border: '1px solid var(--gabi-balao-borda)',
-                              boxShadow: 'var(--shadow-raised)',
-                            }}
-                          >
-                            {/* Realce no topo — dá volume ao painel */}
-                            <div aria-hidden className="absolute inset-x-0 top-0 pointer-events-none"
-                              style={{ height: 1, background: 'var(--gabi-brilho-topo)' }} />
-                            <GabiAvatar3D size={176} />
-                            {/* Sombra elíptica: a figura passa a assentar,
-                                em vez de flutuar sobre o fundo. */}
-                            <div aria-hidden className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
-                              style={{
-                                bottom: 6, width: 104, height: 14, borderRadius: '50%',
-                                background: 'radial-gradient(ellipse at center, var(--gabi-chao), transparent 72%)',
-                              }} />
-                          </div>
+                      <div className="flex flex-col items-center pt-2 pb-1">
+                        {/* Sem moldura: só o brilho atrás da figura. A caixa
+                            com borda e sombra recortava a Gabi do painel. */}
+                        <div className="w-44 h-44 overflow-hidden"
+                          style={{ background: 'radial-gradient(80% 80% at 50% 30%, var(--gabi-halo), transparent 70%)' }}>
+                          <GabiAvatar3D size={176} />
                         </div>
-                        <p className="font-bold mt-3 tracking-[-0.01em]"
+                        <p className="font-bold mt-1 tracking-[-0.01em]"
                           style={{ fontSize: 15, color: 'var(--text-primary)' }}>Gabi</p>
                         <p className="uppercase font-semibold tracking-[0.09em] mt-0.5"
                           style={{ fontSize: 9.5, color: 'var(--brand-cobalt-text)' }}>
