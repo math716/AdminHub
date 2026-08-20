@@ -444,7 +444,7 @@ export type FonteRelatorio = 'emendas' | 'votos' | 'gabinete';
 
 const RODAPE_FONTE: Record<FonteRelatorio, string> = {
   emendas:  'Base portais de transparência federal e estadual',
-  votos:    'Base de votos do TSE',
+  votos:    'Base de dados do TSE',
   gabinete: 'Base do banco de dados do Gabinete',
 };
 
