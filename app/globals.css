@@ -61,6 +61,22 @@
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.04);
   --shadow-raised: 0 4px 12px rgba(15, 23, 42, 0.06), 0 2px 4px rgba(15, 23, 42, 0.04);
 
+  /* Chat da Gabi — superfícies próprias. O tint cinza genérico deixava o
+     avatar num retângulo branco chapado e os balões/input sem profundidade. */
+  --gabi-palco-de: #eef4ff;                      /* palco do avatar 3D */
+  --gabi-palco-para: #ffffff;
+  --gabi-halo: rgba(37, 99, 235, 0.18);          /* brilho atrás do avatar */
+  --gabi-chao: rgba(15, 23, 42, 0.10);           /* sombra sob a figura */
+  --gabi-balao-de: #ffffff;                      /* balão da Gabi */
+  --gabi-balao-para: #f5f8fd;
+  --gabi-balao-borda: #e3ebf7;
+  --gabi-balao-sombra: 0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 14px rgba(15, 23, 42, 0.045);
+  --gabi-campo: #ffffff;                         /* caixa de texto */
+  --gabi-campo-sombra: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+  --gabi-brilho-topo: rgba(255, 255, 255, 0.9);  /* realce superior */
+  --gabi-envio: linear-gradient(135deg, #2563eb, #4f8ff7);
+  --gabi-envio-sombra: 0 2px 8px rgba(37, 99, 235, 0.35);
+
   /* Misc */
   --focus-ring: rgba(37, 99, 235, 0.35);
   --modal-backdrop: rgba(15, 23, 42, 0.40);
@@ -141,6 +157,22 @@
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
   --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.25);
+
+  /* Chat da Gabi — no escuro o palco é mais profundo que o painel, para a
+     figura destacar, e o brilho é ciano (combina com a marca no escuro). */
+  --gabi-palco-de: #0d1f3a;
+  --gabi-palco-para: #16294a;
+  --gabi-halo: rgba(34, 211, 238, 0.22);
+  --gabi-chao: rgba(0, 0, 0, 0.45);
+  --gabi-balao-de: #1a3055;
+  --gabi-balao-para: #16294a;
+  --gabi-balao-borda: rgba(148, 163, 184, 0.18);
+  --gabi-balao-sombra: 0 1px 2px rgba(0, 0, 0, 0.28), 0 6px 18px rgba(0, 0, 0, 0.22);
+  --gabi-campo: #16294a;
+  --gabi-campo-sombra: inset 0 1px 2px rgba(0, 0, 0, 0.32);
+  --gabi-brilho-topo: rgba(255, 255, 255, 0.07);
+  --gabi-envio: linear-gradient(135deg, #2563eb, #38bdf8);
+  --gabi-envio-sombra: 0 2px 10px rgba(56, 189, 248, 0.35);
 
   --focus-ring: rgba(96, 165, 250, 0.45);
   --modal-backdrop: rgba(0, 0, 0, 0.60);

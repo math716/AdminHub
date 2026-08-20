@@ -761,21 +761,60 @@ export function GabiFAB() {
                   >
                     {/* Gabi 3D grande na tela inicial (sem conversa ainda) */}
                     {HAS_GABI_3D && messages.length <= 1 && (
-                      <div className="flex flex-col items-center pt-2 pb-1">
-                        <div className="w-44 h-44 rounded-2xl overflow-hidden"
-                          style={{ background: 'radial-gradient(80% 80% at 50% 30%, rgba(34,211,238,0.12), transparent 70%)' }}>
-                          <GabiAvatar3D size={176} />
+                      <div className="flex flex-col items-center pt-3 pb-2">
+                        {/* Palco do avatar: halo atrás, superfície com leve
+                            gradiente e sombra de chão. Antes era um retângulo
+                            chapado — no tema claro a figura parecia recortada
+                            e colada sobre o branco. */}
+                        <div className="relative">
+                          <div
+                            aria-hidden
+                            className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+                            style={{
+                              top: -14, width: 216, height: 216, borderRadius: '50%',
+                              background: `radial-gradient(circle at 50% 42%, var(--gabi-halo), transparent 68%)`,
+                              filter: 'blur(6px)',
+                            }}
+                          />
+                          <div
+                            className="relative w-44 h-44 overflow-hidden"
+                            style={{
+                              borderRadius: 26,
+                              background: 'linear-gradient(165deg, var(--gabi-palco-de), var(--gabi-palco-para))',
+                              border: '1px solid var(--gabi-balao-borda)',
+                              boxShadow: 'var(--shadow-raised)',
+                            }}
+                          >
+                            {/* Realce no topo — dá volume ao painel */}
+                            <div aria-hidden className="absolute inset-x-0 top-0 pointer-events-none"
+                              style={{ height: 1, background: 'var(--gabi-brilho-topo)' }} />
+                            <GabiAvatar3D size={176} />
+                            {/* Sombra elíptica: a figura passa a assentar,
+                                em vez de flutuar sobre o fundo. */}
+                            <div aria-hidden className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+                              style={{
+                                bottom: 6, width: 104, height: 14, borderRadius: '50%',
+                                background: 'radial-gradient(ellipse at center, var(--gabi-chao), transparent 72%)',
+                              }} />
+                          </div>
                         </div>
-                        <p className="text-sm font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>Gabi</p>
-                        <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Sua assessora virtual</p>
+                        <p className="font-bold mt-3 tracking-[-0.01em]"
+                          style={{ fontSize: 15, color: 'var(--text-primary)' }}>Gabi</p>
+                        <p className="uppercase font-semibold tracking-[0.09em] mt-0.5"
+                          style={{ fontSize: 9.5, color: 'var(--brand-cobalt-text)' }}>
+                          Sua assessora virtual
+                        </p>
                       </div>
                     )}
                     {messages.map((msg, i) => (
                       <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         {/* Avatar Gabi */}
                         {msg.role === 'assistant' && (
-                          <div className="w-7 h-7 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center mt-6 font-semibold text-white text-[11px]"
-                            style={{ background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)', boxShadow: '0 0 0 1px var(--border-default)' }}>
+                          <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center mt-5 font-semibold text-white text-[11px]"
+                            style={{
+                              background: 'linear-gradient(135deg, #1d4ed8, #22d3ee)',
+                              boxShadow: '0 0 0 2px var(--bg-card), 0 0 0 3px var(--gabi-balao-borda), 0 2px 6px rgba(15,23,42,0.14)',
+                            }}>
                             {gabiFace ? <img src={gabiFace} alt="Gabi" className="w-full h-full object-cover" /> : 'G'}
                           </div>
                         )}
@@ -797,18 +836,20 @@ export function GabiFAB() {
                             style={
                               msg.role === 'user'
                                 ? {
-                                    background: 'var(--brand-cobalt)', color: '#fff',
-                                    borderRadius: 14, borderTopRightRadius: 4,
-                                    padding: '10px 14px',
-                                    boxShadow: '0 1px 2px rgba(15,23,42,0.12)',
+                                    background: 'var(--gabi-envio)', color: '#fff',
+                                    borderRadius: 16, borderTopRightRadius: 5,
+                                    padding: '11px 15px',
+                                    boxShadow: 'var(--gabi-envio-sombra)',
                                   }
                                 : {
-                                    // tint-06 destaca o balão do painel nos dois
-                                    // temas (no claro, branco sobre branco some).
-                                    background: 'var(--tint-06)',
-                                    border: '1px solid var(--border-default)',
-                                    borderRadius: 14, borderTopLeftRadius: 4,
+                                    // Gradiente leve + sombra própria: o cinza
+                                    // chapado deixava a resposta com peso de
+                                    // rascunho, sem destaque do painel.
+                                    background: 'linear-gradient(180deg, var(--gabi-balao-de), var(--gabi-balao-para))',
+                                    border: '1px solid var(--gabi-balao-borda)',
+                                    borderRadius: 16, borderTopLeftRadius: 5,
                                     padding: '14px 16px',
+                                    boxShadow: 'var(--gabi-balao-sombra)',
                                   }
                             }
                           >
@@ -846,7 +887,12 @@ export function GabiFAB() {
                           {gabiFace ? <img src={gabiFace} alt="Gabi" className="w-full h-full object-cover" /> : 'G'}
                         </div>
                         <div className="flex items-center px-4 py-3"
-                          style={{ background: 'var(--tint-06)', border: '1px solid var(--border-default)', borderRadius: 14, borderTopLeftRadius: 4 }}>
+                          style={{
+                            background: 'linear-gradient(180deg, var(--gabi-balao-de), var(--gabi-balao-para))',
+                            border: '1px solid var(--gabi-balao-borda)',
+                            borderRadius: 16, borderTopLeftRadius: 5,
+                            boxShadow: 'var(--gabi-balao-sombra)',
+                          }}>
                           <div className="flex items-center gap-1.5">
                             {[0, 150, 300].map(delay => (
                               <span key={delay} className="rounded-full animate-bounce"
@@ -868,8 +914,12 @@ export function GabiFAB() {
                   </div>
 
                   {/* Input */}
-                  <div className="flex-shrink-0 px-5 py-4" style={{ borderTop: '1px solid var(--tint-08)', background: 'var(--bg-card)' }}>
-                    <div className="flex items-end gap-3">
+                  <div className="flex-shrink-0 px-5 py-4 relative" style={{ background: 'var(--bg-card)' }}>
+                    {/* Filete com brilho no topo — separa a área de escrita do
+                        histórico sem o traço seco de uma borda. */}
+                    <div aria-hidden className="absolute inset-x-0 top-0 pointer-events-none"
+                      style={{ height: 1, background: 'linear-gradient(90deg, transparent, var(--gabi-balao-borda) 18%, var(--gabi-balao-borda) 82%, transparent)' }} />
+                    <div className="flex items-end gap-2.5">
                       <textarea
                         ref={inputRef}
                         value={input}
@@ -878,17 +928,25 @@ export function GabiFAB() {
                         placeholder="Pergunte sobre emendas, votos, demandas, candidatos..."
                         rows={1}
                         disabled={loading}
-                        className="flex-1 resize-none rounded-xl px-4 py-3 outline-none transition-colors"
+                        className="flex-1 resize-none px-4 py-3 outline-none transition-all duration-150"
                         style={{
-                          background: 'var(--tint-06)',
-                          border: '1px solid var(--border-default)',
+                          background: 'var(--gabi-campo)',
+                          border: '1px solid var(--gabi-balao-borda)',
+                          borderRadius: 14,
                           color: 'var(--text-primary)',
                           maxHeight: 120,
                           fontSize: 13.5,
                           lineHeight: '1.55',
+                          boxShadow: 'var(--gabi-campo-sombra)',
                         }}
-                        onFocus={e => { e.currentTarget.style.borderColor = 'var(--brand-cobalt)'; }}
-                        onBlur={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; }}
+                        onFocus={e => {
+                          e.currentTarget.style.borderColor = 'var(--brand-cobalt)';
+                          e.currentTarget.style.boxShadow = 'var(--gabi-campo-sombra), 0 0 0 3px var(--focus-ring)';
+                        }}
+                        onBlur={e => {
+                          e.currentTarget.style.borderColor = 'var(--gabi-balao-borda)';
+                          e.currentTarget.style.boxShadow = 'var(--gabi-campo-sombra)';
+                        }}
                         onInput={e => {
                           const el = e.currentTarget;
                           el.style.height = 'auto';
@@ -898,10 +956,14 @@ export function GabiFAB() {
                       <button
                         onClick={send}
                         disabled={!input.trim() || loading}
-                        className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150"
+                        className="flex-shrink-0 flex items-center justify-center transition-all duration-150 disabled:cursor-not-allowed"
                         style={{
-                          background: input.trim() && !loading ? 'var(--brand-cobalt)' : 'var(--tint-08)',
+                          width: 42, height: 42, borderRadius: 14,
+                          background: input.trim() && !loading ? 'var(--gabi-envio)' : 'var(--tint-06)',
+                          border: input.trim() && !loading ? 'none' : '1px solid var(--gabi-balao-borda)',
                           color: input.trim() && !loading ? '#fff' : 'var(--text-tertiary)',
+                          boxShadow: input.trim() && !loading ? 'var(--gabi-envio-sombra)' : 'none',
+                          transform: input.trim() && !loading ? 'scale(1)' : 'scale(0.97)',
                         }}
                       >
                         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
