@@ -762,11 +762,24 @@ export function GabiFAB() {
                     {/* Gabi 3D grande na tela inicial (sem conversa ainda) */}
                     {HAS_GABI_3D && messages.length <= 1 && (
                       <div className="flex flex-col items-center pt-2 pb-1">
-                        {/* Sem moldura: só o brilho atrás da figura. A caixa
-                            com borda e sombra recortava a Gabi do painel. */}
-                        <div className="w-44 h-44 overflow-hidden"
-                          style={{ background: 'radial-gradient(80% 80% at 50% 30%, var(--gabi-halo), transparent 70%)' }}>
-                          <GabiAvatar3D size={176} />
+                        <div className="relative">
+                          {/* O brilho fica FORA do container do avatar e maior
+                              que ele. Dentro, com overflow-hidden, ele era
+                              cortado no quadrado — e esse corte reto é que
+                              parecia uma moldura. Solto e desfocado, some
+                              gradualmente em todas as direções. */}
+                          <div
+                            aria-hidden
+                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                            style={{
+                              width: 250, height: 250, borderRadius: '50%',
+                              background: 'radial-gradient(circle, var(--gabi-halo) 0%, transparent 62%)',
+                              filter: 'blur(26px)',
+                            }}
+                          />
+                          <div className="relative w-44 h-44">
+                            <GabiAvatar3D size={176} />
+                          </div>
                         </div>
                         <p className="font-bold mt-1 tracking-[-0.01em]"
                           style={{ fontSize: 15, color: 'var(--text-primary)' }}>Gabi</p>
