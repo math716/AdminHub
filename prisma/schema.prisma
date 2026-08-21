@@ -121,6 +121,7 @@ model Gabinete {
   padrinhos            Padrinho[]
   agentUsages          AgentUsage[]
   gabiConversas        GabiConversa[]
+  googleAgenda         GoogleAgendaConexao?
 
   @@map("gabinetes")
 }
@@ -251,6 +252,12 @@ model Demand {
   @@map("demands")
 }
 
+/// Origem do evento da agenda
+enum AgendaOrigem {
+  MANUAL
+  GOOGLE
+}
+
 enum AgendaEventTipo {
   REUNIAO
   VISITA
@@ -272,6 +279,15 @@ model AgendaEvent {
   tipo        AgendaEventTipo @default(REUNIAO)
   cor         String?
 
+  /// De onde veio o evento. Eventos do Google são sobrescritos a cada
+  /// sincronização e não devem ser editados no AdminHub.
+  origem        AgendaOrigem @default(MANUAL)
+  /// ID do evento no Google Calendar — casa o evento local com o remoto na
+  /// sincronização. Único por gabinete.
+  googleEventId String?
+  /// Última vez que este evento veio do Google (diagnóstico).
+  sincronizadoEm DateTime?
+
   gabineteId  String
   gabinete    Gabinete        @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
 
@@ -281,10 +297,48 @@ model AgendaEvent {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
+  @@unique([gabineteId, googleEventId])
   @@index([gabineteId])
   @@index([data])
   @@index([gabineteId, data])
   @@map("agenda_events")
+}
+
+/// Conexão do gabinete com o Google Agenda.
+///
+/// Uma por gabinete: o chefe de gabinete conecta a agenda oficial e toda a
+/// equipe passa a ver os mesmos compromissos. O refresh_token é o que permite
+/// a sincronização automática continuar sem ninguém logado — por isso ele é
+/// pedido com access_type=offline e guardado aqui.
+model GoogleAgendaConexao {
+  id         String   @id @default(cuid())
+  gabineteId String   @unique
+  gabinete   Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+
+  /// Conta Google conectada (mostrada na tela para o usuário saber qual é).
+  email        String
+  refreshToken String
+  accessToken  String?
+  expiraEm     DateTime?
+  escopo       String?
+
+  /// Calendário de onde os eventos vêm ("primary" = agenda principal).
+  calendarId String @default("primary")
+  /// syncToken do Google: permite pedir só o que mudou desde a última vez,
+  /// em vez de reler a agenda inteira a cada rodada.
+  syncToken  String?
+
+  ultimaSync     DateTime?
+  ultimoErro     String?
+  eventosImportados Int @default(0)
+
+  conectadoPorId   String?
+  conectadoPorNome String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("google_agenda_conexoes")
 }
 
 /// Favoritos do Usuário (Candidatos)

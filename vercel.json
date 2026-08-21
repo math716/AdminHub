@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/enrich-emendas?limit=30",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/google-agenda",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

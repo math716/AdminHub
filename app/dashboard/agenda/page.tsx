@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { GoogleConexao } from '@/components/agenda/google-conexao';
 import { createPortal } from 'react-dom';
 import { Select } from '@/components/ui/select';
 import { useSession } from 'next-auth/react';
@@ -322,6 +323,11 @@ export default function AgendaPage() {
           </button>
         }
       />
+
+      {/* ── Conexão com o Google Agenda ── */}
+      <Suspense fallback={null}>
+        <GoogleConexao onSincronizou={fetchEvents} />
+      </Suspense>
 
       {/* ── Stats bar ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

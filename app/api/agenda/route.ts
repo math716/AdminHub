@@ -18,12 +18,17 @@ export async function GET(request: NextRequest) {
     const mes = searchParams.get('mes');
     const ano = searchParams.get('ano');
 
-    // Auto-delete past events (fire-and-forget — don't block the response)
+    // Limpeza de eventos passados (fire-and-forget — não bloqueia a resposta).
+    //
+    // SÓ apaga o que foi criado à mão. Evento vindo do Google não pode ser
+    // apagado aqui: a sincronização usa syncToken e só recebe o que MUDOU, então
+    // ele não voltaria na próxima rodada — o histórico importado sumiria de vez.
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     prisma.agendaEvent.deleteMany({
       where: {
         gabineteId,
+        origem: 'MANUAL',
         OR: [
           { dataFim: { lt: startOfToday } },
           { dataFim: null, data: { lt: startOfToday } },
