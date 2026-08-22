@@ -191,28 +191,29 @@ export function GoogleConexao({ onSincronizou }: { onSincronizou?: () => void })
         <div className="flex items-center gap-2">
           {estado.conectado ? (
             <>
-              {/* Ação principal: superfície do Google com o logo, para o vínculo
-                  ficar evidente mesmo depois de conectado. */}
+              {/* Cor do SISTEMA, igual ao "Novo Evento" desta mesma tela. A
+                  superfície de marca do Google vale para o ato de CONECTAR;
+                  depois disso, sincronizar é ação do AdminHub — e o botão preto
+                  do padrão Google destoava do painel no tema escuro. */}
               <button onClick={sincronizar} disabled={ocupado}
-                className="flex items-center gap-2 px-4 transition-all hover:brightness-[0.97] active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 transition-all hover:opacity-90 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{
-                  height: 38, borderRadius: 19,
-                  background: 'var(--google-btn-bg)',
-                  border: '1px solid var(--google-btn-borda)',
-                  boxShadow: 'var(--google-btn-sombra)',
-                  color: 'var(--google-btn-texto)',
-                  fontSize: 13, fontWeight: 500, letterSpacing: '0.01em',
+                  height: 38, borderRadius: 10,
+                  background: 'linear-gradient(135deg, #2563EB, #3B82F6)',
+                  color: '#FFFFFF',
+                  fontSize: 13, fontWeight: 600,
+                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.30)',
                 }}>
                 {ocupado
-                  ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#4285F4' }} />
-                  : <RefreshCw className="w-4 h-4" style={{ color: '#4285F4' }} />}
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <RefreshCw className="w-4 h-4" />}
                 Sincronizar
               </button>
               <button onClick={desconectar} disabled={ocupado}
                 title="Desconectar a conta do Google"
                 className="flex items-center justify-center transition-all hover:opacity-100 disabled:opacity-40"
                 style={{
-                  width: 38, height: 38, borderRadius: 19,
+                  width: 38, height: 38, borderRadius: 10,
                   border: '1px solid var(--border-default)',
                   color: 'var(--text-tertiary)', opacity: 0.75,
                 }}>
