@@ -16,7 +16,7 @@ import { googleConfigurado, urlDeConsentimento } from '@/lib/google-agenda';
 import { assinarEstado } from '@/lib/google-agenda-estado';
 
 /** Só quem administra o gabinete conecta a agenda oficial. */
-const PAPEIS_PERMITIDOS = new Set(['ADMIN', 'SUPER_ADMIN', 'CHEFE_GABINETE', 'AGENTE_POLITICO']);
+const PAPEIS_PERMITIDOS = new Set(['ADMIN', 'SUPER_ADMIN', 'CHEFE', 'AGENTE_POLITICO']);
 
 function redirectUri(request: NextRequest): string {
   const host = request.headers.get('host') ?? 'localhost:3000';

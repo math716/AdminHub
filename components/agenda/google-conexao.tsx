@@ -129,7 +129,7 @@ export function GoogleConexao({ onSincronizou }: { onSincronizou?: () => void })
   // calado deixa quem configura sem saber se falta variável, se a chamada
   // quebrou ou se o código nem subiu.
   const papel = (sessao?.user as any)?.role;
-  const administra = ['ADMIN', 'SUPER_ADMIN', 'CHEFE_GABINETE', 'AGENTE_POLITICO'].includes(papel);
+  const administra = ['ADMIN', 'SUPER_ADMIN', 'CHEFE', 'AGENTE_POLITICO'].includes(papel);
 
   if (!estado?.disponivel) {
     if (!administra) return null;
