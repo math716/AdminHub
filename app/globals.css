@@ -77,6 +77,13 @@
   --gabi-envio: linear-gradient(135deg, #2563eb, #4f8ff7);
   --gabi-envio-sombra: 0 2px 8px rgba(37, 99, 235, 0.35);
 
+  /* Botão do Google — superfície de marca. No claro é o branco padrão das
+     diretrizes; no escuro, a variante escura que o próprio Google publica. */
+  --google-btn-bg: #ffffff;
+  --google-btn-borda: #dadce0;
+  --google-btn-texto: #1f1f1f;
+  --google-btn-sombra: 0 1px 2px rgba(60, 64, 67, 0.30), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+
   /* Misc */
   --focus-ring: rgba(37, 99, 235, 0.35);
   --modal-backdrop: rgba(15, 23, 42, 0.40);
@@ -173,6 +180,11 @@
   --gabi-brilho-topo: rgba(255, 255, 255, 0.07);
   --gabi-envio: linear-gradient(135deg, #2563eb, #38bdf8);
   --gabi-envio-sombra: 0 2px 10px rgba(56, 189, 248, 0.35);
+
+  --google-btn-bg: #131314;
+  --google-btn-borda: #8e918f;
+  --google-btn-texto: #e3e3e3;
+  --google-btn-sombra: none;
 
   --focus-ring: rgba(96, 165, 250, 0.45);
   --modal-backdrop: rgba(0, 0, 0, 0.60);

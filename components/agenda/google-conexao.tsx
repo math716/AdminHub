@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Loader2, RefreshCw, Link2, Unlink, AlertTriangle, Check } from 'lucide-react';
+import { Loader2, RefreshCw, Unlink, AlertTriangle, Check } from 'lucide-react';
 
 interface Conexao {
   email: string;
@@ -33,6 +33,23 @@ function quandoFoi(iso: string | null): string {
   const h = Math.floor(min / 60);
   if (h < 24) return `há ${h}h`;
   return new Date(iso).toLocaleDateString('pt-BR');
+}
+
+
+/**
+ * Logo "G" do Google, nas quatro cores oficiais. Vem inline porque as diretrizes
+ * de marca não permitem recolorir nem redesenhar o símbolo — usar um ícone
+ * genérico de link, como estava antes, descaracteriza o botão.
+ */
+function LogoGoogle({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden focusable="false">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
 }
 
 export function GoogleConexao({ onSincronizou }: { onSincronizou?: () => void }) {
@@ -174,24 +191,50 @@ export function GoogleConexao({ onSincronizou }: { onSincronizou?: () => void })
         <div className="flex items-center gap-2">
           {estado.conectado ? (
             <>
+              {/* Ação principal: superfície do Google com o logo, para o vínculo
+                  ficar evidente mesmo depois de conectado. */}
               <button onClick={sincronizar} disabled={ocupado}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all hover:opacity-90 disabled:opacity-60"
-                style={{ background: 'linear-gradient(135deg, #2563EB, #4f8ff7)', color: '#fff' }}>
-                {ocupado ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                Sincronizar agora
+                className="flex items-center gap-2 px-4 transition-all hover:brightness-[0.97] active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{
+                  height: 38, borderRadius: 19,
+                  background: 'var(--google-btn-bg)',
+                  border: '1px solid var(--google-btn-borda)',
+                  boxShadow: 'var(--google-btn-sombra)',
+                  color: 'var(--google-btn-texto)',
+                  fontSize: 13, fontWeight: 500, letterSpacing: '0.01em',
+                }}>
+                {ocupado
+                  ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#4285F4' }} />
+                  : <RefreshCw className="w-4 h-4" style={{ color: '#4285F4' }} />}
+                Sincronizar
               </button>
               <button onClick={desconectar} disabled={ocupado}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all hover:opacity-80 disabled:opacity-60"
-                style={{ color: 'var(--text-tertiary)', border: '1px solid var(--border-default)' }}>
-                <Unlink className="w-3.5 h-3.5" />
-                Desconectar
+                title="Desconectar a conta do Google"
+                className="flex items-center justify-center transition-all hover:opacity-100 disabled:opacity-40"
+                style={{
+                  width: 38, height: 38, borderRadius: 19,
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--text-tertiary)', opacity: 0.75,
+                }}>
+                <Unlink className="w-4 h-4" />
               </button>
             </>
           ) : (
+            /* Botão no padrão de marca do Google: superfície própria, logo em
+               quatro cores e altura de 40px, como nas diretrizes. */
             <button onClick={conectar} disabled={ocupado}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all hover:opacity-90 disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg, #2563EB, #4f8ff7)', color: '#fff' }}>
-              {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+              className="flex items-center gap-3 pl-3 pr-4 transition-all hover:brightness-[0.97] active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{
+                height: 40, borderRadius: 20,
+                background: 'var(--google-btn-bg)',
+                border: '1px solid var(--google-btn-borda)',
+                boxShadow: 'var(--google-btn-sombra)',
+                color: 'var(--google-btn-texto)',
+                fontSize: 14, fontWeight: 500, letterSpacing: '0.01em',
+              }}>
+              {ocupado
+                ? <Loader2 className="w-[18px] h-[18px] animate-spin" style={{ color: '#4285F4' }} />
+                : <LogoGoogle size={18} />}
               Conectar com Google
             </button>
           )}
