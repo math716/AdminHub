@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Loader2, RefreshCw, Link2, Unlink, AlertTriangle, Check } from 'lucide-react';
 
 interface Conexao {
@@ -36,15 +37,20 @@ function quandoFoi(iso: string | null): string {
 
 export function GoogleConexao({ onSincronizou }: { onSincronizou?: () => void }) {
   const params = useSearchParams();
+  const { data: sessao } = useSession();
   const [estado, setEstado] = useState<Estado | null>(null);
+  const [falhouCarregar, setFalhouCarregar] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
 
   const carregar = useCallback(async () => {
     try {
       const res = await fetch('/api/agenda/google');
-      if (res.ok) setEstado(await res.json());
-    } catch { /* deixa o bloco oculto */ }
+      if (res.ok) { setEstado(await res.json()); setFalhouCarregar(false); }
+      else setFalhouCarregar(true);
+    } catch {
+      setFalhouCarregar(true);
+    }
   }, []);
 
   useEffect(() => { carregar(); }, [carregar]);
@@ -118,8 +124,33 @@ export function GoogleConexao({ onSincronizou }: { onSincronizou?: () => void })
     } finally { setOcupado(false); }
   };
 
-  // Ambiente sem credenciais do Google: nem mostra o recurso.
-  if (!estado?.disponivel) return null;
+  // Sem credenciais no ambiente (ou falha ao consultar), o recurso não tem como
+  // funcionar. Some para o usuário comum, mas ADMINISTRADOR vê o motivo: sumir
+  // calado deixa quem configura sem saber se falta variável, se a chamada
+  // quebrou ou se o código nem subiu.
+  const papel = (sessao?.user as any)?.role;
+  const administra = ['ADMIN', 'SUPER_ADMIN', 'CHEFE_GABINETE', 'AGENTE_POLITICO'].includes(papel);
+
+  if (!estado?.disponivel) {
+    if (!administra) return null;
+    if (!estado && !falhouCarregar) return null;   // ainda carregando
+    return (
+      <div className="rounded-xl px-4 py-3 flex items-start gap-2"
+        style={{ background: 'var(--bg-card)', border: '1px dashed var(--border-default)' }}>
+        <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
+        <div>
+          <p className="text-[12.5px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+            Google Agenda ainda não disponível
+          </p>
+          <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+            {falhouCarregar
+              ? 'Não consegui consultar a integração. Recarregue a página; se persistir, avise a equipe técnica.'
+              : 'Faltam as credenciais do Google neste ambiente (GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET). Só administradores veem este aviso.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const c = estado.conexao;
   return (
