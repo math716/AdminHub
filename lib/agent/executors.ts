@@ -213,6 +213,25 @@ export async function executarBuscarVotacao(
       const t = buscarCandidatoTolerante(staticData, args.candidato_nome, args.cargo);
       if (t) todos = [t];
     }
+
+    // Recorte por MUNICÍPIO. Sem isto, "vereadores de Ubatuba" devolvia os
+    // vereadores mais votados de SP inteiro (a base tem 70 mil só neste
+    // cargo, quase todos da capital) — o município era usado apenas para
+    // detalhar zonas, nunca para filtrar. Com nome de candidato não filtramos:
+    // saber que ele teve zero voto ali também é resposta.
+    const muniNorm = args.municipio ? normalizarTextoTse(args.municipio) : '';
+    const votosNoMunicipio = (c: any): number => {
+      if (!muniNorm) return 0;
+      for (const [m, v] of Object.entries(c.votos ?? {})) {
+        if (normalizarTextoTse(m) === muniNorm) return v as number;
+      }
+      return 0;
+    };
+    if (muniNorm && uf !== 'BR' && semNome) {
+      todos = todos
+        .filter(c => votosNoMunicipio(c) > 0)
+        .sort((a, b) => votosNoMunicipio(b) - votosNoMunicipio(a));
+    }
     // "eleitos" ≠ situacao.includes('eleito'): isso casaria "NÃO ELEITO"
     // também. Os eleitos são os que a situação começa com ELEITO
     // (ELEITO POR QP + ELEITO POR MÉDIA) — no RJ/2022, exatamente 70.
@@ -230,16 +249,41 @@ export async function executarBuscarVotacao(
 
     if (resultados.length === 0) continue;
 
-    // Contexto da eleição inteira (para "quantos candidatos" e "houve 2º turno")
-    const totalVotosValidos = todos.reduce((s, c) => s + c.totalVotos, 0);
-    const pctLider = totalVotosValidos > 0 ? (todos[0].totalVotos / totalVotosValidos) * 100 : 0;
-    // 2º turno só existe em cargos majoritários (governador/prefeito/presidente)
+    // Contexto da eleição inteira (para "quantos candidatos" e "houve 2º turno").
+    // Filtrado por município, o denominador são os votos DALI — usar o total do
+    // estado faria o líder de Ubatuba parecer ter 0,01% dos votos.
+    const noMunicipio = !!muniNorm && uf !== 'BR' && semNome;
+    const totalVotosValidos = todos.reduce(
+      (s, c) => s + (noMunicipio ? votosNoMunicipio(c) : c.totalVotos), 0);
+    const votosLider = noMunicipio ? votosNoMunicipio(todos[0]) : todos[0].totalVotos;
+    const pctLider = totalVotosValidos > 0 ? (votosLider / totalVotosValidos) * 100 : 0;
+    // 2º turno só existe em cargos majoritários (governador/prefeito/presidente).
+    // Para PREFEITO há um segundo requisito, na Constituição (art. 29, II): só
+    // há segundo turno em município com mais de 200 mil ELEITORES. Sem essa
+    // checagem, qualquer cidade pequena cujo prefeito venceu com menos de 50%
+    // aparecia como tendo ido a segundo turno — falso e verificável.
     const majoritario = /governador|prefeito|president/.test(cargoNorm);
+    let houveSegundoTurno: boolean | null = majoritario ? pctLider < 50 : false;
+    let eleitoradoMunicipio: number | null = null;
+    if (/prefeito/.test(cargoNorm)) {
+      if (muniNorm) {
+        const st = await prisma.municipioStats.findFirst({
+          where: { nome: { contains: args.municipio!, mode: 'insensitive' }, uf },
+          orderBy: { ano: 'desc' },
+          select: { eleitores: true },
+        }).catch(() => null);
+        eleitoradoMunicipio = st?.eleitores ?? null;
+      }
+      // Sem o eleitorado não dá para afirmar nem negar — null impede a Gabi
+      // de chutar (o campo `notaSegundoTurno` diz o que fazer).
+      houveSegundoTurno = eleitoradoMunicipio === null
+        ? null
+        : eleitoradoMunicipio > 200_000 && pctLider < 50;
+    }
 
     // Quebra por zona eleitoral (+ bairros de cada zona) quando um município
     // é informado. Dados do TSE vão até a zona/seção — não há contagem por
     // bairro; os bairros vêm dos locais de votação de cada zona.
-    const muniNorm = args.municipio ? normalizarTextoTse(args.municipio) : '';
     const bairrosZona = muniNorm && uf !== 'BR' ? bairrosPorZona(uf, args.municipio!) : {};
 
     const detalheMunicipios =
@@ -253,6 +297,14 @@ export async function executarBuscarVotacao(
       // Nome do município consultado — o relatório usa para desenhar o mapa da
       // cidade por bairros em vez do mapa do estado com um ponto pintado.
       municipioConsultado: args.municipio ?? null,
+      // Filtrado por município, estes números são DALI — é a resposta certa
+      // para "quantos concorreram" e "quantas cadeiras tem a Câmara".
+      escopoContagem: noMunicipio
+        // Para cargo municipal isto é a eleição inteira daquela cidade. Para
+        // cargo estadual são os que receberam votos ali — não "os deputados de
+        // Ubatuba"; a Gabi precisa da diferença para não escrever besteira.
+        ? `candidatos com votos em ${args.municipio} (${uf})`
+        : (uf === 'BR' ? 'nacional' : `estado ${uf}`),
       totalCandidatos: totalNoCargo,
       totalEleitos: eleitos.length,
       filtradoPorEleitos: !!args.apenas_eleitos && eleitos.length > 0,
@@ -262,7 +314,13 @@ export async function executarBuscarVotacao(
           'com "limite" maior (teto 80).',
       }),
       liderPercentualValidos: Math.round(pctLider * 10) / 10,
-      houveSegundoTurno: majoritario ? pctLider < 50 : false,
+      houveSegundoTurno,
+      ...(eleitoradoMunicipio !== null && { eleitoradoMunicipio }),
+      ...(houveSegundoTurno === null && {
+        notaSegundoTurno: 'Não foi possível confirmar o eleitorado do município, e segundo turno '
+          + 'para prefeito só existe acima de 200 mil eleitores. Não afirme nem negue o segundo '
+          + 'turno — apresente o resultado sem tocar no assunto.',
+      }),
       candidatos: resultados.map(c => ({
         nome: c.nome,
         nomeUrna: c.nomeUrna,
@@ -272,6 +330,9 @@ export async function executarBuscarVotacao(
         uf,
         situacao: c.situacao,
         totalVotos: c.totalVotos,
+        // Consulta com município: o número que interessa é o de lá. Para
+        // vereador coincide com o total; para deputado, não.
+        ...(muniNorm && uf !== 'BR' && { votosNoMunicipio: votosNoMunicipio(c) }),
         // Quanto mais candidatos na resposta, menos municípios por candidato —
         // 70 deputados × 20 municípios estouraria o limite do turno. Num
         // ranking de bancada, o principal reduto de cada um já basta.
