@@ -32,7 +32,7 @@ export default function PoliticaDePrivacidade() {
           agenda, contatos e lideranças, e registros de colaboradores. Esses dados pertencem ao
           gabinete que os cadastrou.</p>
         <p><strong>Dados públicos.</strong> Resultados eleitorais do Tribunal Superior Eleitoral e
-          emendas parlamentares dos portais de transparência federal e estaduais. São informações
+          emendas parlamentares dos Portais de Transparência Federais e estaduais. São informações
           públicas, obtidas de fontes oficiais, e não identificam usuários da plataforma.</p>
         <p><strong>Dados de uso.</strong> Registros técnicos de acesso e de consumo da assistente
           virtual, usados para segurança e controle de custos.</p>
@@ -145,8 +145,8 @@ export default function PoliticaDePrivacidade() {
       <Secao titulo="10. Contato">
         <p>
           Dúvidas sobre privacidade ou solicitações relativas aos seus dados:{' '}
-          <a href="mailto:contato@adminhub.com.br" style={{ color: 'var(--brand-cobalt-text)' }}>
-            contato@adminhub.com.br
+          <a href="mailto:admorbitatech@gmail.com" style={{ color: 'var(--brand-cobalt-text)' }}>
+            admorbitatech@gmail.com
           </a>.
         </p>
         <p className="pt-2" style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>

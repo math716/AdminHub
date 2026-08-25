@@ -45,9 +45,9 @@ export default function TermosDeUso() {
 
       <Secao titulo="4. Dados públicos e limites de precisão">
         <p>
-          Resultados eleitorais vêm do Tribunal Superior Eleitoral; emendas parlamentares, dos portais
-          de transparência federal e estaduais. São dados públicos, reproduzidos como divulgados pelas
-          fontes oficiais.
+          Resultados eleitorais vêm do Tribunal Superior Eleitoral; emendas parlamentares, dos
+          Portais de Transparência Federais e estaduais. São dados públicos, reproduzidos como
+          divulgados pelas fontes oficiais.
         </p>
         <p>
           Alguns números são <strong>estimativas</strong>, não medições. A distribuição de votos por
@@ -129,8 +129,8 @@ export default function TermosDeUso() {
 
       <Secao titulo="12. Contato">
         <p>
-          <a href="mailto:contato@adminhub.com.br" style={{ color: 'var(--brand-cobalt-text)' }}>
-            contato@adminhub.com.br
+          <a href="mailto:admorbitatech@gmail.com" style={{ color: 'var(--brand-cobalt-text)' }}>
+            admorbitatech@gmail.com
           </a>
         </p>
       </Secao>
