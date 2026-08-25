@@ -105,6 +105,15 @@ function deEmendas(d: any): Visualizacao[] {
       titulo: porQuem.titulo,
       dados: { itens: porQuem.dados.slice(0, 8).map(([k, v]) => ({ label: k, valor: v })) },
     });
+    // Comparando poucos parlamentares, a pergunta real é "quanto cada um pesa
+    // no total" — a rosca responde isso de relance; a barra, não.
+    if (nomes.size > 1 && nomes.size <= 6) {
+      vis.push({
+        tipo: 'donut',
+        titulo: 'Participação de cada parlamentar no total',
+        dados: { itens: porQuem.dados.map(([k, v]) => ({ label: k, valor: v })) },
+      });
+    }
   }
   return vis;
 }

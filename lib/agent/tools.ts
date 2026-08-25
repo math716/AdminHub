@@ -296,8 +296,11 @@ export const AGENT_TOOLS: Tool[] = [
   {
     name: 'gerar_relatorio_territorial',
     description:
-      'Prepara um RELATÓRIO TERRITORIAL eleitoral por Região Administrativa (RA) do DF, para um ou mais deputados — ' +
-      'DISTRITAIS ou FEDERAIS do DF (a ferramenta detecta o cargo automaticamente se o nome não for achado como distrital). ' +
+      'Prepara um RELATÓRIO TERRITORIAL eleitoral por Região Administrativa (RA) do DF, para um ou mais parlamentares: ' +
+      'deputados DISTRITAIS, deputados FEDERAIS ou SENADORES do DF (a ferramenta detecta o cargo automaticamente). ' +
+      'Para SENADORES ela varre as DUAS eleições da renovação alternada (2018 e 2022) e acha a bancada inteira — ' +
+      'basta passar cargo="Senador" e os nomes. É a ferramenta certa sempre que pedirem "top 5 RAs", ' +
+      '"regiões com mais votos" ou "mapa de calor dos votos" no DF: buscar_votacao devolve ZONA ELEITORAL, não RA. ' +
       'Use SEMPRE que o usuário pedir: "relatório territorial", análise por região administrativa, redutos/força por RA, ' +
       'ou quando ele COLAR um roteiro/script listando deputados do DF para analisar por território. ' +
       'Esta ferramenta apenas valida os nomes e prepara o relatório — a plataforma então exibe um botão para gerar o PDF completo ' +
@@ -309,7 +312,7 @@ export const AGENT_TOOLS: Tool[] = [
         deputados: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Lista de nomes dos deputados a analisar (um ou mais). Extraia todos os nomes citados no pedido do usuário.',
+          description: 'Lista de nomes dos parlamentares a analisar (um ou mais). Extraia todos os nomes citados no pedido do usuário.',
         },
         ano: {
           type: 'integer',
@@ -321,7 +324,7 @@ export const AGENT_TOOLS: Tool[] = [
         },
         cargo: {
           type: 'string',
-          description: 'Cargo disputado (padrão "Deputado Distrital").',
+          description: 'Cargo disputado: "Deputado Distrital" (padrão), "Deputado Federal" ou "Senador".',
         },
       },
       required: ['deputados'],

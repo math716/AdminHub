@@ -863,38 +863,52 @@ export async function executarGerarRelatorioTerritorial(
     return { encontrado: false, mensagem: 'O relatório territorial por Região Administrativa está disponível para o DF.' };
   }
 
-  let cargoUsado = cargo;
-  let { encontrados, faltantes } = resolverDeputados(nomes, ano, uf, cargo);
+  // Eleições a varrer, em ordem. O SENADO renova de forma alternada, então os
+  // 3 senadores em exercício vêm de duas eleições (2018 e 2022) — varrer um ano
+  // só devolveria uma bancada incompleta. Para deputado, o fallback continua
+  // sendo o outro cargo do DF (distrital ↔ federal).
+  const ehSenado = normalizarTextoTse(cargo).includes('senador');
+  const lotes = ehSenado
+    ? [{ ano, cargo: 'Senador' }, { ano: ano === 2018 ? 2022 : 2018, cargo: 'Senador' }]
+    : [{ ano, cargo }, { ano, cargo: normalizarTextoTse(cargo).includes('distrital') ? 'Deputado Federal' : 'Deputado Distrital' }];
 
-  // O DF elege deputados DISTRITAIS e FEDERAIS — ambos têm votos por zona,
-  // então o territorial funciona para os dois. Se nada foi achado no cargo
-  // pedido, tenta como Deputado Federal (ex.: "Alberto Fraga" → FRAGA).
-  if (encontrados.length === 0 && normalizarTextoTse(cargo).includes('distrital')) {
-    const fed = resolverDeputados(nomes, ano, uf, 'Deputado Federal');
-    if (fed.encontrados.length > 0) {
-      encontrados = fed.encontrados;
-      faltantes = fed.faltantes;
-      cargoUsado = 'Deputado Federal';
+  const encontrados: Array<{ nome: string; ano: number; cargo: string }> = [];
+  const usados: Array<{ ano: number; cargo: string }> = [];
+  let faltantes = nomes;
+
+  for (const lote of lotes) {
+    if (faltantes.length === 0) break;
+    const r = resolverDeputados(faltantes, lote.ano, uf, lote.cargo);
+    if (r.encontrados.length > 0) {
+      encontrados.push(...r.encontrados.map(e => ({
+        nome: e.cand.nomeUrna, ano: lote.ano, cargo: lote.cargo,
+      })));
+      usados.push(lote);
     }
+    faltantes = r.faltantes;
   }
 
-  // Nomes não achados no cargo usado mas que existem no outro cargo — dica
-  // para a Gabi orientar (relatório mistura só um cargo por vez, pois o
-  // "domínio" compara com os votos válidos daquele cargo).
-  const outroCargo = normalizarTextoTse(cargoUsado).includes('distrital') ? 'Deputado Federal' : 'Deputado Distrital';
-  const noOutroCargo = faltantes.length > 0
-    ? resolverDeputados(faltantes, ano, uf, outroCargo).encontrados.map(e => `${e.nome} (${outroCargo})`)
-    : [];
+  // O PDF varre o primeiro lote e, com os nomes que sobrarem, os seguintes.
+  const principal = usados[0] ?? lotes[0];
+  const extras = usados.slice(1);
 
   return {
     tipo: 'relatorio_territorial',
-    ano, uf, cargo: cargoUsado,
+    ano: principal.ano, uf, cargo: principal.cargo,
+    tambemEm: extras.length > 0 ? extras : undefined,  // reenviado ao endpoint do PDF
     solicitados: nomes.length,
     deputados: nomes,                                  // reenviados ao endpoint do PDF
-    encontrados: encontrados.map(e => e.cand.nomeUrna),
+    encontrados: encontrados.map(e => e.nome),
+    // Quem veio de qual eleição — a Gabi precisa disso para não dizer que os
+    // três senadores são da mesma eleição.
+    porEleicao: encontrados.map(e => `${e.nome} — ${e.cargo}, eleito em ${e.ano}`),
     faltantes,
-    encontradosEmOutroCargo: noOutroCargo.length > 0 ? noOutroCargo : undefined,
     prontoParaGerar: encontrados.length > 0,
+    ...(extras.length > 0 && {
+      observacao: 'Os parlamentares vêm de eleições diferentes (renovação alternada do Senado). '
+        + 'Diga isso ao usuário com naturalidade e lembre que votos de eleições distintas não se '
+        + 'comparam diretamente — o que se compara é o padrão territorial de cada um.',
+    }),
   };
 }
 

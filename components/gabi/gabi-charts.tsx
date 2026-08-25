@@ -600,6 +600,7 @@ export function RelatorioTerritorialCard({ payload }: { payload: any }) {
           ano: payload.ano,
           uf: payload.uf,
           cargo: payload.cargo,
+          tambemEm: payload.tambemEm,
           deputados: payload.deputados,
         }),
       });

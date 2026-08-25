@@ -45,6 +45,37 @@ function resumoDosDados(d: Record<string, unknown>): string {
   return `Levantei os dados abaixo:\n\n${linhas}\n\nOs gráficos detalham o resultado. Quer que eu aprofunde algum ponto?`;
 }
 
+/**
+ * Junta duas buscas de emendas num só conjunto, sem duplicar registros e com os
+ * totais recalculados sobre o resultado combinado (o cabeçalho do PDF e os
+ * gráficos leem daqui).
+ */
+function acumularEmendas(prev: any, novo: any) {
+  if (!novo?.encontrado) return prev;          // busca vazia não apaga o que já há
+  if (!prev?.encontrado) return novo;
+
+  const chave = (e: any) =>
+    [e.parlamentar, e.ano, e.area, e.municipio, e.valorEmpenhado, e.objeto].join('|');
+  const vistas = new Set((prev.emendas ?? []).map(chave));
+  const emendas = [
+    ...(prev.emendas ?? []),
+    ...(novo.emendas ?? []).filter((e: any) => !vistas.has(chave(e))),
+  ];
+
+  const totalEmpenhado = emendas.reduce((s: number, e: any) => s + (e.valorEmpenhado ?? 0), 0);
+  const totalPago      = emendas.reduce((s: number, e: any) => s + (e.valorPago ?? 0), 0);
+
+  return {
+    ...novo,
+    encontrado: true,
+    emendas,
+    total: emendas.length,
+    totalEmpenhado,
+    totalPago,
+    execucaoGeral: totalEmpenhado > 0 ? Math.round((totalPago / totalEmpenhado) * 100) : 0,
+  };
+}
+
 // A data vai num bloco PRÓPRIO do system: o prompt grande fica cacheado e não é
 // invalidado a cada virada de dia. Sem isso a Gabi não resolve "este ano" /
 // "este mês" — ela chutaria o ano ao chamar buscar_agenda.
@@ -68,7 +99,11 @@ function blocoDataAtual() {
 // max_tokens precisa acomodar pensamento + resposta (por isso 8192, não 4096).
 const MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 12288; // pensamento adaptativo + respostas com tabelas longas
-const MAX_ITERATIONS = 8; // evita loops infinitos
+// Roteiros colados pelo cliente ("4 itens × 3 parlamentares") gastam muitas
+// buscas antes da primeira linha de texto. Com 8 o turno morria buscando e caía
+// no resumo genérico; o teto só é usado quando o pedido realmente exige.
+const MAX_ITERATIONS = 14; // evita loops infinitos
+const AVISAR_ORCAMENTO_EM = 4; // faltando N rodadas, manda escrever
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -235,6 +270,13 @@ export async function POST(request: NextRequest) {
                 const vistos = new Set(prev.map((c: any) => c.nomeUrna));
                 const candidatos = [...prev, ...novos.filter((c: any) => !vistos.has(c.nomeUrna))];
                 dadosBrutos.buscar_votacao = { ...(resultado as any), candidatos };
+              } else if (block.name === 'buscar_emendas' && dadosBrutos.buscar_emendas) {
+                // Comparar N parlamentares exige uma busca por nome. Sobrescrever
+                // deixava no PDF só as emendas do ÚLTIMO — e o valor dele no
+                // cabeçalho, com cara de total geral. Acumula e recalcula.
+                dadosBrutos.buscar_emendas = acumularEmendas(
+                  dadosBrutos.buscar_emendas as any, resultado as any,
+                );
               } else {
                 dadosBrutos[block.name] = resultado; // guarda a última chamada de cada ferramenta
               }
@@ -247,6 +289,24 @@ export async function POST(request: NextRequest) {
             type: 'tool_result',
             tool_use_id: block.id,
             content: JSON.stringify(resultado),
+          });
+        }
+
+        // Orçamento restante do turno. Sem esse aviso o modelo não tem como
+        // saber que está perto do fim e segue buscando até o loop estourar —
+        // era assim que um pedido de 4 itens × 3 nomes acabava sem texto
+        // nenhum, entregando o resumo genérico ao usuário.
+        const restantes = MAX_ITERATIONS - 1 - iter;
+        if (restantes <= AVISAR_ORCAMENTO_EM) {
+          toolResults.push({
+            type: 'text',
+            text: restantes <= 1
+              ? 'ORÇAMENTO ESGOTADO: esta é a última rodada. NÃO chame mais ferramentas. '
+                + 'Escreva agora a resposta final ao usuário com tudo o que já apurou, '
+                + 'organizada pelos itens que ele pediu, e diga em uma linha o que ficou de fora.'
+              : `Restam ${restantes} rodadas de busca neste turno. Faça apenas o que for `
+                + 'indispensável e comece a redigir a resposta — melhor uma resposta completa '
+                + 'sobre os dados que você já tem do que nenhuma resposta.',
           });
         }
 

@@ -370,24 +370,32 @@ function notaMetodologica(faltantes: string[]): string {
   return linhas.join('\n');
 }
 
-function PaginasComparativo({ ms, mapa, bandeira, ano, cargo, faltantes }: {
+function PaginasComparativo({ ms, mapa, bandeira, ano, cargo, faltantes, mesmaEleicao = true }: {
   ms: DeputadoMetrics[]; mapa: MapaResult | null; bandeira: BandeiraSrc;
-  ano: number; cargo: string; faltantes: string[];
+  ano: number | string; cargo: string; faltantes: string[]; mesmaEleicao?: boolean;
 }): React.ReactNode {
   const chips = [
-    { label: 'Deputados', value: String(ms.length) },
+    { label: 'Parlamentares', value: String(ms.length) },
     { label: 'Cargo', value: cargo },
-    { label: 'Ano', value: String(ano) },
+    { label: mesmaEleicao ? 'Ano' : 'Eleições', value: String(ano) },
   ];
   return React.createElement(Page, { size: 'A4', style: S.page },
     Hero({
       titulo: 'Comparativo Territorial',
-      sub: 'Redutos, domínio proporcional e disputas entre os deputados analisados',
+      sub: 'Redutos, domínio proporcional e disputas entre os parlamentares analisados',
       chips, iniciais: 'CT', bandeira,
     }),
     mapa ? React.createElement(View, { wrap: false, style: { marginBottom: 8 } },
       MapaBox(mapa, 'Quem domina cada Região Administrativa (mais votos na RA, entre os analisados)'),
     ) : null,
+    ...(mesmaEleicao ? [] : renderContent(
+      `**Leitura comparativa entre eleições diferentes.** Os parlamentares deste relatório foram `
+      + `eleitos em anos distintos (${ano}) — no Senado isso é a regra, porque a renovação é `
+      + `alternada. Cada um disputou contra concorrentes diferentes, com eleitorado e contexto `
+      + `próprios, então os votos absolutos não são diretamente comparáveis. O que se compara com `
+      + `segurança é o **padrão territorial de cada um**: onde concentra, onde é fraco e o grau de `
+      + `dispersão pelas Regiões Administrativas.\n`,
+    )),
     ...renderContent(textoDisputas(ms)),
     React.createElement(Text, { style: S.h3 }, 'Quadro comparativo'),
     TabelaComparativa(ms),
@@ -412,31 +420,54 @@ function PaginaVazia(faltantes: string[], bandeira: BandeiraSrc): React.ReactNod
 // ─── Builder principal: nomes → Buffer do PDF ─────────────────────────────────
 export async function montarRelatorioTerritorial(params: {
   ano: number; uf: string; cargo: string; nomes: string[];
+  /**
+   * Eleições adicionais a varrer com os nomes que a principal não localizou.
+   * O Senado renova de forma alternada (1/3 e 2/3), então os 3 senadores em
+   * exercício vêm de DUAS eleições — um relatório da bancada cruza 2018 e 2022.
+   */
+  tambemEm?: Array<{ ano: number; cargo?: string }>;
 }): Promise<Buffer> {
   const { ano, uf, cargo, nomes } = params;
-  const territorial: TerritorialData | null = carregarTerritorial(ano, uf, cargo);
 
   // bandeira do estado no cabeçalho (public/flags/{UF}.png)
   const bandeira = caminhoBandeira(uf);
 
+  const lotes = [
+    { ano, cargo },
+    ...(params.tambemEm ?? []).map(t => ({ ano: t.ano, cargo: t.cargo ?? cargo })),
+  ];
+
   const paginas: React.ReactNode[] = [];
+  const metricas: DeputadoMetrics[] = [];
+  const anosUsados = new Set<number>();
   let faltantes: string[] = nomes;
 
-  if (territorial) {
-    const res = resolverDeputados(nomes, ano, uf, cargo);
+  for (const lote of lotes) {
+    if (faltantes.length === 0) break;
+    const territorial: TerritorialData | null = carregarTerritorial(lote.ano, uf, lote.cargo);
+    if (!territorial) continue;
+
+    const res = resolverDeputados(faltantes, lote.ano, uf, lote.cargo);
     faltantes = res.faltantes;
 
-    const metricas: DeputadoMetrics[] = [];
     for (const { cand } of res.encontrados) {
       const votosRA = territorial.votosPorCand.get(cand.id) ?? {};
       const m = metricasDeputado(cand, votosRA, territorial.totalPorRA);
       metricas.push(m);
+      anosUsados.add(lote.ano);
       const mapa = await renderMapaDF_RA({ valores: votosRA, width: 225, height: 170 });
-      paginas.push(PaginaDeputado({ m, mapa, bandeira, ano, cargo }));
+      paginas.push(PaginaDeputado({ m, mapa, bandeira, ano: lote.ano, cargo: lote.cargo }));
     }
+  }
 
-    // Comparativo final (2+ deputados): vencedor por RA entre os analisados
-    if (metricas.length >= 2) {
+  // Comparativo final (2+ parlamentares): vencedor por RA entre os analisados.
+  // Com eleições diferentes na mesma lista o mapa "quem domina" mentiria — são
+  // disputas distintas, com eleitorado e concorrentes distintos —, então ali
+  // fica só o quadro comparativo, com o ano de cada um.
+  if (metricas.length >= 2) {
+    const mesmaEleicao = anosUsados.size === 1;
+    let mapaVencedor: MapaResult | null = null;
+    if (mesmaEleicao) {
       const winners: Record<string, Vencedor> = {};
       for (const m of metricas) {
         for (const [ra, votos] of Object.entries(m.votosPorRA)) {
@@ -446,9 +477,13 @@ export async function montarRelatorioTerritorial(params: {
           }
         }
       }
-      const mapaVencedor = await renderMapaDF_RAVencedor({ winners, width: 275, height: 210 });
-      paginas.push(PaginasComparativo({ ms: metricas, mapa: mapaVencedor, bandeira, ano, cargo, faltantes }));
+      mapaVencedor = await renderMapaDF_RAVencedor({ winners, width: 275, height: 210 });
     }
+    const anosLabel = [...anosUsados].sort().join(' e ');
+    paginas.push(PaginasComparativo({
+      ms: metricas, mapa: mapaVencedor, bandeira,
+      ano: anosLabel, cargo, faltantes, mesmaEleicao,
+    }));
   }
 
   if (paginas.length === 0) paginas.push(PaginaVazia(faltantes, bandeira));

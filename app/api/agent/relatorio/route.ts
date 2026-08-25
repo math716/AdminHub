@@ -140,7 +140,10 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const body: ReportInput & { tipo?: string; ano?: number; uf?: string; cargo?: string; deputados?: string[] } =
+    const body: ReportInput & {
+      tipo?: string; ano?: number; uf?: string; cargo?: string; deputados?: string[];
+      tambemEm?: Array<{ ano?: number; cargo?: string }>;
+    } =
       await request.json();
 
     // ── Relatório Territorial do DF (por Região Administrativa) ────────────
@@ -159,7 +162,13 @@ export async function POST(request: NextRequest) {
       if (nomes.length === 0) {
         return NextResponse.json({ error: 'Informe ao menos um deputado.' }, { status: 400 });
       }
-      const pdf = await montarRelatorioTerritorial({ ano, uf, cargo, nomes });
+      // Eleições adicionais (bancada do Senado cruza 2018 e 2022).
+      const tambemEm = Array.isArray(body.tambemEm)
+        ? body.tambemEm
+            .map((t: any) => ({ ano: Number(t?.ano), cargo: t?.cargo ? String(t.cargo) : undefined }))
+            .filter((t: any) => Number.isFinite(t.ano))
+        : undefined;
+      const pdf = await montarRelatorioTerritorial({ ano, uf, cargo, nomes, tambemEm });
       return new NextResponse(pdf as any, {
         status: 200,
         headers: {
