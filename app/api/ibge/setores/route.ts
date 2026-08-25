@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 
 // Cache para setores (24 horas)
 const setoresCache: Record<string, { data: any; timestamp: number }> = {};
@@ -95,6 +97,12 @@ function calculateCentroid(geometry: any): [number, number] | null {
 }
 
 export async function GET(request: NextRequest) {
+  // Exige sessão: sem isto a rota é um proxy ABERTO para as APIs
+  // externas. O dado é público, mas a infraestrutura é nossa — qualquer
+  // um poderia consumir banda e invocações de função da conta.
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+
   const { searchParams } = new URL(request.url);
   const codigoMunicipio = searchParams.get('codigo');
   const municipioNome = searchParams.get('municipio');

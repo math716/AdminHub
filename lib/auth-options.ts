@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -13,10 +14,27 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Senha', type: 'password' }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Credenciais inválidas');
         }
+
+        // Limite de tentativas. A rota /api/auth/login já tinha essa proteção,
+        // mas a TELA de login entra por aqui (signIn('credentials')) — ou seja,
+        // o endpoint que de fato autentica estava aberto a força bruta.
+        //
+        // Limita por e-mail e por IP: só por IP, um atacante atrás de várias
+        // saídas escaparia; só por e-mail, daria para varrer contas diferentes.
+        const ip = (req?.headers?.['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim()
+          || (req?.headers?.['x-real-ip'] as string | undefined)
+          || 'desconhecido';
+        const email = credentials.email.toLowerCase();
+
+        if (!checkRateLimit(`login:email:${email}`, 8, 60_000)
+            || !checkRateLimit(`login:ip:${ip}`, 20, 60_000)) {
+          throw new Error('Muitas tentativas. Aguarde um momento antes de tentar novamente.');
+        }
+
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
           include: { gabinete: true }

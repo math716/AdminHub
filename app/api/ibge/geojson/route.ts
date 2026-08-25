@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 
 const UF_CODES: Record<string, number> = {
   'AC': 12, 'AL': 27, 'AP': 16, 'AM': 13, 'BA': 29, 'CE': 23, 'DF': 53,
@@ -10,6 +12,12 @@ const UF_CODES: Record<string, number> = {
 };
 
 export async function GET(request: NextRequest) {
+  // Exige sessão: sem isto a rota é um proxy ABERTO para as APIs
+  // externas. O dado é público, mas a infraestrutura é nossa — qualquer
+  // um poderia consumir banda e invocações de função da conta.
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'brasil';
