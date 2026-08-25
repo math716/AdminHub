@@ -38,7 +38,14 @@ export function assuntoDoRelatorio(input: DadosRelatorio): string | null {
   if (cands.length > 0) {
     const ano = cands[0].ano ?? '';
     const uf  = cands[0].uf && cands[0].uf !== 'BR' ? cands[0].uf : '';
-    const escopo = [uf, ano].filter(Boolean).join(' ');
+    // Consulta a um município: o título tem de dizer QUAL. "Ranking de
+    // vereadores eleitos — SP 2024" não identifica o documento; a eleição é
+    // municipal e existe uma por cidade.
+    const muni = d.buscar_votacao?.municipioConsultado
+      ? tituloCaso(String(d.buscar_votacao.municipioConsultado))
+      : '';
+    const local = muni ? (uf ? `${muni} (${uf})` : muni) : uf;
+    const escopo = [local, ano].filter(Boolean).join(' ');
     if (cands.length === 1) {
       return `Desempenho eleitoral de ${listarNomes([cands[0].nomeUrna || cands[0].nome])}${escopo ? ` — ${escopo}` : ''}`;
     }
