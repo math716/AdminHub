@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { Layers, Eye, EyeOff, Loader2, MapPin, Info } from 'lucide-react';
 import { useMapCleanup, throttle } from '@/hooks/use-map-cleanup';
+import { camadaBase } from '@/lib/maps/basemap';
 
 interface StateMapProps {
   uf: string;
@@ -636,11 +637,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       //     do <div> como fundo + uma camada com os outros estados pra deixar
       //     claro o que é "selecionado" vs "resto do mapa".
       if (!darkMode) {
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-          subdomains: 'abcd',
-          maxZoom: 20
-        }).addTo(map);
+        camadaBase(L, { maxZoom: 20 }).addTo(map);
       }
 
       // Panes para z-index

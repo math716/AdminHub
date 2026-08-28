@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import { MapPin, ZoomIn, ZoomOut, Layers, Home } from 'lucide-react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
+import { camadaBase } from '@/lib/maps/basemap';
 
 interface LocalVotacao {
   codLocal: number;
@@ -303,10 +304,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
       markersLayerRef.current = markersLayer;
       registerLayer(markersLayer);
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd',
-      }).addTo(map);
+      camadaBase(L).addTo(map);
 
       const latLngBounds = L.latLngBounds(
         [bounds.minLat - 0.005, bounds.minLng - 0.005],

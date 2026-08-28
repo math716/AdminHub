@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, memo } from 'react';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
+import { camadaBase } from '@/lib/maps/basemap';
 
 interface BrazilMapProps {
   onStateClick: (uf: string, name: string) => void;
@@ -113,11 +114,7 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false,
       // como fundo — sem tile do CartoDB. Os estados (já desenhados em GeoJSON)
       // ficam destacados sobre o fundo, igual à referência aprovada pelo cliente.
       if (!darkMode) {
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-          subdomains: 'abcd',
-          maxZoom: 20
-        }).addTo(map);
+        camadaBase(L, { maxZoom: 20 }).addTo(map);
       }
 
       const hasVotes = highlightedStates && Object.keys(highlightedStates).length > 0;

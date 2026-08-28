@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
+import { camadaBase } from '@/lib/maps/basemap';
 
 export interface ZonaPinData {
   zona: number;
@@ -132,10 +133,7 @@ function ZonaPinsMap({ municipio, zonas, bounds, selectedZona, onZonaClick }: Zo
 
       mapInstanceRef.current = map;
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd',
-      }).addTo(map);
+      camadaBase(L).addTo(map);
 
       await renderMarkers(map);
 

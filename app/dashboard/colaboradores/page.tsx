@@ -16,6 +16,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PERMISSIONS, hasPermission } from '@/lib/permissions';
 import GradientCard from '@/components/charts/gradient-card';
+import { camadaBase } from '@/lib/maps/basemap';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -290,11 +291,7 @@ function ZonasMapInner({ colaboradoresByZona, selectedZona, onZonaClick }: Zonas
       });
       mapInstanceRef.current = map;
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19,
-      }).addTo(map);
+      camadaBase(L).addTo(map);
 
       DF_ZONAS.forEach(zona => {
         const coords = DF_ZONA_COORDS[zona];
@@ -438,11 +435,7 @@ function ColaboradoresMapInner({
       });
       mapInstanceRef.current = map;
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19,
-      }).addTo(map);
+      camadaBase(L).addTo(map);
 
       const tooltipEl = L.DomUtil.create('div', '', map.getContainer()) as HTMLElement;
       tooltipEl.style.cssText = [

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { camadaBase } from '@/lib/maps/basemap';
 
 export interface ContatoMapItem {
   id: string;
@@ -126,10 +127,7 @@ export default function ContatosMunicipioMap({
       });
       mapRef.current = map;
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '',
-        maxZoom: 19,
-      }).addTo(map);
+      camadaBase(L, { atribuicao: false }).addTo(map);
 
       contacts.forEach(c => {
         const marker = L.marker([c.lat, c.lng], {

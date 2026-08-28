@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef, memo } from 'react';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
+import { camadaBase } from '@/lib/maps/basemap';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -265,10 +266,7 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
 
       mapInstanceRef.current = map;
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd',
-      }).addTo(map);
+      camadaBase(L).addTo(map);
 
       // Camada para os círculos de cluster
       const clusterLayerGroup = L.layerGroup().addTo(map);

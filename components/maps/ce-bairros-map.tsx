@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
 import { Loader2 } from 'lucide-react';
+import { camadaBase } from '@/lib/maps/basemap';
 
 interface CeBairrosMapProps {
   votesData?: Record<string, number>;
@@ -172,11 +173,7 @@ function CeBairrosMapComponent({ votesData, selectedBairro, onBairroClick, heigh
       });
       mapInstanceRef.current = map;
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19,
-      }).addTo(map);
+      camadaBase(L).addTo(map);
 
       map.createPane('bairrosPane');
       map.createPane('voteLabelsPane');

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { camadaBase } from '@/lib/maps/basemap';
 
 interface ContatosBairrosMapProps {
   municipio: string;               // usado no key do wrapper externo
@@ -54,11 +55,7 @@ function ContatosBairrosMapInner({
       });
       mapRef.current = map;
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd',
-        attribution: '',
-      }).addTo(map);
+      camadaBase(L, { atribuicao: false }).addTo(map);
 
       const buildStyle = (feature: any) => {
         const normNm = norm(feature?.properties?.NM_BAIRRO ?? '');

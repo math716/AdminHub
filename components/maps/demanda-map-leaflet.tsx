@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CATEGORY_COLORS } from '@/lib/types';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
+import { camadaBase } from '@/lib/maps/basemap';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -180,10 +181,7 @@ export default function DemandaMapLeaflet({
       lRef.current = L;
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd',
-      }).addTo(map);
+      camadaBase(L).addTo(map);
 
       // ── Contornos de estados e municípios
       const CODE_TO_UF: Record<string, string> = {
