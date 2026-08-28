@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 // — descrição genérica costuma ser reprovada na triagem.
 export default function PoliticaDePrivacidade() {
   return (
-    <PaginaLegal titulo="Política de Privacidade" atualizadoEm="22 de agosto de 2026">
+    <PaginaLegal titulo="Política de Privacidade" atualizadoEm="28 de agosto de 2026">
       <Secao titulo="1. Quem somos">
         <p>
           O AdminHub é uma plataforma de gestão para gabinetes parlamentares brasileiros. Reúne, num
@@ -34,11 +34,33 @@ export default function PoliticaDePrivacidade() {
         <p><strong>Dados públicos.</strong> Resultados eleitorais do Tribunal Superior Eleitoral e
           emendas parlamentares dos Portais de Transparência Federais e estaduais. São informações
           públicas, obtidas de fontes oficiais, e não identificam usuários da plataforma.</p>
+        <p><strong>Documentos enviados para leitura.</strong> Arquivos que o gabinete opta por
+          enviar para preenchimento automático — por exemplo, uma agenda em PDF importada para o
+          módulo Agenda. O envio é sempre uma ação explícita do usuário.</p>
         <p><strong>Dados de uso.</strong> Registros técnicos de acesso e de consumo da assistente
           virtual, usados para segurança e controle de custos.</p>
       </Secao>
 
-      <Secao titulo="3. Integração com o Google Agenda">
+      <Secao titulo="3. Leitura automática de documentos">
+        <p>
+          Alguns módulos permitem enviar um documento para que as informações sejam extraídas
+          automaticamente, evitando a digitação manual. É o caso da importação de agenda em PDF.
+        </p>
+        <Destaque>
+          <p>
+            O arquivo é enviado ao serviço de inteligência artificial que utilizamos (Anthropic)
+            <strong> apenas para essa leitura</strong>. O conteúdo <strong>não é usado para treinar
+            modelos</strong> e não é retido pelo fornecedor após o processamento.
+          </p>
+        </Destaque>
+        <p>
+          O envio é sempre <strong>opcional e iniciado pelo usuário</strong> — nenhum documento sai
+          da plataforma automaticamente. O resultado é apresentado para conferência e só é gravado
+          na agenda do gabinete depois que a pessoa confirma.
+        </p>
+      </Secao>
+
+      <Secao titulo="4. Integração com o Google Agenda">
         <p>
           A conexão com o Google Agenda é <strong>opcional</strong> e só ocorre quando o chefe de
           gabinete ou administrador autoriza expressamente, pela tela de consentimento do próprio
@@ -88,7 +110,7 @@ export default function PoliticaDePrivacidade() {
         </p>
       </Secao>
 
-      <Secao titulo="4. Isolamento entre gabinetes">
+      <Secao titulo="5. Isolamento entre gabinetes">
         <p>
           Cada gabinete acessa exclusivamente os próprios dados. Demandas, agenda, contatos e
           conexões com o Google são segregados por gabinete em todas as consultas do sistema. Um
@@ -96,21 +118,22 @@ export default function PoliticaDePrivacidade() {
         </p>
       </Secao>
 
-      <Secao titulo="5. Com quem compartilhamos">
+      <Secao titulo="6. Com quem compartilhamos">
         <p>Não vendemos nem cedemos dados pessoais. Utilizamos apenas fornecedores necessários à
           operação da plataforma:</p>
         <Lista itens={[
           <><strong>Vercel</strong> — hospedagem da aplicação.</>,
           <><strong>Supabase</strong> — banco de dados.</>,
-          <><strong>Anthropic</strong> — processamento das perguntas feitas à assistente virtual. O
-            conteúdo enviado não é utilizado para treinar modelos.</>,
+          <><strong>Anthropic</strong> — processamento das perguntas feitas à assistente virtual e
+            leitura dos documentos que o gabinete envia para preenchimento automático. O conteúdo
+            enviado não é utilizado para treinar modelos.</>,
           <><strong>Google</strong> — exclusivamente quando a integração com o Google Agenda é
             ativada pelo gabinete.</>,
         ]} />
         <p>Também podemos divulgar informações quando houver obrigação legal ou ordem judicial.</p>
       </Secao>
 
-      <Secao titulo="6. Por quanto tempo guardamos">
+      <Secao titulo="7. Por quanto tempo guardamos">
         <p>
           Os dados permanecem enquanto a conta do gabinete estiver ativa. Encerrado o contrato, são
           excluídos ou anonimizados em até 90 dias, ressalvadas as hipóteses de guarda obrigatória
@@ -118,7 +141,7 @@ export default function PoliticaDePrivacidade() {
         </p>
       </Secao>
 
-      <Secao titulo="7. Segurança">
+      <Secao titulo="8. Segurança">
         <p>
           As conexões trafegam por HTTPS, as senhas são armazenadas com criptografia irreversível e o
           acesso é controlado por papéis — apenas o chefe de gabinete e administradores podem conectar
@@ -127,7 +150,7 @@ export default function PoliticaDePrivacidade() {
         </p>
       </Secao>
 
-      <Secao titulo="8. Seus direitos (LGPD)">
+      <Secao titulo="9. Seus direitos (LGPD)">
         <p>
           Nos termos da Lei nº 13.709/2018, você pode solicitar confirmação de tratamento, acesso,
           correção, anonimização, portabilidade ou eliminação dos seus dados, além de revogar
@@ -135,14 +158,14 @@ export default function PoliticaDePrivacidade() {
         </p>
       </Secao>
 
-      <Secao titulo="9. Alterações">
+      <Secao titulo="10. Alterações">
         <p>
           Podemos atualizar esta política. Mudanças relevantes serão comunicadas na própria
           plataforma, e a data de atualização no topo desta página é sempre a da versão vigente.
         </p>
       </Secao>
 
-      <Secao titulo="10. Contato">
+      <Secao titulo="11. Contato">
         <p>
           Dúvidas sobre privacidade ou solicitações relativas aos seus dados:{' '}
           <a href="mailto:admorbitatech@gmail.com" style={{ color: 'var(--brand-cobalt-text)' }}>

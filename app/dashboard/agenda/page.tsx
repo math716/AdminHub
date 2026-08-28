@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { GoogleConexao } from '@/components/agenda/google-conexao';
+import { ImportarPdf } from '@/components/agenda/importar-pdf';
 import { createPortal } from 'react-dom';
 import { Select } from '@/components/ui/select';
 import { useSession } from 'next-auth/react';
@@ -313,14 +314,17 @@ export default function AgendaPage() {
         title="Agenda do Gabinete"
         subtitle={`${events.length} evento${events.length !== 1 ? 's' : ''} em ${MESES[viewMonth]}`}
         actions={
-          <button
-            onClick={() => { setEditEvent(null); setForm({ ...EMPTY_FORM }); setFormError(''); setShowModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' }}
-          >
-            <Plus className="w-4 h-4" />
-            Novo Evento
-          </button>
+          <div className="flex items-center gap-2">
+            <ImportarPdf onImportou={fetchEvents} />
+            <button
+              onClick={() => { setEditEvent(null); setForm({ ...EMPTY_FORM }); setFormError(''); setShowModal(true); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' }}
+            >
+              <Plus className="w-4 h-4" />
+              Novo Evento
+            </button>
+          </div>
         }
       />
 
