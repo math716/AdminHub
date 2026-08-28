@@ -17,6 +17,10 @@
  */
 const CHAVE_CARTO = process.env.NEXT_PUBLIC_CARTO_API_KEY?.trim();
 
+// ATENÇÃO: o CARTO está aposentando os basemaps RASTER em favor dos vetoriais.
+// A chave abaixo mantém o visual atual funcionando, mas em algum momento o
+// raster sai do ar — e aí a escolha é migrar para o basemap vetorial deles
+// (exige trocar o L.tileLayer por uma camada MapLibre) ou ficar na Esri.
 const CARTO = {
   url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
   subdominios: 'abcd',
@@ -35,8 +39,14 @@ export const usandoCarto = Boolean(CHAVE_CARTO);
 
 const FONTE = usandoCarto ? CARTO : ESRI;
 
-/** URL dos tiles, já com a chave quando houver. */
-export const URL_TILES = usandoCarto ? `${CARTO.url}?api_key=${CHAVE_CARTO}` : ESRI.url;
+/**
+ * URL dos tiles, já com a chave quando houver.
+ *
+ * O parâmetro é `key`, não `api_key` — este é o basemap público do CARTO
+ * (carto.com/basemaps/apikey), que não tem relação com os tokens do Workspace
+ * deles e não exige conta.
+ */
+export const URL_TILES = usandoCarto ? `${CARTO.url}?key=${CHAVE_CARTO}` : ESRI.url;
 export const ATRIBUICAO_TILES = FONTE.atribuicao;
 
 /**
