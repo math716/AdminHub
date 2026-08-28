@@ -55,7 +55,7 @@ function ContatosBairrosMapInner({
       });
       mapRef.current = map;
 
-      camadaBase(L, { atribuicao: false }).addTo(map);
+      camadaBase(L).addTo(map);
 
       const buildStyle = (feature: any) => {
         const normNm = norm(feature?.properties?.NM_BAIRRO ?? '');

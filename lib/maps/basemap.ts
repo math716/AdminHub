@@ -56,12 +56,14 @@ export const ATRIBUICAO_TILES = FONTE.atribuicao;
  *   camadaBase(L).addTo(map);
  *   camadaBase(L, { maxZoom: 20 }).addTo(map);
  */
-export function camadaBase(L: any, opcoes: { maxZoom?: number; atribuicao?: boolean } = {}) {
+export function camadaBase(L: any, opcoes: { maxZoom?: number } = {}) {
   return L.tileLayer(URL_TILES, {
     maxZoom: opcoes.maxZoom ?? 19,
     ...(FONTE.subdominios ? { subdomains: FONTE.subdominios } : {}),
-    // Alguns mapas embutidos são pequenos demais para caber o crédito; nesses,
-    // a atribuição aparece na legenda ao lado.
-    attribution: opcoes.atribuicao === false ? '' : FONTE.atribuicao,
+    // A atribuição NÃO é opcional: os termos do CARTO e a licença do
+    // OpenStreetMap exigem o crédito visível no mapa. Dois mapas rodavam sem
+    // ele por decisão de layout — o Leaflet encolhe o crédito sozinho em telas
+    // pequenas, então não havia motivo real para removê-lo.
+    attribution: FONTE.atribuicao,
   });
 }

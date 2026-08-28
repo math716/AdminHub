@@ -127,7 +127,7 @@ export default function ContatosMunicipioMap({
       });
       mapRef.current = map;
 
-      camadaBase(L, { atribuicao: false }).addTo(map);
+      camadaBase(L).addTo(map);
 
       contacts.forEach(c => {
         const marker = L.marker([c.lat, c.lng], {
