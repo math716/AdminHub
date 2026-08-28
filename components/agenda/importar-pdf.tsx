@@ -215,7 +215,7 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
                           Escolha o PDF da agenda ou arraste aqui
                         </p>
                         <p className="text-[12.5px] mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                          Grade semanal com dias nas colunas e horários nas linhas · até 4 MB
+                          Arquivo com os dados da agenda · até 4 MB
                         </p>
                       </div>
 
