@@ -10,7 +10,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Upload, X, Loader2, FileText, AlertTriangle, Check, Trash2, Info,
+  Upload, X, Loader2, FileText, AlertTriangle, Check, Trash2, Info, MapPin,
 } from 'lucide-react';
 
 const TIPOS = ['REUNIAO', 'VISITA', 'EVENTO', 'COMPROMISSO'] as const;
@@ -28,6 +28,8 @@ interface EventoLido {
   local: string | null;
   endereco: string | null;
   tipo: string;
+  lat?: number | null;
+  lng?: number | null;
   jaExiste?: boolean;
 }
 
@@ -124,6 +126,7 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
 
   const marcados = linhas.filter(l => l.incluir).length;
   const duplicados = linhas.filter(l => l.jaExiste).length;
+  const semLocal = linhas.filter(l => l.lat == null).length;
 
   return (
     <>
@@ -261,6 +264,12 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
                             {duplicados} já {duplicados !== 1 ? 'estão' : 'está'} na agenda
                           </span>
                         )}
+                        {semLocal > 0 && (
+                          <span className="text-[12px] px-2 py-0.5 rounded-md"
+                            style={{ background: 'var(--bg-page)', color: 'var(--text-tertiary)' }}>
+                            {semLocal} sem local no mapa
+                          </span>
+                        )}
                       </div>
 
                       {observacoes && (
@@ -314,6 +323,11 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
                                     <span className="px-1.5 py-0.5 rounded text-[11.5px]"
                                       style={{ background: 'color-mix(in srgb, var(--warning) 15%, transparent)', color: 'var(--warning)' }}>
                                       já na agenda
+                                    </span>
+                                  )}
+                                  {l.lat != null && (
+                                    <span title="Endereço localizado — aparecerá no mapa">
+                                      <MapPin className="w-3.5 h-3.5" style={{ color: 'var(--success)' }} />
                                     </span>
                                   )}
                                 </div>

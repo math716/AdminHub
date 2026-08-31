@@ -14,6 +14,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { lerAgendaEmPdf, montarDataBR, type EventoExtraido } from '@/lib/agenda/importar-pdf';
+import { geocodificarLote, ancoraDoGabinete } from '@/lib/geocode';
 
 /** A plataforma limita o corpo da requisição a ~4,5 MB. Uma agenda semanal tem centenas de KB. */
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -69,8 +70,21 @@ export async function POST(request: NextRequest) {
     // provável de quem usa isso, e duplicar compromisso é pior que não importar.
     const jaExistentes = await buscarExistentes(gabineteId, eventos);
 
+    // Coordenadas ainda na LEITURA, nao na gravacao: esta rota ja e lenta por
+    // natureza (le o documento) e ja tem tempo estendido, enquanto a gravacao
+    // precisa ser rapida e sem configuracao propria — no plano Hobby cada rota
+    // com maxDuration vira uma funcao serverless dedicada, e o limite e 12.
+    // De quebra, a conferencia passa a mostrar o que foi localizado.
+    const ancora = await ancoraDoGabinete(gabineteId);
+    const coords = await geocodificarLote(eventos, { ancora });
+
     return NextResponse.json({
-      eventos: eventos.map(e => ({ ...e, jaExiste: jaExistentes.has(chaveEvento(e.titulo, e.data, e.horaInicio)) })),
+      eventos: eventos.map((e, i) => ({
+        ...e,
+        lat: coords[i]?.lat ?? null,
+        lng: coords[i]?.lng ?? null,
+        jaExiste: jaExistentes.has(chaveEvento(e.titulo, e.data, e.horaInicio)),
+      })),
       observacoes: leitura.observacoes,
       arquivo: arquivo.name,
     });

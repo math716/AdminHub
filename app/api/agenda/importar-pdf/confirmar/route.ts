@@ -5,16 +5,15 @@
 // corpo vem do navegador e pode ter sido alterado no caminho.
 
 export const dynamic = 'force-dynamic';
-// Geocodificar respeita 1 consulta/segundo (política do Nominatim), então uma
-// agenda cheia leva dezenas de segundos.
-export const maxDuration = 60;
+// Sem maxDuration de propósito: as coordenadas já vêm resolvidas da leitura, e
+// no plano Hobby cada rota com configuração própria vira uma função serverless
+// dedicada — o limite é 12 para o projeto inteiro.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { montarDataBR, TIPOS_EVENTO } from '@/lib/agenda/importar-pdf';
-import { geocodificarLote, ancoraDoGabinete } from '@/lib/geocode';
 
 /** Teto por importação. Uma agenda semanal tem dezenas de itens, não centenas. */
 const MAX_EVENTOS = 200;
@@ -74,6 +73,10 @@ export async function POST(request: NextRequest) {
         local: textoOuNulo(e?.local, 200),
         endereco: textoOuNulo(e?.endereco, 400),
         tipo: TIPOS.has(String(e?.tipo)) ? String(e.tipo) : 'COMPROMISSO',
+        // Coordenadas resolvidas na leitura. Revalidadas porque o corpo vem do
+        // navegador: um par invalido plotaria o compromisso no lugar errado.
+        lat: coordValida(e?.lat, 90),
+        lng: coordValida(e?.lng, 180),
         gabineteId,
         createdById: userId,
       });
@@ -86,14 +89,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Coordenadas, para o compromisso aparecer no mapa. Só tenta onde há
-    // endereço; quem não tiver entra sem coordenada, sem travar a importação.
-    const ancora = await ancoraDoGabinete(gabineteId);
-    const coords = await geocodificarLote(registros, { ancora });
-    coords.forEach((c, i) => {
-      if (c) { registros[i].lat = c.lat; registros[i].lng = c.lng; }
-    });
-    const localizados = coords.filter(Boolean).length;
+    const localizados = registros.filter(r => r.lat != null).length;
 
     const { count } = await prisma.agendaEvent.createMany({ data: registros });
 
@@ -102,6 +98,12 @@ export async function POST(request: NextRequest) {
     console.error('[/api/agenda/importar-pdf/confirmar]', err);
     return NextResponse.json({ error: 'Erro ao gravar os compromissos.' }, { status: 500 });
   }
+}
+
+/** Coordenada so entra se for numero real dentro da faixa geografica. */
+function coordValida(v: unknown, limite: number): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) && Math.abs(n) <= limite && n !== 0 ? n : null;
 }
 
 function textoOuNulo(v: unknown, max: number): string | null {
