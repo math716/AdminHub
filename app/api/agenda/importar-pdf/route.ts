@@ -50,10 +50,19 @@ export async function POST(request: NextRequest) {
     try {
       leitura = await lerAgendaEmPdf(base64);
     } catch (err) {
-      console.error('[/api/agenda/importar-pdf] leitura falhou:', String(err).slice(0, 300));
+      const motivo = String(err);
+      console.error('[/api/agenda/importar-pdf] leitura falhou:', motivo.slice(0, 300));
+
+      // Demora e "não entendi o documento" são problemas diferentes e pedem
+      // ações diferentes de quem está na tela.
+      const demorou = /timeout|aborted|ETIMEDOUT/i.test(motivo);
       return NextResponse.json(
-        { error: 'Não consegui interpretar este documento. Confira se o PDF traz a grade de horários.' },
-        { status: 422 },
+        {
+          error: demorou
+            ? 'A leitura demorou mais que o permitido. Se o PDF tiver várias semanas, envie uma semana por vez.'
+            : 'Não consegui interpretar este documento. Confira se o PDF traz a grade de horários.',
+        },
+        { status: demorou ? 504 : 422 },
       );
     }
 

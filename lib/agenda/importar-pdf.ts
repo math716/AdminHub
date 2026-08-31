@@ -17,6 +17,15 @@ import { jsonSchemaOutputFormat } from '@anthropic-ai/sdk/helpers/json-schema';
 const MODEL = 'claude-opus-5';
 const MAX_TOKENS = 16000;
 
+/**
+ * Corta a leitura ANTES do teto de 60 s da função.
+ *
+ * Estourando o limite da plataforma, o cliente recebe um 504 sem explicação e
+ * o log não diz nada. Com o corte aqui, sobra tempo para responder algo que a
+ * pessoa entenda e para registrar quanto tempo levou.
+ */
+const TIMEOUT_MS = 45_000;
+
 /** Brasilia. O servidor roda em UTC — sem ancora, "14h30" viraria 11h30. */
 const FUSO_BR = '-03:00';
 
@@ -183,6 +192,7 @@ export async function lerAgendaEmPdf(pdfBase64: string, hoje = new Date()): Prom
     timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(hoje);
 
+  const t0 = Date.now();
   const response = await client.messages.parse({
     model: MODEL,
     max_tokens: MAX_TOKENS,
@@ -197,8 +207,16 @@ export async function lerAgendaEmPdf(pdfBase64: string, hoje = new Date()): Prom
         },
       ],
     }],
-    output_config: { format: jsonSchemaOutputFormat(SCHEMA) },
-  });
+    output_config: {
+      format: jsonSchemaOutputFormat(SCHEMA),
+      // A tarefa e transcrever uma tabela, nao raciocinar sobre ela. No esforco
+      // padrao (alto) o modelo demorava mais de 60 s numa agenda de UMA pagina
+      // e a funcao era cortada pelo limite da plataforma.
+      effort: 'low',
+    },
+  }, { timeout: TIMEOUT_MS });
+
+  console.log(`[importar-pdf] leitura em ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 
   const saida = response.parsed_output as unknown as ResultadoLeitura | null;
   if (!saida?.eventos) throw new Error('Nao foi possivel interpretar o documento.');
