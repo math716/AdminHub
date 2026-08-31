@@ -59,10 +59,10 @@ interface GeoIndex {
 }
 const geoIdxCache = new Map<string, GeoIndex>();
 
-function buildGeoIndex(uf = 'DF'): GeoIndex {
+async function buildGeoIndex(uf = 'DF'): Promise<GeoIndex> {
   if (geoIdxCache.has(uf)) return geoIdxCache.get(uf)!;
   const features: any[] = loadGeo().features ?? [];
-  const locais = loadLocaisTse(uf) ?? [];
+  const locais = await loadLocaisTse(uf) ?? [];
   const raCountPorZona = new Map<number, Map<string, number>>();
   const totalLocaisPorZona = new Map<number, number>();
 
@@ -106,16 +106,16 @@ export interface TerritorialData {
   candidatos: CandidatoJson[];                         // candidatos do cargo
 }
 
-export function carregarTerritorial(
+export async function carregarTerritorial(
   ano: number, uf = 'DF', cargo = 'Deputado Distrital',
-): TerritorialData | null {
-  const data = loadStaticTseData(String(ano), uf);
+): Promise<TerritorialData | null> {
+  const data = await loadStaticTseData(String(ano), uf);
   if (!data) return null;
   const cargoNorm = normalizarTextoTse(cargo);
   const cands = data.filter(c => normalizarTextoTse(c.cargo).includes(cargoNorm));
   if (cands.length === 0) return null;
 
-  const idx = buildGeoIndex(uf);
+  const idx = await buildGeoIndex(uf);
   const totalPorRA: Record<string, number> = {};
   const votosPorCand = new Map<string, Record<string, number>>();
 
@@ -205,10 +205,10 @@ export interface ResolucaoDeputados {
   faltantes: string[];
 }
 
-export function resolverDeputados(
+export async function resolverDeputados(
   nomes: string[], ano: number, uf = 'DF', cargo = 'Deputado Distrital',
-): ResolucaoDeputados {
-  const data = loadStaticTseData(String(ano), uf) ?? [];
+): Promise<ResolucaoDeputados> {
+  const data = await loadStaticTseData(String(ano), uf) ?? [];
   const encontrados: { nome: string; cand: CandidatoJson }[] = [];
   const faltantes: string[] = [];
   const usados = new Set<string>();

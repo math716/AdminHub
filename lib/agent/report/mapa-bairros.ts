@@ -159,10 +159,10 @@ export function distribuirVotosPorBairro(
  * maiores somam só 71,6% dos votos de Eduardo Paes em 2020 — 276 mil votos
  * ficariam de fora do desenho.
  */
-function zonasCompletas(
+async function zonasCompletas(
   ano: number, uf: string, municipio: string, nomeUrna: string, cargo?: string,
-): ZonaVotos[] | null {
-  const base = loadStaticTseData(String(ano), uf.toUpperCase());
+): Promise<ZonaVotos[] | null> {
+  const base = await loadStaticTseData(String(ano), uf.toUpperCase());
   if (!base) return null;
   const alvoNome = normalizarTextoTse(nomeUrna);
   const alvoCargo = cargo ? normalizarTextoTse(cargo) : '';
@@ -190,7 +190,7 @@ export async function bairrosComVotos(params: {
 
   // Prefere as zonas completas da base; o recorte recebido é o plano B.
   const completas = params.ano && params.nomeUrna
-    ? zonasCompletas(params.ano, uf, municipio, params.nomeUrna, params.cargo)
+    ? await zonasCompletas(params.ano, uf, municipio, params.nomeUrna, params.cargo)
     : null;
   const zonas = completas && completas.length > 0 ? completas : params.zonas;
   if (!zonas || zonas.length === 0) return null;
@@ -198,7 +198,7 @@ export async function bairrosComVotos(params: {
   const features = await carregarBairros(uf, municipio, baseUrl);
   if (!features) return null;
 
-  const locais = loadLocaisTse(uf.toUpperCase());
+  const locais = await loadLocaisTse(uf.toUpperCase());
   if (!locais) return null;
 
   const valores = distribuirVotosPorBairro(features, locais, municipio, zonas);

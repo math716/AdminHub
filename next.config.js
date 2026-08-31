@@ -43,15 +43,14 @@ const nextConfig = {
   images: { unoptimized: true },
   experimental: {
     serverComponentsExternalPackages: ['@react-pdf/renderer'],
-    // NÃO declare './public/data/tse/**/*' aqui para as rotas do agente: são
-    // 230 MB, e copiá-los para dentro da função estoura o limite de 250 MB da
-    // Vercel (api/agent/chat foi a 263 MB e o build falhou). Esses arquivos já
-    // chegam à função pelo diretório public/ do deploy — o include só duplica.
-    // O índice nacional vive em public/data/tse-index/ (fora da base do TSE)
-    // justamente para NÃO ser arrastado ao bundle do relatório, que não o usa.
-    // Aqui ele é garantido na rota que o consome — 1 MB, seguro.
+    // NUNCA declare './public/data/tse/**/*' aqui. São 211 MB: copiá-los para
+    // dentro de uma função estoura o teto de 250 MB da Vercel — foi o que
+    // manteve api/agent/relatorio em 250,9 MB. Esses arquivos agora são
+    // BUSCADOS POR HTTP do próprio deploy (ver lib/tse-static.ts), como o
+    // public/geojson sempre foi.
+    // O índice nacional (1 MB) fica em public/data/tse-index/, fora da base do
+    // TSE, e é pequeno o bastante para viajar junto da rota que o usa.
     outputFileTracingIncludes: {
-      '/api/tse/zonas': ['./public/data/tse/**/*'],
       '/api/agent/chat': ['./public/data/tse-index/**/*'],
     },
   },

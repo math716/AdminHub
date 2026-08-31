@@ -7,6 +7,7 @@ import { anoValido, ufValida } from '@/lib/tse-params';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
+import { loadStaticTseData } from '@/lib/tse-static';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,32 +48,12 @@ interface CandidatoJson {
   votosPorEstado?: Record<string, number>;
 }
 
-// Cache em memória para não re-ler disco a cada request
-const fileCache = new Map<string, CandidatoJson[]>();
-
-function loadStaticData(ano: string, uf: string): CandidatoJson[] | null {
-  const key = `${ano}-${uf}`;
-  if (fileCache.has(key)) return fileCache.get(key)!;
-
-  const base = path.join(process.cwd(), 'public', 'data', 'tse', ano, uf);
-  const gzPath   = `${base}.json.gz`;
-  const jsonPath  = `${base}.json`;
-
-  try {
-    let raw: string;
-    if (fs.existsSync(gzPath)) {
-      raw = zlib.gunzipSync(fs.readFileSync(gzPath) as any).toString('utf8');
-    } else if (fs.existsSync(jsonPath)) {
-      raw = fs.readFileSync(jsonPath, 'utf8');
-    } else {
-      return null;
-    }
-    const data: CandidatoJson[] = JSON.parse(raw);
-    fileCache.set(key, data);
-    return data;
-  } catch {
-    return null;
-  }
+// Delegado a lib/tse-static, que busca a base do TSE por HTTP em vez de ler o
+// disco — com fs.readFileSync o empacotador copiava os 211 MB da base para
+// dentro desta função, que ficava em 245,6 MB contra um teto de 250 MB.
+// O cache em memória vive lá, compartilhado com as demais rotas.
+async function loadStaticData(ano: string, uf: string): Promise<CandidatoJson[] | null> {
+  return (await loadStaticTseData(ano, uf)) as unknown as CandidatoJson[] | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -146,7 +127,7 @@ async function montarResposta(cand: CandidatoJson, uf: string) {
 // ---------------------------------------------------------------------------
 async function montarRespostaBrasil(candidato: string | null, candidatoId: string | null, ano: string) {
   // Carrega o arquivo BR.json.gz pré-agregado (gerado por scripts/gerar-br-json.ts)
-  const brData = loadStaticData(ano, 'BR');
+  const brData = await loadStaticData(ano, 'BR');
 
   if (!brData || brData.length === 0) {
     return NextResponse.json(
@@ -256,7 +237,7 @@ export async function GET(request: NextRequest) {
     const anoInt = parseInt(ano);
 
     // ── Tentar JSON estático ──────────────────────────────────────────────
-    const staticData = loadStaticData(ano, uf);
+    const staticData = await loadStaticData(ano, uf);
 
     if (staticData) {
       // Busca por ID específico
