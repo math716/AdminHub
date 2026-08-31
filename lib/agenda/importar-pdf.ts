@@ -14,7 +14,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { jsonSchemaOutputFormat } from '@anthropic-ai/sdk/helpers/json-schema';
 
-const MODEL = 'claude-opus-5';
+// Sonnet 5, e nao Opus 5, por uma razao medida: a funcao tem teto de 60 s na
+// plataforma, e o Opus passava de 45 s so na leitura mesmo no esforco minimo.
+// A tarefa aqui e transcrever uma grade de uma pagina — leitura de layout, nao
+// raciocinio — e o Sonnet da conta em uma fracao do tempo.
+const MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 16000;
 
 /**
@@ -24,7 +28,17 @@ const MAX_TOKENS = 16000;
  * o log não diz nada. Com o corte aqui, sobra tempo para responder algo que a
  * pessoa entenda e para registrar quanto tempo levou.
  */
-const TIMEOUT_MS = 45_000;
+const TIMEOUT_MS = 40_000;
+
+/**
+ * Sem retentativa.
+ *
+ * O SDK repete a chamada por conta propria ate duas vezes. Com um trabalho que
+ * ja demora, isso DOBRA o tempo: no log da falha apareciam dois POST para a
+ * API, o primeiro cortado pelo timeout e o segundo consumindo o resto ate a
+ * funcao morrer. Numa leitura lenta, repetir e a pior coisa a fazer.
+ */
+const TENTATIVAS = 0;
 
 /** Brasilia. O servidor roda em UTC — sem ancora, "14h30" viraria 11h30. */
 const FUSO_BR = '-03:00';
@@ -214,7 +228,7 @@ export async function lerAgendaEmPdf(pdfBase64: string, hoje = new Date()): Prom
       // e a funcao era cortada pelo limite da plataforma.
       effort: 'low',
     },
-  }, { timeout: TIMEOUT_MS });
+  }, { timeout: TIMEOUT_MS, maxRetries: TENTATIVAS });
 
   console.log(`[importar-pdf] leitura em ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 
