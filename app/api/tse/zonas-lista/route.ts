@@ -5,7 +5,6 @@ import { anoValido, ufValida } from '@/lib/tse-params';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
-import { loadStaticTseData, loadLocaisTse } from '@/lib/tse-static';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,10 +52,13 @@ function readJsonFile(filePath: string): unknown | null {
   return null;
 }
 
-async function loadCandidatos(ano: string, uf: string): Promise<CandidatoJson[] | null> {
-  // Delegado a lib/tse-static: a base do TSE e buscada por HTTP, e nao
-  // lida do disco, para nao viajar dentro da funcao serverless.
-  return (await loadStaticTseData(ano, uf)) as unknown as CandidatoJson[] | null;
+function loadCandidatos(ano: string, uf: string): CandidatoJson[] | null {
+  const key = `${ano}-${uf}`;
+  if (candCache.has(key)) return candCache.get(key)!;
+  const fp = path.join(process.cwd(), 'public', 'data', 'tse', ano, `${uf}.json`);
+  const d = readJsonFile(fp) as CandidatoJson[] | null;
+  if (d) candCache.set(key, d);
+  return d;
 }
 
 function normalizar(s: string): string {
@@ -102,7 +104,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Carregar dados do estado
-    const candidatos = await loadCandidatos(ano, uf);
+    const candidatos = loadCandidatos(ano, uf);
     if (!candidatos) {
       return NextResponse.json(
         { error: `Dados não disponíveis para ${uf}/${ano}` },

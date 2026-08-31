@@ -7,8 +7,7 @@
     "start": "next start",
     "lint": "next lint",
     "import:estados": "tsx --require dotenv/config scripts/estados/import-estados.ts",
-    "import:estados:dry": "tsx --require dotenv/config scripts/estados/import-estados.ts --dry-run",
-    "tse:manifesto": "node scripts/gerar-manifesto-tse.mjs"
+    "import:estados:dry": "tsx --require dotenv/config scripts/estados/import-estados.ts --dry-run"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config scripts/safe-seed.ts"

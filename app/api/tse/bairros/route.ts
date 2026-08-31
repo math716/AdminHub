@@ -5,7 +5,6 @@ import { anoValido, ufValida } from '@/lib/tse-params';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
-import { loadStaticTseData, loadLocaisTse } from '@/lib/tse-static';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,14 +51,23 @@ function readGz(base: string): string | null {
   return null;
 }
 
-async function loadLocais(uf: string): Promise<LocalJson[] | null> {
-  return (await loadLocaisTse(uf)) as unknown as LocalJson[] | null;
+function loadLocais(uf: string): LocalJson[] | null {
+  if (locaisCache.has(uf)) return locaisCache.get(uf)!;
+  const raw = readGz(path.join(process.cwd(), 'public', 'data', 'tse', 'locais', uf));
+  if (!raw) return null;
+  const data: LocalJson[] = JSON.parse(raw);
+  locaisCache.set(uf, data);
+  return data;
 }
 
-async function loadCandidatos(ano: string, uf: string): Promise<CandidatoJson[] | null> {
-  // Delegado a lib/tse-static: a base do TSE e buscada por HTTP, e nao
-  // lida do disco, para nao viajar dentro da funcao serverless.
-  return (await loadStaticTseData(ano, uf)) as unknown as CandidatoJson[] | null;
+function loadCandidatos(ano: string, uf: string): CandidatoJson[] | null {
+  const key = `${ano}-${uf}`;
+  if (candCache.has(key)) return candCache.get(key)!;
+  const raw = readGz(path.join(process.cwd(), 'public', 'data', 'tse', ano, uf));
+  if (!raw) return null;
+  const data: CandidatoJson[] = JSON.parse(raw);
+  candCache.set(key, data);
+  return data;
 }
 
 function normalizar(s: string): string {
@@ -93,7 +101,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Ano inválido' }, { status: 400 });
   }
 
-  const locais = await loadLocais(uf);
+  const locais = loadLocais(uf);
   if (!locais) {
     return NextResponse.json({ bairros: [], total: 0, message: 'Dados de locais não disponíveis para esta UF' });
   }
@@ -109,7 +117,7 @@ export async function GET(request: NextRequest) {
   const votosPorZona = new Map<number, number>();
 
   if (ano && (candidatoId || nome)) {
-    const candidatos = await loadCandidatos(ano, uf);
+    const candidatos = loadCandidatos(ano, uf);
     let cand: CandidatoJson | undefined;
 
     if (candidatos) {
@@ -133,7 +141,7 @@ export async function GET(request: NextRequest) {
 
     // Fallback: candidatos nacionais (presidente/senado) estão em BR.json mas não em UF.json
     if (!cand && candidatoId) {
-      const brCandidatos = await loadCandidatos(ano, 'BR');
+      const brCandidatos = loadCandidatos(ano, 'BR');
       if (brCandidatos) {
         cand = brCandidatos.find(c => c.id === candidatoId);
       }
