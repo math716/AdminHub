@@ -142,6 +142,49 @@ export default function MapaDemandasPage() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [mapFullscreen, setMapFullscreen] = useState(false);
+  // true quando quem está em tela cheia é o NAVEGADOR; aí o `position: fixed`
+  // de reserva não entra.
+  const [telaCheiaNativa, setTelaCheiaNativa] = useState(false);
+  const mapaBoxRef = useRef<HTMLDivElement>(null);
+  // O painel da rota ocupa a faixa direita; com ele aberto, os balões de
+  // detalhe abrem mais à esquerda em vez de cobrir a lista de paradas.
+  const [rotaAberta, setRotaAberta] = useState(false);
+
+  /**
+   * Tela cheia de verdade, do navegador — não um `position: fixed` por cima.
+   *
+   * O widget de chat da plataforma usa z-index 2147483647, o maior valor
+   * possível: nenhum número nosso passa por cima dele. Em tela cheia nativa o
+   * navegador cria uma camada acima de TODA a página e o problema deixa de
+   * existir. O modo CSS fica como reserva para navegador que recuse a API.
+   */
+  const alternarTelaCheia = useCallback(async () => {
+    const box = mapaBoxRef.current;
+    try {
+      if (!document.fullscreenElement && box?.requestFullscreen) {
+        await box.requestFullscreen();
+        return;                       // o listener abaixo atualiza o estado
+      }
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        return;
+      }
+    } catch {
+      // Recusado (permissão, iframe sem allow): usa o modo CSS.
+    }
+    setMapFullscreen(f => !f);
+  }, []);
+
+  // Sair pelo Esc ou pelo controle do navegador também precisa refletir aqui.
+  useEffect(() => {
+    const aoMudar = () => {
+      const nativo = Boolean(document.fullscreenElement);
+      setTelaCheiaNativa(nativo);
+      setMapFullscreen(nativo);
+    };
+    document.addEventListener('fullscreenchange', aoMudar);
+    return () => document.removeEventListener('fullscreenchange', aoMudar);
+  }, []);
   const [showDemands, setShowDemands] = useState(true);
   const [showAgendas, setShowAgendas] = useState(true);
   const [rotaLinha, setRotaLinha] = useState<Array<[number, number]> | undefined>();
@@ -700,7 +743,11 @@ export default function MapaDemandasPage() {
         )}
 
         {/* Mapa */}
-        <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)]' : 'flex-1 relative rounded-2xl overflow-hidden border border-[var(--tint-10)] shadow-2xl bg-[var(--bg-card)]'}>
+        <div
+          ref={mapaBoxRef}
+          className={mapFullscreen && !telaCheiaNativa
+            ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)]'
+            : 'flex-1 relative rounded-2xl overflow-hidden border border-[var(--tint-10)] shadow-2xl bg-[var(--bg-card)]'}>
           <DemandaMapLeaflet
             demands={showDemands ? demandsWithCoords : []}
             agendaEvents={showAgendas ? agendaEvents : []}
@@ -715,7 +762,11 @@ export default function MapaDemandasPage() {
           />
 
           {/* Rota entre os compromissos do dia */}
-          <RotaDoDia eventos={agendaEvents} onLinhaChange={setRotaLinha} />
+          <RotaDoDia
+            eventos={agendaEvents}
+            onLinhaChange={setRotaLinha}
+            onAbertoChange={setRotaAberta}
+          />
 
           {/* Botão expandir painel — canto superior esquerdo */}
           {sidebarCollapsed && (
@@ -737,7 +788,7 @@ export default function MapaDemandasPage() {
 
           {/* Botão tela cheia — canto superior direito */}
           <button
-            onClick={() => setMapFullscreen(f => !f)}
+            onClick={alternarTelaCheia}
             className="absolute top-3 right-3 z-[1000] p-2.5 rounded-2xl transition-colors duration-200"
             style={{
               background: 'var(--bg-card)',
@@ -752,7 +803,7 @@ export default function MapaDemandasPage() {
 
           {/* Popup detalhe — demanda */}
           {selectedDemand && (
-            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-3 md:left-auto md:w-64 w-full bg-[var(--bg-page)] border-t md:border border-[var(--tint-14)] md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] z-[1000] overflow-hidden max-h-[65vh] overflow-y-auto">
+            <div className={`absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 ${rotaAberta ? 'md:right-[23.5rem]' : 'md:right-3'} md:left-auto md:w-64 w-full bg-[var(--bg-page)] border-t md:border border-[var(--tint-14)] md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] z-[1000] overflow-hidden max-h-[65vh] overflow-y-auto`}>
               {selectedDemand.foto
                 ? <div className="w-full h-32 bg-black overflow-hidden flex-shrink-0">
                     <img src={selectedDemand.foto} alt="Foto da demanda" className="w-full h-full object-cover" />
@@ -843,7 +894,7 @@ export default function MapaDemandasPage() {
 
           {/* Popup detalhe — evento */}
           {selectedEvent && (
-            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 md:right-4 md:left-auto md:w-80 w-full bg-[var(--bg-page)] border-t md:border border-[var(--tint-14)] md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] z-[1000] overflow-hidden max-h-[60vh] overflow-y-auto">
+            <div className={`absolute bottom-0 left-0 right-0 md:bottom-auto md:top-14 ${rotaAberta ? 'md:right-[23.5rem]' : 'md:right-4'} md:left-auto md:w-80 w-full bg-[var(--bg-page)] border-t md:border border-[var(--tint-14)] md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] z-[1000] overflow-hidden max-h-[60vh] overflow-y-auto`}>
               <div className="h-1 w-full flex-shrink-0" style={{ background: selectedEvent.cor ?? TIPO_AGENDA_COLORS[selectedEvent.tipo] ?? '#6366f1' }} />
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-3">

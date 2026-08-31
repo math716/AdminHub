@@ -82,9 +82,11 @@ function duracao(min: number): string {
   return r ? `${h}h${String(r).padStart(2, '0')}` : `${h}h`;
 }
 
-export function RotaDoDia({ eventos, onLinhaChange }: {
+export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
   eventos: EventoMapa[];
   onLinhaChange: (linha: Array<[number, number]> | undefined) => void;
+  /** A tela precisa saber, para os balões de detalhe não caírem em cima. */
+  onAbertoChange?: (aberto: boolean) => void;
 }) {
   const [aberto, setAberto] = useState(false);
   const [dia, setDia] = useState('');
@@ -291,6 +293,8 @@ export function RotaDoDia({ eventos, onLinhaChange }: {
       setAddBuscando(false);
     }
   };
+
+  useEffect(() => { onAbertoChange?.(aberto); }, [aberto]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fechar = () => {
     setAberto(false);
