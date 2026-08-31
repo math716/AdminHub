@@ -141,6 +141,10 @@ export default function MapaDemandasPage() {
   const [geoResults, setGeoResults] = useState<GeoResult[]>([]);
   const [geoLoading, setGeoLoading] = useState(false);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  // Ponto do endereço buscado: sem marcá-lo, a busca só movia o mapa e, num
+  // lugar sem demandas, parecia que nada tinha sido encontrado.
+  const [pontoBuscado, setPontoBuscado] = useState<{ lat: number; lng: number; rotulo: string } | null>(null);
+  const [geoAviso, setGeoAviso] = useState('');
   const [mapFullscreen, setMapFullscreen] = useState(false);
   // true quando quem está em tela cheia é o NAVEGADOR; aí o `position: fixed`
   // de reserva não entra.
@@ -302,10 +306,19 @@ export default function MapaDemandasPage() {
     if (!geoQuery.trim()) return;
     setGeoLoading(true);
     setGeoResults([]);
+    setGeoAviso('');
     try {
       const res = await fetch(`/api/geocode?address=${encodeURIComponent(geoQuery)}`);
       const data = await res.json();
-      setGeoResults(data.results ?? []);
+      const achados = data.results ?? [];
+      setGeoResults(achados);
+      // Antes, não encontrar era indistinguível de erro: a lista simplesmente
+      // não aparecia e a tela ficava muda.
+      if (achados.length === 0) {
+        setGeoAviso('Nenhum endereço encontrado. Tente incluir a cidade, ou uma referência maior.');
+      }
+    } catch {
+      setGeoAviso('Não foi possível buscar agora. Tente de novo em instantes.');
     } finally {
       setGeoLoading(false);
     }
@@ -452,12 +465,22 @@ export default function MapaDemandasPage() {
               ? <Loader2 className="w-4 h-4 text-sky-400 animate-spin" />
               : <button onClick={geocode} className="text-sky-400 hover:text-sky-300"><Search className="w-4 h-4" /></button>
             }
+            {geoAviso && (
+              <div className="absolute top-full left-0 mt-1 w-80 rounded-xl px-4 py-2.5 z-50"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)', boxShadow: '0 8px 30px rgba(0,0,0,0.4)' }}>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{geoAviso}</p>
+              </div>
+            )}
             {geoResults.length > 0 && (
               <div className="absolute top-full left-0 mt-1 w-80 bg-[var(--bg-card)] border border-[var(--tint-10)] rounded-xl shadow-2xl z-50 overflow-hidden">
                 {geoResults.map((r, i) => (
                   <button
                     key={i}
-                    onClick={() => { setMapCenter([r.lat, r.lng]); setGeoResults([]); setGeoQuery(r.endereco); }}
+                    onClick={() => {
+                      setMapCenter([r.lat, r.lng]);
+                      setPontoBuscado({ lat: r.lat, lng: r.lng, rotulo: r.endereco || geoQuery });
+                      setGeoResults([]); setGeoAviso(''); setGeoQuery(r.endereco);
+                    }}
                     className="w-full text-left px-4 py-2.5 hover:bg-[var(--tint-06)] text-sm text-gray-300 border-b border-[var(--tint-06)] last:border-0"
                   >
                     <div className="font-medium text-[color:var(--text-primary)] truncate">{r.endereco}</div>
@@ -759,6 +782,7 @@ export default function MapaDemandasPage() {
             onEventClick={handleMapEventClick}
             showSpDistritos
             rota={rotaLinha}
+            marcadorBusca={pontoBuscado}
           />
 
           {/* Rota entre os compromissos do dia */}

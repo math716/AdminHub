@@ -60,6 +60,8 @@ interface Props {
   showSpDistritos?: boolean;
   /** Linha da rota do dia, em pares [lat, lng]. Vazio esconde a rota. */
   rota?: Array<[number, number]>;
+  /** Ponto de um endereço buscado — some quando a busca é limpa. */
+  marcadorBusca?: { lat: number; lng: number; rotulo: string } | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -146,12 +148,14 @@ export default function DemandaMapLeaflet({
   onEventClick,
   showSpDistritos = false,
   rota,
+  marcadorBusca,
 }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const { mapInstanceRef, cleanupMap, isUnmounted } = useMapCleanup();
   const markersRef = useRef<Map<string, any>>(new Map());
   const lRef = useRef<any>(null); // instância do Leaflet, disponível após init
   const rotaRef = useRef<any>(null); // camada da rota do dia
+  const buscaRef = useRef<any>(null); // marcador do endereço buscado
   const [mapReady, setMapReady] = useState(false);
 
   // Callback refs — sempre atuais sem precisar de deps
@@ -428,7 +432,47 @@ export default function DemandaMapLeaflet({
     };
   }, [mapReady, rota]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Effect 4: Centralizar quando o centro externo mudar
+  // ── Effect 4: Marcador do endereço buscado
+  //
+  // Sem isto a busca apenas centralizava o mapa. Num lugar sem demandas, a
+  // pessoa via uma tela vazia e concluía que o endereço não tinha sido
+  // encontrado — quando na verdade o mapa já estava em cima dele.
+  useEffect(() => {
+    const L = lRef.current;
+    const map = mapInstanceRef.current;
+    if (!mapReady || !L || !map) return;
+
+    if (buscaRef.current) {
+      try { buscaRef.current.remove(); } catch {}
+      buscaRef.current = null;
+    }
+    if (!marcadorBusca) return;
+
+    const icone = L.divIcon({
+      className: '',
+      html: `<div style="
+        width:22px;height:22px;border-radius:50%;
+        background:#2563EB;border:3px solid #fff;
+        box-shadow:0 0 0 6px rgba(37,99,235,0.30), 0 2px 8px rgba(0,0,0,0.45);
+      "></div>`,
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+    });
+
+    const m = L.marker([marcadorBusca.lat, marcadorBusca.lng], { icon: icone, zIndexOffset: 1000 })
+      .addTo(map)
+      .bindTooltip(marcadorBusca.rotulo, { direction: 'top', offset: [0, -14], permanent: true, className: 'demanda-tooltip' });
+    buscaRef.current = m;
+
+    return () => {
+      if (buscaRef.current) {
+        try { buscaRef.current.remove(); } catch {}
+        buscaRef.current = null;
+      }
+    };
+  }, [mapReady, marcadorBusca?.lat, marcadorBusca?.lng, marcadorBusca?.rotulo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Effect 5: Centralizar quando o centro externo mudar
   useEffect(() => {
     if (!center || !mapInstanceRef.current) return;
     mapInstanceRef.current.setView(center, Math.max(mapInstanceRef.current.getZoom(), 14), { animate: true });
