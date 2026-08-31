@@ -132,6 +132,10 @@ export default function AgendaPage() {
   const [formError, setFormError] = useState('');
 
   const [geoLoading, setGeoLoading] = useState(false);
+  // Nome do lugar encontrado. Coordenada sozinha nao diz nada a quem le:
+  // "Prefeitura de Sao Paulo" resolveu para Sao Jose do Rio Preto e o erro
+  // so aparecia depois, no mapa.
+  const [geoNome, setGeoNome] = useState<string>('');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   useEffect(() => {
@@ -188,6 +192,7 @@ export default function AgendaPage() {
     const dateStr = `${viewYear}-${pad(viewMonth + 1)}-${pad(day)}`;
     setEditEvent(null);
     setForm({ ...EMPTY_FORM, data: dateStr });
+    setGeoNome('');
     setFormError('');
     setShowModal(true);
   };
@@ -196,6 +201,9 @@ export default function AgendaPage() {
     const d = new Date(e.data);
     const pad = (n: number) => String(n).padStart(2, '0');
     setEditEvent(e);
+    // Sem isto, o lugar geocodificado do evento anterior ficaria na tela ao
+    // abrir outro — dizendo que o endereco deste foi confirmado quando nao foi.
+    setGeoNome('');
     setForm({
       titulo: e.titulo,
       descricao: e.descricao ?? '',
@@ -224,6 +232,9 @@ export default function AgendaPage() {
       if (data.results?.[0]) {
         const r = data.results[0];
         setForm((f) => ({ ...f, lat: r.lat, lng: r.lng, endereco: f.endereco || r.endereco }));
+        setGeoNome(r.displayName || r.endereco || '');
+      } else {
+        setGeoNome('');
       }
     } finally {
       setGeoLoading(false);
@@ -755,11 +766,19 @@ export default function AgendaPage() {
                   </button>
                 </div>
                 {form.lat && form.lng && (
-                  <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: '#22c55e' }}>
-                    <CheckCircle className="w-3 h-3" />
-                    Localizado: {form.lat.toFixed(4)}, {form.lng.toFixed(4)}
-                    <span className="ml-1" style={{ color: 'var(--tint-35)' }}>— aparecerá no Mapa de Demandas</span>
-                  </p>
+                  <div className="text-xs mt-1.5">
+                    <p className="flex items-start gap-1" style={{ color: '#22c55e' }}>
+                      <CheckCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                      <span>
+                        {/* O NOME vem primeiro: e o que permite notar que o
+                            servico entendeu outra cidade. */}
+                        {geoNome ? <strong style={{ fontWeight: 600 }}>{geoNome}</strong> : 'Endereço localizado'}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 pl-4" style={{ color: 'var(--tint-35)' }}>
+                      Confira se é o lugar certo — é aqui que o compromisso aparecerá no mapa.
+                    </p>
+                  </div>
                 )}
               </div>
 

@@ -157,7 +157,9 @@ async function consultarNominatim(consulta: string, ancora?: Ancora): Promise<Co
   }
 
   try {
-    let url = `${NOMINATIM}?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(consulta)}`;
+    // limit alto de proposito: o Nominatim ordena por relevancia textual, NAO
+    // por proximidade. Buscamos varios e escolhemos o mais perto da ancora.
+    let url = `${NOMINATIM}?format=json&limit=10&countrycodes=br&q=${encodeURIComponent(consulta)}`;
     if (ancora) {
       const v = [
         ancora.lng - VIEWBOX_GRAUS, ancora.lat + VIEWBOX_GRAUS,
@@ -173,14 +175,17 @@ async function consultarNominatim(consulta: string, ancora?: Ancora): Promise<Co
     }
 
     const dados: any[] = await res.json();
-    const primeiro = dados?.[0];
-    if (!primeiro) { cache.set(chave, null); return null; }
+    const candidatos = (Array.isArray(dados) ? dados : [])
+      .map(r => ({ lat: parseFloat(r.lat), lng: parseFloat(r.lon) }))
+      .filter(c => Number.isFinite(c.lat) && Number.isFinite(c.lng));
+    if (candidatos.length === 0) { cache.set(chave, null); return null; }
 
-    const lat = parseFloat(primeiro.lat);
-    const lng = parseFloat(primeiro.lon);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) { cache.set(chave, null); return null; }
-
-    const coord = { lat, lng };
+    // "Prefeitura de Sao Paulo" devolvia a prefeitura de Sao Jose do Rio Preto:
+    // o Nominatim le "Sao Paulo" como o ESTADO e ordena por semelhanca de nome.
+    // Com a ancora, o mais PROXIMO e quase sempre o certo.
+    const coord = ancora
+      ? candidatos.reduce((a, b) => (distanciaKm(ancora, b) < distanciaKm(ancora, a) ? b : a))
+      : candidatos[0];
 
     // Homonimo em outro estado: descarta em vez de plotar longe.
     if (ancora && distanciaKm(ancora, coord) > RAIO_MAX_KM) {

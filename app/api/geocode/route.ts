@@ -3,13 +3,17 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
+import { ancoraDoGabinete, type Ancora } from '@/lib/geocode';
 
-// In-memory cache: key → { results, expiresAt }
+// Cache em memória: chave → { results, expiresAt }
 const geocodeCache = new Map<string, { results: unknown[]; expiresAt: number }>();
-const CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
+const CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 horas
 
-// Proxy para Nominatim (OpenStreetMap) — sem custo, sem API key
-// GET /api/geocode?address=Rua+das+Flores+123,+São+Paulo
+/** Faixa em graus ao redor do gabinete usada para enviesar a busca (~130 km). */
+const VIEWBOX_GRAUS = 1.2;
+
+// Proxy para o Nominatim (OpenStreetMap) — sem custo, sem chave.
+// GET /api/geocode?address=Rua+das+Flores+123
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
@@ -17,14 +21,32 @@ export async function GET(request: NextRequest) {
   const address = request.nextUrl.searchParams.get('address');
   if (!address) return NextResponse.json({ error: 'Parâmetro address obrigatório' }, { status: 400 });
 
-  const cacheKey = address.toLowerCase().trim();
+  const gabineteId = (session.user as any)?.gabineteId as string | undefined;
+
+  // A âncora entra na chave: o mesmo endereço deve resolver diferente para
+  // gabinetes de estados diferentes.
+  const ancora = gabineteId ? await ancoraDoGabinete(gabineteId).catch(() => undefined) : undefined;
+  const cacheKey = `${address.toLowerCase().trim()}|${ancora ? `${ancora.lat.toFixed(2)},${ancora.lng.toFixed(2)}` : ''}`;
   const cached = geocodeCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return NextResponse.json({ results: cached.results });
   }
 
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&countrycodes=br&q=${encodeURIComponent(address)}`;
+    // limit alto de propósito: o Nominatim ordena por semelhança de NOME, não
+    // por proximidade. "Prefeitura de São Paulo" devolvia a prefeitura de São
+    // José do Rio Preto, porque ele lê "São Paulo" como o estado. Buscamos
+    // vários e reordenamos pelo mais perto de onde o gabinete atua.
+    let url = 'https://nominatim.openstreetmap.org/search'
+      + `?format=json&limit=15&addressdetails=1&countrycodes=br&q=${encodeURIComponent(address)}`;
+    if (ancora) {
+      const v = [
+        ancora.lng - VIEWBOX_GRAUS, ancora.lat + VIEWBOX_GRAUS,
+        ancora.lng + VIEWBOX_GRAUS, ancora.lat - VIEWBOX_GRAUS,
+      ].map(n => n.toFixed(4)).join(',');
+      url += `&viewbox=${v}`;
+    }
+
     const res = await fetch(url, {
       headers: { 'User-Agent': 'AdminHub/1.0 (gabinete@adminhub.app)' },
     });
@@ -34,7 +56,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data: any[] = await res.json();
-    const results = data.map((item) => ({
+    let results = data.map((item) => ({
       lat: parseFloat(item.lat),
       lng: parseFloat(item.lon),
       displayName: item.display_name,
@@ -47,11 +69,33 @@ export async function GET(request: NextRequest) {
       ]
         .filter(Boolean)
         .join(', '),
-    }));
+    })).filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng));
+
+    // Aqui NÃO descartamos os distantes, ao contrário da importação: no
+    // formulário a pessoa está digitando de propósito e pode marcar um
+    // compromisso em outro estado. Só reordenamos, e a tela mostra o endereço
+    // encontrado para ela conferir.
+    if (ancora) {
+      results = results
+        .map(r => ({ ...r, _km: distanciaKm(ancora, r) }))
+        .sort((a, b) => a._km - b._km)
+        .map(({ _km, ...r }) => r);
+    }
+    results = results.slice(0, 5);
 
     geocodeCache.set(cacheKey, { results, expiresAt: Date.now() + CACHE_TTL_MS });
     return NextResponse.json({ results });
   } catch {
     return NextResponse.json({ error: 'Erro ao geocodificar endereço' }, { status: 500 });
   }
+}
+
+function distanciaKm(a: Ancora, b: { lat: number; lng: number }): number {
+  const R = 6371;
+  const rad = (g: number) => (g * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2
+    + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
 }
