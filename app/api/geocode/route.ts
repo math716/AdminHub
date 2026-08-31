@@ -59,7 +59,22 @@ export async function GET(request: NextRequest) {
     });
 
     if (!res.ok) {
-      return NextResponse.json({ error: 'Falha ao consultar geocodificação' }, { status: 502 });
+      // 403/429 do Nominatim = uso acima do permitido (uma consulta por
+      // segundo). Isso acontece de verdade quando uma importação em lote está
+      // rodando ao mesmo tempo, e precisa ser dito com estas palavras: quem vê
+      // "nenhum endereço encontrado" tenta de novo com outro texto, o que não
+      // resolve e piora o bloqueio.
+      const bloqueado = res.status === 403 || res.status === 429;
+      console.warn(`[geocode] Nominatim ${res.status} para "${address.slice(0, 60)}"`);
+      return NextResponse.json(
+        {
+          error: bloqueado
+            ? 'O serviço de mapas está recusando consultas no momento. Aguarde um instante e tente de novo.'
+            : 'Falha ao consultar o serviço de mapas.',
+          bloqueado,
+        },
+        { status: 502 },
+      );
     }
 
     const data: any[] = await res.json();
@@ -91,8 +106,20 @@ export async function GET(request: NextRequest) {
     }
     results = results.slice(0, 5);
 
+    // Um resultado a centenas de quilômetros da região do gabinete pode estar
+    // certo (compromisso em outro estado) ou ser homônimo — "SHIS" sozinho
+    // resolve para Luziânia/GO. Quem decide é quem está na tela, mas ela
+    // precisa ser avisada.
+    const longe = ancora && results[0]
+      ? Math.round(distanciaKm(ancora, results[0]))
+      : null;
+
+    const payload = {
+      results,
+      ...(longe !== null && longe > 100 && { distanciaKm: longe }),
+    };
     geocodeCache.set(cacheKey, { results, expiresAt: Date.now() + CACHE_TTL_MS });
-    return NextResponse.json({ results });
+    return NextResponse.json(payload);
   } catch {
     return NextResponse.json({ error: 'Erro ao geocodificar endereço' }, { status: 500 });
   }

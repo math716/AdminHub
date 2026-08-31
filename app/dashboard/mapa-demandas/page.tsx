@@ -317,13 +317,16 @@ export default function MapaDemandasPage() {
     setGeoAviso('');
     try {
       const res = await fetch(`/api/geocode?address=${encodeURIComponent(geoQuery)}`);
+      const data = await res.json();
+
       if (!res.ok) {
-        setGeoAviso('Não foi possível buscar agora. Tente de novo em instantes.');
+        // O servidor distingue "fui barrado pelo serviço de mapas" de falha
+        // genérica — tentar de novo com outro texto não resolveria o primeiro.
+        setGeoAviso(data?.error ?? 'Não foi possível buscar agora. Tente de novo em instantes.');
         return;
       }
-      const data = await res.json();
-      const achados: GeoResult[] = data.results ?? [];
 
+      const achados: GeoResult[] = data.results ?? [];
       if (achados.length === 0) {
         // Não encontrar era indistinguível de erro: a lista não aparecia e a
         // tela ficava muda.
@@ -334,6 +337,13 @@ export default function MapaDemandasPage() {
       const primeiro = achados[0];
       setMapCenter([primeiro.lat, primeiro.lng]);
       setPontoBuscado({ lat: primeiro.lat, lng: primeiro.lng, rotulo: primeiro.endereco || geoQuery });
+
+      // Achado longe da região do gabinete: pode ser um compromisso em outro
+      // estado, ou um homônimo — "SHIS" sozinho cai em Luziânia/GO. A tela
+      // avisa e deixa a lista aberta em vez de decidir sozinha.
+      if (typeof data.distanciaKm === 'number') {
+        setGeoAviso(`Este endereço fica a ${data.distanciaKm} km da região onde o gabinete atua. Confira se é o certo.`);
+      }
       // Mais de um candidato: mantém a lista para trocar de escolha.
       if (achados.length > 1) setGeoResults(achados);
     } catch {
