@@ -302,6 +302,14 @@ export default function MapaDemandasPage() {
   }, []);
 
   // Geocodificar endereço
+  /**
+   * Busca um endereço e VAI até ele.
+   *
+   * Antes a busca só abria uma lista: o mapa não se mexia até alguém clicar num
+   * item. Quem digitava e apertava Enter via a tela parada e concluía que a
+   * busca não funcionava. Agora o primeiro resultado é aplicado na hora, e a
+   * lista continua disponível para escolher outro.
+   */
   const geocode = useCallback(async () => {
     if (!geoQuery.trim()) return;
     setGeoLoading(true);
@@ -309,14 +317,25 @@ export default function MapaDemandasPage() {
     setGeoAviso('');
     try {
       const res = await fetch(`/api/geocode?address=${encodeURIComponent(geoQuery)}`);
-      const data = await res.json();
-      const achados = data.results ?? [];
-      setGeoResults(achados);
-      // Antes, não encontrar era indistinguível de erro: a lista simplesmente
-      // não aparecia e a tela ficava muda.
-      if (achados.length === 0) {
-        setGeoAviso('Nenhum endereço encontrado. Tente incluir a cidade, ou uma referência maior.');
+      if (!res.ok) {
+        setGeoAviso('Não foi possível buscar agora. Tente de novo em instantes.');
+        return;
       }
+      const data = await res.json();
+      const achados: GeoResult[] = data.results ?? [];
+
+      if (achados.length === 0) {
+        // Não encontrar era indistinguível de erro: a lista não aparecia e a
+        // tela ficava muda.
+        setGeoAviso('Nenhum endereço encontrado. Tente incluir a cidade, ou uma referência maior.');
+        return;
+      }
+
+      const primeiro = achados[0];
+      setMapCenter([primeiro.lat, primeiro.lng]);
+      setPontoBuscado({ lat: primeiro.lat, lng: primeiro.lng, rotulo: primeiro.endereco || geoQuery });
+      // Mais de um candidato: mantém a lista para trocar de escolha.
+      if (achados.length > 1) setGeoResults(achados);
     } catch {
       setGeoAviso('Não foi possível buscar agora. Tente de novo em instantes.');
     } finally {
@@ -456,7 +475,11 @@ export default function MapaDemandasPage() {
             <Navigation className="w-4 h-4 text-gray-400" />
             <input
               value={geoQuery}
-              onChange={(e) => setGeoQuery(e.target.value)}
+              onChange={(e) => {
+                setGeoQuery(e.target.value);
+                setGeoAviso('');
+                if (!e.target.value.trim()) { setPontoBuscado(null); setGeoResults([]); }
+              }}
               onKeyDown={(e) => e.key === 'Enter' && geocode()}
               placeholder="Buscar endereço no mapa..."
               className="bg-transparent text-[color:var(--text-primary)] text-sm w-52 outline-none placeholder-gray-500"
