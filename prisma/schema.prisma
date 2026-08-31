@@ -104,6 +104,13 @@ model Gabinete {
   whatsappInstanceId String?
   limiteTokensMes    Int?    // limite mensal de tokens da Gabi (null = sem limite)
 
+  /// Sede do gabinete — ponto de partida das rotas do dia no mapa.
+  /// Sem isto, a rota começava no primeiro compromisso e ignorava o trajeto de
+  /// saída, que costuma ser o mais longo do dia.
+  endereco String?
+  lat      Float?
+  lng      Float?
+
   deletedAt     DateTime?
   deletedById   String?
   deletedByName String?

@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Route, X, Loader2, AlertTriangle, Clock, MapPin, Wand2, ExternalLink,
   ChevronDown, ChevronUp, Plus, GripVertical, Trash2, RotateCcw,
+  Building2, LocateFixed, CornerDownLeft,
 } from 'lucide-react';
 
 interface EventoMapa {
@@ -36,6 +37,8 @@ interface Parada {
   lat: number;
   lng: number;
   avulsa: boolean;
+  /** Sede do gabinete ou posição do aparelho: de onde o dia começa. */
+  origem?: boolean;
   /** Só compromissos têm horário. */
   inicio?: string;
   fim?: string | null;
@@ -95,7 +98,28 @@ export function RotaDoDia({ eventos, onLinhaChange }: {
   const [addTexto, setAddTexto] = useState('');
   const [addBuscando, setAddBuscando] = useState(false);
 
+  // Sede do gabinete (Configurações). É a origem padrão do dia — sem ela a
+  // rota ignorava o trajeto de saída, que costuma ser o mais longo.
+  const [sede, setSede] = useState<Parada | null>(null);
+  const [usarOrigem, setUsarOrigem] = useState(true);
+  const [voltar, setVoltar] = useState(false);
+  const [buscandoGps, setBuscandoGps] = useState(false);
+
   const arrastando = useRef<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/gabinete/sede')
+      .then(r => (r.ok ? r.json() : null))
+      .then(j => {
+        if (j?.lat != null && j?.lng != null) {
+          setSede({
+            chave: 'origem', nome: j.endereco || 'Sede do gabinete',
+            lat: j.lat, lng: j.lng, avulsa: true, origem: true,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const dias = useMemo(() => {
     const porDia = new Map<string, number>();
@@ -126,6 +150,18 @@ export function RotaDoDia({ eventos, onLinhaChange }: {
         fim: e.dataFim ?? null,
       }));
   }, [eventos, dia]);
+
+  /** Compromissos do dia com a origem na frente e, se pedido, o retorno no fim. */
+  const comOrigem = useMemo((): Parada[] => {
+    if (doDia.length === 0) return [];
+    const partida = usarOrigem && sede ? [sede] : [];
+    // O retorno é uma cópia com chave própria: React precisa de chaves únicas,
+    // e sem isso a última parada não renderizaria.
+    const retorno = voltar && sede
+      ? [{ ...sede, chave: 'retorno', nome: `Retorno — ${sede.nome}` }]
+      : [];
+    return [...partida, ...doDia, ...retorno];
+  }, [doDia, sede, usarOrigem, voltar]);
 
   const semLocal = useMemo(() => {
     if (!dia) return 0;
@@ -165,13 +201,13 @@ export function RotaDoDia({ eventos, onLinhaChange }: {
     }
   }, [onLinhaChange]);
 
-  // Troca de dia: recomeça da ordem dos horários.
+  // Troca de dia, ou mudança na origem/retorno: recomeça da ordem dos horários.
   useEffect(() => {
-    setParadas(doDia);
+    setParadas(comOrigem);
     setRota(null);
     onLinhaChange(undefined);
-    if (doDia.length >= 2) calcular(doDia, false);
-  }, [dia, doDia.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (comOrigem.length >= 2) calcular(comOrigem, false);
+  }, [dia, comOrigem.length, sede?.chave, usarOrigem, voltar]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const reordenar = (de: number, para: number) => {
     if (de === para || para < 0 || para >= paradas.length) return;
@@ -189,8 +225,40 @@ export function RotaDoDia({ eventos, onLinhaChange }: {
   };
 
   const restaurar = () => {
-    setParadas(doDia);
-    calcular(doDia, false);
+    setParadas(comOrigem);
+    calcular(comOrigem, false);
+  };
+
+  /**
+   * Substitui a origem pela posição do aparelho — para quem já está na rua.
+   * Não vira padrão: no computador a posição vem por IP e erra o bairro, e a
+   * rota é montada com antecedência, quando o aparelho não está onde o dia
+   * vai começar.
+   */
+  const usarGps = () => {
+    if (!navigator.geolocation) { setErro('Este navegador não informa a localização.'); return; }
+    setBuscandoGps(true);
+    setErro('');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const aqui: Parada = {
+          chave: 'origem', nome: 'Minha localização', avulsa: true, origem: true,
+          lat: pos.coords.latitude, lng: pos.coords.longitude,
+        };
+        const semAntiga = paradas.filter(p => !p.origem);
+        const nova = [aqui, ...semAntiga];
+        setSede(aqui);
+        setUsarOrigem(true);
+        setParadas(nova);
+        calcular(nova, false);
+        setBuscandoGps(false);
+      },
+      () => {
+        setErro('Não consegui obter sua localização. Verifique a permissão do navegador.');
+        setBuscandoGps(false);
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
   };
 
   /** Busca o endereço digitado e insere como parada no fim da lista. */
@@ -267,8 +335,8 @@ export function RotaDoDia({ eventos, onLinhaChange }: {
       + (p.length > 2 ? `&waypoints=${p.slice(1, -1).join('|')}` : '');
   }, [paradas]);
 
-  const alterada = paradas.length !== doDia.length
-    || paradas.some((p, i) => p.chave !== doDia[i]?.chave);
+  const alterada = paradas.length !== comOrigem.length
+    || paradas.some((p, i) => p.chave !== comOrigem[i]?.chave);
 
   if (dias.length === 0) return null;
 
@@ -315,6 +383,57 @@ export function RotaDoDia({ eventos, onLinhaChange }: {
               <ChevronDown className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
                 style={{ color: 'var(--text-tertiary)' }} />
             </div>
+
+            {/* Origem do dia */}
+            {sede ? (
+              <div className="rounded-xl px-3 py-2.5 space-y-2"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-14)' }}>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input type="checkbox" checked={usarOrigem}
+                    onChange={e => setUsarOrigem(e.target.checked)}
+                    className="mt-0.5 w-3.5 h-3.5 flex-shrink-0" style={{ accentColor: '#2563EB' }} />
+                  <span className="flex-1 min-w-0">
+                    <span className="text-[12.5px] font-semibold block truncate" style={{ color: 'var(--text-primary)' }}>
+                      Partir de {sede.nome}
+                    </span>
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={voltar} disabled={!usarOrigem}
+                    onChange={e => setVoltar(e.target.checked)}
+                    className="w-3.5 h-3.5 flex-shrink-0" style={{ accentColor: '#2563EB' }} />
+                  <span className="text-[12px] flex items-center gap-1"
+                    style={{ color: usarOrigem ? 'var(--text-secondary)' : 'var(--text-tertiary)' }}>
+                    <CornerDownLeft className="w-3 h-3" /> Voltar no fim do dia
+                  </span>
+                </label>
+                <button onClick={usarGps} disabled={buscandoGps}
+                  className="flex items-center gap-1.5 text-[11.5px] transition-all hover:opacity-70 disabled:opacity-40"
+                  style={{ color: 'var(--text-tertiary)' }}>
+                  {buscandoGps
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : <LocateFixed className="w-3 h-3" />}
+                  Partir da minha localização
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-xl px-3 py-2.5"
+                style={{ background: 'var(--bg-card)', border: '1px dashed var(--tint-14)' }}>
+                <p className="text-[11.5px] flex items-start gap-1.5 mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
+                  <Building2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  A rota começa no primeiro compromisso. Cadastre a sede em Configurações
+                  para incluir o trajeto de saída.
+                </p>
+                <button onClick={usarGps} disabled={buscandoGps}
+                  className="flex items-center gap-1.5 text-[11.5px] transition-all hover:opacity-70 disabled:opacity-40"
+                  style={{ color: 'var(--text-secondary)' }}>
+                  {buscandoGps
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : <LocateFixed className="w-3 h-3" />}
+                  Partir da minha localização
+                </button>
+              </div>
+            )}
 
             {carregando && (
               <div className="flex items-center gap-2 py-2 text-[12.5px]" style={{ color: 'var(--text-tertiary)' }}>
@@ -375,8 +494,11 @@ export function RotaDoDia({ eventos, onLinhaChange }: {
                       style={{ color: 'var(--text-tertiary)' }} />
 
                     <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5"
-                      style={{ background: p.avulsa ? 'var(--text-tertiary)' : '#2563EB', color: '#fff' }}>
-                      {i + 1}
+                      style={{
+                        background: p.origem ? '#0f9d58' : p.avulsa ? 'var(--text-tertiary)' : '#2563EB',
+                        color: '#fff',
+                      }}>
+                      {p.origem ? <Building2 className="w-3 h-3" /> : i + 1}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -386,6 +508,8 @@ export function RotaDoDia({ eventos, onLinhaChange }: {
                       <p className="text-[11.5px] flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
                         {p.inicio ? (
                           <><Clock className="w-3 h-3" />{horaDe(p.inicio)}{p.fim ? ` – ${horaDe(p.fim)}` : ''}</>
+                        ) : p.origem ? (
+                          <><Building2 className="w-3 h-3" />{p.chave === 'retorno' ? 'fim do dia' : 'início do dia'}</>
                         ) : (
                           <><MapPin className="w-3 h-3" />parada acrescentada</>
                         )}
@@ -461,7 +585,9 @@ export function RotaDoDia({ eventos, onLinhaChange }: {
               <button
                 onClick={() => calcular(paradas, true)}
                 disabled={paradas.length < 4 || carregando}
-                title={paradas.length < 4 ? 'A partir de 4 paradas' : 'Reordenar para gastar menos tempo'}
+                title={paradas.length < 4
+                  ? 'Com 3 paradas a ordem do meio já é a única possível'
+                  : 'Reordenar para gastar menos tempo'}
                 className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold transition-all hover:opacity-90 disabled:opacity-40"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-14)', color: 'var(--text-primary)' }}
               >
@@ -477,6 +603,15 @@ export function RotaDoDia({ eventos, onLinhaChange }: {
                 </a>
               )}
             </div>
+
+            {/* Botao apagado sem motivo visivel confunde: o tooltip so aparece no
+                hover, e no celular nunca. */}
+            {paradas.length === 3 && (
+              <p className="text-[11.5px] leading-snug" style={{ color: 'var(--text-tertiary)' }}>
+                Otimizar fica disponível a partir de 4 paradas — o primeiro e o último
+                compromisso ficam no lugar, então com 3 sobra um só no meio.
+              </p>
+            )}
 
             {alterada && (
               <button onClick={restaurar}

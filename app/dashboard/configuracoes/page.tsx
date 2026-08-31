@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { SedeGabinete } from '@/components/configuracoes/sede-gabinete';
 
 type WaStatus = 'loading' | 'not_configured' | 'disconnected' | 'connecting' | 'connected';
 
@@ -166,6 +167,9 @@ export default function ConfiguracoesPage() {
 
       {/* Aparência Section */}
       <AparenciaCard />
+
+      {/* Sede do gabinete — ponto de partida das rotas do dia */}
+      <SedeGabinete />
 
       {/* WhatsApp Section */}
       <div className="rounded-2xl overflow-hidden" style={cardStyle}>
