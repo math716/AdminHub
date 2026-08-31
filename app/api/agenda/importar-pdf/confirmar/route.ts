@@ -5,12 +5,16 @@
 // corpo vem do navegador e pode ter sido alterado no caminho.
 
 export const dynamic = 'force-dynamic';
+// Geocodificar respeita 1 consulta/segundo (política do Nominatim), então uma
+// agenda cheia leva dezenas de segundos.
+export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { montarDataBR, TIPOS_EVENTO } from '@/lib/agenda/importar-pdf';
+import { geocodificarLote, ancoraDoGabinete } from '@/lib/geocode';
 
 /** Teto por importação. Uma agenda semanal tem dezenas de itens, não centenas. */
 const MAX_EVENTOS = 200;
@@ -82,9 +86,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Coordenadas, para o compromisso aparecer no mapa. Só tenta onde há
+    // endereço; quem não tiver entra sem coordenada, sem travar a importação.
+    const ancora = await ancoraDoGabinete(gabineteId);
+    const coords = await geocodificarLote(registros, { ancora });
+    coords.forEach((c, i) => {
+      if (c) { registros[i].lat = c.lat; registros[i].lng = c.lng; }
+    });
+    const localizados = coords.filter(Boolean).length;
+
     const { count } = await prisma.agendaEvent.createMany({ data: registros });
 
-    return NextResponse.json({ importados: count, recusados }, { status: 201 });
+    return NextResponse.json({ importados: count, localizados, recusados }, { status: 201 });
   } catch (err) {
     console.error('[/api/agenda/importar-pdf/confirmar]', err);
     return NextResponse.json({ error: 'Erro ao gravar os compromissos.' }, { status: 500 });

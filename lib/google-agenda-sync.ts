@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db';
 import { listarEventos, paraEventoLocal, tokenValido } from '@/lib/google-agenda';
+import { geocodificarLote, ancoraDoGabinete } from '@/lib/geocode';
 
 export interface ResultadoSync {
   ok: boolean;
@@ -86,6 +87,8 @@ export async function sincronizarGabinete(gabineteId: string): Promise<Resultado
       }
     }
 
+    await preencherCoordenadas(gabineteId);
+
     await prisma.googleAgendaConexao.update({
       where: { id: conexao.id },
       data: {
@@ -107,6 +110,51 @@ export async function sincronizarGabinete(gabineteId: string): Promise<Resultado
     }).catch(() => {});
     console.error(`[google-agenda] gabinete ${gabineteId}:`, erro);
     return { ok: false, criados: 0, atualizados: 0, removidos: 0, erro };
+  }
+}
+
+/**
+ * Preenche as coordenadas dos eventos do Google que ainda não têm.
+ *
+ * Roda depois da sincronização, sobre o que está no banco, em vez de dentro do
+ * laço: assim pega tanto os eventos recém-criados quanto os que já existiam de
+ * rodadas anteriores — o histórico vai se completando a cada sincronização, sem
+ * precisar de migração.
+ *
+ * O Nominatim admite uma consulta por segundo, então o lote é pequeno e tem
+ * orçamento de tempo. O que não couber nesta rodada entra na próxima.
+ */
+async function preencherCoordenadas(gabineteId: string): Promise<void> {
+  const LOTE = 12;             // ~13s de relógio, folgado dentro do limite da função
+  const ORCAMENTO_MS = 20_000;
+
+  const pendentes = await prisma.agendaEvent.findMany({
+    where: {
+      gabineteId,
+      origem: 'GOOGLE',
+      lat: null,
+      // Sem local não há o que geocodificar — nem adianta trazer.
+      local: { not: null },
+      data: { gte: new Date() },   // agenda futura primeiro; passado não vira rota
+    },
+    orderBy: { data: 'asc' },
+    take: LOTE,
+    select: { id: true, local: true, endereco: true },
+  });
+  if (pendentes.length === 0) return;
+
+  // geocodificarLote é quem aplica a pausa entre consultas — chamar
+  // geocodificar em laço aqui estouraria o limite do Nominatim.
+  const ancora = await ancoraDoGabinete(gabineteId);
+  const coords = await geocodificarLote(pendentes, { ancora, maximo: LOTE, orcamentoMs: ORCAMENTO_MS });
+
+  for (let i = 0; i < pendentes.length; i++) {
+    const coord = coords[i];
+    if (!coord) continue;   // sem endereço, ou endereço que o Nominatim não conhece
+    await prisma.agendaEvent.update({
+      where: { id: pendentes[i].id },
+      data: { lat: coord.lat, lng: coord.lng },
+    }).catch(() => {});      // evento apagado no meio da sincronização
   }
 }
 
