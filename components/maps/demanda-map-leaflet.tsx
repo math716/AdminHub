@@ -58,6 +58,8 @@ interface Props {
   onDemandClick: (id: string) => void;
   onEventClick: (id: string) => void;
   showSpDistritos?: boolean;
+  /** Linha da rota do dia, em pares [lat, lng]. Vazio esconde a rota. */
+  rota?: Array<[number, number]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -143,11 +145,13 @@ export default function DemandaMapLeaflet({
   onDemandClick,
   onEventClick,
   showSpDistritos = false,
+  rota,
 }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const { mapInstanceRef, cleanupMap, isUnmounted } = useMapCleanup();
   const markersRef = useRef<Map<string, any>>(new Map());
   const lRef = useRef<any>(null); // instância do Leaflet, disponível após init
+  const rotaRef = useRef<any>(null); // camada da rota do dia
   const [mapReady, setMapReady] = useState(false);
 
   // Callback refs — sempre atuais sem precisar de deps
@@ -388,7 +392,43 @@ export default function DemandaMapLeaflet({
     }
   }, [mapReady, demands, agendaEvents, contatos, selectedDemandId, selectedEventId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Effect 3: Centralizar quando o centro externo mudar
+  // ── Effect 3: Linha da rota do dia
+  //
+  // Camada própria, separada dos marcadores: a rota muda quando se troca o dia,
+  // e redesenhar todos os pinos a cada troca faria o mapa piscar.
+  useEffect(() => {
+    const L = lRef.current;
+    const map = mapInstanceRef.current;
+    if (!mapReady || !L || !map) return;
+
+    if (rotaRef.current) {
+      try { rotaRef.current.remove(); } catch {}
+      rotaRef.current = null;
+    }
+    if (!rota || rota.length < 2) return;
+
+    // Duas linhas sobrepostas: um contorno escuro por baixo dá contraste sobre
+    // qualquer basemap, claro ou escuro.
+    const grupo = L.layerGroup([
+      L.polyline(rota, { color: '#0b1b3a', weight: 8, opacity: 0.35, lineJoin: 'round' }),
+      L.polyline(rota, { color: '#2563EB', weight: 4, opacity: 0.95, lineJoin: 'round' }),
+    ]);
+    grupo.addTo(map);
+    rotaRef.current = grupo;
+
+    try {
+      map.fitBounds(L.latLngBounds(rota), { padding: [60, 60], maxZoom: 15 });
+    } catch {}
+
+    return () => {
+      if (rotaRef.current) {
+        try { rotaRef.current.remove(); } catch {}
+        rotaRef.current = null;
+      }
+    };
+  }, [mapReady, rota]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Effect 4: Centralizar quando o centro externo mudar
   useEffect(() => {
     if (!center || !mapInstanceRef.current) return;
     mapInstanceRef.current.setView(center, Math.max(mapInstanceRef.current.getZoom(), 14), { animate: true });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { RotaDoDia } from '@/components/agenda/rota-do-dia';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -143,6 +144,7 @@ export default function MapaDemandasPage() {
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [showDemands, setShowDemands] = useState(true);
   const [showAgendas, setShowAgendas] = useState(true);
+  const [rotaLinha, setRotaLinha] = useState<Array<[number, number]> | undefined>();
 
   // Demandas concluídas — seção colapsável com seleção individual para exibir no mapa
   const [concluidasOpen, setConcluidasOpen] = useState(false);
@@ -709,7 +711,11 @@ export default function MapaDemandasPage() {
             onDemandClick={handleMapDemandClick}
             onEventClick={handleMapEventClick}
             showSpDistritos
+            rota={rotaLinha}
           />
+
+          {/* Rota entre os compromissos do dia */}
+          <RotaDoDia eventos={agendaEvents} onLinhaChange={setRotaLinha} />
 
           {/* Botão expandir painel — canto superior esquerdo */}
           {sidebarCollapsed && (
