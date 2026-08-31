@@ -58,6 +58,11 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
   const [nomeArquivo, setNomeArquivo] = useState('');
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [resultado, setResultado] = useState<{ importados: number } | null>(null);
+  // Progresso da localização dos endereços, feita AQUI e não no servidor: a
+  // função tem teto de 60 s e o Nominatim aceita uma consulta por segundo —
+  // vinte compromissos estouravam o limite. No navegador não há esse teto, e
+  // a pessoa acompanha o avanço.
+  const [geo, setGeo] = useState<{ feitos: number; total: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fechar = useCallback(() => {
@@ -68,6 +73,33 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
     setLinhas([]);
     setResultado(null);
     setNomeArquivo('');
+  }, []);
+
+  /**
+   * Localiza os endereços um por vez, respeitando o limite do Nominatim, e vai
+   * preenchendo a lista conforme encontra. Falha em um endereço não interrompe
+   * os demais — o compromisso entra sem pino, o que já é o comportamento.
+   */
+  const localizarEnderecos = useCallback(async (lista: Linha[]) => {
+    const alvos = lista
+      .map((l, i) => ({ i, texto: [l.endereco, l.local].filter(Boolean).join(', ') }))
+      .filter(a => a.texto.trim().length > 2);
+    if (alvos.length === 0) return;
+
+    setGeo({ feitos: 0, total: alvos.length });
+    for (let n = 0; n < alvos.length; n++) {
+      const { i, texto } = alvos[n];
+      try {
+        const res = await fetch(`/api/geocode?estrito=1&address=${encodeURIComponent(texto)}`);
+        const json = await res.json();
+        const r = json?.results?.[0];
+        if (r) setLinhas(ls => ls.map((l, k) => (k === i ? { ...l, lat: r.lat, lng: r.lng } : l)));
+      } catch { /* segue para o próximo */ }
+      setGeo({ feitos: n + 1, total: alvos.length });
+      // O Nominatim admite uma consulta por segundo.
+      if (n < alvos.length - 1) await new Promise(r => setTimeout(r, 1100));
+    }
+    setGeo(null);
   }, []);
 
   const enviar = useCallback(async (arquivo: File) => {
@@ -86,14 +118,18 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
         return;
       }
       // Já existente vem desmarcado: quem quiser duplicar, marca de propósito.
-      setLinhas((json.eventos as EventoLido[]).map(e => ({ ...e, incluir: !e.jaExiste })));
+      const lista = (json.eventos as EventoLido[]).map(e => ({ ...e, incluir: !e.jaExiste }));
+      setLinhas(lista);
       setObservacoes(json.observacoes ?? null);
       setFase('conferencia');
+      // A conferência já aparece; os endereços vão sendo localizados em segundo
+      // plano, e os alfinetes surgem um a um.
+      localizarEnderecos(lista);
     } catch {
       setErro('Falha de conexão ao enviar o arquivo.');
       setFase('inicial');
     }
-  }, []);
+  }, [localizarEnderecos]);
 
   const confirmar = useCallback(async () => {
     const escolhidos = linhas.filter(l => l.incluir);
@@ -264,7 +300,13 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
                             {duplicados} já {duplicados !== 1 ? 'estão' : 'está'} na agenda
                           </span>
                         )}
-                        {semLocal > 0 && (
+                        {geo ? (
+                          <span className="text-[12px] px-2 py-0.5 rounded-md flex items-center gap-1.5"
+                            style={{ background: 'var(--bg-page)', color: 'var(--text-tertiary)' }}>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            localizando endereços {geo.feitos}/{geo.total}
+                          </span>
+                        ) : semLocal > 0 && (
                           <span className="text-[12px] px-2 py-0.5 rounded-md"
                             style={{ background: 'var(--bg-page)', color: 'var(--text-tertiary)' }}>
                             {semLocal} sem local no mapa

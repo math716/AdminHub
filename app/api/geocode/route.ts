@@ -21,12 +21,19 @@ export async function GET(request: NextRequest) {
   const address = request.nextUrl.searchParams.get('address');
   if (!address) return NextResponse.json({ error: 'Parâmetro address obrigatório' }, { status: 400 });
 
+  // estrito=1 (importação em lote): descarta resultado longe demais da região
+  // do gabinete, em vez de só reordenar. Aqui ninguém está conferindo endereço
+  // por endereço, então um homônimo de outro estado passaria batido.
+  const estrito = request.nextUrl.searchParams.get('estrito') === '1';
+
   const gabineteId = (session.user as any)?.gabineteId as string | undefined;
 
   // A âncora entra na chave: o mesmo endereço deve resolver diferente para
   // gabinetes de estados diferentes.
   const ancora = gabineteId ? await ancoraDoGabinete(gabineteId).catch(() => undefined) : undefined;
-  const cacheKey = `${address.toLowerCase().trim()}|${ancora ? `${ancora.lat.toFixed(2)},${ancora.lng.toFixed(2)}` : ''}`;
+  // `estrito` entra na chave: o modo solto e o estrito podem devolver
+  // resultados diferentes para o mesmo endereço.
+  const cacheKey = `${address.toLowerCase().trim()}|${ancora ? `${ancora.lat.toFixed(2)},${ancora.lng.toFixed(2)}` : ''}|${estrito ? 'e' : ''}`;
   const cached = geocodeCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return NextResponse.json({ results: cached.results });
@@ -71,14 +78,15 @@ export async function GET(request: NextRequest) {
         .join(', '),
     })).filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng));
 
-    // Aqui NÃO descartamos os distantes, ao contrário da importação: no
-    // formulário a pessoa está digitando de propósito e pode marcar um
-    // compromisso em outro estado. Só reordenamos, e a tela mostra o endereço
-    // encontrado para ela conferir.
+    // No formulário NÃO descartamos os distantes: a pessoa está digitando de
+    // propósito e pode marcar um compromisso em outro estado. Só reordenamos, e
+    // a tela mostra o endereço encontrado para ela conferir. Em lote (estrito),
+    // o corte volta.
     if (ancora) {
       results = results
         .map(r => ({ ...r, _km: distanciaKm(ancora, r) }))
         .sort((a, b) => a._km - b._km)
+        .filter(r => !estrito || r._km <= 150)
         .map(({ _km, ...r }) => r);
     }
     results = results.slice(0, 5);
