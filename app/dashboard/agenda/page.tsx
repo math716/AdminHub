@@ -13,6 +13,7 @@ import {
   Users, Mic, Briefcase, TrendingUp,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
 import { DatePicker, TimePicker, ColorPicker } from '@/components/ui/date-time-picker';
 
 // ---------------------------------------------------------------------------
@@ -79,11 +80,6 @@ const TIPO_LABELS: Record<string, string> = {
 const TIPO_COLORS: Record<string, string> = {
   REUNIAO: '#2563EB', VISITA: '#22c55e', EVENTO: '#818cf8', COMPROMISSO: '#fb923c',
 };
-/** Mesma identidade, mas na luminosidade certa de cada tema — ver globals.css. */
-const TIPO_TEXTO: Record<string, string> = {
-  REUNIAO: 'var(--tipo-reuniao-texto)', VISITA: 'var(--tipo-visita-texto)',
-  EVENTO: 'var(--tipo-evento-texto)',   COMPROMISSO: 'var(--tipo-compromisso-texto)',
-};
 const EMPTY_FORM = {
   titulo: '', descricao: '', data: '', dataFim: '', hora: '09:00', horaFim: '',
   local: '', endereco: '', tipo: 'REUNIAO', cor: '',
@@ -112,40 +108,6 @@ function TipoIconBox({ tipo, box = 32, icon = 16 }: { tipo: string; box?: number
     >
       <TipoIcon tipo={tipo} size={icon} />
     </span>
-  );
-}
-
-/** Uma linha de compromisso. Mesma peça no bloco do dia e no "A seguir". */
-function LinhaEvento({ e, onClick, destaque, comData }: {
-  e: AgendaEvent; onClick: () => void; destaque?: boolean; comData?: boolean;
-}) {
-  const hora = new Date(e.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  const dia = new Date(e.data).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
-  return (
-    <button onClick={onClick}
-      className="w-full text-left px-4 py-3 transition-all hover:bg-[var(--tint-06)] flex items-start gap-3">
-      {/* A hora à esquerda alinhada dá a leitura vertical do dia. */}
-      <span className="text-xs font-semibold tabular-nums pt-0.5 flex-shrink-0"
-        style={{ color: TIPO_TEXTO[e.tipo] ?? 'var(--brand-cobalt-text)', minWidth: 38 }}>
-        {hora}
-      </span>
-      <span className="w-px self-stretch flex-shrink-0"
-        style={{ background: `color-mix(in srgb, ${TIPO_COLORS[e.tipo] ?? '#2563EB'} 45%, transparent)` }} />
-      <span className="flex-1 min-w-0">
-        <span className={`block truncate text-[color:var(--text-primary)] ${destaque ? 'text-sm font-medium' : 'text-[13px]'}`}>
-          {e.titulo}
-        </span>
-        <span className="flex items-center gap-2.5 mt-0.5 text-xs" style={{ color: 'var(--tint-45)' }}>
-          {comData && <span className="capitalize">{dia.replace('.', '')}</span>}
-          {e.local && (
-            <span className="flex items-center gap-1 truncate">
-              <MapPin className="w-3 h-3 flex-shrink-0" />{e.local}
-            </span>
-          )}
-          {!comData && !e.local && <span>{TIPO_LABELS[e.tipo]}</span>}
-        </span>
-      </span>
-    </button>
   );
 }
 
@@ -339,39 +301,10 @@ export default function AgendaPage() {
   const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); } else setViewMonth(m => m - 1); };
   const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); } else setViewMonth(m => m + 1); };
 
-  /** Janela do dia: do primeiro ao último compromisso. Diz mais que a contagem. */
-  const janelaDoDia = (evs: AgendaEvent[]): string | null => {
-    if (evs.length === 0) return null;
-    const hs = evs.map(e => new Date(e.data)).sort((a, b) => a.getTime() - b.getTime());
-    const fmt = (d: Date) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    return hs.length === 1 ? fmt(hs[0]) : `${fmt(hs[0])} – ${fmt(hs[hs.length - 1])}`;
-  };
-
-  /** Compromissos dos próximos 7 dias — o horizonte real de quem organiza. */
-  const daSemana = useMemo(() => {
-    const ini = new Date(today); ini.setHours(0, 0, 0, 0);
-    const fim = new Date(ini); fim.setDate(fim.getDate() + 7);
-    return events.filter(e => { const d = new Date(e.data); return d >= ini && d < fim; });
-  }, [events]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /** Compromissos do dia em foco: o selecionado, ou hoje. */
-  const emFoco = selectedDay ? dayEvents : todayEvents;
-
-  /**
-   * O que vem DEPOIS do dia em foco.
-   *
-   * A lista antiga começava em "agora" e repetia, logo abaixo, os mesmos
-   * compromissos que o bloco do dia já mostrava — com poucos eventos no mês,
-   * a coluna inteira era a mesma informação duas vezes.
-   */
-  const aSeguir = useMemo(() => {
-    const base = selectedDay ? new Date(viewYear, viewMonth, selectedDay) : new Date(today);
-    base.setHours(23, 59, 59, 999);          // tudo depois do fim do dia em foco
-    return events
-      .filter(e => new Date(e.data) > base)
-      .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
-      .slice(0, 8);
-  }, [events, selectedDay, viewMonth, viewYear]); // eslint-disable-line react-hooks/exhaustive-deps
+  const upcomingEvents = events
+    .filter((e) => new Date(e.data) >= today)
+    .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
+    .slice(0, 8);
 
   const inputCls = "mt-1 w-full rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder:text-[color:var(--text-tertiary)] text-sm outline-none transition-all"
     + " placeholder-[color:var(--text-tertiary)]"
@@ -380,7 +313,7 @@ export default function AgendaPage() {
   if (status === 'loading') {
     return (
       <div className="h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, var(--bg-page) 0%, var(--bg-card) 50%, var(--bg-card) 100%)' }}>
-        <Loader2 className="w-10 h-10 animate-spin" style={{ color: 'var(--brand-cobalt)' }} />
+        <Loader2 className="w-10 h-10 animate-spin" style={{ color: '#2563EB' }} />
       </div>
     );
   }
@@ -411,65 +344,25 @@ export default function AgendaPage() {
         <GoogleConexao onSincronizou={fetchEvents} />
       </Suspense>
 
-      {/* ── Resumo ──
-          Antes eram quatro cartões grandes com "3, 0, 0, 0": muito espaço para
-          pouca informação, e três deles quase sempre em zero. Aqui ficam os
-          recortes que quem organiza a agenda realmente usa — hoje, os próximos
-          sete dias e o mês — com a composição por tipo como detalhe, não como
-          manchete. */}
-      <div className="rounded-2xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-3"
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-08)' }}>
-
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold leading-none" style={{ color: 'var(--brand-cobalt-text)' }}>
-            {todayEvents.length}
-          </span>
-          <div className="leading-tight">
-            <p className="text-xs font-semibold text-[color:var(--text-primary)]">
-              {todayEvents.length === 1 ? 'compromisso hoje' : 'compromissos hoje'}
-            </p>
-            <p className="text-[11px]" style={{ color: 'var(--tint-45)' }}>
-              {janelaDoDia(todayEvents) ?? 'nada marcado'}
-            </p>
-          </div>
-        </div>
-
-        <div className="h-8 w-px" style={{ background: 'var(--tint-08)' }} />
-
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold leading-none text-[color:var(--text-primary)]">
-            {daSemana.length}
-          </span>
-          <p className="text-xs leading-tight" style={{ color: 'var(--tint-45)' }}>
-            nos próximos<br />7 dias
-          </p>
-        </div>
-
-        <div className="h-8 w-px hidden sm:block" style={{ background: 'var(--tint-08)' }} />
-
-        {/* Só os tipos que existem no mês: chip zerado não informa nada. */}
-        <div className="flex flex-wrap items-center gap-2 ml-auto">
-          {Object.entries(TIPO_LABELS)
-            .filter(([tipo]) => (statsByTipo[tipo] ?? 0) > 0)
-            .map(([tipo, label]) => (
-              <span key={tipo} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs"
-                style={{
-                  // color-mix mantém o mesmo peso visual sobre branco e sobre
-                  // navy; um alpha fixo some no fundo escuro.
-                  background: `color-mix(in srgb, ${TIPO_COLORS[tipo] ?? '#2563EB'} 16%, transparent)`,
-                  color: TIPO_TEXTO[tipo] ?? 'var(--brand-cobalt-text)',
-                }}>
-                <TipoIcon tipo={tipo} size={12} />
-                <strong className="font-semibold">{statsByTipo[tipo]}</strong>
-                <span style={{ opacity: 0.85 }}>{label.toLowerCase()}</span>
-              </span>
-            ))}
-          {events.length === 0 && (
-            <span className="text-xs" style={{ color: 'var(--tint-35)' }}>
-              Nenhum compromisso em {MESES[viewMonth]}
-            </span>
-          )}
-        </div>
+      {/* ── Stats bar ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {Object.entries(TIPO_LABELS).map(([tipo, label], i) => {
+          const count = statsByTipo[tipo] ?? 0;
+          const color = TIPO_COLORS[tipo];
+          const tipoIconMap: Record<string, any> = {
+            REUNIAO: Users, VISITA: MapPin, EVENTO: Mic, COMPROMISSO: Briefcase,
+          };
+          return (
+            <StatCard
+              key={tipo}
+              label={label}
+              value={count}
+              icon={tipoIconMap[tipo] ?? CalendarDays}
+              color={color}
+              delay={i * 0.05}
+            />
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -490,13 +383,13 @@ export default function AgendaPage() {
             <div className="flex items-center gap-3">
               <h2 className="text-[color:var(--text-primary)] font-bold text-lg tracking-wide">
                 {MESES[viewMonth]}{' '}
-                <span style={{ color: 'var(--brand-cobalt-text)' }}>{viewYear}</span>
+                <span style={{ color: '#2563EB' }}>{viewYear}</span>
               </h2>
               {(viewMonth !== today.getMonth() || viewYear !== today.getFullYear()) && (
                 <button
                   onClick={goToday}
                   className="text-xs px-2.5 py-1 rounded-full font-medium transition-all hover:opacity-80"
-                  style={{ background: 'var(--brand-cobalt-soft)', color: 'var(--brand-cobalt-text)' }}
+                  style={{ background: 'rgba(37,99,235,0.15)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.25)' }}
                 >
                   Hoje
                 </button>
@@ -523,13 +416,13 @@ export default function AgendaPage() {
           {/* Células do calendário */}
           {loading ? (
             <div className="flex items-center justify-center h-48 md:h-64">
-              <Loader2 className="w-7 h-7 animate-spin" style={{ color: 'var(--brand-cobalt)' }} />
+              <Loader2 className="w-7 h-7 animate-spin" style={{ color: '#2563EB' }} />
             </div>
           ) : (
             <div className="grid grid-cols-7">
               {cells.map((day, idx) => {
                 if (!day) return (
-                  <div key={`empty-${idx}`} className="h-14 md:h-[4.75rem]"
+                  <div key={`empty-${idx}`} className="h-16 md:h-24"
                     style={{ borderBottom: '1px solid var(--tint-04)', borderRight: '1px solid var(--tint-04)' }} />
                 );
                 const dayEvs = eventsByDay.get(day) ?? [];
@@ -545,7 +438,7 @@ export default function AgendaPage() {
                   <div
                     key={day}
                     onClick={() => setSelectedDay(isSel ? null : day)}
-                    className="h-14 md:h-[4.75rem] p-1 md:p-1.5 cursor-pointer transition-all group"
+                    className="h-16 md:h-24 p-1 md:p-1.5 cursor-pointer transition-all group"
                     style={{
                       borderBottom: '1px solid var(--tint-04)',
                       borderRight: '1px solid var(--tint-04)',
@@ -562,7 +455,7 @@ export default function AgendaPage() {
                         style={isTod
                           ? { background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF', fontWeight: 800 }
                           : feriado
-                            ? { color: 'var(--danger)' }
+                            ? { color: '#f87171' }
                             : isWeekend
                               ? { color: 'rgba(37,99,235,0.5)' }
                               : { color: 'var(--tint-75)' }
@@ -570,16 +463,8 @@ export default function AgendaPage() {
                       >
                         {day}
                       </span>
-                      {/* Com pouco espaço, os compromissos que não couberem
-                          viram pontos na cor do tipo — a densidade do dia
-                          continua legível sem texto. */}
-                      {dayEvs.length > 0 && (
-                        <span className="flex gap-0.5 mt-1.5 mr-0.5">
-                          {dayEvs.slice(0, 4).map(e => (
-                            <span key={e.id} className="w-1 h-1 rounded-full"
-                              style={{ background: e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB' }} />
-                          ))}
-                        </span>
+                      {isSel && !isTod && (
+                        <span className="w-1.5 h-1.5 rounded-full mt-2 mr-0.5" style={{ background: '#2563EB' }} />
                       )}
                     </div>
                     <div className="space-y-0.5 overflow-hidden">
@@ -592,17 +477,19 @@ export default function AgendaPage() {
                           onClick={(ev) => { ev.stopPropagation(); openEdit(e); }}
                           className="text-[10px] truncate rounded px-1 py-0.5 cursor-pointer leading-tight transition-opacity hover:opacity-70"
                           style={{
-                            // color-mix em vez de alpha fixo: o mesmo peso
-                            // visual sobre o branco e sobre o navy.
-                            background: `color-mix(in srgb, ${e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB'} 15%, transparent)`,
-                            color: TIPO_TEXTO[e.tipo] ?? 'var(--brand-cobalt-text)',
+                            background: (e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB') + '22',
+                            color: e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB',
                             borderLeft: `2px solid ${e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB'}`,
                           }}
                         >
                           {new Date(e.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} {e.titulo}
                         </div>
                       ))}
-
+                      {dayEvs.length > (feriado ? 1 : 2) && (
+                        <div className="text-[10px] px-1" style={{ color: 'var(--tint-35)' }}>
+                          +{dayEvs.length - (feriado ? 1 : 2)} mais
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -611,68 +498,136 @@ export default function AgendaPage() {
           )}
         </div>
 
-        {/* ── Coluna do dia ──
-            Antes eram tres cartoes: "Briefing", "Proximos Compromissos" e uma
-            legenda de tipos. Os dois primeiros listavam os MESMOS compromissos
-            quando so havia os de hoje, e a legenda era estatica — os chips do
-            resumo ja dizem quais tipos existem. Ficou um cartao so: o dia em
-            foco e, abaixo, o que vem DEPOIS dele, sem repetir. */}
-        <div className="rounded-2xl overflow-hidden flex flex-col"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-08)' }}>
+        {/* ── Painel lateral ── */}
+        <div className="flex flex-col gap-4">
 
-          <div className="flex items-center justify-between px-4 py-3.5"
-            style={{ borderBottom: '1px solid var(--tint-06)' }}>
-            <div className="min-w-0">
-              <p className="font-semibold text-sm text-[color:var(--text-primary)] truncate">
-                {selectedDay
-                  ? `${selectedDay} de ${MESES[viewMonth]}`
-                  : isCurrentMonth ? 'Hoje' : `${MESES[viewMonth]} ${viewYear}`}
-              </p>
-              <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--tint-45)' }}>
-                {selectedDay && feriados[fmtKey(selectedDay)]
-                  ? feriados[fmtKey(selectedDay)]
-                  : emFoco.length === 0
-                    ? 'Nada marcado'
-                    : janelaDoDia(emFoco)}
+          {/* Briefing do Dia */}
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}
+          >
+            <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--tint-06)' }}>
+              <div>
+                <p className="text-[color:var(--text-primary)] font-semibold text-sm">
+                  {selectedDay
+                    ? `${selectedDay} de ${MESES[viewMonth]}`
+                    : isCurrentMonth
+                      ? `Briefing — ${today.getDate()} de ${MESES[today.getMonth()]}`
+                      : `${MESES[viewMonth]} ${viewYear}`}
+                </p>
+                {selectedDay && feriados[fmtKey(selectedDay)] && (
+                  <p className="text-xs mt-0.5" style={{ color: '#f87171' }}>{feriados[fmtKey(selectedDay)]}</p>
+                )}
+                {!selectedDay && isCurrentMonth && (
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--tint-35)' }}>
+                    {todayEvents.length === 0 ? 'Dia livre' : `${todayEvents.length} evento${todayEvents.length > 1 ? 's' : ''} hoje`}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => openNewOnDay(selectedDay ?? today.getDate())}
+                className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:opacity-80"
+                style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)', color: '#2563EB' }}>
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="divide-y" style={{ borderColor: 'var(--tint-04)' }}>
+              {(selectedDay ? dayEvents : todayEvents).length === 0 ? (
+                <div className="px-4 py-6 text-center">
+                  <TrendingUp className="w-6 h-6 mx-auto mb-2" style={{ color: 'var(--tint-14)' }} />
+                  <p className="text-sm" style={{ color: 'var(--tint-35)' }}>Nenhum evento</p>
+                </div>
+              ) : (
+                (selectedDay ? dayEvents : todayEvents).map((e, idx) => {
+                  const color = e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB';
+                  return (
+                    <button key={e.id} onClick={() => openEdit(e)}
+                      className="w-full text-left px-4 py-3 transition-all hover:bg-[var(--tint-06)]">
+                      <div className="flex items-start gap-3">
+                        <div className="flex flex-col items-center mt-0.5">
+                          <TipoIconBox tipo={e.tipo} box={28} icon={13} />
+                          {idx < (selectedDay ? dayEvents : todayEvents).length - 1 && (
+                            <div className="w-px flex-1 mt-1" style={{ background: 'var(--tint-06)', minHeight: 12 }} />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 pb-1">
+                          <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{e.titulo}</p>
+                          <div className="flex items-center gap-3 mt-0.5" style={{ color: 'var(--tint-45)' }}>
+                            <span className="flex items-center gap-1 text-xs">
+                              <Clock className="w-3 h-3" />
+                              {new Date(e.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {e.local && (
+                              <span className="flex items-center gap-1 text-xs truncate">
+                                <MapPin className="w-3 h-3" />
+                                {e.local}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: color }} />
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Próximos Compromissos */}
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.15)', backdropFilter: 'blur(8px)' }}
+          >
+            <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid var(--tint-06)' }}>
+              <TrendingUp className="w-3.5 h-3.5" style={{ color: '#2563EB' }} />
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>
+                Próximos Compromissos
               </p>
             </div>
-            <button
-              onClick={() => openNewOnDay(selectedDay ?? today.getDate())}
-              title="Novo compromisso neste dia"
-              className="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0 transition-all hover:opacity-80"
-              style={{
-                background: 'var(--brand-cobalt-soft)',
-                color: 'var(--brand-cobalt-text)',
-              }}>
-              <Plus className="w-4 h-4" />
-            </button>
+            <div className="divide-y max-h-48 md:max-h-72 overflow-y-auto" style={{ borderColor: 'var(--tint-04)' }}>
+              {upcomingEvents.length === 0 ? (
+                <p className="text-sm px-4 py-5 text-center" style={{ color: 'var(--tint-35)' }}>Nenhum evento futuro</p>
+              ) : upcomingEvents.map((e) => {
+                const color = e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB';
+                return (
+                  <button key={e.id} onClick={() => openEdit(e)}
+                    className="w-full text-left px-4 py-3 transition-all hover:bg-[var(--tint-06)] group">
+                    <div className="flex items-center gap-2.5">
+                      <TipoIconBox tipo={e.tipo} box={28} icon={13} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[color:var(--text-primary)] text-xs font-medium truncate">{e.titulo}</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--tint-35)' }}>
+                          {new Date(e.data).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
+                          {' · '}
+                          {new Date(e.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Compromissos do dia em foco */}
-          <div className="divide-y" style={{ borderColor: 'var(--tint-04)' }}>
-            {emFoco.length === 0 ? (
-              <div className="px-4 py-7 text-center">
-                <CalendarDays className="w-6 h-6 mx-auto mb-2" style={{ color: 'var(--tint-14)' }} />
-                <p className="text-sm" style={{ color: 'var(--tint-35)' }}>Dia livre</p>
-              </div>
-            ) : emFoco.map((e) => <LinhaEvento key={e.id} e={e} onClick={() => openEdit(e)} destaque />)}
+          {/* Legenda de tipos */}
+          <div
+            className="rounded-2xl p-4"
+            style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--tint-35)' }}>
+              Tipos de Evento
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(TIPO_LABELS).map(([k, v]) => (
+                <div key={k} className="flex items-center gap-2">
+                  <TipoIconBox tipo={k} box={24} icon={12} />
+                  <span className="text-xs" style={{ color: 'var(--tint-55)' }}>{v}</span>
+                </div>
+              ))}
+            </div>
           </div>
-
-          {/* O que vem DEPOIS do dia em foco — nunca repete o de cima */}
-          {aSeguir.length > 0 && (
-            <>
-              <div className="px-4 py-2.5 flex items-center gap-2"
-                style={{ borderTop: '1px solid var(--tint-06)', borderBottom: '1px solid var(--tint-06)', background: 'var(--bg-card-subtle)' }}>
-                <TrendingUp className="w-3.5 h-3.5" style={{ color: 'var(--tint-35)' }} />
-                <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-45)' }}>
-                  A seguir
-                </p>
-              </div>
-              <div className="divide-y overflow-y-auto max-h-72" style={{ borderColor: 'var(--tint-04)' }}>
-                {aSeguir.map((e) => <LinhaEvento key={e.id} e={e} onClick={() => openEdit(e)} comData />)}
-              </div>
-            </>
-          )}
         </div>
       </div>
 
@@ -806,13 +761,13 @@ export default function AgendaPage() {
                   />
                   <button onClick={geocodeFormAddress} disabled={geoLoading}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-all hover:opacity-80"
-                    style={{ background: 'var(--brand-cobalt-soft)', color: 'var(--brand-cobalt-text)' }}>
+                    style={{ background: 'rgba(37,99,235,0.2)', border: '1px solid rgba(37,99,235,0.3)', color: '#2563EB' }}>
                     {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                   </button>
                 </div>
                 {form.lat && form.lng && (
                   <div className="text-xs mt-1.5">
-                    <p className="flex items-start gap-1" style={{ color: 'var(--tipo-visita-texto)' }}>
+                    <p className="flex items-start gap-1" style={{ color: '#22c55e' }}>
                       <CheckCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
                       <span>
                         {/* O NOME vem primeiro: e o que permite notar que o
@@ -841,7 +796,7 @@ export default function AgendaPage() {
 
               {formError && (
                 <div className="flex items-center gap-2 text-sm rounded-xl px-4 py-3"
-                  style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>
+                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5' }}>
                   <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                   {formError}
                 </div>
