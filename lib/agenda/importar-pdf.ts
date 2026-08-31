@@ -28,7 +28,7 @@ const MAX_TOKENS = 16000;
  * o log não diz nada. Com o corte aqui, sobra tempo para responder algo que a
  * pessoa entenda e para registrar quanto tempo levou.
  */
-const TIMEOUT_MS = 40_000;
+const TIMEOUT_MS = 50_000;
 
 /**
  * Sem retentativa.
@@ -221,6 +221,10 @@ export async function lerAgendaEmPdf(pdfBase64: string, hoje = new Date()): Prom
         },
       ],
     }],
+    // Sem raciocinio: transcrever uma grade nao exige deliberacao, e era ele
+    // que consumia o tempo. Com o modo adaptativo ligado (padrao), a leitura
+    // de UMA pagina passava de 40 s e era cortada.
+    thinking: { type: 'disabled' },
     output_config: {
       format: jsonSchemaOutputFormat(SCHEMA),
       // A tarefa e transcrever uma tabela, nao raciocinar sobre ela. No esforco

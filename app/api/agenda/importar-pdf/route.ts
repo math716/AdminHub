@@ -55,7 +55,10 @@ export async function POST(request: NextRequest) {
 
       // Demora e "não entendi o documento" são problemas diferentes e pedem
       // ações diferentes de quem está na tela.
-      const demorou = /timeout|aborted|ETIMEDOUT/i.test(motivo);
+      // O SDK lanca "Request timed out." — com espaco. Sem o \s? aqui, uma
+      // demora era reportada como "nao entendi o documento", mandando a
+      // pessoa conferir um PDF que estava perfeito.
+      const demorou = /time\s?d?\s?out|aborted|ETIMEDOUT/i.test(motivo);
       return NextResponse.json(
         {
           error: demorou
