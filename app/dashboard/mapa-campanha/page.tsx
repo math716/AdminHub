@@ -3826,8 +3826,7 @@ export default function MapaCampanhaPage() {
                   {/* Botão tela cheia */}
                   <button
                     onClick={() => setMapFullscreen(f => !f)}
-                    className="absolute bottom-3 z-[1000] bg-slate-800 border border-slate-600 rounded-lg p-2 text-slate-200 hover:bg-slate-700 hover:text-white hover:border-slate-400 transition-all shadow-lg"
-                    style={{ right: 'var(--espaco-do-chat)' }}
+                    className="absolute top-3 right-3 z-[1000] bg-slate-800 border border-slate-600 rounded-lg p-2 text-slate-200 hover:bg-slate-700 hover:text-white hover:border-slate-400 transition-all shadow-lg"
                     title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
                   >
                     {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}

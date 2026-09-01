@@ -90,14 +90,6 @@
   --google-btn-texto: #1f1f1f;
   --google-btn-sombra: 0 1px 2px rgba(60, 64, 67, 0.30), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
 
-  /* Faixa que o botao flutuante da Gabi ocupa no canto inferior direito da
-     JANELA. Ele e `fixed`, entao passa por cima de qualquer controle ancorado
-     ali dentro de um card — foi assim que o botao de tela cheia dos mapas
-     ficou inalcancavel. Controles daquele canto se afastam por esta medida.
-     O botao tem 3.5rem de diametro e fica a 1.5rem da borda direita: ocupa
-     ate 5rem. Com 6rem sobra uma folga visivel entre os dois. */
-  --espaco-do-chat: 6rem;
-
   /* Misc */
   --focus-ring: rgba(37, 99, 235, 0.35);
   --modal-backdrop: rgba(15, 23, 42, 0.40);

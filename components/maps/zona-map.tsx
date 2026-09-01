@@ -416,8 +416,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
       />
       
       {/* Controles de zoom */}
-      <div className="absolute bottom-4 z-[1000] flex flex-col gap-1"
-        style={{ right: 'var(--espaco-do-chat)' }}>
+      <div className="absolute bottom-4 right-4 z-[1000] flex flex-col gap-1">
         <button
           onClick={() => mapInstanceRef.current?.zoomIn()}
           className="bg-[var(--bg-card)]/95 rounded-lg p-2 text-gray-400 hover:text-white transition-colors"

@@ -1429,8 +1429,8 @@ export default function EmendasPage() {
             {/* Legenda de cores */}
             {view === 'estado' && (
               <div
-                className="absolute bottom-3 z-[400] rounded-xl px-3 py-2.5 pointer-events-none"
-                style={{ right: 'var(--espaco-do-chat)', background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-raised)' }}
+                className="absolute bottom-3 right-3 z-[400] rounded-xl px-3 py-2.5 pointer-events-none"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-raised)' }}
               >
                 <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-1.5">Valor de Emendas (R$)</p>
                 <LegendaCores />

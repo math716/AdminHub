@@ -378,6 +378,21 @@ export default function MapaPage() {
     return norm(selectedMunicipio.nome) === 'SAO PAULO';
   }, [selectedUf, selectedMunicipio]);
 
+  /**
+   * A lista lateral (distritos, bairros, zonas) está ocupando a direita do card?
+   *
+   * Ela vive DENTRO do mesmo card do mapa, e não ao lado dele — por isso o
+   * botão de tela cheia, que é posicionado em relação ao card, precisa saber
+   * dela para não cair por cima.
+   *
+   * Fica de fora um caso: quando o município não tem bairros carregados, a
+   * lista cresce para ocupar a metade do card em vez dos 192px. Aí o botão
+   * ainda encosta nela. É um estado sem dado nenhum na lista, e resolver
+   * exigiria mover o botão para dentro de cada uma das oito colunas de mapa.
+   */
+  const listaLateralAberta = view === 'municipio'
+    || (view === 'estado' && selectedUf === 'DF');
+
   // ── Auto-busca a partir dos parâmetros de URL (vindo dos Favoritos) ──
   const urlParams = useSearchParams();
   const autoSearchDone = useRef(false);
@@ -1623,11 +1638,19 @@ export default function MapaPage() {
               {/* Botão tela cheia */}
               <button
                 onClick={() => setMapFullscreen(f => !f)}
-                className="absolute bottom-3 z-[1000] rounded-xl p-2.5 transition-all"
-                /* Afastado do canto: o botao da Gabi fica por cima de quem
-                   encosta ali. Em tela cheia o card ocupa a janela inteira, e
-                   a sobreposicao e garantida. */
-                style={{ right: 'var(--espaco-do-chat)', background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-raised)' }}
+                className="absolute top-3 z-[1000] rounded-xl p-2.5 transition-all"
+                /* No alto, e nao embaixo: em baixo ele cai sob o botao da
+                   Gabi, que e fixo no canto da janela.
+                   O `right` para antes da lista lateral quando ela esta
+                   aberta. A conta repete o tamanho dela — w-[30%] limitado
+                   entre 130 e 192px — mais o vao e a margem do botao. */
+                style={{
+                  right: listaLateralAberta
+                    ? 'calc(clamp(130px, 30%, 192px) + 1.5rem)'
+                    : '0.75rem',
+                  background: 'var(--bg-card)', border: '1px solid var(--border-default)',
+                  color: 'var(--text-primary)', boxShadow: 'var(--shadow-raised)',
+                }}
                 title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
               >
                 {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
