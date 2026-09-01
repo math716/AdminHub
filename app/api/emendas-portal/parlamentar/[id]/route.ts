@@ -42,6 +42,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         select: {
           id: true,
           idPortal: true, ano: true, numero: true, tipo: true, natureza: true, funcao: true,
+          subfuncao: true, valorProposto: true,
           area: true, objeto: true, valorEmpenhado: true, valorPago: true, valorRestoPago: true,
           uf: true, codigoIbge: true, municipioNome: true,
           beneficiario: true, cnpjBeneficiario: true,
@@ -99,13 +100,16 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             tipo:           e.tipo,
             natureza:       e.natureza,
             funcao:         e.funcao,
-            subfuncao:      null,
+            subfuncao:      e.subfuncao,
             area:           e.area,
             objeto:         e.objeto,
             valorEmpenhado: docVals ? docVals.empenhado : e.valorEmpenhado,
             valorPago:      docVals ? docVals.pago       : e.valorPago,
             valorRestoPago: e.valorRestoPago,
-            valorProposto:  null,
+            // O valor que o parlamentar destinou. Vinha fixo em null aqui, e
+            // por isso a tela nunca mostrou o campo — nem depois de o import
+            // passar a grava-lo direito.
+            valorProposto:  e.valorProposto,
             orgaoExecutor:  null,
             beneficiario:   e.beneficiario ?? null,
             cnpjBeneficiario: e.cnpjBeneficiario ?? null,

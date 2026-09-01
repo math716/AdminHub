@@ -2805,15 +2805,6 @@ function EmendasDetalhadasCard({
                               {item.tipo}
                             </span>
                           ) : <span className="text-slate-500">—</span>}
-                          {/* Natureza da despesa: o que a emenda paga. Texto
-                              simples e nao etiqueta — sao frases inteiras
-                              ("Equipamentos e material permanente"), que numa
-                              pilula de 9px ficariam cortadas. */}
-                          {item.natureza && (
-                            <span className="text-[10px] leading-tight" style={{ color: 'var(--text-tertiary)' }}>
-                              {item.natureza}
-                            </span>
-                          )}
                           {item.estagio && (
                             <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ background: 'rgba(245,158,11,0.12)', color: '#d97706', border: '1px solid rgba(245,158,11,0.3)' }}>
                               {item.estagio}
@@ -3100,8 +3091,29 @@ function EmendasDetalhadasCard({
                       <td className="py-2.5 px-3 truncate max-w-[100px] md:max-w-[140px] transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#cbd5e1' : '#374151' }}>{e.funcao ?? '—'}</td>
                       <td className="py-2.5 px-3 truncate max-w-[200px] font-medium transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#f1f5f9' : '#111827' }}>
                         {e.municipioNome ?? <span className="italic font-normal" style={{ color: isDark ? '#64748b' : '#6b7280' }}>{e.objeto ?? 'sem destino'}</span>}
+                        {/* Em QUE o dinheiro pode ser gasto, logo abaixo do
+                            destino. Texto simples e nao etiqueta: sao frases
+                            inteiras ("Equipamentos e material permanente"),
+                            que numa pilula de 9px ficariam cortadas. */}
+                        {e.natureza && (
+                          <span className="block text-[10px] font-normal leading-tight truncate"
+                            title={e.natureza} style={{ color: 'var(--text-tertiary)' }}>
+                            {e.natureza}
+                          </span>
+                        )}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap group-hover:text-[color:var(--brand-cobalt-text)] transition-colors" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? 'var(--text-primary)' : '#1e40af' }}>{formatBRLCompact(e.valorEmpenhado)}</td>
+                      <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap group-hover:text-[color:var(--brand-cobalt-text)] transition-colors" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? 'var(--text-primary)' : '#1e40af' }}>
+                        {formatBRLCompact(e.valorEmpenhado)}
+                        {/* Empenhar acima ou abaixo do que a emenda destinou e
+                            comum — em 2025 aconteceu em 37% das do DF — e a
+                            diferenca so aparece com os dois numeros juntos. */}
+                        {e.valorProposto != null && e.valorProposto !== e.valorEmpenhado && (
+                          <span className="block text-[10px] font-normal" style={{ color: 'var(--text-tertiary)' }}
+                            title="Valor destinado pelo parlamentar na emenda">
+                            de {formatBRLCompact(e.valorProposto)}
+                          </span>
+                        )}
+                      </td>
                       <td className="py-2.5 px-3 text-right whitespace-nowrap font-semibold" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#10b981' : '#047857' }}>{formatBRLCompact(e.valorPago)}</td>
                       <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{
