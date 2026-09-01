@@ -148,37 +148,46 @@ function mesmoDia(a: string, b: string): boolean {
 }
 
 /**
- * Corrige o ano da data quando o documento traz o dia da semana.
+ * Descobre o ano da data, que a agenda quase nunca traz.
  *
- * Agendas exportadas costumam mostrar "terca-feira 25/08" — sem ano. O dia da
- * semana resolve isso: 25/08 so cai numa terca em 2026 dentro de uma janela de
- * anos plausivel. Sem essa checagem, uma agenda de dezembro lida em janeiro
- * entraria no ano errado.
+ * A grade mostra "terca-feira 25/08" e mais nada. Duas regras resolvem:
+ *
+ * 1. Agenda de gabinete e sempre do presente ou do futuro. Ninguem importa o
+ *    compromisso do ano passado. Entao o ano NUNCA e anterior ao corrente —
+ *    era esse o erro que jogava uma agenda de 2026 para 2024.
+ * 2. Entre os anos possiveis, vale o que faz o dia bater com o dia da semana
+ *    escrito no documento. 25/08 so cai numa terca em 2026.
  */
-export function corrigirAnoPeloDiaDaSemana(data: string, diaSemana: string | null): string {
-  if (!diaSemana) return data;
+export function corrigirAnoPeloDiaDaSemana(
+  data: string, diaSemana: string | null, hoje = new Date(),
+): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(data);
   if (!m) return data;
-
   const [, anoStr, mesStr, diaStr] = m;
-  const ano = Number(anoStr), mes = Number(mesStr), dia = Number(diaStr);
+  const mes = Number(mesStr), dia = Number(diaStr);
+
+  // Ano corrente em Brasilia — o servidor roda em UTC.
+  const anoAtual = Number(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo', year: 'numeric',
+  }).format(hoje));
 
   const nomeDoDia = (a: number) =>
     new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: 'UTC' })
       .format(new Date(Date.UTC(a, mes - 1, dia)));
 
-  if (mesmoDia(nomeDoDia(ano), diaSemana)) return data;
-
-  // Apenas os anos ADJACENTES. Uma agenda de gabinete e sempre da semana
-  // corrente; a janela de +-1 cobre o unico caso real (dezembro lido em
-  // janeiro) sem permitir um salto absurdo. Com uma janela maior, um dia da
-  // semana lido errado moveria o compromisso anos de distancia — e a data
-  // errada pareceria plausivel na tela de conferencia.
-  for (const delta of [1, -1]) {
-    const cand = ano + delta;
-    if (mesmoDia(nomeDoDia(cand), diaSemana)) return `${cand}-${mesStr}-${diaStr}`;
+  // Sem o dia da semana no documento, so garante que nao fique no passado.
+  if (!diaSemana) {
+    const ano = Math.max(Number(anoStr), anoAtual);
+    return `${ano}-${mesStr}-${diaStr}`;
   }
-  return data; // nenhum ano bate — mantem o que veio e deixa a conferencia decidir
+
+  // Do ano corrente para a frente: o primeiro que casa com o dia da semana.
+  for (const ano of [anoAtual, anoAtual + 1, anoAtual + 2]) {
+    if (mesmoDia(nomeDoDia(ano), diaSemana)) return `${ano}-${mesStr}-${diaStr}`;
+  }
+
+  // Nenhum casou (dia da semana lido errado): fica no ano corrente, nunca atras.
+  return `${Math.max(Number(anoStr), anoAtual)}-${mesStr}-${diaStr}`;
 }
 
 /** "2026-08-25" + "14:30" -> Date no horario de Brasilia. */

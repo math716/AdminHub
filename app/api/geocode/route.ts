@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import { ancoraDoGabinete, type Ancora } from '@/lib/geocode';
+import { ancoraDoGabinete, simplificar, type Ancora } from '@/lib/geocode';
 
 // Cache em memória: chave → { results, expiresAt }
 const geocodeCache = new Map<string, { results: unknown[]; expiresAt: number }>();
@@ -44,19 +44,33 @@ export async function GET(request: NextRequest) {
     // por proximidade. "Prefeitura de São Paulo" devolvia a prefeitura de São
     // José do Rio Preto, porque ele lê "São Paulo" como o estado. Buscamos
     // vários e reordenamos pelo mais perto de onde o gabinete atua.
-    let url = 'https://nominatim.openstreetmap.org/search'
-      + `?format=json&limit=15&addressdetails=1&countrycodes=br&q=${encodeURIComponent(address)}`;
-    if (ancora) {
-      const v = [
-        ancora.lng - VIEWBOX_GRAUS, ancora.lat + VIEWBOX_GRAUS,
-        ancora.lng + VIEWBOX_GRAUS, ancora.lat - VIEWBOX_GRAUS,
-      ].map(n => n.toFixed(4)).join(',');
-      url += `&viewbox=${v}`;
-    }
+    const viewbox = ancora
+      ? '&viewbox=' + [
+          ancora.lng - VIEWBOX_GRAUS, ancora.lat + VIEWBOX_GRAUS,
+          ancora.lng + VIEWBOX_GRAUS, ancora.lat - VIEWBOX_GRAUS,
+        ].map(n => n.toFixed(4)).join(',')
+      : '';
 
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'AdminHub/1.0 (gabinete@adminhub.app)' },
-    });
+    const buscar = (termo: string) => fetch(
+      'https://nominatim.openstreetmap.org/search'
+      + `?format=json&limit=15&addressdetails=1&countrycodes=br&q=${encodeURIComponent(termo)}${viewbox}`,
+      { headers: { 'User-Agent': 'AdminHub/1.0 (gabinete@adminhub.app)' } },
+    );
+
+    let res = await buscar(address);
+    let data: any[] = res.ok ? await res.json() : [];
+
+    // Endereço de Brasília vem com complemento que o serviço não indexa:
+    // "QI 15, Cj 7, Casa 23" não existe na base, "QI 15" existe. Sem esta
+    // segunda tentativa, os endereços do DF simplesmente não eram encontrados.
+    if (res.ok && data.length === 0) {
+      const curta = simplificar(address);
+      if (curta) {
+        await new Promise(r => setTimeout(r, 1100));   // uma consulta por segundo
+        const res2 = await buscar(curta);
+        if (res2.ok) data = await res2.json();
+      }
+    }
 
     if (!res.ok) {
       // 403/429 do Nominatim = uso acima do permitido (uma consulta por
@@ -77,7 +91,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data: any[] = await res.json();
     let results = data.map((item) => ({
       lat: parseFloat(item.lat),
       lng: parseFloat(item.lon),

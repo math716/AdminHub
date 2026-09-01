@@ -113,7 +113,7 @@ const COMPLEMENTO_NO_FIM =
  * enderecos e a simplificada acertou os tres na rua certa. Devolve null quando
  * nao ha o que simplificar.
  */
-function simplificar(consulta: string): string | null {
+export function simplificar(consulta: string): string | null {
   const partes = consulta.split(',').map(p => p.trim()).filter(Boolean);
 
   const mantidas = partes

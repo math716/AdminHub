@@ -30,6 +30,10 @@ interface EventoLido {
   tipo: string;
   lat?: number | null;
   lng?: number | null;
+  /** Lugar que o mapa encontrou — é o que a pessoa confere, lendo. */
+  localizadoEm?: string | null;
+  /** Caiu longe dos outros compromissos: provável cidade homônima. */
+  longe?: boolean;
   jaExiste?: boolean;
 }
 
@@ -50,6 +54,43 @@ function rotuloData(iso: string): string {
   return `${DIA_SEMANA[dow]}, ${d}/${mes}`;
 }
 
+/**
+ * Regiões administrativas do DF.
+ *
+ * Endereço de Brasília não tem rua: tem "SHIS QI 25 Conjunto 3", "SQN 210
+ * Bloco B". O serviço de mapas só encontra esses formatos quando a cidade vem
+ * junto — "QI 25, Lago Sul" falha, "QI 25, Lago Sul, Brasília, DF" acerta.
+ */
+const REGIOES_DF = [
+  'plano piloto', 'asa norte', 'asa sul', 'gama', 'taguatinga', 'brazlandia',
+  'sobradinho', 'planaltina', 'paranoa', 'nucleo bandeirante', 'ceilandia',
+  'guara', 'cruzeiro', 'samambaia', 'santa maria', 'sao sebastiao',
+  'recanto das emas', 'lago sul', 'lago norte', 'riacho fundo',
+  'candangolandia', 'aguas claras', 'sudoeste', 'octogonal', 'varjao',
+  'park way', 'scia', 'estrutural', 'jardim botanico', 'itapoa', 'sia',
+  'vicente pires', 'fercal', 'sol nascente', 'arniqueira', 'agua quente',
+];
+
+const semAcento = (t: string) =>
+  t.normalize('NFD').replace(new RegExp('[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']', 'g'), '').toLowerCase();
+
+/** Monta o texto da busca, completando a cidade quando o local é do DF. */
+function consultaDeBusca(endereco: string | null, local: string | null): string {
+  const partes = [endereco, local].filter(Boolean) as string[];
+  if (partes.length === 0) return '';
+  const texto = partes.join(', ');
+
+  const alvo = semAcento(texto);
+  const ehDF = REGIOES_DF.some(r => alvo.includes(r))
+    || /sh[ic]s?|sqn|sqs|cln|cls|shin|shis/.test(alvo);
+
+  // Só acrescenta se ainda não estiver escrito.
+  if (ehDF && !/brasilia|distrito federal|df/.test(alvo)) {
+    return `${texto}, Brasília, DF`;
+  }
+  return texto;
+}
+
 /** Distância em km entre dois pontos (fórmula de Haversine). */
 function distanciaKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371;
@@ -65,7 +106,6 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
   const [aberto, setAberto] = useState(false);
   const [fase, setFase] = useState<Fase>('inicial');
   const [erro, setErro] = useState('');
-  const [observacoes, setObservacoes] = useState<string | null>(null);
   const [nomeArquivo, setNomeArquivo] = useState('');
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [resultado, setResultado] = useState<{ importados: number } | null>(null);
@@ -74,18 +114,15 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
   // vinte compromissos estouravam o limite. No navegador não há esse teto, e
   // a pessoa acompanha o avanço.
   const [geo, setGeo] = useState<{ feitos: number; total: number } | null>(null);
-  const [avisoLocal, setAvisoLocal] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fechar = useCallback(() => {
     setAberto(false);
     setFase('inicial');
     setErro('');
-    setObservacoes(null);
     setLinhas([]);
     setResultado(null);
     setNomeArquivo('');
-    setAvisoLocal('');
   }, []);
 
   /**
@@ -95,7 +132,7 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
    */
   const localizarEnderecos = useCallback(async (lista: Linha[]) => {
     const alvos = lista
-      .map((l, i) => ({ i, texto: [l.endereco, l.local].filter(Boolean).join(', ') }))
+      .map((l, i) => ({ i, texto: consultaDeBusca(l.endereco, l.local) }))
       .filter(a => a.texto.trim().length > 2);
     if (alvos.length === 0) return;
 
@@ -115,7 +152,11 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
         const r = json?.results?.[0];
         if (r) {
           achados.push({ i, lat: r.lat, lng: r.lng });
-          setLinhas(ls => ls.map((l, k) => (k === i ? { ...l, lat: r.lat, lng: r.lng } : l)));
+          // Guarda o nome do lugar: pedir para "conferir o alfinete" não faz
+          // sentido numa tela que não tem mapa. Lendo "Lago Sul, Brasília" a
+          // pessoa sabe na hora se está certo.
+          const onde = (r.endereco || r.displayName || '').split(',').slice(0, 3).join(',').trim();
+          setLinhas(ls => ls.map((l, k) => (k === i ? { ...l, lat: r.lat, lng: r.lng, localizadoEm: onde } : l)));
         }
       } catch { /* segue para o próximo */ }
       setGeo({ feitos: n + 1, total: alvos.length });
@@ -134,11 +175,13 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
         return o.length % 2 ? o[m] : (o[m - 1] + o[m]) / 2;
       };
       const centro = { lat: meio(achados.map(a => a.lat)), lng: meio(achados.map(a => a.lng)) };
-      const fora = achados.filter(a => distanciaKm(centro, a) > 150).length;
-      if (fora > 0) {
-        setAvisoLocal(fora === 1
-          ? 'Um endereço foi localizado longe dos demais. Confira o alfinete antes de importar.'
-          : `${fora} endereços foram localizados longe dos demais. Confira os alfinetes antes de importar.`);
+      // Marca a LINHA que destoa, em vez de um aviso geral pedindo para
+      // "conferir os alfinetes" — não existe mapa nesta tela, e a pessoa não
+      // teria como saber de qual compromisso se trata.
+      const distantes = new Set(
+        achados.filter(a => distanciaKm(centro, a) > 150).map(a => a.i));
+      if (distantes.size > 0) {
+        setLinhas(ls => ls.map((l, k) => (distantes.has(k) ? { ...l, longe: true } : l)));
       }
     }
 
@@ -163,7 +206,6 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
       // Já existente vem desmarcado: quem quiser duplicar, marca de propósito.
       const lista = (json.eventos as EventoLido[]).map(e => ({ ...e, incluir: !e.jaExiste }));
       setLinhas(lista);
-      setObservacoes(json.observacoes ?? null);
       setFase('conferencia');
       // A conferência já aparece; os endereços vão sendo localizados em segundo
       // plano, e os alfinetes surgem um a um.
@@ -357,21 +399,6 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
                         )}
                       </div>
 
-                      {avisoLocal && (
-                        <div className="flex items-start gap-2 rounded-xl px-3.5 py-2.5 mb-3"
-                          style={{ background: 'color-mix(in srgb, var(--warning) 12%, transparent)' }}>
-                          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
-                          <p className="text-[12.5px]" style={{ color: 'var(--text-secondary)' }}>{avisoLocal}</p>
-                        </div>
-                      )}
-
-                      {observacoes && (
-                        <div className="flex items-start gap-2 rounded-xl px-3.5 py-2.5 mb-3"
-                          style={{ background: 'var(--bg-page)', border: '1px solid var(--border-default)' }}>
-                          <Info className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--text-tertiary)' }} />
-                          <p className="text-[12.5px]" style={{ color: 'var(--text-tertiary)' }}>{observacoes}</p>
-                        </div>
-                      )}
 
                       <div className="space-y-2">
                         {linhas.map((l, i) => (
@@ -418,11 +445,6 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
                                       já na agenda
                                     </span>
                                   )}
-                                  {l.lat != null && (
-                                    <span title="Endereço localizado — aparecerá no mapa">
-                                      <MapPin className="w-3.5 h-3.5" style={{ color: 'var(--success)' }} />
-                                    </span>
-                                  )}
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
@@ -430,6 +452,18 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
                                   <CampoTexto placeholder="Endereço" valor={l.endereco ?? ''} onChange={v => editar(i, 'endereco', v || null)} largo />
                                 </div>
 
+                                {/* O lugar encontrado, por extenso: é assim que
+                                    se confere sem precisar de um mapa. */}
+                                {l.localizadoEm && (
+                                  <p className="text-[12px] px-1.5 flex items-start gap-1"
+                                    style={{ color: l.longe ? 'var(--warning)' : 'var(--success)' }}>
+                                    <MapPin className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                                    <span>
+                                      {l.localizadoEm}
+                                      {l.longe && ' — bem longe dos outros compromissos do dia'}
+                                    </span>
+                                  </p>
+                                )}
                                 {l.descricao && (
                                   <p className="text-[12px] px-1.5" style={{ color: 'var(--text-tertiary)' }}>{l.descricao}</p>
                                 )}
