@@ -365,7 +365,10 @@ export default function AgendaPage() {
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* items-start: sem isto, a grade estica as duas colunas até a altura
+          da mais alta. Quando a agenda encheu, a coluna da direita passou a
+          ser a maior e o calendário ganhou um vão vazio embaixo. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
 
         {/* ── Calendário ── */}
         <div
