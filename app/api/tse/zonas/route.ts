@@ -5,6 +5,7 @@ import { anoValido, ufValida } from '@/lib/tse-params';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
+import { loadStaticTseData, loadLocaisTse } from '@/lib/tse-static';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,21 +60,14 @@ function readJsonFile(filePath: string): unknown | null {
   return null;
 }
 
-function loadCandidatos(ano: string, uf: string): CandidatoJson[] | null {
-  const key = `${ano}-${uf}`;
-  if (candCache.has(key)) return candCache.get(key)!;
-  const fp = path.join(process.cwd(), 'public', 'data', 'tse', ano, `${uf}.json`);
-  const d = readJsonFile(fp) as CandidatoJson[] | null;
-  if (d) candCache.set(key, d);
-  return d;
+async function loadCandidatos(ano: string, uf: string): Promise<CandidatoJson[] | null> {
+  // Delegado a lib/tse-static: a base do TSE e buscada por HTTP, e nao
+  // lida do disco, para nao viajar dentro da funcao serverless.
+  return (await loadStaticTseData(ano, uf)) as unknown as CandidatoJson[] | null;
 }
 
-function loadLocais(uf: string): LocalJson[] | null {
-  if (locaisCache.has(uf)) return locaisCache.get(uf)!;
-  const fp = path.join(process.cwd(), 'public', 'data', 'tse', 'locais', `${uf}.json`);
-  const d = readJsonFile(fp) as LocalJson[] | null;
-  if (d) locaisCache.set(uf, d);
-  return d;
+async function loadLocais(uf: string): Promise<LocalJson[] | null> {
+  return (await loadLocaisTse(uf)) as unknown as LocalJson[] | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,7 +119,7 @@ function montarZonasLocaisSemVotos(locaisMun: LocalJson[], municipio: string) {
 // ---------------------------------------------------------------------------
 // Montar resposta de zonas a partir de dados estáticos
 // ---------------------------------------------------------------------------
-function montarZonasEstatico(cand: CandidatoJson, municipio: string, uf: string) {
+async function montarZonasEstatico(cand: CandidatoJson, municipio: string, uf: string) {
   const munNorm = normalizar(municipio);
 
   // Filtrar zonas do município
@@ -141,7 +135,7 @@ function montarZonasEstatico(cand: CandidatoJson, municipio: string, uf: string)
     .sort((a, b) => a.zona - b.zona);
 
   // Locais de votação do município
-  const todosLocais = loadLocais(uf) ?? [];
+  const todosLocais = await loadLocais(uf) ?? [];
   const locaisMun = todosLocais.filter(l => normalizar(l.municipio) === munNorm);
 
   // Agrupar locais por zona (todos os locais, não só os com coord válida)
@@ -220,7 +214,7 @@ export async function GET(request: NextRequest) {
 
     // ── Tentar JSON estático ──────────────────────────────────────────────
     if (uf && ano) {
-      const staticData = loadCandidatos(ano, uf);
+      const staticData = await loadCandidatos(ano, uf);
       if (staticData) {
         let cand: CandidatoJson | undefined;
         if (candidatoId) {
@@ -241,10 +235,10 @@ export async function GET(request: NextRequest) {
             }
           }
         }
-        if (cand) return montarZonasEstatico(cand, municipio, uf);
+        if (cand) return await montarZonasEstatico(cand, municipio, uf);
 
         // Candidato não encontrado mas temos locais: retornar zonas com 0 votos (fallback para mapa)
-        const todosLocais = loadLocais(uf) ?? [];
+        const todosLocais = await loadLocais(uf) ?? [];
         const munNorm = normalizar(municipio);
         const locaisMun = todosLocais.filter(l => normalizar(l.municipio) === munNorm);
         if (locaisMun.length > 0) {

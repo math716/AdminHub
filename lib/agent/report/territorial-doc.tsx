@@ -444,10 +444,10 @@ export async function montarRelatorioTerritorial(params: {
 
   for (const lote of lotes) {
     if (faltantes.length === 0) break;
-    const territorial: TerritorialData | null = carregarTerritorial(lote.ano, uf, lote.cargo);
+    const territorial: TerritorialData | null = await carregarTerritorial(lote.ano, uf, lote.cargo);
     if (!territorial) continue;
 
-    const res = resolverDeputados(faltantes, lote.ano, uf, lote.cargo);
+    const res = await resolverDeputados(faltantes, lote.ano, uf, lote.cargo);
     faltantes = res.faltantes;
 
     for (const { cand } of res.encontrados) {

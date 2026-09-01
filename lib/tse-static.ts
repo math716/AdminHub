@@ -1,6 +1,72 @@
-import fs from 'fs';
-import path from 'path';
 import zlib from 'zlib';
+import manifesto from './tse-manifesto.json';
+
+// A base do TSE (211 MB) é BUSCADA POR HTTP, não lida do disco.
+//
+// Com `fs.readFileSync`, o empacotador da Vercel conclui que os arquivos
+// precisam viajar dentro da função e copia a pasta inteira: as funções do
+// agente chegaram a 250,9 MB contra um teto de 250 MB. Com `fetch` nada é
+// copiado — o arquivo é buscado do CDN no momento do uso, que é como o
+// public/geojson (232 MB) sempre conviveu com o limite ocupando 0,7 MB.
+//
+// O preço é a primeira leitura de cada UF: MG e SP têm ~25 MB, o DF tem 80 KB.
+// O cache em memória abaixo faz isso acontecer uma vez por instância.
+
+/**
+ * De onde a funcao baixa os arquivos de public/.
+ *
+ * A ordem foi MEDIDA em producao, nao suposta — a primeira tentativa desta
+ * migracao usou VERCEL_URL e derrubou o mapa eleitoral. Diagnostico feito de
+ * dentro da funcao, baixando o mesmo arquivo por cada endereco:
+ *
+ *   VERCEL_PROJECT_PRODUCTION_URL  200, 80.340 bytes,  10 ms   <-- este
+ *   host do pedido                 200, 80.340 bytes, 169 ms
+ *   VERCEL_URL (do deployment)     302 -> tela de login da Vercel
+ *   VERCEL_BRANCH_URL              302 -> tela de login da Vercel
+ *   NEXTAUTH_URL                   308 (barra sobrando no fim)
+ *
+ * A protecao de deploy da Vercel barra a PROPRIA funcao quando ela chama a URL
+ * do deployment. O dominio de producao passa direto e ainda e o mais rapido.
+ */
+function baseEstaticos(): string {
+  const limpa = (u: string) => u.replace(/[/]+$/, '');
+  if (process.env.NEXT_PUBLIC_SITE_URL) return limpa(process.env.NEXT_PUBLIC_SITE_URL);
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  if (process.env.NEXTAUTH_URL) return limpa(process.env.NEXTAUTH_URL);
+  return 'http://localhost:3000';
+}
+
+/**
+ * Baixa e descomprime um arquivo de public/data/tse.
+ *
+ * Tenta .json.gz e cai para .json. Devolve null em qualquer falha — quem chama
+ * já trata ausência de dados, e derrubar a requisição seria pior.
+ */
+export async function baixarTseJson<T>(caminho: string): Promise<T | null> {
+  const base = baseEstaticos();
+  for (const [url, comprimido] of [
+    [`${base}/data/tse/${caminho}.json.gz`, true],
+    [`${base}/data/tse/${caminho}.json`, false],
+  ] as Array<[string, boolean]>) {
+    try {
+      const res = await fetch(url, { cache: 'force-cache', redirect: 'manual' });
+      if (!res.ok) {
+        // 3xx aqui = protecao de deploy barrando a propria funcao.
+        console.warn(`[tse] ${res.status} em ${url}`);
+        continue;
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      // O .gz é servido como arquivo bruto; quem descomprime somos nós.
+      const texto = comprimido ? zlib.gunzipSync(buf).toString('utf8') : buf.toString('utf8');
+      return JSON.parse(texto) as T;
+    } catch (err) {
+      // Silenciar aqui foi o que escondeu a falha na primeira tentativa desta
+      // migracao: a rota devolvia 404 e o log nao dizia por que.
+      console.warn(`[tse] falhou ${url}: ${String(err).slice(0, 120)}`);
+    }
+  }
+  return null;
+}
 
 export interface CandidatoJson {
   id: string;
@@ -39,64 +105,34 @@ export function palavrasDoNome(c: { nomeUrna: string; nome: string }): string[] 
 
 const fileCache = new Map<string, CandidatoJson[]>();
 
-export function loadStaticTseData(ano: string, uf: string): CandidatoJson[] | null {
+export async function loadStaticTseData(ano: string, uf: string): Promise<CandidatoJson[] | null> {
   const key = `${ano}-${uf}`;
   if (fileCache.has(key)) return fileCache.get(key)!;
 
-  const base = path.join(process.cwd(), 'public', 'data', 'tse', ano, uf);
-  const gzPath   = `${base}.json.gz`;
-  const jsonPath  = `${base}.json`;
-
-  try {
-    let raw: string;
-    if (fs.existsSync(gzPath)) {
-      raw = zlib.gunzipSync(fs.readFileSync(gzPath) as any).toString('utf8');
-    } else if (fs.existsSync(jsonPath)) {
-      raw = fs.readFileSync(jsonPath, 'utf8');
-    } else {
-      return null;
-    }
-    const data: CandidatoJson[] = JSON.parse(raw);
-    fileCache.set(key, data);
-    return data;
-  } catch {
-    return null;
-  }
+  const data = await baixarTseJson<CandidatoJson[]>(`${ano}/${uf}`);
+  if (data) fileCache.set(key, data);
+  return data;
 }
 
 /**
  * Anos de eleição disponíveis na base (opcionalmente para uma UF). Permite
  * responder "não temos 2026, temos 2022 e 2018" em vez de "não encontrei".
  */
-let anosCache: Record<string, number[]> | null = null;
+// Vem do manifesto (lib/tse-manifesto.json, ~2 KB), gerado por
+// scripts/gerar-manifesto-tse.mjs. Por HTTP dá para buscar um arquivo, mas não
+// para listar o conteúdo de uma pasta — daí o índice.
+const anosPorUf: Record<string, number[]> = manifesto.anosPorUf as Record<string, number[]>;
 
 export function anosDisponiveisTse(uf?: string): number[] {
-  if (!anosCache) {
-    anosCache = {};
-    try {
-      const base = path.join(process.cwd(), 'public', 'data', 'tse');
-      for (const dir of fs.readdirSync(base)) {
-        if (!/^\d{4}$/.test(dir)) continue;
-        const ano = Number(dir);
-        for (const arq of fs.readdirSync(path.join(base, dir))) {
-          const sigla = arq.replace(/\.json(\.gz)?$/i, '').toUpperCase();
-          if (!/^[A-Z]{2}$/.test(sigla)) continue;
-          (anosCache[sigla] = anosCache[sigla] || []).push(ano);
-        }
-      }
-      for (const k of Object.keys(anosCache)) anosCache[k].sort((a, b) => b - a);
-    } catch { /* base ausente — devolve vazio */ }
-  }
-  if (uf) return anosCache[uf.toUpperCase()] ?? [];
-  return [...new Set(Object.values(anosCache).flat())].sort((a, b) => b - a);
+  if (uf) return anosPorUf[uf.toUpperCase()] ?? [];
+  return [...new Set(Object.values(anosPorUf).flat())].sort((a, b) => b - a);
 }
 
 /**
  * UFs que têm dados num ano (para orientar quando a UF pedida não existe).
  */
 export function ufsDisponiveisTse(ano: number): string[] {
-  anosDisponiveisTse(); // garante o cache preenchido
-  return Object.entries(anosCache ?? {})
+  return Object.entries(anosPorUf)
     .filter(([, anos]) => anos.includes(ano))
     .map(([uf]) => uf)
     .sort();
@@ -157,23 +193,9 @@ export interface LocalVotacao {
 
 const locaisCache = new Map<string, LocalVotacao[] | null>();
 
-export function loadLocaisTse(uf: string): LocalVotacao[] | null {
+export async function loadLocaisTse(uf: string): Promise<LocalVotacao[] | null> {
   if (locaisCache.has(uf)) return locaisCache.get(uf)!;
-
-  const base = path.join(process.cwd(), 'public', 'data', 'tse', 'locais', uf);
-  const gzPath = `${base}.json.gz`;
-  const jsonPath = `${base}.json`;
-
-  let data: LocalVotacao[] | null = null;
-  try {
-    if (fs.existsSync(gzPath)) {
-      data = JSON.parse(zlib.gunzipSync(fs.readFileSync(gzPath) as any).toString('utf8'));
-    } else if (fs.existsSync(jsonPath)) {
-      data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-    }
-  } catch {
-    data = null;
-  }
+  const data = await baixarTseJson<LocalVotacao[]>(`locais/${uf}`);
   locaisCache.set(uf, data);
   return data;
 }
@@ -182,8 +204,8 @@ export function loadLocaisTse(uf: string): LocalVotacao[] | null {
  * Mapa `zona → bairros` de um município (a partir dos locais de votação).
  * Permite relacionar os votos por zona eleitoral aos bairros correspondentes.
  */
-export function bairrosPorZona(uf: string, municipio: string, maxBairros = 12): Record<number, string[]> {
-  const locais = loadLocaisTse(uf);
+export async function bairrosPorZona(uf: string, municipio: string, maxBairros = 12): Promise<Record<number, string[]>> {
+  const locais = await loadLocaisTse(uf);
   if (!locais) return {};
   const muniNorm = normalizarTextoTse(municipio);
   const sets: Record<number, Set<string>> = {};

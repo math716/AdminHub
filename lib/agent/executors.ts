@@ -202,7 +202,7 @@ export async function executarBuscarVotacao(
     : ['BR'];
 
   for (const uf of ufsParaBuscar) {
-    const staticData = loadStaticTseData(anoStr, uf);
+    const staticData = await loadStaticTseData(anoStr, uf);
     if (!staticData) continue;
 
     let todos = buscarCandidatoNoJson(staticData, semNome ? '' : args.candidato_nome, args.cargo)
@@ -284,7 +284,7 @@ export async function executarBuscarVotacao(
     // Quebra por zona eleitoral (+ bairros de cada zona) quando um município
     // é informado. Dados do TSE vão até a zona/seção — não há contagem por
     // bairro; os bairros vêm dos locais de votação de cada zona.
-    const bairrosZona = muniNorm && uf !== 'BR' ? bairrosPorZona(uf, args.municipio!) : {};
+    const bairrosZona = muniNorm && uf !== 'BR' ? await bairrosPorZona(uf, args.municipio!) : {};
 
     const detalheMunicipios =
       resultados.length > 40 ? 2 :
@@ -409,7 +409,7 @@ export async function executarBuscarVotacao(
   let sugestoes: any[] = [];
   if (args.candidato_nome) {
     for (const ano of [anoStr, ...anosDisponiveis.map(String)]) {
-      const base = loadStaticTseData(ano, ufAlvo);
+      const base = await loadStaticTseData(ano, ufAlvo);
       if (!base) continue;
       // Busca em TODOS os cargos, ordenada por relevância do nome: é comum a
       // pessoa ter concorrido a outro cargo (ex.: pediram distrital, era
@@ -678,7 +678,7 @@ export async function executarLocalizarParlamentar(
   const ufBusca = (args.uf ?? registros.find(r => r.uf)?.uf ?? '').toUpperCase();
   if (emEleicoes.length === 0 && ufBusca) {
     for (const ano of anosDisponiveisTse(ufBusca)) {
-      const base = loadStaticTseData(String(ano), ufBusca);
+      const base = await loadStaticTseData(String(ano), ufBusca);
       if (!base) continue;
       for (const sug of sugerirCandidatos(base, nome, undefined, 3)) {
         emEleicoes.push({ ...sug, ano, uf: ufBusca, exato: false });
@@ -939,7 +939,7 @@ export async function executarGerarRelatorioTerritorial(
 
   for (const lote of lotes) {
     if (faltantes.length === 0) break;
-    const r = resolverDeputados(faltantes, lote.ano, uf, lote.cargo);
+    const r = await resolverDeputados(faltantes, lote.ano, uf, lote.cargo);
     if (r.encontrados.length > 0) {
       encontrados.push(...r.encontrados.map(e => ({
         nome: e.cand.nomeUrna, ano: lote.ano, cargo: lote.cargo,
