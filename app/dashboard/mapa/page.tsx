@@ -1579,7 +1579,15 @@ export default function MapaPage() {
                     <div
                       key={fav?.id}
                       className="flex items-center gap-2 p-3 rounded-xl transition-colors"
-                      style={{ background: 'rgba(12,42,79,0.5)', border: '1px solid rgba(37,99,235,0.18)' }}
+                      /* Azul do sistema diluido, e nao um navy fixo: o valor
+                         anterior era rgba(12,42,79,0.5) nos DOIS temas, entao
+                         no claro virava uma barra acinzentada com o texto
+                         escuro por cima. Diluido no fundo do tema, fica claro
+                         no claro e escuro no escuro, mantendo o azul. */
+                      style={{
+                        background: 'color-mix(in srgb, var(--brand-cobalt) 8%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--brand-cobalt) 22%, transparent)',
+                      }}
                     >
                       <button
                         onClick={() => handleFavoriteClick(fav)}
