@@ -46,6 +46,8 @@ interface SISCONEPRow {
   ValorEmpenhado?: string;
   ValorLiquidado?: string;
   ValorEmenda?: string;
+  /** Codigo da natureza da despesa, ex. "449051". */
+  Natureza?: string;
   // Forma antiga
   EmendaId?: string;
   NomeCompleto?: string;
@@ -78,6 +80,28 @@ function lerJson(caminho: string): SISCONEPRow[] {
   return lista as SISCONEPRow[];
 }
 
+/**
+ * Custeio ou investimento, a partir do codigo da natureza da despesa.
+ *
+ * O SISCONEP manda o codigo cru — "449051", "335041". O primeiro digito e a
+ * categoria economica: 3 = despesa corrente (custeio: servico, material,
+ * contribuicao), 4 = despesa de capital (investimento: obra, equipamento).
+ * E a divisao que a assessoria de fato usa ao falar de emenda, e cabe na
+ * etiqueta da tela, que soma os valores por grupo — os 28 codigos distintos
+ * nao caberiam nem em uma nem na outra.
+ *
+ * Os quatro digitos seguintes dizem O QUE foi comprado (51 = obras, 52 =
+ * equipamentos, 39 = servicos de terceiros). Essa parte se perde: nao ha
+ * coluna para ela hoje, e inventar uma fora do lugar seria pior.
+ */
+function categoriaDaNatureza(codigo: string | undefined): string | undefined {
+  const n = (codigo ?? '').trim();
+  if (!/^[0-9]{6}$/.test(n)) return undefined;
+  if (n[0] === '3') return 'Custeio';
+  if (n[0] === '4') return 'Investimento';
+  return undefined;
+}
+
 function mapearJson(row: SISCONEPRow, ano: number): EmendaEstadualRow | null {
   const autor = (row.Parlamentar ?? row.NomeCompleto ?? '').trim();
   if (!autor) return null;
@@ -99,6 +123,7 @@ function mapearJson(row: SISCONEPRow, ano: number): EmendaEstadualRow | null {
     idPortal:       `DF-${ano}-${row.Id ?? row.EmendaId}`,
     ano,
     numero:         row.NrEmenda?.trim() || undefined,
+    tipo:           categoriaDaNatureza(row.Natureza),
     funcao:         funcao || undefined,
     subfuncao:      row.PT?.trim() || undefined,
     objeto:         objeto || undefined,
@@ -195,12 +220,20 @@ async function main() {
     console.log(`    valor da emenda: R$ ${(rows[0].valorProposto ?? 0).toLocaleString('pt-BR')}`);
     console.log(`    empenhado     : R$ ${rows[0].valorEmpenhado.toLocaleString('pt-BR')}`);
     console.log(`    área          : ${rows[0].area}`);
+    console.log(`    natureza      : ${rows[0].tipo ?? '—'}`);
 
     const divergem = rows.filter(r => r.valorProposto && r.valorProposto !== r.valorEmpenhado).length;
     if (divergem) {
       console.log(`
   ${divergem} de ${rows.length} emendas têm valor diferente do empenhado.`);
     }
+
+    const porNatureza = new Map<string, number>();
+    for (const r of rows) {
+      const k = r.tipo ?? 'sem natureza';
+      porNatureza.set(k, (porNatureza.get(k) ?? 0) + 1);
+    }
+    console.log('  ' + [...porNatureza].map(([k, n]) => `${k}: ${n}`).join('  ·  '));
   }
 
   if (rows.length === 0) {
