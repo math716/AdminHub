@@ -105,11 +105,15 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
     const map = mapInstanceRef.current;
     if (!geoLayer || !map) return;
 
-    // Sem município selecionado — restaura cores de faixa e zoom ao estado
+    // Sem município selecionado — restaura cores de faixa e zoom ao estado.
+    // Estado de um município só (DF) é exceção: fica destacado do mesmo jeito,
+    // porque não há outro com que comparar.
     if (!highlightMunicipioNome) {
-      geoLayer.eachLayer((l: any) => geoLayer.resetStyle(l));
-      selectedMunicipioRef.current = null;
-      municipioSelectedLayerRef.current = null;
+      if (!destacarUnico(geoLayer, darkModeRef.current)) {
+        geoLayer.eachLayer((l: any) => geoLayer.resetStyle(l));
+        selectedMunicipioRef.current = null;
+        municipioSelectedLayerRef.current = null;
+      }
       try {
         const stateBounds = geoLayer.getBounds();
         if (stateBounds.isValid()) map.fitBounds(stateBounds, { padding: [20, 20] });
@@ -573,6 +577,42 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
     color:       '#ffffff',
     opacity:     1,
   };
+  /**
+   * O único município do estado, quando o estado tem um só.
+   *
+   * É o caso do Distrito Federal, que não se divide em municípios: Brasília
+   * ocupa o DF inteiro. Nessa situação a cor de faixa não diz nada — uma
+   * única forma pintada de "acima de R$ 2 milhões" não se compara com nada —
+   * e o mapa ficava chapado, diferente de todos os outros estados. Tratar
+   * como selecionado deixa igual: azul vivo com contorno branco.
+   */
+  const municipioUnico = (geoLayer: any): any => {
+    let unico: any = null;
+    let quantos = 0;
+    geoLayer.eachLayer((l: any) => { quantos++; unico = l; });
+    return quantos === 1 ? unico : null;
+  };
+
+  /**
+   * Destaca o município único do estado e o registra como selecionado.
+   *
+   * Registrar importa tanto quanto pintar: as reações ao mouse decidem o que
+   * fazer olhando para `selectedMunicipioRef`. Sem isso, o `mouseout` chamaria
+   * `resetStyle` e o DF voltaria à cor de faixa no primeiro passar do mouse.
+   *
+   * Devolve false quando o estado tem mais de um município — aí nada muda.
+   */
+  const destacarUnico = (geoLayer: any, isDark: boolean): boolean => {
+    const unico = municipioUnico(geoLayer);
+    if (!unico) return false;
+    applySpotlight(geoLayer, unico, isDark);
+    unico.bringToFront();
+    municipioSelectedLayerRef.current = unico;
+    const cod = unico.feature?.properties?.codarea || '';
+    selectedMunicipioRef.current = codigoToNomeRef.current[cod] || null;
+    return true;
+  };
+
   const applySpotlight = (geoLayer: any, targetLayer: any, isDark: boolean) => {
     geoLayer.eachLayer((l: any) => {
       l.setStyle(l === targetLayer ? spotlightSelectStyle : spotlightDimStyle(isDark));
@@ -931,6 +971,9 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
         }
       } else {
+        // Mesma exceção da seleção, agora na primeira pintura: sem isto o DF
+        // aparecia na cor de faixa por um instante até o efeito rodar.
+        if (disableSubdivisao) destacarUnico(geoLayer, darkMode);
         const bounds = geoLayer.getBounds();
         if (bounds.isValid()) {
           map.fitBounds(bounds, { padding: [30, 30] });
@@ -1085,6 +1128,9 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
     if (municipioSelectedLayerRef.current && municipiosLayerRef.current) {
       municipiosLayerRef.current.resetStyle(municipioSelectedLayerRef.current);
       municipioSelectedLayerRef.current = null;
+      // Num estado de um município só, fechar o painél não volta para a cor de
+      // faixa: não há outro município, e a forma é o próprio estado.
+      destacarUnico(municipiosLayerRef.current, darkModeRef.current);
     }
 
     setMunicipiosInteractivity(true);
