@@ -19,6 +19,7 @@ import {
   ChevronDown, ChevronUp, Plus, GripVertical, Trash2, RotateCcw,
   Building2, LocateFixed, CornerDownLeft,
 } from 'lucide-react';
+import { Select } from '@/components/ui/select';
 import { corDoTrecho } from '@/lib/maps/cores-rota';
 
 interface EventoMapa {
@@ -394,19 +395,17 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
           </div>
 
           <div className="px-4 py-3 space-y-3">
-            <div className="relative">
-              <select
-                value={dia} onChange={e => setDia(e.target.value)}
-                className="w-full appearance-none rounded-xl px-3 py-2 pr-8 text-[13px] outline-none cursor-pointer"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-14)', color: 'var(--text-primary)' }}
-              >
-                {dias.map(d => (
-                  <option key={d.dia} value={d.dia}>{rotuloDia(d.dia)} — {d.quantidade} compromissos</option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: 'var(--text-tertiary)' }} />
-            </div>
+            {/* A lista do sistema, e nao um <select> nativo: no Windows o nativo
+                abre o menu do sistema operacional, com outra fonte e outras
+                cores, destoando de todas as outras listas do AdminHub. */}
+            <Select
+              value={dia}
+              onChange={e => setDia(e.target.value)}
+              options={dias.map(d => ({
+                value: d.dia,
+                label: `${rotuloDia(d.dia)} — ${d.quantidade} ${d.quantidade === 1 ? 'compromisso' : 'compromissos'}`,
+              }))}
+            />
 
             {/* Origem do dia */}
             {sede ? (
