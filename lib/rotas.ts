@@ -24,6 +24,14 @@ export interface Trecho {
   para: string;
   distanciaKm: number;
   duracaoMin: number;
+  /**
+   * O caminho deste trecho sozinho, pares [lat, lng].
+   *
+   * A rota inteira vinha como uma linha so, de uma cor so: com quatro
+   * compromissos no mesmo dia nao dava para dizer qual perna do trajeto era
+   * qual. Separada por trecho, cada uma ganha a sua cor no mapa.
+   */
+  linha: Array<[number, number]>;
 }
 
 export interface Rota {
@@ -45,26 +53,37 @@ export async function tracarRota(pontos: Ponto[]): Promise<Rota | null> {
 
   const usados = pontos.slice(0, MAX_PONTOS);
   const coords = usados.map(p => `${p.lng},${p.lat}`).join(';');  // OSRM usa lng,lat
-  const url = `${OSRM}/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+  // steps=true e o que traz a geometria SEPARADA por trecho. Sem ele o OSRM
+  // devolve uma unica linha da partida ao destino final.
+  const url = `${OSRM}/route/v1/driving/${coords}`
+    + '?overview=full&geometries=geojson&steps=true';
 
   const dados = await buscar(url);
   const rota = dados?.routes?.[0];
   if (!rota) return null;
 
+  // O GeoJSON vem [lng, lat]; o Leaflet espera [lat, lng].
+  const paraLeaflet = (cs: any): Array<[number, number]> =>
+    (Array.isArray(cs) ? cs : []).map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+
+  const legs: any[] = rota.legs ?? [];
+
   // Uma "leg" para cada par consecutivo de pontos.
-  const trechos: Trecho[] = (rota.legs ?? []).map((leg: any, i: number) => ({
+  const trechos: Trecho[] = legs.map((leg: any, i: number) => ({
     de: usados[i]?.nome ?? `Ponto ${i + 1}`,
     para: usados[i + 1]?.nome ?? `Ponto ${i + 2}`,
     distanciaKm: Math.round((leg.distance ?? 0) / 100) / 10,
     duracaoMin: Math.round((leg.duration ?? 0) / 60),
+    // A linha do trecho e a emenda das manobras dele. Se o servico nao mandar
+    // os passos, o trecho fica sem linha propria e o mapa cai na linha inteira.
+    linha: (leg.steps ?? []).flatMap((passo: any) => paraLeaflet(passo?.geometry?.coordinates)),
   }));
 
   return {
     trechos,
     distanciaTotalKm: Math.round((rota.distance ?? 0) / 100) / 10,
     duracaoTotalMin: Math.round((rota.duration ?? 0) / 60),
-    // O GeoJSON vem [lng, lat]; o Leaflet espera [lat, lng].
-    linha: (rota.geometry?.coordinates ?? []).map((c: [number, number]) => [c[1], c[0]] as [number, number]),
+    linha: paraLeaflet(rota.geometry?.coordinates),
   };
 }
 

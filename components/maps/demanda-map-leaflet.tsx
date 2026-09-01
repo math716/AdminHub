@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CATEGORY_COLORS } from '@/lib/types';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
 import { camadaBase } from '@/lib/maps/basemap';
+import { corDoTrecho } from '@/lib/maps/cores-rota';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -59,7 +60,11 @@ interface Props {
   onEventClick: (id: string) => void;
   showSpDistritos?: boolean;
   /** Linha da rota do dia, em pares [lat, lng]. Vazio esconde a rota. */
-  rota?: Array<[number, number]>;
+  /**
+   * Um caminho por trecho da rota, na ordem. Cada um sai de uma cor, para dar
+   * para dizer qual perna do trajeto e qual — a linha unica azul nao dizia.
+   */
+  rota?: Array<Array<[number, number]>>;
   /** Ponto de um endereço buscado — some quando a busca é limpa. */
   marcadorBusca?: { lat: number; lng: number; rotulo: string } | null;
 }
@@ -409,19 +414,25 @@ export default function DemandaMapLeaflet({
       try { rotaRef.current.remove(); } catch {}
       rotaRef.current = null;
     }
-    if (!rota || rota.length < 2) return;
+    const trechos = (rota ?? []).filter(t => Array.isArray(t) && t.length >= 2);
+    if (trechos.length === 0) return;
 
-    // Duas linhas sobrepostas: um contorno escuro por baixo dá contraste sobre
-    // qualquer basemap, claro ou escuro.
+    // Duas linhas sobrepostas por trecho: um contorno escuro por baixo dá
+    // contraste sobre qualquer basemap, claro ou escuro; a cor por cima diz de
+    // qual trecho se trata, e e a MESMA que o painel mostra ao lado da
+    // distância. O contorno vai primeiro em todos, para que a cor de um trecho
+    // nunca fique por baixo do contorno do seguinte no ponto em que se cruzam.
     const grupo = L.layerGroup([
-      L.polyline(rota, { color: '#0b1b3a', weight: 8, opacity: 0.35, lineJoin: 'round' }),
-      L.polyline(rota, { color: '#2563EB', weight: 4, opacity: 0.95, lineJoin: 'round' }),
+      ...trechos.map(t =>
+        L.polyline(t, { color: '#0b1b3a', weight: 8, opacity: 0.35, lineJoin: 'round' })),
+      ...trechos.map((t, i) =>
+        L.polyline(t, { color: corDoTrecho(i), weight: 4, opacity: 0.95, lineJoin: 'round' })),
     ]);
     grupo.addTo(map);
     rotaRef.current = grupo;
 
     try {
-      map.fitBounds(L.latLngBounds(rota), { padding: [60, 60], maxZoom: 15 });
+      map.fitBounds(L.latLngBounds(trechos.flat()), { padding: [60, 60], maxZoom: 15 });
     } catch {}
 
     return () => {

@@ -191,7 +191,8 @@ export default function MapaDemandasPage() {
   }, []);
   const [showDemands, setShowDemands] = useState(true);
   const [showAgendas, setShowAgendas] = useState(true);
-  const [rotaLinha, setRotaLinha] = useState<Array<[number, number]> | undefined>();
+  // Um caminho por trecho: o mapa pinta cada um de uma cor.
+  const [rotaLinha, setRotaLinha] = useState<Array<Array<[number, number]>> | undefined>();
 
   // Demandas concluídas — seção colapsável com seleção individual para exibir no mapa
   const [concluidasOpen, setConcluidasOpen] = useState(false);

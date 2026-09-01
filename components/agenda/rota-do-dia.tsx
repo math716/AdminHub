@@ -19,6 +19,7 @@ import {
   ChevronDown, ChevronUp, Plus, GripVertical, Trash2, RotateCcw,
   Building2, LocateFixed, CornerDownLeft,
 } from 'lucide-react';
+import { corDoTrecho } from '@/lib/maps/cores-rota';
 
 interface EventoMapa {
   id: string;
@@ -44,7 +45,11 @@ interface Parada {
   fim?: string | null;
 }
 
-interface Trecho { de: string; para: string; distanciaKm: number; duracaoMin: number }
+interface Trecho {
+  de: string; para: string; distanciaKm: number; duracaoMin: number;
+  /** O caminho deste trecho sozinho — e o que ganha cor propria no mapa. */
+  linha?: Array<[number, number]>;
+}
 
 interface RotaCalculada {
   trechos: Trecho[];
@@ -75,6 +80,20 @@ function rotuloDia(dia: string): string {
   return `${semana.replace('.', '')}, ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`;
 }
 
+/**
+ * Os caminhos na ordem dos trechos, para o mapa colorir um a um.
+ *
+ * Se o servico de rotas nao mandar a geometria separada, sobra a linha inteira
+ * como um trecho unico — o mapa volta a ser de uma cor so, mas continua ali.
+ */
+function linhasPorTrecho(r: RotaCalculada): Array<Array<[number, number]>> | undefined {
+  const porTrecho = (r.trechos ?? [])
+    .map(t => t.linha ?? [])
+    .filter(l => l.length >= 2);
+  if (porTrecho.length > 0) return porTrecho;
+  return r.linha?.length >= 2 ? [r.linha] : undefined;
+}
+
 function duracao(min: number): string {
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
@@ -84,7 +103,8 @@ function duracao(min: number): string {
 
 export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
   eventos: EventoMapa[];
-  onLinhaChange: (linha: Array<[number, number]> | undefined) => void;
+  /** Um caminho por trecho, na ordem da rota: o mapa pinta cada um de uma cor. */
+  onLinhaChange: (trechos: Array<Array<[number, number]>> | undefined) => void;
   /** A tela precisa saber, para os balões de detalhe não caírem em cima. */
   onAbertoChange?: (aberto: boolean) => void;
 }) {
@@ -195,7 +215,7 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
         setParadas(json.ordem.map((i: number) => lista[i]));
       }
       setRota(json);
-      onLinhaChange(json.linha);
+      onLinhaChange(linhasPorTrecho(json));
     } catch {
       setErro('Falha de conexão ao calcular a rota.');
     } finally {
@@ -539,8 +559,11 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
                     </button>
                   </div>
 
+                  {/* A mesma cor que este trecho tem no mapa. E o que liga
+                      a lista ao tracado: sem isso a cor no mapa nao diz nada. */}
                   {rota?.trechos[i] && (
-                    <div className="pl-[26px] py-0.5" style={{ borderLeft: '2px dashed var(--tint-14)', marginLeft: 15 }}>
+                    <div className="pl-[26px] py-0.5"
+                      style={{ borderLeft: `2px dashed ${corDoTrecho(i)}`, marginLeft: 15 }}>
                       <span className="text-[11px] pl-3" style={{ color: 'var(--text-tertiary)' }}>
                         {rota.trechos[i].distanciaKm} km · {duracao(rota.trechos[i].duracaoMin)}
                       </span>
