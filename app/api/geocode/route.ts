@@ -32,6 +32,10 @@ export async function GET(request: NextRequest) {
   // colocou compromissos de Brasília em Minas Gerais e no Espírito Santo.
   // No formulário manual não vale: ali a pessoa digitou de propósito.
   const lote = request.nextUrl.searchParams.get('lote') === '1';
+  // Cidade deduzida do lote inteiro, enviada à parte. Se viesse grudada no
+  // endereço, o "DF" do fim seria confundido com a região do compromisso ao
+  // montar as versões curtas da busca.
+  const cidade = (request.nextUrl.searchParams.get('cidade') ?? '').trim();
   if (lote && ehGenerico(address)) {
     return NextResponse.json({ results: [], semLugar: true });
   }
@@ -43,7 +47,7 @@ export async function GET(request: NextRequest) {
   const ancora = gabineteId ? await ancoraDoGabinete(gabineteId).catch(() => undefined) : undefined;
   // `estrito` entra na chave: o modo solto e o estrito podem devolver
   // resultados diferentes para o mesmo endereço.
-  const cacheKey = `${address.toLowerCase().trim()}|${ancora ? `${ancora.lat.toFixed(2)},${ancora.lng.toFixed(2)}` : ''}|${estrito ? 'e' : ''}`;
+  const cacheKey = `${address.toLowerCase().trim()}|${cidade}|${ancora ? `${ancora.lat.toFixed(2)},${ancora.lng.toFixed(2)}` : ''}|${estrito ? 'e' : ''}`;
   const cached = geocodeCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return NextResponse.json({ results: cached.results });
@@ -72,16 +76,34 @@ export async function GET(request: NextRequest) {
     // Bloco J2 Ed. Lúcia Plaza, 3º Andar, Salas 308/309" não existe na base do
     // serviço, mas "SHIN CA 05, Lago Norte" existe. Sem isto, endereço do DF
     // completo e correto simplesmente não era encontrado.
-    const variantes = variantesDeBusca(address).slice(0, 3);
+    const variantes = variantesDeBusca(address)
+      .map(v => (cidade ? `${v}, ${cidade}` : v))
+      .slice(0, 5);
+
+    /**
+     * Um resultado só com bairro ou cidade, sem rua, é o serviço dizendo "achei
+     * a região, não o endereço". Ele SEMPRE devolve algo assim, então parar na
+     * primeira resposta colocava o compromisso no centro do bairro mesmo
+     * havendo uma versão da busca capaz de achar a rua exata.
+     */
+    const temRua = (d: any[]) => Boolean(d?.[0]?.address?.road || d?.[0]?.address?.house_number);
+
     let res = await buscar(variantes[0]);
     let data: any[] = res.ok ? await res.json() : [];
+    let reserva: any[] = temRua(data) ? [] : data;   // guarda o aproximado
 
-    for (let i = 1; i < variantes.length && res.ok && data.length === 0; i++) {
+    for (let i = 1; i < variantes.length && res.ok && !temRua(data); i++) {
       await new Promise(r => setTimeout(r, 1100));     // uma consulta por segundo
       const proxima = await buscar(variantes[i]);
       if (!proxima.ok) break;
-      data = await proxima.json();
+      const d = await proxima.json();
+      if (temRua(d)) { data = d; break; }
+      if (d?.length && reserva.length === 0) reserva = d;
+      data = [];
     }
+
+    // Nenhuma variante achou a rua: fica a melhor aproximação (o bairro).
+    if (!temRua(data) && reserva.length > 0) data = reserva;
 
     if (!res.ok) {
       // 403/429 do Nominatim = uso acima do permitido (uma consulta por

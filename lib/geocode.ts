@@ -134,20 +134,58 @@ const TEM_COMPLEMENTO =
  * Uma unica simplificacao nao dava conta porque "3o Andar" COMECA com o
  * numero, e o filtro antigo so olhava o inicio da parte.
  */
+/**
+ * Ajusta a grafia dos numeros ao que o servico de mapas indexa.
+ *
+ * Medido com a agenda real:
+ *   "Conjunto 03"  nao acha  |  "Conjunto 3"  acha
+ *   "QSF AE 4/5"   nao acha  |  "QSF 4"       acha
+ *
+ * Quem escreve a agenda usa zero a esquerda e intervalo de quadras; a base
+ * geografica guarda o numero puro.
+ */
+// Montados com fromCharCode: escrever a barra invertida direto aqui ja foi
+// convertida em caractere de controle por um editor, e o regex virou lixo
+// silenciosamente — a normalizacao deixou de acontecer sem ninguem notar.
+const B = String.fromCharCode(92);
+const ZERO_A_ESQUERDA = new RegExp(B + 'b0+(' + B + 'd)', 'g');
+const INTERVALO = new RegExp('(' + B + 'd+)' + B + 's*/' + B + 's*' + B + 'd+', 'g');
+
+function normalizarNumeros(texto: string): string {
+  return texto
+    .replace(ZERO_A_ESQUERDA, '$1')            // Conjunto 03 -> Conjunto 3
+    .replace(/(\d+)\s*\/\s*\d+/g, '$1');    // QSF 4/5 -> QSF 4 (fica a primeira)
+}
+
 export function variantesDeBusca(consulta: string): string[] {
   const partes = consulta.split(',').map(p => p.trim()).filter(Boolean);
-  const saida: string[] = [consulta];
+  const primeira = partes[0] ?? consulta;
+  const regiao = partes.length > 1 ? partes[partes.length - 1] : '';
 
-  // Sem as partes que sao puro complemento (em qualquer posicao da parte).
-  const uteis = partes.filter(p => !TEM_COMPLEMENTO.test(semAcento(p)));
-  if (uteis.length > 0 && uteis.length < partes.length) saida.push(uteis.join(', '));
+  // Da MAIS especifica para a menos. A ordem importa: a busca para na primeira
+  // que encontra, e parar cedo demais devolve o centro do bairro no lugar do
+  // endereco. "So a regiao" fica por ultimo, como consolo.
+  const bruta: string[] = [consulta];
 
-  // O essencial: a via e a regiao. Descarta todo o miolo.
-  if (partes.length > 2) saida.push(`${partes[0]}, ${partes[partes.length - 1]}`);
+  // Via + regiao, sem o miolo de complementos.
+  if (partes.length > 2 && regiao) bruta.push(`${primeira}, ${regiao}`);
 
-  // Ultimo recurso: so a regiao. Impreciso, mas coloca o compromisso no
-  // bairro certo — e a tela mostra o nome do lugar para a pessoa julgar.
-  if (partes.length > 1) saida.push(partes[partes.length - 1]);
+  // Sem as partes que sao puro complemento — mas a PRIMEIRA nunca sai: ela e a
+  // via, e some por conter "Conjunto" no nome ("SHIS QI 25 Conjunto 03").
+  const uteis = partes.filter((p, i) => i === 0 || !TEM_COMPLEMENTO.test(semAcento(p)));
+  if (uteis.length > 1 && uteis.length < partes.length) bruta.push(uteis.join(', '));
+
+  // Ultimo recurso: so a via, e depois so a regiao.
+  bruta.push(primeira);
+  if (regiao) bruta.push(regiao);
+
+  // A grafia normalizada entra logo apos cada forma, para ser tentada cedo.
+  const saida: string[] = [];
+  for (const v of bruta) {
+    saida.push(v);
+    const n = normalizarNumeros(v);
+    if (n !== v) saida.push(n);
+  }
 
   return [...new Set(saida)].filter(v => v.trim().length > 2);
 }

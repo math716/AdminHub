@@ -95,16 +95,9 @@ function cidadeDoLote(linhas: Linha[]): string | null {
   return doDF >= 2 ? 'Brasília, DF' : null;
 }
 
-/** Monta o texto da busca de um compromisso, com a cidade do lote no fim. */
-function consultaDeBusca(endereco: string | null, local: string | null, cidade: string | null): string {
-  const partes = [endereco, local].filter(Boolean) as string[];
-  if (partes.length === 0) return '';
-  const texto = partes.join(', ');
-  if (!cidade) return texto;
-
-  const alvo = semAcento(texto);
-  if (/brasilia|distrito federal|df/.test(alvo)) return texto;
-  return `${texto}, ${cidade}`;
+/** Endereço + região do compromisso. A cidade vai à parte, na chamada. */
+function consultaDeBusca(endereco: string | null, local: string | null): string {
+  return ([endereco, local].filter(Boolean) as string[]).join(', ');
 }
 
 /** Distância em km entre dois pontos (fórmula de Haversine). */
@@ -151,7 +144,7 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
     // contexto dos outros da mesma agenda.
     const cidade = cidadeDoLote(lista);
     const alvos = lista
-      .map((l, i) => ({ i, texto: consultaDeBusca(l.endereco, l.local, cidade) }))
+      .map((l, i) => ({ i, texto: consultaDeBusca(l.endereco, l.local) }))
       .filter(a => a.texto.trim().length > 2);
     if (alvos.length === 0) return;
 
@@ -166,7 +159,9 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
         // a agenda de Brasília via TUDO ser rejeitado, porque são 867 km entre
         // as duas regiões. A coerência que vale aqui é a do próprio lote, e ela
         // é conferida no fim.
-        const res = await fetch(`/api/geocode?lote=1&address=${encodeURIComponent(texto)}`);
+        const res = await fetch(
+          `/api/geocode?lote=1&address=${encodeURIComponent(texto)}`
+          + (cidade ? `&cidade=${encodeURIComponent(cidade)}` : ''));
         const json = await res.json();
         const r = json?.results?.[0];
         if (r) {
