@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Route, X, Loader2, AlertTriangle, Clock, MapPin, Wand2, ExternalLink,
-  ChevronDown, ChevronUp, Plus, GripVertical, Trash2, RotateCcw,
+  ChevronDown, ChevronUp, Plus, GripVertical, Trash2, RotateCcw, Search,
   Building2, LocateFixed, CornerDownLeft,
 } from 'lucide-react';
 import { Select } from '@/components/ui/select';
@@ -128,6 +128,15 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
   const [voltar, setVoltar] = useState(false);
   const [buscandoGps, setBuscandoGps] = useState(false);
 
+  // Partir de outro endereco. O dia nem sempre comeca no gabinete: quem dorme
+  // fora, quem sai de um compromisso da vespera, quem pega alguem no caminho.
+  const [saidaAberta, setSaidaAberta] = useState(false);
+  const [saidaTexto, setSaidaTexto] = useState('');
+  const [saidaBuscando, setSaidaBuscando] = useState(false);
+  // A sede cadastrada, guardada a parte: trocar a origem sobrescreve `sede`, e
+  // sem isto nao havia caminho de volta — nem pelo GPS, que ja fazia o mesmo.
+  const sedeCadastrada = useRef<Parada | null>(null);
+
   const arrastando = useRef<number | null>(null);
 
   useEffect(() => {
@@ -135,10 +144,12 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
       .then(r => (r.ok ? r.json() : null))
       .then(j => {
         if (j?.lat != null && j?.lng != null) {
-          setSede({
+          const daSede: Parada = {
             chave: 'origem', nome: j.endereco || 'Sede do gabinete',
             lat: j.lat, lng: j.lng, avulsa: true, origem: true,
-          });
+          };
+          sedeCadastrada.current = daSede;
+          setSede(daSede);
         }
       })
       .catch(() => {});
@@ -264,16 +275,10 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
     setErro('');
     navigator.geolocation.getCurrentPosition(
       pos => {
-        const aqui: Parada = {
+        trocarOrigem({
           chave: 'origem', nome: 'Minha localização', avulsa: true, origem: true,
           lat: pos.coords.latitude, lng: pos.coords.longitude,
-        };
-        const semAntiga = paradas.filter(p => !p.origem);
-        const nova = [aqui, ...semAntiga];
-        setSede(aqui);
-        setUsarOrigem(true);
-        setParadas(nova);
-        calcular(nova, false);
+        });
         setBuscandoGps(false);
       },
       () => {
@@ -282,6 +287,50 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
       },
       { enableHighAccuracy: true, timeout: 10_000 },
     );
+  };
+
+  /**
+   * Troca de onde o dia comeca, recalculando na hora.
+   *
+   * Vale para as tres portas de entrada: o GPS, um endereco digitado e a volta
+   * para a sede cadastrada. Todas mexem na mesma peca, entao mexem por aqui.
+   */
+  const trocarOrigem = useCallback((nova: Parada | null) => {
+    const semAntiga = paradas.filter(p => !p.origem);
+    const lista = nova ? [nova, ...semAntiga] : semAntiga;
+    setSede(nova);
+    setUsarOrigem(Boolean(nova));
+    setParadas(lista);
+    if (lista.length >= 2) calcular(lista, false);
+  }, [paradas, calcular]);
+
+  /** Busca o endereço digitado e passa a sair dele. */
+  const usarEnderecoDeSaida = async () => {
+    const texto = saidaTexto.trim();
+    if (!texto) return;
+    setSaidaBuscando(true);
+    setErro('');
+    try {
+      const res = await fetch(`/api/geocode?address=${encodeURIComponent(texto)}`);
+      const json = await res.json();
+      const r = json?.results?.[0];
+      if (!r) {
+        setErro(`Não localizei "${texto}". Tente com a rua e a cidade.`);
+        return;
+      }
+      trocarOrigem({
+        chave: 'origem', avulsa: true, origem: true, lat: r.lat, lng: r.lng,
+        // O nome que o servico devolveu, e nao o que foi digitado: e assim que
+        // se confere que entrou o lugar certo.
+        nome: (r.endereco || r.displayName || texto).split(',').slice(0, 2).join(',').trim(),
+      });
+      setSaidaTexto('');
+      setSaidaAberta(false);
+    } catch {
+      setErro('Falha ao buscar o endereço.');
+    } finally {
+      setSaidaBuscando(false);
+    }
   };
 
   /** Busca o endereço digitado e insere como parada no fim da lista. */
@@ -314,6 +363,12 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
       setAddBuscando(false);
     }
   };
+
+  // Lida uma vez: a volta para a sede aparece em dois blocos da tela.
+  const sedeOriginal = sedeCadastrada.current;
+  // Calculado aqui e nao no JSX: la dentro os dois ramos de `sede ? ... : ...`
+  // ja restringiram o tipo, e a comparacao nao compila.
+  const podeVoltarASede = Boolean(sedeOriginal && sede?.nome !== sedeOriginal.nome);
 
   useEffect(() => { onAbertoChange?.(aberto); }, [aberto]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -438,9 +493,49 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
                     : <LocateFixed className="w-3 h-3" />}
                   Partir da minha localização
                 </button>
+                {/* Sair de outro lugar. O dia nem sempre comeca no gabinete,
+                    e ate aqui a unica alternativa era o GPS — que so serve se a
+                    pessoa JA estiver no ponto de partida. */}
+                {saidaAberta ? (
+                  <div className="flex gap-1.5 pt-0.5">
+                    <input
+                      autoFocus value={saidaTexto}
+                      onChange={e => setSaidaTexto(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') usarEnderecoDeSaida();
+                        if (e.key === 'Escape') { setSaidaAberta(false); setSaidaTexto(''); }
+                      }}
+                      placeholder="Endereço de onde o dia começa"
+                      className="flex-1 min-w-0 rounded-lg px-2.5 py-1.5 text-[12px] outline-none"
+                      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
+                    />
+                    <button onClick={usarEnderecoDeSaida} disabled={saidaBuscando || !saidaTexto.trim()}
+                      className="px-2.5 rounded-lg text-[12px] font-semibold disabled:opacity-40 flex-shrink-0"
+                      style={{ background: 'var(--brand-cobalt)', color: '#FFFFFF' }}>
+                      {saidaBuscando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Usar'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <button onClick={() => setSaidaAberta(true)}
+                      className="flex items-center gap-1.5 text-[11.5px] transition-all hover:opacity-70"
+                      style={{ color: 'var(--text-tertiary)' }}>
+                      <Search className="w-3 h-3" /> Partir de outro endereço
+                    </button>
+                    {/* Trocar a origem sobrescreve a sede; sem esta volta, o unico
+                        jeito de recuperar seria recarregar a tela. */}
+                    {podeVoltarASede && sedeOriginal && (
+                      <button onClick={() => trocarOrigem(sedeOriginal)}
+                        className="flex items-center gap-1.5 text-[11.5px] transition-all hover:opacity-70"
+                        style={{ color: 'var(--text-tertiary)' }}>
+                        <Building2 className="w-3 h-3" /> Voltar para a sede
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="rounded-xl px-3 py-2.5"
+              <div className="rounded-xl px-3 py-2.5 space-y-2"
                 style={{ background: 'var(--bg-card)', border: '1px dashed var(--tint-14)' }}>
                 <p className="text-[11.5px] flex items-start gap-1.5 mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
                   <Building2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
@@ -455,6 +550,46 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
                     : <LocateFixed className="w-3 h-3" />}
                   Partir da minha localização
                 </button>
+                {/* Sair de outro lugar. O dia nem sempre comeca no gabinete,
+                    e ate aqui a unica alternativa era o GPS — que so serve se a
+                    pessoa JA estiver no ponto de partida. */}
+                {saidaAberta ? (
+                  <div className="flex gap-1.5 pt-0.5">
+                    <input
+                      autoFocus value={saidaTexto}
+                      onChange={e => setSaidaTexto(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') usarEnderecoDeSaida();
+                        if (e.key === 'Escape') { setSaidaAberta(false); setSaidaTexto(''); }
+                      }}
+                      placeholder="Endereço de onde o dia começa"
+                      className="flex-1 min-w-0 rounded-lg px-2.5 py-1.5 text-[12px] outline-none"
+                      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
+                    />
+                    <button onClick={usarEnderecoDeSaida} disabled={saidaBuscando || !saidaTexto.trim()}
+                      className="px-2.5 rounded-lg text-[12px] font-semibold disabled:opacity-40 flex-shrink-0"
+                      style={{ background: 'var(--brand-cobalt)', color: '#FFFFFF' }}>
+                      {saidaBuscando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Usar'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <button onClick={() => setSaidaAberta(true)}
+                      className="flex items-center gap-1.5 text-[11.5px] transition-all hover:opacity-70"
+                      style={{ color: 'var(--text-tertiary)' }}>
+                      <Search className="w-3 h-3" /> Partir de outro endereço
+                    </button>
+                    {/* Trocar a origem sobrescreve a sede; sem esta volta, o unico
+                        jeito de recuperar seria recarregar a tela. */}
+                    {podeVoltarASede && sedeOriginal && (
+                      <button onClick={() => trocarOrigem(sedeOriginal)}
+                        className="flex items-center gap-1.5 text-[11.5px] transition-all hover:opacity-70"
+                        style={{ color: 'var(--text-tertiary)' }}>
+                        <Building2 className="w-3 h-3" /> Voltar para a sede
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
