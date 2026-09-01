@@ -4,6 +4,8 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
 import { Loader2 } from 'lucide-react';
 import { camadaBase } from '@/lib/maps/basemap';
+import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
+import { htmlDaBolha, tamanhoDaBolha } from '@/lib/maps/bolha-votos';
 
 export interface DfRegiaoData {
   nome: string;
@@ -104,41 +106,26 @@ function DfRegioesMapComponent({ votesData, selectedRegiao, onRegiaoClick, heigh
       const votos = getVotos(nome);
       if (!votos || votos === 0) return;
       try {
-        let centerLat: number, centerLng: number;
-        const latlngs = layer.getLatLngs?.();
-        const ring: any[] = latlngs?.[0] ?? [];
-        const n = ring.length;
-        if (n >= 3) {
-          const lats = ring.map((p: any) => p.lat);
-          const minLat = Math.min(...lats);
-          const maxLat = Math.max(...lats);
-          const threshold = maxLat - (maxLat - minLat) * 0.40;
-          const north = ring.filter((p: any) => p.lat >= threshold);
-          const pts = north.length >= 3 ? north : ring;
-          centerLat = pts.reduce((s: number, p: any) => s + p.lat, 0) / pts.length;
-          centerLng = pts.reduce((s: number, p: any) => s + p.lng, 0) / pts.length;
-        } else {
-          const bc = layer.getBounds().getCenter();
-          centerLat = bc.lat; centerLng = bc.lng;
+        // O rotulo vai no ponto INTERNO mais distante das bordas.
+        //
+        // Antes era a media dos vertices no terco norte do poligono, com a
+        // ideia de acompanhar o nucleo urbano. Media de vertices nao e centro:
+        // uma borda recortada concentra pontos e arrasta o rotulo para la.
+        const geom = layer.feature?.geometry as { type: string; coordinates: any } | undefined;
+        let aneis: Array<Array<[number, number]>> = [];
+        if (geom?.type === 'Polygon') {
+          if (geom.coordinates?.[0]?.length) aneis = [geom.coordinates[0]];
+        } else if (geom?.type === 'MultiPolygon') {
+          aneis = (geom.coordinates as any[][][]).map((p) => p[0]).filter(Boolean);
         }
+        const ponto = pontoParaRotuloMultiplo(aneis);
+        const bc = layer.getBounds().getCenter();
+        const [centerLat, centerLng] = ponto ?? [bc.lat, bc.lng];
         const label = fmtVotos(votos);
-        const sz = label.length <= 2 ? 28 : label.length <= 3 ? 32 : label.length <= 4 ? 36 : 40;
-        const fs = sz <= 28 ? 9 : 10;
+        const sz = tamanhoDaBolha(label);
         const marker = L.marker([centerLat, centerLng], {
           icon: L.divIcon({
-            html: `<div style="
-              width:${sz}px;height:${sz}px;
-              background:rgba(7,29,54,0.88);
-              color:var(--acento-azul);
-              font-size:${fs}px;font-weight:800;
-              border-radius:50%;
-              border:2px solid rgba(74,158,222,0.5);
-              display:flex;align-items:center;justify-content:center;
-              pointer-events:none;
-              box-shadow:0 2px 6px rgba(0,0,0,0.4);
-              font-family:'Segoe UI',system-ui,sans-serif;
-              letter-spacing:-0.5px;
-            ">${label}</div>`,
+            html: htmlDaBolha(label, sz),
             className: '',
             iconSize: [sz, sz] as [number, number],
             iconAnchor: [sz / 2, sz / 2] as [number, number],

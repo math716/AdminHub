@@ -4,6 +4,8 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { camadaBase } from '@/lib/maps/basemap';
+import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
+import { htmlDaBolha, tamanhoDaBolha } from '@/lib/maps/bolha-votos';
 
 interface BairrosPoligonosMapProps {
   municipio: string;
@@ -190,26 +192,27 @@ function BairrosPoligonosMapComponent({
       if (!votos) return;
       try {
         const geom = layer.feature?.geometry;
-        const center = geom ? featureCentroid(geom) : null;
-        if (!center) return;
+        if (!geom) return;
+        // Ponto interno mais distante das bordas. O centroide de area, usado
+        // antes, e melhor que o centro da caixa envolvente, mas ainda cai fora
+        // num bairro em forma de C ou de L — e a bolha aparecia no vizinho.
+        // `featureCentroid` fica como reserva para geometria que o polo nao
+        // resolva.
+        let aneis: Array<Array<[number, number]>> = [];
+        if (geom.type === 'Polygon') {
+          if (geom.coordinates?.[0]?.length) aneis = [geom.coordinates[0]];
+        } else if (geom.type === 'MultiPolygon') {
+          aneis = (geom.coordinates as any[][][]).map((r: any) => r[0]).filter(Boolean);
+        }
+        const ponto = pontoParaRotuloMultiplo(aneis);
+        const reserva = ponto ? null : featureCentroid(geom);
+        if (!ponto && !reserva) return;
+        const [centerLat, centerLng] = ponto ?? [reserva!.lat, reserva!.lng];
         const label = fmtVotos(votos);
-        const sz = label.length <= 2 ? 28 : label.length <= 3 ? 32 : label.length <= 4 ? 36 : 40;
-        const fs = sz <= 28 ? 9 : 10;
-        const marker = L.marker([center.lat, center.lng], {
+        const sz = tamanhoDaBolha(label);
+        const marker = L.marker([centerLat, centerLng], {
           icon: L.divIcon({
-            html: `<div style="
-              width:${sz}px;height:${sz}px;
-              background:rgba(7,29,54,0.88);
-              color:var(--acento-azul);
-              font-size:${fs}px;font-weight:800;
-              border-radius:50%;
-              border:2px solid rgba(74,158,222,0.5);
-              display:flex;align-items:center;justify-content:center;
-              pointer-events:none;
-              box-shadow:0 2px 6px rgba(0,0,0,0.4);
-              font-family:'Segoe UI',system-ui,sans-serif;
-              letter-spacing:-0.5px;
-            ">${label}</div>`,
+            html: htmlDaBolha(label, sz),
             className: '',
             iconSize: [sz, sz] as [number, number],
             iconAnchor: [sz / 2, sz / 2] as [number, number],
