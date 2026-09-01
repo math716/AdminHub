@@ -148,13 +148,87 @@ const TEM_COMPLEMENTO =
 // convertida em caractere de controle por um editor, e o regex virou lixo
 // silenciosamente — a normalizacao deixou de acontecer sem ninguem notar.
 const B = String.fromCharCode(92);
+const TRAVESSAO = String.fromCharCode(0x2013) + String.fromCharCode(0x2014);
 const ZERO_A_ESQUERDA = new RegExp(B + 'b0+(' + B + 'd)', 'g');
+const TRACO = '[' + B + 's]+[-' + TRAVESSAO + '][' + B + 's]+';
+const TRACO_RE = new RegExp(TRACO);
+const ROTULO_NUMERO = new RegExp(
+  '(quadra|qd|conjunto|conj|cj|chacara|lote|lt|bloco|bl|casa|trecho|tr|modulo|q)'
+  + '[' + B + 's.:-]*(' + B + 'd{1,4})' + B + 'b', 'g');
 const INTERVALO = new RegExp('(' + B + 'd+)' + B + 's*/' + B + 's*' + B + 'd+', 'g');
 
 function normalizarNumeros(texto: string): string {
   return texto
     .replace(ZERO_A_ESQUERDA, '$1')            // Conjunto 03 -> Conjunto 3
     .replace(/(\d+)\s*\/\s*\d+/g, '$1');    // QSF 4/5 -> QSF 4 (fica a primeira)
+}
+
+/**
+ * O nome do estabelecimento em "QSF AE 4/5 - Catedral da Bencao".
+ *
+ * So devolve algo que pareca NOME: duas palavras ou mais, sem palavra de
+ * complemento. Sem esse crivo, "Bloco J2 Ed. Lucia Plaza" viraria uma busca
+ * por conta propria e o mapa devolveria qualquer coisa parecida em outro lugar.
+ */
+function nomeDoLugar(parte: string): string | null {
+  const i = parte.search(TRACO_RE);
+  if (i < 0) return null;
+  const cauda = parte.slice(i).replace(/^[\s–—-]+/, '').trim();
+  if (cauda.length < 8) return null;
+  if (TEM_COMPLEMENTO.test(semAcento(cauda))) return null;
+  if (cauda.split(/\s+/).filter(w => w.length > 1).length < 2) return null;
+  return cauda;
+}
+
+/**
+ * Numeros de quadra, conjunto, lote... escritos na busca e no resultado.
+ *
+ * Serve para flagrar resposta que contradiz a pergunta. Medido: buscando
+ * "SMPW Quadra 05, Conjunto 06, Chacara 09" o mapa devolveu "SMPW Quadra 26
+ * Conjunto 08 Lote 09" — outro endereco, a quilometros dali, com cara de certo
+ * na tela. Sem esta conferencia o pino errado passa.
+ */
+function numerosPorRotulo(texto: string): Map<string, Set<number>> {
+  const m = new Map<string, Set<number>>();
+  const t = semAcento(texto).toLowerCase();
+  for (const achado of t.matchAll(ROTULO_NUMERO)) {
+    const rotulo = SINONIMO[achado[1]] ?? achado[1];
+    const n = parseInt(achado[2], 10);
+    if (!Number.isFinite(n)) continue;
+    if (!m.has(rotulo)) m.set(rotulo, new Set());
+    m.get(rotulo)!.add(n);
+  }
+  return m;
+}
+
+/** Rotulos que identificam a VIA. Divergir aqui e outro endereco, nao um vizinho. */
+const ROTULO_PRINCIPAL = new Set(['quadra', 'trecho']);
+
+const SINONIMO: Record<string, string> = {
+  qd: 'quadra', q: 'quadra', cj: 'conjunto', conj: 'conjunto',
+  lt: 'lote', bl: 'bloco', tr: 'trecho',
+};
+
+/**
+ * Compara os numeros da busca com os do resultado.
+ *
+ *  - 'ok'          nada se contradiz;
+ *  - 'aproximado'  divergiu num complemento (conjunto, lote) — e o vizinho;
+ *  - 'conflito'    divergiu na quadra ou no trecho — e outro endereco.
+ */
+export function conferirNumeros(consulta: string, resultado: string):
+  'ok' | 'aproximado' | 'conflito' {
+  const a = numerosPorRotulo(consulta);
+  const b = numerosPorRotulo(resultado);
+  let brando = false;
+  for (const [rotulo, nums] of a) {
+    const outros = b.get(rotulo);
+    if (!outros) continue;                       // o resultado nao diz: nao contradiz
+    if ([...nums].some(n => outros.has(n))) continue;
+    if (ROTULO_PRINCIPAL.has(rotulo)) return 'conflito';
+    brando = true;
+  }
+  return brando ? 'aproximado' : 'ok';
 }
 
 export function variantesDeBusca(consulta: string): string[] {
@@ -174,6 +248,13 @@ export function variantesDeBusca(consulta: string): string[] {
   // via, e some por conter "Conjunto" no nome ("SHIS QI 25 Conjunto 03").
   const uteis = partes.filter((p, i) => i === 0 || !TEM_COMPLEMENTO.test(semAcento(p)));
   if (uteis.length > 1 && uteis.length < partes.length) bruta.push(uteis.join(', '));
+
+  // O NOME do lugar, quando o texto e "codigo - nome". Medido na agenda real:
+  // "QSF AE 4/5 - Catedral da Bencao, TAGUATINGA" nao acha nada, e cai na
+  // regiao Taguatinga inteira; "Catedral da Bencao, Taguatinga" acha a catedral
+  // exata. O mapa conhece o lugar pelo nome, nao pelo codigo da quadra.
+  const nome = nomeDoLugar(partes[0] ?? '');
+  if (nome) bruta.push(regiao ? `${nome}, ${regiao}` : nome);
 
   // Ultimo recurso: so a via, e depois so a regiao.
   bruta.push(primeira);

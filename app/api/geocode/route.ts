@@ -3,10 +3,10 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import { ancoraDoGabinete, variantesDeBusca, ehGenerico, type Ancora } from '@/lib/geocode';
+import { ancoraDoGabinete, variantesDeBusca, ehGenerico, conferirNumeros, type Ancora } from '@/lib/geocode';
 
 // Cache em memória: chave → { results, expiresAt }
-const geocodeCache = new Map<string, { results: unknown[]; expiresAt: number }>();
+const geocodeCache = new Map<string, { results: unknown[]; aproximado?: boolean; expiresAt: number }>();
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 horas
 
 /** Faixa em graus ao redor do gabinete usada para enviesar a busca (~130 km). */
@@ -50,7 +50,10 @@ export async function GET(request: NextRequest) {
   const cacheKey = `${address.toLowerCase().trim()}|${cidade}|${ancora ? `${ancora.lat.toFixed(2)},${ancora.lng.toFixed(2)}` : ''}|${estrito ? 'e' : ''}`;
   const cached = geocodeCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
-    return NextResponse.json({ results: cached.results });
+    return NextResponse.json({
+      results: cached.results,
+      ...(cached.aproximado && { aproximado: true }),
+    });
   }
 
   try {
@@ -88,15 +91,27 @@ export async function GET(request: NextRequest) {
      */
     const temRua = (d: any[]) => Boolean(d?.[0]?.address?.road || d?.[0]?.address?.house_number);
 
+    /**
+     * Joga fora a resposta que CONTRADIZ o endereco perguntado.
+     *
+     * Buscando "SMPW Quadra 05, Conjunto 06, Chacara 09" o servico devolveu
+     * "SMPW Quadra 26 Conjunto 08 Lote 09" — outra quadra, quilometros dali. A
+     * busca e por semelhanca de texto, entao ele sempre acha o parecido; quem
+     * confere se o numero e o mesmo somos nos. Divergencia so no conjunto ou no
+     * lote passa, marcada como aproximada: e o vizinho, nao outro endereco.
+     */
+    const limpar = (d: any[]) => (Array.isArray(d) ? d : [])
+      .filter(it => conferirNumeros(address, String(it?.display_name ?? '')) !== 'conflito');
+
     let res = await buscar(variantes[0]);
-    let data: any[] = res.ok ? await res.json() : [];
+    let data: any[] = res.ok ? limpar(await res.json()) : [];
     let reserva: any[] = temRua(data) ? [] : data;   // guarda o aproximado
 
     for (let i = 1; i < variantes.length && res.ok && !temRua(data); i++) {
       await new Promise(r => setTimeout(r, 1100));     // uma consulta por segundo
       const proxima = await buscar(variantes[i]);
       if (!proxima.ok) break;
-      const d = await proxima.json();
+      const d = limpar(await proxima.json());
       if (temRua(d)) { data = d; break; }
       if (d?.length && reserva.length === 0) reserva = d;
       data = [];
@@ -128,7 +143,12 @@ export async function GET(request: NextRequest) {
       lat: parseFloat(item.lat),
       lng: parseFloat(item.lon),
       displayName: item.display_name,
+      // O nome do lugar na frente do endereco. Sem ele, quem buscou o estadio
+      // Mane Garrincha lia "SRPN Trecho 1, Setor de Administracao Municipal" e
+      // nao tinha como saber que era o estadio — o endereco esta certo, mas nao
+      // se parece com o que a pessoa escreveu.
       endereco: [
+        item.name && item.name !== item.address?.road ? item.name : null,
         item.address?.road,
         item.address?.house_number,
         item.address?.suburb || item.address?.neighbourhood,
@@ -160,11 +180,20 @@ export async function GET(request: NextRequest) {
       ? Math.round(distanciaKm(ancora, results[0]))
       : null;
 
+    // O servico SEMPRE devolve alguma coisa: nao achando a rua, devolve a
+    // regiao. Isso apareceu na tela como se fosse o endereco encontrado
+    // ("Taguatinga Sul, Taguatinga"), e a pessoa dava por conferido. Precisa
+    // estar escrito que e aproximado.
+    const aproximado = results.length > 0
+      && (!temRua(data)
+        || conferirNumeros(address, String(data[0]?.display_name ?? '')) === 'aproximado');
+
     const payload = {
       results,
+      ...(aproximado && { aproximado: true }),
       ...(longe !== null && longe > 100 && { distanciaKm: longe }),
     };
-    geocodeCache.set(cacheKey, { results, expiresAt: Date.now() + CACHE_TTL_MS });
+    geocodeCache.set(cacheKey, { results, aproximado, expiresAt: Date.now() + CACHE_TTL_MS });
     return NextResponse.json(payload);
   } catch {
     return NextResponse.json({ error: 'Erro ao geocodificar endereço' }, { status: 500 });

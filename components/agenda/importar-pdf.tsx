@@ -34,6 +34,8 @@ interface EventoLido {
   localizadoEm?: string | null;
   /** Caiu longe dos outros compromissos: provável cidade homônima. */
   longe?: boolean;
+  /** O mapa achou a região, não o endereço exato. */
+  aproximado?: boolean;
   /**
    * Por que este compromisso ficou sem localização, na língua de quem lê.
    * Cada causa tem a sua frase: dizer "não encontrado no mapa" quando o que
@@ -204,7 +206,8 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
           // pessoa sabe na hora se está certo.
           const onde = (r.endereco || r.displayName || '').split(',').slice(0, 3).join(',').trim();
           setLinhas(ls => ls.map((l, k) => (k === i
-            ? { ...l, lat: r.lat, lng: r.lng, localizadoEm: onde, motivo: null } : l)));
+            ? { ...l, lat: r.lat, lng: r.lng, localizadoEm: onde,
+                motivo: null, aproximado: Boolean(json?.aproximado) } : l)));
         } else {
           const motivo = motivoDaResposta(res, json);
           setLinhas(ls => ls.map((l, k) => (k === i ? { ...l, motivo } : l)));
@@ -271,6 +274,7 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
             lng: r?.lng ?? null,
             longe: false,
             localizadoEm: r ? (r.endereco || r.displayName || '').split(',').slice(0, 3).join(',').trim() : null,
+            aproximado: Boolean(r && json?.aproximado),
             motivo: r ? null : motivoDaResposta(res, json),
           }
         : x)));
@@ -549,10 +553,11 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
                                     se confere sem precisar de um mapa. */}
                                 {l.localizadoEm && (
                                   <p className="text-[12px] px-1.5 flex items-start gap-1"
-                                    style={{ color: l.longe ? 'var(--warning)' : 'var(--success)' }}>
+                                    style={{ color: l.longe || l.aproximado ? 'var(--warning)' : 'var(--success)' }}>
                                     <MapPin className="w-3 h-3 flex-shrink-0 mt-0.5" />
                                     <span>
                                       {l.localizadoEm}
+                                      {l.aproximado && ' — aproximado: achamos a região, não o endereço exato'}
                                       {l.longe && ' — bem longe dos outros compromissos do dia'}
                                     </span>
                                   </p>
