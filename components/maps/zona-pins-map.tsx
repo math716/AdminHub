@@ -74,11 +74,11 @@ function ZonaPinsMap({ municipio, zonas, bounds, selectedZona, onZonaClick }: Zo
 
       circle.bindTooltip(`
         <div style="background:rgba(13,27,42,0.97);padding:10px 14px;border-radius:10px;border:1px solid #1b4965;min-width:180px;">
-          <div style="font-weight:800;color:#38bdf8;font-size:14px;margin-bottom:4px;">Zona ${zona.zona}</div>
+          <div style="font-weight:800;color:var(--acento-azul);font-size:14px;margin-bottom:4px;">Zona ${zona.zona}</div>
           ${zona.votos > 0
             ? `<div style="color:var(--success);font-size:16px;font-weight:700;margin-bottom:4px;">${zona.votos.toLocaleString('pt-BR')} votos</div>`
             : ''}
-          <div style="color:#94a3b8;font-size:10px;margin-top:4px;">${bairrosText}</div>
+          <div style="color:var(--text-tertiary);font-size:10px;margin-top:4px;">${bairrosText}</div>
         </div>
       `, { permanent: false, direction: 'top', className: 'zona-pin-tooltip', offset: [0, -radius] });
 

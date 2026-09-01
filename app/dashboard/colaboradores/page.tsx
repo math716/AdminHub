@@ -486,12 +486,12 @@ function ColaboradoresMapInner({
               ? normalizeRegiao(nome) === normalizeRegiao(selectedRef.current)
               : false;
             if (!isSelected) {
-              layer.setStyle({ fillOpacity: 0.1, fillColor: 'var(--warning)', weight: 2, color: 'var(--warning)', opacity: 0.9 });
+              layer.setStyle({ fillOpacity: 0.1, fillColor: '#f59e0b', weight: 2, color: '#f59e0b', opacity: 0.9 });
             }
             tooltipEl.innerHTML = [
-              `<strong style="color:#7dd3fc;font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
+              `<strong style="color:var(--acento-azul);font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
               colabs.length > 0
-                ? `<span style="color:#e2e8f0;font-size:13px;">${colabs.length} colaborador${colabs.length > 1 ? 'es' : ''}</span>`
+                ? `<span style="color:var(--text-secondary);font-size:13px;">${colabs.length} colaborador${colabs.length > 1 ? 'es' : ''}</span>`
                 : '<span style="color:#64748b;font-size:12px;">Sem colaboradores</span>',
               '<div style="margin-top:6px;padding-top:5px;border-top:1px solid rgba(27,73,101,0.5);">',
               '<span style="color:#78909c;font-size:10px;">Clique para selecionar</span></div>',
@@ -645,7 +645,7 @@ function ColaboradoresMapInner({
   if (loading) {
     return (
       <div className="w-full flex items-center justify-center rounded-xl" style={{ height, background: 'var(--bg-card-subtle)', minHeight: 400 }}>
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--acento-azul)' }} />
       </div>
     );
   }
@@ -1410,7 +1410,7 @@ export default function ColaboradoresPage() {
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--acento-azul)' }} />
       </div>
     );
   }
@@ -1619,7 +1619,7 @@ export default function ColaboradoresPage() {
                 <button
                   onClick={selectAllFiltered}
                   className="font-semibold transition-colors hover:underline"
-                  style={{ color: '#4a9ede' }}
+                  style={{ color: 'var(--acento-azul)' }}
                 >
                   Selecionar todos
                 </button>
@@ -1631,7 +1631,7 @@ export default function ColaboradoresPage() {
           <div className="flex-1 min-h-0 overflow-y-auto space-y-2 scrollbar-dark">
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#4a9ede' }} />
+                <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--acento-azul)' }} />
               </div>
             ) : filteredColaboradores.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 gap-2">
@@ -1707,7 +1707,7 @@ export default function ColaboradoresPage() {
                                 className="text-[10px] px-1.5 py-0.5 rounded"
                                 style={r.tipo === 'ZONA'
                                   ? { background: 'rgba(167,139,250,0.15)', color: 'var(--acento-violeta)' }
-                                  : { background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
+                                  : { background: 'rgba(74,158,222,0.15)', color: 'var(--acento-azul)' }}
                               >
                                 {r.regiaoNome}
                               </span>
@@ -2048,7 +2048,7 @@ export default function ColaboradoresPage() {
                 <div className="flex items-center justify-between px-6 pt-6 pb-4" style={{ borderBottom: '1px solid var(--tint-08)' }}>
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(74,158,222,0.15)' }}>
-                      <Users2 className="w-4 h-4" style={{ color: '#4a9ede' }} />
+                      <Users2 className="w-4 h-4" style={{ color: 'var(--acento-azul)' }} />
                     </div>
                     <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
                       {editingColaborador ? 'Editar Colaborador' : 'Novo Colaborador'}
@@ -2358,7 +2358,7 @@ export default function ColaboradoresPage() {
                       >
                         {geoRegioes.length === 0 ? (
                           <div className="col-span-full text-center py-4">
-                            <Loader2 className="w-4 h-4 animate-spin mx-auto" style={{ color: '#4a9ede' }} />
+                            <Loader2 className="w-4 h-4 animate-spin mx-auto" style={{ color: 'var(--acento-azul)' }} />
                           </div>
                         ) : (
                           geoRegioes.map(nome => {
@@ -2512,7 +2512,7 @@ export default function ColaboradoresPage() {
                 <div className="flex items-center justify-between px-6 pt-6 pb-4" style={{ borderBottom: '1px solid var(--tint-08)' }}>
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(74,158,222,0.15)' }}>
-                      <Upload className="w-4 h-4" style={{ color: '#4a9ede' }} />
+                      <Upload className="w-4 h-4" style={{ color: 'var(--acento-azul)' }} />
                     </div>
                     <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Importar Colaboradores</h2>
                   </div>
@@ -2556,11 +2556,11 @@ export default function ColaboradoresPage() {
                         className="w-full rounded-xl flex flex-col items-center justify-center gap-3 py-12 cursor-pointer transition-all"
                         style={{ border: '2px dashed var(--tint-15)', background: 'var(--tint-04)' }}
                         onClick={() => document.getElementById('colabFileInput')?.click()}
-                        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#4a9ede'; }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--acento-azul)'; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--tint-15)'; }}
                       >
                         <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(74,158,222,0.12)' }}>
-                          <FileUp className="w-7 h-7" style={{ color: '#4a9ede' }} />
+                          <FileUp className="w-7 h-7" style={{ color: 'var(--acento-azul)' }} />
                         </div>
                         <div className="text-center">
                           <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Clique para selecionar arquivo</p>
@@ -2609,11 +2609,11 @@ export default function ColaboradoresPage() {
                       {/* Column detection summary */}
                       {importCols.nome ? (
                         <div className="rounded-xl p-3" style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                          <p className="text-xs font-semibold mb-2" style={{ color: '#22c55e' }}>Colunas reconhecidas automaticamente:</p>
+                          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--success)' }}>Colunas reconhecidas automaticamente:</p>
                           <div className="flex flex-wrap gap-2">
                             {(Object.entries(importCols) as [keyof DetectedColabCols, string][]).map(([field, col]) =>
                               col ? (
-                                <span key={field} className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede', border: '1px solid rgba(74,158,222,0.2)' }}>
+                                <span key={field} className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: 'rgba(74,158,222,0.12)', color: 'var(--acento-azul)', border: '1px solid rgba(74,158,222,0.2)' }}>
                                   {field} → <span style={{ color: 'var(--text-secondary)' }}>{col}</span>
                                 </span>
                               ) : null
@@ -2645,7 +2645,7 @@ export default function ColaboradoresPage() {
                                     <th key={h} className="px-3 py-2 text-left font-semibold whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
                                       {h}
                                       {detectedAs && (
-                                        <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase" style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}>
+                                        <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase" style={{ background: 'rgba(74,158,222,0.15)', color: 'var(--acento-azul)' }}>
                                           {detectedAs}
                                         </span>
                                       )}
@@ -2688,7 +2688,7 @@ export default function ColaboradoresPage() {
                     <div className="flex flex-col items-center justify-center gap-4 py-8">
                       {importResult.imported > 0 ? (
                         <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.15)' }}>
-                          <CheckCircle2 className="w-8 h-8" style={{ color: '#22c55e' }} />
+                          <CheckCircle2 className="w-8 h-8" style={{ color: 'var(--success)' }} />
                         </div>
                       ) : (
                         <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.15)' }}>
@@ -2854,19 +2854,19 @@ export default function ColaboradoresPage() {
                 <div className="flex flex-col gap-2">
                   {viewingColaborador.telefone && (
                     <div className="flex items-center gap-2.5">
-                      <Phone className="w-4 h-4 flex-shrink-0" style={{ color: '#4a9ede' }} />
+                      <Phone className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--acento-azul)' }} />
                       <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{viewingColaborador.telefone}</span>
                     </div>
                   )}
                   {viewingColaborador.email && (
                     <div className="flex items-center gap-2.5">
-                      <AtSign className="w-4 h-4 flex-shrink-0" style={{ color: '#4a9ede' }} />
+                      <AtSign className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--acento-azul)' }} />
                       <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{viewingColaborador.email}</span>
                     </div>
                   )}
                   {viewingColaborador.endereco && (
                     <div className="flex items-start gap-2.5">
-                      <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#4a9ede' }} />
+                      <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--acento-azul)' }} />
                       <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{viewingColaborador.endereco}</span>
                     </div>
                   )}
@@ -2894,7 +2894,7 @@ export default function ColaboradoresPage() {
                           className="text-xs px-2 py-0.5 rounded-lg"
                           style={r.tipo === 'ZONA'
                             ? { background: 'rgba(167,139,250,0.15)', color: 'var(--acento-violeta)' }
-                            : { background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
+                            : { background: 'rgba(74,158,222,0.15)', color: 'var(--acento-azul)' }}
                         >
                           {r.regiaoNome}
                         </span>
@@ -2930,7 +2930,7 @@ export default function ColaboradoresPage() {
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{colabMsgText.length} caracteres</span>
                       {colabMsgStatus === 'ok' && (
-                        <span className="text-xs flex items-center gap-1" style={{ color: '#22c55e' }}>
+                        <span className="text-xs flex items-center gap-1" style={{ color: 'var(--success)' }}>
                           <CheckCircle2 className="w-3.5 h-3.5" /> Enviado
                         </span>
                       )}
@@ -2963,7 +2963,7 @@ export default function ColaboradoresPage() {
                 <button
                   onClick={() => { setViewingColaborador(null); openEdit(viewingColaborador); }}
                   className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                  style={{ background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
+                  style={{ background: 'rgba(74,158,222,0.15)', color: 'var(--acento-azul)' }}
                 >
                   <Pencil className="w-4 h-4" /> Editar
                 </button>
@@ -3323,7 +3323,7 @@ export default function ColaboradoresPage() {
                             </a>
                           ) : null
                         ) : st === 'sending' ? (
-                          <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: '#4a9ede' }} />
+                          <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: 'var(--acento-azul)' }} />
                         ) : st === 'ok' ? (
                           <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-green-400" />
                         ) : (
@@ -3359,7 +3359,7 @@ export default function ColaboradoresPage() {
                 <button
                   onClick={copyBulkNumbers}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
-                  style={{ background: 'rgba(74,158,222,0.1)', border: '1px solid rgba(74,158,222,0.2)', color: '#4a9ede' }}
+                  style={{ background: 'rgba(74,158,222,0.1)', border: '1px solid rgba(74,158,222,0.2)', color: 'var(--acento-azul)' }}
                 >
                   {bulkCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   {bulkCopied ? 'Copiado!' : 'Copiar números'}
@@ -3583,7 +3583,7 @@ export default function ColaboradoresPage() {
                                 <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{c.telefone}</p>
                                 {st === 'err' && msgSendErrors[c.id] && <p className="text-[10px] mt-0.5 text-red-400">{msgSendErrors[c.id]}</p>}
                               </div>
-                              {st === 'sending' && <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" style={{ color: '#4a9ede' }} />}
+                              {st === 'sending' && <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" style={{ color: 'var(--acento-azul)' }} />}
                               {st === 'ok' && <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-green-400" />}
                               {st === 'err' && <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 text-red-400" />}
                             </div>

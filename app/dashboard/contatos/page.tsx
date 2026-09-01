@@ -28,7 +28,7 @@ const BrazilMap = dynamic(() => import('@/components/maps/brazil-map'), {
   ssr: false,
   loading: () => (
     <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'var(--bg-card-subtle)' }}>
-      <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+      <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--acento-azul)' }} />
     </div>
   ),
 });
@@ -37,7 +37,7 @@ const StateMap = dynamic(() => import('@/components/maps/state-map'), {
   ssr: false,
   loading: () => (
     <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'var(--bg-card-subtle)' }}>
-      <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+      <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--acento-azul)' }} />
     </div>
   ),
 });
@@ -46,7 +46,7 @@ const ContatosBairrosMap = dynamic(() => import('@/components/maps/contatos-bair
   ssr: false,
   loading: () => (
     <div className="h-full flex items-center justify-center rounded-xl" style={{ background: 'var(--bg-card-subtle)' }}>
-      <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+      <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--acento-azul)' }} />
     </div>
   ),
 });
@@ -685,7 +685,7 @@ export default function ContatosPage() {
         <>
           {/* Search */}
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--tint-35)' }} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
             <input type="text" placeholder="Buscar por nome, número, email..."
               value={search} onChange={e => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-[color:var(--text-primary)] placeholder-[color:var(--text-tertiary)] outline-none transition-all"
@@ -764,13 +764,13 @@ export default function ContatosPage() {
                       </div>
                       {c.email && (
                         <div className="flex items-center gap-2.5">
-                          <Mail className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
+                          <Mail className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
                           <span className="text-[13px] truncate" style={{ color: 'var(--tint-55)' }} title={c.email}>{c.email}</span>
                         </div>
                       )}
                       {c.endereco && (
                         <div className="flex items-start gap-2.5">
-                          <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: 'var(--tint-35)' }} />
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: 'var(--text-tertiary)' }} />
                           <span className="text-[13px] leading-snug" style={{ color: 'var(--tint-55)' }}>{c.endereco}</span>
                         </div>
                       )}
@@ -803,7 +803,7 @@ export default function ContatosPage() {
                         </button>
                         <button onClick={() => handleDelete(c.id)}
                           className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:bg-red-500/10"
-                          style={{ color: 'var(--tint-35)' }} title="Excluir contato">
+                          style={{ color: 'var(--text-tertiary)' }} title="Excluir contato">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -824,13 +824,13 @@ export default function ContatosPage() {
           <div className="flex items-center gap-1 px-4 py-3 text-sm flex-wrap" style={{ borderBottom: '1px solid var(--tint-06)' }}>
             <button onClick={view === 'brasil' ? undefined : goBack}
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
-              style={view === 'brasil' ? { background: 'rgba(74,158,222,0.12)', color: '#4a9ede', fontWeight: 600 } : { color: 'var(--tint-55)', cursor: 'pointer' }}>
+              style={view === 'brasil' ? { background: 'rgba(74,158,222,0.12)', color: 'var(--acento-azul)', fontWeight: 600 } : { color: 'var(--tint-55)', cursor: 'pointer' }}>
               <Globe className="h-3.5 w-3.5" /> Brasil
             </button>
             <ChevronRight className="h-3.5 w-3.5" style={{ color: 'var(--tint-25)' }} />
             {view === 'estado' ? (
               <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg font-semibold"
-                style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede' }}>
+                style={{ background: 'rgba(74,158,222,0.12)', color: 'var(--acento-azul)' }}>
                 <Layers className="h-3.5 w-3.5" /> {selectedStateName}
               </span>
             ) : view === 'municipio' ? (
@@ -847,7 +847,7 @@ export default function ContatosPage() {
               <>
                 <ChevronRight className="h-3.5 w-3.5" style={{ color: 'var(--tint-25)' }} />
                 <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg font-semibold"
-                  style={{ background: 'rgba(74,158,222,0.12)', color: '#4a9ede' }}>
+                  style={{ background: 'rgba(74,158,222,0.12)', color: 'var(--acento-azul)' }}>
                   <Building2 className="h-3.5 w-3.5" /> {navMunicipio.nome}
                 </span>
               </>
@@ -899,14 +899,14 @@ export default function ContatosPage() {
                   <div className="p-2.5 flex-shrink-0" style={{ borderBottom: '1px solid var(--tint-06)' }}>
                     <div className="flex items-center gap-2 rounded-lg px-2.5 py-2"
                       style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}>
-                      <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
+                      <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
                       <input value={mapSearch} onChange={e => setMapSearch(e.target.value)}
                         placeholder="Buscar contatos..."
                         className="flex-1 bg-transparent text-[color:var(--text-primary)] text-xs outline-none placeholder-[color:var(--text-tertiary)]" />
                     </div>
                   </div>
                   <div className="flex items-center justify-between px-3 py-2 flex-shrink-0" style={{ borderBottom: '1px solid var(--tint-06)' }}>
-                    <button onClick={selectAll} className="flex items-center gap-1 text-xs transition-all hover:opacity-70" style={{ color: '#4a9ede' }}>
+                    <button onClick={selectAll} className="flex items-center gap-1 text-xs transition-all hover:opacity-70" style={{ color: 'var(--acento-azul)' }}>
                       <UserCheck className="h-3.5 w-3.5" /> Todos
                     </button>
                     {selectedIds.size > 0 && (
@@ -917,7 +917,7 @@ export default function ContatosPage() {
                   </div>
                   <div className="flex-1 overflow-y-auto divide-y" style={{ borderColor: 'var(--tint-04)' }}>
                     {mapSidebarContacts.length === 0 ? (
-                      <p className="text-xs text-center py-5" style={{ color: 'var(--tint-35)' }}>
+                      <p className="text-xs text-center py-5" style={{ color: 'var(--text-tertiary)' }}>
                         {(pipLoading || bairroLoading) ? 'Calculando...' : 'Nenhum contato geolocado aqui'}
                       </p>
                     ) : mapSidebarContacts.map(c => {
@@ -953,7 +953,7 @@ export default function ContatosPage() {
             <div className="flex-1 relative" style={{ minHeight: 320 }}>
               {(pipLoading || bairroLoading) && (
                 <div className="absolute inset-0 flex items-center justify-center z-10" style={{ background: 'var(--bg-card)' }}>
-                  <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: '#4a9ede' }} />
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: 'var(--acento-azul)' }} />
                   <span className="text-sm" style={{ color: 'var(--tint-65)' }}>Calculando...</span>
                 </div>
               )}
@@ -989,7 +989,7 @@ export default function ContatosPage() {
                           ? navigateToState(popup.uf, popup.nome)
                           : navigateToMunicipio(popup.codigo!, popup.nome)}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90"
-                        style={{ background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.25)', color: '#4a9ede' }}>
+                        style={{ background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.25)', color: 'var(--acento-azul)' }}>
                         <Navigation className="h-4 w-4 flex-shrink-0" />
                         <span>Navegar {popup.type === 'estado' ? 'pelo estado' : 'pelo município'}</span>
                       </button>
@@ -1016,7 +1016,7 @@ export default function ContatosPage() {
                 )}
                 {view === 'municipio' && navMunicipio && bairroLoading && (
                   <div className="h-full flex items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+                    <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--acento-azul)' }} />
                   </div>
                 )}
                 {view === 'municipio' && navMunicipio && !bairroLoading && munHasBairros && bairroFeatures.length > 0 && (
@@ -1032,7 +1032,7 @@ export default function ContatosPage() {
                 )}
                 {view === 'municipio' && navMunicipio && !bairroLoading && (!munHasBairros || bairroFeatures.length === 0) && (
                   <div className="h-full flex flex-col items-center justify-center gap-3">
-                    <Building2 className="h-12 w-12 opacity-20" style={{ color: '#4a9ede' }} />
+                    <Building2 className="h-12 w-12 opacity-20" style={{ color: 'var(--acento-azul)' }} />
                     <p className="text-sm" style={{ color: 'var(--tint-45)' }}>Dados de bairros não disponíveis para {navMunicipio.nome}</p>
                   </div>
                 )}
@@ -1087,7 +1087,7 @@ export default function ContatosPage() {
                       onChange={e => { setForm(f => ({ ...f, endereco: e.target.value })); setResolvedCoords(null); }} />
                     <button onClick={() => geocodeEndereco(form.endereco)} disabled={!form.endereco.trim() || geoLoading}
                       className="px-3 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80 disabled:opacity-40"
-                      style={{ background: 'rgba(74,158,222,0.15)', border: '1px solid rgba(74,158,222,0.25)', color: '#4a9ede' }}>
+                      style={{ background: 'rgba(74,158,222,0.15)', border: '1px solid rgba(74,158,222,0.25)', color: 'var(--acento-azul)' }}>
                       {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
                     </button>
                   </div>
@@ -1146,10 +1146,10 @@ export default function ContatosPage() {
                     <p className="text-sm" style={{ color: 'var(--tint-55)' }}>Selecione um arquivo <strong className="text-[color:var(--text-primary)]">.csv</strong> exportado do Google Forms ou de qualquer planilha.</p>
                     <label className="flex flex-col items-center justify-center gap-3 rounded-xl p-8 cursor-pointer transition-all hover:opacity-80"
                       style={{ border: '2px dashed var(--tint-14)', background: 'var(--tint-04)' }}>
-                      <Upload className="w-10 h-10" style={{ color: 'var(--tint-35)' }} />
+                      <Upload className="w-10 h-10" style={{ color: 'var(--text-tertiary)' }} />
                       <div className="text-center">
                         <p className="text-sm text-[color:var(--text-primary)]">Clique para selecionar</p>
-                        <p className="text-xs mt-1" style={{ color: 'var(--tint-35)' }}>Formato .csv</p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>Formato .csv</p>
                       </div>
                       <input type="file" accept=".csv,text/csv" onChange={handleCsvFile} className="hidden" />
                     </label>
@@ -1164,7 +1164,7 @@ export default function ContatosPage() {
                 {importStep === 2 && (
                   <div className="space-y-4">
                     <div className="rounded-xl p-3 space-y-2" style={{ background: 'var(--tint-04)' }}>
-                      <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--tint-35)' }}>Colunas detectadas</p>
+                      <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--text-tertiary)' }}>Colunas detectadas</p>
                       <div className="flex flex-wrap gap-2">
                         {[['Nome', detectedCols.nome, '#2563EB'], ['WhatsApp', detectedCols.numero, '#4ade80'], ...(detectedCols.email ? [['Email', detectedCols.email, '#4a9ede']] : []), ...(detectedCols.endereco ? [['Endereço', detectedCols.endereco, '#fb923c']] : [])].map(([label, val, color]) => (
                           <span key={label as string} className="text-xs px-2.5 py-1 rounded-full" style={{ background: `${color}18`, color: color as string, border: `1px solid ${color}33` }}>
@@ -1188,10 +1188,10 @@ export default function ContatosPage() {
                           </div>
                         </div>
                       ))}
-                      {csvPreview.length > 50 && <p className="text-xs text-center py-2" style={{ color: 'var(--tint-35)' }}>... e mais {csvPreview.length - 50}</p>}
+                      {csvPreview.length > 50 && <p className="text-xs text-center py-2" style={{ color: 'var(--text-tertiary)' }}>... e mais {csvPreview.length - 50}</p>}
                     </div>
                     {detectedCols.endereco && (
-                      <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs" style={{ background: 'rgba(74,158,222,0.07)', border: '1px solid rgba(74,158,222,0.15)', color: '#4a9ede' }}>
+                      <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs" style={{ background: 'rgba(74,158,222,0.07)', border: '1px solid rgba(74,158,222,0.15)', color: 'var(--acento-azul)' }}>
                         <MapPin className="w-3.5 h-3.5 flex-shrink-0" /> Endereços serão geocodificados automaticamente.
                       </div>
                     )}
@@ -1221,7 +1221,7 @@ export default function ContatosPage() {
                     <div className="text-center space-y-1">
                       <p className="text-[color:var(--text-primary)] font-bold text-lg">{importResult.imported} contato{importResult.imported !== 1 ? 's' : ''} importado{importResult.imported !== 1 ? 's' : ''}!</p>
                       {importResult.geocodificados > 0 && (
-                        <p className="text-sm flex items-center justify-center gap-1" style={{ color: '#4a9ede' }}>
+                        <p className="text-sm flex items-center justify-center gap-1" style={{ color: 'var(--acento-azul)' }}>
                           <MapPin className="w-3.5 h-3.5" /> {importResult.geocodificados} endereço{importResult.geocodificados !== 1 ? 's' : ''} localizado{importResult.geocodificados !== 1 ? 's' : ''} no mapa
                         </p>
                       )}
@@ -1343,7 +1343,7 @@ export default function ContatosPage() {
             <div className="flex items-center justify-between px-6 py-4 flex-shrink-0 gap-3" style={{ borderTop: '1px solid rgba(37,99,235,0.15)' }}>
               <button onClick={copyNumbers}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
-                style={{ background: 'rgba(74,158,222,0.1)', border: '1px solid rgba(74,158,222,0.2)', color: '#4a9ede' }}>
+                style={{ background: 'rgba(74,158,222,0.1)', border: '1px solid rgba(74,158,222,0.2)', color: 'var(--acento-azul)' }}>
                 {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 {copied ? 'Copiado!' : 'Copiar números'}
               </button>

@@ -168,7 +168,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
             <div style="color: #9ca3af; font-size: 10px; margin-bottom: 2px;">BAIRRO(S):</div>
             <div style="color: var(--warning); font-weight: 500;">${bairrosText}</div>
           </div>
-          <div><span style="color: #9ca3af;">Votos:</span><span style="font-weight: bold; color: #10b981;"> ${zona.votos.toLocaleString('pt-BR')}</span></div>
+          <div><span style="color: var(--text-tertiary);">Votos:</span><span style="font-weight: bold; color: var(--success);"> ${zona.votos.toLocaleString('pt-BR')}</span></div>
         </div>
       `, { className: 'dark-map-tooltip', direction: 'top', offset: [0, -radius] });
       
@@ -228,7 +228,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
           <div style="font-weight: bold; font-size: 15px; margin-bottom: 8px; color: ${cor};">📍 ${bairro.nome}</div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span style="color: #9ca3af;">Votos estimados:</span>
-            <span style="font-weight: bold; color: #10b981;">${bairro.votos.toLocaleString('pt-BR')}</span>
+            <span style="font-weight: bold; color: var(--success);">${bairro.votos.toLocaleString('pt-BR')}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span style="color: #9ca3af;">Zonas:</span>

@@ -226,13 +226,13 @@ export default function ContatosMunicipioMap({
         const styleNormal = {
           fillColor: '#1a3a5c',
           fillOpacity: 0.07,
-          color: '#4a9ede',
+          color: 'var(--acento-azul)',
           weight: 1.5,
           opacity: 0.5,
         };
         const styleHover = {
           fillOpacity: 0.18,
-          color: '#7dd3fc',
+          color: 'var(--acento-azul)',
           weight: 2,
           opacity: 0.8,
         };
@@ -257,9 +257,9 @@ export default function ContatosMunicipioMap({
                 featureLayer.setStyle(styleHover);
               }
               featureLayer.bindTooltip(
-                `<div style="background:var(--bg-card-raised);border:1px solid #1b4965;border-radius:8px;padding:8px 12px;color:#7dd3fc;font-size:12px;font-weight:600;">
+                `<div style="background:var(--bg-card-raised);border:1px solid #1b4965;border-radius:8px;padding:8px 12px;color:var(--acento-azul);font-size:12px;font-weight:600;">
                   ${nome}
-                  <div style="color:#94a3b8;font-size:10px;margin-top:3px;font-weight:400;">Clique para selecionar contatos</div>
+                  <div style="color:var(--text-tertiary);font-size:10px;margin-top:3px;font-weight:400;">Clique para selecionar contatos</div>
                 </div>`,
                 { sticky: true, className: 'sp-bairro-tooltip', direction: 'top' }
               ).openTooltip();

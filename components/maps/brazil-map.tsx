@@ -207,7 +207,7 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false,
                 min-width: 160px;
                 box-shadow: 0 4px 20px rgba(0,0,0,0.2);
               ">
-                <div style="font-weight: 700; color: #4a9ede; font-size: 14px; margin-bottom: 4px;">${estado.nome}</div>
+                <div style="font-weight: 700; color: var(--acento-azul); font-size: 14px; margin-bottom: 4px;">${estado.nome}</div>
                 <div style="color: var(--tint-45); font-size: 11px; margin-bottom: 6px;">${uf}</div>
                 ${votesLabel
                   ? `<div style="color: var(--text-primary); font-size: 13px; font-weight: 600;">${votesLabel}</div>`

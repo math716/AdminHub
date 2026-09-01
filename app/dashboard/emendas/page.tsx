@@ -60,7 +60,7 @@ const StateMap = dynamic(() => import('@/components/maps/state-map'), {
 function MapPlaceholder() {
   return (
     <div className="h-full flex items-center justify-center rounded-lg" style={{ background: 'var(--bg-card-subtle)' }}>
-      <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+      <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--acento-azul)' }} />
     </div>
   );
 }
@@ -1374,7 +1374,7 @@ export default function EmendasPage() {
                 style={{ background: 'rgba(4,17,31,0.65)', backdropFilter: 'blur(3px)' }}
               >
                 <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="h-10 w-10 animate-spin" style={{ color: '#4a9ede' }} />
+                  <Loader2 className="h-10 w-10 animate-spin" style={{ color: 'var(--acento-azul)' }} />
                   <span className="text-sm font-medium" style={{ color: 'var(--tint-75)' }}>
                     Carregando dados…
                   </span>
@@ -1637,7 +1637,7 @@ function ResumoGeralCard({
         <ResumoStat
           icon={<Users className="w-4 h-4" />}
           iconBg="rgba(74,158,222,0.15)"
-          iconColor="#4a9ede"
+          iconColor="var(--acento-azul)"
           label="População Total"
           value={
             view === 'brasil'
@@ -1663,7 +1663,7 @@ function ResumoGeralCard({
         <ResumoStat
           icon={<Landmark className="w-4 h-4" />}
           iconBg="rgba(16,185,129,0.15)"
-          iconColor="#10b981"
+          iconColor="var(--success)"
           label={totalLabel}
           value={formatBRLCompact(totalValue)}
           sub={totalSub}
@@ -1671,7 +1671,7 @@ function ResumoGeralCard({
         <ResumoStat
           icon={<Building2 className="w-4 h-4" />}
           iconBg="rgba(245,158,11,0.15)"
-          iconColor="#f59e0b"
+          iconColor="var(--warning)"
           label="Teto MAC"
           value={
             tetoMac != null
@@ -3270,7 +3270,7 @@ function MunicipiosPixCard({
         <div className="flex items-center gap-2">
           <span
             className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest"
-            style={{ background: 'rgba(168,85,247,0.18)', color: '#c084fc', border: '1px solid rgba(168,85,247,0.35)' }}
+            style={{ background: 'rgba(168,85,247,0.18)', color: 'var(--acento-violeta)', border: '1px solid rgba(168,85,247,0.35)' }}
           >
             Pix
           </span>

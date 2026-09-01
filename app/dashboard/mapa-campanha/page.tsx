@@ -2650,7 +2650,7 @@ export default function MapaCampanhaPage() {
               <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
               <div className="flex flex-col items-center gap-0.5">
                 <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Eleição</span>
-                <span className="text-base font-bold" style={{ color: '#4a9ede' }}>{projecao.anoBase}</span>
+                <span className="text-base font-bold" style={{ color: 'var(--acento-azul)' }}>{projecao.anoBase}</span>
               </div>
               <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
               <div className="flex flex-col items-center gap-0.5">
@@ -3436,7 +3436,7 @@ export default function MapaCampanhaPage() {
                                   <div className="flex items-center gap-1 flex-shrink-0">
                                     {isNew && <Badge variant="success" className="text-[10px] px-1 py-0">NOVO</Badge>}
                                     {mun.prioridade === 'ALTA' && <Badge variant="danger" className="text-[10px] px-1 py-0">!</Badge>}
-                                    {bairrosDelta > 0 && <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.25)' }}>+{bairrosDelta.toLocaleString()} bairros</span>}
+                                    {bairrosDelta > 0 && <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(56,189,248,0.15)', color: 'var(--acento-azul)', border: '1px solid rgba(56,189,248,0.25)' }}>+{bairrosDelta.toLocaleString()} bairros</span>}
                                     {isNew && (
                                       <button onClick={(e) => { e.stopPropagation(); removeMunicipio(mun.municipio); }} className="p-0.5 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Trash2 className="h-3 w-3" />
@@ -4057,7 +4057,7 @@ export default function MapaCampanhaPage() {
                               <span>+ Parcerias:</span>
                               <span>+{parceriasSum.conservadora.toLocaleString()}</span>
                             </div>}
-                            {bairrosDeltaC > 0 && <div className="flex justify-between" style={{ color: '#38bdf8' }}>
+                            {bairrosDeltaC > 0 && <div className="flex justify-between" style={{ color: 'var(--acento-azul)' }}>
                               <span>+ Bairros:</span>
                               <span>+{bairrosDeltaC.toLocaleString()}</span>
                             </div>}
@@ -4079,7 +4079,7 @@ export default function MapaCampanhaPage() {
                               <span>+ Parcerias:</span>
                               <span>+{parceriasSum.possivel.toLocaleString()}</span>
                             </div>}
-                            {bairrosDeltaP > 0 && <div className="flex justify-between" style={{ color: '#38bdf8' }}>
+                            {bairrosDeltaP > 0 && <div className="flex justify-between" style={{ color: 'var(--acento-azul)' }}>
                               <span>+ Bairros:</span>
                               <span>+{bairrosDeltaP.toLocaleString()}</span>
                             </div>}
@@ -4101,7 +4101,7 @@ export default function MapaCampanhaPage() {
                               <span>+ Parcerias:</span>
                               <span>+{parceriasSum.arrojada.toLocaleString()}</span>
                             </div>}
-                            {bairrosDeltaA > 0 && <div className="flex justify-between" style={{ color: '#38bdf8' }}>
+                            {bairrosDeltaA > 0 && <div className="flex justify-between" style={{ color: 'var(--acento-azul)' }}>
                               <span>+ Bairros:</span>
                               <span>+{bairrosDeltaA.toLocaleString()}</span>
                             </div>}
@@ -4215,7 +4215,7 @@ export default function MapaCampanhaPage() {
                             {TIPO_PARCERIA_LABELS[parceria.tipo]}
                           </span>
                           {parceria.id?.startsWith('pending-') && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--warning)', border: '1px solid rgba(245,158,11,0.3)' }}>
                               pendente
                             </span>
                           )}
@@ -4225,7 +4225,7 @@ export default function MapaCampanhaPage() {
                               : isMgBairro(pMun) ? getMgBairroNome(pMun)
                               : null;
                             return bairroNome ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0" style={{ background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0" style={{ background: 'rgba(56,189,248,0.15)', color: 'var(--acento-azul)', border: '1px solid rgba(56,189,248,0.3)' }}>
                                 bairro: {bairroNome}
                               </span>
                             ) : null;

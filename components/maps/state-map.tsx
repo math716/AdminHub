@@ -442,8 +442,8 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           subdivisaoLayersMapRef.current.set(bairro.nome, marker);
 
           const locaisHtml = bairro.locais.slice(0, 6).map(l =>
-            `<div style="padding:3px 0;border-top:1px solid var(--tint-08);font-size:11px;color:#94a3b8;">
-              <span style="color:#7dd3fc">Z${l.zona}</span> ${l.nome}
+            `<div style="padding:3px 0;border-top:1px solid var(--tint-08);font-size:11px;color:var(--text-tertiary);">
+              <span style="color:var(--acento-azul)">Z${l.zona}</span> ${l.nome}
             </div>`
           ).join('') + (bairro.locais.length > 6
             ? `<div style="font-size:10px;color:#64748b;padding-top:4px">+${bairro.locais.length - 6} locais</div>`
@@ -453,7 +453,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
             <div style="padding:10px 14px;background:var(--bg-card);border-radius:8px;
                         border:1px solid rgba(37,99,235,0.35);min-width:180px;max-width:240px;
                         box-shadow:0 4px 20px rgba(0,0,0,0.25);">
-              <strong style="color:#7dd3fc;font-size:13px;display:block;margin-bottom:6px;">${bairro.nome}</strong>
+              <strong style="color:var(--acento-azul);font-size:13px;display:block;margin-bottom:6px;">${bairro.nome}</strong>
               <span style="color:var(--text-secondary);font-size:12px;">${bairro.totalLocais} local${bairro.totalLocais !== 1 ? 'is' : ''} de votação</span>
               <div style="margin-top:6px;">${locaisHtml}</div>
             </div>`,
@@ -1111,7 +1111,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
       {isReinitializing && (
         <div className="absolute inset-0 z-[9999] flex items-center justify-center rounded-xl"
              style={{ background: 'var(--bg-card-raised)' }}>
-          <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4a9ede' }} />
+          <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--acento-azul)' }} />
         </div>
       )}
       {/* Painel de Controle */}

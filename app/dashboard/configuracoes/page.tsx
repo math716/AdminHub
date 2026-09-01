@@ -191,7 +191,7 @@ export default function ConfiguracoesPage() {
             <div className="text-center py-6">
               <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
                 style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
-                <WifiOff className="w-6 h-6" style={{ color: 'var(--tint-35)' }} />
+                <WifiOff className="w-6 h-6" style={{ color: 'var(--text-tertiary)' }} />
               </div>
               <p className="text-[color:var(--text-primary)] font-medium mb-1">Evolution API não configurada</p>
               <p className="text-xs mb-4" style={{ color: 'var(--tint-45)' }}>
@@ -280,7 +280,7 @@ export default function ConfiguracoesPage() {
                     <div className="p-3 rounded-2xl bg-white">
                       <img src={qrCode} alt="QR Code WhatsApp" className="w-40 h-40 sm:w-52 sm:h-52 object-contain" />
                     </div>
-                    <p className="text-xs flex items-center gap-1.5" style={{ color: 'var(--tint-35)' }}>
+                    <p className="text-xs flex items-center gap-1.5" style={{ color: 'var(--text-tertiary)' }}>
                       <RefreshCw className="w-3 h-3 animate-spin" />
                       Aguardando escaneamento… (atualiza automaticamente)
                     </p>

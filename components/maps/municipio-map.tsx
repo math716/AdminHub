@@ -405,14 +405,14 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
           zonaMarkersRef.current.set(z, [...prev, key]);
         });
         const zonasHtml = zonas.length > 0
-          ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px;">${zonas.map(z => `<span style="background:#1e3a5f;color:#7dd3fc;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600;">Zona ${z}</span>`).join('')}</div>`
+          ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px;">${zonas.map(z => `<span style="background:#1e3a5f;color:var(--acento-azul);border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600;">Zona ${z}</span>`).join('')}</div>`
           : '';
 
         marker.bindTooltip(
           `<div style="background:rgba(13,27,42,0.95);padding:10px 14px;border-radius:10px;border:1px solid #1b4965;min-width:160px;">
-            <div style="font-weight:600;color:#7dd3fc;font-size:13px;margin-bottom:4px;">${bairro.nome}</div>
-            <div style="color:#e2e8f0;font-size:17px;font-weight:700;">${votos.toLocaleString('pt-BR')} votos</div>
-            <div style="color:#94a3b8;font-size:12px;">${percentual}% do município</div>
+            <div style="font-weight:600;color:var(--acento-azul);font-size:13px;margin-bottom:4px;">${bairro.nome}</div>
+            <div style="color:var(--text-secondary);font-size:17px;font-weight:700;">${votos.toLocaleString('pt-BR')} votos</div>
+            <div style="color:var(--text-tertiary);font-size:12px;">${percentual}% do município</div>
             ${zonasHtml}
           </div>`,
           { permanent: false, direction: 'top', className: 'bairro-tooltip', interactive: false }

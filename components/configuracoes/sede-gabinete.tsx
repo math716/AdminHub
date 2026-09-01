@@ -132,7 +132,7 @@ export function SedeGabinete() {
             <p className="text-sm text-[color:var(--text-primary)]">
               {sede.endereco || 'Nenhum endereço cadastrado.'}
             </p>
-            <p className="text-xs mt-1" style={{ color: 'var(--tint-35)' }}>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
               Só o chefe de gabinete, o agente político ou um administrador podem alterar.
             </p>
           </div>
@@ -171,11 +171,11 @@ export function SedeGabinete() {
 
             {coord && (
               <div className="rounded-xl px-3.5 py-2.5" style={{ background: 'var(--tint-04)' }}>
-                <p className="text-xs flex items-start gap-1.5" style={{ color: '#22c55e' }}>
+                <p className="text-xs flex items-start gap-1.5" style={{ color: 'var(--success)' }}>
                   <Check className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                   <span className="font-medium">{nomeAchado || 'Endereço localizado'}</span>
                 </p>
-                <p className="text-[11px] mt-1 pl-5" style={{ color: 'var(--tint-35)' }}>
+                <p className="text-[11px] mt-1 pl-5" style={{ color: 'var(--text-tertiary)' }}>
                   Confira se é o lugar certo antes de salvar.
                 </p>
               </div>
@@ -203,7 +203,7 @@ export function SedeGabinete() {
               )}
 
               {salvo && !mudou && (
-                <span className="text-xs flex items-center gap-1" style={{ color: '#22c55e' }}>
+                <span className="text-xs flex items-center gap-1" style={{ color: 'var(--success)' }}>
                   <Check className="w-3.5 h-3.5" /> Salvo
                 </span>
               )}

@@ -331,8 +331,8 @@ export default function DemandaMapLeaflet({
       marker.bindTooltip(
         `<div style="background:rgba(13,27,42,0.97);padding:10px 14px;border-radius:10px;border:1px solid #1b4965;min-width:180px;max-width:240px;">
           ${d.foto ? `<img src="${d.foto}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:8px;" />` : ''}
-          <div style="font-weight:600;color:#7dd3fc;font-size:13px;margin-bottom:3px;">${d.title}</div>
-          <div style="color:#94a3b8;font-size:11px;margin-bottom:2px;">${d.solicitante}</div>
+          <div style="font-weight:600;color:var(--acento-azul);font-size:13px;margin-bottom:3px;">${d.title}</div>
+          <div style="color:var(--text-tertiary);font-size:11px;margin-bottom:2px;">${d.solicitante}</div>
           ${d.endereco ? `<div style="color:#64748b;font-size:11px;">${d.endereco}</div>` : `<div style="color:#64748b;font-size:11px;">${d.municipio}, ${d.estado}</div>`}
           <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
             <span style="background:${catColor}22;color:${catColor};border-radius:4px;padding:2px 7px;font-size:10px;">${CATEGORY_LABELS[d.category] ?? d.category}</span>
@@ -362,7 +362,7 @@ export default function DemandaMapLeaflet({
       marker.bindTooltip(
         `<div style="background:rgba(13,27,42,0.97);padding:10px 14px;border-radius:10px;border:1px solid ${eColor}44;min-width:160px;">
           <div style="font-weight:600;color:${eColor};font-size:13px;margin-bottom:3px;">${e.titulo}</div>
-          <div style="color:#94a3b8;font-size:11px;">${TIPO_AGENDA_LABELS[e.tipo]} · ${new Date(e.data).toLocaleDateString('pt-BR')}</div>
+          <div style="color:var(--text-tertiary);font-size:11px;">${TIPO_AGENDA_LABELS[e.tipo]} · ${new Date(e.data).toLocaleDateString('pt-BR')}</div>
           ${e.local ? `<div style="color:#64748b;font-size:11px;margin-top:2px;">${e.local}</div>` : ''}
         </div>`,
         { permanent: false, direction: 'top', className: 'demanda-tooltip', offset: [0, -h] }
@@ -382,9 +382,9 @@ export default function DemandaMapLeaflet({
       marker.addTo(map);
       marker.bindTooltip(
         `<div style="background:rgba(13,27,42,0.97);padding:10px 14px;border-radius:10px;border:1px solid #14b8a622;min-width:160px;">
-          <div style="font-weight:600;color:#2dd4bf;font-size:13px;margin-bottom:3px;">${c.nome}</div>
-          <div style="color:#94a3b8;font-size:11px;margin-bottom:2px;">📞 ${c.numero}</div>
-          ${c.email ? `<div style="color:#94a3b8;font-size:11px;margin-bottom:2px;">✉ ${c.email}</div>` : ''}
+          <div style="font-weight:600;color:var(--brand-cyan);font-size:13px;margin-bottom:3px;">${c.nome}</div>
+          <div style="color:var(--text-tertiary);font-size:11px;margin-bottom:2px;">📞 ${c.numero}</div>
+          ${c.email ? `<div style="color:var(--text-tertiary);font-size:11px;margin-bottom:2px;">✉ ${c.email}</div>` : ''}
           ${c.endereco ? `<div style="color:#64748b;font-size:11px;">${c.endereco}</div>` : ''}
         </div>`,
         { permanent: false, direction: 'top', className: 'demanda-tooltip', offset: [0, -43] }

@@ -67,8 +67,8 @@ const ROLE_LABELS: Record<string, string> = {
 const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> = {
   SUPER_ADMIN:     { bg: 'rgba(37,99,235,0.12)',  color: '#2563EB',  border: 'rgba(37,99,235,0.3)'  },
   ADMIN:           { bg: 'rgba(37,99,235,0.12)',  color: '#2563EB',  border: 'rgba(37,99,235,0.3)'  },
-  AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: '#c084fc',  border: 'rgba(168,85,247,0.3)'  },
-  CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)'  },
+  AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: 'var(--acento-violeta)',  border: 'rgba(168,85,247,0.3)'  },
+  CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: 'var(--acento-azul)',  border: 'rgba(74,158,222,0.3)'  },
   ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: 'var(--success)',  border: 'rgba(34,197,94,0.25)'  },
 };
 
@@ -690,7 +690,7 @@ export default function AdminGabinetesPage() {
           <div className="mt-4 flex items-center gap-3 flex-wrap rounded-xl p-3" style={{ background:'var(--tint-04)', border:'1px solid var(--tint-08)' }}>
             <code className="flex-1 text-xs break-all" style={{ color:'var(--tint-65)', fontFamily:'monospace', minWidth:0 }}>{linkGerado}</code>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-[10px]" style={{ color:'var(--tint-35)' }}>expira às {linkExpiry}</span>
+              <span className="text-[10px]" style={{ color:'var(--text-tertiary)' }}>expira às {linkExpiry}</span>
               <button onClick={copiarLink}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                 style={{ background:copiado?'rgba(34,197,94,0.15)':'rgba(37,99,235,0.15)', color:copiado?'#4ade80':'#2563EB', border:copiado?'1px solid rgba(34,197,94,0.3)':'1px solid rgba(37,99,235,0.3)', cursor:'pointer' }}>
@@ -719,7 +719,7 @@ export default function AdminGabinetesPage() {
               <Loader2 size={20} className="animate-spin" style={{ color: '#2563EB' }} />
             </div>
           ) : adminUsers.length === 0 ? (
-            <div className="flex items-center justify-center py-8 text-sm" style={{ color: 'var(--tint-35)' }}>
+            <div className="flex items-center justify-center py-8 text-sm" style={{ color: 'var(--text-tertiary)' }}>
               Nenhum administrador encontrado
             </div>
           ) : (
@@ -795,7 +795,7 @@ export default function AdminGabinetesPage() {
       </div>
 
       {loadingSol ? (
-        <div className="flex flex-col items-center justify-center py-12" style={{ color:'var(--tint-35)' }}>
+        <div className="flex flex-col items-center justify-center py-12" style={{ color:'var(--text-tertiary)' }}>
           <Loader2 size={28} className="animate-spin mb-3" style={{ color:'#2563EB' }} />
           <p className="text-sm">Carregando...</p>
         </div>
@@ -818,9 +818,9 @@ export default function AdminGabinetesPage() {
           <div className="flex items-center gap-3 pt-2">
             <div className="flex-1 h-px" style={{ background:'var(--tint-06)' }} />
             <div className="flex items-center gap-2">
-              <Building2 size={14} style={{ color:'#4a9ede' }} />
-              <span className="text-xs font-semibold" style={{ color:'var(--tint-35)' }}>GABINETES ATIVOS</span>
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background:'rgba(74,158,222,0.15)', color:'#4a9ede', border:'1px solid rgba(74,158,222,0.25)' }}>
+              <Building2 size={14} style={{ color:'var(--acento-azul)' }} />
+              <span className="text-xs font-semibold" style={{ color:'var(--text-tertiary)' }}>GABINETES ATIVOS</span>
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background:'rgba(74,158,222,0.15)', color:'var(--acento-azul)', border:'1px solid rgba(74,158,222,0.25)' }}>
                 {gabineteGroups.length}
               </span>
             </div>
@@ -830,7 +830,7 @@ export default function AdminGabinetesPage() {
           {/* Busca */}
           {gabineteGroups.length > 3 && (
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color:'var(--tint-35)' }} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color:'var(--text-tertiary)' }} />
               <input value={searchGabinete} onChange={e => setSearchGabinete(e.target.value)}
                 placeholder="Buscar gabinete..."
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-[color:var(--text-primary)] outline-none"
@@ -856,7 +856,7 @@ export default function AdminGabinetesPage() {
                       onClick={() => toggleGab(group.id)}>
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                         style={{ background:'rgba(74,158,222,0.15)', border:'1px solid rgba(74,158,222,0.3)' }}>
-                        <Building2 className="w-[18px] h-[18px]" style={{ color:'#4a9ede' }} />
+                        <Building2 className="w-[18px] h-[18px]" style={{ color:'var(--acento-azul)' }} />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[color:var(--text-primary)] font-semibold text-sm">{group.nome}</p>
@@ -866,7 +866,7 @@ export default function AdminGabinetesPage() {
                           </span>
                           {pending.length > 0 && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                              style={{ background:'rgba(245,158,11,0.15)', color:'#f59e0b', border:'1px solid rgba(245,158,11,0.25)' }}>
+                              style={{ background:'rgba(245,158,11,0.15)', color:'var(--warning)', border:'1px solid rgba(245,158,11,0.25)' }}>
                               {pending.length} pendente{pending.length !== 1 ? 's' : ''}
                             </span>
                           )}
@@ -888,7 +888,7 @@ export default function AdminGabinetesPage() {
                       </button>
                       <button onClick={() => toggleGab(group.id)}
                         className="p-1.5 rounded-lg transition-all hover:bg-[var(--tint-06)]"
-                        style={{ color:'var(--tint-35)' }}>
+                        style={{ color:'var(--text-tertiary)' }}>
                         {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
                     </div>
@@ -914,7 +914,7 @@ export default function AdminGabinetesPage() {
                                   <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
                                     style={u.approved || u.role === 'ADMIN' || u.role === 'SUPER_ADMIN'
                                       ? { background:'linear-gradient(135deg,#1b3a5c,#2a5580)', color:'#7dd3fc' }
-                                      : { background:'rgba(245,158,11,0.15)', border:'1px solid rgba(245,158,11,0.3)', color:'#f59e0b' }}>
+                                      : { background:'rgba(245,158,11,0.15)', border:'1px solid rgba(245,158,11,0.3)', color:'var(--warning)' }}>
                                     {u.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('')}
                                   </div>
                                   <div className="min-w-0">
@@ -922,10 +922,10 @@ export default function AdminGabinetesPage() {
                                       <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{u.name}</p>
                                       {!u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN' && (
                                         <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
-                                          style={{ background:'rgba(245,158,11,0.15)', color:'#f59e0b' }}>Pendente</span>
+                                          style={{ background:'rgba(245,158,11,0.15)', color:'var(--warning)' }}>Pendente</span>
                                       )}
                                     </div>
-                                    <p className="text-[11px] truncate" style={{ color:'var(--tint-35)' }}>{u.email}</p>
+                                    <p className="text-[11px] truncate" style={{ color:'var(--text-tertiary)' }}>{u.email}</p>
                                   </div>
                                 </div>
 
@@ -946,14 +946,14 @@ export default function AdminGabinetesPage() {
                                   {u.approved && !hasFullAccess(u.role) && (
                                     <button onClick={() => openEditPermsModal(u)} title="Editar permissões"
                                       className="p-1.5 rounded-lg transition-all hover:bg-purple-500/10"
-                                      style={{ color:'var(--tint-35)' }}>
+                                      style={{ color:'var(--text-tertiary)' }}>
                                       <SlidersHorizontal className="w-3.5 h-3.5" />
                                     </button>
                                   )}
                                   {/* Reset senha */}
                                   <button onClick={() => openResetModal(u.id, u.name)} title="Resetar senha"
                                     className="p-1.5 rounded-lg transition-all hover:bg-yellow-500/10"
-                                    style={{ color:'var(--tint-35)' }}>
+                                    style={{ color:'var(--text-tertiary)' }}>
                                     <KeyRound className="w-3.5 h-3.5" />
                                   </button>
                                   {/* Remover */}
@@ -962,7 +962,7 @@ export default function AdminGabinetesPage() {
                                       disabled={actionId === u.id}
                                       title="Remover usuário"
                                       className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
-                                      style={{ color:'var(--tint-35)' }}>
+                                      style={{ color:'var(--text-tertiary)' }}>
                                       {actionId === u.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
                                     </button>
                                   )}
@@ -988,7 +988,7 @@ export default function AdminGabinetesPage() {
             <div className="flex-1 h-px" style={{ background:'var(--tint-06)' }} />
             <div className="flex items-center gap-2">
               <UserX size={14} style={{ color:'var(--danger)' }} />
-              <span className="text-xs font-semibold" style={{ color:'var(--tint-35)' }}>USUÁRIOS SEM GABINETE</span>
+              <span className="text-xs font-semibold" style={{ color:'var(--text-tertiary)' }}>USUÁRIOS SEM GABINETE</span>
               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background:'rgba(239,68,68,0.15)', color:'var(--danger)', border:'1px solid rgba(239,68,68,0.25)' }}>
                 {semGabinete.length}
               </span>
@@ -1008,7 +1008,7 @@ export default function AdminGabinetesPage() {
                     <span style={{ fontSize:'0.73rem', color:'var(--tint-45)', display:'flex', alignItems:'center', gap:'0.3rem' }}>
                       <Mail size={11}/> {u.email}
                     </span>
-                    <span style={{ fontSize:'0.7rem', padding:'0.1rem 0.5rem', borderRadius:'999px', background:'var(--tint-06)', color:'var(--tint-35)', border:'1px solid var(--tint-08)' }}>
+                    <span style={{ fontSize:'0.7rem', padding:'0.1rem 0.5rem', borderRadius:'999px', background:'var(--tint-06)', color:'var(--text-tertiary)', border:'1px solid var(--tint-08)' }}>
                       {ROLE_LABELS[u.role] ?? u.role}
                     </span>
                     {!u.approved && (
@@ -1036,7 +1036,7 @@ export default function AdminGabinetesPage() {
             <div className="flex-1 h-px" style={{ background: 'var(--tint-06)' }} />
             <div className="flex items-center gap-2">
               <Trash2 size={14} style={{ color: 'var(--danger)' }} />
-              <span className="text-xs font-semibold" style={{ color: 'var(--tint-35)' }}>EXCLUSÕES PENDENTES DE REVISÃO</span>
+              <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>EXCLUSÕES PENDENTES DE REVISÃO</span>
               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.25)' }}>
                 {excluidos.length}
               </span>
@@ -1060,7 +1060,7 @@ export default function AdminGabinetesPage() {
                         <Mail size={11} /> {u.email}
                       </span>
                       {u.gabinete && (
-                        <span style={{ fontSize: '0.7rem', color: 'var(--tint-35)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                           <Building2 size={11} /> {u.gabinete.nome}
                         </span>
                       )}
@@ -1099,15 +1099,15 @@ export default function AdminGabinetesPage() {
             <div className="flex-1 h-px" style={{ background: 'var(--tint-06)' }} />
             <div className="flex items-center gap-2">
               <Trash2 size={14} style={{ color: 'var(--danger)' }} />
-              <span className="text-xs font-semibold" style={{ color: 'var(--tint-35)' }}>LIXEIRA DE GABINETES</span>
+              <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>LIXEIRA DE GABINETES</span>
               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.25)' }}>
                 {gabExcluidos.length}
               </span>
             </div>
             <div className="flex-1 h-px" style={{ background: 'var(--tint-06)' }} />
           </div>
-          <p className="text-xs text-center" style={{ color: 'var(--tint-35)', marginTop: '0.35rem' }}>
-            Gabinetes são excluídos permanentemente após <strong style={{ color: '#f59e0b' }}>90 dias</strong> na lixeira
+          <p className="text-xs text-center" style={{ color: 'var(--text-tertiary)', marginTop: '0.35rem' }}>
+            Gabinetes são excluídos permanentemente após <strong style={{ color: 'var(--warning)' }}>90 dias</strong> na lixeira
           </p>
 
           <div className="flex flex-col gap-2">
@@ -1222,7 +1222,7 @@ export default function AdminGabinetesPage() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.3)' }}>
-                  <SlidersHorizontal className="w-5 h-5" style={{ color:'#c084fc' }} />
+                  <SlidersHorizontal className="w-5 h-5" style={{ color:'var(--acento-violeta)' }} />
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Editar permissões</h3>
@@ -1265,7 +1265,7 @@ export default function AdminGabinetesPage() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)' }}>
-                  <KeyRound className="w-5 h-5" style={{ color:'#f59e0b' }} />
+                  <KeyRound className="w-5 h-5" style={{ color:'var(--warning)' }} />
                 </div>
                 <div>
                   <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Resetar Senha</h3>
@@ -1276,7 +1276,7 @@ export default function AdminGabinetesPage() {
               {!resetResult && (
                 <>
                   <p className="text-sm" style={{ color:'var(--tint-55)' }}>
-                    Uma <strong style={{ color:'#f59e0b' }}>senha temporária</strong> será gerada e a senha atual substituída.
+                    Uma <strong style={{ color:'var(--warning)' }}>senha temporária</strong> será gerada e a senha atual substituída.
                   </p>
                   <div className="flex gap-3 pt-1">
                     <button onClick={() => setShowResetModal(false)} disabled={resettingPwd}
@@ -1304,7 +1304,7 @@ export default function AdminGabinetesPage() {
                       <div className="rounded-xl p-4 text-center space-y-2" style={{ background:'rgba(34,197,94,0.07)', border:'1px solid rgba(34,197,94,0.2)' }}>
                         <p className="text-xs" style={{ color:'var(--tint-45)' }}>Senha temporária gerada</p>
                         <p className="text-2xl font-bold tracking-[0.2em] select-all" style={{ color:'var(--success)', fontFamily:'monospace' }}>{resetResult}</p>
-                        <p className="text-[10px]" style={{ color:'var(--tint-35)' }}>Clique para selecionar</p>
+                        <p className="text-[10px]" style={{ color:'var(--text-tertiary)' }}>Clique para selecionar</p>
                       </div>
                       <button onClick={() => { navigator.clipboard.writeText(resetResult); setCopiedPwd(true); setTimeout(() => setCopiedPwd(false), 2500); }}
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
@@ -1314,7 +1314,7 @@ export default function AdminGabinetesPage() {
                         {copiedPwd ? <CheckCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                         {copiedPwd ? 'Copiado!' : 'Copiar Senha'}
                       </button>
-                      <p className="text-[11px] text-center" style={{ color:'var(--tint-35)' }}>
+                      <p className="text-[11px] text-center" style={{ color:'var(--text-tertiary)' }}>
                         ⚠️ Esta senha não será exibida novamente
                       </p>
                     </>
@@ -1353,7 +1353,7 @@ export default function AdminGabinetesPage() {
               </div>
               <p className="text-sm" style={{ color:'var(--tint-55)' }}>
                 O gabinete <strong style={{ color: 'var(--text-primary)' }}>{confirmDeleteGab.nome}</strong> será movido para a lixeira.
-                Você terá <strong style={{ color:'#f59e0b' }}>90 dias</strong> para restaurá-lo.
+                Você terá <strong style={{ color:'var(--warning)' }}>90 dias</strong> para restaurá-lo.
                 Após esse prazo, o gabinete e todos os seus{' '}
                 <strong style={{ color:'var(--tint-75)' }}>{confirmDeleteGab.users.length} usuário{confirmDeleteGab.users.length !== 1 ? 's' : ''}</strong>,
                 demandas, agenda e contatos serão excluídos permanentemente.

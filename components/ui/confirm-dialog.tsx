@@ -83,7 +83,7 @@ export function ConfirmDialog({
                 >
                   {isDanger
                     ? <AlertTriangle className="w-5 h-5" style={{ color: '#ef4444' }} />
-                    : <HelpCircle className="w-5 h-5" style={{ color: '#4a9ede' }} />
+                    : <HelpCircle className="w-5 h-5" style={{ color: 'var(--acento-azul)' }} />
                   }
                 </span>
                 <div>

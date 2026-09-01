@@ -89,7 +89,7 @@ function ContatosBairrosMapInner({
                 .setContent(
                   `<div style="padding:8px 12px">` +
                   `<strong style="color:#2563EB;font-size:13px">${nmBairro || 'Bairro'}</strong><br>` +
-                  `<span style="color:#94a3b8;font-size:12px">${count} contato${count !== 1 ? 's' : ''}</span></div>`
+                  `<span style="color:var(--text-tertiary);font-size:12px">${count} contato${count !== 1 ? 's' : ''}</span></div>`
                 )
                 .openOn(map);
             });
@@ -160,7 +160,7 @@ function ContatosBairrosMapInner({
       {!mapReady && (
         <div className="absolute inset-0 flex items-center justify-center z-10 rounded-xl"
           style={{ background: 'var(--bg-card)' }}>
-          <Loader2 className="h-6 w-6 animate-spin" style={{ color: '#4a9ede' }} />
+          <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--acento-azul)' }} />
         </div>
       )}
       <div ref={containerRef} className="w-full h-full rounded-xl"

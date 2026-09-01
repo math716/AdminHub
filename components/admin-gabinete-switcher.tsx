@@ -115,7 +115,7 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
             {/* Search */}
             <div className="relative mt-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                style={{ color: 'var(--tint-35)' }} />
+                style={{ color: 'var(--text-tertiary)' }} />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -146,7 +146,7 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium" style={{ color: 'var(--tint-75)' }}>Sem Gabinete (Plataforma)</p>
-                    <p className="text-[11px]" style={{ color: 'var(--tint-35)' }}>Visão de administrador da plataforma</p>
+                    <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Visão de administrador da plataforma</p>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--tint-25)' }} />
@@ -157,7 +157,7 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
                 <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#2563EB' }} />
               </div>
             ) : filtered.length === 0 ? (
-              <div className="py-10 text-center text-sm" style={{ color: 'var(--tint-35)' }}>
+              <div className="py-10 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 {search ? `Nenhum resultado para "${search}"` : 'Nenhum gabinete encontrado'}
               </div>
             ) : (
@@ -172,13 +172,13 @@ export function AdminGabineteSwitcher({ required = false, open = false, onClose 
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.2)' }}>
                       {selecting === g.id
-                        ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#4a9ede' }} />
-                        : <Building2 className="w-4 h-4" style={{ color: '#4a9ede' }} />
+                        ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--acento-azul)' }} />
+                        : <Building2 className="w-4 h-4" style={{ color: 'var(--acento-azul)' }} />
                       }
                     </div>
                     <div className="min-w-0">
                       <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{g.nome}</p>
-                      <p className="text-[11px]" style={{ color: 'var(--tint-35)' }}>
+                      <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
                         {g._count.users} usuário{g._count.users !== 1 ? 's' : ''}
                         {g.descricao ? ` · ${g.descricao}` : ''}
                       </p>

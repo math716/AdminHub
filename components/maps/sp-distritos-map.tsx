@@ -127,7 +127,7 @@ function SpDistritosMapComponent({ votesData, selectedDistrito, onDistritoClick,
             html: `<div style="
               width:${sz}px;height:${sz}px;
               background:rgba(7,29,54,0.88);
-              color:#7dd3fc;
+              color:var(--acento-azul);
               font-size:${fs}px;font-weight:800;
               border-radius:50%;
               border:2px solid rgba(74,158,222,0.5);
@@ -221,13 +221,13 @@ function SpDistritosMapComponent({ votesData, selectedDistrito, onDistritoClick,
             }
             hoveredLayerRef.current = layer;
             if (selectedDistritoRef.current !== nome) {
-              layer.setStyle({ weight: 2, fillOpacity: 0.18, color: '#4a9ede' });
+              layer.setStyle({ weight: 2, fillOpacity: 0.18, color: '#2563EB' });
             }
             const v = getVotos(nome);
             tooltipEl.innerHTML = [
-              `<strong style="color:#7dd3fc;font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
+              `<strong style="color:var(--acento-azul);font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
               v !== undefined
-                ? `<span style="color:#e2e8f0;font-size:13px;">${v.toLocaleString('pt-BR')} votos</span>`
+                ? `<span style="color:var(--text-secondary);font-size:13px;">${v.toLocaleString('pt-BR')} votos</span>`
                 : '<span style="color:#64748b;font-size:12px;">Sem dados de votos</span>',
               '<div style="margin-top:6px;padding-top:5px;border-top:1px solid rgba(27,73,101,0.5);">',
               '<span style="color:#78909c;font-size:10px;">Clique para selecionar</span></div>',

@@ -414,7 +414,7 @@ export default function AgendaPage() {
           <div className="grid grid-cols-7" style={{ borderBottom: '1px solid var(--tint-06)' }}>
             {DIAS_SEMANA.map((d, i) => (
               <div key={d} className="text-center py-2.5 text-xs font-semibold uppercase tracking-widest"
-                style={{ color: i === 0 || i === 6 ? 'rgba(37,99,235,0.6)' : 'var(--tint-35)' }}>
+                style={{ color: i === 0 || i === 6 ? 'var(--acento-azul)' : 'var(--text-tertiary)' }}>
                 {d}
               </div>
             ))}
@@ -493,7 +493,7 @@ export default function AgendaPage() {
                         </div>
                       ))}
                       {dayEvs.length > (feriado ? 1 : 2) && (
-                        <div className="text-[10px] px-1" style={{ color: 'var(--tint-35)' }}>
+                        <div className="text-[10px] px-1" style={{ color: 'var(--text-tertiary)' }}>
                           +{dayEvs.length - (feriado ? 1 : 2)} mais
                         </div>
                       )}
@@ -526,7 +526,7 @@ export default function AgendaPage() {
                   <p className="text-xs mt-0.5" style={{ color: 'var(--danger)' }}>{feriados[fmtKey(selectedDay)]}</p>
                 )}
                 {!selectedDay && isCurrentMonth && (
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--tint-35)' }}>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                     {todayEvents.length === 0 ? 'Dia livre' : `${todayEvents.length} evento${todayEvents.length > 1 ? 's' : ''} hoje`}
                   </p>
                 )}
@@ -542,7 +542,7 @@ export default function AgendaPage() {
               {(selectedDay ? dayEvents : todayEvents).length === 0 ? (
                 <div className="px-4 py-6 text-center">
                   <TrendingUp className="w-6 h-6 mx-auto mb-2" style={{ color: 'var(--tint-14)' }} />
-                  <p className="text-sm" style={{ color: 'var(--tint-35)' }}>Nenhum evento</p>
+                  <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Nenhum evento</p>
                 </div>
               ) : (
                 (selectedDay ? dayEvents : todayEvents).map((e, idx) => {
@@ -594,7 +594,7 @@ export default function AgendaPage() {
             </div>
             <div className="divide-y max-h-48 md:max-h-72 overflow-y-auto" style={{ borderColor: 'var(--tint-04)' }}>
               {upcomingEvents.length === 0 ? (
-                <p className="text-sm px-4 py-5 text-center" style={{ color: 'var(--tint-35)' }}>Nenhum evento futuro</p>
+                <p className="text-sm px-4 py-5 text-center" style={{ color: 'var(--text-tertiary)' }}>Nenhum evento futuro</p>
               ) : upcomingEvents.map((e) => {
                 const color = e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB';
                 return (
@@ -604,7 +604,7 @@ export default function AgendaPage() {
                       <TipoIconBox tipo={e.tipo} box={28} icon={13} />
                       <div className="flex-1 min-w-0">
                         <p className="text-[color:var(--text-primary)] text-xs font-medium truncate">{e.titulo}</p>
-                        <p className="text-xs mt-0.5" style={{ color: 'var(--tint-35)' }}>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                           {new Date(e.data).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
                           {' · '}
                           {new Date(e.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -623,7 +623,7 @@ export default function AgendaPage() {
             className="rounded-2xl p-4"
             style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
           >
-            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--tint-35)' }}>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-tertiary)' }}>
               Tipos de Evento
             </p>
             <div className="grid grid-cols-2 gap-2">
@@ -774,7 +774,7 @@ export default function AgendaPage() {
                 </div>
                 {form.lat && form.lng && (
                   <div className="text-xs mt-1.5">
-                    <p className="flex items-start gap-1" style={{ color: '#22c55e' }}>
+                    <p className="flex items-start gap-1" style={{ color: 'var(--success)' }}>
                       <CheckCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
                       <span>
                         {/* O NOME vem primeiro: e o que permite notar que o
@@ -782,7 +782,7 @@ export default function AgendaPage() {
                         {geoNome ? <strong style={{ fontWeight: 600 }}>{geoNome}</strong> : 'Endereço localizado'}
                       </span>
                     </p>
-                    <p className="mt-0.5 pl-4" style={{ color: 'var(--tint-35)' }}>
+                    <p className="mt-0.5 pl-4" style={{ color: 'var(--text-tertiary)' }}>
                       Confira se é o lugar certo — é aqui que o compromisso aparecerá no mapa.
                     </p>
                   </div>

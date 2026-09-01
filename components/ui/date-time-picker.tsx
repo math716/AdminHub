@@ -57,7 +57,7 @@ export function DatePicker({ value, onChange, className, style }: DatePickerProp
         <span style={{ color: displayValue ? 'var(--text-primary)' : 'var(--text-tertiary)', fontSize: '14px' }}>
           {displayValue || 'dd/mm/aaaa'}
         </span>
-        <Calendar className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
+        <Calendar className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
       </div>
 
       {/* Calendar popover */}
@@ -94,7 +94,7 @@ export function DatePicker({ value, onChange, className, style }: DatePickerProp
           {/* Weekday headers */}
           <div className="grid grid-cols-7 mb-1">
             {DIAS_SEMANA.map((d, i) => (
-              <div key={i} className="text-center text-[10px] font-bold uppercase py-1" style={{ color: 'var(--tint-35)' }}>
+              <div key={i} className="text-center text-[10px] font-bold uppercase py-1" style={{ color: 'var(--text-tertiary)' }}>
                 {d}
               </div>
             ))}
@@ -137,7 +137,7 @@ export function DatePicker({ value, onChange, className, style }: DatePickerProp
               type="button"
               onClick={() => { onChange(''); setOpen(false); }}
               className="text-xs font-medium transition-colors hover:text-white"
-              style={{ color: 'var(--tint-35)' }}
+              style={{ color: 'var(--text-tertiary)' }}
             >
               Limpar
             </button>
@@ -207,7 +207,7 @@ export function TimePicker({ value, onChange, className, style }: TimePickerProp
         <span style={{ color: displayValue ? 'var(--text-primary)' : 'var(--text-tertiary)', fontSize: '14px' }}>
           {displayValue || '--:--'}
         </span>
-        <Clock className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--tint-35)' }} />
+        <Clock className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
       </div>
 
       {/* Time popover */}
@@ -221,8 +221,8 @@ export function TimePicker({ value, onChange, className, style }: TimePickerProp
           }}
         >
           <div className="flex items-center gap-1 mb-3">
-            <Clock className="w-3.5 h-3.5" style={{ color: 'var(--tint-35)' }} />
-            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--tint-35)' }}>Horário</span>
+            <Clock className="w-3.5 h-3.5" style={{ color: 'var(--text-tertiary)' }} />
+            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-tertiary)' }}>Horário</span>
           </div>
 
           <div className="flex items-center justify-center gap-3">

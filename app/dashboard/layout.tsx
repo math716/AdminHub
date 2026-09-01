@@ -68,7 +68,7 @@ export default function DashboardLayout({
             <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#60A5FA', animationDelay: '150ms' }} />
             <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#60A5FA', animationDelay: '300ms' }} />
           </div>
-          <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: 'var(--tint-35)' }}>
+          <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: 'var(--text-tertiary)' }}>
             Carregando
           </p>
         </div>
