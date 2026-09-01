@@ -1623,8 +1623,11 @@ export default function MapaPage() {
               {/* Botão tela cheia */}
               <button
                 onClick={() => setMapFullscreen(f => !f)}
-                className="absolute bottom-3 right-3 z-[1000] rounded-xl p-2.5 transition-all"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-raised)' }}
+                className="absolute bottom-3 z-[1000] rounded-xl p-2.5 transition-all"
+                /* Afastado do canto: o botao da Gabi fica por cima de quem
+                   encosta ali. Em tela cheia o card ocupa a janela inteira, e
+                   a sobreposicao e garantida. */
+                style={{ right: 'var(--espaco-do-chat)', background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-raised)' }}
                 title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
               >
                 {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}

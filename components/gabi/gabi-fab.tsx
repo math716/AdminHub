@@ -994,7 +994,12 @@ export function GabiFAB() {
             </motion.div>
           ) : (
             <motion.div key="chat" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-              <MessageSquare className="w-6 h-6 text-white" />
+              {/* Estrelas, e nao um balao de fala: o balao promete uma conversa
+                  com uma pessoa. Do outro lado esta a Gabi, que le dados e
+                  monta relatorio — as estrelas sao o simbolo que hoje se
+                  reconhece como "isto e IA", e ja aparecem ao lado do nome
+                  dela no cabecalho do chat. */}
+              <Sparkles className="w-6 h-6 text-white" />
             </motion.div>
           )}
         </AnimatePresence>
