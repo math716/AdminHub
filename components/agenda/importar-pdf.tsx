@@ -34,6 +34,13 @@ interface EventoLido {
   localizadoEm?: string | null;
   /** Caiu longe dos outros compromissos: provável cidade homônima. */
   longe?: boolean;
+  /**
+   * Por que este compromisso ficou sem localização, na língua de quem lê.
+   * Cada causa tem a sua frase: dizer "não encontrado no mapa" quando o que
+   * houve foi o serviço fora do ar manda a pessoa reescrever um endereço que
+   * já estava certo.
+   */
+  motivo?: string | null;
   jaExiste?: boolean;
 }
 
@@ -100,6 +107,27 @@ function consultaDeBusca(endereco: string | null, local: string | null): string 
   return ([endereco, local].filter(Boolean) as string[]).join(', ');
 }
 
+/**
+ * Traduz a resposta de /api/geocode no motivo de o lugar não ter sido achado.
+ *
+ * A rota separa as causas de propósito — lista vazia (o lugar não existe na
+ * base do mapa), `semLugar` (o texto descreve o compromisso, não um endereço),
+ * `bloqueado` (uso acima do limite do serviço) e falha geral. Só a primeira
+ * é culpa do mapa não conhecer o lugar; nas outras, pedir para corrigir o
+ * endereço seria mandar a pessoa atrás de um problema que não é dela.
+ */
+function motivoDaResposta(res: Response, json: any): string {
+  if (res.ok) {
+    if (json?.semLugar) return 'Sem endereço para localizar — escreva o local ou a rua.';
+    return 'Este lugar não consta no mapa. Se souber, escreva o endereço da rua e localize de novo.';
+  }
+  if (json?.bloqueado) return 'O serviço de mapas recusou a consulta agora. Tente de novo em instantes.';
+  return 'O serviço de mapas não respondeu. Tente de novo em instantes.';
+}
+
+/** Falha de rede: não chegamos nem a perguntar ao mapa. */
+const SEM_CONEXAO = 'Não foi possível falar com o serviço de mapas. Verifique a conexão e tente de novo.';
+
 /** Distância em km entre dois pontos (fórmula de Haversine). */
 function distanciaKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371;
@@ -123,6 +151,11 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
   // vinte compromissos estouravam o limite. No navegador não há esse teto, e
   // a pessoa acompanha o avanço.
   const [geo, setGeo] = useState<{ feitos: number; total: number } | null>(null);
+  const [geoUm, setGeoUm] = useState<number | null>(null);
+  // Espelho da lista: os callbacks precisam do valor atual sem virar
+  // dependência e recriar a cada tecla digitada.
+  const linhasRef = useRef<Linha[]>([]);
+  linhasRef.current = linhas;
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fechar = useCallback(() => {
@@ -162,7 +195,7 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
         const res = await fetch(
           `/api/geocode?lote=1&address=${encodeURIComponent(texto)}`
           + (cidade ? `&cidade=${encodeURIComponent(cidade)}` : ''));
-        const json = await res.json();
+        const json = await res.json().catch(() => null);
         const r = json?.results?.[0];
         if (r) {
           achados.push({ i, lat: r.lat, lng: r.lng });
@@ -170,9 +203,18 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
           // sentido numa tela que não tem mapa. Lendo "Lago Sul, Brasília" a
           // pessoa sabe na hora se está certo.
           const onde = (r.endereco || r.displayName || '').split(',').slice(0, 3).join(',').trim();
-          setLinhas(ls => ls.map((l, k) => (k === i ? { ...l, lat: r.lat, lng: r.lng, localizadoEm: onde } : l)));
+          setLinhas(ls => ls.map((l, k) => (k === i
+            ? { ...l, lat: r.lat, lng: r.lng, localizadoEm: onde, motivo: null } : l)));
+        } else {
+          const motivo = motivoDaResposta(res, json);
+          setLinhas(ls => ls.map((l, k) => (k === i ? { ...l, motivo } : l)));
         }
-      } catch { /* segue para o próximo */ }
+      } catch {
+        // Falhou a chamada em si. Segue para o próximo — um endereço não
+        // derruba os outros — mas dizendo o que houve, e não que o mapa
+        // desconhece o lugar.
+        setLinhas(ls => ls.map((l, k) => (k === i ? { ...l, motivo: SEM_CONEXAO } : l)));
+      }
       setGeo({ feitos: n + 1, total: alvos.length });
       // O Nominatim admite uma consulta por segundo.
       if (n < alvos.length - 1) await new Promise(r => setTimeout(r, 1100));
@@ -200,6 +242,43 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
     }
 
     setGeo(null);
+  }, []);
+
+  /**
+   * Tenta localizar UM compromisso, depois de a pessoa corrigir o endereço.
+   *
+   * Nem todo lugar existe no mapa: estádio e prédio público em geral sim,
+   * igreja de bairro e associação quase nunca. Nesses casos o jeito é escrever
+   * o endereço da rua — e então vale tentar de novo sem reimportar o arquivo.
+   */
+  const localizarUm = useCallback(async (i: number) => {
+    const l = linhasRef.current[i];
+    const texto = consultaDeBusca(l?.endereco ?? null, l?.local ?? null);
+    if (texto.trim().length < 3) return;
+
+    setGeoUm(i);
+    try {
+      const cidade = cidadeDoLote(linhasRef.current);
+      const res = await fetch(
+        `/api/geocode?lote=1&address=${encodeURIComponent(texto)}`
+        + (cidade ? `&cidade=${encodeURIComponent(cidade)}` : ''));
+      const json = await res.json().catch(() => null);
+      const r = json?.results?.[0];
+      setLinhas(ls => ls.map((x, k) => (k === i
+        ? {
+            ...x,
+            lat: r?.lat ?? null,
+            lng: r?.lng ?? null,
+            longe: false,
+            localizadoEm: r ? (r.endereco || r.displayName || '').split(',').slice(0, 3).join(',').trim() : null,
+            motivo: r ? null : motivoDaResposta(res, json),
+          }
+        : x)));
+    } catch {
+      setLinhas(ls => ls.map((x, k) => (k === i ? { ...x, motivo: SEM_CONEXAO } : x)));
+    } finally {
+      setGeoUm(null);
+    }
   }, []);
 
   const enviar = useCallback(async (arquivo: File) => {
@@ -477,6 +556,31 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
                                       {l.longe && ' — bem longe dos outros compromissos do dia'}
                                     </span>
                                   </p>
+                                )}
+                                {/* Nem todo lugar existe no mapa: igreja de bairro e
+                                    associação quase nunca estão lá. Escrever o endereço
+                                    da rua resolve — e dá pra tentar de novo aqui mesmo. */}
+                                {/* Ficou sem localização: diz por quê, com a frase
+                                    da causa real, e deixa corrigir e tentar de
+                                    novo sem reimportar o arquivo. */}
+                                {!l.lat && (l.motivo || l.endereco || l.local) && (
+                                  <div className="flex flex-wrap items-center gap-2 px-1.5">
+                                    {l.motivo && (
+                                      <span className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
+                                        {l.motivo}
+                                      </span>
+                                    )}
+                                    {(l.endereco || l.local) && (
+                                      <button
+                                        onClick={() => localizarUm(i)}
+                                        disabled={geoUm !== null}
+                                        className="text-[12px] px-2 py-0.5 rounded-lg border transition-colors hover:opacity-70 disabled:opacity-50 flex-shrink-0"
+                                        style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                                      >
+                                        {geoUm === i ? 'Localizando…' : 'Localizar no mapa'}
+                                      </button>
+                                    )}
+                                  </div>
                                 )}
                                 {l.descricao && (
                                   <p className="text-[12px] px-1.5" style={{ color: 'var(--text-tertiary)' }}>{l.descricao}</p>
