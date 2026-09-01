@@ -88,6 +88,13 @@ function mapearJson(row: SISCONEPRow, ano: number): EmendaEstadualRow | null {
   const empenhado = parseFloat(row.ValorEmpenhado ?? row.EmpenhadoEmendaSum ?? '') || 0;
   const liquidado = parseFloat(row.ValorLiquidado ?? row.LiquidadoEmendaSum ?? '') || 0;
 
+  // O valor da emenda, que e o que o parlamentar destinou. Antes gravavamos o
+  // empenhado no lugar dele, porque a resposta antiga nao trazia esse campo —
+  // e os dois divergem em 284 dos 771 registros de 2025 (37%). Num deles a
+  // emenda e de R$ 1 milhao e o empenho, de R$ 5,75 milhoes.
+  // Arquivo antigo nao tem ValorEmenda: ali o empenhado segue como estava.
+  const daEmenda = parseFloat(row.ValorEmenda ?? '') || 0;
+
   return {
     idPortal:       `DF-${ano}-${row.Id ?? row.EmendaId}`,
     ano,
@@ -96,7 +103,7 @@ function mapearJson(row: SISCONEPRow, ano: number): EmendaEstadualRow | null {
     subfuncao:      row.PT?.trim() || undefined,
     objeto:         objeto || undefined,
     area,
-    valorProposto:  empenhado || undefined,
+    valorProposto:  daEmenda || empenhado || undefined,
     valorEmpenhado: empenhado,
     valorPago:      liquidado,
     uf:             'DF',
@@ -183,8 +190,17 @@ async function main() {
     console.log(`\n  Exemplo:`);
     console.log(`    parlamentar   : ${rows[0].autorNome}`);
     console.log(`    nº emenda     : ${rows[0].numero}`);
+    // O valor da emenda ao lado do empenhado: e a forma de ver, sem abrir o
+    // banco, que os dois nao sao mais o mesmo numero.
+    console.log(`    valor da emenda: R$ ${(rows[0].valorProposto ?? 0).toLocaleString('pt-BR')}`);
     console.log(`    empenhado     : R$ ${rows[0].valorEmpenhado.toLocaleString('pt-BR')}`);
     console.log(`    área          : ${rows[0].area}`);
+
+    const divergem = rows.filter(r => r.valorProposto && r.valorProposto !== r.valorEmpenhado).length;
+    if (divergem) {
+      console.log(`
+  ${divergem} de ${rows.length} emendas têm valor diferente do empenhado.`);
+    }
   }
 
   if (rows.length === 0) {
