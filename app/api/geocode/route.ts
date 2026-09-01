@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import { ancoraDoGabinete, simplificar, type Ancora } from '@/lib/geocode';
+import { ancoraDoGabinete, simplificar, ehGenerico, type Ancora } from '@/lib/geocode';
 
 // Cache em memória: chave → { results, expiresAt }
 const geocodeCache = new Map<string, { results: unknown[]; expiresAt: number }>();
@@ -25,6 +25,16 @@ export async function GET(request: NextRequest) {
   // do gabinete, em vez de só reordenar. Aqui ninguém está conferindo endereço
   // por endereço, então um homônimo de outro estado passaria batido.
   const estrito = request.nextUrl.searchParams.get('estrito') === '1';
+
+  // lote=1 (importação de agenda): recusa nomes que descrevem o compromisso e
+  // não um lugar — "COMITÊ", "Residência", "Agenda Pessoal". O serviço de mapas
+  // sempre encontra ALGUMA coisa para eles, e na agenda real do cliente isso
+  // colocou compromissos de Brasília em Minas Gerais e no Espírito Santo.
+  // No formulário manual não vale: ali a pessoa digitou de propósito.
+  const lote = request.nextUrl.searchParams.get('lote') === '1';
+  if (lote && ehGenerico(address)) {
+    return NextResponse.json({ results: [], semLugar: true });
+  }
 
   const gabineteId = (session.user as any)?.gabineteId as string | undefined;
 

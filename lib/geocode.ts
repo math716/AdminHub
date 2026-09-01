@@ -46,6 +46,11 @@ const GENERICOS = [
   'escritorio', 'casa', 'em casa', 'home office', 'online', 'remoto',
   'a definir', 'a confirmar', 'interno', 'reuniao interna', 'almoco',
   'deslocamento', 'livre', 'diversos', 'varios',
+  // Vistos na agenda real do cliente: "COMITE" foi parar em Minas Gerais e
+  // "Residencia" no Espirito Santo, porque o servico de mapas sempre encontra
+  // ALGUMA coisa com esses nomes.
+  'comite', 'sede', 'sede do comite', 'base', 'ponto de apoio', 'qg',
+  'jantar', 'cafe da manha', 'reuniao', 'evento', 'compromisso', 'visita',
 ];
 
 // Faixa dos acentos combinantes (U+0300-U+036F). Montada com fromCharCode
@@ -59,8 +64,13 @@ function semAcento(s: string): string {
   return s.normalize('NFD').replace(COMBINANTES, '').toLowerCase().trim();
 }
 
-function ehGenerico(consulta: string): boolean {
+export function ehGenerico(consulta: string): boolean {
   const limpo = semAcento(consulta).replace(/[.,;-]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // Qualquer numero indica endereco de verdade junto: "COMITE Central, SQN 210"
+  // tem onde ser encontrado, ao contrario de "COMITE" sozinho.
+  if (/\d/.test(limpo)) return false;
+
   return GENERICOS.some(g => limpo === g || limpo.startsWith(g + ' '));
 }
 

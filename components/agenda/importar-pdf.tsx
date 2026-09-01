@@ -147,7 +147,7 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
         // a agenda de Brasília via TUDO ser rejeitado, porque são 867 km entre
         // as duas regiões. A coerência que vale aqui é a do próprio lote, e ela
         // é conferida no fim.
-        const res = await fetch(`/api/geocode?address=${encodeURIComponent(texto)}`);
+        const res = await fetch(`/api/geocode?lote=1&address=${encodeURIComponent(texto)}`);
         const json = await res.json();
         const r = json?.results?.[0];
         if (r) {
