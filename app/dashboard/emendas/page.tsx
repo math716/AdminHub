@@ -75,6 +75,8 @@ interface PortalEmenda {
   ano: number;
   numero: string | null;
   tipo: string | null;
+  /** Em que o dinheiro pode ser gasto — hoje só o DF preenche. */
+  natureza: string | null;
   funcao: string | null;
   subfuncao: string | null;
   area: EmendaArea;
@@ -2803,6 +2805,15 @@ function EmendasDetalhadasCard({
                               {item.tipo}
                             </span>
                           ) : <span className="text-slate-500">—</span>}
+                          {/* Natureza da despesa: o que a emenda paga. Texto
+                              simples e nao etiqueta — sao frases inteiras
+                              ("Equipamentos e material permanente"), que numa
+                              pilula de 9px ficariam cortadas. */}
+                          {item.natureza && (
+                            <span className="text-[10px] leading-tight" style={{ color: 'var(--text-tertiary)' }}>
+                              {item.natureza}
+                            </span>
+                          )}
                           {item.estagio && (
                             <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ background: 'rgba(245,158,11,0.12)', color: '#d97706', border: '1px solid rgba(245,158,11,0.3)' }}>
                               {item.estagio}

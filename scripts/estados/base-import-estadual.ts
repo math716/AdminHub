@@ -93,6 +93,8 @@ export interface EmendaEstadualRow {
   funcao?: string;
   /** Subfunção orçamentária */
   subfuncao?: string;
+  /** Natureza da despesa por extenso — em que o dinheiro pode ser gasto */
+  natureza?: string;
   /** Área temática — se não vier do CSV, será classificada automaticamente */
   area?: EmendaArea;
   /** Descrição / objeto da emenda */
@@ -221,6 +223,7 @@ export async function importarEmendas(
           if (!dryRun) {
             const commonData = {
               esfera: 'ESTADUAL' as const, numero: row.numero ?? null, tipo: row.tipo ?? null,
+              natureza: row.natureza ?? null,
               funcao: row.funcao ?? null, subfuncao: row.subfuncao ?? null,
               area, objeto: row.objeto ?? null,
               valorProposto: row.valorProposto ?? null,

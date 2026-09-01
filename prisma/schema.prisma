@@ -2,9 +2,10 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
@@ -96,13 +97,13 @@ enum ColaboradorStatus {
 
 /// Gabinete/Secretaria
 model Gabinete {
-  id        String   @id @default(cuid())
-  nome      String   @unique
+  id        String  @id @default(cuid())
+  nome      String  @unique
   descricao String?
-  ativo     Boolean  @default(true)
+  ativo     Boolean @default(true)
 
   whatsappInstanceId String?
-  limiteTokensMes    Int?    // limite mensal de tokens da Gabi (null = sem limite)
+  limiteTokensMes    Int? // limite mensal de tokens da Gabi (null = sem limite)
 
   /// Sede do gabinete — ponto de partida das rotas do dia no mapa.
   /// Sem isto, a rota começava no primeiro compromisso e ignorava o trajeto de
@@ -135,16 +136,16 @@ model Gabinete {
 
 /// Usuário do Sistema
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role               UserRole @default(ASSESSOR)
-  approved           Boolean  @default(false)
-  mustChangePassword Boolean  @default(false)
-  permissions        String[] @default([])
+  id                  String   @id @default(cuid())
+  email               String   @unique
+  password            String
+  name                String
+  role                UserRole @default(ASSESSOR)
+  approved            Boolean  @default(false)
+  mustChangePassword  Boolean  @default(false)
+  permissions         String[] @default([])
   pendingGabineteNome String?
-  theme              String   @default("dark")  // "light" | "dark"
+  theme               String   @default("dark") // "light" | "dark"
 
   gabineteId String?
   gabinete   Gabinete? @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
@@ -157,15 +158,15 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  demands       Demand[]          @relation("CreatedBy")
-  agendaEvents  AgendaEvent[]     @relation("AgendaCreatedBy")
-  contatos      Contato[]         @relation("ContatoCreatedBy")
-  colaboradores Colaborador[]     @relation("ColaboradorCreatedBy")
-  favorites     Favorite[]
-  anotacoesEmenda EmendaAnotacao[]
-  projecoes     ProjecaoCampanha[]
-  accounts      Account[]
-  sessions      Session[]
+  demands           Demand[]           @relation("CreatedBy")
+  agendaEvents      AgendaEvent[]      @relation("AgendaCreatedBy")
+  contatos          Contato[]          @relation("ContatoCreatedBy")
+  colaboradores     Colaborador[]      @relation("ColaboradorCreatedBy")
+  favorites         Favorite[]
+  anotacoesEmenda   EmendaAnotacao[]
+  projecoes         ProjecaoCampanha[]
+  accounts          Account[]
+  sessions          Session[]
   passwordResetLogs PasswordResetLog[]
   agentUsages       AgentUsage[]
 
@@ -176,18 +177,18 @@ model User {
 
 /// NextAuth - Conta Conectada
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -221,32 +222,32 @@ model VerificationToken {
 
 /// Demanda/Solicitação
 model Demand {
-  id              String            @id @default(cuid())
-  title           String
-  description     String?
-  solicitante     String
-  contato         String?
-  estado          String
-  municipio       String
-  bairro          String?
-  endereco        String?
-  lat             Float?
-  lng             Float?
-  foto            String?           @db.Text
-  category        DemandCategory
-  status          DemandStatus      @default(PENDENTE)
-  priority        DemandPriority    @default(MEDIA)
-  observations    String?
-  closedAt        DateTime?
+  id           String         @id @default(cuid())
+  title        String
+  description  String?
+  solicitante  String
+  contato      String?
+  estado       String
+  municipio    String
+  bairro       String?
+  endereco     String?
+  lat          Float?
+  lng          Float?
+  foto         String?        @db.Text
+  category     DemandCategory
+  status       DemandStatus   @default(PENDENTE)
+  priority     DemandPriority @default(MEDIA)
+  observations String?
+  closedAt     DateTime?
 
-  gabineteId      String
-  gabinete        Gabinete          @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+  gabineteId String
+  gabinete   Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
 
-  createdById     String
-  createdBy       User              @relation("CreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([gabineteId])
   @@index([createdById])
@@ -274,35 +275,35 @@ enum AgendaEventTipo {
 
 /// Evento da Agenda do Gabinete
 model AgendaEvent {
-  id          String          @id @default(cuid())
-  titulo      String
-  descricao   String?
-  data        DateTime
-  dataFim     DateTime?
-  local       String?
-  endereco    String?
-  lat         Float?
-  lng         Float?
-  tipo        AgendaEventTipo @default(REUNIAO)
-  cor         String?
+  id        String          @id @default(cuid())
+  titulo    String
+  descricao String?
+  data      DateTime
+  dataFim   DateTime?
+  local     String?
+  endereco  String?
+  lat       Float?
+  lng       Float?
+  tipo      AgendaEventTipo @default(REUNIAO)
+  cor       String?
 
   /// De onde veio o evento. Eventos do Google são sobrescritos a cada
   /// sincronização e não devem ser editados no AdminHub.
-  origem        AgendaOrigem @default(MANUAL)
+  origem         AgendaOrigem @default(MANUAL)
   /// ID do evento no Google Calendar — casa o evento local com o remoto na
   /// sincronização. Único por gabinete.
-  googleEventId String?
+  googleEventId  String?
   /// Última vez que este evento veio do Google (diagnóstico).
   sincronizadoEm DateTime?
 
-  gabineteId  String
-  gabinete    Gabinete        @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+  gabineteId String
+  gabinete   Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
 
   createdById String
-  createdBy   User            @relation("AgendaCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy   User   @relation("AgendaCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([gabineteId, googleEventId])
   @@index([gabineteId])
@@ -330,14 +331,14 @@ model GoogleAgendaConexao {
   escopo       String?
 
   /// Calendário de onde os eventos vêm ("primary" = agenda principal).
-  calendarId String @default("primary")
+  calendarId String  @default("primary")
   /// syncToken do Google: permite pedir só o que mudou desde a última vez,
   /// em vez de reler a agenda inteira a cada rodada.
   syncToken  String?
 
-  ultimaSync     DateTime?
-  ultimoErro     String?
-  eventosImportados Int @default(0)
+  ultimaSync        DateTime?
+  ultimoErro        String?
+  eventosImportados Int       @default(0)
 
   conectadoPorId   String?
   conectadoPorNome String?
@@ -350,43 +351,42 @@ model GoogleAgendaConexao {
 
 /// Favoritos do Usuário (Candidatos)
 model Favorite {
-  id            String   @id @default(cuid())
+  id            String  @id @default(cuid())
   userId        String
   candidateName String
   ano           Int
   cargo         String?
   uf            String
-  tipo          String   @default("ELEITORAL")
+  tipo          String  @default("ELEITORAL")
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([userId, candidateName, ano, uf, tipo])
   @@index([userId])
   @@map("favorites")
 }
 
-
 /// Candidato (TSE)
 model Candidato {
-  id          String   @id @default(cuid())
-  nome        String
-  nomeUrna    String
-  numero      Int?
-  ano         Int
-  uf          String
-  cargo       String
-  partido     String
-  situacao    String?
-  totalVotos  Int      @default(0)
+  id         String  @id @default(cuid())
+  nome       String
+  nomeUrna   String
+  numero     Int?
+  ano        Int
+  uf         String
+  cargo      String
+  partido    String
+  situacao   String?
+  totalVotos Int     @default(0)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  votos       VotoMunicipio[]
-  votosZona   VotoZona[]
+  votos     VotoMunicipio[]
+  votosZona VotoZona[]
 
   @@index([ano])
   @@index([uf])
@@ -396,12 +396,12 @@ model Candidato {
 
 /// Votos por Município (TSE)
 model VotoMunicipio {
-  id          String    @id @default(cuid())
+  id          String @id @default(cuid())
   candidatoId String
   municipio   String
   votos       Int
 
-  candidato   Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
 
   @@unique([candidatoId, municipio])
   @@index([candidatoId])
@@ -411,13 +411,13 @@ model VotoMunicipio {
 
 /// Votos por Zona Eleitoral (TSE)
 model VotoZona {
-  id          String    @id @default(cuid())
+  id          String @id @default(cuid())
   candidatoId String
   municipio   String
   zona        Int
   votos       Int
 
-  candidato   Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
 
   @@index([candidatoId])
   @@index([municipio])
@@ -426,40 +426,39 @@ model VotoZona {
 
 /// Locais de Votação (TSE)
 model LocalVotacao {
-  id           String  @id @default(cuid())
-  uf           String?
+  id            String  @id @default(cuid())
+  uf            String?
   nomeMunicipio String
-  zona         Int
-  codLocal     String?
-  nomeLocal    String
-  endereco     String?
-  bairro       String?
-  latitude     Float?
-  longitude    Float?
+  zona          Int
+  codLocal      String?
+  nomeLocal     String
+  endereco      String?
+  bairro        String?
+  latitude      Float?
+  longitude     Float?
 
   @@index([nomeMunicipio])
   @@index([zona])
   @@map("locais_votacao")
 }
 
-
 /// Projeção de Campanha
 model ProjecaoCampanha {
-  id             String   @id @default(cuid())
-  userId         String
-  candidatoNome  String
-  anoBase        Int
-  anoProjecao    Int
-  uf             String
-  cargo          String?
+  id            String  @id @default(cuid())
+  userId        String
+  candidatoNome String
+  anoBase       Int
+  anoProjecao   Int
+  uf            String
+  cargo         String?
 
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  municipios     ProjecaoMunicipio[]
+  municipios ProjecaoMunicipio[]
 
   @@unique([userId, candidatoNome, anoBase, anoProjecao, uf])
   @@index([userId])
@@ -469,27 +468,27 @@ model ProjecaoCampanha {
 
 /// Municípios de uma Projeção de Campanha
 model ProjecaoMunicipio {
-  id                  String   @id @default(cuid())
-  projecaoId          String
-  municipio           String
-  votosBase           Int      @default(0)
-  metaConservadora    Int      @default(0)
-  metaPossivel        Int      @default(0)
-  metaArrojada        Int      @default(0)
-  observacoes         String?
-  prioridade          String?
-  dobradaAtiva        Boolean  @default(false)
-  dobradaNome         String?
-  dobradaPartido      String?
-  dobradaObservacoes  String?
+  id                 String  @id @default(cuid())
+  projecaoId         String
+  municipio          String
+  votosBase          Int     @default(0)
+  metaConservadora   Int     @default(0)
+  metaPossivel       Int     @default(0)
+  metaArrojada       Int     @default(0)
+  observacoes        String?
+  prioridade         String?
+  dobradaAtiva       Boolean @default(false)
+  dobradaNome        String?
+  dobradaPartido     String?
+  dobradaObservacoes String?
 
-  projecao            ProjecaoCampanha @relation(fields: [projecaoId], references: [id], onDelete: Cascade)
+  projecao ProjecaoCampanha @relation(fields: [projecaoId], references: [id], onDelete: Cascade)
 
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  parcerias           Parceria[]
+  parcerias Parceria[]
 
   @@unique([projecaoId, municipio])
   @@index([projecaoId])
@@ -498,22 +497,22 @@ model ProjecaoMunicipio {
 
 /// Contato do Gabinete
 model Contato {
-  id          String   @id @default(cuid())
-  numero      String
-  nome        String
-  email       String?
-  endereco    String?
-  lat         Float?
-  lng         Float?
+  id       String  @id @default(cuid())
+  numero   String
+  nome     String
+  email    String?
+  endereco String?
+  lat      Float?
+  lng      Float?
 
-  gabineteId  String
-  gabinete    Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+  gabineteId String
+  gabinete   Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
 
   createdById String
-  createdBy   User     @relation("ContatoCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy   User   @relation("ContatoCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([gabineteId])
   @@index([createdAt])
@@ -523,32 +522,32 @@ model Contato {
 
 /// Colaborador de Campanha — responsável por uma ou mais regiões geográficas
 model Colaborador {
-  id           String            @id @default(cuid())
-  nome         String
-  telefone     String?
-  email        String?
-  endereco     String?
-  lat          Float?
-  lng          Float?
-  funcao       String?
-  observacao   String?
-  status       ColaboradorStatus @default(ATIVO)
-  cor          String?           @default("#8b5cf6")
+  id         String            @id @default(cuid())
+  nome       String
+  telefone   String?
+  email      String?
+  endereco   String?
+  lat        Float?
+  lng        Float?
+  funcao     String?
+  observacao String?
+  status     ColaboradorStatus @default(ATIVO)
+  cor        String?           @default("#8b5cf6")
 
   // Padrinho político (entidade separada com Nome, Cargo e Partido)
-  padrinhoId   String?
-  padrinho     Padrinho?         @relation(fields: [padrinhoId], references: [id], onDelete: SetNull)
+  padrinhoId String?
+  padrinho   Padrinho? @relation(fields: [padrinhoId], references: [id], onDelete: SetNull)
 
-  gabineteId   String
-  gabinete     Gabinete          @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+  gabineteId String
+  gabinete   Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
 
-  createdById  String
-  createdBy    User              @relation("ColaboradorCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User   @relation("ColaboradorCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
 
-  regioes      ColaboradorRegiao[]
+  regioes ColaboradorRegiao[]
 
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([gabineteId])
   @@index([padrinhoId])
@@ -582,7 +581,7 @@ model ColaboradorRegiao {
   colaborador   Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
   uf            String
   regiaoNome    String
-  tipo          String      @default("RA")   // "RA" = Região Administrativa | "ZONA" = Zona Eleitoral
+  tipo          String      @default("RA") // "RA" = Região Administrativa | "ZONA" = Zona Eleitoral
 
   @@unique([colaboradorId, regiaoNome, tipo])
   @@index([colaboradorId])
@@ -592,24 +591,24 @@ model ColaboradorRegiao {
 
 /// Parcerias de uma Projeção
 model Parceria {
-  id                   String   @id @default(cuid())
-  projecaoMunicipioId  String
-  bairro               String?
-  nome                 String
-  tipo                 String
-  responsavel          String?
-  contato              String?
-  observacoes          String?
-  impactoEstimado      Int      @default(0)
-  metaConservadora     Int      @default(0)
-  metaPossivel         Int      @default(0)
-  metaArrojada         Int      @default(0)
-  ativa                Boolean  @default(true)
+  id                  String  @id @default(cuid())
+  projecaoMunicipioId String
+  bairro              String?
+  nome                String
+  tipo                String
+  responsavel         String?
+  contato             String?
+  observacoes         String?
+  impactoEstimado     Int     @default(0)
+  metaConservadora    Int     @default(0)
+  metaPossivel        Int     @default(0)
+  metaArrojada        Int     @default(0)
+  ativa               Boolean @default(true)
 
-  projecaoMunicipio    ProjecaoMunicipio @relation(fields: [projecaoMunicipioId], references: [id], onDelete: Cascade)
+  projecaoMunicipio ProjecaoMunicipio @relation(fields: [projecaoMunicipioId], references: [id], onDelete: Cascade)
 
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([projecaoMunicipioId])
   @@map("parcerias")
@@ -620,19 +619,19 @@ model Parceria {
 /// (limites SUS de Média e Alta Complexidade / Procedimentos de Atenção Primária)
 /// são importados manualmente do DataSUS — ano a ano.
 model MunicipioStats {
-  id           String   @id @default(cuid())
-  codigoIbge   String
-  uf           String
-  nome         String
-  ano          Int
-  habitantes   Int?
-  eleitores    Int?
-  tetoMac      Float?
-  tetoPap      Float?
-  fonte        String?
+  id         String  @id @default(cuid())
+  codigoIbge String
+  uf         String
+  nome       String
+  ano        Int
+  habitantes Int?
+  eleitores  Int?
+  tetoMac    Float?
+  tetoPap    Float?
+  fonte      String?
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([codigoIbge, ano])
   @@index([uf, ano])
@@ -642,21 +641,21 @@ model MunicipioStats {
 /// Parlamentar autor de emendas (Portal da Transparência). Cache compartilhado
 /// entre gabinetes para evitar buscar repetidamente no Portal.
 model Parlamentar {
-  id           String           @id @default(cuid())
-  cpf          String?          @unique
-  idPortal     String?          @unique
-  nome         String
-  nomeUrna     String?
-  partido      String?
-  uf           String?
-  cargo        ParlamentarCargo
-  ativo        Boolean          @default(true)
-  fotoUrl      String?
+  id       String           @id @default(cuid())
+  cpf      String?          @unique
+  idPortal String?          @unique
+  nome     String
+  nomeUrna String?
+  partido  String?
+  uf       String?
+  cargo    ParlamentarCargo
+  ativo    Boolean          @default(true)
+  fotoUrl  String?
 
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  emendas          EmendaParlamentar[]
+  emendas           EmendaParlamentar[]
   transferenciasPix TransferenciaPix[]
 
   @@index([cargo])
@@ -669,32 +668,37 @@ model Parlamentar {
 /// Cache de emendas parlamentares puxadas do Portal da Transparência.
 /// idPortal é o identificador único do Portal — usado para upsert ao sincronizar.
 model EmendaParlamentar {
-  id                String       @id @default(cuid())
-  idPortal          String       @unique
-  esfera            EmendaEsfera @default(FEDERAL)
-  ano               Int
-  numero            String?
-  tipo              String?
-  funcao            String?
-  subfuncao         String?
-  area              EmendaArea   @default(OUTROS)
-  objeto            String?
-  valorEmpenhado    Float        @default(0)
-  valorPago         Float        @default(0)
-  valorRestoPago    Float        @default(0)
-  valorProposto     Float?
-  orgaoExecutor     String?
+  id                  String       @id @default(cuid())
+  idPortal            String       @unique
+  esfera              EmendaEsfera @default(FEDERAL)
+  ano                 Int
+  numero              String?
+  tipo                String?
+  funcao              String?
+  subfuncao           String?
+  /// Natureza da despesa: em QUE o dinheiro pode ser gasto ("Obras e
+  /// instalações", "Equipamentos e material permanente"). Vem do SISCONEP,
+  /// só o DF preenche hoje. `tipo` guarda o corte grosso (custeio ou
+  /// investimento); aqui fica o detalhe.
+  natureza            String?
+  area                EmendaArea   @default(OUTROS)
+  objeto              String?
+  valorEmpenhado      Float        @default(0)
+  valorPago           Float        @default(0)
+  valorRestoPago      Float        @default(0)
+  valorProposto       Float?
+  orgaoExecutor       String?
   unidadeOrcamentaria String?
-  beneficiario      String?
-  cnpjBeneficiario  String?
-  estagio           String?
+  beneficiario        String?
+  cnpjBeneficiario    String?
+  estagio             String?
 
-  uf                String?
-  codigoIbge        String?
-  municipioNome     String?
+  uf            String?
+  codigoIbge    String?
+  municipioNome String?
 
-  parlamentarId     String?
-  parlamentar       Parlamentar? @relation(fields: [parlamentarId], references: [id], onDelete: SetNull)
+  parlamentarId String?
+  parlamentar   Parlamentar? @relation(fields: [parlamentarId], references: [id], onDelete: SetNull)
 
   // Transferências Pix (Transferências Especiais EC 105/2019) — destinos
   // reais quando a emenda foi cadastrada a nível UF e o município só é
@@ -703,13 +707,16 @@ model EmendaParlamentar {
 
   // Documentos de despesa (empenho/liquidação/pagamento) — populados pelo
   // cron de enrich a partir de /despesas/documentos/{cod}.
-  documentos        EmendaDocumento[]
+  documentos EmendaDocumento[]
 
-  anotacoes         EmendaAnotacao[]
+  anotacoes EmendaAnotacao[]
 
-  fetchedAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  fetchedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  // Impede que a mesma emenda (mesmo parlamentar + ano + numero) seja importada
+  // duas vezes com idPortal diferente — root cause das duplicatas visuais.
+  @@unique([parlamentarId, ano, numero])
   @@index([ano])
   @@index([codigoIbge])
   @@index([codigoIbge, ano])
@@ -719,9 +726,6 @@ model EmendaParlamentar {
   @@index([area])
   @@index([uf, ano])
   @@index([uf, ano, esfera])
-  // Impede que a mesma emenda (mesmo parlamentar + ano + numero) seja importada
-  // duas vezes com idPortal diferente — root cause das duplicatas visuais.
-  @@unique([parlamentarId, ano, numero])
   @@map("emendas_parlamentares")
 }
 
@@ -735,16 +739,16 @@ model EmendaParlamentar {
 ///   2) ufFavorecido do documento (sempre vem)
 ///   3) Fase 3: lookup CNPJ → município sede (não implementado no MVP)
 model EmendaDocumento {
-  id                   String   @id @default(cuid())
-  codigoDocumento      String   @unique
+  id                      String  @id @default(cuid())
+  codigoDocumento         String  @unique
   codigoDocumentoResumido String?
 
-  emendaId             String
-  emenda               EmendaParlamentar @relation(fields: [emendaId], references: [id], onDelete: Cascade)
+  emendaId String
+  emenda   EmendaParlamentar @relation(fields: [emendaId], references: [id], onDelete: Cascade)
 
-  fase                 String   // "Empenho" | "Liquidação" | "Pagamento"
-  data                 DateTime?
-  valor                Float    @default(0)
+  fase  String // "Empenho" | "Liquidação" | "Pagamento"
+  data  DateTime?
+  valor Float     @default(0)
 
   cnpjFavorecido       String?
   nomeFavorecido       String?
@@ -752,16 +756,16 @@ model EmendaDocumento {
   municipioFavorecido  String?
   codigoIbgeFavorecido String?
 
-  subTitulo            String?
-  localizadorGasto     String?
-  observacao           String?  @db.Text
-  programa             String?
-  acao                 String?
-  orgao                String?
-  orgaoSuperior        String?
+  subTitulo        String?
+  localizadorGasto String?
+  observacao       String? @db.Text
+  programa         String?
+  acao             String?
+  orgao            String?
+  orgaoSuperior    String?
 
-  fetchedAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  fetchedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([emendaId])
   @@index([emendaId, fase])
@@ -786,34 +790,34 @@ model EmendaDocumento {
 ///   - `parlamentarId` desnormaliza o autor pra queries diretas
 ///     (ex.: "todos Pix do Eduardo Bolsonaro em 2024").
 model TransferenciaPix {
-  id                String   @id @default(cuid())
-  idPortal          String   @unique     // identificador no Portal (id da transferência)
+  id       String @id @default(cuid())
+  idPortal String @unique // identificador no Portal (id da transferência)
 
-  ano               Int
-  mes               Int?
-  dataReferencia    DateTime?
+  ano            Int
+  mes            Int?
+  dataReferencia DateTime?
 
-  valor             Float    @default(0)
+  valor Float @default(0)
 
   // Destino real do Pix
-  uf                String?
-  codigoIbge        String?
-  municipioNome     String?
+  uf            String?
+  codigoIbge    String?
+  municipioNome String?
 
   // Beneficiário (ente recebedor — pode ser prefeitura, estado, ONG…)
-  beneficiarioNome  String?
-  cnpjBeneficiario  String?
+  beneficiarioNome String?
+  cnpjBeneficiario String?
 
   // Linkagem com a emenda original (quando disponível)
-  emendaIdPortal    String?
-  emenda            EmendaParlamentar? @relation(fields: [emendaIdPortal], references: [idPortal], onDelete: SetNull)
+  emendaIdPortal String?
+  emenda         EmendaParlamentar? @relation(fields: [emendaIdPortal], references: [idPortal], onDelete: SetNull)
 
   // Desnormalização do parlamentar pra queries diretas
-  parlamentarId     String?
-  parlamentar       Parlamentar? @relation(fields: [parlamentarId], references: [id], onDelete: SetNull)
+  parlamentarId String?
+  parlamentar   Parlamentar? @relation(fields: [parlamentarId], references: [id], onDelete: SetNull)
 
-  fetchedAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  fetchedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([ano])
   @@index([codigoIbge])
@@ -827,11 +831,11 @@ model TransferenciaPix {
 
 /// Link de convite para criação de novo gabinete (multi-uso, expira em 1h)
 model GabineteConviteLink {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  expiresAt DateTime
+  id          String   @id @default(cuid())
+  token       String   @unique
+  expiresAt   DateTime
   createdById String
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 
   @@index([token])
   @@map("gabinete_convite_links")
@@ -839,17 +843,17 @@ model GabineteConviteLink {
 
 /// Solicitação pendente de criação de gabinete + agente político
 model SolicitacaoGabinete {
-  id              String   @id @default(cuid())
-  gabineteNome    String
-  userName        String
-  userEmail       String
-  userPassword    String
-  status          String   @default("PENDENTE")  // PENDENTE | APROVADA | RECUSADA
-  motivoRecusa    String?
-  reviewedById    String?
-  reviewedAt      DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String    @id @default(cuid())
+  gabineteNome String
+  userName     String
+  userEmail    String
+  userPassword String
+  status       String    @default("PENDENTE") // PENDENTE | APROVADA | RECUSADA
+  motivoRecusa String?
+  reviewedById String?
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([status])
   @@index([createdAt])
@@ -874,23 +878,23 @@ model EmendaAnotacao {
 }
 
 model EmendaNaoRealizada {
-  id            String   @id @default(cuid())
-  gabineteId    String
-  gabinete      Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
-  parlamentarId String
-  ano           Int
-  numero        String?
-  tipo          String?
-  area          String?
-  favorecido    String
-  municipio     String?
-  uf            String?
-  valor             Float    @default(0)
-  observacao        String?
-  documentoBase64   String?
-  documentoNome     String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id              String   @id @default(cuid())
+  gabineteId      String
+  gabinete        Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+  parlamentarId   String
+  ano             Int
+  numero          String?
+  tipo            String?
+  area            String?
+  favorecido      String
+  municipio       String?
+  uf              String?
+  valor           Float    @default(0)
+  observacao      String?
+  documentoBase64 String?
+  documentoNome   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([gabineteId, parlamentarId, ano])
   @@map("emendas_nao_realizadas")

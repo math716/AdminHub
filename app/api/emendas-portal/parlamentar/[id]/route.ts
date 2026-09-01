@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         },
         select: {
           id: true,
-          idPortal: true, ano: true, numero: true, tipo: true, funcao: true,
+          idPortal: true, ano: true, numero: true, tipo: true, natureza: true, funcao: true,
           area: true, objeto: true, valorEmpenhado: true, valorPago: true, valorRestoPago: true,
           uf: true, codigoIbge: true, municipioNome: true,
           beneficiario: true, cnpjBeneficiario: true,
@@ -97,6 +97,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             ano:            e.ano,
             numero:         e.numero,
             tipo:           e.tipo,
+            natureza:       e.natureza,
             funcao:         e.funcao,
             subfuncao:      null,
             area:           e.area,

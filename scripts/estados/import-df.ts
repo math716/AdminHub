@@ -102,6 +102,54 @@ function categoriaDaNatureza(codigo: string | undefined): string | undefined {
   return undefined;
 }
 
+/**
+ * Elemento de despesa: O QUE foi comprado com a emenda.
+ *
+ * São os dois últimos dígitos do código da natureza — em "449051", o "51".
+ * A tabela é a da Portaria Interministerial STN/SOF nº 163/2001, que vale para
+ * a União, os estados e os municípios.
+ *
+ * Só estão aqui os códigos de que se tem certeza. Código fora da lista NÃO
+ * ganha rótulo inventado: fica o código cru, que pelo menos é verificável.
+ * Nos quatro anos baixados isso acontece com 6 emendas em 3315.
+ */
+const ELEMENTO_DE_DESPESA: Record<string, string> = {
+  '03': 'Pensões do RPPS e do militar',
+  '14': 'Diárias — civil',
+  '15': 'Diárias — militar',
+  '16': 'Outras despesas variáveis — pessoal civil',
+  '18': 'Auxílio financeiro a estudantes',
+  '20': 'Auxílio financeiro a pesquisadores',
+  '30': 'Material de consumo',
+  '31': 'Premiações culturais, artísticas, científicas e desportivas',
+  '32': 'Material, bem ou serviço para distribuição gratuita',
+  '33': 'Passagens e despesas com locomoção',
+  '35': 'Serviços de consultoria',
+  '36': 'Outros serviços de terceiros — pessoa física',
+  '37': 'Locação de mão de obra',
+  '39': 'Outros serviços de terceiros — pessoa jurídica',
+  '40': 'Serviços de tecnologia da informação — pessoa jurídica',
+  '41': 'Contribuições',
+  '42': 'Auxílios',
+  '43': 'Subvenções sociais',
+  '46': 'Auxílio-alimentação',
+  '48': 'Outros auxílios financeiros a pessoas físicas',
+  '51': 'Obras e instalações',
+  '52': 'Equipamentos e material permanente',
+  '61': 'Aquisição de imóveis',
+  '66': 'Concessão de empréstimos e financiamentos',
+  '91': 'Sentenças judiciais',
+  '92': 'Despesas de exercícios anteriores',
+  '94': 'Indenizações e restituições trabalhistas',
+};
+
+/** O que a emenda paga, por extenso. Sem rotulo conhecido, fica o codigo. */
+function naturezaPorExtenso(codigo: string | undefined): string | undefined {
+  const n = (codigo ?? '').trim();
+  if (!/^[0-9]{6}$/.test(n)) return undefined;
+  return ELEMENTO_DE_DESPESA[n.slice(4, 6)] ?? `Natureza ${n}`;
+}
+
 function mapearJson(row: SISCONEPRow, ano: number): EmendaEstadualRow | null {
   const autor = (row.Parlamentar ?? row.NomeCompleto ?? '').trim();
   if (!autor) return null;
@@ -124,6 +172,7 @@ function mapearJson(row: SISCONEPRow, ano: number): EmendaEstadualRow | null {
     ano,
     numero:         row.NrEmenda?.trim() || undefined,
     tipo:           categoriaDaNatureza(row.Natureza),
+    natureza:       naturezaPorExtenso(row.Natureza),
     funcao:         funcao || undefined,
     subfuncao:      row.PT?.trim() || undefined,
     objeto:         objeto || undefined,
@@ -220,7 +269,7 @@ async function main() {
     console.log(`    valor da emenda: R$ ${(rows[0].valorProposto ?? 0).toLocaleString('pt-BR')}`);
     console.log(`    empenhado     : R$ ${rows[0].valorEmpenhado.toLocaleString('pt-BR')}`);
     console.log(`    área          : ${rows[0].area}`);
-    console.log(`    natureza      : ${rows[0].tipo ?? '—'}`);
+    console.log(`    natureza      : ${rows[0].tipo ?? '—'} — ${rows[0].natureza ?? '—'}`);
 
     const divergem = rows.filter(r => r.valorProposto && r.valorProposto !== r.valorEmpenhado).length;
     if (divergem) {
