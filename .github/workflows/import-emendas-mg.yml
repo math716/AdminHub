@@ -62,6 +62,10 @@ jobs:
         id: baixar
         env:
           FORCAR: ${{ inputs.forcar && '1' || '0' }}
+          # O portal recusa a faixa de IP do GitHub Actions (403, pagina e
+          # arquivo). Com o segredo PROXY_MG definido, a chamada passa por um
+          # intermediario que ele aceite; sem ele, vai direto e falha aqui.
+          PROXY_MG: ${{ secrets.PROXY_MG }}
         run: npx tsx scripts/download-emendas-mg.ts
         timeout-minutes: 15
 

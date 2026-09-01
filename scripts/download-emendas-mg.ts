@@ -29,6 +29,28 @@ const ESTADO = path.join(DEST_DIR, '.mg-estado.json');
 const TIMEOUT_MS = 300_000;
 
 /**
+ * Intermediário pelo qual passar, quando o portal recusa quem chama direto.
+ *
+ * Medido: o emendas.mg.gov.br responde 200 para qualquer User-Agent vindo de
+ * outras redes, e 403 — página E arquivo — para a faixa de IP do GitHub
+ * Actions. Não é cabeçalho nem caminho: é de onde a chamada parte. Nenhum
+ * ajuste neste script resolve isso; o que resolve é sair de outro lugar.
+ *
+ * PROXY_MG é o gancho para isso. Recebe um endereço que aceite a URL de
+ * destino no fim, por exemplo:
+ *
+ *   PROXY_MG=https://meu-worker.workers.dev/?url=
+ *
+ * Vazio (o padrão), o script chama o portal direto, como sempre.
+ */
+const PROXY_MG = (process.env.PROXY_MG ?? '').trim();
+
+/** O endereço a chamar de verdade — pelo intermediário, se houver um. */
+function porOndeIr(url: string): string {
+  return PROXY_MG ? PROXY_MG + encodeURIComponent(url) : url;
+}
+
+/**
  * O portal recusa a PÁGINA vinda da faixa de IP do GitHub Actions (403), mas
  * responde normalmente para qualquer User-Agent vindo de outras redes — ou
  * seja, o bloqueio é por endereço, e trocar cabeçalho não resolve.
@@ -79,7 +101,7 @@ async function buscar(url: string, init?: RequestInit): Promise<Response> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    return await fetch(url, {
+    return await fetch(porOndeIr(url), {
       ...init,
       headers: { ...CABECALHOS, ...(init?.headers as Record<string, string>) },
       signal: ctrl.signal,
@@ -154,6 +176,7 @@ async function main() {
   fs.mkdirSync(DEST_DIR, { recursive: true });
 
   const estado = lerEstado();
+  if (PROXY_MG) console.log(`Passando por ${PROXY_MG.split('?')[0]}…`);
   const arquivos = await descobrirArquivos(Object.keys(estado));
   console.log(`${arquivos.length} planilha(s) no portal:`);
   for (const a of arquivos) console.log(`  ${a.nome}`);
@@ -188,9 +211,10 @@ async function main() {
       // endereço resolve — precisa de outra rota até o portal.
       if (resposta.status === 403) {
         throw new Error(
-          `[${nome}] o portal recusou o download (403). O bloqueio não é só da `
-          + `página: alcança o arquivo. Baixar daqui não vai funcionar sem passar `
-          + `por outra rede.`);
+          `[${nome}] o portal recusou o download (403). O bloqueio alcança `
+          + `também o arquivo, e é pela rede de onde a chamada parte — nenhum `
+          + `ajuste de cabeçalho ou de endereço resolve. Saida: definir PROXY_MG `
+          + `com um intermediário que o portal aceite.`);
       }
       throw new Error(`[${nome}] o portal respondeu ${resposta.status}`);
     }
