@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { Layers, Eye, EyeOff, Loader2, MapPin, Info } from 'lucide-react';
 import { useMapCleanup, throttle } from '@/hooks/use-map-cleanup';
 import { camadaBase } from '@/lib/maps/basemap';
+import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
 
 interface StateMapProps {
   uf: string;
@@ -968,38 +969,17 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
               exteriorRings = (geom.coordinates as any[][][]).map((poly) => poly[0]).filter(Boolean);
             }
 
-            // Para cada anel calcula a área (shoelace) e um "centro visual":
-            // média dos vértices nos 40% norte do intervalo de latitude.
-            // Municípios brasileiros têm seu núcleo urbano tipicamente no norte
-            // do território — extensões sul (mata, serra) puxam o centróide
-            // geométrico para longe do nome que aparece no mapa.
-            const ringVisualCenter = (ring: [number, number][]) => {
-              const n = ring.length;
-              // área pelo shoelace (para escolher o maior sub-polígono)
-              let area = 0;
-              for (let i = 0; i < n; i++) {
-                const j = (i + 1) % n;
-                area += ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1];
-              }
-              const absArea = Math.abs(area) / 2;
-              // centro visual = média dos vértices no terço norte do polígono
-              const lats = ring.map(p => p[1]);
-              const minLat = Math.min(...lats);
-              const maxLat = Math.max(...lats);
-              const threshold = maxLat - (maxLat - minLat) * 0.40; // norte-40%
-              const north = ring.filter(p => p[1] >= threshold);
-              const pts = north.length >= 3 ? north : ring;
-              const lat = pts.reduce((s, p) => s + p[1], 0) / pts.length;
-              const lng = pts.reduce((s, p) => s + p[0], 0) / pts.length;
-              return { area: absArea, lat, lng };
-            };
-
-            const best = exteriorRings
-              .map(ringVisualCenter)
-              .reduce((a, b) => b.area > a.area ? b : a, { area: 0, lat: 0, lng: 0 });
-            const center = layer.getBounds().getCenter();
-            const lat = best.area > 0 ? best.lat : center.lat;
-            const lng = best.area > 0 ? best.lng : center.lng;
+            // O rótulo vai no ponto INTERNO mais distante das bordas.
+            //
+            // Antes era a média dos vértices no terço norte do polígono, com a
+            // ideia de acompanhar o núcleo urbano. Média de vértices não é
+            // centro: uma divisa recortada concentra pontos e arrasta o rótulo
+            // para a borda — foi assim que os números apareceram fora dos
+            // municípios. O reserva era o centro da caixa envolvente, que num
+            // município curvo cai fora da área.
+            const ponto = pontoParaRotuloMultiplo(exteriorRings);
+            const centro = layer.getBounds().getCenter();
+            const [lat, lng] = ponto ?? [centro.lat, centro.lng];
             labelItems.push({ latlng: [lat, lng], votos, nome: nomeMun });
           } catch (_) {}
         });

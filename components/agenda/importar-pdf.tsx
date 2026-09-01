@@ -50,6 +50,17 @@ function rotuloData(iso: string): string {
   return `${DIA_SEMANA[dow]}, ${d}/${mes}`;
 }
 
+/** Distância em km entre dois pontos (fórmula de Haversine). */
+function distanciaKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371;
+  const rad = (g: number) => (g * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2
+    + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
 export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
   const [aberto, setAberto] = useState(false);
   const [fase, setFase] = useState<Fase>('inicial');
@@ -63,6 +74,7 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
   // vinte compromissos estouravam o limite. No navegador não há esse teto, e
   // a pessoa acompanha o avanço.
   const [geo, setGeo] = useState<{ feitos: number; total: number } | null>(null);
+  const [avisoLocal, setAvisoLocal] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fechar = useCallback(() => {
@@ -73,6 +85,7 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
     setLinhas([]);
     setResultado(null);
     setNomeArquivo('');
+    setAvisoLocal('');
   }, []);
 
   /**
@@ -87,18 +100,48 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
     if (alvos.length === 0) return;
 
     setGeo({ feitos: 0, total: alvos.length });
+    const achados: Array<{ i: number; lat: number; lng: number }> = [];
+
     for (let n = 0; n < alvos.length; n++) {
       const { i, texto } = alvos[n];
       try {
-        const res = await fetch(`/api/geocode?estrito=1&address=${encodeURIComponent(texto)}`);
+        // SEM o corte por distância da região do gabinete. Ele descartava
+        // endereços legítimos: um gabinete com demandas em São Paulo importando
+        // a agenda de Brasília via TUDO ser rejeitado, porque são 867 km entre
+        // as duas regiões. A coerência que vale aqui é a do próprio lote, e ela
+        // é conferida no fim.
+        const res = await fetch(`/api/geocode?address=${encodeURIComponent(texto)}`);
         const json = await res.json();
         const r = json?.results?.[0];
-        if (r) setLinhas(ls => ls.map((l, k) => (k === i ? { ...l, lat: r.lat, lng: r.lng } : l)));
+        if (r) {
+          achados.push({ i, lat: r.lat, lng: r.lng });
+          setLinhas(ls => ls.map((l, k) => (k === i ? { ...l, lat: r.lat, lng: r.lng } : l)));
+        }
       } catch { /* segue para o próximo */ }
       setGeo({ feitos: n + 1, total: alvos.length });
       // O Nominatim admite uma consulta por segundo.
       if (n < alvos.length - 1) await new Promise(r => setTimeout(r, 1100));
     }
+
+    // Uma agenda é de UMA região. Quem cai longe dos demais é quase sempre um
+    // homônimo de outra cidade — "Guará" existe no DF e no interior de SP.
+    // Não apagamos a coordenada: apenas avisamos, porque pode ser uma viagem
+    // de verdade, e quem sabe é quem está conferindo.
+    if (achados.length >= 3) {
+      const meio = (ns: number[]) => {
+        const o = [...ns].sort((a, b) => a - b);
+        const m = Math.floor(o.length / 2);
+        return o.length % 2 ? o[m] : (o[m - 1] + o[m]) / 2;
+      };
+      const centro = { lat: meio(achados.map(a => a.lat)), lng: meio(achados.map(a => a.lng)) };
+      const fora = achados.filter(a => distanciaKm(centro, a) > 150).length;
+      if (fora > 0) {
+        setAvisoLocal(fora === 1
+          ? 'Um endereço foi localizado longe dos demais. Confira o alfinete antes de importar.'
+          : `${fora} endereços foram localizados longe dos demais. Confira os alfinetes antes de importar.`);
+      }
+    }
+
     setGeo(null);
   }, []);
 
@@ -313,6 +356,14 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
                           </span>
                         )}
                       </div>
+
+                      {avisoLocal && (
+                        <div className="flex items-start gap-2 rounded-xl px-3.5 py-2.5 mb-3"
+                          style={{ background: 'color-mix(in srgb, var(--warning) 12%, transparent)' }}>
+                          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
+                          <p className="text-[12.5px]" style={{ color: 'var(--text-secondary)' }}>{avisoLocal}</p>
+                        </div>
+                      )}
 
                       {observacoes && (
                         <div className="flex items-start gap-2 rounded-xl px-3.5 py-2.5 mb-3"
