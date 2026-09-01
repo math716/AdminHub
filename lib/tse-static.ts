@@ -1,4 +1,7 @@
 import zlib from 'zlib';
+// Importar e seguro em qualquer contexto; so CHAMAR headers() fora de um
+// pedido e que lanca — dai o try/catch em hostDoPedido.
+import { headers } from 'next/headers';
 import manifesto from './tse-manifesto.json';
 
 // A base do TSE (211 MB) é BUSCADA POR HTTP, não lida do disco.
@@ -32,8 +35,42 @@ function baseEstaticos(): string {
   const limpa = (u: string) => u.replace(/[/]+$/, '');
   if (process.env.NEXT_PUBLIC_SITE_URL) return limpa(process.env.NEXT_PUBLIC_SITE_URL);
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+
+  // O host do PEDIDO, antes de recorrer a mais uma variavel de ambiente.
+  //
+  // As duas acima dependem de configuracao do projeto: a segunda so existe se
+  // "expose System Environment Variables" estiver ligado na Vercel. Faltando as
+  // duas, a ordem antiga caia em localhost:3000 — que em producao nunca
+  // responde, e derrubava o mapa eleitoral num ambiente enquanto o outro,
+  // configurado, seguia funcionando. O host do pedido nao depende de
+  // configuracao nenhuma: e o dominio pelo qual a pessoa chegou.
+  //
+  // Medido em producao: 200 em 169 ms, contra 10 ms pelo dominio de producao —
+  // mais lento, e por isso fica depois, mas responde.
+  const doPedido = hostDoPedido();
+  if (doPedido) return doPedido;
+
   if (process.env.NEXTAUTH_URL) return limpa(process.env.NEXTAUTH_URL);
   return 'http://localhost:3000';
+}
+
+/**
+ * O endereco pelo qual a pessoa chegou, lido dos cabecalhos do pedido.
+ *
+ * `headers()` so existe dentro de um pedido; chamado de um script ou de um
+ * contexto estatico, ele lanca. Por isso o try/catch: nesses casos seguimos
+ * para a proxima alternativa em vez de derrubar a leitura.
+ */
+function hostDoPedido(): string | null {
+  try {
+    const h = headers();
+    const host = h.get('x-forwarded-host') ?? h.get('host');
+    if (!host) return null;
+    const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
+    return `${proto}://${host}`;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -42,8 +79,24 @@ function baseEstaticos(): string {
  * Tenta .json.gz e cai para .json. Devolve null em qualquer falha — quem chama
  * já trata ausência de dados, e derrubar a requisição seria pior.
  */
+/**
+ * Por que a última leitura falhou, para quem chama poder dizer algo útil.
+ *
+ * Sem isto, a rota só sabia que veio null e chutava a causa: a mensagem dizia
+ * "execute scripts/gerar-br-json.ts" mesmo quando o arquivo estava no lugar e
+ * o que falhava era a busca. Chute em mensagem de erro custa caro — manda
+ * quem lê investigar a coisa errada.
+ */
+let ultimaFalha: string | null = null;
+
+/** A causa da última falha de leitura, ou null se a última deu certo. */
+export function ultimaFalhaTse(): string | null {
+  return ultimaFalha;
+}
+
 export async function baixarTseJson<T>(caminho: string): Promise<T | null> {
   const base = baseEstaticos();
+  const motivos: string[] = [];
   for (const [url, comprimido] of [
     [`${base}/data/tse/${caminho}.json.gz`, true],
     [`${base}/data/tse/${caminho}.json`, false],
@@ -53,18 +106,22 @@ export async function baixarTseJson<T>(caminho: string): Promise<T | null> {
       if (!res.ok) {
         // 3xx aqui = protecao de deploy barrando a propria funcao.
         console.warn(`[tse] ${res.status} em ${url}`);
+        motivos.push(`${res.status} em ${url}`);
         continue;
       }
       const buf = Buffer.from(await res.arrayBuffer());
       // O .gz é servido como arquivo bruto; quem descomprime somos nós.
       const texto = comprimido ? zlib.gunzipSync(buf).toString('utf8') : buf.toString('utf8');
+      ultimaFalha = null;
       return JSON.parse(texto) as T;
     } catch (err) {
       // Silenciar aqui foi o que escondeu a falha na primeira tentativa desta
       // migracao: a rota devolvia 404 e o log nao dizia por que.
       console.warn(`[tse] falhou ${url}: ${String(err).slice(0, 120)}`);
+      motivos.push(`${String(err).slice(0, 80)} em ${url}`);
     }
   }
+  ultimaFalha = motivos.join(' | ') || `nada respondeu em ${base}`;
   return null;
 }
 

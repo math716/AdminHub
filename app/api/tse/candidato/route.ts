@@ -7,7 +7,7 @@ import { anoValido, ufValida } from '@/lib/tse-params';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
-import { loadStaticTseData } from '@/lib/tse-static';
+import { loadStaticTseData, ultimaFalhaTse } from '@/lib/tse-static';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -130,9 +130,21 @@ async function montarRespostaBrasil(candidato: string | null, candidatoId: strin
   const brData = await loadStaticData(ano, 'BR');
 
   if (!brData || brData.length === 0) {
+    // Duas situações diferentes, e antes as duas diziam a mesma coisa: que
+    // faltava gerar o arquivo. Quando a busca falha, o arquivo está no lugar e
+    // quem falhou foi a leitura — mandar gerar de novo não resolve nada e leva
+    // quem lê para o lado errado.
+    const falha = ultimaFalhaTse();
+    if (falha) {
+      console.error(`[/api/tse/candidato] não consegui ler BR/${ano}: ${falha}`);
+      return NextResponse.json(
+        { error: 'Não foi possível carregar os dados de votação agora. Tente de novo em instantes.' },
+        { status: 503 },
+      );
+    }
     return NextResponse.json(
-      { error: `Dados nacionais de ${ano} não disponíveis. Execute scripts/gerar-br-json.ts.` },
-      { status: 404 }
+      { error: `Não há dados nacionais de ${ano}.` },
+      { status: 404 },
     );
   }
 
