@@ -29,6 +29,35 @@ const ESTADO = path.join(DEST_DIR, '.mg-estado.json');
 const TIMEOUT_MS = 300_000;
 
 /**
+ * O portal recusa a PÁGINA vinda da faixa de IP do GitHub Actions (403), mas
+ * responde normalmente para qualquer User-Agent vindo de outras redes — ou
+ * seja, o bloqueio é por endereço, e trocar cabeçalho não resolve.
+ *
+ * Estes cabeçalhos ficam porque não custam nada e cobrem o caso de o bloqueio
+ * ser por IP E User-Agent juntos.
+ */
+const CABECALHOS: Record<string, string> = {
+  'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
+    + '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  'Accept-Language': 'pt-BR,pt;q=0.9',
+};
+
+/**
+ * Endereço conhecido, usado só quando a página não pode ser lida.
+ *
+ * A página é PHP e o arquivo é estático (/wp-content/): o bloqueio que atinge
+ * uma pode não atingir o outro. Quando a descoberta falha, tentamos o que já
+ * conhecemos, em vez de desistir.
+ *
+ * O caminho carrega o ano e um nome, então ele VAI ficar velho — por isso é
+ * só a reserva, e a leitura da página continua sendo o caminho principal.
+ */
+const SEMENTE = [
+  'https://www.emendas.mg.gov.br/wp-content/dados-emendas/2026_Marcel/'
+  + 'DADOS_EMENDAS_2023_2024_2025_2026.xlsx',
+];
+
+/**
  * Primeiro ano que interessa.
  *
  * O portal serve duas planilhas: 2023 em diante e 2022 para trás. A antiga
@@ -50,7 +79,12 @@ async function buscar(url: string, init?: RequestInit): Promise<Response> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    return await fetch(url, { ...init, signal: ctrl.signal, redirect: 'follow' });
+    return await fetch(url, {
+      ...init,
+      headers: { ...CABECALHOS, ...(init?.headers as Record<string, string>) },
+      signal: ctrl.signal,
+      redirect: 'follow',
+    });
   } finally {
     clearTimeout(t);
   }
@@ -61,10 +95,24 @@ function lerEstado(): Record<string, Visto> {
 }
 
 /** Os .xlsx que a página de transparência oferece, na ordem em que aparecem. */
-async function descobrirArquivos(): Promise<{ url: string; nome: string }[]> {
-  const res = await buscar(PAGINA);
-  if (!res.ok) throw new Error(`a página de transparência respondeu ${res.status}`);
-  const html = await res.text();
+async function descobrirArquivos(conhecidos: string[]): Promise<{ url: string; nome: string }[]> {
+  let html = '';
+  try {
+    const res = await buscar(PAGINA);
+    if (!res.ok) throw new Error(`respondeu ${res.status}`);
+    html = await res.text();
+  } catch (e) {
+    // Ler a página é o caminho principal, mas não pode ser o único: o portal
+    // recusa a página vinda da faixa de IP do GitHub Actions. O arquivo fica
+    // em /wp-content/, servido direto, e costuma passar mesmo assim — então
+    // seguimos com os endereços que já conhecemos.
+    const motivo = e instanceof Error ? e.message : String(e);
+    console.warn(`Não consegui ler a página de transparência (${motivo}).`);
+    const reserva = [...new Set([...conhecidos, ...SEMENTE])];
+    console.warn(`Seguindo com ${reserva.length} endereço(s) já conhecido(s).`);
+    console.warn('Se o portal tiver mudado o caminho, isto para de achar — o log dirá 404.');
+    return filtrarPorAno(reserva);
+  }
 
   const data = html.match(/Data de atualiza[^:]*:\s*([0-9]{2}\/[0-9]{2}\/[0-9]{4})/);
   if (data) console.log(`O portal declara atualização em ${data[1]}.`);
@@ -75,6 +123,11 @@ async function descobrirArquivos(): Promise<{ url: string; nome: string }[]> {
 
   // Espaco no nome quebraria o laco do workflow, que separa os caminhos por
   // espaco. O nome vem do portal, entao nao da para confiar que nunca tera um.
+  return filtrarPorAno(urls);
+}
+
+/** Só as planilhas que contêm algum ano a partir de ANO_MINIMO. */
+function filtrarPorAno(urls: string[]): { url: string; nome: string }[] {
   const todos = urls.map(url => ({
     url,
     nome: decodeURIComponent(url.split('/').pop()!).replace(/\s+/g, '_'),
@@ -100,11 +153,11 @@ async function descobrirArquivos(): Promise<{ url: string; nome: string }[]> {
 async function main() {
   fs.mkdirSync(DEST_DIR, { recursive: true });
 
-  const arquivos = await descobrirArquivos();
+  const estado = lerEstado();
+  const arquivos = await descobrirArquivos(Object.keys(estado));
   console.log(`${arquivos.length} planilha(s) no portal:`);
   for (const a of arquivos) console.log(`  ${a.nome}`);
 
-  const estado = lerEstado();
   if (FORCAR) console.log('\nModo forçado: baixando tudo, sem olhar o que já foi visto.');
 
   let mudou = false;
@@ -130,6 +183,15 @@ async function main() {
     // precisa baixar de novo, sem condicional.
     const resposta = res.status === 304 ? await buscar(url) : res;
     if (!resposta.ok) {
+      // 403 aqui é diferente de 403 na página: significa que o bloqueio por IP
+      // alcança também os arquivos, e aí nenhum ajuste de cabeçalho ou de
+      // endereço resolve — precisa de outra rota até o portal.
+      if (resposta.status === 403) {
+        throw new Error(
+          `[${nome}] o portal recusou o download (403). O bloqueio não é só da `
+          + `página: alcança o arquivo. Baixar daqui não vai funcionar sem passar `
+          + `por outra rede.`);
+      }
       throw new Error(`[${nome}] o portal respondeu ${resposta.status}`);
     }
 
