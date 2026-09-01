@@ -74,21 +74,37 @@ const REGIOES_DF = [
 const semAcento = (t: string) =>
   t.normalize('NFD').replace(new RegExp('[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']', 'g'), '').toLowerCase();
 
-/** Monta o texto da busca, completando a cidade quando o local é do DF. */
-function consultaDeBusca(endereco: string | null, local: string | null): string {
+/** O texto parece do Distrito Federal? */
+function pareceDF(texto: string): boolean {
+  const alvo = semAcento(texto);
+  return REGIOES_DF.some(r => alvo.includes(r))
+    || /(sh[ic]n?s?|sqn|sqs|cln|cls|qi|qe|ql|qnl|scia|srpn|ae)/.test(alvo);
+}
+
+/**
+ * A cidade vem do LOTE, não de cada endereço.
+ *
+ * Uma agenda é de uma cidade só. Quando vários compromissos são claramente de
+ * Brasília, os demais também são — e sem a cidade escrita o serviço de mapas
+ * escolhe outro estado: "MANÉ GARRINCHA" resolvia para Boa Vista/RR e
+ * "COMITÊ" para Teófilo Otoni/MG. Com ", Brasília, DF" no fim, o primeiro
+ * acha a Arena BRB Mané Garrincha e o segundo não acha nada — os dois certos.
+ */
+function cidadeDoLote(linhas: Linha[]): string | null {
+  const doDF = linhas.filter(l => pareceDF([l.endereco, l.local].filter(Boolean).join(' '))).length;
+  return doDF >= 2 ? 'Brasília, DF' : null;
+}
+
+/** Monta o texto da busca de um compromisso, com a cidade do lote no fim. */
+function consultaDeBusca(endereco: string | null, local: string | null, cidade: string | null): string {
   const partes = [endereco, local].filter(Boolean) as string[];
   if (partes.length === 0) return '';
   const texto = partes.join(', ');
+  if (!cidade) return texto;
 
   const alvo = semAcento(texto);
-  const ehDF = REGIOES_DF.some(r => alvo.includes(r))
-    || /sh[ic]s?|sqn|sqs|cln|cls|shin|shis/.test(alvo);
-
-  // Só acrescenta se ainda não estiver escrito.
-  if (ehDF && !/brasilia|distrito federal|df/.test(alvo)) {
-    return `${texto}, Brasília, DF`;
-  }
-  return texto;
+  if (/brasilia|distrito federal|df/.test(alvo)) return texto;
+  return `${texto}, ${cidade}`;
 }
 
 /** Distância em km entre dois pontos (fórmula de Haversine). */
@@ -131,8 +147,11 @@ export function ImportarPdf({ onImportou }: { onImportou: () => void }) {
    * os demais — o compromisso entra sem pino, o que já é o comportamento.
    */
   const localizarEnderecos = useCallback(async (lista: Linha[]) => {
+    // A cidade sai do conjunto: um compromisso isolado sem referência ganha o
+    // contexto dos outros da mesma agenda.
+    const cidade = cidadeDoLote(lista);
     const alvos = lista
-      .map((l, i) => ({ i, texto: consultaDeBusca(l.endereco, l.local) }))
+      .map((l, i) => ({ i, texto: consultaDeBusca(l.endereco, l.local, cidade) }))
       .filter(a => a.texto.trim().length > 2);
     if (alvos.length === 0) return;
 

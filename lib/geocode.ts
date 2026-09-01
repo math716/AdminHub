@@ -116,28 +116,46 @@ const COMPLEMENTOS = /^(cj|conj|conjunto|casa|bloco|bl|apto|apartamento|sala|sal
 const COMPLEMENTO_NO_FIM =
   /\s+(cj|conj|conjunto|casa|bloco|bl|apto|apartamento|sala|salas|lote|lt|chacara|chácara|quadra|qd|andar|loja)\s*[\w/-]*$/i;
 
+/** Palavra de complemento em QUALQUER posicao da parte, nao so no inicio. */
+const TEM_COMPLEMENTO =
+  /(cj|conj|conjunto|casa|bloco|bl|apto|apartamento|sala|salas|lote|lt|chacara|andar|loja|ed|edificio|predio|torre|quadra|qd|km)/;
+
 /**
- * Versao mais curta da consulta, sem os complementos de numeracao.
+ * Versoes progressivamente mais curtas da consulta, da mais completa a mais
+ * simples. Quem chama tenta uma a uma e para na primeira que encontrar.
  *
- * Medido com a agenda real do gabinete: a consulta cheia falhava nos tres
- * enderecos e a simplificada acertou os tres na rua certa. Devolve null quando
- * nao ha o que simplificar.
+ * Endereco de gabinete vem com um rastro de complementos:
+ *
+ *   "SHIN CA 05, Conjunto J, Bloco J2 Ed. Lucia Plaza, 3o Andar,
+ *    Salas 308/309 - Caravelas Filmes, LAGO NORTE"
+ *
+ * Medido: o texto inteiro nao acha; "SHIN CA 05, 3o Andar, LAGO NORTE" tambem
+ * nao — bastava o "3o Andar" para estragar; "SHIN CA 05, LAGO NORTE" acha.
+ * Uma unica simplificacao nao dava conta porque "3o Andar" COMECA com o
+ * numero, e o filtro antigo so olhava o inicio da parte.
  */
-export function simplificar(consulta: string): string | null {
+export function variantesDeBusca(consulta: string): string[] {
   const partes = consulta.split(',').map(p => p.trim()).filter(Boolean);
+  const saida: string[] = [consulta];
 
-  const mantidas = partes
-    .filter(p => !COMPLEMENTOS.test(semAcento(p)))          // parte inteira e complemento
-    .map(p => {
-      // ...ou o complemento vem grudado no fim, sem virgula separando.
-      const curta = p.replace(COMPLEMENTO_NO_FIM, '').trim();
-      return curta.length >= 4 ? curta : p;                 // nao deixa virar "Av."
-    })
-    .filter(Boolean);
+  // Sem as partes que sao puro complemento (em qualquer posicao da parte).
+  const uteis = partes.filter(p => !TEM_COMPLEMENTO.test(semAcento(p)));
+  if (uteis.length > 0 && uteis.length < partes.length) saida.push(uteis.join(', '));
 
-  if (mantidas.length === 0) return null;
-  const nova = mantidas.join(', ');
-  return nova === consulta ? null : nova;                   // nada mudou: nao vale repetir
+  // O essencial: a via e a regiao. Descarta todo o miolo.
+  if (partes.length > 2) saida.push(`${partes[0]}, ${partes[partes.length - 1]}`);
+
+  // Ultimo recurso: so a regiao. Impreciso, mas coloca o compromisso no
+  // bairro certo — e a tela mostra o nome do lugar para a pessoa julgar.
+  if (partes.length > 1) saida.push(partes[partes.length - 1]);
+
+  return [...new Set(saida)].filter(v => v.trim().length > 2);
+}
+
+/** Mantida para a sincronizacao do Google, que usa uma unica alternativa. */
+export function simplificar(consulta: string): string | null {
+  const vs = variantesDeBusca(consulta);
+  return vs.length > 1 ? vs[1] : null;
 }
 
 function distanciaKm(a: Coordenada, b: Coordenada): number {

@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import { ancoraDoGabinete, simplificar, ehGenerico, type Ancora } from '@/lib/geocode';
+import { ancoraDoGabinete, variantesDeBusca, ehGenerico, type Ancora } from '@/lib/geocode';
 
 // Cache em memória: chave → { results, expiresAt }
 const geocodeCache = new Map<string, { results: unknown[]; expiresAt: number }>();
@@ -67,19 +67,20 @@ export async function GET(request: NextRequest) {
       { headers: { 'User-Agent': 'AdminHub/1.0 (gabinete@adminhub.app)' } },
     );
 
-    let res = await buscar(address);
+    // Tenta versões progressivamente mais curtas até encontrar. Endereço de
+    // gabinete vem com um rastro de complementos — "SHIN CA 05, Conjunto J,
+    // Bloco J2 Ed. Lúcia Plaza, 3º Andar, Salas 308/309" não existe na base do
+    // serviço, mas "SHIN CA 05, Lago Norte" existe. Sem isto, endereço do DF
+    // completo e correto simplesmente não era encontrado.
+    const variantes = variantesDeBusca(address).slice(0, 3);
+    let res = await buscar(variantes[0]);
     let data: any[] = res.ok ? await res.json() : [];
 
-    // Endereço de Brasília vem com complemento que o serviço não indexa:
-    // "QI 15, Cj 7, Casa 23" não existe na base, "QI 15" existe. Sem esta
-    // segunda tentativa, os endereços do DF simplesmente não eram encontrados.
-    if (res.ok && data.length === 0) {
-      const curta = simplificar(address);
-      if (curta) {
-        await new Promise(r => setTimeout(r, 1100));   // uma consulta por segundo
-        const res2 = await buscar(curta);
-        if (res2.ok) data = await res2.json();
-      }
+    for (let i = 1; i < variantes.length && res.ok && data.length === 0; i++) {
+      await new Promise(r => setTimeout(r, 1100));     // uma consulta por segundo
+      const proxima = await buscar(variantes[i]);
+      if (!proxima.ok) break;
+      data = await proxima.json();
     }
 
     if (!res.ok) {
