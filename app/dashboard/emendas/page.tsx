@@ -2584,7 +2584,7 @@ function EmendasDetalhadasCard({
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <div
         className="px-5 py-3.5 flex items-center justify-between gap-2 md:gap-4 flex-wrap"
-        style={{ borderBottom: '1px solid var(--tint-06)', background: 'rgba(255,255,255,0.02)' }}
+        style={{ borderBottom: '1px solid var(--tint-06)', background: 'var(--tint-04)' }}
       >
         <div className="flex items-center gap-3">
           <div className="w-1 h-4 rounded-full" style={{ background: 'linear-gradient(180deg,#f59e0b,#d97706)' }} />
@@ -2970,7 +2970,7 @@ function EmendasDetalhadasCard({
           <div className="overflow-x-auto -mx-1">
             <table className="w-full text-[12px] border-separate border-spacing-0">
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                <tr style={{ background: 'var(--tint-04)' }}>
                   {(['Nº', 'Tipo', 'Área', 'Favorecido', 'Município', 'Empenhado', 'Pago', '%'] as const).map((h, i) => (
                     <th
                       key={h}
@@ -3057,7 +3057,7 @@ function EmendasDetalhadasCard({
           <div className="overflow-x-auto -mx-1">
             <table className="w-full text-[12px] border-separate border-spacing-0">
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                <tr style={{ background: 'var(--tint-04)' }}>
                   {(['Nº', 'Tipo', 'Área', 'Destino', 'Empenhado', 'Pago', '%'] as const).map((h, i) => (
                     <th
                       key={h}

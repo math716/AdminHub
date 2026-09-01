@@ -94,7 +94,7 @@ export function GabiAvatar3D({ size = 120 }: { size?: number }) {
         <directionalLight position={[2, 4, 3]} intensity={1.0} />
         <directionalLight position={[-3, 2, 2]} intensity={0.4} color="#cfe0ff" />
 
-        <Suspense fallback={<Html center><span style={{ color: '#22d3ee', fontSize: 10 }}>…</span></Html>}>
+        <Suspense fallback={<Html center><span style={{ color: 'var(--brand-cyan)', fontSize: 10 }}>…</span></Html>}>
           <Model url={GABI_MODEL_URL} />
           {/* Ambiente suave gerado na cena (sem HDR externo) — só um toque de
               reflexo; a cor vem das texturas (metalness reduzido no Model). */}

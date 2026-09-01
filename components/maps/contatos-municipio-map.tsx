@@ -239,7 +239,7 @@ export default function ContatosMunicipioMap({
         const styleSelected = {
           fillColor: '#1d4ed8',
           fillOpacity: 0.25,
-          color: '#60a5fa',
+          color: 'var(--acento-azul)',
           weight: 2.5,
           opacity: 1,
         };

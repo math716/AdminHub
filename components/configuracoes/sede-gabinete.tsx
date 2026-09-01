@@ -163,7 +163,7 @@ export function SedeGabinete() {
             </div>
 
             {erro && (
-              <p className="text-xs flex items-start gap-1.5" style={{ color: '#fca5a5' }}>
+              <p className="text-xs flex items-start gap-1.5" style={{ color: 'var(--danger)' }}>
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                 {erro}
               </p>

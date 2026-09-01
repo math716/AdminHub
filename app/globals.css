@@ -46,6 +46,12 @@
   --danger: #DC2626;
   --danger-soft: #FECACA;
 
+  /* Acentos sem par no conjunto semantico (azul de destaque, violeta das zonas
+     eleitorais). Existem porque estavam escritos direto no codigo como tom 400
+     — cor pensada para fundo escuro, que no tema claro fica lavada. */
+  --acento-azul: #2563EB;
+  --acento-violeta: #7C3AED;
+
   /* Sidebar (cores fixas — sempre navy) */
   --sidebar-text: rgba(255, 255, 255, 0.78);
   --sidebar-text-muted: #94A3B8;
@@ -161,6 +167,10 @@
   --warning-soft: rgba(245, 158, 11, 0.14);
   --danger: #EF4444;
   --danger-soft: rgba(239, 68, 68, 0.14);
+
+  /* No escuro ficam os tons 400 originais: sobre o navy eles ja estavam certos. */
+  --acento-azul: #60A5FA;
+  --acento-violeta: #A78BFA;
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
   --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.25);

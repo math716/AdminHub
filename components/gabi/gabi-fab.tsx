@@ -677,6 +677,8 @@ export function GabiFAB() {
                 <div className="relative flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className="font-bold text-white leading-tight tracking-tight text-[15px]">Gabi</p>
+                    {/* Ciano claro fixo: o cabecalho da Gabi e navy nos DOIS temas, entao aqui
+                        a cor nao acompanha o tema — o ciano escuro do claro sumiria. */}
                     <Sparkles className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22d3ee' }} />
                   </div>
                   <p className="text-[11px] font-medium truncate" style={{ color: 'rgba(226,232,240,0.62)' }}>
@@ -894,7 +896,7 @@ export function GabiFAB() {
 
                     {/* Erro */}
                     {error && (
-                      <div className="mx-auto text-sm px-4 py-2.5 rounded-xl text-center max-w-sm" style={{ background: 'rgba(239,68,68,0.08)', color: '#f87171', border: '1px solid rgba(239,68,68,0.15)' }}>
+                      <div className="mx-auto text-sm px-4 py-2.5 rounded-xl text-center max-w-sm" style={{ background: 'rgba(239,68,68,0.08)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.15)' }}>
                         {error}
                       </div>
                     )}

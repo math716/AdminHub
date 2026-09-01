@@ -486,7 +486,7 @@ function ColaboradoresMapInner({
               ? normalizeRegiao(nome) === normalizeRegiao(selectedRef.current)
               : false;
             if (!isSelected) {
-              layer.setStyle({ fillOpacity: 0.1, fillColor: '#fbbf24', weight: 2, color: '#fbbf24', opacity: 0.9 });
+              layer.setStyle({ fillOpacity: 0.1, fillColor: 'var(--warning)', weight: 2, color: 'var(--warning)', opacity: 0.9 });
             }
             tooltipEl.innerHTML = [
               `<strong style="color:#7dd3fc;font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
@@ -1593,9 +1593,9 @@ export default function ColaboradoresPage() {
               className="flex items-center justify-between rounded-lg px-3 py-2 text-xs"
               style={{ background: 'rgba(29,78,216,0.12)', border: '1px solid rgba(29,78,216,0.3)' }}
             >
-              <span style={{ color: '#60a5fa' }}>RA: {selectedRegiao}</span>
+              <span style={{ color: 'var(--acento-azul)' }}>RA: {selectedRegiao}</span>
               <button onClick={clearRegionFilter}>
-                <X className="w-3.5 h-3.5" style={{ color: '#60a5fa' }} />
+                <X className="w-3.5 h-3.5" style={{ color: 'var(--acento-azul)' }} />
               </button>
             </div>
           )}
@@ -1604,9 +1604,9 @@ export default function ColaboradoresPage() {
               className="flex items-center justify-between rounded-lg px-3 py-2 text-xs"
               style={{ background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.3)' }}
             >
-              <span style={{ color: '#a78bfa' }}>Zona Eleitoral {selectedZona}</span>
+              <span style={{ color: 'var(--acento-violeta)' }}>Zona Eleitoral {selectedZona}</span>
               <button onClick={clearZonaFilter}>
-                <X className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />
+                <X className="w-3.5 h-3.5" style={{ color: 'var(--acento-violeta)' }} />
               </button>
             </div>
           )}
@@ -1706,7 +1706,7 @@ export default function ColaboradoresPage() {
                                 key={r.id}
                                 className="text-[10px] px-1.5 py-0.5 rounded"
                                 style={r.tipo === 'ZONA'
-                                  ? { background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }
+                                  ? { background: 'rgba(167,139,250,0.15)', color: 'var(--acento-violeta)' }
                                   : { background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
                               >
                                 {r.regiaoNome}
@@ -1914,7 +1914,7 @@ export default function ColaboradoresPage() {
                           className="flex items-center gap-2 px-3 py-2.5 flex-shrink-0"
                           style={{ borderBottom: '1px solid var(--tint-06)' }}
                         >
-                          <MapPin className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />
+                          <MapPin className="w-3.5 h-3.5" style={{ color: 'var(--acento-violeta)' }} />
                           <span
                             className="text-[11px] font-bold uppercase tracking-widest"
                             style={{ color: 'var(--text-secondary)' }}
@@ -1923,7 +1923,7 @@ export default function ColaboradoresPage() {
                           </span>
                           <span
                             className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                            style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}
+                            style={{ background: 'rgba(167,139,250,0.15)', color: 'var(--acento-violeta)' }}
                           >
                             {DF_ZONAS.length}
                           </span>
@@ -2893,7 +2893,7 @@ export default function ColaboradoresPage() {
                           key={r.id}
                           className="text-xs px-2 py-0.5 rounded-lg"
                           style={r.tipo === 'ZONA'
-                            ? { background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }
+                            ? { background: 'rgba(167,139,250,0.15)', color: 'var(--acento-violeta)' }
                             : { background: 'rgba(74,158,222,0.15)', color: '#4a9ede' }}
                         >
                           {r.regiaoNome}
@@ -3156,7 +3156,7 @@ export default function ColaboradoresPage() {
                   </button>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-xs font-bold" style={{ color: '#a78bfa' }}>Novo Padrinho</p>
+                    <p className="text-xs font-bold" style={{ color: 'var(--acento-violeta)' }}>Novo Padrinho</p>
                     <input
                       type="text"
                       placeholder="Nome completo *"

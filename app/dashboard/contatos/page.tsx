@@ -784,7 +784,7 @@ export default function ContatosPage() {
                           onClick={() => handleReGeocode(c.id, c.endereco!)}
                           disabled={reGeocodingId === c.id}
                           className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg font-semibold transition-all hover:opacity-80 disabled:opacity-50"
-                          style={{ background: 'rgba(37,99,235,0.08)', color: '#60A5FA' }}>
+                          style={{ background: 'rgba(37,99,235,0.08)', color: 'var(--acento-azul)' }}>
                           {reGeocodingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPin className="w-3 h-3" />}
                           {reGeocodingId === c.id ? 'Localizando...' : 'Localizar'}
                         </button>
@@ -854,7 +854,7 @@ export default function ContatosPage() {
             )}
             {selectedIds.size > 0 && (
               <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)' }}>
+                style={{ background: 'rgba(34,197,94,0.15)', color: 'var(--success)', border: '1px solid rgba(34,197,94,0.25)' }}>
                 {selectedIds.size} selecionado{selectedIds.size !== 1 ? 's' : ''}
               </span>
             )}
@@ -881,7 +881,7 @@ export default function ContatosPage() {
                     </p>
                   </div>
                   <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)' }}>
-                    <p className="text-lg font-bold" style={{ color: '#4ade80' }}>{selectedIds.size}</p>
+                    <p className="text-lg font-bold" style={{ color: 'var(--success)' }}>{selectedIds.size}</p>
                     <p className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--tint-45)' }}>selecionados</p>
                   </div>
                 </div>
@@ -998,7 +998,7 @@ export default function ContatosPage() {
                           ? selectStateContacts(popup.uf)
                           : selectMunicipioContacts(popup.uf, popup.codigo!)}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90"
-                        style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: '#4ade80' }}>
+                        style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: 'var(--success)' }}>
                         <MousePointer className="h-4 w-4 flex-shrink-0" />
                         <span>Selecionar contatos {popup.type === 'estado' ? 'do estado' : 'do município'}</span>
                       </button>
@@ -1092,13 +1092,13 @@ export default function ContatosPage() {
                     </button>
                   </div>
                   {resolvedCoords && (
-                    <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: '#4ade80' }}>
+                    <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: 'var(--success)' }}>
                       <CheckCircle2 className="w-3 h-3" /> Localizado — aparecerá no Mapa de Contatos
                     </p>
                   )}
                 </div>
                 {saveError && (
-                  <div className="flex items-center gap-2 text-sm rounded-xl px-3 py-2.5" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}>
+                  <div className="flex items-center gap-2 text-sm rounded-xl px-3 py-2.5" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)' }}>
                     <AlertCircle className="w-4 h-4 flex-shrink-0" /> {saveError}
                   </div>
                 )}
@@ -1154,7 +1154,7 @@ export default function ContatosPage() {
                       <input type="file" accept=".csv,text/csv" onChange={handleCsvFile} className="hidden" />
                     </label>
                     {importError && (
-                      <div className="flex items-start gap-2 text-sm rounded-xl px-3 py-2.5 whitespace-pre-line" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}>
+                      <div className="flex items-start gap-2 text-sm rounded-xl px-3 py-2.5 whitespace-pre-line" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)' }}>
                         <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /><span>{importError}</span>
                       </div>
                     )}
@@ -1196,7 +1196,7 @@ export default function ContatosPage() {
                       </div>
                     )}
                     {importError && (
-                      <div className="flex items-center gap-2 text-sm rounded-xl px-3 py-2.5" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}>
+                      <div className="flex items-center gap-2 text-sm rounded-xl px-3 py-2.5" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)' }}>
                         <AlertCircle className="w-4 h-4 flex-shrink-0" />{importError}
                       </div>
                     )}
@@ -1206,7 +1206,7 @@ export default function ContatosPage() {
                         style={{ border: '1px solid var(--tint-10)', color: 'var(--tint-55)' }}>Voltar</button>
                       <button onClick={handleImport} disabled={importing}
                         className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
-                        style={{ background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}>
+                        style={{ background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--success)' }}>
                         {importing ? <><Loader2 className="w-4 h-4 animate-spin" /> Importando...</> : <><Upload className="w-4 h-4" /> Importar {csvPreview.length}</>}
                       </button>
                     </div>
@@ -1216,7 +1216,7 @@ export default function ContatosPage() {
                 {importStep === 3 && importResult && (
                   <div className="flex flex-col items-center justify-center py-6 gap-4">
                     <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)' }}>
-                      <CheckCircle2 className="w-8 h-8" style={{ color: '#4ade80' }} />
+                      <CheckCircle2 className="w-8 h-8" style={{ color: 'var(--success)' }} />
                     </div>
                     <div className="text-center space-y-1">
                       <p className="text-[color:var(--text-primary)] font-bold text-lg">{importResult.imported} contato{importResult.imported !== 1 ? 's' : ''} importado{importResult.imported !== 1 ? 's' : ''}!</p>
@@ -1225,7 +1225,7 @@ export default function ContatosPage() {
                           <MapPin className="w-3.5 h-3.5" /> {importResult.geocodificados} endereço{importResult.geocodificados !== 1 ? 's' : ''} localizado{importResult.geocodificados !== 1 ? 's' : ''} no mapa
                         </p>
                       )}
-                      {importResult.errors > 0 && <p className="text-sm" style={{ color: '#fbbf24' }}>{importResult.errors} linha{importResult.errors !== 1 ? 's' : ''} ignorada{importResult.errors !== 1 ? 's' : ''}</p>}
+                      {importResult.errors > 0 && <p className="text-sm" style={{ color: 'var(--warning)' }}>{importResult.errors} linha{importResult.errors !== 1 ? 's' : ''} ignorada{importResult.errors !== 1 ? 's' : ''}</p>}
                     </div>
                     <button onClick={resetImport}
                       className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
@@ -1298,7 +1298,7 @@ export default function ContatosPage() {
                           <p className="text-[color:var(--text-primary)] text-xs font-medium truncate">{c.nome}</p>
                           <p className="text-xs" style={{ color: 'var(--tint-45)' }}>{c.numero}</p>
                           {st === 'err' && sendErrors[c.id] && (
-                            <p className="text-[10px] mt-0.5" style={{ color: '#fca5a5' }}>{sendErrors[c.id]}</p>
+                            <p className="text-[10px] mt-0.5" style={{ color: 'var(--danger)' }}>{sendErrors[c.id]}</p>
                           )}
                         </div>
                         {/* Status indicator */}
@@ -1313,9 +1313,9 @@ export default function ContatosPage() {
                         ) : st === 'sending' ? (
                           <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: '#2563EB' }} />
                         ) : st === 'ok' ? (
-                          <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: '#4ade80' }} />
+                          <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--success)' }} />
                         ) : (
-                          <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#fca5a5' }} />
+                          <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--danger)' }} />
                         )}
                       </div>
                     );
@@ -1327,11 +1327,11 @@ export default function ContatosPage() {
               {!sendingApi && Object.keys(sendStatus).length > 0 && (
                 <div className="rounded-xl px-4 py-3 text-xs flex items-center gap-3"
                   style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
-                  <span style={{ color: '#4ade80' }}>
+                  <span style={{ color: 'var(--success)' }}>
                     ✓ {Object.values(sendStatus).filter(s => s === 'ok').length} enviado{Object.values(sendStatus).filter(s => s === 'ok').length !== 1 ? 's' : ''}
                   </span>
                   {Object.values(sendStatus).filter(s => s === 'err').length > 0 && (
-                    <span style={{ color: '#fca5a5' }}>
+                    <span style={{ color: 'var(--danger)' }}>
                       ✗ {Object.values(sendStatus).filter(s => s === 'err').length} com erro
                     </span>
                   )}

@@ -69,7 +69,7 @@ const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> 
   ADMIN:           { bg: 'rgba(37,99,235,0.12)',  color: '#2563EB',  border: 'rgba(37,99,235,0.3)'  },
   AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: '#c084fc',  border: 'rgba(168,85,247,0.3)'  },
   CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)'  },
-  ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: '#4ade80',  border: 'rgba(34,197,94,0.25)'  },
+  ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: 'var(--success)',  border: 'rgba(34,197,94,0.25)'  },
 };
 
 type Accent = { solid: string; bgLight: string; borderLight: string };
@@ -207,8 +207,8 @@ function PermissionsChecklist({ selected, onToggle, onSelectAll, onClear, accent
 function StatusBadge({ status }: { status: Solicitacao['status'] }) {
   const map = {
     PENDENTE: { label: 'Pendente', color: '#3B82F6', bg: 'rgba(37,99,235,0.15)', border: 'rgba(37,99,235,0.3)', icon: <Clock size={12} /> },
-    APROVADA: { label: 'Aprovada', color: '#4ade80', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.25)', icon: <CheckCircle2 size={12} /> },
-    RECUSADA: { label: 'Recusada', color: '#f87171', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.25)', icon: <XCircle size={12} /> },
+    APROVADA: { label: 'Aprovada', color: 'var(--success)', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.25)', icon: <CheckCircle2 size={12} /> },
+    RECUSADA: { label: 'Recusada', color: 'var(--danger)', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.25)', icon: <XCircle size={12} /> },
   };
   const s = map[status];
   return (
@@ -272,7 +272,7 @@ function SolicitacaoCard({ sol, onAcao }: { sol: Solicitacao; onAcao: () => void
               <Calendar size={13} color="var(--tint-35)" /><span>{dt}</span>
             </div>
             {sol.motivoRecusa && (
-              <div style={{ display:'flex', alignItems:'flex-start', gap:'0.5rem', fontSize:'0.8rem', color:'#f87171', gridColumn:'1/-1' }}>
+              <div style={{ display:'flex', alignItems:'flex-start', gap:'0.5rem', fontSize:'0.8rem', color:'var(--danger)', gridColumn:'1/-1' }}>
                 <AlertCircle size={13} style={{ marginTop:2, flexShrink:0 }} />
                 <span><strong>Motivo:</strong> {sol.motivoRecusa}</span>
               </div>
@@ -288,11 +288,11 @@ function SolicitacaoCard({ sol, onAcao }: { sol: Solicitacao; onAcao: () => void
               )}
               <div style={{ display:'flex', gap:'0.6rem' }}>
                 <button onClick={() => agir('APROVAR')} disabled={loading}
-                  style={{ flex:1, padding:'0.55rem', borderRadius:'0.65rem', border:'1px solid rgba(34,197,94,0.3)', cursor:loading?'not-allowed':'pointer', fontWeight:600, fontSize:'0.82rem', color:'#4ade80', background:'rgba(34,197,94,0.1)', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem' }}>
+                  style={{ flex:1, padding:'0.55rem', borderRadius:'0.65rem', border:'1px solid rgba(34,197,94,0.3)', cursor:loading?'not-allowed':'pointer', fontWeight:600, fontSize:'0.82rem', color:'var(--success)', background:'rgba(34,197,94,0.1)', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem' }}>
                   {loading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Aprovar
                 </button>
                 <button onClick={() => { if (showRecusa) agir('RECUSAR'); else setShowRecusa(true); }} disabled={loading}
-                  style={{ flex:1, padding:'0.55rem', borderRadius:'0.65rem', border:'1px solid rgba(239,68,68,0.3)', cursor:loading?'not-allowed':'pointer', fontWeight:600, fontSize:'0.82rem', color:'#f87171', background:'rgba(239,68,68,0.08)', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem' }}>
+                  style={{ flex:1, padding:'0.55rem', borderRadius:'0.65rem', border:'1px solid rgba(239,68,68,0.3)', cursor:loading?'not-allowed':'pointer', fontWeight:600, fontSize:'0.82rem', color:'var(--danger)', background:'rgba(239,68,68,0.08)', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem' }}>
                   <XCircle size={14} />{showRecusa ? 'Confirmar Recusa' : 'Recusar'}
                 </button>
                 {showRecusa && (
@@ -938,7 +938,7 @@ export default function AdminGabinetesPage() {
                                   {!u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN' && (
                                     <button onClick={() => openApproveModal(u)} disabled={actionId === u.id}
                                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80 disabled:opacity-50"
-                                      style={{ background:'rgba(34,197,94,0.15)', border:'1px solid rgba(34,197,94,0.3)', color:'#4ade80' }}>
+                                      style={{ background:'rgba(34,197,94,0.15)', border:'1px solid rgba(34,197,94,0.3)', color:'var(--success)' }}>
                                       {actionId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Aprovar
                                     </button>
                                   )}
@@ -987,9 +987,9 @@ export default function AdminGabinetesPage() {
           <div className="flex items-center gap-3 pt-2">
             <div className="flex-1 h-px" style={{ background:'var(--tint-06)' }} />
             <div className="flex items-center gap-2">
-              <UserX size={14} style={{ color:'#f87171' }} />
+              <UserX size={14} style={{ color:'var(--danger)' }} />
               <span className="text-xs font-semibold" style={{ color:'var(--tint-35)' }}>USUÁRIOS SEM GABINETE</span>
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background:'rgba(239,68,68,0.15)', color:'#f87171', border:'1px solid rgba(239,68,68,0.25)' }}>
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background:'rgba(239,68,68,0.15)', color:'var(--danger)', border:'1px solid rgba(239,68,68,0.25)' }}>
                 {semGabinete.length}
               </span>
             </div>
@@ -1000,7 +1000,7 @@ export default function AdminGabinetesPage() {
             {semGabinete.map(u => (
               <div key={u.id} style={{ background:'var(--bg-card)', borderRadius:'0.875rem', border:'1px solid rgba(239,68,68,0.15)', padding:'0.875rem 1.25rem', display:'flex', alignItems:'center', gap:'0.875rem' }}>
                 <div style={{ width:36, height:36, borderRadius:'50%', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <User size={16} style={{ color:'#f87171' }} />
+                  <User size={16} style={{ color:'var(--danger)' }} />
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <p style={{ margin:0, fontWeight:600, fontSize:'0.875rem', color: 'var(--text-primary)' }}>{u.name}</p>
@@ -1012,7 +1012,7 @@ export default function AdminGabinetesPage() {
                       {ROLE_LABELS[u.role] ?? u.role}
                     </span>
                     {!u.approved && (
-                      <span style={{ fontSize:'0.7rem', padding:'0.1rem 0.5rem', borderRadius:'999px', background:'rgba(245,158,11,0.1)', color:'#fbbf24', border:'1px solid rgba(245,158,11,0.2)' }}>
+                      <span style={{ fontSize:'0.7rem', padding:'0.1rem 0.5rem', borderRadius:'999px', background:'rgba(245,158,11,0.1)', color:'var(--warning)', border:'1px solid rgba(245,158,11,0.2)' }}>
                         Não aprovado
                       </span>
                     )}
@@ -1020,7 +1020,7 @@ export default function AdminGabinetesPage() {
                 </div>
                 <button onClick={() => deletarUsuarioSemGabinete(u.id, u.name)} disabled={deletingUserId === u.id}
                   title="Excluir usuário"
-                  style={{ padding:'0.5rem', borderRadius:'0.5rem', border:'1px solid rgba(239,68,68,0.25)', background:'rgba(239,68,68,0.08)', color:'#f87171', cursor:deletingUserId===u.id?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  style={{ padding:'0.5rem', borderRadius:'0.5rem', border:'1px solid rgba(239,68,68,0.25)', background:'rgba(239,68,68,0.08)', color:'var(--danger)', cursor:deletingUserId===u.id?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                   {deletingUserId === u.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
                 </button>
               </div>
@@ -1035,9 +1035,9 @@ export default function AdminGabinetesPage() {
           <div className="flex items-center gap-3 pt-2">
             <div className="flex-1 h-px" style={{ background: 'var(--tint-06)' }} />
             <div className="flex items-center gap-2">
-              <Trash2 size={14} style={{ color: '#f87171' }} />
+              <Trash2 size={14} style={{ color: 'var(--danger)' }} />
               <span className="text-xs font-semibold" style={{ color: 'var(--tint-35)' }}>EXCLUSÕES PENDENTES DE REVISÃO</span>
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.25)' }}>
                 {excluidos.length}
               </span>
             </div>
@@ -1050,7 +1050,7 @@ export default function AdminGabinetesPage() {
               const isActing = acaoExcluidoId === u.id;
               return (
                 <div key={u.id} style={{ background: 'var(--bg-card)', borderRadius: '0.875rem', border: '1px solid rgba(239,68,68,0.2)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', flexWrap: 'wrap' }}>
-                  <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.75rem', fontWeight: 700, color: '#f87171' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.75rem', fontWeight: 700, color: 'var(--danger)' }}>
                     {u.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -1064,7 +1064,7 @@ export default function AdminGabinetesPage() {
                           <Building2 size={11} /> {u.gabinete.nome}
                         </span>
                       )}
-                      <span style={{ fontSize: '0.7rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                         <Calendar size={11} /> Removido por <strong>{u.deletedByName ?? 'desconhecido'}</strong> em {dt}
                       </span>
                     </div>
@@ -1073,14 +1073,14 @@ export default function AdminGabinetesPage() {
                     <button
                       onClick={() => acaoExcluido(u.id, 'RESTAURAR')} disabled={isActing}
                       title="Restaurar usuário"
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.875rem', borderRadius: '0.65rem', border: '1px solid rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.1)', color: '#4ade80', fontSize: '0.78rem', fontWeight: 600, cursor: isActing ? 'not-allowed' : 'pointer' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.875rem', borderRadius: '0.65rem', border: '1px solid rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.1)', color: 'var(--success)', fontSize: '0.78rem', fontWeight: 600, cursor: isActing ? 'not-allowed' : 'pointer' }}>
                       {isActing ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
                       Restaurar
                     </button>
                     <button
                       onClick={() => acaoExcluido(u.id, 'EXCLUIR')} disabled={isActing}
                       title="Excluir definitivamente"
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.875rem', borderRadius: '0.65rem', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#f87171', fontSize: '0.78rem', fontWeight: 600, cursor: isActing ? 'not-allowed' : 'pointer' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.875rem', borderRadius: '0.65rem', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: 'var(--danger)', fontSize: '0.78rem', fontWeight: 600, cursor: isActing ? 'not-allowed' : 'pointer' }}>
                       {isActing ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                       Excluir
                     </button>
@@ -1098,9 +1098,9 @@ export default function AdminGabinetesPage() {
           <div className="flex items-center gap-3 pt-2">
             <div className="flex-1 h-px" style={{ background: 'var(--tint-06)' }} />
             <div className="flex items-center gap-2">
-              <Trash2 size={14} style={{ color: '#f87171' }} />
+              <Trash2 size={14} style={{ color: 'var(--danger)' }} />
               <span className="text-xs font-semibold" style={{ color: 'var(--tint-35)' }}>LIXEIRA DE GABINETES</span>
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.25)' }}>
                 {gabExcluidos.length}
               </span>
             </div>
@@ -1120,7 +1120,7 @@ export default function AdminGabinetesPage() {
               return (
                 <div key={g.id} style={{ background: 'var(--bg-card)', borderRadius: '0.875rem', border: '1px solid rgba(239,68,68,0.2)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem', flexWrap: 'wrap' }}>
                   <div style={{ width: 38, height: 38, borderRadius: '0.65rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Building2 size={18} style={{ color: '#f87171' }} />
+                    <Building2 size={18} style={{ color: 'var(--danger)' }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{g.nome}</p>
@@ -1131,7 +1131,7 @@ export default function AdminGabinetesPage() {
                       <span style={{ fontSize: '0.72rem', color: 'var(--tint-45)' }}>
                         {g._count.demands} demanda{g._count.demands !== 1 ? 's' : ''} · {g._count.contatos} contato{g._count.contatos !== 1 ? 's' : ''}
                       </span>
-                      <span style={{ fontSize: '0.7rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                         <Calendar size={11} /> Excluído em {dt} por {g.deletedByName ?? 'Admin'}
                       </span>
                       <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.5rem', borderRadius: '999px', background: daysLeft <= 10 ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.12)', color: daysLeft <= 10 ? '#f87171' : '#f59e0b', border: `1px solid ${daysLeft <= 10 ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'}` }}>
@@ -1143,14 +1143,14 @@ export default function AdminGabinetesPage() {
                     <button
                       onClick={() => acaoGabExcluido(g.id, 'RESTAURAR')} disabled={isActing}
                       title="Restaurar gabinete"
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.875rem', borderRadius: '0.65rem', border: '1px solid rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.1)', color: '#4ade80', fontSize: '0.78rem', fontWeight: 600, cursor: isActing ? 'not-allowed' : 'pointer' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.875rem', borderRadius: '0.65rem', border: '1px solid rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.1)', color: 'var(--success)', fontSize: '0.78rem', fontWeight: 600, cursor: isActing ? 'not-allowed' : 'pointer' }}>
                       {isActing ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
                       Restaurar
                     </button>
                     <button
                       onClick={() => acaoGabExcluido(g.id, 'EXCLUIR')} disabled={isActing}
                       title="Excluir permanentemente"
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.875rem', borderRadius: '0.65rem', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#f87171', fontSize: '0.78rem', fontWeight: 600, cursor: isActing ? 'not-allowed' : 'pointer' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.875rem', borderRadius: '0.65rem', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: 'var(--danger)', fontSize: '0.78rem', fontWeight: 600, cursor: isActing ? 'not-allowed' : 'pointer' }}>
                       {isActing ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                       Excluir
                     </button>
@@ -1178,7 +1178,7 @@ export default function AdminGabinetesPage() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(34,197,94,0.12)', border:'1px solid rgba(34,197,94,0.3)' }}>
-                  <Check className="w-5 h-5" style={{ color:'#4ade80' }} />
+                  <Check className="w-5 h-5" style={{ color:'var(--success)' }} />
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Aprovar usuário</h3>
@@ -1296,20 +1296,20 @@ export default function AdminGabinetesPage() {
                 <>
                   {resetResult === '__EMAIL_SENT__' ? (
                     <div className="rounded-xl p-4 text-center space-y-2" style={{ background:'rgba(34,197,94,0.07)', border:'1px solid rgba(34,197,94,0.2)' }}>
-                      <p className="text-sm font-semibold" style={{ color:'#4ade80' }}>Senha redefinida!</p>
+                      <p className="text-sm font-semibold" style={{ color:'var(--success)' }}>Senha redefinida!</p>
                       <p className="text-xs" style={{ color:'var(--tint-55)' }}>Senha temporária enviada por e-mail.</p>
                     </div>
                   ) : (
                     <>
                       <div className="rounded-xl p-4 text-center space-y-2" style={{ background:'rgba(34,197,94,0.07)', border:'1px solid rgba(34,197,94,0.2)' }}>
                         <p className="text-xs" style={{ color:'var(--tint-45)' }}>Senha temporária gerada</p>
-                        <p className="text-2xl font-bold tracking-[0.2em] select-all" style={{ color:'#4ade80', fontFamily:'monospace' }}>{resetResult}</p>
+                        <p className="text-2xl font-bold tracking-[0.2em] select-all" style={{ color:'var(--success)', fontFamily:'monospace' }}>{resetResult}</p>
                         <p className="text-[10px]" style={{ color:'var(--tint-35)' }}>Clique para selecionar</p>
                       </div>
                       <button onClick={() => { navigator.clipboard.writeText(resetResult); setCopiedPwd(true); setTimeout(() => setCopiedPwd(false), 2500); }}
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
                         style={copiedPwd
-                          ? { background:'rgba(34,197,94,0.15)', color:'#4ade80', border:'1px solid rgba(34,197,94,0.3)' }
+                          ? { background:'rgba(34,197,94,0.15)', color:'var(--success)', border:'1px solid rgba(34,197,94,0.3)' }
                           : { background:'rgba(37,99,235,0.12)', color:'#2563EB', border:'1px solid rgba(37,99,235,0.3)' }}>
                         {copiedPwd ? <CheckCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                         {copiedPwd ? 'Copiado!' : 'Copiar Senha'}
@@ -1344,7 +1344,7 @@ export default function AdminGabinetesPage() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.3)' }}>
-                  <Trash2 className="w-5 h-5" style={{ color:'#f87171' }} />
+                  <Trash2 className="w-5 h-5" style={{ color:'var(--danger)' }} />
                 </div>
                 <div>
                   <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Excluir Gabinete</h3>
@@ -1389,7 +1389,7 @@ export default function AdminGabinetesPage() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.3)' }}>
-                  <Trash2 className="w-5 h-5" style={{ color:'#f87171' }} />
+                  <Trash2 className="w-5 h-5" style={{ color:'var(--danger)' }} />
                 </div>
                 <div>
                   <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Remover usuário</h3>

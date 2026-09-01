@@ -380,7 +380,7 @@ export default function ImportacaoPage() {
               </div>
               {isPortalFed && (
                 <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold"
-                  style={{ background: 'rgba(16,185,129,0.12)', color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.25)' }}>
+                  style={{ background: 'rgba(16,185,129,0.12)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.25)' }}>
                   Portal Federal detectado
                 </span>
               )}

@@ -169,7 +169,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
         </Radix.Root>
 
         {error && (
-          <p className="mt-1.5 text-xs" style={{ color: '#f87171' }}>
+          <p className="mt-1.5 text-xs" style={{ color: 'var(--danger)' }}>
             {error}
           </p>
         )}

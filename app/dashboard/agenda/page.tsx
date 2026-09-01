@@ -77,8 +77,12 @@ const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const TIPO_LABELS: Record<string, string> = {
   REUNIAO: 'Reunião', VISITA: 'Visita', EVENTO: 'Evento', COMPROMISSO: 'Compromisso',
 };
+// Um valor por tipo, usado nos DOIS temas (vai para o pino do mapa tambem, nao
+// so para o icone). Por isso ficam no tom 600: o 400 anterior era vivido sobre
+// o navy e lavado sobre o branco. Medido em contraste sobre o card de cada
+// tema, o 600 passa de 3:1 nos dois — o 400 nao chegava a 3:1 no claro.
 const TIPO_COLORS: Record<string, string> = {
-  REUNIAO: '#2563EB', VISITA: '#22c55e', EVENTO: '#818cf8', COMPROMISSO: '#fb923c',
+  REUNIAO: '#2563EB', VISITA: '#16A34A', EVENTO: '#6366F1', COMPROMISSO: '#EA580C',
 };
 const EMPTY_FORM = {
   titulo: '', descricao: '', data: '', dataFim: '', hora: '09:00', horaFim: '',
@@ -447,10 +451,10 @@ export default function AgendaPage() {
                       borderRight: '1px solid var(--tint-04)',
                       background: isSel
                         ? 'rgba(37,99,235,0.08)'
-                        : isWeekend ? 'rgba(255,255,255,0.012)' : 'transparent',
+                        : isWeekend ? 'var(--tint-04)' : 'transparent',
                     }}
-                    onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = 'var(--tint-04)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isSel ? 'rgba(37,99,235,0.08)' : isWeekend ? 'rgba(255,255,255,0.012)' : 'transparent'; }}
+                    onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = 'var(--tint-08)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isSel ? 'rgba(37,99,235,0.08)' : isWeekend ? 'var(--tint-04)' : 'transparent'; }}
                   >
                     <div className="flex items-start justify-between mb-1">
                       <span
@@ -458,9 +462,9 @@ export default function AgendaPage() {
                         style={isTod
                           ? { background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF', fontWeight: 800 }
                           : feriado
-                            ? { color: '#f87171' }
+                            ? { color: 'var(--danger)' }
                             : isWeekend
-                              ? { color: 'rgba(37,99,235,0.5)' }
+                              ? { color: 'var(--acento-azul)' }
                               : { color: 'var(--tint-75)' }
                         }
                       >
@@ -472,7 +476,7 @@ export default function AgendaPage() {
                     </div>
                     <div className="space-y-0.5 overflow-hidden">
                       {feriado && (
-                        <div className="text-[9px] truncate leading-tight" style={{ color: 'rgba(248,113,113,0.6)' }}>{feriado}</div>
+                        <div className="text-[9px] truncate leading-tight" style={{ color: 'var(--danger)' }}>{feriado}</div>
                       )}
                       {dayEvs.slice(0, feriado ? 1 : 2).map((e) => (
                         <div
@@ -519,7 +523,7 @@ export default function AgendaPage() {
                       : `${MESES[viewMonth]} ${viewYear}`}
                 </p>
                 {selectedDay && feriados[fmtKey(selectedDay)] && (
-                  <p className="text-xs mt-0.5" style={{ color: '#f87171' }}>{feriados[fmtKey(selectedDay)]}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--danger)' }}>{feriados[fmtKey(selectedDay)]}</p>
                 )}
                 {!selectedDay && isCurrentMonth && (
                   <p className="text-xs mt-0.5" style={{ color: 'var(--tint-35)' }}>
@@ -799,7 +803,7 @@ export default function AgendaPage() {
 
               {formError && (
                 <div className="flex items-center gap-2 text-sm rounded-xl px-4 py-3"
-                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5' }}>
+                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: 'var(--danger)' }}>
                   <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                   {formError}
                 </div>

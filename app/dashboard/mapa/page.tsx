@@ -1073,7 +1073,7 @@ export default function MapaPage() {
             <>
               <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--tint-25)' }} />
               <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg font-semibold"
-                style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80' }}>
+                style={{ background: 'rgba(34,197,94,0.12)', color: 'var(--success)' }}>
                 <HomeIcon className="h-3.5 w-3.5" />
                 {selectedBairro}
               </span>

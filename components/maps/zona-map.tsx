@@ -163,10 +163,10 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
       
       marker.bindTooltip(`
         <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid var(--tint-25); border-radius: 8px; padding: 10px 14px; color: white; font-size: 12px; min-width: 180px;">
-          <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; color: #60a5fa;">Zona ${zona.zona}</div>
+          <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; color: var(--acento-azul);">Zona ${zona.zona}</div>
           <div style="margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--tint-10);">
             <div style="color: #9ca3af; font-size: 10px; margin-bottom: 2px;">BAIRRO(S):</div>
-            <div style="color: #fbbf24; font-weight: 500;">${bairrosText}</div>
+            <div style="color: var(--warning); font-weight: 500;">${bairrosText}</div>
           </div>
           <div><span style="color: #9ca3af;">Votos:</span><span style="font-weight: bold; color: #10b981;"> ${zona.votos.toLocaleString('pt-BR')}</span></div>
         </div>
@@ -232,7 +232,7 @@ function ZonaMapComponent({ municipio, candidato, zonas, bounds }: ZonaMapProps)
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span style="color: #9ca3af;">Zonas:</span>
-            <span style="color: #60a5fa;">${bairro.zonas.sort((a,b) => a-b).join(', ')}</span>
+            <span style="color: var(--acento-azul);">${bairro.zonas.sort((a,b) => a-b).join(', ')}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
             <span style="color: #9ca3af;">Locais de votação:</span>

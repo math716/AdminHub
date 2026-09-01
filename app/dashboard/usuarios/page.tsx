@@ -130,7 +130,7 @@ const ROLE_STYLE: Record<string, { bg: string; color: string; border: string }> 
   ADMIN:           { bg: 'rgba(37,99,235,0.12)',  color: '#2563EB',  border: 'rgba(37,99,235,0.3)'  },
   AGENTE_POLITICO: { bg: 'rgba(168,85,247,0.12)',  color: '#c084fc',  border: 'rgba(168,85,247,0.3)'  },
   CHEFE:           { bg: 'rgba(74,158,222,0.12)',  color: '#4a9ede',  border: 'rgba(74,158,222,0.3)'  },
-  ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: '#4ade80',  border: 'rgba(34,197,94,0.25)'  },
+  ASSESSOR:        { bg: 'rgba(34,197,94,0.10)',   color: 'var(--success)',  border: 'rgba(34,197,94,0.25)'  },
 };
 
 function RoleBadge({ role }: { role: string }) {
@@ -594,8 +594,8 @@ export default function UsuariosPage() {
           <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
             className="fixed top-5 right-5 z-[9999] flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-sm font-medium"
             style={toastData.type === 'ok'
-              ? { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }
-              : { background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>
+              ? { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--success)' }
+              : { background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: 'var(--danger)' }}>
             {toastData.type === 'ok'
               ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
               : <AlertCircle  className="w-4 h-4 flex-shrink-0" />}
@@ -873,7 +873,7 @@ export default function UsuariosPage() {
                                     <button onClick={() => openApproveModal(u)} disabled={actionId === u.id}
                                       title="Aprovar usuário"
                                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80 disabled:opacity-50"
-                                      style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}>
+                                      style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--success)' }}>
                                       {actionId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                                       Aprovar
                                     </button>
@@ -986,7 +986,7 @@ export default function UsuariosPage() {
                             <button onClick={() => openApproveModal(u)} disabled={actionId === u.id}
                               title="Aprovar usuário e criar gabinete"
                               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80 disabled:opacity-50"
-                              style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}>
+                              style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--success)' }}>
                               {actionId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                               Aprovar
                             </button>
@@ -1135,7 +1135,7 @@ export default function UsuariosPage() {
                 <button onClick={() => { navigator.clipboard.writeText(inviteUrl); setCopied(true); setTimeout(() => setCopied(false), 2500); }}
                   className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                   style={copied
-                    ? { background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)' }
+                    ? { background: 'rgba(34,197,94,0.15)', color: 'var(--success)', border: '1px solid rgba(34,197,94,0.3)' }
                     : { background: 'rgba(37,99,235,0.12)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.3)' }}>
                   {copied ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   {copied ? 'Copiado!' : 'Copiar'}
@@ -1270,7 +1270,7 @@ export default function UsuariosPage() {
                 <>
                   {resetResult === '__EMAIL_SENT__' ? (
                     <div className="rounded-xl p-4 text-center space-y-2" style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                      <p className="text-sm font-semibold" style={{ color: '#4ade80' }}>Senha redefinida com sucesso!</p>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--success)' }}>Senha redefinida com sucesso!</p>
                       <p className="text-xs" style={{ color: 'var(--tint-55)' }}>
                         A senha temporária foi enviada por e-mail ao usuário.<br />Ele deverá alterá-la no próximo acesso.
                       </p>
@@ -1279,7 +1279,7 @@ export default function UsuariosPage() {
                     <>
                       <div className="rounded-xl p-4 text-center space-y-2" style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)' }}>
                         <p className="text-xs" style={{ color: 'var(--tint-45)' }}>Senha temporária gerada</p>
-                        <p className="text-2xl font-bold tracking-[0.2em] select-all" style={{ color: '#4ade80', fontFamily: 'monospace' }}>
+                        <p className="text-2xl font-bold tracking-[0.2em] select-all" style={{ color: 'var(--success)', fontFamily: 'monospace' }}>
                           {resetResult}
                         </p>
                         <p className="text-[10px]" style={{ color: 'var(--tint-35)' }}>
@@ -1295,7 +1295,7 @@ export default function UsuariosPage() {
                         }}
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
                         style={copiedPwd
-                          ? { background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)' }
+                          ? { background: 'rgba(34,197,94,0.15)', color: 'var(--success)', border: '1px solid rgba(34,197,94,0.3)' }
                           : { background: 'rgba(37,99,235,0.12)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.3)' }}>
                         {copiedPwd ? <CheckCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                         {copiedPwd ? 'Copiado!' : 'Copiar Senha'}
@@ -1335,7 +1335,7 @@ export default function UsuariosPage() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)' }}>
-                  <Check className="w-5 h-5" style={{ color: '#4ade80' }} />
+                  <Check className="w-5 h-5" style={{ color: 'var(--success)' }} />
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Aprovar usuário</h3>
@@ -1454,7 +1454,7 @@ export default function UsuariosPage() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)' }}>
-                  <Trash2 className="w-5 h-5" style={{ color: '#f87171' }} />
+                  <Trash2 className="w-5 h-5" style={{ color: 'var(--danger)' }} />
                 </div>
                 <div>
                   <h3 className="text-[color:var(--text-primary)] font-semibold text-sm">Excluir Gabinete</h3>
@@ -1464,7 +1464,7 @@ export default function UsuariosPage() {
 
               <div className="rounded-xl p-4 space-y-2 text-xs"
                 style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.18)' }}>
-                <p className="font-semibold" style={{ color: '#fca5a5' }}>Esta ação é irreversível. Serão excluídos permanentemente:</p>
+                <p className="font-semibold" style={{ color: 'var(--danger)' }}>Esta ação é irreversível. Serão excluídos permanentemente:</p>
                 <ul className="space-y-1 mt-2" style={{ color: 'var(--tint-55)' }}>
                   <li>• Todas as demandas do gabinete</li>
                   <li>• Todos os contatos do gabinete</li>
@@ -1472,7 +1472,7 @@ export default function UsuariosPage() {
                 </ul>
                 {deleteGabTarget.userCount > 0 && (
                   <p className="mt-2" style={{ color: 'var(--tint-45)' }}>
-                    Os <span style={{ color: '#fbbf24' }}>{deleteGabTarget.userCount} usuário{deleteGabTarget.userCount !== 1 ? 's' : ''}</span> vinculados perderão o vínculo mas não serão excluídos.
+                    Os <span style={{ color: 'var(--warning)' }}>{deleteGabTarget.userCount} usuário{deleteGabTarget.userCount !== 1 ? 's' : ''}</span> vinculados perderão o vínculo mas não serão excluídos.
                   </p>
                 )}
               </div>

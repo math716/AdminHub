@@ -149,7 +149,7 @@ export function DatePicker({ value, onChange, className, style }: DatePickerProp
                 select(today.getDate());
               }}
               className="text-xs font-semibold"
-              style={{ color: '#60A5FA' }}
+              style={{ color: 'var(--acento-azul)' }}
             >
               Hoje
             </button>

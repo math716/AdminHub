@@ -150,8 +150,8 @@ export default function ConfiguracoesPage() {
           <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
             className="fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-sm font-medium"
             style={toast.type === 'ok'
-              ? { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }
-              : { background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>
+              ? { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: 'var(--success)' }
+              : { background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: 'var(--danger)' }}>
             {toast.type === 'ok' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
             {toast.msg}
           </motion.div>
@@ -197,7 +197,7 @@ export default function ConfiguracoesPage() {
               <p className="text-xs mb-4" style={{ color: 'var(--tint-45)' }}>
                 O servidor de WhatsApp ainda não está instalado. Siga o guia de instalação.
               </p>
-              <span className="text-xs px-3 py-1.5 rounded-full" style={{ background: 'rgba(239,68,68,0.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <span className="text-xs px-3 py-1.5 rounded-full" style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)' }}>
                 Aguardando configuração do servidor
               </span>
             </div>
@@ -225,7 +225,7 @@ export default function ConfiguracoesPage() {
                     Instância: <span style={{ color: 'var(--brand-cobalt)' }}>{instanceData?.instanceName}</span>
                   </p>
                 </div>
-                <CheckCircle2 className="w-5 h-5 ml-auto flex-shrink-0" style={{ color: '#4ade80' }} />
+                <CheckCircle2 className="w-5 h-5 ml-auto flex-shrink-0" style={{ color: 'var(--success)' }} />
               </div>
 
               <p className="text-xs" style={{ color: 'var(--tint-45)' }}>
@@ -235,7 +235,7 @@ export default function ConfiguracoesPage() {
 
               <button onClick={handleDelete} disabled={deleting}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80 disabled:opacity-50"
-                style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5' }}>
+                style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: 'var(--danger)' }}>
                 {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                 Desconectar WhatsApp
               </button>
@@ -295,7 +295,7 @@ export default function ConfiguracoesPage() {
                     </button>
                     <button onClick={handleCancelQr}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
-                      style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}>
+                      style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)' }}>
                       <X className="w-3.5 h-3.5" />
                       Cancelar
                     </button>
@@ -416,7 +416,7 @@ function AparenciaCard() {
               className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ background: 'var(--bg-card)', border: '1px solid rgba(148,163,184,0.18)' }}
             >
-              <Moon className="w-5 h-5" style={{ color: '#60A5FA' }} />
+              <Moon className="w-5 h-5" style={{ color: 'var(--acento-azul)' }} />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold" style={{
