@@ -17,7 +17,7 @@ jobs:
     name: Import DF SISCONEP
     if: github.repository == 'math716/AdminHub'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 20
 
     env:
       ANOS: >-
@@ -38,18 +38,15 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Instalar Playwright (Chromium)
-        run: npx playwright install chromium --with-deps
-
       - name: Gerar Prisma Client
         run: npx prisma generate
 
       - name: Criar diretorio de dados
         run: mkdir -p data/estados
 
-      - name: Baixar XLS via SISCONEP
+      - name: Baixar dados do SISCONEP
         run: npx tsx scripts/download-emendas-df-sisconep.ts
-        timeout-minutes: 45
+        timeout-minutes: 10
 
       - name: Importar no banco
         env:

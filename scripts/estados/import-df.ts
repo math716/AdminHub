@@ -30,38 +30,66 @@ const DRY_RUN = process.argv.includes('--dry-run');
 
 // ─── Formato JSON (OutSystems) ────────────────────────────────────────────────
 
+/**
+ * Uma emenda como o SISCONEP devolve.
+ *
+ * Os nomes mudaram quando o site foi republicado: `NomeCompleto` virou
+ * `Parlamentar`, `NoUO` virou `UnidadeOrcamentaria`, `EmpenhadoEmendaSum`
+ * virou `ValorEmpenhado`. Os dois conjuntos ficam aceitos aqui, para que os
+ * arquivos ja baixados continuem importaveis.
+ */
 interface SISCONEPRow {
-  EmendaId: string;
-  Label: string;
-  NameSubTitulo: string;
-  NomeCompleto: string;
-  NoUO: string;
-  NrEmenda: string;
-  PT: string;
-  EmpenhadoEmendaSum: string;
-  LiquidadoEmendaSum: string;
-  AnoExercicio: number;
+  // Forma nova
+  Id?: string;
+  Parlamentar?: string;
+  UnidadeOrcamentaria?: string;
+  ValorEmpenhado?: string;
+  ValorLiquidado?: string;
+  ValorEmenda?: string;
+  // Forma antiga
+  EmendaId?: string;
+  NomeCompleto?: string;
+  NoUO?: string;
+  EmpenhadoEmendaSum?: string;
+  LiquidadoEmendaSum?: string;
+  // Iguais nas duas
+  NameSubTitulo?: string;
+  NrEmenda?: string;
+  PT?: string;
 }
 
 function lerJson(caminho: string): SISCONEPRow[] {
   const raw = JSON.parse(fs.readFileSync(caminho, 'utf8'));
-  const lista = raw?.data?.List?.List;
-  if (!Array.isArray(lista)) throw new Error('Formato JSON inválido — esperado data.List.List[]');
+
+  // ListAux e a lista completa da resposta atual — tem o Id real da emenda.
+  // List e a pagina exibida na tela, e hoje vem vazia; era dela que os
+  // arquivos antigos vinham. Relatorio traz os mesmos registros de ListAux,
+  // porem com Id "0", entao so serve se nao houver melhor.
+  const lista = raw?.data?.ListAux?.List
+    ?? raw?.data?.List?.List
+    ?? raw?.data?.Relatorio?.List;
+
+  if (!Array.isArray(lista) || lista.length === 0) {
+    const chaves = Object.keys(raw?.data ?? {}).join(', ') || '(nenhuma)';
+    throw new Error(
+      `Formato JSON inválido — esperado data.ListAux.List[] com registros. `
+      + `Chaves encontradas em data: ${chaves}`);
+  }
   return lista as SISCONEPRow[];
 }
 
 function mapearJson(row: SISCONEPRow, ano: number): EmendaEstadualRow | null {
-  const autor = (row.NomeCompleto ?? '').trim();
+  const autor = (row.Parlamentar ?? row.NomeCompleto ?? '').trim();
   if (!autor) return null;
 
-  const funcao   = (row.NoUO ?? '').trim();
+  const funcao   = (row.UnidadeOrcamentaria ?? row.NoUO ?? '').trim();
   const objeto   = (row.NameSubTitulo ?? '').trim();
   const area     = classificarArea(null, funcao || null);
-  const empenhado = parseFloat(row.EmpenhadoEmendaSum) || 0;
-  const liquidado = parseFloat(row.LiquidadoEmendaSum) || 0;
+  const empenhado = parseFloat(row.ValorEmpenhado ?? row.EmpenhadoEmendaSum ?? '') || 0;
+  const liquidado = parseFloat(row.ValorLiquidado ?? row.LiquidadoEmendaSum ?? '') || 0;
 
   return {
-    idPortal:       `DF-${ano}-${row.EmendaId}`,
+    idPortal:       `DF-${ano}-${row.Id ?? row.EmendaId}`,
     ano,
     numero:         row.NrEmenda?.trim() || undefined,
     funcao:         funcao || undefined,
