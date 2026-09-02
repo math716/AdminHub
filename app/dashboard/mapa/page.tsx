@@ -393,6 +393,29 @@ export default function MapaPage() {
   const listaLateralAberta = view === 'municipio'
     || (view === 'estado' && selectedUf === 'DF');
 
+  /**
+   * O botão de tela cheia, montado uma vez e usado nos três lugares possíveis.
+   *
+   * No alto, e não embaixo: embaixo ele cai sob o botão da Gabi, que é fixo no
+   * canto da janela. O `right` para antes da lista lateral quando ela existe —
+   * a conta repete o tamanho dela (w-[30%] limitado entre 130 e 192px) mais o
+   * vão e a margem.
+   */
+  const botaoTelaCheia = (
+    <button
+      onClick={() => setMapFullscreen(f => !f)}
+      className="absolute top-3 z-[1000] rounded-xl p-2.5 transition-all"
+      style={{
+        right: listaLateralAberta ? 'calc(clamp(130px, 30%, 192px) + 1.5rem)' : '0.75rem',
+        background: 'var(--bg-card)', border: '1px solid var(--border-default)',
+        color: 'var(--text-primary)', boxShadow: 'var(--shadow-raised)',
+      }}
+      title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+    >
+      {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+    </button>
+  );
+
   // ── Auto-busca a partir dos parâmetros de URL (vindo dos Favoritos) ──
   const urlParams = useSearchParams();
   const autoSearchDone = useRef(false);
@@ -1635,26 +1658,11 @@ export default function MapaPage() {
         <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)]' : 'md:col-span-3'}>
           <Card noPadding className={mapFullscreen ? 'h-full rounded-none border-0 overflow-hidden' : 'h-[400px] md:h-[750px] overflow-hidden'}>
             <CardContent className="h-full p-1.5 relative">
-              {/* Botão tela cheia */}
-              <button
-                onClick={() => setMapFullscreen(f => !f)}
-                className="absolute top-3 z-[1000] rounded-xl p-2.5 transition-all"
-                /* No alto, e nao embaixo: em baixo ele cai sob o botao da
-                   Gabi, que e fixo no canto da janela.
-                   O `right` para antes da lista lateral quando ela esta
-                   aberta. A conta repete o tamanho dela — w-[30%] limitado
-                   entre 130 e 192px — mais o vao e a margem do botao. */
-                style={{
-                  right: listaLateralAberta
-                    ? 'calc(clamp(130px, 30%, 192px) + 1.5rem)'
-                    : '0.75rem',
-                  background: 'var(--bg-card)', border: '1px solid var(--border-default)',
-                  color: 'var(--text-primary)', boxShadow: 'var(--shadow-raised)',
-                }}
-                title={mapFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
-              >
-                {mapFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </button>
+              {/* Tela cheia: só aqui quando o mapa ocupa o card inteiro.
+                  Havendo barra de título e lista lateral, ele vai para DENTRO
+                  da área do mapa, mais abaixo — ancorado ao card, cairia na
+                  barra de título em vez do canto do mapa. */}
+              {!listaLateralAberta && botaoTelaCheia}
               {/* Overlay de carregamento: cobre o mapa enquanto busca votos (BR→estado) */}
               {loadingVotes && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center rounded-xl"
@@ -1701,7 +1709,8 @@ export default function MapaPage() {
                     </div>
                   </div>
 
-                  <div className="flex-1 min-h-0">
+                  <div className="flex-1 min-h-0 relative">
+                    {botaoTelaCheia}
                     {dfVisualizacao === 'bairros' && (
                       <div className="h-full flex gap-3">
                         <div className="flex-1 min-w-0">
@@ -1952,7 +1961,8 @@ export default function MapaPage() {
                     </div>
                   </div>
 
-                  <div className="flex-1 flex gap-3 min-h-0">
+                  <div className="flex-1 flex gap-3 min-h-0 relative">
+                    {botaoTelaCheia}
                     {/* Mapa de distritos SP — só para São Paulo capital */}
                     {isSaoPauloCapital && spVisualizacao === 'distritos' && (
                       <>
