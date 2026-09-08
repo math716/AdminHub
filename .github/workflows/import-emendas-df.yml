@@ -17,7 +17,11 @@ jobs:
     name: Import DF SISCONEP
     if: github.repository == 'math716/AdminHub'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 20 minutos nao davam: o job foi cancelado no meio da reclassificacao.
+    # Eu tinha baixado de 60 para 20 quando o download deixou de usar navegador
+    # — sizei o orcamento pela parte que otimizei, e quem manda no tempo aqui e
+    # o banco de dados, nao o download. A execucao mensal cobre quatro anos.
+    timeout-minutes: 60
 
     env:
       ANOS: >-
@@ -49,6 +53,9 @@ jobs:
         timeout-minutes: 10
 
       - name: Importar no banco
+        # Teto proprio para que um passo travado nao consuma o do job inteiro
+        # e derrube tambem a reclassificacao, que vem depois.
+        timeout-minutes: 30
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
@@ -67,6 +74,7 @@ jobs:
           done
 
       - name: Reclassificar areas
+        timeout-minutes: 20
         continue-on-error: true
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

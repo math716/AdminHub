@@ -30,19 +30,37 @@ async function main() {
   console.log(`[reclassificar-areas] emendas com OUTROS: ${total}`);
 
   const PAGE = 500;
-  let skip = 0;
   let atualizadas = 0;
   let mantidas = 0;
+  let processadas = 0;
   const porArea: Record<string, number> = {};
 
-  while (skip < total) {
-    const lote = await prisma.emendaParlamentar.findMany({
-      where: { area: 'OUTROS' },
-      select: { id: true, funcao: true },
-      skip,
-      take: PAGE,
-    });
+  /**
+   * Avanca por ID, e nao por `skip`.
+   *
+   * Com `skip`, duas coisas davam errado ao mesmo tempo. O banco precisa varrer
+   * e descartar todas as linhas anteriores a cada pagina, entao o custo cresce
+   * com o quadrado do total — foi o que estourou o tempo do workflow, com 40 mil
+   * emendas. E, pior, as linhas que ACABARAM de ser atualizadas saem do filtro
+   * `area: OUTROS`: o conjunto encolhe embaixo do offset, e a pagina seguinte
+   * pula tantos registros quantos foram atualizados. Emenda pulada ficava em
+   * OUTROS sem ninguem notar.
+   *
+   * Andando por id crescente, nenhuma das duas acontece: a pagina seguinte
+   * comeca onde a anterior parou, e o que saiu do filtro nao desloca nada.
+   */
+  let ultimoId: string | null = null;
+
+  for (;;) {
+    const lote: Array<{ id: string; funcao: string | null }> =
+      await prisma.emendaParlamentar.findMany({
+        where: { area: 'OUTROS', ...(ultimoId ? { id: { gt: ultimoId } } : {}) },
+        select: { id: true, funcao: true },
+        orderBy: { id: 'asc' },
+        take: PAGE,
+      });
     if (lote.length === 0) break;
+    ultimoId = lote[lote.length - 1].id;
 
     const updates: Array<{ id: string; area: EmendaArea }> = [];
     for (const e of lote) {
@@ -67,8 +85,8 @@ async function main() {
     }
 
     atualizadas += updates.length;
-    skip += lote.length;
-    process.stdout.write(`\r  processadas ${Math.min(skip, total)}/${total} — atualizadas: ${atualizadas}`);
+    processadas += lote.length;
+    process.stdout.write(`\r  processadas ${processadas}/${total} — atualizadas: ${atualizadas}`);
   }
 
   console.log('\n');
