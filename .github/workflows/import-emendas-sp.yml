@@ -1,45 +1,57 @@
-name: Import Emendas SP (ALESP)
+name: Import Emendas SP (Transparencia)
+
+# Fonte: base aberta do portal da transparencia de SP (emendas.zip).
+#
+# Substituiu o painel do Power BI, que era aberto por navegador e publicava um
+# conjunto DIFERENTE do portal: em setembro de 2026 o deputado Gilmaci Santos
+# aparecia no sistema com 12 emendas de 2026 (R$ 13,2 M) contra 5 no portal
+# (R$ 4,8 M). Some o Chromium, e os numeros passam a bater com a fonte oficial.
+#
+# O download so acontece se o arquivo mudou (ETag), e o import cobre 2019 a 2026
+# de uma vez — o CSV traz todos os anos juntos.
 
 on:
   schedule:
-    - cron: '0 3 * * 1'   # Toda segunda-feira 3h UTC → 2025 e 2026
-    - cron: '0 2 3 * *'   # Dia 3 do mês 2h UTC       → 2023 e 2024
+    - cron: '0 3 * * 1'   # Toda segunda-feira 3h UTC
   workflow_dispatch:
     inputs:
       anos:
-        description: 'Anos a importar, separados por vírgula (ex: 2023,2024,2025,2026)'
+        description: 'Anos a importar (vazio = todos os do arquivo)'
         required: false
-        default: '2025,2026'
+        default: ''
         type: string
+      forcar:
+        description: 'Baixar e importar mesmo sem alteracao no portal'
+        required: false
+        default: false
+        type: boolean
+      dry_run:
+        description: 'So conferir, sem gravar nem apagar'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   import-sp:
-    name: Import SP ALESP
+    name: Import SP Transparencia
     if: github.repository == 'math716/AdminHub'
     runs-on: ubuntu-latest
+    # O tempo aqui e do banco, nao do download: sao ate 228 mil emendas, mais a
+    # reclassificacao de areas.
     timeout-minutes: 60
-
-    env:
-      ANOS: >-
-        ${{ github.event_name == 'workflow_dispatch' && inputs.anos ||
-            github.event.schedule == '0 3 * * 1' && '2025,2026' ||
-            '2023,2024' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Instalar dependencias
         run: npm ci
-
-      - name: Instalar Playwright (Chromium)
-        run: npx playwright install chromium --with-deps
 
       - name: Gerar Prisma Client
         run: npx prisma generate
@@ -47,36 +59,49 @@ jobs:
       - name: Criar diretorio de dados
         run: mkdir -p data/estados
 
-      - name: Baixar XLSX via Power BI
-        run: npx tsx scripts/download-emendas-sp-powerbi.ts
-        timeout-minutes: 30
+      # Guarda o ETag entre execucoes. A chave muda a cada run para que o valor
+      # novo seja sempre salvo; restore-keys recupera o da execucao anterior.
+      # Cache perdido custa no maximo uma importacao a mais — o import e
+      # idempotente.
+      - name: Recuperar o que ja foi visto no portal
+        uses: actions/cache@v4
+        with:
+          path: data/estados/.sp-estado.json
+          key: sp-estado-${{ github.run_id }}
+          restore-keys: |
+            sp-estado-
+
+      - name: Baixar base aberta (so o que mudou)
+        id: baixar
+        env:
+          FORCAR: ${{ inputs.forcar && '1' || '0' }}
+        run: npx tsx scripts/download-emendas-sp.ts
+        timeout-minutes: 15
 
       - name: Importar no banco
+        if: steps.baixar.outputs.mudou == 'true'
+        timeout-minutes: 40
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANOS: ${{ inputs.anos }}
+          DRY: ${{ inputs.dry_run && '--dry-run' || '' }}
         run: |
-          IFS=',' read -ra ANOS_ARRAY <<< "$ANOS"
-          for ANO in "${ANOS_ARRAY[@]}"; do
-            ANO=$(echo "$ANO" | tr -d ' ')
-            FILE="data/estados/Emendas_Impositivas_${ANO}.xlsx"
-            if [ -f "$FILE" ]; then
-              echo "=== Importando $ANO ==="
-              npx tsx --require dotenv/config scripts/estados/import-sp.ts \
-                --file "$FILE" \
-                --ano "$ANO"
-            else
-              echo "Arquivo não encontrado para $ANO, pulando."
-            fi
-          done
+          ARGS=""
+          if [ -n "$ANOS" ]; then ARGS="--anos $ANOS"; fi
+          npx tsx --require dotenv/config scripts/estados/import-sp-aberto.ts $ARGS $DRY
 
       - name: Backfill codigos IBGE
+        if: steps.baixar.outputs.mudou == 'true' && !inputs.dry_run
         continue-on-error: true
+        timeout-minutes: 15
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx tsx --require dotenv/config scripts/backfill-municipios-ibge.ts --uf SP
 
       - name: Reclassificar areas
+        if: steps.baixar.outputs.mudou == 'true' && !inputs.dry_run
         continue-on-error: true
+        timeout-minutes: 20
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx tsx --require dotenv/config scripts/reclassificar-areas.ts
@@ -84,6 +109,10 @@ jobs:
       - name: Resumo
         if: always()
         run: |
-          echo "## Import SP (ALESP) concluído" >> $GITHUB_STEP_SUMMARY
-          echo "- **Anos:** $ANOS" >> $GITHUB_STEP_SUMMARY
-          echo "- **Horário:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "## Import SP (portal da transparencia)" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.baixar.outputs.mudou }}" = "true" ]; then
+            echo "- Base atualizada e importada." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Nada mudou no portal — nenhuma importacao foi feita." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- **Horario:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
