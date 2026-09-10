@@ -12,7 +12,8 @@ name: Import Emendas SP (Transparencia)
 
 on:
   schedule:
-    - cron: '0 3 * * 1'   # Toda segunda-feira 3h UTC
+    - cron: '0 3 * * 1'   # Toda segunda-feira 3h UTC → 2025 e 2026
+    - cron: '0 2 3 * *'   # Dia 3 do mes 2h UTC       → 2023 e 2024
   workflow_dispatch:
     inputs:
       anos:
@@ -41,6 +42,18 @@ jobs:
     # GitHub e 6 horas; ficamos perto disso, porque um import cortado no meio
     # deixa o banco em estado parcial — pior que demorar.
     timeout-minutes: 350
+
+    # Que anos entram, conforme quem disparou.
+    #
+    # O `|| ''` no fim nao e enfeite: numa execucao manual com o campo em
+    # branco, o primeiro termo da vazio e a expressao continua avaliando os
+    # seguintes. Sem ele, pedir "todos os anos" traria 2023 e 2024.
+    env:
+      ANOS: >-
+        ${{ github.event_name == 'workflow_dispatch' && inputs.anos
+            || github.event.schedule == '0 3 * * 1' && '2025,2026'
+            || github.event.schedule == '0 2 3 * *' && '2023,2024'
+            || '' }}
 
     steps:
       - name: Checkout
@@ -85,7 +98,6 @@ jobs:
         timeout-minutes: 300
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          ANOS: ${{ inputs.anos }}
           DRY: ${{ inputs.dry_run && '--dry-run' || '' }}
         run: |
           ARGS=""
