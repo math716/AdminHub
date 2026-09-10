@@ -78,7 +78,32 @@ function anoDoCodigo(cod: string): number | null {
   return a >= 2000 && a <= 2100 ? a : null;
 }
 
-function mapear(l: Linha): EmendaEstadualRow | null {
+/**
+ * Soma os valores DISTINTOS de um campo dentro do grupo.
+ *
+ * O portal exporta um produto cartesiano: para um mesmo código, cada empenho
+ * aparece cruzado com cada liquidação. Medido no código 2024.292.56581 —
+ * 4.180 linhas, UM único instrumento jurídico, e os valores se repetindo em
+ * todas as combinações. Somar as linhas daria R$ 94,9 milhões numa emenda que
+ * não vale isso; só em 2024, o total do estado passaria de R$ 15 BILHÕES.
+ *
+ * Somar os valores distintos reconstrói o lado A do cruzamento. A limitação é
+ * conhecida e vale registrar: dois empenhos de valor idêntico viram um só. Não
+ * há no arquivo nada que os separe — nem o instrumento jurídico, que é o mesmo.
+ */
+function somaDistintos(grupo: Linha[], campo: (l: Linha) => string): number {
+  const vistos = new Set<string>();
+  for (const l of grupo) {
+    const v = (campo(l) ?? '').trim();
+    if (v) vistos.add(v);
+  }
+  let total = 0;
+  for (const v of vistos) total += reais(v);
+  return total;
+}
+
+function mapear(grupo: Linha[]): EmendaEstadualRow | null {
+  const l = grupo[0];
   const autor = l.parlamentar.trim();
   const cod = l.cod.trim();
   const ano = anoDoCodigo(cod);
@@ -88,7 +113,7 @@ function mapear(l: Linha): EmendaEstadualRow | null {
   if (ANOS.length > 0 && !ANOS.includes(ano)) return null;
 
   const orgao = l.orgao.trim();
-  const empenhado = reais(l.empenhado);
+  const empenhado = somaDistintos(grupo, x => x.empenhado);
 
   return {
     idPortal:       `SP-${ano}-${cod}`,
@@ -103,7 +128,7 @@ function mapear(l: Linha): EmendaEstadualRow | null {
     objeto:         l.objeto.trim() || undefined,
     valorProposto:  empenhado || undefined,
     valorEmpenhado: empenhado,
-    valorPago:      reais(l.pago),
+    valorPago:      somaDistintos(grupo, x => x.pago),
     uf:             'SP',
     municipioNome:  l.municipio.trim() || undefined,
     autorNome:      autor,
@@ -128,16 +153,29 @@ async function main() {
   // Conferido: o arquivo inteiro decodifica como UTF-8 sem um byte invalido.
   const texto = fs.readFileSync(ARQUIVO, 'utf8');
   const linhas = texto.split(/\r?\n/);
-  const rows: EmendaEstadualRow[] = [];
-  let quebradas = 0, truncadas = 0, ignoradas = 0;
+  let quebradas = 0, truncadas = 0;
 
+  // Agrupa por código ANTES de mapear: uma emenda é um código, e o arquivo traz
+  // várias linhas por código (ver somaDistintos). Sem agrupar, cada linha
+  // viraria uma gravação no mesmo idPortal e o valor final seria o da última
+  // linha lida — nem a soma, nem o maior: o que calhasse de vir por último.
+  const porCodigo = new Map<string, Linha[]>();
   for (let i = 1; i < linhas.length; i++) {           // pula o cabeçalho
     const bruta = linhas[i];
     if (!bruta.trim()) continue;
     if (bruta.split(';').length > COLUNAS) quebradas++;
     const l = partir(bruta);
     if (!l) { truncadas++; continue; }
-    const row = mapear(l);
+    const cod = l.cod.trim();
+    if (!cod) { truncadas++; continue; }
+    const grupo = porCodigo.get(cod);
+    if (grupo) grupo.push(l); else porCodigo.set(cod, [l]);
+  }
+
+  const rows: EmendaEstadualRow[] = [];
+  let ignoradas = 0;
+  for (const grupo of porCodigo.values()) {
+    const row = mapear(grupo);
     if (!row) { ignoradas++; continue; }
     rows.push(row);
   }
@@ -145,18 +183,31 @@ async function main() {
   console.log(`\n  ${linhas.length - 1} linhas lidas`);
   console.log(`  ${quebradas} com ponto-e-vírgula dentro do objeto — remontadas`);
   console.log(`  ${truncadas} truncadas — descartadas`);
-  console.log(`  ${ignoradas} sem parlamentar ou fora dos anos — ignoradas`);
+  console.log(`  ${porCodigo.size} códigos distintos`);
+  console.log(`  ${ignoradas} sem parlamentar ou fora dos anos — ignorados`);
   console.log(`  ${rows.length} emendas a importar`);
 
-  const porAno = new Map<number, number>();
-  for (const r of rows) porAno.set(r.ano, (porAno.get(r.ano) ?? 0) + 1);
-  console.log('  ' + [...porAno].sort().map(([a, n]) => `${a}: ${n}`).join('  ·  '));
+  // Contagem E dinheiro por ano: número de emendas sozinho não deixa ninguém
+  // conferir contra o portal, que é o único jeito de saber se o import prestou.
+  const porAno = new Map<number, { n: number; empenhado: number }>();
+  for (const r of rows) {
+    const d = porAno.get(r.ano) ?? { n: 0, empenhado: 0 };
+    d.n++; d.empenhado += r.valorEmpenhado;
+    porAno.set(r.ano, d);
+  }
+  const brl = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+  console.log('');
+  for (const [ano, d] of [...porAno].sort()) {
+    console.log(`    ${ano}: ${String(d.n).padStart(6)} emendas   R$ ${brl(d.empenhado).padStart(15)}`
+      + (d.empenhado === 0 ? '   ← o portal não publica execução deste ano' : ''));
+  }
 
   const porTipo = new Map<string, number>();
   for (const r of rows) {
     const k = r.tipo ?? 'sem instrumento';
     porTipo.set(k, (porTipo.get(k) ?? 0) + 1);
   }
+  console.log('');
   console.log('  ' + [...porTipo].map(([t, n]) => `${t}: ${n}`).join('  ·  '));
 
   if (rows.length === 0) { console.error('\nNada a importar.'); process.exit(1); }
