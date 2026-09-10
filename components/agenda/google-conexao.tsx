@@ -8,7 +8,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Loader2, RefreshCw, Unlink, AlertTriangle, Check } from 'lucide-react';
+import { Loader2, RefreshCw, Unlink, AlertTriangle, Check, CalendarDays } from 'lucide-react';
+import { Select } from '@/components/ui/select';
+import type { AgendaGoogle } from '@/lib/google-agenda';
 
 interface Conexao {
   email: string;
@@ -60,6 +62,10 @@ export function GoogleConexao({ onSincronizou }: { onSincronizou?: () => void })
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
 
+  // As agendas da conta conectada. Buscadas só depois de conectar, e uma vez
+  // por carregamento da tela: cada consulta é uma chamada ao Google.
+  const [agendas, setAgendas] = useState<AgendaGoogle[] | null>(null);
+
   const carregar = useCallback(async () => {
     try {
       const res = await fetch('/api/agenda/google');
@@ -71,6 +77,50 @@ export function GoogleConexao({ onSincronizou }: { onSincronizou?: () => void })
   }, []);
 
   useEffect(() => { carregar(); }, [carregar]);
+
+  /**
+   * Busca as agendas da conta.
+   *
+   * O gabinete quase nunca guarda o compromisso na agenda principal: costuma
+   * ser uma agenda própria da equipe, ou uma compartilhada pelo parlamentar.
+   * Antes disto o sistema lia só a principal e a sincronização voltava zero
+   * sem dizer por quê.
+   */
+  const carregarAgendas = useCallback(async () => {
+    try {
+      const res = await fetch('/api/agenda/google?agendas=1');
+      if (!res.ok) return;
+      setAgendas((await res.json()).agendas ?? []);
+    } catch { /* a lista some; o resto da tela segue */ }
+  }, []);
+
+  useEffect(() => {
+    if (estado?.conectado && agendas === null) carregarAgendas();
+  }, [estado?.conectado, agendas, carregarAgendas]);
+
+  /** Troca a agenda e já sincroniza: escolher sem ver o resultado não resolve. */
+  const trocarAgenda = async (calendarId: string) => {
+    if (!calendarId || calendarId === estado?.conexao?.calendarId) return;
+    setOcupado(true); setAviso(null);
+    try {
+      const res = await fetch('/api/agenda/google', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ calendarId }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setAviso({ tipo: 'erro', texto: d.error ?? 'Não foi possível trocar a agenda.' });
+        return;
+      }
+      await carregar();
+      await sincronizar();
+    } catch {
+      setAviso({ tipo: 'erro', texto: 'Falha de conexão ao trocar a agenda.' });
+    } finally {
+      setOcupado(false);
+    }
+  };
 
   // O callback do Google devolve o resultado pela query da URL.
   useEffect(() => {
@@ -241,6 +291,40 @@ export function GoogleConexao({ onSincronizou }: { onSincronizou?: () => void })
           )}
         </div>
       </div>
+
+      {/* Qual agenda sincronizar.
+          Só aparece quando há mais de uma: com uma agenda só, o seletor seria
+          uma pergunta sem resposta possível. */}
+      {estado.conectado && agendas && agendas.length > 1 && (
+        <div className="mt-2.5 pt-2.5" style={{ borderTop: '1px solid var(--border-default)' }}>
+          <div className="flex items-center gap-2 mb-1.5">
+            <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
+            <p className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>
+              Agenda sincronizada
+            </p>
+          </div>
+          <Select
+            value={c?.calendarId ?? 'primary'}
+            onChange={e => trocarAgenda(e.target.value)}
+            disabled={ocupado}
+            options={agendas.map(a => ({
+              value: a.id,
+              // O aviso vai no rótulo porque é onde a pessoa decide. Descobrir
+              // depois, com a agenda cheia de "(sem título)", é tarde.
+              label: a.nome
+                + (a.principal ? ' — principal' : '')
+                + (a.comDetalhes ? '' : ' — sem detalhes dos eventos'),
+            }))}
+          />
+          {/* A sincronização só apaga o que o Google marca como cancelado, então
+              o que veio da agenda anterior fica. É de propósito — sumir com
+              compromisso que a equipe já está usando seria pior — mas ninguém
+              adivinha isso sozinho ao trocar. */}
+          <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-tertiary)' }}>
+            Os compromissos já importados da agenda anterior continuam aqui.
+          </p>
+        </div>
+      )}
 
       {/* Erro da última sincronização automática — sem isto, ela pararia de
           atualizar em silêncio e ninguém saberia por quê. */}

@@ -106,6 +106,66 @@ export async function tokenValido(conexao: {
   return novo.access_token;
 }
 
+// ── Agendas da conta ─────────────────────────────────────────────────────────
+
+export interface AgendaGoogle {
+  id: string;
+  nome: string;
+  /** A agenda principal da conta — a que o Google cria junto com o e-mail. */
+  principal: boolean;
+  /**
+   * Se os eventos vêm com título e local, ou só como blocos ocupados.
+   *
+   * Quem compartilha uma agenda escolhe o nível. Em "ver apenas
+   * disponibilidade", o Google devolve os eventos SEM título, local nem
+   * descrição — chegariam na agenda do gabinete como blocos vazios. Melhor
+   * avisar antes de a pessoa escolher do que depois, com a agenda cheia de
+   * "(sem título)".
+   */
+  comDetalhes: boolean;
+}
+
+/**
+ * As agendas que a conta conectada enxerga — as dela e as compartilhadas.
+ *
+ * Existe porque o sistema lia apenas a agenda principal (`calendarId` nasce
+ * como "primary" e não havia como mudar). Num gabinete real, o compromisso
+ * costuma morar numa agenda à parte, criada para a equipe ou compartilhada
+ * pelo parlamentar — e a sincronização voltava zero sem dizer por quê.
+ */
+export async function listarAgendas(accessToken: string): Promise<AgendaGoogle[]> {
+  const agendas: AgendaGoogle[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const q = new URLSearchParams({ maxResults: '250', minAccessRole: 'reader' });
+    if (pageToken) q.set('pageToken', pageToken);
+
+    const res = await fetch(`${CALENDAR_API}/users/me/calendarList?${q}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) {
+      throw new Error(`Google Calendar ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    }
+
+    const dados = await res.json();
+    for (const c of dados.items ?? []) {
+      agendas.push({
+        id: c.id,
+        nome: c.summaryOverride || c.summary || c.id,
+        principal: Boolean(c.primary),
+        // "freeBusyReader" é justamente o nível que esconde os detalhes.
+        comDetalhes: c.accessRole !== 'freeBusyReader',
+      });
+    }
+    pageToken = dados.nextPageToken;
+  } while (pageToken);
+
+  // A principal primeiro; o resto em ordem alfabética.
+  return agendas.sort((a, b) =>
+    Number(b.principal) - Number(a.principal) || a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+
 // ── Eventos ──────────────────────────────────────────────────────────────────
 export interface EventoGoogle {
   id: string;
