@@ -36,9 +36,11 @@ jobs:
     name: Import SP Transparencia
     if: github.repository == 'math716/AdminHub'
     runs-on: ubuntu-latest
-    # O tempo aqui e do banco, nao do download: sao ate 228 mil emendas, mais a
-    # reclassificacao de areas.
-    timeout-minutes: 60
+    # O tempo aqui e do banco, nao do download. Medido: 40 minutos deram 15.220
+    # das 42.304 emendas, entao a carga completa passa de duas horas. O teto do
+    # GitHub e 6 horas; ficamos perto disso, porque um import cortado no meio
+    # deixa o banco em estado parcial — pior que demorar.
+    timeout-minutes: 350
 
     steps:
       - name: Checkout
@@ -80,7 +82,7 @@ jobs:
 
       - name: Importar no banco
         if: steps.baixar.outputs.mudou == 'true'
-        timeout-minutes: 40
+        timeout-minutes: 300
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ANOS: ${{ inputs.anos }}
