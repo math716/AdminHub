@@ -32,10 +32,14 @@ const VIEWBOX_GRAUS = 1.2;
 /** Acima disto o resultado e considerado outra cidade de mesmo nome. */
 const RAIO_MAX_KM = 150;
 
-const cache = new Map<string, Coordenada | null>();
-
 export interface Coordenada { lat: number; lng: number }
 export interface Ancora extends Coordenada {}
+
+/** Resultado do Nominatim: a coordenada e o texto completo, usado para
+ * conferir se o resultado realmente corresponde ao numero perguntado. */
+interface Candidato { coord: Coordenada; texto: string }
+
+const cache = new Map<string, Candidato | null>();
 
 /**
  * Termos que descrevem um compromisso, nao um lugar. O Nominatim sempre acha
@@ -291,8 +295,31 @@ function chaveCache(consulta: string, ancora?: Ancora): string {
   return `${semAcento(consulta)}|${ancora ? `${ancora.lat.toFixed(2)},${ancora.lng.toFixed(2)}` : ''}`;
 }
 
+/**
+ * Numero de um endereco de rua comum ("Av. Joaquim Boer, 733"), fora do padrao
+ * de quadra/lote do DF que `conferirNumeros` ja cobre.
+ *
+ * Existe por causa de um caso real: "FAM - Faculdade de Americana, Av.
+ * Joaquim Boer, 733 - Jardim Luciane, Americana - SP" caiu em Sao Bernardo do
+ * Campo, a 130 km dali — porque o OpenStreetMap tem OUTRO lugar com o mesmo
+ * nome "FAM - Faculdade de Americana" cadastrado la, e a busca por texto nao
+ * tem como saber que e o lugar errado. O numero da rua e a unica pista que a
+ * pergunta e a resposta podem confirmar entre si sem ambiguidade de nome.
+ */
+const RUA_NUMERO =
+  /\b(?:av\.?|avenida|r\.?|rua|al\.?|alameda|travessa|estrada|rod\.?|rodovia)\b[^,]{2,60},\s*(\d{1,5})\b/i;
+
+function numeroDaVia(consulta: string): string | null {
+  return consulta.match(RUA_NUMERO)?.[1] ?? null;
+}
+
+/** O numero aparece no resultado como token isolado — nao miolo de outro numero ou de CEP. */
+function candidatoTemNumero(numero: string, texto: string): boolean {
+  return new RegExp(`(?<!\\d)${numero}(?!\\d)`).test(texto);
+}
+
 /** Uma consulta ao Nominatim. Devolve null quando nao encontra — nunca lanca. */
-async function consultarNominatim(consulta: string, ancora?: Ancora): Promise<Coordenada | null> {
+async function consultarNominatim(consulta: string, ancora?: Ancora): Promise<Candidato | null> {
   const chave = chaveCache(consulta, ancora);
   if (cache.has(chave)) return cache.get(chave) ?? null;
 
@@ -323,57 +350,75 @@ async function consultarNominatim(consulta: string, ancora?: Ancora): Promise<Co
 
     const dados: any[] = await res.json();
     const candidatos = (Array.isArray(dados) ? dados : [])
-      .map(r => ({ lat: parseFloat(r.lat), lng: parseFloat(r.lon) }))
+      .map(r => ({ lat: parseFloat(r.lat), lng: parseFloat(r.lon), texto: String(r.display_name ?? '') }))
       .filter(c => Number.isFinite(c.lat) && Number.isFinite(c.lng));
     if (candidatos.length === 0) { cache.set(chave, null); return null; }
 
     // "Prefeitura de Sao Paulo" devolvia a prefeitura de Sao Jose do Rio Preto:
     // o Nominatim le "Sao Paulo" como o ESTADO e ordena por semelhanca de nome.
     // Com a ancora, o mais PROXIMO e quase sempre o certo.
-    const coord = ancora
+    const escolhido = ancora
       ? candidatos.reduce((a, b) => (distanciaKm(ancora, b) < distanciaKm(ancora, a) ? b : a))
       : candidatos[0];
 
     // Homonimo em outro estado: descarta em vez de plotar longe.
-    if (ancora && distanciaKm(ancora, coord) > RAIO_MAX_KM) {
-      console.warn(`[geocode] "${consulta.slice(0, 40)}" caiu a ${Math.round(distanciaKm(ancora, coord))} km — descartado`);
+    if (ancora && distanciaKm(ancora, escolhido) > RAIO_MAX_KM) {
+      console.warn(`[geocode] "${consulta.slice(0, 40)}" caiu a ${Math.round(distanciaKm(ancora, escolhido))} km — descartado`);
       cache.set(chave, null);
       return null;
     }
 
-    cache.set(chave, coord);
-    return coord;
+    const candidato: Candidato = { coord: { lat: escolhido.lat, lng: escolhido.lng }, texto: escolhido.texto };
+    cache.set(chave, candidato);
+    return candidato;
   } catch (err) {
     console.warn('[geocode] falhou:', String(err).slice(0, 120));
     return null;
   }
 }
 
+/** Quantas formas da busca tentar antes de desistir — cada uma custa 1,1s de pausa. */
+const TETO_VARIANTES = 4;
+
 /**
- * Geocodifica uma consulta, tentando a versao simplificada quando a completa
- * nao retorna nada.
+ * Geocodifica uma consulta, tentando formas progressivamente mais simples
+ * quando a completa nao retorna nada.
  *
  * A cascata existe porque endereco de gabinete vem com complemento
  * ("QI 15, Cj 7, Casa 23") que o Nominatim nao conhece. Retirado o
- * complemento, a busca acerta a rua. NAO ha um terceiro nivel caindo para a
- * regiao: "Planaltina" sozinho resolve para Planaltina de Goias, outra cidade
- * a 40 km — dentro do raio aceito, e portanto um erro que passaria batido.
+ * complemento, a busca acerta a rua.
+ *
+ * Quando a consulta tem numero de rua reconhecivel, o resultado so e aceito
+ * de primeira se ECOAR esse numero — sem essa conferencia, um lugar de nome
+ * IGUAL em outra cidade (caso real: duas "FAM - Faculdade de Americana" no
+ * OpenStreetMap, uma das quais em Sao Bernardo do Campo) passava batido so
+ * por ter o nome parecido. Se nenhuma variante confirmar o numero, fica a
+ * melhor aproximacao encontrada — incerta, mas ainda a candidata mais provavel.
  */
 export async function geocodificar(consulta: string, ancora?: Ancora): Promise<Coordenada | null> {
-  const direta = await consultarNominatim(consulta, ancora);
-  if (direta) return direta;
+  const numero = numeroDaVia(consulta);
+  const variantes = [consulta, ...variantesDeBusca(consulta).filter(v => v !== consulta)]
+    .slice(0, TETO_VARIANTES);
 
-  const curta = simplificar(consulta);
-  if (!curta) return null;
+  let reserva: Candidato | null = null;
 
-  await pausa(INTERVALO_MS);   // a segunda tentativa tambem conta para o limite
-  const coord = await consultarNominatim(curta, ancora);
+  for (let i = 0; i < variantes.length; i++) {
+    if (i > 0) await pausa(INTERVALO_MS);
+    const achado = await consultarNominatim(variantes[i], ancora);
+    if (!achado) continue;
 
-  // Grava o acerto TAMBEM sob a consulta original. Sem isto, o mesmo endereco
-  // repetido no lote consultava o cache pela forma completa, encontrava o
-  // "nao achei" da primeira tentativa e desistia sem tentar a cascata.
-  cache.set(chaveCache(consulta, ancora), coord);
-  return coord;
+    // Sem numero extraivel da pergunta (endereco generico, ou so o nome do
+    // lugar): mantem o comportamento de sempre — aceita a primeira resposta.
+    if (!numero || candidatoTemNumero(numero, achado.texto)) {
+      cache.set(chaveCache(consulta, ancora), achado);   // tambem sob a forma original
+      return achado.coord;
+    }
+
+    if (!reserva) reserva = achado;   // guarda caso nada confirme o numero
+  }
+
+  cache.set(chaveCache(consulta, ancora), reserva);
+  return reserva?.coord ?? null;
 }
 
 /**
@@ -446,7 +491,7 @@ export async function geocodificarLote<T extends ItemParaGeocodificar>(
     if (!consulta) continue;   // sem endereco ou generico: nao geocodifica
 
     const chave = `${semAcento(consulta)}|${opcoes.ancora ? `${opcoes.ancora.lat.toFixed(2)},${opcoes.ancora.lng.toFixed(2)}` : ''}`;
-    if (cache.has(chave)) { saida[i] = cache.get(chave) ?? null; continue; }
+    if (cache.has(chave)) { saida[i] = cache.get(chave)?.coord ?? null; continue; }
 
     if (consultas >= maximo || Date.now() > limite) {
       console.warn(`[geocode] lote interrompido em ${i}/${itens.length} (teto ou tempo)`);
