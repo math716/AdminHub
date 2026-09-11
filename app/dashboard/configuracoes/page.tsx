@@ -195,7 +195,7 @@ export default function ConfiguracoesPage() {
               </div>
               <p className="text-[color:var(--text-primary)] font-medium mb-1">Evolution API não configurada</p>
               <p className="text-xs mb-4" style={{ color: 'var(--tint-45)' }}>
-                O servidor de WhatsApp ainda não está instalado. Siga o guia de instalação.
+                O servidor de WhatsApp ainda não está instalado.
               </p>
               <span className="text-xs px-3 py-1.5 rounded-full" style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)' }}>
                 Aguardando configuração do servidor
