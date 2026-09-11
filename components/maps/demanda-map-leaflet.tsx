@@ -91,6 +91,37 @@ const TIPO_AGENDA_LABELS: Record<string, string> = {
   REUNIAO: 'Reunião', VISITA: 'Visita', EVENTO: 'Evento', COMPROMISSO: 'Compromisso',
 };
 
+// ── Balão que aparece ao passar o mouse num pin ──────────────────────────────
+//
+// O fundo era um azul-marinho fixo. No tema escuro passava despercebido, mas no
+// claro virava uma caixa preta no meio de um mapa claro — e o endereço, num
+// cinza pensado para fundo escuro, sumia dentro dela. Aqui tudo vem dos tokens
+// do tema. Vale lembrar que `var()` resolve em atributo `style` de HTML (o que
+// NÃO acontece no `setStyle` do Leaflet, que vira atributo SVG).
+const CAIXA_DO_BALAO =
+  'background:var(--bg-card);border:1px solid var(--border-default);' +
+  'border-radius:10px;padding:10px 14px;box-shadow:0 6px 20px rgba(15,23,42,0.18);';
+
+/**
+ * Título do balão: um ponto com a cor do pin + o texto em cor legível.
+ *
+ * A cor ia no próprio texto, e é aí que o tema claro doía: âmbar (#f59e0b) e
+ * turquesa (#14b8a6) sobre branco ficam perto de 2:1 de contraste — dá para
+ * ver que há algo escrito, não dá para ler. Como ponto, a mesma cor continua
+ * identificando o tipo sem precisar ser legível como texto.
+ */
+function tituloDoBalao(cor: string, texto: string): string {
+  return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+    <span style="width:8px;height:8px;border-radius:50%;background:${cor};flex:none;"></span>
+    <span style="font-weight:600;color:var(--text-primary);font-size:13px;">${texto}</span>
+  </div>`;
+}
+
+/** Etiqueta de cor cheia com texto branco — lê bem nos dois temas. */
+function etiquetaDoBalao(cor: string, texto: string): string {
+  return `<span style="background:${cor};color:#fff;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:500;">${texto}</span>`;
+}
+
 // Cache módulo para não refazer o fetch a cada reinicialização do mapa
 let spDistritosGeoCache: any = null;
 
@@ -329,14 +360,14 @@ export default function DemandaMapLeaflet({
       marker.addTo(map);
       marker.on('click', () => onDemandClickRef.current(d.id));
       marker.bindTooltip(
-        `<div style="background:rgba(13,27,42,0.97);padding:10px 14px;border-radius:10px;border:1px solid #1b4965;min-width:180px;max-width:240px;">
+        `<div style="${CAIXA_DO_BALAO}min-width:180px;max-width:240px;">
           ${d.foto ? `<img src="${d.foto}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:8px;" />` : ''}
-          <div style="font-weight:600;color:var(--acento-azul);font-size:13px;margin-bottom:3px;">${d.title}</div>
-          <div style="color:var(--text-tertiary);font-size:11px;margin-bottom:2px;">${d.solicitante}</div>
-          ${d.endereco ? `<div style="color:#64748b;font-size:11px;">${d.endereco}</div>` : `<div style="color:#64748b;font-size:11px;">${d.municipio}, ${d.estado}</div>`}
+          ${tituloDoBalao(statusColor, d.title)}
+          <div style="color:var(--text-secondary);font-size:11px;margin-bottom:2px;">${d.solicitante}</div>
+          <div style="color:var(--text-tertiary);font-size:11px;">${d.endereco ? d.endereco : `${d.municipio}, ${d.estado}`}</div>
           <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
-            <span style="background:${catColor}22;color:${catColor};border-radius:4px;padding:2px 7px;font-size:10px;">${CATEGORY_LABELS[d.category] ?? d.category}</span>
-            <span style="background:${statusColor}22;color:${statusColor};border-radius:4px;padding:2px 7px;font-size:10px;">${STATUS_LABELS[d.status] ?? d.status}</span>
+            ${etiquetaDoBalao(catColor, CATEGORY_LABELS[d.category] ?? d.category)}
+            ${etiquetaDoBalao(statusColor, STATUS_LABELS[d.status] ?? d.status)}
           </div>
         </div>`,
         { permanent: false, direction: 'top', className: 'demanda-tooltip', offset: [0, -h] }
@@ -360,10 +391,10 @@ export default function DemandaMapLeaflet({
       marker.addTo(map);
       marker.on('click', () => onEventClickRef.current(e.id));
       marker.bindTooltip(
-        `<div style="background:rgba(13,27,42,0.97);padding:10px 14px;border-radius:10px;border:1px solid ${eColor}44;min-width:160px;">
-          <div style="font-weight:600;color:${eColor};font-size:13px;margin-bottom:3px;">${e.titulo}</div>
-          <div style="color:var(--text-tertiary);font-size:11px;">${TIPO_AGENDA_LABELS[e.tipo]} · ${new Date(e.data).toLocaleDateString('pt-BR')}</div>
-          ${e.local ? `<div style="color:#64748b;font-size:11px;margin-top:2px;">${e.local}</div>` : ''}
+        `<div style="${CAIXA_DO_BALAO}min-width:160px;max-width:240px;">
+          ${tituloDoBalao(eColor, e.titulo)}
+          <div style="color:var(--text-secondary);font-size:11px;">${TIPO_AGENDA_LABELS[e.tipo]} · ${new Date(e.data).toLocaleDateString('pt-BR')}</div>
+          ${e.local ? `<div style="color:var(--text-tertiary);font-size:11px;margin-top:2px;">${e.local}</div>` : ''}
         </div>`,
         { permanent: false, direction: 'top', className: 'demanda-tooltip', offset: [0, -h] }
       );
@@ -381,11 +412,11 @@ export default function DemandaMapLeaflet({
       });
       marker.addTo(map);
       marker.bindTooltip(
-        `<div style="background:rgba(13,27,42,0.97);padding:10px 14px;border-radius:10px;border:1px solid #14b8a622;min-width:160px;">
-          <div style="font-weight:600;color:var(--brand-cyan);font-size:13px;margin-bottom:3px;">${c.nome}</div>
-          <div style="color:var(--text-tertiary);font-size:11px;margin-bottom:2px;">📞 ${c.numero}</div>
-          ${c.email ? `<div style="color:var(--text-tertiary);font-size:11px;margin-bottom:2px;">✉ ${c.email}</div>` : ''}
-          ${c.endereco ? `<div style="color:#64748b;font-size:11px;">${c.endereco}</div>` : ''}
+        `<div style="${CAIXA_DO_BALAO}min-width:160px;max-width:240px;">
+          ${tituloDoBalao('#14b8a6', c.nome)}
+          <div style="color:var(--text-secondary);font-size:11px;margin-bottom:2px;">📞 ${c.numero}</div>
+          ${c.email ? `<div style="color:var(--text-secondary);font-size:11px;margin-bottom:2px;">✉ ${c.email}</div>` : ''}
+          ${c.endereco ? `<div style="color:var(--text-tertiary);font-size:11px;">${c.endereco}</div>` : ''}
         </div>`,
         { permanent: false, direction: 'top', className: 'demanda-tooltip', offset: [0, -43] }
       );
