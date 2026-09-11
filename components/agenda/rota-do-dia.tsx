@@ -162,15 +162,14 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
       const d = diaDe(e.data);
       porDia.set(d, (porDia.get(d) ?? 0) + 1);
     }
-    // Com a sede cadastrada, ela é o primeiro ponto do dia — um compromisso já
-    // fecha uma rota de dois pontos (gabinete até lá). Sem sede, é preciso pelo
-    // menos dois compromissos para ter entre quem traçar.
-    const minimo = sede ? 1 : 2;
+    // Um compromisso já basta: mesmo sem sede cadastrada, a origem sempre pode
+    // ser escolhida na hora — "Partir da minha localização" (GPS) ou "Partir de
+    // outro endereço" — e isso já fecha uma rota de dois pontos.
     return [...porDia.entries()]
-      .filter(([, n]) => n >= minimo)
+      .filter(([, n]) => n >= 1)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([d, n]) => ({ dia: d, quantidade: n }));
-  }, [eventos, sede]);
+  }, [eventos]);
 
   /** Compromissos do dia, na ordem dos horários. É o ponto de partida da rota. */
   const doDia = useMemo((): Parada[] => {
