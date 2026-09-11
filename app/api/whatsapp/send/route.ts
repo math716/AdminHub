@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { isConfigured, sendText, getConnectionState, makeInstanceName } from '@/lib/evolution';
+import { isConfigured, sendText, getConnectionState, makeInstanceName, motivoDaFalha } from '@/lib/evolution';
 
 function normalizeWA(n: string): string {
   const d = n.replace(/\D/g, '');
@@ -55,7 +55,10 @@ export async function POST(request: NextRequest) {
   const { ok, data } = await sendText(instanceName, to, message);
 
   if (!ok) {
-    return NextResponse.json({ error: data?.message ?? 'Erro ao enviar mensagem', details: data }, { status: 500 });
+    // A resposta inteira vai para o log do servidor: é onde está o diagnóstico
+    // quando a Evolution recusa sem explicar. Para a tela vai só a frase.
+    console.error('[/api/whatsapp/send] recusado pela Evolution:', JSON.stringify(data));
+    return NextResponse.json({ error: motivoDaFalha(data) }, { status: 500 });
   }
 
   return NextResponse.json({ success: true, messageId: data?.key?.id });
