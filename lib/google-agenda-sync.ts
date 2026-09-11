@@ -15,6 +15,12 @@ export interface ResultadoSync {
   erro?: string;
 }
 
+function emLotes<T>(itens: T[], tamanho: number): T[][] {
+  const lotes: T[][] = [];
+  for (let i = 0; i < itens.length; i += tamanho) lotes.push(itens.slice(i, i + tamanho));
+  return lotes;
+}
+
 /**
  * Traz do Google o que mudou e reflete na agenda do gabinete.
  *
@@ -41,49 +47,74 @@ export async function sincronizarGabinete(gabineteId: string): Promise<Resultado
       r = await listarEventos({ accessToken, calendarId: conexao.calendarId, syncToken: null });
     }
 
-    let criados = 0, atualizados = 0, removidos = 0;
     const agora = new Date();
 
-    for (const ev of r.eventos) {
-      // Cancelado na origem: some daqui também. O filtro por origem garante que
-      // só apagamos o que veio do Google.
-      if (ev.status === 'cancelled') {
-        const del = await prisma.agendaEvent.deleteMany({
-          where: { gabineteId, googleEventId: ev.id, origem: 'GOOGLE' },
-        });
-        removidos += del.count;
-        continue;
-      }
+    // Cancelados na origem somem daqui também — numa tacada só, em vez de um
+    // deleteMany por evento. O filtro por origem garante que só apagamos o
+    // que veio do Google.
+    const idsCancelados = r.eventos.filter(ev => ev.status === 'cancelled').map(ev => ev.id);
+    const removidos = idsCancelados.length === 0 ? 0 : (await prisma.agendaEvent.deleteMany({
+      where: { gabineteId, googleEventId: { in: idsCancelados }, origem: 'GOOGLE' },
+    })).count;
 
-      const campos = paraEventoLocal(ev);
-      if (!campos) continue; // sem data utilizável
+    const validos = r.eventos
+      .filter(ev => ev.status !== 'cancelled')
+      .map(ev => ({ ev, campos: paraEventoLocal(ev) }))
+      .filter((x): x is { ev: typeof x.ev; campos: NonNullable<typeof x.campos> } => x.campos !== null);
 
-      const existente = await prisma.agendaEvent.findFirst({
-        where: { gabineteId, googleEventId: ev.id },
-        select: { id: true },
+    let criados = 0, atualizados = 0;
+
+    if (validos.length > 0) {
+      // Uma consulta só para saber quais já existem — antes era um findFirst
+      // por evento. Numa agenda com centenas ou milhares de compromissos
+      // (o caso de uma agenda compartilhada bem movimentada), essa troca de
+      // N idas ao banco por 1 é o que evita a função estourar os 5 minutos
+      // da Vercel no meio da sincronização.
+      const idsGoogle = validos.map(v => v.ev.id);
+      const existentes = await prisma.agendaEvent.findMany({
+        where: { gabineteId, googleEventId: { in: idsGoogle } },
+        select: { id: true, googleEventId: true },
       });
+      const idLocalPorGoogleId = new Map(existentes.map(e => [e.googleEventId as string, e.id]));
 
-      if (existente) {
-        await prisma.agendaEvent.update({
-          where: { id: existente.id },
-          data: { ...campos, sincronizadoEm: agora },
-        });
-        atualizados++;
-      } else {
-        await prisma.agendaEvent.create({
-          data: {
-            ...campos,
-            origem: 'GOOGLE',
-            googleEventId: ev.id,
+      const autorPadrao = conexao.conectadoPorId ?? (await primeiroUsuario(gabineteId));
+      const paraCriar = validos.filter(v => !idLocalPorGoogleId.has(v.ev.id));
+      const paraAtualizar = validos.filter(v => idLocalPorGoogleId.has(v.ev.id));
+
+      // createMany é um único round trip por lote, não um por linha — a carga
+      // inicial de uma agenda cheia (a primeira sincronização, sem syncToken)
+      // é praticamente só criação.
+      for (const lote of emLotes(paraCriar, 500)) {
+        const { count } = await prisma.agendaEvent.createMany({
+          data: lote.map(v => ({
+            ...v.campos,
+            origem: 'GOOGLE' as const,
+            googleEventId: v.ev.id,
             sincronizadoEm: agora,
-            tipo: 'COMPROMISSO',
+            tipo: 'COMPROMISSO' as const,
             gabineteId,
             // A agenda do Google não tem autor no AdminHub; fica com quem
             // conectou, para o evento ter um responsável rastreável.
-            createdById: conexao.conectadoPorId ?? (await primeiroUsuario(gabineteId)),
-          },
+            createdById: autorPadrao,
+          })),
+          skipDuplicates: true,
         });
-        criados++;
+        criados += count;
+      }
+
+      // O Prisma não tem update em lote — mas rodar em paralelo em vez de um
+      // de cada vez é o que muda de minutos para segundos. Nas rodadas depois
+      // da primeira, a sincronização é quase só atualização, e era exatamente
+      // aí que o tempo se acumulava.
+      const CONCORRENCIA = 8; // dentro do limite de 10 conexões de lib/db.ts
+      for (const lote of emLotes(paraAtualizar, CONCORRENCIA)) {
+        await Promise.all(lote.map(v =>
+          prisma.agendaEvent.update({
+            where: { id: idLocalPorGoogleId.get(v.ev.id)! },
+            data: { ...v.campos, sincronizadoEm: agora },
+          })
+        ));
+        atualizados += lote.length;
       }
     }
 
