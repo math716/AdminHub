@@ -180,7 +180,7 @@ export default function ContatosPage() {
   const [csvPreview, setCsvPreview] = useState<Array<{ nome: string; numero: string; email: string; endereco: string }>>([]);
   const [totalRows, setTotalRows] = useState(0);
   const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{ imported: number; errors: number; geocodificados: number } | null>(null);
+  const [importResult, setImportResult] = useState<{ imported: number; errors: number; geocodificados: number; repetidos?: number; semCoordenada?: number } | null>(null);
   const [importError, setImportError] = useState('');
 
   // ── Re-geocoding ──
@@ -614,7 +614,7 @@ export default function ContatosPage() {
       const res = await fetch('/api/contacts/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contatos: csvPreview }) });
       const data = await res.json();
       if (!res.ok) { setImportError(data.error ?? 'Erro ao importar.'); return; }
-      setImportResult({ imported: data.imported, errors: data.errors, geocodificados: data.geocodificados ?? 0 });
+      setImportResult({ imported: data.imported, errors: data.errors, geocodificados: data.geocodificados ?? 0, repetidos: data.repetidos ?? 0, semCoordenada: data.semCoordenada ?? 0 });
       setImportStep(3); fetchContatos();
     } finally { setImporting(false); }
   };
@@ -1223,6 +1223,16 @@ export default function ContatosPage() {
                       {importResult.geocodificados > 0 && (
                         <p className="text-sm flex items-center justify-center gap-1" style={{ color: 'var(--acento-azul)' }}>
                           <MapPin className="w-3.5 h-3.5" /> {importResult.geocodificados} endereço{importResult.geocodificados !== 1 ? 's' : ''} localizado{importResult.geocodificados !== 1 ? 's' : ''} no mapa
+                        </p>
+                      )}
+                      {(importResult.semCoordenada ?? 0) > 0 && (
+                        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                          {importResult.semCoordenada} endereço{importResult.semCoordenada !== 1 ? 's' : ''} não {importResult.semCoordenada !== 1 ? 'entraram' : 'entrou'} no mapa — você pode ajustar pela ficha do contato
+                        </p>
+                      )}
+                      {(importResult.repetidos ?? 0) > 0 && (
+                        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                          {importResult.repetidos} número{importResult.repetidos !== 1 ? 's' : ''} já {importResult.repetidos !== 1 ? 'estavam' : 'estava'} na sua lista e não {importResult.repetidos !== 1 ? 'foram' : 'foi'} {importResult.repetidos !== 1 ? 'duplicados' : 'duplicado'}
                         </p>
                       )}
                       {importResult.errors > 0 && <p className="text-sm" style={{ color: 'var(--warning)' }}>{importResult.errors} linha{importResult.errors !== 1 ? 's' : ''} ignorada{importResult.errors !== 1 ? 's' : ''}</p>}
