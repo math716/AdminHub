@@ -315,17 +315,31 @@ function renderBlock(block: Block, i: number): React.ReactNode {
       const rankCol = /^(#|n[ºo.]?|pos(i[çc][aã]o)?|rank(ing)?)$/i.test((block.headers[0] || '').replace(/\*/g, '').trim());
       const colFlex = (ci: number) => (ci === 0 && block.headers.length > 2 ? (rankCol ? 0.5 : 1.7) : 1);
 
+      const cabecalhoEl = React.createElement(View, { style: S.tableRow, wrap: false },
+        ...block.headers.map((h, hi) =>
+          React.createElement(View, { key: hi, style: { ...S.tableHdrCell, flex: colFlex(hi) } },
+            React.createElement(Text, { style: S.tableHdrText }, stripEmoji(h.replace(/\*\*/g, ''))))));
+
+      const linhaEl = (row: string[], ri: number) =>
+        React.createElement(View, { key: ri, wrap: false, style: [ri === block.rows.length - 1 ? S.tableRowLast : S.tableRow, ri % 2 === 1 ? S.tableRowAlt : {}] },
+          ...row.map((cell, ci) =>
+            React.createElement(View, { key: ci, style: { ...S.tableCell, flex: colFlex(ci) } },
+              React.createElement(Text, { style: ci === 0 ? S.tableCellBold : S.tableCellText },
+                ...(rankCol && ci === 0 ? [`${ri + 1}º`] : parseInline(cell))))));
+
+      // Cabeçalho e primeira linha viajam JUNTOS.
+      //
+      // Antes o cabeçalho tinha `minPresenceAhead: 48`, o que só garante 48pt
+      // livres à frente. Numa tabela de células curtas isso basta; num ranking
+      // com nome, partido, votos e ano em cada célula, uma linha passa de 60pt
+      // — então o cabeçalho cabia, a linha não, e ele ficava órfão no pé da
+      // página, com o rodapé fixo impresso por cima da faixa azul.
       const tableEl = React.createElement(View, { style: S.tableWrap },
-        React.createElement(View, { style: S.tableRow, wrap: false, minPresenceAhead: 48 },
-          ...block.headers.map((h, hi) =>
-            React.createElement(View, { key: hi, style: { ...S.tableHdrCell, flex: colFlex(hi) } },
-              React.createElement(Text, { style: S.tableHdrText }, stripEmoji(h.replace(/\*\*/g, '')))))),
-        ...block.rows.map((row, ri) =>
-          React.createElement(View, { key: ri, wrap: false, style: [ri === block.rows.length - 1 ? S.tableRowLast : S.tableRow, ri % 2 === 1 ? S.tableRowAlt : {}] },
-            ...row.map((cell, ci) =>
-              React.createElement(View, { key: ci, style: { ...S.tableCell, flex: colFlex(ci) } },
-                React.createElement(Text, { style: ci === 0 ? S.tableCellBold : S.tableCellText },
-                  ...(rankCol && ci === 0 ? [`${ri + 1}º`] : parseInline(cell))))))));
+        React.createElement(View, { wrap: false },
+          cabecalhoEl,
+          block.rows.length > 0 ? linhaEl(block.rows[0], 0) : null,
+        ),
+        ...block.rows.slice(1).map((row, ri) => linhaEl(row, ri + 1)));
 
       return React.createElement(View, { key: i }, tableEl, chart);
     }
