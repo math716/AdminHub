@@ -137,7 +137,13 @@ export async function executarBuscarEmendas(
   // SP/2026: 101% de execução e "100 emendas" num recorte de milhares.
   const whereFinal = whereEmendas(args, new Set(filtrosIgnorados));
 
-  const [resumo, porAreaBruto, porParlamentarBruto, porMunicipioBruto] = await Promise.all([
+  // Anos que a base REALMENTE cobre neste recorte (ignorando o ano pedido).
+  // Sem isto a Gabi só descobre a cobertura quando a busca falha; achando algo,
+  // ela afirmava de cabeça — e errou: disse "a base cobre 2022 a 2026" num
+  // recorte de SP que começa em 2021.
+  const whereSemAno = whereEmendas(args, new Set([...filtrosIgnorados, 'ano']));
+
+  const [resumo, porAreaBruto, porParlamentarBruto, porMunicipioBruto, anosBruto] = await Promise.all([
     prisma.emendaParlamentar.aggregate({
       where: whereFinal,
       _count: { _all: true },
@@ -166,6 +172,12 @@ export async function executarBuscarEmendas(
       by: ['municipioNome'],
       where: whereFinal,
       _sum: { valorEmpenhado: true, valorPago: true },
+    }),
+    prisma.emendaParlamentar.groupBy({
+      by: ['ano'],
+      where: whereSemAno,
+      _count: { _all: true },
+      orderBy: { ano: 'asc' },
     }),
   ]);
 
@@ -212,6 +224,11 @@ export async function executarBuscarEmendas(
       .sort((a, b) => b.empenhado - a.empenhado),
     /** Quantos parlamentares existem no recorte inteiro. */
     totalParlamentares: porParlamentar.length,
+    /**
+     * Anos que a base cobre neste recorte, com quantas emendas em cada.
+     * É o que a Gabi deve citar ao falar de cobertura — nunca de memória.
+     */
+    anosDisponiveis: anosBruto.map(a => ({ ano: a.ano, emendas: a._count._all })),
     /** Valor por município, para o mapa de calor. Removido antes de ir ao modelo. */
     porMunicipio: porMunicipioBruto
       .filter(m => m.municipioNome && ((m._sum.valorEmpenhado ?? 0) > 0 || (m._sum.valorPago ?? 0) > 0))
