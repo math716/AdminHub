@@ -8,6 +8,7 @@ import { AGENT_TOOLS } from '@/lib/agent/tools';
 import { executarTool } from '@/lib/agent/executors';
 import { SYSTEM_PROMPT } from '@/lib/agent/system-prompt';
 import { visualizacoesAutomaticas } from '@/lib/agent/visualizacoes-auto';
+import { contextoDoGabinete, blocoDoGabinete } from '@/lib/agent/contexto-gabinete';
 
 import { prisma } from '@/lib/db';
 import type { Session } from 'next-auth';
@@ -299,19 +300,21 @@ export async function POST(request: NextRequest) {
     const dadosBrutos: Record<string, unknown> = {}; // saídas cruas p/ alimentar o relatório PDF
     let resposta = '';
 
+    // Quem é este gabinete. Vai num bloco à parte, DEPOIS do prompt grande, para
+    // não invalidar o cache dele — o prompt é o mesmo para todos, isto não.
+    const ctxGabinete = gabineteId ? blocoDoGabinete(await contextoDoGabinete(gabineteId)) : '';
+    const blocosDoSistema = [
+      { type: 'text' as const, text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' as const } },
+      blocoDataAtual(),
+      ...(ctxGabinete ? [{ type: 'text' as const, text: ctxGabinete }] : []),
+    ];
+
     // ── Loop agentic de tool use ─────────────────────────────────────────────
     for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
       const response = await anthropic.messages.create({
         model: MODEL,
         max_tokens: MAX_TOKENS,
-        system: [
-          {
-            type: 'text',
-            text: SYSTEM_PROMPT,
-            cache_control: { type: 'ephemeral' }, // cacheia o system prompt
-          },
-          blocoDataAtual(),
-        ],
+        system: blocosDoSistema,
         tools: AGENT_TOOLS.map((t, i) =>
           // cacheia a lista de tools (muda raramente)
           i === AGENT_TOOLS.length - 1
@@ -429,7 +432,7 @@ export async function POST(request: NextRequest) {
         const fechamento = await anthropic.messages.create({
           model: MODEL,
           max_tokens: MAX_TOKENS,
-          system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }, blocoDataAtual()],
+          system: blocosDoSistema,
           tools: AGENT_TOOLS as any,
           tool_choice: { type: 'none' },
           messages: [
