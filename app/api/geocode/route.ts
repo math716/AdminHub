@@ -4,9 +4,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { ancoraDoGabinete, variantesDeBusca, ehGenerico, conferirNumeros, type Ancora } from '@/lib/geocode';
+import { CacheLimitado } from '@/lib/cache-limitado';
 
 // Cache em memória: chave → { results, expiresAt }
-const geocodeCache = new Map<string, { results: unknown[]; aproximado?: boolean; expiresAt: number }>();
+//
+// Com teto. A chave é o endereço digitado, então o espaço de chaves não tem
+// fim: uma importação de agenda passa milhares de endereços diferentes por
+// aqui. O TTL de 24h sozinho não resolvia — nada apagava o que vencia, e a
+// entrada vencida continuava ocupando memória até a instância ser reciclada.
+// Cada entrada guarda até 15 resultados do Nominatim (~25 KB no pior caso),
+// então 500 entradas limitam o cache a ~12 MB e cobrem uma agenda inteira.
+const geocodeCache = new CacheLimitado<{ results: unknown[]; aproximado?: boolean; expiresAt: number }>(500);
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 horas
 
 /** Faixa em graus ao redor do gabinete usada para enviesar a busca (~130 km). */

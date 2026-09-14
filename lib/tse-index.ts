@@ -11,6 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 import { normalizarTextoTse, TITULOS_COMUNS } from './tse-static';
+import { CacheLimitado } from './cache-limitado';
 
 // Achar alguém sem saber a UF exigiria abrir os 27 arquivos do ano (~5s e
 // centenas de MB de heap). O índice traz só o que identifica a pessoa; é
@@ -20,10 +21,13 @@ export interface CandidatoIndice {
   cargo: string; partido: string; totalVotos: number; situacao: string;
 }
 
-const indiceCache = new Map<string, CandidatoIndice[] | null>();
+// 8 MB de heap por ano. Sao poucos anos, mas o desenho e o mesmo que derrubou
+// o cache dos arquivos por UF — teto aqui tambem, para nao depender de a base
+// continuar pequena.
+const indiceCache = new CacheLimitado<CandidatoIndice[] | null>(3);
 
 function loadIndice(ano: string): CandidatoIndice[] | null {
-  if (indiceCache.has(ano)) return indiceCache.get(ano)!;
+  if (indiceCache.has(ano)) return indiceCache.get(ano) ?? null;
   let dados: CandidatoIndice[] | null = null;
   try {
     // Fora de public/data/tse/ de propósito: o tracing da Vercel puxa aquele

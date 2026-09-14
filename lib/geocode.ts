@@ -19,6 +19,7 @@
 // sequencial e com pausa.
 
 import { prisma } from '@/lib/db';
+import { CacheLimitado } from './cache-limitado';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 const USER_AGENT = 'AdminHub/1.0 (gabinete@adminhub.app)';
@@ -39,7 +40,10 @@ export interface Ancora extends Coordenada {}
  * conferir se o resultado realmente corresponde ao numero perguntado. */
 interface Candidato { coord: Coordenada; texto: string }
 
-const cache = new Map<string, Candidato | null>();
+// Com teto: a chave e o endereco perguntado, e cada consulta guarda ate 4
+// variantes da mesma busca. Numa importacao de agenda isso so crescia.
+// O valor e pequeno (coordenada + texto), entao o teto pode ser folgado.
+const cache = new CacheLimitado<Candidato | null>(2000);
 
 /**
  * Termos que descrevem um compromisso, nao um lugar. O Nominatim sempre acha

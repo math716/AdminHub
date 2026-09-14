@@ -3,6 +3,7 @@ import zlib from 'zlib';
 // pedido e que lanca — dai o try/catch em hostDoPedido.
 import { headers } from 'next/headers';
 import manifesto from './tse-manifesto.json';
+import { CacheLimitado } from './cache-limitado';
 
 // A base do TSE (211 MB) é BUSCADA POR HTTP, não lida do disco.
 //
@@ -172,32 +173,15 @@ export function palavrasDoNome(c: { nomeUrna: string; nome: string }): string[] 
  * Com teto de 2, o caso comum (um estado, um ou dois anos) continua sem reler
  * nada, e uma varredura larga fica lenta em vez de fatal.
  */
-const TETO_CACHE_TSE = 2;
-const fileCache = new Map<string, CandidatoJson[]>();
-
-function guardarNoCache(key: string, data: CandidatoJson[]): void {
-  // Map preserva a ordem de inserção: o primeiro a sair é o mais antigo.
-  while (fileCache.size >= TETO_CACHE_TSE) {
-    const maisAntigo = fileCache.keys().next().value;
-    if (maisAntigo === undefined) break;
-    fileCache.delete(maisAntigo);
-  }
-  fileCache.set(key, data);
-}
+const fileCache = new CacheLimitado<CandidatoJson[]>(2);
 
 export async function loadStaticTseData(ano: string, uf: string): Promise<CandidatoJson[] | null> {
   const key = `${ano}-${uf}`;
-  // Reinserir move a chave para o fim da ordem: o que está em uso não é o
-  // primeiro candidato a sair quando o teto for atingido.
   const guardado = fileCache.get(key);
-  if (guardado) {
-    fileCache.delete(key);
-    fileCache.set(key, guardado);
-    return guardado;
-  }
+  if (guardado) return guardado;
 
   const data = await baixarTseJson<CandidatoJson[]>(`${ano}/${uf}`);
-  if (data) guardarNoCache(key, data);
+  if (data) fileCache.set(key, data);
   return data;
 }
 
@@ -278,10 +262,12 @@ export interface LocalVotacao {
   nome: string; endereco: string; bairro: string; lat: number; lng: number;
 }
 
-const locaisCache = new Map<string, LocalVotacao[] | null>();
+// Mesmo teto pelo mesmo motivo: os locais de SP ocupam 65 MB de heap (148 mil
+// registros), e a Gabi varre os 27 estados numa pergunta só.
+const locaisCache = new CacheLimitado<LocalVotacao[] | null>(3);
 
 export async function loadLocaisTse(uf: string): Promise<LocalVotacao[] | null> {
-  if (locaisCache.has(uf)) return locaisCache.get(uf)!;
+  if (locaisCache.has(uf)) return locaisCache.get(uf) ?? null;
   const data = await baixarTseJson<LocalVotacao[]>(`locais/${uf}`);
   locaisCache.set(uf, data);
   return data;

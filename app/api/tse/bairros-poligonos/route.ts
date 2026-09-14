@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { anoValido, ufValida } from '@/lib/tse-params';
+import { CacheLimitado } from '@/lib/cache-limitado';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
@@ -30,11 +31,22 @@ interface CandidatoJson {
 }
 
 // ---------------------------------------------------------------------------
-// Cache em memória — arquivos GeoJSON de estado podem ter 20MB+
+// Cache em memória — com teto, porque aqui o que entra é grande e a chave vem
+// da URL: `uf` e `ano` são escolhidos por quem usa o mapa, então 27 estados
+// × 4 eleições podem passar pelo mesmo processo.
+//
+// Medido no heap, depois de descomprimir e parsear:
+//   candidatos 2018/SP .... 428 MB      geojson de bairros SC .... 57 MB
+//   candidatos 2022/MG .... 408 MB      geojson de bairros SP .... 48 MB
+//   locais de votação SP ... 65 MB
+//
+// Sem teto, olhar o mapa de três estados já passava de 1 GB e derrubava a
+// instância — foi assim que a Gabi caiu com "falha de conexão".
 // ---------------------------------------------------------------------------
-const geoCache = new Map<string, any>();
-const locaisCache = new Map<string, LocalJson[]>();
-const candCache = new Map<string, CandidatoJson[]>();
+const geoCache = new CacheLimitado<any>(2);       // malha estadual inteira
+const geoMuniCache = new CacheLimitado<any[]>(20); // recorte de um município
+const locaisCache = new CacheLimitado<LocalJson[]>(3);
+const candCache = new CacheLimitado<CandidatoJson[]>(2);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -76,13 +88,13 @@ async function loadGeo(uf: string, baseUrl: string): Promise<any | null> {
 async function loadGeoMunicipio(uf: string, munNorm: string, baseUrl: string): Promise<any[] | null> {
   const fileNorm = munNorm.replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '_');
   const cacheKey = `mun:${uf}:${fileNorm}`;
-  if (geoCache.has(cacheKey)) return geoCache.get(cacheKey)!;
+  if (geoMuniCache.has(cacheKey)) return geoMuniCache.get(cacheKey)!;
   try {
     const res = await fetch(`${baseUrl}/geojson/municipios/${uf}/${fileNorm}.json`);
     if (!res.ok) return null;
     const data = await res.json();
     const features = data.features ?? [];
-    geoCache.set(cacheKey, features);
+    geoMuniCache.set(cacheKey, features);
     return features;
   } catch { return null; }
 }

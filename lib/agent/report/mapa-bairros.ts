@@ -14,6 +14,7 @@
 // da função — que já está a menos de 1 MB do teto de 250 MB.
 
 import { loadLocaisTse, loadStaticTseData, normalizarTextoTse, type LocalVotacao } from '@/lib/tse-static';
+import { CacheLimitado } from '@/lib/cache-limitado';
 
 // ── Point-in-polygon (ray casting) ──────────────────────────────────────────
 function pip(pt: [number, number], ring: [number, number][]): boolean {
@@ -35,7 +36,9 @@ function dentroDaFeicao(lng: number, lat: number, geom: any): boolean {
 }
 
 // ── Carga do GeoJSON de bairros (por HTTP) ──────────────────────────────────
-const cacheBairros = new Map<string, any[] | null>();
+// Um recorte por municipio, e sao 5.570 municipios. Cada malha de capital tem
+// alguns MB; guardar todas as ja consultadas fazia a memoria so subir.
+const cacheBairros = new CacheLimitado<any[] | null>(20);
 
 /**
  * Bairros de um município, a partir do GeoJSON estadual do Censo 2022
@@ -66,7 +69,7 @@ export async function carregarBairros(
   const ufUp = uf.toUpperCase();
   const munNorm = normalizarTextoTse(municipio);
   const chave = `${ufUp}:${munNorm}`;
-  if (cacheBairros.has(chave)) return cacheBairros.get(chave)!;
+  if (cacheBairros.has(chave)) return cacheBairros.get(chave) ?? null;
 
   let features: any[] | null = null;
   try {
