@@ -160,14 +160,44 @@ export function palavrasDoNome(c: { nomeUrna: string; nome: string }): string[] 
   return `${normalizarTextoTse(c.nomeUrna)} ${normalizarTextoTse(c.nome)}`.split(' ').filter(Boolean);
 }
 
+/**
+ * Cache dos arquivos do TSE, com TETO.
+ *
+ * Guardar tudo derrubava a função. Medido: SP/2018, sozinho, ocupa 428 MB de
+ * heap depois de descomprimido e parseado. Uma pergunta do tipo "os senadores
+ * de cada estado" faz a Gabi varrer 27 UFs em dois anos — o Map crescia sem
+ * parar até a instância morrer por falta de memória, e o navegador via "falha
+ * de conexão", porque resposta nenhuma chegava a sair.
+ *
+ * Com teto de 2, o caso comum (um estado, um ou dois anos) continua sem reler
+ * nada, e uma varredura larga fica lenta em vez de fatal.
+ */
+const TETO_CACHE_TSE = 2;
 const fileCache = new Map<string, CandidatoJson[]>();
+
+function guardarNoCache(key: string, data: CandidatoJson[]): void {
+  // Map preserva a ordem de inserção: o primeiro a sair é o mais antigo.
+  while (fileCache.size >= TETO_CACHE_TSE) {
+    const maisAntigo = fileCache.keys().next().value;
+    if (maisAntigo === undefined) break;
+    fileCache.delete(maisAntigo);
+  }
+  fileCache.set(key, data);
+}
 
 export async function loadStaticTseData(ano: string, uf: string): Promise<CandidatoJson[] | null> {
   const key = `${ano}-${uf}`;
-  if (fileCache.has(key)) return fileCache.get(key)!;
+  // Reinserir move a chave para o fim da ordem: o que está em uso não é o
+  // primeiro candidato a sair quando o teto for atingido.
+  const guardado = fileCache.get(key);
+  if (guardado) {
+    fileCache.delete(key);
+    fileCache.set(key, guardado);
+    return guardado;
+  }
 
   const data = await baixarTseJson<CandidatoJson[]>(`${ano}/${uf}`);
-  if (data) fileCache.set(key, data);
+  if (data) guardarNoCache(key, data);
   return data;
 }
 
