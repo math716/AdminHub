@@ -127,14 +127,91 @@ export async function executarBuscarEmendas(
     };
   }
 
-  const totalEmpenhado = emendas.reduce((s, e) => s + e.valorEmpenhado, 0);
-  const totalPago = emendas.reduce((s, e) => s + e.valorPago, 0);
+  // Os totais saem de uma AGREGAÇÃO sobre todas as linhas do recorte, não da
+  // soma da lista acima — ela é só uma amostra das 100 de maior valor pago.
+  //
+  // Somar a amostra produzia dois erros que chegavam ao relatório com cara de
+  // dado: o "total de emendas" era sempre 100 (o teto da consulta), e a
+  // execução passava de 100%, porque ordenar por valor pago seleciona
+  // justamente as linhas em que o pago pesa mais que o empenhado. Medido em
+  // SP/2026: 101% de execução e "100 emendas" num recorte de milhares.
+  const whereFinal = whereEmendas(args, new Set(filtrosIgnorados));
+
+  const [resumo, porAreaBruto, porParlamentarBruto] = await Promise.all([
+    prisma.emendaParlamentar.aggregate({
+      where: whereFinal,
+      _count: { _all: true },
+      _sum: { valorEmpenhado: true, valorPago: true },
+    }),
+    prisma.emendaParlamentar.groupBy({
+      by: ['area'],
+      where: whereFinal,
+      _count: { _all: true },
+      _sum: { valorEmpenhado: true, valorPago: true },
+    }),
+    // Sem `take`: o mesmo agrupamento serve para o ranking E para saber
+    // QUANTOS parlamentares existem no recorte. Contar os nomes distintos da
+    // amostra dava um número que era efeito do corte — o relatório de SP/2026
+    // saiu intitulado "54 parlamentares" só porque 54 nomes couberam nas 100.
+    prisma.emendaParlamentar.groupBy({
+      by: ['parlamentarId'],
+      where: whereFinal,
+      _count: { _all: true },
+      _sum: { valorEmpenhado: true, valorPago: true },
+    }),
+  ]);
+
+  const totalEmendas = resumo._count._all;
+  const totalEmpenhado = resumo._sum.valorEmpenhado ?? 0;
+  const totalPago = resumo._sum.valorPago ?? 0;
+
+  const porParlamentar = porParlamentarBruto
+    .filter(p => p.parlamentarId)
+    .sort((a, b) => (b._sum.valorEmpenhado ?? 0) - (a._sum.valorEmpenhado ?? 0));
+  const top = porParlamentar.slice(0, 15);
+
+  // Nome de quem lidera o ranking — o groupBy devolve só o id.
+  const idsTop = top.map(p => p.parlamentarId).filter((i): i is string => !!i);
+  const dadosParlamentar = idsTop.length > 0
+    ? await prisma.parlamentar.findMany({
+        where: { id: { in: idsTop } },
+        select: { id: true, nome: true, partido: true, uf: true },
+      }).catch(() => [] as any[])
+    : [];
+  const porId = new Map(dadosParlamentar.map((p: any) => [p.id, p]));
 
   return {
     encontrado: true,
-    total: emendas.length,
+    total: totalEmendas,
     totalEmpenhado,
     totalPago,
+    /** Quantas vieram na lista `emendas` — quase sempre menor que `total`. */
+    mostrando: emendas.length,
+    ...(totalEmendas > emendas.length && {
+      avisoLista:
+        `A lista "emendas" traz apenas as ${emendas.length} de MAIOR VALOR PAGO, de ${totalEmendas} no recorte. ` +
+        'Nunca diga que o recorte tem ' + emendas.length + ' emendas, e nunca some a lista para chegar a um total: ' +
+        'use "total", "totalEmpenhado", "totalPago", "porArea" e "topParlamentares", que já cobrem TODAS as linhas.',
+    }),
+    /** Distribuição por área sobre TODAS as linhas — base do gráfico. */
+    porArea: porAreaBruto
+      .map(a => ({
+        area: a.area,
+        emendas: a._count._all,
+        empenhado: a._sum.valorEmpenhado ?? 0,
+        pago: a._sum.valorPago ?? 0,
+      }))
+      .sort((a, b) => b.empenhado - a.empenhado),
+    /** Quantos parlamentares existem no recorte inteiro. */
+    totalParlamentares: porParlamentar.length,
+    /** Ranking por valor empenhado sobre TODAS as linhas (15 primeiros). */
+    topParlamentares: top.map(p => ({
+      nome: porId.get(p.parlamentarId!)?.nome ?? 'N/A',
+      partido: porId.get(p.parlamentarId!)?.partido ?? '',
+      emendas: p._count._all,
+      empenhado: p._sum.valorEmpenhado ?? 0,
+      pago: p._sum.valorPago ?? 0,
+    })),
     // Quando a busca exata falhou e o resultado veio de um filtro relaxado,
     // avisa a Gabi para ela deixar isso claro na resposta (transparência sem
     // expor mecânica: "não há registros de 2025; trouxe os de 2024").

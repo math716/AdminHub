@@ -85,19 +85,32 @@ function deEmendas(d: any): Visualizacao[] {
   if (emendas.length === 0) return [];
   const vis: Visualizacao[] = [];
 
-  const porArea = agrupar(emendas, e => String(e.area ?? ''), e => e.valorEmpenhado || e.valorPago || 0);
-  if (porArea.length > 0) {
+  // `porArea` e `topParlamentares` vêm agregados sobre TODAS as linhas do
+  // recorte; `emendas` é só a amostra das 100 de maior valor pago. Agrupar a
+  // amostra desenhava um gráfico com percentuais que não fechavam com a
+  // realidade — usa-se a agregação sempre que ela vier.
+  const areaAgregada: Array<[string, number]> = Array.isArray(d?.porArea)
+    ? d.porArea.map((a: any) => [String(a.area ?? ''), Number(a.empenhado || a.pago || 0)] as [string, number])
+        .filter(([, v]: [string, number]) => v > 0)
+    : agrupar(emendas, e => String(e.area ?? ''), e => e.valorEmpenhado || e.valorPago || 0);
+
+  if (areaAgregada.length > 0) {
     vis.push({
       tipo: 'donut',
       titulo: 'Distribuição por área',
-      dados: { itens: porArea.map(([a, v]) => ({ label: AREA_LABEL[a] ?? a, valor: v })) },
+      dados: { itens: areaAgregada.map(([a, v]) => ({ label: AREA_LABEL[a] ?? a, valor: v })) },
     });
   }
 
   // Barras: por parlamentar quando há vários; por município quando é um só.
   const nomes = new Set(emendas.map(e => String(e.parlamentar ?? '').trim()).filter(n => n && n !== 'N/A'));
+  const topAgregado: Array<[string, number]> | null = Array.isArray(d?.topParlamentares) && d.topParlamentares.length > 0
+    ? d.topParlamentares.map((p: any) => [String(p.nome ?? ''), Number(p.empenhado || 0)] as [string, number])
+        .filter(([n, v]: [string, number]) => n && n !== 'N/A' && v > 0)
+    : null;
+
   const porQuem = nomes.size > 1
-    ? { titulo: 'Total por parlamentar', dados: agrupar(emendas, e => String(e.parlamentar ?? ''), e => e.valorEmpenhado || 0) }
+    ? { titulo: 'Total por parlamentar', dados: topAgregado ?? agrupar(emendas, e => String(e.parlamentar ?? ''), e => e.valorEmpenhado || 0) }
     : { titulo: 'Destinos principais',   dados: agrupar(emendas, e => String(e.municipio ?? ''),  e => e.valorEmpenhado || 0) };
   if (porQuem.dados.length > 0) {
     vis.push({
