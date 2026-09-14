@@ -46,6 +46,44 @@ const ROTULO_FILTRO: Record<string, string> = {
 };
 
 /**
+ * As partes batem com o todo?
+ *
+ * Conferência determinística, feita aqui e não pedida ao modelo: se a soma das
+ * áreas não fecha com o total, alguma coisa somou o que não devia. Foi assim
+ * que um relatório saiu com R$ 6,1B na capa e R$ 4,5B na tabela — o modelo não
+ * tinha como desconfiar, porque os dois números chegaram prontos.
+ *
+ * Tolerância de um centavo por área: são floats vindos do banco.
+ */
+export function conferirSomas(
+  totais: { total: number; empenhado: number; pago: number },
+  porArea: Array<{ emendas: number; empenhado: number; pago: number }>,
+): string | undefined {
+  if (porArea.length === 0) return undefined;
+
+  const somaEmendas = porArea.reduce((s, a) => s + a.emendas, 0);
+  const somaEmp = porArea.reduce((s, a) => s + a.empenhado, 0);
+  const somaPago = porArea.reduce((s, a) => s + a.pago, 0);
+  const folga = Math.max(0.01 * porArea.length, 1);
+
+  const problemas: string[] = [];
+  if (somaEmendas !== totais.total) {
+    problemas.push(`as áreas somam ${somaEmendas} emendas, o total diz ${totais.total}`);
+  }
+  if (Math.abs(somaEmp - totais.empenhado) > folga) {
+    problemas.push(`as áreas somam ${somaEmp.toFixed(2)} de empenhado, o total diz ${totais.empenhado.toFixed(2)}`);
+  }
+  if (Math.abs(somaPago - totais.pago) > folga) {
+    problemas.push(`as áreas somam ${somaPago.toFixed(2)} de pago, o total diz ${totais.pago.toFixed(2)}`);
+  }
+  if (problemas.length === 0) return undefined;
+
+  return `NÃO PUBLIQUE ESTES NÚMEROS: ${problemas.join('; ')}. `
+    + 'Diga ao usuário que houve inconsistência ao juntar os dados e refaça a busca '
+    + 'com um recorte só, em vez de apresentar valores que não fecham entre si.';
+}
+
+/**
  * O recorte destes números, em texto — para a Gabi citar junto do valor.
  *
  * Sem isto ela não tem como saber, olhando duas respostas na mesma conversa,
@@ -227,6 +265,20 @@ export async function executarBuscarEmendas(
 
   const anosDisponiveis = anosBruto.map(a => ({ ano: a.ano, emendas: a._count._all }));
 
+  const porArea = porAreaBruto
+    .map(a => ({
+      area: a.area,
+      emendas: a._count._all,
+      empenhado: a._sum.valorEmpenhado ?? 0,
+      pago: a._sum.valorPago ?? 0,
+    }))
+    .sort((a, b) => b.empenhado - a.empenhado);
+
+  // Aqui os números vêm todos da mesma consulta, então isto nunca deve disparar
+  // — é rede de segurança para quando alguém mexer na montagem do retorno.
+  const inconsistencia = conferirSomas(
+    { total: totalEmendas, empenhado: totalEmpenhado, pago: totalPago }, porArea);
+
   const municipiosComValor = porMunicipioBruto
     .filter(m => m.municipioNome && ((m._sum.valorEmpenhado ?? 0) > 0 || (m._sum.valorPago ?? 0) > 0))
     .map(m => ({
@@ -256,6 +308,7 @@ export async function executarBuscarEmendas(
       area: args.area && !filtrosIgnorados.includes('area') ? args.area : null,
       ano: args.ano && !filtrosIgnorados.includes('ano') ? Number(args.ano) : null,
     },
+    ...(inconsistencia && { inconsistencia }),
     total: totalEmendas,
     totalEmpenhado,
     totalPago,
@@ -268,14 +321,7 @@ export async function executarBuscarEmendas(
         'use "total", "totalEmpenhado", "totalPago", "porArea" e "topParlamentares", que já cobrem TODAS as linhas.',
     }),
     /** Distribuição por área sobre TODAS as linhas — base do gráfico. */
-    porArea: porAreaBruto
-      .map(a => ({
-        area: a.area,
-        emendas: a._count._all,
-        empenhado: a._sum.valorEmpenhado ?? 0,
-        pago: a._sum.valorPago ?? 0,
-      }))
-      .sort((a, b) => b.empenhado - a.empenhado),
+    porArea,
     /** Quantos parlamentares existem no recorte inteiro. */
     totalParlamentares: porParlamentar.length,
     /**

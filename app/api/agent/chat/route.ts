@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import anthropic from '@/lib/anthropic';
 import { AGENT_TOOLS } from '@/lib/agent/tools';
-import { executarTool } from '@/lib/agent/executors';
+import { executarTool, conferirSomas } from '@/lib/agent/executors';
 import { SYSTEM_PROMPT } from '@/lib/agent/system-prompt';
 import { visualizacoesAutomaticas } from '@/lib/agent/visualizacoes-auto';
 import { contextoDoGabinete, blocoDoGabinete } from '@/lib/agent/contexto-gabinete';
@@ -141,6 +141,10 @@ function acumularEmendas(prev: any, novo: any) {
       : { ...m });
   }
 
+  const porArea = [...areas.values()].sort((a, b) => b.empenhado - a.empenhado);
+  const inconsistencia = conferirSomas(
+    { total, empenhado: totalEmpenhado, pago: totalPago }, porArea);
+
   return {
     ...novo,
     encontrado: true,
@@ -166,7 +170,11 @@ function acumularEmendas(prev: any, novo: any) {
       .slice(0, 15),
     porMunicipio: [...municipios.values()],
     totalParlamentares: (prev.totalParlamentares ?? 0) + (novo.totalParlamentares ?? 0) || undefined,
-    porArea: [...areas.values()].sort((a, b) => b.empenhado - a.empenhado),
+    porArea,
+    // A junção é o ponto onde os números já saíram errados (R$ 6,1B numa capa
+    // cujo total era R$ 4,5B). Conferido aqui, o modelo recebe o aviso junto
+    // dos dados em vez de publicar valores que não fecham entre si.
+    ...(inconsistencia && { inconsistencia }),
     topParlamentares: [...porNome.values()].sort((a, b) => b.empenhado - a.empenhado).slice(0, 15),
     execucaoGeral: totalEmpenhado > 0 ? Math.round((totalPago / totalEmpenhado) * 100) : 0,
   };
