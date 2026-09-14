@@ -33,6 +33,19 @@ const CARGO_TITULO: Record<string, string> = {
 export function assuntoDoRelatorio(input: DadosRelatorio): string | null {
   const d = input.dadosBrutos ?? {};
 
+  // Ranking nacional — vem antes do eleitoral por estado: quando os dois
+  // aparecem no mesmo turno, o documento é sobre o país, não sobre uma UF.
+  const rk = d.ranking_nacional;
+  if (rk?.porEstado && Object.keys(rk.porEstado).length > 0) {
+    const anos: string[] = rk.anosUsados ?? [];
+    const periodo = anos.length > 1 ? `${anos[0]}–${anos[anos.length - 1]}` : (anos[0] ?? '');
+    const cargoCru = String(rk.recorte ?? '').split('·')[0].trim();
+    const cargo = CARGO_TITULO[cargoCru.toLowerCase()] ?? (cargoCru || 'candidatos');
+    const ufs = Object.keys(rk.porEstado).length;
+    const escopo = ufs >= 27 ? 'Brasil' : `${ufs} estados`;
+    return `${cargo.charAt(0).toUpperCase()}${cargo.slice(1)} mais votados — ${escopo}${periodo ? ` ${periodo}` : ''}`;
+  }
+
   // Eleitoral
   const cands: any[] = d.buscar_votacao?.candidatos ?? [];
   if (cands.length > 0) {

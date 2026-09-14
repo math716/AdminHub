@@ -1246,8 +1246,28 @@ export async function executarRankingNacional(
   }
 
   const estados = Object.keys(r.porUf).sort();
+
+  // O índice cobre o PRIMEIRO TURNO. Para senador e deputado isso é o
+  // resultado final; para governador e presidente, não: quem decidiu no
+  // segundo turno aparece como "2º TURNO", nunca como eleito. Em 2022 foram
+  // 15 governadores eleitos na primeira volta e 12 estados em segundo turno —
+  // responder "15 governadores" como se fosse o país inteiro seria errado.
+  const ufsEmSegundoTurno = [...new Set(
+    estados.flatMap(uf => r.porUf[uf]
+      .filter(c => /2.*turno/i.test(String(c.situacao ?? '')))
+      .map(() => uf)),
+  )];
+
   return {
     encontrado: estados.length > 0,
+    ...(ufsEmSegundoTurno.length > 0 && {
+      avisoSegundoTurno:
+        `Este levantamento é do PRIMEIRO TURNO. Em ${ufsEmSegundoTurno.length} estado(s) `
+        + `(${ufsEmSegundoTurno.join(', ')}) a disputa foi decidida em segundo turno, e o `
+        + 'vencedor NÃO consta aqui — quem aparece com "2º TURNO" chegou à segunda volta, '
+        + 'não venceu. Diga isso ao apresentar, e não trate os eleitos listados como se '
+        + 'fossem todos os do país.',
+    }),
     recorte: `${args.cargo} · ${r.anosUsados.join(' + ')}${args.apenas_eleitos ? ' · só eleitos' : ''}`,
     anosUsados: r.anosUsados,
     ...(r.anosSemIndice.length > 0 && {

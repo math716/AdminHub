@@ -187,11 +187,59 @@ function deContatos(d: any): Visualizacao[] {
  * Gráficos padrão para o que as ferramentas trouxeram. Vazio quando não há
  * número que renda visualização.
  */
+// ── Ranking nacional (os 27 estados de uma vez) ──────────────────────────────
+//
+// Votos absolutos entre estados dizem pouco: SP tem 30x o eleitorado do Acre, e
+// um gráfico de barras com os dois lado a lado só mostra tamanho de população.
+// Por isso o corte principal é PARTIDÁRIO, que compara de igual para igual.
+function deRankingNacional(d: any): Visualizacao[] {
+  const porEstado: Record<string, any[]> = d?.porEstado ?? {};
+  const estados = Object.keys(porEstado);
+  if (estados.length === 0) return [];
+
+  const todos = estados.flatMap(uf => (porEstado[uf] ?? []).map(c => ({ ...c, uf })));
+  const eleitos = todos.filter(c => /^ELEITO/i.test(String(c.situacao ?? '')));
+  const vis: Visualizacao[] = [];
+
+  // Quantas cadeiras cada partido levou — a leitura que o volume de votos esconde.
+  const base = eleitos.length > 0 ? eleitos : todos;
+  const porPartido = agrupar(base, c => String(c.partido ?? '').trim(), () => 1);
+  if (porPartido.length > 0) {
+    // O resto vira uma fatia "Outros" em vez de sumir. Um donut cortado nos dez
+    // maiores calcula os percentuais sobre o que sobrou, não sobre o total —
+    // com 81 cadeiras espalhadas por mais de dez siglas, as dez maiores somam
+    // 60 e cada fatia apareceria maior do que é.
+    const TETO = 9;
+    const itens = porPartido.slice(0, TETO).map(([p, n]) => ({ label: p, valor: n }));
+    const resto = porPartido.slice(TETO).reduce((soma, [, n]) => soma + n, 0);
+    if (resto > 0) itens.push({ label: `Outros (${porPartido.length - TETO} partidos)`, valor: resto });
+    vis.push({
+      tipo: 'donut',
+      titulo: eleitos.length > 0 ? 'Eleitos por partido' : 'Candidatos por partido',
+      dados: { itens },
+    });
+  }
+
+  // Os mais votados do país. Enviesado por população — mas é o ranking que se
+  // espera ver, e a tabela ao lado traz o estado de cada um.
+  const top = [...todos].sort((a, b) => (b.totalVotos ?? 0) - (a.totalVotos ?? 0)).slice(0, 8);
+  if (top.length >= 2) {
+    vis.push({
+      tipo: 'barras',
+      titulo: 'Mais votados do país',
+      dados: { itens: top.map(c => ({ label: `${c.nomeUrna} (${c.uf})`, valor: c.totalVotos ?? 0 })) },
+    });
+  }
+
+  return vis;
+}
+
 export function visualizacoesAutomaticas(dadosBrutos: Record<string, unknown>): Visualizacao[] {
   const d = dadosBrutos ?? {};
   // Ordem de prioridade: o assunto principal do turno vem primeiro.
   const vis = [
     ...deVotacao(d.buscar_votacao),
+    ...deRankingNacional(d.ranking_nacional),
     ...deComparativo(d.comparar_parlamentares),
     ...deEmendas(d.buscar_emendas),
     ...deAgenda(d.buscar_agenda),

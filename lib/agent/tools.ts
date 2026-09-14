@@ -376,7 +376,9 @@ export const AGENT_TOOLS: Tool[] = [
       '(centenas de MB) e derruba o sistema. Esta lê só nome, partido, votos e situação, ' +
       'e cobre os 27 estados em milissegundos. Em troca, NÃO traz voto por município nem por ' +
       'zona — para esse detalhe, use buscar_votacao num estado de cada vez. ' +
-      'Para o SENADO informe os DOIS anos (2018 e 2022): a bancada nunca sai de uma eleição só.',
+      'Para o SENADO informe os DOIS anos (2018 e 2022): a bancada nunca sai de uma eleição só. ' +
+      'Cobre o PRIMEIRO TURNO: para governador e presidente, quem venceu no segundo turno não ' +
+      'consta — o retorno avisa quando isso acontece.',
     input_schema: {
       type: 'object' as const,
       properties: {
