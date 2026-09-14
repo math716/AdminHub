@@ -650,16 +650,18 @@ export async function executarBuscarDemandas(
     return { erro: 'Usuário sem gabinete associado — não é possível buscar demandas.' };
   }
 
+  const where = {
+    gabineteId: user.gabineteId, // SEMPRE presente — nunca remove isso
+    ...(args.status && { status: args.status as any }),
+    ...(args.categoria && { category: args.categoria as any }),
+    ...(args.prioridade && { priority: args.prioridade as any }),
+    ...(args.municipio && {
+      municipio: { contains: args.municipio, mode: 'insensitive' as const },
+    }),
+  };
+
   const demandas = await prisma.demand.findMany({
-    where: {
-      gabineteId: user.gabineteId, // SEMPRE presente — nunca remove isso
-      ...(args.status && { status: args.status as any }),
-      ...(args.categoria && { category: args.categoria as any }),
-      ...(args.prioridade && { priority: args.prioridade as any }),
-      ...(args.municipio && {
-        municipio: { contains: args.municipio, mode: 'insensitive' },
-      }),
-    },
+    where,
     select: {
       title: true,
       solicitante: true,
@@ -674,14 +676,24 @@ export async function executarBuscarDemandas(
     take: 50,
   });
 
-  // Contagem por status para dar contexto
-  const contagem = demandas.reduce<Record<string, number>>((acc, d) => {
-    acc[d.status] = (acc[d.status] ?? 0) + 1;
-    return acc;
-  }, {});
+  // Contagem sobre TODAS as demandas do recorte, não sobre as 50 trazidas.
+  // Contar a lista respondia "temos 50 demandas" a um gabinete com 300, e a
+  // divisão por status descrevia só as mais recentes — mesmo defeito que as
+  // emendas tinham.
+  const [totalNoRecorte, porStatus] = await Promise.all([
+    prisma.demand.count({ where }),
+    prisma.demand.groupBy({ by: ['status'], where, _count: { _all: true } }),
+  ]);
+
+  const contagem = Object.fromEntries(porStatus.map(s => [s.status, s._count._all]));
 
   return {
-    total: demandas.length,
+    total: totalNoRecorte,
+    exibidos: demandas.length,
+    ...(totalNoRecorte > demandas.length && {
+      avisoCorte: `A lista traz as ${demandas.length} mais recentes, de ${totalNoRecorte} no recorte. ` +
+        'Use "total" e "contagemPorStatus" para números — não conte a lista.',
+    }),
     contagemPorStatus: contagem,
     demandas: demandas.map(d => ({
       titulo: d.title,
