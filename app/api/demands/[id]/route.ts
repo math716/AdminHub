@@ -85,6 +85,16 @@ export async function PUT(
       return NextResponse.json({ error: 'Foto muito grande (limite 5MB)' }, { status: 413 });
     }
 
+    // Só é alterado o que veio no corpo. O Prisma ignora campo com valor
+    // `undefined`, então ausente = não mexe.
+    //
+    // Antes estes quatro campos usavam `?? null`: quem não os reenviasse os
+    // apagava. E a listagem de demandas não devolve a foto (é base64, pesa
+    // demais), então o formulário de edição a recebia vazia e a gravava vazia
+    // — abrir uma demanda, corrigir uma vírgula e salvar destruía a foto, que
+    // costuma ser a prova do que foi pedido. Sem volta.
+    const veio = (campo: string) => campo in (body ?? {});
+
     const updateData: any = {
       title:        body?.title,
       description:  body?.description,
@@ -93,10 +103,13 @@ export async function PUT(
       estado:       body?.estado,
       municipio:    body?.municipio,
       bairro:       body?.bairro,
-      endereco:     body?.endereco     ?? null,
-      lat:          body?.lat          ?? null,
-      lng:          body?.lng          ?? null,
-      foto:         body?.foto         ?? null,
+      endereco:     veio('endereco') ? body.endereco : undefined,
+      lat:          veio('lat')      ? body.lat      : undefined,
+      lng:          veio('lng')      ? body.lng      : undefined,
+      // String vazia aqui significa "tirar a foto" — é o que o formulário manda
+      // quando a pessoa remove a imagem. Guardar '' deixaria o registro num
+      // estado que nem tem foto nem está vazio.
+      foto:         veio('foto')     ? (body.foto === '' ? null : body.foto) : undefined,
       observations: body?.observations
     };
 

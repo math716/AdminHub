@@ -48,9 +48,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Listagem nao traz o campo `foto` (base64, frequentemente >100KB).
-    // O frontend recebe `hasFoto: boolean` e busca a foto sob demanda em
-    // /api/demands/[id] ao abrir o detalhe — ja implementado via
-    // selectDemandWithFoto na pagina mapa-demandas.
+    // Quem precisa da imagem busca a demanda inteira em /api/demands/[id]:
+    // `selectDemandWithFoto` no mapa e `handleEdit` na lista de demandas.
+    //
+    // Nao existe `hasFoto` aqui — o comentario anterior dizia que sim, e quem
+    // confiasse nele escreveria tela contando com um campo que nunca chega.
     const demands = await prisma.demand.findMany({
       where,
       orderBy: { createdAt: 'desc' },

@@ -73,6 +73,9 @@ export default function DemandasPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingDemand, setEditingDemand] = useState<Demand | null>(null);
+  // A foto como estava no banco ao abrir a edicao. Serve para nao reenviar
+  // megabytes de base64 quando a pessoa nao mexeu na imagem.
+  const [fotoOriginal, setFotoOriginal] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
@@ -150,7 +153,15 @@ export default function DemandasPage() {
     setSaving(true);
 
     try {
-      let payload = { ...formData };
+      let payload: any = { ...formData };
+
+      // Numa edicao, `foto` so vai no corpo se a pessoa mexeu na imagem. O
+      // servidor trata campo ausente como "nao mexer", entao isso evita
+      // reenviar megabytes de base64 a cada gravacao — e evita que uma foto
+      // que nao carregou apague a que esta no banco.
+      if (editingDemand && payload.foto === (fotoOriginal ?? '')) {
+        delete payload.foto;
+      }
 
       // Auto-geocode if address present but no coordinates
       if (payload.endereco && !payload.lat && !payload.lng) {
@@ -179,6 +190,7 @@ export default function DemandasPage() {
       if (res.ok) {
         setShowModal(false);
         setEditingDemand(null);
+        setFotoOriginal(null);
         resetForm();
         fetchDemands();
       }
@@ -189,24 +201,36 @@ export default function DemandasPage() {
     }
   };
 
-  const handleEdit = (demand: Demand) => {
+  const handleEdit = async (demand: Demand) => {
     setEditingDemand(demand);
+    // A listagem nao devolve a foto (e base64, pesa demais). Sem buscar a
+    // demanda inteira aqui, o formulario abria sem a imagem e salvava por cima
+    // dela. Se a busca falhar, a foto fica fora do formulario e o `foto` some
+    // do envio — o servidor entende ausencia como "nao mexer".
+    let completa: any = demand;
+    try {
+      const res = await fetch(`/api/demands/${demand.id}`);
+      if (res.ok) completa = await res.json();
+    } catch { /* segue com o que a listagem trouxe */ }
+
+    setFotoOriginal(typeof completa?.foto === 'string' ? completa.foto : null);
+    const demandaCompleta = completa as Demand;
     setFormData({
-      title: demand?.title ?? '',
-      description: demand?.description ?? '',
-      solicitante: demand?.solicitante ?? '',
-      contato: demand?.contato ?? '',
-      estado: demand?.estado ?? '',
-      municipio: demand?.municipio ?? '',
-      bairro: demand?.bairro ?? '',
-      endereco: demand?.endereco ?? '',
-      lat: demand?.lat ?? null,
-      lng: demand?.lng ?? null,
-      foto: demand?.foto ?? '',
-      category: demand?.category ?? 'OUTROS',
-      status: demand?.status ?? 'PENDENTE',
-      priority: demand?.priority ?? 'MEDIA',
-      observations: demand?.observations ?? ''
+      title: demandaCompleta?.title ?? '',
+      description: demandaCompleta?.description ?? '',
+      solicitante: demandaCompleta?.solicitante ?? '',
+      contato: demandaCompleta?.contato ?? '',
+      estado: demandaCompleta?.estado ?? '',
+      municipio: demandaCompleta?.municipio ?? '',
+      bairro: demandaCompleta?.bairro ?? '',
+      endereco: demandaCompleta?.endereco ?? '',
+      lat: demandaCompleta?.lat ?? null,
+      lng: demandaCompleta?.lng ?? null,
+      foto: (completa?.foto as string) ?? '',
+      category: demandaCompleta?.category ?? 'OUTROS',
+      status: demandaCompleta?.status ?? 'PENDENTE',
+      priority: demandaCompleta?.priority ?? 'MEDIA',
+      observations: demandaCompleta?.observations ?? ''
     });
     setShowModal(true);
   };
