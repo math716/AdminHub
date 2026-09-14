@@ -116,3 +116,61 @@ export function inferirUfPorNomes(
   return { uf: ranking[0]?.[0] ?? null, porNome };
 }
 
+
+/**
+ * Ranking nacional a partir do ÍNDICE, sem abrir os arquivos por estado.
+ *
+ * Existe porque "os senadores mais votados de cada estado" era impossível pelo
+ * caminho normal: cada busca carrega o arquivo completo daquela UF — SP/2018
+ * sozinho ocupa 428 MB de heap, porque traz o detalhamento de votos por
+ * município de todos os candidatos. Varrer 27 estados derrubava a função, e a
+ * pessoa via "falha de conexão".
+ *
+ * O índice tem o país inteiro em 8 MB: nome, partido, cargo, votos e situação,
+ * sem a quebra por município. Para ranquear, é tudo que se precisa.
+ *
+ * `anos` aceita mais de um exercício de propósito — a bancada do Senado nunca
+ * sai de uma eleição só (renovação alternada: 2018 elegeu 2 por estado, 2022
+ * elegeu 1).
+ */
+export function rankingNacional(opcoes: {
+  anos: string[];
+  cargo: string;
+  porUf?: number;
+  apenasEleitos?: boolean;
+}): {
+  anosUsados: string[];
+  anosSemIndice: string[];
+  totalCandidatos: number;
+  porUf: Record<string, Array<CandidatoIndice & { ano: string }>>;
+} | null {
+  const cargoAlvo = normalizarTextoTse(opcoes.cargo);
+  const porUfLimite = Math.min(Math.max(opcoes.porUf ?? 5, 1), 15);
+
+  const anosUsados: string[] = [];
+  const anosSemIndice: string[] = [];
+  const todos: Array<CandidatoIndice & { ano: string }> = [];
+
+  for (const ano of opcoes.anos) {
+    const indice = loadIndice(ano);
+    if (!indice) { anosSemIndice.push(ano); continue; }
+    anosUsados.push(ano);
+    for (const c of indice) {
+      if (!normalizarTextoTse(c.cargo).includes(cargoAlvo)) continue;
+      if (opcoes.apenasEleitos && !/^eleito/.test(normalizarTextoTse(c.situacao))) continue;
+      todos.push({ ...c, ano });
+    }
+  }
+
+  if (anosUsados.length === 0) return null;
+
+  const porUf: Record<string, Array<CandidatoIndice & { ano: string }>> = {};
+  for (const c of todos) {
+    (porUf[c.uf] ??= []).push(c);
+  }
+  for (const uf of Object.keys(porUf)) {
+    porUf[uf] = porUf[uf].sort((a, b) => b.totalVotos - a.totalVotos).slice(0, porUfLimite);
+  }
+
+  return { anosUsados, anosSemIndice, totalCandidatos: todos.length, porUf };
+}

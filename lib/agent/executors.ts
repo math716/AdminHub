@@ -3,7 +3,7 @@ import {
   loadStaticTseData, buscarCandidatoNoJson, buscarCandidatoTolerante, normalizarTextoTse,
   bairrosPorZona, anosDisponiveisTse, sugerirCandidatos,
 } from '@/lib/tse-static';
-import { buscarCandidatoNacional, inferirUfPorNomes } from '@/lib/tse-index';
+import { buscarCandidatoNacional, inferirUfPorNomes, rankingNacional } from '@/lib/tse-index';
 import { resolverDeputados } from '@/lib/agent/report/df-territorial';
 import type { Session } from 'next-auth';
 
@@ -1215,6 +1215,65 @@ export async function executarGerarVisualizacao(
 // ---------------------------------------------------------------------------
 // Dispatcher central — chamado pelo loop de tool use
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ranking_nacional — os 27 estados de uma vez, pelo índice.
+//
+// buscar_votacao abre o arquivo completo da UF, com voto por município de todo
+// candidato: SP/2018 sozinho ocupa 428 MB de heap. Varrer o país por ali
+// derrubava a função e a pessoa via "falha de conexão". O índice traz o mesmo
+// ranking em 14 MB, sem a quebra por município.
+// ---------------------------------------------------------------------------
+export async function executarRankingNacional(
+  args: { anos?: string[]; cargo?: string; por_uf?: number; apenas_eleitos?: boolean },
+  _session: UserSession,
+) {
+  const anos = (args.anos ?? []).map(a => String(a).trim()).filter(Boolean);
+  if (anos.length === 0) return { erro: 'Informe ao menos um ano de eleição.' };
+  if (!args.cargo?.trim()) return { erro: 'Informe o cargo (ex.: Senador, Governador).' };
+
+  const r = rankingNacional({
+    anos,
+    cargo: args.cargo,
+    porUf: args.por_uf,
+    apenasEleitos: args.apenas_eleitos,
+  });
+
+  if (!r) {
+    return {
+      encontrado: false,
+      mensagem: `Não há índice nacional para ${anos.join(', ')}. Os anos com índice são 2018 e 2022.`,
+    };
+  }
+
+  const estados = Object.keys(r.porUf).sort();
+  return {
+    encontrado: estados.length > 0,
+    recorte: `${args.cargo} · ${r.anosUsados.join(' + ')}${args.apenas_eleitos ? ' · só eleitos' : ''}`,
+    anosUsados: r.anosUsados,
+    ...(r.anosSemIndice.length > 0 && {
+      avisoAnos: `Sem índice nacional para ${r.anosSemIndice.join(', ')} — estes anos ficaram de fora.`,
+    }),
+    totalEstados: estados.length,
+    totalCandidatos: r.totalCandidatos,
+    // O índice não guarda voto por município: dizer isso evita que a Gabi
+    // prometa um detalhamento que este caminho não tem.
+    semDetalhePorMunicipio:
+      'Este recorte traz votos totais por candidato. Para voto por município ou por zona, '
+      + 'use buscar_votacao num estado de cada vez.',
+    porEstado: Object.fromEntries(estados.map(uf => [
+      uf,
+      r.porUf[uf].map(c => ({
+        nomeUrna: c.nomeUrna,
+        nome: c.nome,
+        partido: c.partido,
+        totalVotos: c.totalVotos,
+        situacao: c.situacao,
+        ano: c.ano,
+      })),
+    ])),
+  };
+}
+
 export async function executarTool(
   nome: string,
   args: Record<string, unknown>,
@@ -1225,6 +1284,8 @@ export async function executarTool(
       return executarBuscarEmendas(args as any, session);
     case 'buscar_votacao':
       return executarBuscarVotacao(args as any, session);
+    case 'ranking_nacional':
+      return executarRankingNacional(args as any, session);
     case 'comparar_parlamentares':
       return executarCompararParlamentares(args as any, session);
     case 'dados_municipio':

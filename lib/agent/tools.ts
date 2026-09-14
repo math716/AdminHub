@@ -365,4 +365,40 @@ export const AGENT_TOOLS: Tool[] = [
       required: ['tipo', 'dados'],
     },
   },
+
+  {
+    name: 'ranking_nacional',
+    description:
+      'Ranking de candidatos em TODOS os estados de uma vez, a partir do índice nacional. ' +
+      'É a ferramenta certa para "os senadores de cada estado", "os governadores do Brasil", ' +
+      '"os deputados federais mais votados do país" — qualquer recorte que atravesse várias UFs. ' +
+      'NÃO use buscar_votacao em laço para isso: ela abre o arquivo completo de cada estado ' +
+      '(centenas de MB) e derruba o sistema. Esta lê só nome, partido, votos e situação, ' +
+      'e cobre os 27 estados em milissegundos. Em troca, NÃO traz voto por município nem por ' +
+      'zona — para esse detalhe, use buscar_votacao num estado de cada vez. ' +
+      'Para o SENADO informe os DOIS anos (2018 e 2022): a bancada nunca sai de uma eleição só.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        anos: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Anos da eleição (ex: ["2018","2022"]). Senado exige os dois.',
+        },
+        cargo: {
+          type: 'string',
+          description: 'Senador, Governador, Deputado Federal, Deputado Estadual, Presidente.',
+        },
+        por_uf: {
+          type: 'integer',
+          description: 'Quantos por estado (padrão 5, teto 15).',
+        },
+        apenas_eleitos: {
+          type: 'boolean',
+          description: 'Só quem se elegeu. Para a bancada do Senado, use true.',
+        },
+      },
+      required: ['anos', 'cargo'],
+    },
+  },
 ];
