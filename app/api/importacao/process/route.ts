@@ -100,52 +100,92 @@ export async function POST(req: NextRequest) {
   // Cache de parlamentares por cpf/nome pra evitar queries repetidas
   const parlamentarCache = new Map<string, string>(); // chave → id
 
+  // ── Fase 1: quais códigos já existem ────────────────────────────────────
+  //
+  // Uma consulta para o lote todo, em vez de um findUnique por linha. Serve só
+  // para contar criados x atualizados: a gravação virou upsert, que dispensa
+  // saber isso de antemão.
+  const codigos = rows
+    .map(r => String(r.codigoEmenda ?? '').trim())
+    .filter(Boolean);
+  const jaExistem = new Set(
+    (await prisma.emendaParlamentar.findMany({
+      where: { idPortal: { in: codigos } },
+      select: { idPortal: true },
+    })).map(e => e.idPortal),
+  );
+
+  // ── Fase 2: resolver os parlamentares ───────────────────────────────────
+  //
+  // Antes da gravação, porque o cache precisa estar pronto quando as emendas
+  // entrarem em paralelo. Aqui as CHAVES já são distintas, então não há duas
+  // gravações disputando a mesma linha — dá para ir em lote também.
+  const autores = new Map<string, MappedRow>();
   for (const row of rows) {
+    const nome = row.nomeAutor?.trim();
+    if (!nome) continue;
+    const chave = normalizeCpf(row.cpfAutor) ?? nome.toUpperCase();
+    if (!autores.has(chave)) autores.set(chave, row);
+  }
+
+  const gravarAutor = async ([chave, row]: [string, MappedRow]) => {
+    try {
+      const nome = row.nomeAutor!.trim();
+      const cpf = normalizeCpf(row.cpfAutor);
+      const idPortal = cpf ?? nome;
+      const cargo = inferCargo(row.tipo, row.cargo, esfera);
+      const parl = await prisma.parlamentar.upsert({
+        where: { idPortal },
+        create: {
+          idPortal,
+          nome,
+          cpf,
+          cargo,
+          partido: row.partido?.trim() ?? null,
+          uf: row.ufAutor?.trim() ?? (row.uf || ufGlobal) ?? null,
+        },
+        update: {
+          ...(row.partido ? { partido: row.partido.trim() } : {}),
+          ...(cargo !== 'DEPUTADO_FEDERAL' ? { cargo } : {}),
+        },
+        select: { id: true },
+      });
+      parlamentarCache.set(chave, parl.id);
+    } catch {
+      // Parlamentar que não entra não impede a emenda de ser gravada sem autor.
+    }
+  };
+
+  const LOTE_AUTORES = 8;
+  const listaAutores = [...autores.entries()];
+  for (let i = 0; i < listaAutores.length; i += LOTE_AUTORES) {
+    await Promise.all(listaAutores.slice(i, i + LOTE_AUTORES).map(gravarAutor));
+  }
+
+  // ── Fase 3: gravar as emendas ───────────────────────────────────────────
+  //
+  // Em lotes paralelos. Era uma gravação por vez, esperando a ida e volta ao
+  // banco: com as 500 linhas que o front manda por requisição e latência de
+  // 120 ms, batia nos 120 s de teto da rota — e o usuário via a importação
+  // falhar no meio, sem saber quantas linhas tinham entrado.
+  const CONCORRENCIA = 8;
+
+  const gravarLinha = async (row: MappedRow) => {
     try {
       const codigoEmenda = String(row.codigoEmenda ?? '').trim();
-      if (!codigoEmenda) { errors++; continue; }
+      if (!codigoEmenda) { errors++; return; }
 
       const ano = row.anoEmenda || anoGlobal;
       const uf  = (row.uf || ufGlobal) ?? null;
       const cpf = normalizeCpf(row.cpfAutor);
-      const cargo = inferCargo(row.tipo, row.cargo, esfera);
       const area = classificarArea(null, row.funcao) as EmendaArea;
 
-      // ── Upsert Parlamentar ───────────────────────────────────
-      let parlamentarId: string | null = null;
-      if (row.nomeAutor?.trim()) {
-        const cacheKey = cpf ?? row.nomeAutor.trim().toUpperCase();
-        if (parlamentarCache.has(cacheKey)) {
-          parlamentarId = parlamentarCache.get(cacheKey)!;
-        } else {
-          const idPortal = cpf ?? row.nomeAutor.trim();
-          const parl = await prisma.parlamentar.upsert({
-            where:  { idPortal },
-            create: {
-              idPortal,
-              nome:    row.nomeAutor.trim(),
-              cpf,
-              cargo,
-              partido: row.partido?.trim() ?? null,
-              uf:      row.ufAutor?.trim() ?? uf ?? null,
-            },
-            update: {
-              ...(row.partido ? { partido: row.partido.trim() } : {}),
-              ...(cargo !== 'DEPUTADO_FEDERAL' ? { cargo } : {}),
-            },
-            select: { id: true },
-          });
-          parlamentarId = parl.id;
-          parlamentarCache.set(cacheKey, parl.id);
-        }
-      }
+      // Resolvido na fase 2; aqui é só consulta ao cache.
+      const parlamentarId = row.nomeAutor?.trim()
+        ? (parlamentarCache.get(cpf ?? row.nomeAutor.trim().toUpperCase()) ?? null)
+        : null;
 
       // ── Upsert EmendaParlamentar ─────────────────────────────
-      const existing = await prisma.emendaParlamentar.findUnique({
-        where: { idPortal: codigoEmenda },
-        select: { id: true },
-      });
-
       const data = {
         esfera,
         ano,
@@ -165,17 +205,33 @@ export async function POST(req: NextRequest) {
         parlamentarId,
       };
 
-      if (existing) {
-        await prisma.emendaParlamentar.update({ where: { id: existing.id }, data });
-        updated++;
-      } else {
-        await prisma.emendaParlamentar.create({ data: { idPortal: codigoEmenda, ...data } });
-        created++;
-      }
+      await prisma.emendaParlamentar.upsert({
+        where: { idPortal: codigoEmenda },
+        update: data,
+        create: { idPortal: codigoEmenda, ...data },
+      });
+      if (jaExistem.has(codigoEmenda)) updated++; else created++;
     } catch (e: any) {
       errors++;
       if (erroDetalhes.length < 5) erroDetalhes.push(String(e?.message ?? e).slice(0, 120));
     }
+  };
+
+  // Código repetido no mesmo arquivo é comum — o portal de SP publica produto
+  // cartesiano, com a mesma emenda em várias linhas. Em série a última vencia;
+  // em paralelo, duas gravações disputariam a mesma chave única e uma
+  // quebraria. Mantém-se a última ocorrência, que é o comportamento de antes.
+  const porCodigo = new Map<string, MappedRow>();
+  const semCodigo: MappedRow[] = [];
+  for (const row of rows) {
+    const cod = String(row.codigoEmenda ?? '').trim();
+    if (cod) porCodigo.set(cod, row);
+    else semCodigo.push(row);   // contabilizados como erro em gravarLinha
+  }
+  const aGravar = [...porCodigo.values(), ...semCodigo];
+
+  for (let i = 0; i < aGravar.length; i += CONCORRENCIA) {
+    await Promise.all(aGravar.slice(i, i + CONCORRENCIA).map(gravarLinha));
   }
 
   return NextResponse.json({ created, updated, errors, erroDetalhes, total: rows.length });
