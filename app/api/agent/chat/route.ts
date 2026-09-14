@@ -50,9 +50,50 @@ function resumoDosDados(d: Record<string, unknown>): string {
  * totais recalculados sobre o resultado combinado (o cabeçalho do PDF e os
  * gráficos leem daqui).
  */
+const DIMENSOES = ['parlamentar', 'uf', 'esfera', 'municipio', 'area', 'ano'] as const;
+
+/**
+ * Os dois recortes com certeza NÃO se sobrepõem?
+ *
+ * Só quando alguma dimensão tem valor concreto e DIFERENTE nos dois lados
+ * (2024 × 2025, Fulano × Beltrano). Se um lado deixa a dimensão em aberto, ele
+ * contém o outro — "SP, todos os anos" engloba "SP, 2022".
+ */
+function recortesDisjuntos(a: any, b: any): boolean {
+  if (!a || !b) return false;
+  return DIMENSOES.some(d =>
+    a[d] != null && b[d] != null && String(a[d]).toLowerCase() !== String(b[d]).toLowerCase());
+}
+
+/** Quanto mais filtros, mais estreito o recorte. */
+function quantosFiltros(f: any): number {
+  return f ? DIMENSOES.filter(d => f[d] != null).length : 0;
+}
+
 function acumularEmendas(prev: any, novo: any) {
   if (!novo?.encontrado) return prev;          // busca vazia não apaga o que já há
   if (!prev?.encontrado) return novo;
+
+  // Recortes que se sobrepõem NÃO podem ser somados. Caso real: ao montar um
+  // panorama, a Gabi buscou o período inteiro e depois 2022 e 2023 à parte —
+  // a soma cega pôs R$ 6,1B na capa de um documento cujo total é R$ 4,5B,
+  // porque 2022 e 2023 já estavam dentro do período. Nesse caso vale o recorte
+  // MAIS AMPLO, que já contém o outro; os agregados dele descrevem o conjunto.
+  if (!recortesDisjuntos(prev.filtros, novo.filtros)) {
+    const amplo = quantosFiltros(novo.filtros) <= quantosFiltros(prev.filtros) ? novo : prev;
+    const outro = amplo === novo ? prev : novo;
+    const chaveAmostra = (e: any) =>
+      [e.parlamentar, e.ano, e.area, e.municipio, e.valorEmpenhado, e.objeto].join('|');
+    const vistasAmplo = new Set((amplo.emendas ?? []).map(chaveAmostra));
+    return {
+      ...amplo,
+      // A amostra pode crescer — ela é só ilustrativa e não alimenta total algum.
+      emendas: [
+        ...(amplo.emendas ?? []),
+        ...(outro.emendas ?? []).filter((e: any) => !vistasAmplo.has(chaveAmostra(e))),
+      ],
+    };
+  }
 
   const chave = (e: any) =>
     [e.parlamentar, e.ano, e.area, e.municipio, e.valorEmpenhado, e.objeto].join('|');

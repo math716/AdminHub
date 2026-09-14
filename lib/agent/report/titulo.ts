@@ -79,7 +79,20 @@ export function assuntoDoRelatorio(input: DadosRelatorio): string | null {
     // Todos os anos presentes, não o mais frequente: um comparativo entre
     // exercícios cobre dois, e rotular o documento com um só ("SP 2025")
     // esconde metade do que ele traz.
-    const anos = cont('ano').map(([a]) => Number(a)).filter(n => Number.isFinite(n)).sort((a, b) => a - b);
+    //
+    // Numa busca sem filtro de ano, porém, a amostra não serve de régua: ela
+    // traz as maiores por valor pago, então um ano inteiro de emendas zeradas
+    // não aparece nela. Foi assim que um panorama de 2021 a 2026 saiu rotulado
+    // "2022–2026" — as 911 emendas de 2021 valem R$ 0 e ficaram de fora da
+    // amostra. Com o recorte aberto, quem manda é a cobertura declarada.
+    const e = d.buscar_emendas ?? {};
+    const cobertura: number[] = (e.anosDisponiveis ?? [])
+      .map((a: any) => Number(a?.ano)).filter((n: number) => Number.isFinite(n)).sort((a: number, b: number) => a - b);
+    const daAmostra = cont('ano').map(([a]) => Number(a)).filter(n => Number.isFinite(n)).sort((a, b) => a - b);
+
+    const anos = (!e.recortesUnidos && e.filtros && e.filtros.ano == null && cobertura.length > 0)
+      ? cobertura
+      : daAmostra;
     const ano = anos.length > 1 ? `${anos[0]}–${anos[anos.length - 1]}` : String(anos[0] ?? '');
     const escopo = [uf, ano].filter(Boolean).join(' ');
 

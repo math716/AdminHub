@@ -243,6 +243,19 @@ export async function executarBuscarEmendas(
      * compare com um resultado de recorte diferente sem dizer.
      */
     recorte: descreverRecorte(args, filtrosIgnorados, anosDisponiveis.map(a => a.ano)),
+    /**
+     * Os filtros de fato aplicados. Quem junta dois resultados precisa deles
+     * para saber se os recortes se sobrepõem — somar "SP, todos os anos" com
+     * "SP, 2022" conta 2022 duas vezes.
+     */
+    filtros: {
+      parlamentar: args.parlamentar_nome && !filtrosIgnorados.includes('parlamentar') ? args.parlamentar_nome : null,
+      uf: args.uf ? args.uf.toUpperCase() : null,
+      esfera: args.esfera ?? null,
+      municipio: args.municipio && !filtrosIgnorados.includes('municipio') ? args.municipio : null,
+      area: args.area && !filtrosIgnorados.includes('area') ? args.area : null,
+      ano: args.ano && !filtrosIgnorados.includes('ano') ? Number(args.ano) : null,
+    },
     total: totalEmendas,
     totalEmpenhado,
     totalPago,
