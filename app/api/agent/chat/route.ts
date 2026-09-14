@@ -107,6 +107,13 @@ function acumularEmendas(prev: any, novo: any) {
     totalEmpenhado,
     totalPago,
     mostrando: emendas.length,
+    // Marca que este resultado é a junção de buscas diferentes. Importa para o
+    // título: somar `totalParlamentares` dos dois lados conta duas vezes quem
+    // aparece nos dois recortes — num comparativo 2025 vs 2026 o documento saiu
+    // intitulado "269 parlamentares", que é 173 + 96 com as repetições dentro.
+    // Para o uso previsto (um parlamentar por busca) a soma está certa; quando
+    // não dá para saber, é melhor o título não afirmar um número.
+    recortesUnidos: true,
     porMunicipio: [...municipios.values()],
     totalParlamentares: (prev.totalParlamentares ?? 0) + (novo.totalParlamentares ?? 0) || undefined,
     porArea: [...areas.values()].sort((a, b) => b.empenhado - a.empenhado),

@@ -75,14 +75,28 @@ export function assuntoDoRelatorio(input: DadosRelatorio): string | null {
     };
     const parls = cont('parlamentar');
     const uf  = cont('uf')[0]?.[0] ?? '';
-    const ano = cont('ano')[0]?.[0] ?? '';
+
+    // Todos os anos presentes, não o mais frequente: um comparativo entre
+    // exercícios cobre dois, e rotular o documento com um só ("SP 2025")
+    // esconde metade do que ele traz.
+    const anos = cont('ano').map(([a]) => Number(a)).filter(n => Number.isFinite(n)).sort((a, b) => a - b);
+    const ano = anos.length > 1 ? `${anos[0]}–${anos[anos.length - 1]}` : String(anos[0] ?? '');
     const escopo = [uf, ano].filter(Boolean).join(' ');
+
     // `totalParlamentares` conta o recorte inteiro; `parls` conta só os nomes
     // que couberam na amostra. Sem essa preferência, o título anunciava o
     // tamanho do corte da consulta como se fosse o tamanho da bancada.
+    //
+    // Já quando o resultado junta buscas diferentes, nenhum dos dois serve: a
+    // soma dos totais repete quem aparece nos dois recortes, e a amostra
+    // subconta. Sem número confiável, o título fica sem ele.
+    const unidos = Boolean(d.buscar_emendas?.recortesUnidos);
     const quantos = Number(d.buscar_emendas?.totalParlamentares) || parls.length;
-    if (parls.length === 1 && quantos === 1) return `Emendas de ${listarNomes([parls[0][0]])}${escopo ? ` — ${escopo}` : ''}`;
-    if (quantos > 1)  return `Emendas parlamentares${escopo ? ` — ${escopo}` : ''} (${quantos} parlamentares)`;
+    if (!unidos && parls.length === 1 && quantos === 1) {
+      return `Emendas de ${listarNomes([parls[0][0]])}${escopo ? ` — ${escopo}` : ''}`;
+    }
+    if (unidos)      return `Emendas parlamentares${escopo ? ` — ${escopo}` : ''}`;
+    if (quantos > 1) return `Emendas parlamentares${escopo ? ` — ${escopo}` : ''} (${quantos} parlamentares)`;
     return `Emendas parlamentares${escopo ? ` — ${escopo}` : ''}`;
   }
 
