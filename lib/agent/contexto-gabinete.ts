@@ -40,16 +40,31 @@ export interface ContextoGabinete {
 }
 
 /**
+ * DESLIGADO por padrão. Ligue com GABI_IDENTIFICAR_PARLAMENTAR=1.
+ *
+ * O risco é nome ambíguo: um gabinete chamado "Silva" casaria com qualquer
+ * Silva da base, e a Gabi passaria a resposta inteira falando do mandato
+ * errado com toda a confiança — pior que não saber de quem é o gabinete.
+ * Enquanto não houver um casamento em que se confie (nome idêntico, ou um
+ * vínculo explícito no cadastro), o caminho fica fechado.
+ */
+function identificacaoLigada(): boolean {
+  return process.env.GABI_IDENTIFICAR_PARLAMENTAR === '1';
+}
+
+/**
  * Procura, na base de parlamentares, alguém cujo nome case com o do gabinete.
  *
- * Conservador de propósito: só devolve quando UM único parlamentar bate com
- * TODAS as palavras úteis do nome. Apresentar a pessoa errada é pior que não
- * apresentar ninguém — a Gabi passaria a resposta inteira falando de outro
- * mandato com toda a confiança.
+ * Conservador: só devolve quando UM único parlamentar bate com TODAS as
+ * palavras úteis do nome. Ainda assim, "todas as palavras aparecem" é fraco
+ * para nome curto ou sobrenome comum — daí a chave acima.
  */
 async function acharParlamentar(nomeGabinete: string) {
+  if (!identificacaoLigada()) return undefined;
+
   const palavras = palavrasDoNome(nomeGabinete);
-  if (palavras.length === 0) return undefined;
+  // Uma palavra só ("Silva", "Michelle") não identifica ninguém com segurança.
+  if (palavras.length < 2) return undefined;
 
   const candidatos = await prisma.parlamentar.findMany({
     where: { AND: palavras.map(p => ({ nome: { contains: p, mode: 'insensitive' as const } })) } as any,
@@ -137,8 +152,9 @@ export function blocoDoGabinete(ctx: ContextoGabinete | null): string {
     );
   } else {
     linhas.push(
-      'Não foi possível identificar com segurança um parlamentar com esse nome na base. ' +
-      'Não chute de quem é o gabinete: fale de forma neutra sobre os dados.',
+      'Não há parlamentar associado a este gabinete no cadastro. NÃO deduza de quem é ' +
+      'o gabinete pelo nome dele: fale dos dados de forma neutra, sem tratar ninguém ' +
+      'como "o seu parlamentar".',
     );
   }
 
