@@ -45,6 +45,31 @@ const ROTULO_FILTRO: Record<string, string> = {
   ano: 'ano', area: 'área temática', municipio: 'município', parlamentar: 'parlamentar',
 };
 
+/**
+ * O recorte destes números, em texto — para a Gabi citar junto do valor.
+ *
+ * Sem isto ela não tem como saber, olhando duas respostas na mesma conversa,
+ * que uma cobre 2026 e a outra cobre todos os anos. Caso real: comparou "Altair
+ * com 100%" (só 2026) contra "Bragato com 71%" (todos os anos) na mesma frase,
+ * como se fossem a mesma medida. Nenhum dos dois números estava errado; a
+ * comparação é que não existia.
+ */
+function descreverRecorte(a: FiltrosEmendas, ignorados: string[], anos: number[]): string {
+  const ign = new Set(ignorados);
+  const partes: string[] = [];
+  if (a.parlamentar_nome && !ign.has('parlamentar')) partes.push(a.parlamentar_nome);
+  if (a.uf) partes.push(a.uf.toUpperCase());
+  if (a.esfera) partes.push(String(a.esfera).toLowerCase());
+  if (a.municipio && !ign.has('municipio')) partes.push(a.municipio);
+  if (a.area && !ign.has('area')) partes.push(String(a.area).toLowerCase());
+  partes.push(a.ano && !ign.has('ano')
+    ? String(a.ano)
+    : anos.length > 0
+      ? `todos os anos (${anos[0]}–${anos[anos.length - 1]})`
+      : 'todos os anos');
+  return partes.join(' · ');
+}
+
 export async function executarBuscarEmendas(
   args: FiltrosEmendas,
   _session: UserSession,
@@ -200,8 +225,15 @@ export async function executarBuscarEmendas(
     : [];
   const porId = new Map(dadosParlamentar.map((p: any) => [p.id, p]));
 
+  const anosDisponiveis = anosBruto.map(a => ({ ano: a.ano, emendas: a._count._all }));
+
   return {
     encontrado: true,
+    /**
+     * O que estes números cobrem, em texto. CITE junto do valor, e nunca
+     * compare com um resultado de recorte diferente sem dizer.
+     */
+    recorte: descreverRecorte(args, filtrosIgnorados, anosDisponiveis.map(a => a.ano)),
     total: totalEmendas,
     totalEmpenhado,
     totalPago,
@@ -228,7 +260,7 @@ export async function executarBuscarEmendas(
      * Anos que a base cobre neste recorte, com quantas emendas em cada.
      * É o que a Gabi deve citar ao falar de cobertura — nunca de memória.
      */
-    anosDisponiveis: anosBruto.map(a => ({ ano: a.ano, emendas: a._count._all })),
+    anosDisponiveis,
     /** Valor por município, para o mapa de calor. Removido antes de ir ao modelo. */
     porMunicipio: porMunicipioBruto
       .filter(m => m.municipioNome && ((m._sum.valorEmpenhado ?? 0) > 0 || (m._sum.valorPago ?? 0) > 0))

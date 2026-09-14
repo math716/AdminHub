@@ -114,6 +114,9 @@ function acumularEmendas(prev: any, novo: any) {
     // Para o uso previsto (um parlamentar por busca) a soma está certa; quando
     // não dá para saber, é melhor o título não afirmar um número.
     recortesUnidos: true,
+    // Os dois recortes somados, para a Gabi saber que o número agregado não
+    // descreve nenhum dos dois isoladamente.
+    recorte: [prev.recorte, novo.recorte].filter(Boolean).join('  +  ') || undefined,
     porMunicipio: [...municipios.values()],
     totalParlamentares: (prev.totalParlamentares ?? 0) + (novo.totalParlamentares ?? 0) || undefined,
     porArea: [...areas.values()].sort((a, b) => b.empenhado - a.empenhado),
