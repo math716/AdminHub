@@ -315,16 +315,38 @@ function renderBlock(block: Block, i: number): React.ReactNode {
       const rankCol = /^(#|n[ºo.]?|pos(i[çc][aã]o)?|rank(ing)?)$/i.test((block.headers[0] || '').replace(/\*/g, '').trim());
       const colFlex = (ci: number) => (ci === 0 && block.headers.length > 2 ? (rankCol ? 0.5 : 1.7) : 1);
 
-      const cabecalhoEl = React.createElement(View, { style: S.tableRow, wrap: false },
-        ...block.headers.map((h, hi) =>
-          React.createElement(View, { key: hi, style: { ...S.tableHdrCell, flex: colFlex(hi) } },
-            React.createElement(Text, { style: S.tableHdrText }, stripEmoji(h.replace(/\*\*/g, ''))))));
+      // Quanto mais colunas, menos espaço por célula — e texto que não cabe
+      // quebra em três linhas e hifeniza ("REPUBLI-CANOS"). Com 6 colunas em
+      // 527pt sobram ~88pt por célula, e "Damares Alves (REPUBLICANOS) 714.562
+      // 22" não entra nem perto. Encolher fonte e recuo devolve espaço útil, e
+      // linhas mais baixas ainda reduzem a chance de quebra ruim de página.
+      const nCols = block.headers.length;
+      const apertada = nCols >= 5;
+      const fonteCell = apertada ? (nCols >= 6 ? 7 : 7.6) : 8.5;
+      const recuoH = apertada ? 4 : 8;
+      const recuoV = apertada ? 4 : 5;
 
-      const linhaEl = (row: string[], ri: number) =>
-        React.createElement(View, { key: ri, wrap: false, style: [ri === block.rows.length - 1 ? S.tableRowLast : S.tableRow, ri % 2 === 1 ? S.tableRowAlt : {}] },
+      const estiloCel = { ...S.tableCell, paddingHorizontal: recuoH, paddingVertical: recuoV };
+      const estiloHdrCel = { ...S.tableHdrCell, paddingHorizontal: recuoH, paddingVertical: recuoV + 1 };
+      const txtCell = { ...S.tableCellText, fontSize: fonteCell };
+      const txtCellBold = { ...S.tableCellBold, fontSize: fonteCell };
+      const txtHdr = { ...S.tableHdrText, fontSize: apertada ? 7 : 8 };
+
+      // `semQuebra` fica FALSO para quem vai dentro do grupo cabeçalho+1ª linha:
+      // `wrap: false` aninhado dentro de outro `wrap: false` desarruma o
+      // react-pdf, que passa a pintar linhas por cima umas das outras em vez de
+      // empurrá-las para a página seguinte. Quem manda é sempre o de fora.
+      const cabecalhoEl = (semQuebra: boolean) =>
+        React.createElement(View, { style: S.tableRow, ...(semQuebra ? { wrap: false } : {}) },
+          ...block.headers.map((h, hi) =>
+            React.createElement(View, { key: hi, style: { ...estiloHdrCel, flex: colFlex(hi) } },
+              React.createElement(Text, { style: txtHdr }, stripEmoji(h.replace(/\*\*/g, ''))))));
+
+      const linhaEl = (row: string[], ri: number, semQuebra = true) =>
+        React.createElement(View, { key: ri, ...(semQuebra ? { wrap: false } : {}), style: [ri === block.rows.length - 1 ? S.tableRowLast : S.tableRow, ri % 2 === 1 ? S.tableRowAlt : {}] },
           ...row.map((cell, ci) =>
-            React.createElement(View, { key: ci, style: { ...S.tableCell, flex: colFlex(ci) } },
-              React.createElement(Text, { style: ci === 0 ? S.tableCellBold : S.tableCellText },
+            React.createElement(View, { key: ci, style: { ...estiloCel, flex: colFlex(ci) } },
+              React.createElement(Text, { style: ci === 0 ? txtCellBold : txtCell },
                 ...(rankCol && ci === 0 ? [`${ri + 1}º`] : parseInline(cell))))));
 
       // Cabeçalho e primeira linha viajam JUNTOS.
@@ -336,8 +358,8 @@ function renderBlock(block: Block, i: number): React.ReactNode {
       // página, com o rodapé fixo impresso por cima da faixa azul.
       const tableEl = React.createElement(View, { style: S.tableWrap },
         React.createElement(View, { wrap: false },
-          cabecalhoEl,
-          block.rows.length > 0 ? linhaEl(block.rows[0], 0) : null,
+          cabecalhoEl(false),
+          block.rows.length > 0 ? linhaEl(block.rows[0], 0, false) : null,
         ),
         ...block.rows.slice(1).map((row, ri) => linhaEl(row, ri + 1)));
 
