@@ -110,7 +110,24 @@ export async function POST(request: NextRequest) {
     // Nota: sem $transaction — Supabase usa PgBouncer em modo transaction, incompatível com
     // transações interativas do Prisma (P2028). Os upserts são idempotentes, sem necessidade de atomicidade.
     if (municipios && Array.isArray(municipios) && municipios.length > 0) {
-      for (const mun of municipios as any[]) {
+      // O front manda a projeção INTEIRA a cada salvamento, e uma projeção
+      // estadual cobre centenas de municípios (SP tem 645, MG tem 853). Um
+      // upsert de cada vez, esperando a ida e volta ao banco, levava mais de um
+      // minuto só para salvar — mesmo problema que travava a sincronização do
+      // Google Agenda. Os upserts são independentes entre si (a chave é
+      // projeção + município), então vão em paralelo, 8 por vez para não
+      // esgotar as 10 conexões configuradas em lib/db.ts.
+      const CONCORRENCIA = 8;
+
+      // Município repetido no corpo da requisição faria duas gravações
+      // disputarem a mesma linha dentro do mesmo lote; o último vence.
+      const unicos = [...new Map(
+        (municipios as any[])
+          .filter(m => m?.municipio)
+          .map(m => [String(m.municipio), m]),
+      ).values()];
+
+      const gravar = (mun: any) => {
         const munData = {
           votosBase: mun.votosBase ?? 0,
           metaConservadora: mun.metaConservadora ?? mun.votosBase ?? 0,
@@ -123,16 +140,24 @@ export async function POST(request: NextRequest) {
           dobradaPartido: mun.dobradaPartido ?? null,
           dobradaObservacoes: mun.dobradaObservacoes ?? null,
         };
-        await prisma.projecaoMunicipio.upsert({
+        return prisma.projecaoMunicipio.upsert({
           where: { projecaoId_municipio: { projecaoId: projecao.id, municipio: mun.municipio } },
           update: munData,
           create: { projecaoId: projecao.id, municipio: mun.municipio, ...munData },
         });
+      };
+
+      for (let i = 0; i < unicos.length; i += CONCORRENCIA) {
+        await Promise.all(unicos.slice(i, i + CONCORRENCIA).map(gravar));
       }
-      // Remove municípios que foram excluídos pelo usuário
-      const incomingNames = (municipios as any[]).map((m: any) => m.municipio as string);
+      // Remove municípios que foram excluídos pelo usuário. Usa a MESMA lista
+      // que acabou de ser gravada: montá-la do corpo cru colocava `undefined`
+      // no `notIn` quando vinha um item sem município.
       await prisma.projecaoMunicipio.deleteMany({
-        where: { projecaoId: projecao.id, municipio: { notIn: incomingNames } },
+        where: {
+          projecaoId: projecao.id,
+          municipio: { notIn: unicos.map((m: any) => String(m.municipio)) },
+        },
       });
     }
 
