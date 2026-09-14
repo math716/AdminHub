@@ -19,6 +19,14 @@ export async function POST(request: NextRequest) {
 
   const gabineteId = (session.user as any)?.gabineteId;
 
+  // Usuário sem gabinete é possível (User.gabineteId é opcional, e o middleware
+  // só barra quem não foi aprovado). Sem esta guarda a busca do gabinete ia com
+  // id indefinido e a pessoa recebia um erro de banco na tela, em vez de uma
+  // frase. Todas as rotas irmãs já tratam isso assim.
+  if (!gabineteId) {
+    return NextResponse.json({ error: 'Usuário sem gabinete associado' }, { status: 400 });
+  }
+
   if (!isConfigured()) {
     return NextResponse.json({ error: 'WhatsApp não configurado. Conecte um número em Configurações.' }, { status: 503 });
   }
