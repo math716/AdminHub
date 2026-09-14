@@ -62,16 +62,55 @@ function acumularEmendas(prev: any, novo: any) {
     ...(novo.emendas ?? []).filter((e: any) => !vistas.has(chave(e))),
   ];
 
-  const totalEmpenhado = emendas.reduce((s: number, e: any) => s + (e.valorEmpenhado ?? 0), 0);
-  const totalPago      = emendas.reduce((s: number, e: any) => s + (e.valorPago ?? 0), 0);
+  // Soma os AGREGADOS dos dois lados, nunca as listas: cada busca já traz o
+  // total do seu recorte, enquanto `emendas` é só a amostra das maiores.
+  // Somar as listas devolvia o tamanho da amostra como total — era por aqui
+  // que a correção do executor se perdia quando a Gabi buscava duas vezes.
+  // O uso previsto é uma busca por parlamentar, recortes portanto disjuntos.
+  const totalEmpenhado = (prev.totalEmpenhado ?? 0) + (novo.totalEmpenhado ?? 0);
+  const totalPago      = (prev.totalPago ?? 0) + (novo.totalPago ?? 0);
+  const total          = (prev.total ?? (prev.emendas ?? []).length)
+                       + (novo.total ?? (novo.emendas ?? []).length);
+
+  // Distribuição por área: junta as duas, somando o que cai na mesma área.
+  const areas = new Map<string, any>();
+  for (const a of [...(prev.porArea ?? []), ...(novo.porArea ?? [])]) {
+    const atual = areas.get(a.area);
+    areas.set(a.area, atual
+      ? { area: a.area, emendas: atual.emendas + a.emendas, empenhado: atual.empenhado + a.empenhado, pago: atual.pago + a.pago }
+      : { ...a });
+  }
+
+  // Ranking: mesma ideia, por nome.
+  const porNome = new Map<string, any>();
+  for (const p of [...(prev.topParlamentares ?? []), ...(novo.topParlamentares ?? [])]) {
+    const atual = porNome.get(p.nome);
+    porNome.set(p.nome, atual
+      ? { ...atual, emendas: atual.emendas + p.emendas, empenhado: atual.empenhado + p.empenhado, pago: atual.pago + p.pago }
+      : { ...p });
+  }
+
+  // Mapa de calor: soma o que cai no mesmo município.
+  const municipios = new Map<string, any>();
+  for (const m of [...(prev.porMunicipio ?? []), ...(novo.porMunicipio ?? [])]) {
+    const atual = municipios.get(m.municipio);
+    municipios.set(m.municipio, atual
+      ? { municipio: m.municipio, empenhado: atual.empenhado + m.empenhado, pago: atual.pago + m.pago }
+      : { ...m });
+  }
 
   return {
     ...novo,
     encontrado: true,
     emendas,
-    total: emendas.length,
+    total,
     totalEmpenhado,
     totalPago,
+    mostrando: emendas.length,
+    porMunicipio: [...municipios.values()],
+    totalParlamentares: (prev.totalParlamentares ?? 0) + (novo.totalParlamentares ?? 0) || undefined,
+    porArea: [...areas.values()].sort((a, b) => b.empenhado - a.empenhado),
+    topParlamentares: [...porNome.values()].sort((a, b) => b.empenhado - a.empenhado).slice(0, 15),
     execucaoGeral: totalEmpenhado > 0 ? Math.round((totalPago / totalEmpenhado) * 100) : 0,
   };
 }
@@ -285,10 +324,15 @@ export async function POST(request: NextRequest) {
             resultado = { erro: `Erro ao executar ${block.name}: ${String(err)}` };
           }
 
+          // `porMunicipio` existe só para o mapa de calor do PDF e pode ter
+          // centenas de linhas. Fica em dadosBrutos, mas sai do que vai ao
+          // modelo — senão consome o turno sem a Gabi ter uso para ele.
+          const { porMunicipio: _mapa, ...paraOModelo } = (resultado ?? {}) as any;
+
           toolResults.push({
             type: 'tool_result',
             tool_use_id: block.id,
-            content: JSON.stringify(resultado),
+            content: JSON.stringify(paraOModelo),
           });
         }
 

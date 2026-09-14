@@ -58,8 +58,27 @@ function buildPizza(input: ReportInput, isEleitoral: boolean, isEmendas: boolean
       return muns.length >= 2 ? renderPizza('Votos por município (principais)', muns) : null;
     }
   }
-  // Emendas — distribuição por área temática
+  // Emendas — distribuição por área temática.
+  //
+  // `porArea` vem agregado sobre TODAS as linhas do recorte; `emendas` é só a
+  // amostra das maiores. Somar a amostra fazia a faixa do cabeçalho contradizer
+  // a tabela do próprio documento — num relatório de SP/2026 ela anunciava
+  // "Esporte 58,9%" enquanto a tabela, duas linhas abaixo, dizia 13%.
   if (isEmendas) {
+    const porArea: any[] = input.dadosBrutos?.buscar_emendas?.porArea ?? [];
+    if (porArea.length > 0) {
+      const itens = porArea
+        .map(a => ({
+          label: AREA_LABEL[a.area] || String(a.area),
+          valor: Number(a.empenhado) || 0,
+          valorLabel: fmtMoney(Number(a.empenhado) || 0),
+        }))
+        .filter(i => i.valor > 0)
+        .sort((a, b) => b.valor - a.valor);
+      if (itens.length > 0) return renderPizza('Distribuição por área', itens);
+    }
+
+    // Sem os agregados (conversa salva antes desta mudança): soma o que há.
     const emendas: any[] = input.dadosBrutos?.buscar_emendas?.emendas ?? [];
     if (emendas.length > 0) {
       const byArea: Record<string, number> = {};
@@ -306,11 +325,22 @@ export async function POST(request: NextRequest) {
             mapa = await renderMapaEmendasVencedor({ uf, emendas, width: W, height: H });
             mapaTitulo = 'Mapa — parlamentar que mais destinou por município';
           } else {
+            // Prefere a agregação por município (todas as linhas do recorte);
+            // a lista `emendas` é só a amostra das maiores, e colorir o mapa
+            // por ela pintava meia dúzia de cidades como se fossem o estado.
+            const agregado: any[] = body.dadosBrutos?.buscar_emendas?.porMunicipio ?? [];
             const valores: Record<string, number> = {};
-            emendas.forEach(e => {
-              if (!e.municipio) return;
-              valores[e.municipio] = (valores[e.municipio] ?? 0) + (e.valorEmpenhado || e.valorPago || 0);
-            });
+            if (agregado.length > 0) {
+              agregado.forEach(m => {
+                if (!m.municipio) return;
+                valores[m.municipio] = (Number(m.empenhado) || 0) || (Number(m.pago) || 0);
+              });
+            } else {
+              emendas.forEach(e => {
+                if (!e.municipio) return;
+                valores[e.municipio] = (valores[e.municipio] ?? 0) + (e.valorEmpenhado || e.valorPago || 0);
+              });
+            }
             if (Object.keys(valores).length > 0) {
               mapa = await renderMapaEmendas({ uf, valores, width: W, height: H });
               mapaTitulo = 'Mapa de calor — valor destinado por município';

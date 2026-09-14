@@ -137,7 +137,7 @@ export async function executarBuscarEmendas(
   // SP/2026: 101% de execução e "100 emendas" num recorte de milhares.
   const whereFinal = whereEmendas(args, new Set(filtrosIgnorados));
 
-  const [resumo, porAreaBruto, porParlamentarBruto] = await Promise.all([
+  const [resumo, porAreaBruto, porParlamentarBruto, porMunicipioBruto] = await Promise.all([
     prisma.emendaParlamentar.aggregate({
       where: whereFinal,
       _count: { _all: true },
@@ -157,6 +157,14 @@ export async function executarBuscarEmendas(
       by: ['parlamentarId'],
       where: whereFinal,
       _count: { _all: true },
+      _sum: { valorEmpenhado: true, valorPago: true },
+    }),
+    // Só para o mapa de calor do PDF. NÃO vai para o modelo — a rota do chat
+    // remove este campo antes de mandar o resultado (um estado tem centenas de
+    // municípios, e isso consumiria o turno inteiro sem a Gabi precisar deles).
+    prisma.emendaParlamentar.groupBy({
+      by: ['municipioNome'],
+      where: whereFinal,
       _sum: { valorEmpenhado: true, valorPago: true },
     }),
   ]);
@@ -204,6 +212,14 @@ export async function executarBuscarEmendas(
       .sort((a, b) => b.empenhado - a.empenhado),
     /** Quantos parlamentares existem no recorte inteiro. */
     totalParlamentares: porParlamentar.length,
+    /** Valor por município, para o mapa de calor. Removido antes de ir ao modelo. */
+    porMunicipio: porMunicipioBruto
+      .filter(m => m.municipioNome && ((m._sum.valorEmpenhado ?? 0) > 0 || (m._sum.valorPago ?? 0) > 0))
+      .map(m => ({
+        municipio: m.municipioNome as string,
+        empenhado: m._sum.valorEmpenhado ?? 0,
+        pago: m._sum.valorPago ?? 0,
+      })),
     /** Ranking por valor empenhado sobre TODAS as linhas (15 primeiros). */
     topParlamentares: top.map(p => ({
       nome: porId.get(p.parlamentarId!)?.nome ?? 'N/A',
