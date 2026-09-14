@@ -58,10 +58,21 @@ export async function POST(request: NextRequest) {
     if (!nome?.trim()) return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
 
     // Se um padrinho for atribuído, usa a cor dele (a menos que uma cor explícita tenha sido enviada)
+    //
+    // A busca é por id E gabinete: o id vem do corpo da requisição, e aceitá-lo
+    // sem conferir o dono gravava no colaborador a referência a um padrinho de
+    // OUTRO gabinete. A listagem devolve `padrinho { nome, cargo, partido }`,
+    // então o nome alheio apareceria na tela deste gabinete.
     let corFinal = cor || '#8b5cf6';
-    if (padrinhoId && !cor) {
-      const padrinho = await prisma.padrinho.findUnique({ where: { id: padrinhoId }, select: { cor: true } });
-      if (padrinho?.cor) corFinal = padrinho.cor;
+    if (padrinhoId) {
+      const padrinho = await prisma.padrinho.findFirst({
+        where: { id: padrinhoId, gabineteId },
+        select: { cor: true },
+      });
+      if (!padrinho) {
+        return NextResponse.json({ error: 'Padrinho não encontrado neste gabinete.' }, { status: 400 });
+      }
+      if (!cor && padrinho.cor) corFinal = padrinho.cor;
     }
 
     const raNames: string[] = Array.isArray(regioes) ? regioes : [];

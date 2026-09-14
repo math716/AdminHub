@@ -41,11 +41,20 @@ export async function PATCH(
     const body = await request.json();
     const { nome, telefone, email, endereco, lat, lng, funcao, padrinhoId, observacao, status, cor, regioes, zonas } = body ?? {};
 
-    // Se padrinho mudou e não veio uma cor explícita, herda a cor do novo padrinho
+    // Se padrinho mudou e não veio uma cor explícita, herda a cor do novo padrinho.
+    // Busca por id E gabinete — o id chega do corpo da requisição, e sem essa
+    // conferência dava para apontar o colaborador para um padrinho de outro
+    // gabinete, cujo nome e partido a listagem depois exibiria.
     let corFinal = cor;
-    if (padrinhoId !== undefined && padrinhoId && cor === undefined) {
-      const padrinho = await prisma.padrinho.findUnique({ where: { id: padrinhoId }, select: { cor: true } });
-      if (padrinho?.cor) corFinal = padrinho.cor;
+    if (padrinhoId !== undefined && padrinhoId) {
+      const padrinho = await prisma.padrinho.findFirst({
+        where: { id: padrinhoId, gabineteId },
+        select: { cor: true },
+      });
+      if (!padrinho) {
+        return NextResponse.json({ error: 'Padrinho não encontrado neste gabinete.' }, { status: 400 });
+      }
+      if (cor === undefined && padrinho.cor) corFinal = padrinho.cor;
     }
 
     const hasRegioesUpdate = Array.isArray(regioes) || Array.isArray(zonas);
