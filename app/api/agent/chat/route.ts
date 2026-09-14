@@ -117,6 +117,11 @@ function acumularEmendas(prev: any, novo: any) {
     // Os dois recortes somados, para a Gabi saber que o número agregado não
     // descreve nenhum dos dois isoladamente.
     recorte: [prev.recorte, novo.recorte].filter(Boolean).join('  +  ') || undefined,
+    // Recalculado sobre os municípios já somados — o top de cada busca
+    // separadamente não descreve o conjunto.
+    topMunicipios: [...municipios.values()]
+      .sort((a: any, b: any) => b.empenhado - a.empenhado)
+      .slice(0, 15),
     porMunicipio: [...municipios.values()],
     totalParlamentares: (prev.totalParlamentares ?? 0) + (novo.totalParlamentares ?? 0) || undefined,
     porArea: [...areas.values()].sort((a, b) => b.empenhado - a.empenhado),
@@ -337,6 +342,8 @@ export async function POST(request: NextRequest) {
           // `porMunicipio` existe só para o mapa de calor do PDF e pode ter
           // centenas de linhas. Fica em dadosBrutos, mas sai do que vai ao
           // modelo — senão consome o turno sem a Gabi ter uso para ele.
+          // O `topMunicipios` (15 linhas) SEGUE, que é o que ela precisa para
+          // responder "quais municípios mais receberam".
           const { porMunicipio: _mapa, ...paraOModelo } = (resultado ?? {}) as any;
 
           toolResults.push({

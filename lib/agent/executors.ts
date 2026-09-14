@@ -227,6 +227,15 @@ export async function executarBuscarEmendas(
 
   const anosDisponiveis = anosBruto.map(a => ({ ano: a.ano, emendas: a._count._all }));
 
+  const municipiosComValor = porMunicipioBruto
+    .filter(m => m.municipioNome && ((m._sum.valorEmpenhado ?? 0) > 0 || (m._sum.valorPago ?? 0) > 0))
+    .map(m => ({
+      municipio: m.municipioNome as string,
+      empenhado: m._sum.valorEmpenhado ?? 0,
+      pago: m._sum.valorPago ?? 0,
+    }))
+    .sort((a, b) => b.empenhado - a.empenhado);
+
   return {
     encontrado: true,
     /**
@@ -261,14 +270,17 @@ export async function executarBuscarEmendas(
      * É o que a Gabi deve citar ao falar de cobertura — nunca de memória.
      */
     anosDisponiveis,
+    /**
+     * Os municípios que mais receberam — este VAI para o modelo.
+     *
+     * Sem ele a Gabi respondia que "não existe ranking por município, peça um
+     * de cada vez": o `porMunicipio` completo é removido antes de ir ao modelo
+     * (são centenas de linhas, só o mapa precisa), e nada ocupava esse lugar.
+     * Quinze cobrem a pergunta sem pesar no turno.
+     */
+    topMunicipios: municipiosComValor.slice(0, 15),
     /** Valor por município, para o mapa de calor. Removido antes de ir ao modelo. */
-    porMunicipio: porMunicipioBruto
-      .filter(m => m.municipioNome && ((m._sum.valorEmpenhado ?? 0) > 0 || (m._sum.valorPago ?? 0) > 0))
-      .map(m => ({
-        municipio: m.municipioNome as string,
-        empenhado: m._sum.valorEmpenhado ?? 0,
-        pago: m._sum.valorPago ?? 0,
-      })),
+    porMunicipio: municipiosComValor,
     /** Ranking por valor empenhado sobre TODAS as linhas (15 primeiros). */
     topParlamentares: top.map(p => ({
       nome: porId.get(p.parlamentarId!)?.nome ?? 'N/A',
