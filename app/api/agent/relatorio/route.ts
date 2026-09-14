@@ -18,6 +18,19 @@ import { mapaDoDF } from '@/lib/agent/report/mapa-df';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
+/**
+ * O texto é uma ordem dada ao assistente, e não o nome de um assunto?
+ *
+ * "Gere um relatório desses" foi parar na capa de um documento real, porque a
+ * pergunta do usuário era a segunda opção de título. Pedido não é título.
+ */
+function pareceOrdem(texto?: string): boolean {
+  const t = (texto ?? '').trim().toLowerCase();
+  if (!t) return true;
+  if (t.endsWith('?')) return true;
+  return /^(gere|gera|gerar|faça|faca|faz|fazer|monte|monta|montar|crie|cria|criar|me |manda|mande|mandar|traga|traz|trazer|mostre|mostra|mostrar|compare|compara|comparar|quero|preciso|liste|lista|listar|analise|analisa|analisar|detalhe|detalha|explique|explica|calcule|calcula|busque|busca|buscar|procure|procura|pode|consegue|vamos|agora)\b/.test(t);
+}
+
 function fmtMoney(n: number): string {
   if (n >= 1_000_000_000) return `R$ ${(n / 1_000_000_000).toFixed(1).replace('.', ',')}B`;
   if (n >= 1_000_000)     return `R$ ${(n / 1_000_000).toFixed(1).replace('.', ',')}M`;
@@ -121,10 +134,24 @@ function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitu
   input: ReportInput; tipoLabel: string; geradoEm: string; valorPill: Pill | null; mapa: MapaResult | null; mapaTitulo: string; bandeira: BandeiraSrc;
 }) {
   const conteudo = input.conteudo ?? '';
-  // Assunto derivado dos dados; a pergunta do usuário fica só como último
-  // recurso, quando a consulta não trouxe nada de que extrair o tema.
+  // Assunto derivado dos dados; depois o título do gráfico montado no turno.
+  //
+  // A pergunta do usuário ficava como segunda opção e saiu impressa na capa de
+  // um documento real: "Gere um relatório desses". Uma ordem dada ao assistente
+  // não é nome de documento — quando não há dado de que extrair o tema, o
+  // título do gráfico descreve o assunto melhor, e um rótulo genérico é
+  // preferível a repetir o que a pessoa digitou.
+  const tituloDaVisualizacao = (input.visualizacoes ?? [])
+    .map(v => (v?.titulo ?? '').trim())
+    .find(t => t.length > 3);
+
   const reportTitle = clip(
-    stripEmoji(assuntoDoRelatorio(input) || input.titulo || conteudo.split('\n')[0] || 'Relatório de Dados'),
+    stripEmoji(
+      assuntoDoRelatorio(input)
+      || tituloDaVisualizacao
+      || (pareceOrdem(input.titulo) ? '' : input.titulo)
+      || 'Relatório de Dados',
+    ),
     90,
   );
 
