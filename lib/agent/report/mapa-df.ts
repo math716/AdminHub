@@ -33,15 +33,20 @@ export interface MapaDF {
  * geral da eleição); com um só, os votos dele por RA para o mapa de calor.
  * Devolve `null` se a base do ano não existir ou nenhum nome casar.
  */
-export function mapaDoDF(params: {
+// `carregarTerritorial` é assíncrona: sem o `await`, `data` era a Promise, que
+// é sempre "verdadeira" — a guarda abaixo não pegava nada e a primeira leitura
+// de `data.candidatos` estourava em TypeError. A rota do relatório captura, e o
+// que a pessoa via era "Erro ao gerar relatório". Valia para TODO relatório
+// eleitoral do DF, sempre.
+export async function mapaDoDF(params: {
   ano: number;
   cargo?: string;
   candidatos: Array<{ nomeUrna?: string; nome?: string; partido?: string }>;
-}): MapaDF | null {
+}): Promise<MapaDF | null> {
   const { ano, cargo, candidatos } = params;
   if (candidatos.length === 0) return null;
 
-  const data = carregarTerritorial(ano, 'DF', cargo || 'Deputado Distrital');
+  const data = await carregarTerritorial(ano, 'DF', cargo || 'Deputado Distrital');
   if (!data) return null;
 
   const casados = candidatos

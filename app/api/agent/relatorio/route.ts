@@ -310,7 +310,7 @@ export async function POST(request: NextRequest) {
       // costuma estar entre os candidatos comparados. A divisão útil aqui é a
       // Região Administrativa.
       if (!mapa && c?.uf === 'DF') {
-        const df = mapaDoDF({
+        const df = await mapaDoDF({
           ano: Number(c.ano),
           cargo: c.cargo,
           candidatos: cands.map((x: any) => ({ nomeUrna: x.nomeUrna, nome: x.nome, partido: x.partido })),
