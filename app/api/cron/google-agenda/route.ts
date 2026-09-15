@@ -19,12 +19,20 @@ import { sincronizarGabinete } from '@/lib/google-agenda-sync';
 const LOTE = 10;
 
 export async function GET(request: NextRequest) {
+  // Sem segredo configurado, a rota NAO fica aberta.
+  //
+  // A guarda era `if (segredo) { confere }`: faltando a variavel de ambiente,
+  // qualquer um podia disparar este cron — e ele consulta servico externo e
+  // escreve no banco. Falhar fechado e o certo: se a variavel sumir, o cron
+  // para de rodar e aparece no log, em vez de virar um endereco publico que
+  // ninguem percebe.
   const segredo = process.env.CRON_SECRET;
-  if (segredo) {
-    const auth = request.headers.get('authorization');
-    if (auth !== `Bearer ${segredo}`) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
+  if (!segredo) {
+    console.error('[cron/google-agenda] CRON_SECRET nao configurado — cron recusado');
+    return NextResponse.json({ error: 'Cron não configurado' }, { status: 503 });
+  }
+  if (request.headers.get('authorization') !== `Bearer ${segredo}`) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
   }
 
   try {

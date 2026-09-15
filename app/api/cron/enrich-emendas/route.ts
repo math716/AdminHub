@@ -37,12 +37,20 @@ const DEFAULT_CONCURRENCY = 3;
 
 export async function GET(request: NextRequest) {
   // ── Auth: Bearer secret (Vercel Cron compatível) ─────────────────────
+  // Sem segredo configurado, a rota NAO fica aberta.
+  //
+  // A guarda era `if (segredo) { confere }`: faltando a variavel de ambiente,
+  // qualquer um podia disparar este cron — e ele consulta servico externo e
+  // escreve no banco. Falhar fechado e o certo: se a variavel sumir, o cron
+  // para de rodar e aparece no log, em vez de virar um endereco publico que
+  // ninguem percebe.
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  if (!cronSecret) {
+    console.error('[cron/enrich-emendas] CRON_SECRET nao configurado — cron recusado');
+    return NextResponse.json({ error: 'Cron nao configurado' }, { status: 503 });
+  }
+  if (request.headers.get('authorization') !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const limit = Math.min(
