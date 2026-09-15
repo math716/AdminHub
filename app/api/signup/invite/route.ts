@@ -28,6 +28,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 });
     }
 
+    // Tamanho mínimo conferido no servidor. A tela já avisa, mas quem chamar a
+    // rota direto criava conta com senha de um caractere — e essa conta entra
+    // no gabinete depois de aprovada. Seis é o que as telas de cadastro dizem.
+    if (String(password).length < 6) {
+      return NextResponse.json(
+        { error: 'A senha deve ter no mínimo 6 caracteres' },
+        { status: 400 }
+      );
+    }
+
     const secret = process.env.NEXTAUTH_SECRET;
     if (!secret) {
       console.error('NEXTAUTH_SECRET nao configurado');

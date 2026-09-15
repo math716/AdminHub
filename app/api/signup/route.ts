@@ -36,6 +36,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Tamanho mínimo conferido no servidor. A tela já avisa, mas quem chamar a
+    // rota direto criava conta com senha de um caractere — e essa conta entra
+    // no gabinete depois de aprovada. Seis é o que as telas de cadastro dizem.
+    if (String(password).length < 6) {
+      return NextResponse.json(
+        { error: 'A senha deve ter no mínimo 6 caracteres' },
+        { status: 400 }
+      );
+    }
+
     // Verificar se há gabinetes no sistema
     const gabineteCount = await prisma.gabinete.count();
     const userCount = await prisma.user.count();
