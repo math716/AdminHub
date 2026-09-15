@@ -45,7 +45,45 @@ export const authOptions: NextAuthOptions = {
         if (!user || !isValid) {
           throw new Error('Credenciais inválidas');
         }
-        if (!user.approved && user.role !== 'CHEFE' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+
+        // Quem foi removido não entra mais.
+        //
+        // Chefe e Agente Político removem alguém com "remoção suave": o
+        // registro fica marcado com `deletedAt` para o administrador revisar
+        // depois. A listagem de usuários esconde quem tem essa marca, então na
+        // tela a pessoa sumiu — mas a senha continuava valendo e nem o login
+        // nem o middleware olhavam esse campo. Tirar alguém do gabinete não
+        // tirava o acesso dele aos contatos, às demandas e à agenda.
+        if (user.deletedAt) {
+          throw new Error('Este acesso foi removido. Procure o Chefe de Gabinete.');
+        }
+
+        // Gabinete na lixeira: quem trabalhava nele também não entra. Admin
+        // fica de fora da regra porque é quem revisa a exclusão.
+        const ehAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+        if (!ehAdmin && user.gabinete?.deletedAt) {
+          throw new Error('Este gabinete foi excluído. Procure o administrador.');
+        }
+
+        // Sem aprovação, não entra — nem como Chefe de Gabinete.
+        //
+        // Havia uma exceção para CHEFE aqui, e ela abria um buraco: qualquer
+        // pessoa pode se cadastrar escolhendo "Chefe de Gabinete" e um gabinete
+        // existente da lista. A conta nasce com `approved: false` e o sistema
+        // responde "Aguarde a aprovação do Administrador" — mas o login
+        // deixava entrar assim mesmo.
+        //
+        // O middleware manda essa sessão para a tela de espera, então pela tela
+        // parecia bloqueado. Só que o middleware cobre apenas /dashboard: as
+        // rotas de /api conferem se existe sessão, não se o cadastro foi
+        // aprovado. Com a sessão na mão, dava para ler contatos, demandas e
+        // agenda do gabinete escolhido chamando a API direto.
+        //
+        // Nenhum fluxo legítimo depende da exceção: convite de Chefe, aprovação
+        // de usuário e aprovação de solicitação de gabinete criam a conta já
+        // com `approved: true`. O primeiro usuário do sistema entra como ADMIN,
+        // também aprovado.
+        if (!user.approved && !ehAdmin) {
           throw new Error('Cadastro pendente de aprovação');
         }
         return {

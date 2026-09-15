@@ -42,7 +42,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(INVALID_CREDENTIALS, { status: 401 });
     }
 
-    if (!user.approved && user.role !== 'CHEFE' && user.role !== 'ADMIN') {
+    // As mesmas recusas do login de verdade (lib/auth-options.ts). Esta rota
+    // não é usada por nenhuma tela — quem entra no sistema passa por
+    // signIn('credentials') —, mas está no ar e já tinha divergido: não olhava
+    // `deletedAt` e esquecia SUPER_ADMIN. Enquanto existir, responde igual.
+    if (user.deletedAt) {
+      return NextResponse.json(
+        { error: 'Este acesso foi removido. Procure o Chefe de Gabinete.' },
+        { status: 403 }
+      );
+    }
+
+    const ehAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+    if (!user.approved && !ehAdmin) {
       return NextResponse.json(
         { error: 'Cadastro pendente de aprovação' },
         { status: 403 }
