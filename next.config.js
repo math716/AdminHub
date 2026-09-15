@@ -37,8 +37,20 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Erro de tipo volta a barrar o build.
+  //
+  // Enquanto isso ficou ligado, seis arquivos acumularam erro e ninguém mais
+  // olhava a lista. Dois deles eram defeito de execução, não chatice de tipo:
+  // um `await` esquecido numa migração para função assíncrona (todo relatório
+  // eleitoral do DF respondia 500) e um campo fora do `select` que fazia a
+  // chave de de-duplicação virar "numero_undefined". Os dois estavam à vista
+  // em `npx tsc --noEmit` desde o dia em que entraram.
+  //
+  // Com a lista zerada, é melhor o build parar aqui do que o defeito chegar ao
+  // gabinete. Se algum dia travar uma publicação urgente, ligue de volta,
+  // publique e resolva depois — mas não deixe ligado.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: { unoptimized: true },
   experimental: {
