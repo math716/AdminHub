@@ -25,7 +25,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const sp = request.nextUrl.searchParams;
     const ano    = sp.get('ano') ? parseInt(sp.get('ano')!, 10) : undefined;
     const uf     = sp.get('uf') ?? undefined;
-    const esfera = sp.get('esfera')?.toUpperCase() || undefined;
+    // Só os dois valores que a base conhece. Vinha direto da URL: qualquer
+    // outra coisa ("?esfera=x") chegava ao banco e virava erro 500 em vez de
+    // resposta. É também o que fazia o TypeScript perder a inferência do
+    // `select` logo abaixo e reclamar de campos que existem.
+    const esferaRaw = sp.get('esfera')?.toUpperCase();
+    const esfera = esferaRaw === 'FEDERAL' || esferaRaw === 'ESTADUAL' ? esferaRaw : undefined;
 
     // Localiza o parlamentar pelo CPF ou idPortal
     const parlamentar = await prisma.parlamentar.findFirst({
@@ -52,6 +57,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       select: {
         id: true,
         idPortal: true,
+        // `ano` entra na chave de de-duplicacao logo abaixo. Nao estava no
+        // select, entao a chave saia como "0001_undefined" e duas emendas de
+        // mesmo numero em anos diferentes viravam uma so — o merge fica com o
+        // maior valor e descarta o outro. So nao aparecia porque a tela sempre
+        // manda um ano; com o ano ausente, a consulta volta com todos.
+        ano: true,
         numero: true,
         tipo: true,
         funcao: true,

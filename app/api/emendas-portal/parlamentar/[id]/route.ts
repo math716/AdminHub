@@ -18,7 +18,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     // limita resultados àquele estado pra os totais refletirem a "fatia" do
     // parlamentar naquele UF, não o total nacional dele.
     const uf     = request.nextUrl.searchParams.get('uf')?.toUpperCase() || undefined;
-    const esfera = request.nextUrl.searchParams.get('esfera')?.toUpperCase() || undefined;
+    // Só os dois valores que a base conhece. Vinha direto da URL: qualquer
+    // outra coisa ("?esfera=x") chegava ao banco e virava erro 500 em vez de
+    // resposta. É também o que fazia o TypeScript perder a inferência do
+    // `select` logo abaixo e reclamar de campos que existem.
+    const esferaRaw = request.nextUrl.searchParams.get('esfera')?.toUpperCase();
+    const esfera = esferaRaw === 'FEDERAL' || esferaRaw === 'ESTADUAL' ? esferaRaw : undefined;
 
     // id pode ser: CPF (11 dígitos), idPortal (= nome no nosso caso), ou o nome direto
     const isCpf = /^\d{11}$/.test(id);
