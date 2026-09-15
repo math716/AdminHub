@@ -104,7 +104,21 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 8 * 60 * 60, // 8 horas
+    // 2 horas.
+    //
+    // A sessão é um token assinado que o navegador guarda: enquanto vale, o
+    // sistema confia no que está escrito nele e não pergunta nada ao banco.
+    // Rápido, mas o token não sabe que foi revogado. Remover alguém impede que
+    // ele obtenha um token NOVO (ver as recusas no `authorize` acima) — o que
+    // já está na mão dele continua valendo até vencer.
+    //
+    // Esse prazo é, portanto, a janela em que um acesso removido ainda
+    // funciona. Era de 8 horas; passou para 2.
+    //
+    // Fechar a janela de vez exige reconferir no banco de tempos em tempos, o
+    // que mexe no caminho que decide quem entra. Fica para quando der para
+    // testar o login de verdade antes de publicar.
+    maxAge: 2 * 60 * 60,
   },
   cookies: {
     sessionToken: {
