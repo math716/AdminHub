@@ -19,9 +19,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Credenciais inválidas');
         }
 
-        // Limite de tentativas. A rota /api/auth/login já tinha essa proteção,
-        // mas a TELA de login entra por aqui (signIn('credentials')) — ou seja,
-        // o endpoint que de fato autentica estava aberto a força bruta.
+        // Limite de tentativas. Este é o único caminho de autenticação do
+        // sistema: a tela de login chama signIn('credentials'), que entra aqui.
+        // (Existia uma segunda implementação em /api/auth/login, sem uso e já
+        // desatualizada — removida no bloco 7 da auditoria.)
         //
         // Limita por e-mail e por IP: só por IP, um atacante atrás de várias
         // saídas escaparia; só por e-mail, daria para varrer contas diferentes.
