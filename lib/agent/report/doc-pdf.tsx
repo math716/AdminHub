@@ -332,36 +332,42 @@ function renderBlock(block: Block, i: number): React.ReactNode {
       const txtCellBold = { ...S.tableCellBold, fontSize: fonteCell };
       const txtHdr = { ...S.tableHdrText, fontSize: apertada ? 7 : 8 };
 
-      // `semQuebra` fica FALSO para quem vai dentro do grupo cabeçalho+1ª linha:
-      // `wrap: false` aninhado dentro de outro `wrap: false` desarruma o
-      // react-pdf, que passa a pintar linhas por cima umas das outras em vez de
-      // empurrá-las para a página seguinte. Quem manda é sempre o de fora.
-      const cabecalhoEl = (semQuebra: boolean) =>
-        React.createElement(View, { style: S.tableRow, ...(semQuebra ? { wrap: false } : {}) },
+      const cabecalhoEl = () =>
+        React.createElement(View, { style: S.tableRow },
           ...block.headers.map((h, hi) =>
             React.createElement(View, { key: hi, style: { ...estiloHdrCel, flex: colFlex(hi) } },
               React.createElement(Text, { style: txtHdr }, stripEmoji(h.replace(/\*\*/g, ''))))));
 
-      const linhaEl = (row: string[], ri: number, semQuebra = true) =>
-        React.createElement(View, { key: ri, ...(semQuebra ? { wrap: false } : {}), style: [ri === block.rows.length - 1 ? S.tableRowLast : S.tableRow, ri % 2 === 1 ? S.tableRowAlt : {}] },
+      const linhaEl = (row: string[], ri: number) =>
+        React.createElement(View, { key: ri, style: [ri === block.rows.length - 1 ? S.tableRowLast : S.tableRow, ri % 2 === 1 ? S.tableRowAlt : {}] },
           ...row.map((cell, ci) =>
             React.createElement(View, { key: ci, style: { ...estiloCel, flex: colFlex(ci) } },
               React.createElement(Text, { style: ci === 0 ? txtCellBold : txtCell },
                 ...(rankCol && ci === 0 ? [`${ri + 1}º`] : parseInline(cell))))));
 
-      // Cabeçalho e primeira linha viajam JUNTOS.
+      // A tabela INTEIRA é indivisível, e nada dentro dela é.
       //
-      // Antes o cabeçalho tinha `minPresenceAhead: 48`, o que só garante 48pt
-      // livres à frente. Numa tabela de células curtas isso basta; num ranking
-      // com nome, partido, votos e ano em cada célula, uma linha passa de 60pt
-      // — então o cabeçalho cabia, a linha não, e ele ficava órfão no pé da
-      // página, com o rodapé fixo impresso por cima da faixa azul.
-      const tableEl = React.createElement(View, { style: S.tableWrap },
-        React.createElement(View, { wrap: false },
-          cabecalhoEl(false),
-          block.rows.length > 0 ? linhaEl(block.rows[0], 0, false) : null,
-        ),
-        ...block.rows.slice(1).map((row, ri) => linhaEl(row, ri + 1)));
+      // O que o react-pdf faz mal é `wrap: false` em pedaços soltos dentro de
+      // um contêiner que pode quebrar: quando o pedaço não cabe no que sobrou
+      // da página, ele não empurra o pedaço — espreme a tabela toda ali, com as
+      // linhas pintadas umas por cima das outras. Foi o que apareceu no
+      // relatório dos senadores: as 9 linhas do Nordeste em 18pt de altura,
+      // ilegíveis, enquanto a página seguinte começava vazia.
+      //
+      // Com o `wrap: false` só no contorno, a tabela ou cabe onde está ou vai
+      // inteira para a página seguinte — e o cabeçalho nunca fica sozinho no pé
+      // da página, porque viaja junto com tudo. Quando a tabela é maior que uma
+      // página, o react-pdf quebra assim mesmo, sem perder linha (conferido com
+      // 60 linhas: as 60 saem no documento). Nesse caso ele escreve no log
+      // "Node of type VIEW can't wrap between pages" — é esperado, não é erro,
+      // e não é motivo para tirar o `wrap: false` daqui.
+      //
+      // Medido sobre o relatório dos senadores em 32 posições de quebra: o
+      // desenho anterior (grupo cabeçalho+1ª linha com `wrap: false`, demais
+      // linhas idem) deformava em 5 delas; este, em nenhuma.
+      const tableEl = React.createElement(View, { style: S.tableWrap, wrap: false },
+        cabecalhoEl(),
+        ...block.rows.map((row, ri) => linhaEl(row, ri)));
 
       return React.createElement(View, { key: i }, tableEl, chart);
     }
