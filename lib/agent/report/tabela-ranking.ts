@@ -35,9 +35,16 @@ const REGIOES: Array<{ nome: string; ufs: string[] }> = [
   { nome: 'Sul',          ufs: ['PR', 'RS', 'SC'] },
 ];
 
-/** Teto de colocações por estado. Acima de 6 colunas o texto da célula quebra
- *  em três linhas e a tabela fica ilegível na largura de uma A4. */
-const MAX_COLOCACOES = 5;
+/**
+ * Quantas colocações cabem lado a lado numa tabela. Acima disso a célula fica
+ * estreita demais e o texto quebra em três linhas.
+ *
+ * NÃO é um teto de dados. Pedindo 10 por estado, saem duas tabelas — 1º ao 5º
+ * e 6º ao 10º —, cada uma com os 27 estados. A ferramenta entrega até 15 por
+ * estado, e as 15 saem. Cortar colocação para caber na página seria resolver o
+ * layout às custas do que foi pedido.
+ */
+const COLOCACOES_POR_TABELA = 5;
 
 const fmtVotos = (n: unknown): string => {
   const v = Number(n);
@@ -88,50 +95,54 @@ export function tabelaCompletaRanking(rk: RankingNacional | undefined, conteudo 
   const cobertos = ufsComDado.filter(uf => jaTem.has(uf)).length;
   if (cobertos >= ufsComDado.length) return null;
 
-  const colocacoes = Math.min(
-    MAX_COLOCACOES,
-    Math.max(...ufsComDado.map(uf => porEstado[uf].length)),
-  );
+  const colocacoes = Math.max(...ufsComDado.map(uf => porEstado[uf].length));
   if (colocacoes < 1) return null;
 
-  const cabecalho = ['UF', ...Array.from({ length: colocacoes }, (_, i) => `${i + 1}º`)];
-  const partes: string[] = [];
+  // As colocações em faixas de no máximo COLOCACOES_POR_TABELA: [0..4], [5..9]…
+  const faixas: Array<{ de: number; ate: number }> = [];
+  for (let k = 0; k < colocacoes; k += COLOCACOES_POR_TABELA) {
+    faixas.push({ de: k, ate: Math.min(k + COLOCACOES_POR_TABELA, colocacoes) });
+  }
 
+  const partes: string[] = [];
   partes.push('');
   partes.push(`## Todos os estados — ${colocacoes} mais votados`);
   partes.push('');
+
+  const tabela = (ufs: string[], faixa: { de: number; ate: number }) => {
+    const cab = ['UF', ...Array.from({ length: faixa.ate - faixa.de }, (_, i) => `${faixa.de + i + 1}º`)];
+    partes.push(`| ${cab.join(' | ')} |`);
+    partes.push(`|${cab.map(() => '---').join('|')}|`);
+    for (const uf of ufs) {
+      const lista = porEstado[uf] ?? [];
+      const celulas = Array.from({ length: faixa.ate - faixa.de }, (_, i) => celula(lista[faixa.de + i]));
+      partes.push(`| ${uf} | ${celulas.join(' | ')} |`);
+    }
+    partes.push('');
+  };
+
+  const bloco = (rotulo: string, ufs: string[]) => {
+    for (const faixa of faixas) {
+      // Com mais de uma faixa, o rótulo diz de qual pedaço é cada tabela —
+      // senão ficam cinco tabelas iguais por região, sem dizer o que são.
+      const sufixo = faixas.length > 1 ? ` — ${faixa.de + 1}º ao ${faixa.ate}º` : '';
+      partes.push(`**${rotulo}${sufixo}**`);
+      partes.push('');
+      tabela(ufs, faixa);
+    }
+  };
 
   const semRegiao = new Set(ufsComDado);
   for (const regiao of REGIOES) {
     const ufs = regiao.ufs.filter(uf => semRegiao.has(uf));
     if (ufs.length === 0) continue;
     ufs.forEach(uf => semRegiao.delete(uf));
-
-    partes.push(`**${regiao.nome}**`);
-    partes.push('');
-    partes.push(`| ${cabecalho.join(' | ')} |`);
-    partes.push(`|${cabecalho.map(() => '---').join('|')}|`);
-    for (const uf of ufs) {
-      const lista = porEstado[uf] ?? [];
-      const celulas = Array.from({ length: colocacoes }, (_, i) => celula(lista[i]));
-      partes.push(`| ${uf} | ${celulas.join(' | ')} |`);
-    }
-    partes.push('');
+    bloco(regiao.nome, ufs);
   }
 
   // Unidade fora das cinco regiões (não deve acontecer com UF do Brasil, mas
   // nada aqui deve engolir dado em silêncio).
-  if (semRegiao.size > 0) {
-    partes.push('**Outras unidades**');
-    partes.push('');
-    partes.push(`| ${cabecalho.join(' | ')} |`);
-    partes.push(`|${cabecalho.map(() => '---').join('|')}|`);
-    for (const uf of [...semRegiao].sort()) {
-      const lista = porEstado[uf] ?? [];
-      partes.push(`| ${uf} | ${Array.from({ length: colocacoes }, (_, i) => celula(lista[i])).join(' | ')} |`);
-    }
-    partes.push('');
-  }
+  if (semRegiao.size > 0) bloco('Outras unidades', [...semRegiao].sort());
 
   const soEleitos = /só eleitos/i.test(String(rk?.recorte ?? ''));
   partes.push(
