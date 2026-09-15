@@ -13,6 +13,7 @@ import {
 import { renderMapaEleitoral, renderMapaEmendas, renderMapaEmendasVencedor, renderMapaVotos, renderMapaBairros, renderMapaDF_RA, renderMapaDF_RAVencedor, coresPorCandidato, tituloCaso, type MapaResult } from '@/lib/agent/report/geo-map';
 import { montarRelatorioTerritorial, caminhoBandeira } from '@/lib/agent/report/territorial-doc';
 import { assuntoDoRelatorio } from '@/lib/agent/report/titulo';
+import { tabelaCompletaRanking } from '@/lib/agent/report/tabela-ranking';
 import { bairrosComVotos } from '@/lib/agent/report/mapa-bairros';
 import { mapaDoDF } from '@/lib/agent/report/mapa-df';
 
@@ -133,7 +134,17 @@ function MapSection(mapa: MapaResult, titulo: string): React.ReactNode {
 function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitulo, bandeira }: {
   input: ReportInput; tipoLabel: string; geradoEm: string; valorPill: Pill | null; mapa: MapaResult | null; mapaTitulo: string; bandeira: BandeiraSrc;
 }) {
-  const conteudo = input.conteudo ?? '';
+  // A analise e dela; a tabela completa e montada aqui.
+  //
+  // Num pedido de "5 mais votados por cada estado" ela recebeu os 27 estados e
+  // publicou 3, com 2 colocacoes — o resto virou prosa. Como o dado chega
+  // inteiro ate aqui, a tabela deixa de depender da escolha dela. Quando o
+  // texto dela ja traz todos os estados, nada e acrescentado.
+  const anexoRanking = tabelaCompletaRanking(
+    (input.dadosBrutos as any)?.ranking_nacional,
+    input.conteudo ?? '',
+  );
+  const conteudo = (input.conteudo ?? '') + (anexoRanking ?? '');
   // Assunto derivado dos dados; depois o título do gráfico montado no turno.
   //
   // A pergunta do usuário ficava como segunda opção e saiu impressa na capa de
