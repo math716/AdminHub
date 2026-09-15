@@ -53,10 +53,35 @@ export async function POST(request: NextRequest) {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return NextResponse.json({ error: 'Este email já está cadastrado' }, { status: 400 });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     // Convites gerados pelo ADMIN (CHEFE e AGENTE_POLITICO) já vêm pré-aprovados
     const autoApprove = role === 'CHEFE' || role === 'AGENTE_POLITICO';
+
+    // Convite que entra com acesso imediato vale UMA vez.
+    //
+    // O link é válido por 7 dias e funcionava quantas vezes fosse aberto. A
+    // regra de um Chefe por gabinete só era conferida ao GERAR o convite, não
+    // ao usá-lo — então o mesmo link, repassado sem querer, criava um segundo
+    // Chefe com acesso total ao gabinete, sem passar por ninguém.
+    //
+    // O link é um token assinado, sem registro no banco, então não dá para
+    // marcá-lo como usado sem criar tabela. A conferência aqui tem o mesmo
+    // efeito: assim que a vaga é ocupada, o link para de funcionar. Se a conta
+    // for removida depois, a vaga reabre — que é o comportamento desejado.
+    if (autoApprove) {
+      const jaOcupado = await prisma.user.findFirst({
+        where: { gabineteId, role, deletedAt: null },
+        select: { id: true },
+      });
+      if (jaOcupado) {
+        const cargo = role === 'CHEFE' ? 'Chefe de Gabinete' : 'Agente Político';
+        return NextResponse.json(
+          { error: `Este convite já foi utilizado. O ${gabinete.nome} já tem um ${cargo} cadastrado.` },
+          { status: 400 },
+        );
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {

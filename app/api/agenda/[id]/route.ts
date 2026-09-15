@@ -22,19 +22,31 @@ export async function PUT(
       return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 });
     }
 
+    // Só é alterado o que veio no corpo. O Prisma ignora campo com valor
+    // `undefined`, então ausente = não mexe.
+    //
+    // Antes, estes campos usavam `?? null`: quem não os reenviasse os apagava.
+    // Hoje ninguém é atingido, porque a tela da agenda manda o compromisso
+    // inteiro ao salvar — mas foi assim que nasceu o defeito que apagava a foto
+    // das demandas. Lá a tela também mandava tudo, até alguém otimizar a
+    // listagem para não trazer a foto (coisa correta de fazer) e o `?? null`
+    // virar perda de dado. Aqui fica fechado antes de acontecer.
+    const veio = (campo: string) => campo in (body ?? {});
+    const dataOuNulo = (v: unknown) => (v ? new Date(v as string) : null);
+
     const event = await prisma.agendaEvent.update({
       where: { id: params.id },
       data: {
         titulo:    body.titulo ?? existing.titulo,
-        descricao: body.descricao ?? null,
         data:      body.data ? new Date(body.data) : existing.data,
-        dataFim:   body.dataFim ? new Date(body.dataFim) : null,
-        local:     body.local ?? null,
-        endereco:  body.endereco ?? null,
-        lat:       body.lat ?? null,
-        lng:       body.lng ?? null,
         tipo:      body.tipo ?? existing.tipo,
-        cor:       body.cor ?? null,
+        descricao: veio('descricao') ? (body.descricao ?? null) : undefined,
+        dataFim:   veio('dataFim')   ? dataOuNulo(body.dataFim)  : undefined,
+        local:     veio('local')     ? (body.local ?? null)      : undefined,
+        endereco:  veio('endereco')  ? (body.endereco ?? null)   : undefined,
+        lat:       veio('lat')       ? (body.lat ?? null)        : undefined,
+        lng:       veio('lng')       ? (body.lng ?? null)        : undefined,
+        cor:       veio('cor')       ? (body.cor ?? null)        : undefined,
       },
     });
 

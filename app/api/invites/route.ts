@@ -78,6 +78,24 @@ export async function GET(request: NextRequest) {
 
   try {
     const payload = jwt.verify(token, process.env.NEXTAUTH_SECRET!) as any;
+
+    // Mesma conferência que /api/signup/invite faz ao criar a conta: convite
+    // que entra com acesso imediato vale uma vez só. Feita aqui também para a
+    // pessoa saber ANTES de preencher o cadastro inteiro, e não depois.
+    if (payload.role === 'CHEFE' || payload.role === 'AGENTE_POLITICO') {
+      const jaOcupado = await prisma.user.findFirst({
+        where: { gabineteId: payload.gabineteId, role: payload.role, deletedAt: null },
+        select: { id: true },
+      });
+      if (jaOcupado) {
+        const cargo = payload.role === 'CHEFE' ? 'Chefe de Gabinete' : 'Agente Político';
+        return NextResponse.json(
+          { error: `Este convite já foi utilizado — o gabinete já tem um ${cargo} cadastrado.` },
+          { status: 400 },
+        );
+      }
+    }
+
     return NextResponse.json({
       gabineteId: payload.gabineteId,
       gabineteNome: payload.gabineteNome,
