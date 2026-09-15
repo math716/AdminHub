@@ -412,6 +412,11 @@ export async function getAllEmendasDoAno(opts: { ano: number; uf?: string }): Pr
   const hit = cacheGet<PortalEmenda[]>(key);
   if (hit) return hit;
 
+  // Resolvido fora dos filtros: dentro do callback o TypeScript nao garante
+  // que `opts.uf` continua definido, e a leitura repetida escondia isso atras
+  // de um erro de tipo ignorado no build.
+  const ufFiltro = opts.uf?.toUpperCase();
+
   let result: PortalEmenda[];
   if (PORTAL_MOCK_MODE) {
     // Em mock, agrega todas as emendas dos parlamentares mock
@@ -419,9 +424,7 @@ export async function getAllEmendasDoAno(opts: { ano: number; uf?: string }): Pr
     MOCK_PARLAMENTARES.forEach((p) => {
       all.push(...mockEmendasPorParlamentar({ idPortal: p.idPortal, ano: opts.ano }));
     });
-    result = opts.uf
-      ? all.filter((e) => e.uf === opts.uf.toUpperCase())
-      : all;
+    result = ufFiltro ? all.filter((e) => e.uf === ufFiltro) : all;
   } else {
     // Em paralelo (chunks de 12 páginas). Cobre estados grandes sem estourar
     // timeout de serverless (60s no plano Pro do Vercel).
@@ -437,9 +440,7 @@ export async function getAllEmendasDoAno(opts: { ano: number; uf?: string }): Pr
       concurrency: 12,
     });
     const mapped = await Promise.all(rows.map(mapPortalRow));
-    result = opts.uf
-      ? mapped.filter((e) => e.uf === opts.uf.toUpperCase())
-      : mapped;
+    result = ufFiltro ? mapped.filter((e) => e.uf === ufFiltro) : mapped;
   }
 
   cacheSet(key, result);

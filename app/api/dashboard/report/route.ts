@@ -55,8 +55,13 @@ export async function GET(request: Request) {
       ? `data:image/png;base64,${fs.readFileSync(logoPath).toString('base64')}`
       : undefined;
 
+    // A conversão é folga de tipagem do react-pdf: um componente que devolve
+    // <Document> não é inferido como ReactElement<DocumentProps>. As outras
+    // rotas de PDF já fazem igual. Não há nada errado em execução — mas com o
+    // erro na lista, `tsc` deixava de servir de alarme, e foi atrás dessa lista
+    // que um `await` faltando ficou escondido.
     const buffer = await renderToBuffer(
-      React.createElement(DashboardReport, { gabineteName, stats, logoSrc, periodoLabel })
+      React.createElement(DashboardReport, { gabineteName, stats, logoSrc, periodoLabel }) as any
     );
 
     const dateStr = new Date().toISOString().slice(0, 10);

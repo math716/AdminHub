@@ -296,18 +296,24 @@ const TIPO_PARCERIA_LABELS: Record<TipoParceria, string> = {
 interface Parceria {
   id?: string;
   projecaoMunicipioId: string;
-  bairro?: string;
+  // Nulavel no banco, entao a API devolve `null` — nao `undefined`. O tipo
+  // dizia `string | undefined` e so nao quebrava porque o erro ia ignorado
+  // no build. Quem escrevesse `=== undefined` aqui erraria em silencio.
+  bairro?: string | null;
   municipio?: string;
   nome: string;
   tipo: TipoParceria;
-  responsavel?: string;
-  contato?: string;
-  observacoes?: string;
+  responsavel?: string | null;
+  contato?: string | null;
+  observacoes?: string | null;
   impactoEstimado: number;
   metaConservadora: number;
   metaPossivel: number;
   metaArrojada: number;
   ativa: boolean;
+  // Vem da API em toda parceria gravada; faltava no tipo.
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface ParceriasStats {
