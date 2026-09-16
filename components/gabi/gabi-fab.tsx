@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { X, Send, Loader2, MessageSquare, Clock, Plus, Trash2, ChevronLeft, ScrollText, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
@@ -58,8 +59,16 @@ type View = 'chat' | 'history';
 
 // ─── localStorage ────────────────────────────────────────────────────────────
 
-const LS_MSGS = 'gabi_session_msgs';
-const LS_ID   = 'gabi_session_id';
+// A conversa em andamento fica no navegador para sobreviver a um recarregamento.
+// A chave leva o gabinete: sem isso, era UMA chave para todo mundo no mesmo
+// navegador. Quem entrasse depois de outra pessoa abria a Gabi e via a conversa
+// dela na tela — e, 1,2 segundo depois, a gravacao automatica tentava atualizar
+// aquela conversa, a rota recusava por ser de outro gabinete, e o sistema criava
+// uma COPIA dela dentro do gabinete novo, com a data de hoje.
+const LS_MSGS_ANTIGO = 'gabi_session_msgs';
+const LS_ID_ANTIGO   = 'gabi_session_id';
+const chaveMsgs = (gab: string) => `gabi_session_msgs:${gab}`;
+const chaveId   = (gab: string) => `gabi_session_id:${gab}`;
 
 function lsGet<T>(key: string): T | null {
   try { return JSON.parse(localStorage.getItem(key) ?? 'null'); } catch { return null; }
@@ -346,6 +355,11 @@ export function GabiFAB() {
   const [sessaoId, setSessaoId] = useState<string | null>(null);
   const [saving, setSaving]     = useState(false);
 
+  // Gabinete de quem está usando: entra na chave do que fica guardado no
+  // navegador, para uma conta nunca ler a conversa da outra.
+  const { data: sessao } = useSession();
+  const gabineteId = ((sessao?.user as any)?.gabineteId as string | undefined) ?? null;
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
@@ -354,14 +368,23 @@ export function GabiFAB() {
 
   // ── Restaurar sessão ───────────────────────────────────────────────────────
 
+  const restaurouRef = useRef(false);
+
   useEffect(() => {
-    const storedMsgs = lsGet<Message[]>(LS_MSGS);
+    if (restaurouRef.current || !gabineteId) return;
+    restaurouRef.current = true;
+
+    // As chaves antigas eram compartilhadas entre contas no mesmo navegador.
+    // Some com elas na primeira vez, para ninguém herdar conversa de outrem.
+    lsDel(LS_MSGS_ANTIGO, LS_ID_ANTIGO);
+
+    const storedMsgs = lsGet<Message[]>(chaveMsgs(gabineteId));
     if (Array.isArray(storedMsgs) && storedMsgs.length > 0) setMessages(storedMsgs);
-    const storedId = lsGet<string>(LS_ID);
+    const storedId = lsGet<string>(chaveId(gabineteId));
     // Popula o ref junto do state: o autosave lê o ref e, sem isso, uma sessão
     // restaurada seria gravada como conversa nova (duplicata no histórico).
     if (storedId) { setSessaoId(storedId); sessaoIdRef.current = storedId; }
-  }, []);
+  }, [gabineteId]);
 
   // ── Foto da Gabi 3D (capturada do canvas) para os avatares das mensagens ──
   useEffect(() => subscribeGabiFace(() => setGabiFace(getGabiFace())), []);
@@ -374,7 +397,7 @@ export function GabiFAB() {
   // sessão é `novaConversa`, via lsDel.
   useEffect(() => {
     if (messages.length <= 1) return;
-    lsSet(LS_MSGS, messages);
+    if (gabineteId) lsSet(chaveMsgs(gabineteId), messages);
   }, [messages]);
 
   // ── Scroll e foco ─────────────────────────────────────────────────────────
@@ -450,7 +473,7 @@ export function GabiFAB() {
       if (id && id !== sessaoIdRef.current) {
         sessaoIdRef.current = id;
         setSessaoId(id);
-        lsSet(LS_ID, id);
+        if (gabineteId) lsSet(chaveId(gabineteId), id);
       }
     }).catch(() => {});
     return gravacaoRef.current;
@@ -476,7 +499,7 @@ export function GabiFAB() {
     setMessages([WELCOME]);
     setSessaoId(null);
     sessaoIdRef.current = null;
-    lsDel(LS_MSGS, LS_ID);
+    if (gabineteId) lsDel(chaveMsgs(gabineteId), chaveId(gabineteId));
     setView('chat');
   }, [messages, gravar]);
 
@@ -509,14 +532,13 @@ export function GabiFAB() {
     setMessages(final);
     setSessaoId(c.id);
     sessaoIdRef.current = c.id; // o autosave passa a atualizar ESTA conversa
-    lsSet(LS_MSGS, final);
-    lsSet(LS_ID, c.id);
+    if (gabineteId) { lsSet(chaveMsgs(gabineteId), final); lsSet(chaveId(gabineteId), c.id); }
     setView('chat');
   }, []);
 
   const deletarConversa = useCallback(async (id: string) => {
     setHistorico(prev => prev.filter(c => c.id !== id));
-    if (sessaoId === id) { setSessaoId(null); sessaoIdRef.current = null; lsDel(LS_ID); }
+    if (sessaoId === id) { setSessaoId(null); sessaoIdRef.current = null; if (gabineteId) lsDel(chaveId(gabineteId)); }
     try { await fetch(`/api/agent/conversas/${id}`, { method: 'DELETE' }); } catch {}
   }, [sessaoId]);
 

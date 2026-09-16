@@ -99,6 +99,16 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
     // Limpa flag de sync de tema pra proxima sessao buscar do servidor
     if (typeof window !== 'undefined') {
       window.sessionStorage.removeItem('theme-synced');
+
+      // A conversa em andamento da Gabi não fica no navegador depois que a
+      // pessoa sai. A chave já leva o gabinete, então outra conta não a leria
+      // de qualquer forma — mas num computador compartilhado o conteúdo não
+      // tem por que continuar guardado.
+      try {
+        Object.keys(window.localStorage)
+          .filter(k => k.startsWith('gabi_session'))
+          .forEach(k => window.localStorage.removeItem(k));
+      } catch { /* navegador sem localStorage */ }
     }
     try {
       // redirect: false evita a cadeia /api/auth/signout?callbackUrl=...
