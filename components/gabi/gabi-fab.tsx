@@ -5,6 +5,7 @@ import { X, Send, Loader2, MessageSquare, Clock, Plus, Trash2, ChevronLeft, Scro
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { getGabiFace, subscribeGabiFace } from './gabi-face-store';
+import { rotuloDeData } from '@/lib/data-relativa';
 
 const VisualizacoesCard = dynamic(
   () => import('./gabi-charts').then(m => m.VisualizacoesCard),
@@ -328,16 +329,6 @@ const WELCOME: Message = {
   role: 'assistant',
   content: 'Olá, Sou a Gabi! Assessora Virtual do seu Gabinete, como posso te ajudar hoje?',
 };
-
-function formatHistDate(iso: string): string {
-  const d    = new Date(iso);
-  const now  = new Date();
-  const diff = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
-  if (diff === 0) return 'Hoje';
-  if (diff === 1) return 'Ontem';
-  if (diff < 7)  return `Há ${diff} dias`;
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
-}
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
@@ -741,7 +732,7 @@ export function GabiFAB() {
                               {c.titulo || 'Conversa sem título'}
                             </p>
                             <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                              {formatHistDate(c.criadaEm)} · {(c.mensagens ?? []).length} mensagens
+                              {rotuloDeData(c.criadaEm)} · {(c.mensagens ?? []).length} mensagens
                             </p>
                           </div>
                           <button
