@@ -9,6 +9,7 @@ import { executarTool, conferirSomas } from '@/lib/agent/executors';
 import { SYSTEM_PROMPT } from '@/lib/agent/system-prompt';
 import { visualizacoesAutomaticas } from '@/lib/agent/visualizacoes-auto';
 import { contextoDoGabinete, blocoDoGabinete } from '@/lib/agent/contexto-gabinete';
+import { fraseDaBusca, FRASES } from '@/lib/agent/progresso';
 
 import { prisma } from '@/lib/db';
 import type { Session } from 'next-auth';
@@ -249,6 +250,10 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    // A sessão já conferida, guardada num `const`. O turno agora roda dentro de
+    // uma função (para poder ir emitindo o progresso), e ali o TypeScript não
+    // enxerga mais a conferência feita aqui em cima.
+    const sessaoAtiva = session;
 
     const body = await request.json();
     const msgs: ChatMsg[] = Array.isArray(body?.messages) ? body.messages : [];
@@ -317,6 +322,47 @@ export async function POST(request: NextRequest) {
       ...(ctxGabinete ? [{ type: 'text' as const, text: ctxGabinete }] : []),
     ];
 
+    // ── Daqui em diante a resposta vai saindo aos poucos ────────────────────
+    //
+    // Um pedido com vários itens leva dezenas de segundos. Até aqui a tela
+    // ficava parada o tempo todo, sem diferença visível entre "trabalhando" e
+    // "travou". Agora cada passo é anunciado enquanto acontece.
+    //
+    // As recusas anteriores (sessão, formato, limite de tokens) continuam
+    // saindo como resposta normal, com o código HTTP certo — só o que vem
+    // DEPOIS daqui viaja pelo fluxo, porque a essa altura o 200 já foi enviado
+    // e não dá mais para mudar o status.
+    const codificador = new TextEncoder();
+    let emitir: (evento: Record<string, unknown>) => void = () => {};
+
+    const fluxo = new ReadableStream({
+      async start(controlador) {
+        emitir = (evento) => {
+          try { controlador.enqueue(codificador.encode(JSON.stringify(evento) + '\n')); }
+          catch { /* cliente desconectou no meio */ }
+        };
+        try {
+          await conduzirTurno();
+        } catch (err: any) {
+          console.error('[/api/agent/chat] durante o fluxo:', err);
+          emitir({
+            tipo: 'erro',
+            mensagem:
+              err?.status === 529 || err?.message?.includes('overloaded')
+                ? 'A Gabi está sobrecarregada no momento. Tente de novo em alguns segundos.'
+                : err?.status === 402 || err?.message?.includes('credit')
+                  ? 'Créditos insuficientes na conta da Gabi.'
+                  : 'Erro interno ao processar sua mensagem.',
+          });
+        } finally {
+          controlador.close();
+        }
+      },
+    });
+
+    async function conduzirTurno() {
+    emitir({ tipo: 'progresso', texto: FRASES.inicio });
+
     // ── Loop agentic de tool use ─────────────────────────────────────────────
     for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
       const response = await anthropic.messages.create({
@@ -357,6 +403,12 @@ export async function POST(request: NextRequest) {
           if (block.type !== 'tool_use') continue;
 
           let resultado: unknown;
+          // Anuncia ANTES de executar: as buscas pesadas são justamente as que
+          // demoram, e é durante elas que a tela precisa dizer o que acontece.
+          emitir({
+            tipo: 'progresso',
+            texto: fraseDaBusca(block.name, block.input as Record<string, unknown>),
+          });
           try {
             resultado = await executarTool(
               block.name,
@@ -424,6 +476,8 @@ export async function POST(request: NextRequest) {
         }
 
         anthropicMessages.push({ role: 'user', content: toolResults });
+        // Voltou das buscas: vai pensar no que fazer com o que achou.
+        emitir({ tipo: 'progresso', texto: FRASES.analisando });
         continue;
       }
 
@@ -474,17 +528,32 @@ export async function POST(request: NextRequest) {
     // servidor já tinha (~330 tokens de saída, uns 5,5s). Se ele mandou algo
     // sob medida, o dele prevalece.
     if (visualizacoes.length === 0) {
+      emitir({ tipo: 'progresso', texto: FRASES.graficos });
       visualizacoes.push(...visualizacoesAutomaticas(dadosBrutos));
     }
 
     // Salva usage (async, não bloqueia a resposta)
-    salvarUsage(session, totalInputTokens, totalOutputTokens);
+    salvarUsage(sessaoAtiva, totalInputTokens, totalOutputTokens);
 
-    return NextResponse.json({
+    emitir({
+      tipo: 'fim',
       content: resposta,
       visualizacoes: visualizacoes.length > 0 ? visualizacoes : undefined,
       tools: toolsUsed.size > 0 ? [...toolsUsed] : undefined,
       dadosBrutos: Object.keys(dadosBrutos).length > 0 ? dadosBrutos : undefined,
+    });
+    } // fim de conduzirTurno
+
+    return new Response(fluxo, {
+      headers: {
+        // Uma linha de JSON por evento. Simples de ler em pedaços e de
+        // reconstituir quando um pedaço chega partido ao meio.
+        'Content-Type': 'application/x-ndjson; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        // Impede que um servidor no caminho segure os pedaços para entregar
+        // tudo junto no fim — seria o mesmo que não ter fluxo nenhum.
+        'X-Accel-Buffering': 'no',
+      },
     });
 
   } catch (err: any) {

@@ -65,6 +65,9 @@ type View = 'chat' | 'history';
 // dela na tela — e, 1,2 segundo depois, a gravacao automatica tentava atualizar
 // aquela conversa, a rota recusava por ser de outro gabinete, e o sistema criava
 // uma COPIA dela dentro do gabinete novo, com a data de hoje.
+/** Separador dos eventos que a Gabi envia enquanto trabalha: um por linha. */
+const QUEBRA = String.fromCharCode(10);
+
 const LS_MSGS_ANTIGO = 'gabi_session_msgs';
 const LS_ID_ANTIGO   = 'gabi_session_id';
 const chaveMsgs = (gab: string) => `gabi_session_msgs:${gab}`;
@@ -354,6 +357,8 @@ export function GabiFAB() {
   const [histLoading, setHistLoading] = useState(false);
   const [sessaoId, setSessaoId] = useState<string | null>(null);
   const [saving, setSaving]     = useState(false);
+  // O que a Gabi esta fazendo agora, enquanto a resposta nao chega.
+  const [progresso, setProgresso] = useState<string | null>(null);
 
   // Gabinete de quem está usando: entra na chave do que fica guardado no
   // navegador, para uma conta nunca ler a conversa da outra.
@@ -558,14 +563,51 @@ export function GabiFAB() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: history.map(m => ({ role: m.role, content: m.content })) }),
       });
-      const data = await res.json();
+      // Recusa antes de comecar (sessao, formato, limite de tokens) vem como
+      // resposta normal, com o codigo certo.
       if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
         setError(
           res.status === 402 ? 'Créditos insuficientes na conta Anthropic.' :
           res.status === 429 ? 'Limite mensal de tokens atingido para este gabinete.' :
           res.status === 503 ? 'API temporariamente sobrecarregada. Tente novamente.' :
           data.error ?? 'Erro ao contatar a Gabi.'
         );
+        return;
+      }
+
+      // Daqui em diante chega um evento por linha, conforme ela avanca.
+      const leitor = res.body?.getReader();
+      if (!leitor) { setError('Falha de conexão. Tente novamente.'); return; }
+      const decodificador = new TextDecoder();
+      let sobra = '';
+      let data: any = null;
+      let erroDoFluxo: string | null = null;
+
+      const tratar = (linha: string) => {
+        const t = linha.trim();
+        if (!t) return;
+        let ev: any;
+        try { ev = JSON.parse(t); } catch { return; }  // linha partida: ignora
+        if (ev.tipo === 'progresso') setProgresso(ev.texto);
+        else if (ev.tipo === 'erro') erroDoFluxo = ev.mensagem ?? 'Erro ao contatar a Gabi.';
+        else if (ev.tipo === 'fim') data = ev;
+      };
+
+      while (true) {
+        const { done, value } = await leitor.read();
+        if (done) break;
+        sobra += decodificador.decode(value, { stream: true });
+        const linhas = sobra.split(QUEBRA);
+        sobra = linhas.pop() ?? '';   // o último pedaço pode estar incompleto
+        linhas.forEach(tratar);
+      }
+      tratar(sobra);
+
+      if (erroDoFluxo) {
+        setError(erroDoFluxo);
+      } else if (!data) {
+        setError('A resposta veio incompleta. Tente novamente.');
       } else {
         setMessages(prev => [
           ...prev,
@@ -583,6 +625,7 @@ export function GabiFAB() {
       setError('Falha de conexão. Tente novamente.');
     } finally {
       setLoading(false);
+      setProgresso(null);
     }
   };
 
@@ -897,11 +940,21 @@ export function GabiFAB() {
                             borderRadius: 16, borderTopLeftRadius: 5,
                             boxShadow: 'var(--gabi-balao-sombra)',
                           }}>
-                          <div className="flex items-center gap-1.5">
-                            {[0, 150, 300].map(delay => (
-                              <span key={delay} className="rounded-full animate-bounce"
-                                style={{ width: 5, height: 5, background: 'var(--brand-cobalt)', animationDelay: `${delay}ms` }} />
-                            ))}
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
+                              {[0, 150, 300].map(delay => (
+                                <span key={delay} className="rounded-full animate-bounce"
+                                  style={{ width: 5, height: 5, background: 'var(--brand-cobalt)', animationDelay: `${delay}ms` }} />
+                              ))}
+                            </div>
+                            {/* O que ela está fazendo agora. Só aparece quando
+                                há o que dizer — nos primeiros instantes os
+                                pontinhos sozinhos já bastam. */}
+                            {progresso && (
+                              <span className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>
+                                {progresso}…
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
