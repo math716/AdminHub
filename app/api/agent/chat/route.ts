@@ -262,6 +262,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Última mensagem deve ser do usuário' }, { status: 400 });
     }
 
+    // Duas mensagens seguidas do mesmo lado viram uma só.
+    //
+    // Quando um pedido se perde no meio — a pessoa sai da tela do chat e volta,
+    // a conexão cai, o navegador é fechado —, a pergunta fica no histórico sem
+    // resposta. A mensagem seguinte então deixa DUAS falas do usuário coladas,
+    // e a conversa inteira passava a falhar: o histórico ia assim para o
+    // modelo, que espera os lados alternando. Na prática a conversa morria e a
+    // única saída era começar outra, sem nada na tela explicando por quê.
+    //
+    // Juntar preserva o que a pessoa escreveu — a pergunta original e o
+    // "continuar" chegam como um pedido só, que é o sentido pretendido.
+    const historico: ChatMsg[] = [];
+    for (const m of msgs) {
+      const anterior = historico[historico.length - 1];
+      if (anterior && anterior.role === m.role) {
+        anterior.content = `${anterior.content}\n\n${m.content}`.trim();
+      } else {
+        historico.push({ ...m });
+      }
+    }
+
     // ── Verifica limite mensal de tokens do gabinete ─────────────────────────
     const gabineteId = (session.user as any)?.gabineteId as string | null;
     try {
@@ -292,10 +313,10 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Monta o histórico no formato Anthropic ───────────────────────────────
-    const anthropicMessages: any[] = msgs.map((m, i) => {
+    const anthropicMessages: any[] = historico.map((m, i) => {
       // Aplica cache_control na penúltima mensagem do usuário (contexto histórico mais longo)
-      const isLastUser = m.role === 'user' && i === msgs.length - 1;
-      const isPenultimate = m.role === 'user' && i === msgs.length - 3;
+      const isLastUser = m.role === 'user' && i === historico.length - 1;
+      const isPenultimate = m.role === 'user' && i === historico.length - 3;
 
       if (isPenultimate) {
         return {
