@@ -4,6 +4,39 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { CacheLimitado } from '@/lib/cache-limitado';
+
+/**
+ * Revogação de acesso sem esperar a sessão vencer.
+ *
+ * A sessão é um token assinado: enquanto vale, o sistema confia no que está
+ * escrito nele. Remover alguém impedia que ele obtivesse um token NOVO, mas o
+ * que já estava no navegador seguia funcionando — e como o token é reemitido a
+ * cada leitura da sessão, quem mantivesse a aba aberta renovava sozinho, sem
+ * prazo para acabar.
+ *
+ * Agora o token é conferido contra o banco de tempos em tempos. Não é por
+ * requisição porque isso seria uma consulta a cada clique: em rota de API o
+ * next-auth não regrava o cookie (o `setCookie` é vazio ali), então o carimbo
+ * de "conferido em" não avançaria e a consulta se repetiria sempre. O cache em
+ * processo resolve esse caso — com teto, que estrutura de módulo sem descarte
+ * já derrubou este sistema uma vez.
+ */
+const JANELA_REVALIDACAO_MS = 60_000;
+const conferidosRecentemente = new CacheLimitado<number>(500);
+
+/** Motivo pelo qual a sessão deixou de valer, ou `null` se continua válida. */
+function motivoDaRevogacao(u: {
+  approved: boolean; role: string; deletedAt: Date | null;
+  gabinete?: { deletedAt: Date | null } | null;
+} | null): string | null {
+  if (!u) return 'conta removida';
+  if (u.deletedAt) return 'acesso removido';
+  const ehAdmin = u.role === 'ADMIN' || u.role === 'SUPER_ADMIN';
+  if (!ehAdmin && u.gabinete?.deletedAt) return 'gabinete excluído';
+  if (!u.approved && !ehAdmin) return 'cadastro não aprovado';
+  return null;
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -169,6 +202,53 @@ export const authOptions: NextAuthOptions = {
           }
         }
       }
+
+      // ── Conferência periódica contra o banco ────────────────────────────
+      const id = token.id as string | undefined;
+      if (id) {
+        const agora = Date.now();
+        const ultima = conferidosRecentemente.get(id) ?? 0;
+
+        if (agora - ultima >= JANELA_REVALIDACAO_MS) {
+          let dbUser;
+          try {
+            dbUser = await prisma.user.findUnique({
+              where: { id },
+              select: {
+                approved: true, role: true, deletedAt: true,
+                permissions: true, mustChangePassword: true,
+                gabinete: { select: { deletedAt: true } },
+              },
+            });
+          } catch (err) {
+            // Banco fora do ar NÃO desloga ninguém. Só se derruba a sessão
+            // quando o banco confirma que o acesso acabou; na dúvida, mantém.
+            //
+            // Só a primeira linha do erro: se o banco cair, isto acontece a
+            // cada requisição, e o rastro de pilha inteiro do Prisma tornaria
+            // o log ilegível justamente quando ele é mais necessário.
+            const resumo = String((err as Error)?.message ?? err).split('\n').find(Boolean)?.trim();
+            console.error('[auth] revalidação falhou, sessão mantida:', resumo);
+            return token;
+          }
+
+          const motivo = motivoDaRevogacao(dbUser as any);
+          if (motivo) {
+            // Lançar aqui faz o next-auth limpar o cookie de sessão. Nas rotas
+            // de API a sessão volta vazia, e elas respondem "não autorizado".
+            console.warn(`[auth] sessão encerrada para ${id}: ${motivo}`);
+            throw new Error(`Acesso revogado: ${motivo}`);
+          }
+
+          // Aproveita a ida ao banco para atualizar o que pode ter mudado.
+          token.approved = dbUser!.approved;
+          token.role = dbUser!.role;
+          token.permissions = dbUser!.permissions ?? [];
+          token.mustChangePassword = dbUser!.mustChangePassword;
+          conferidosRecentemente.set(id, agora);
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -187,5 +267,18 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/login'
-  }
+  },
+
+  // Encerrar uma sessão revogada é o funcionamento normal, não falha do
+  // sistema. Sem isto, cada uma despeja um rastro de pilha de 25 linhas como
+  // JWT_SESSION_ERROR — ruído que esconde erro de verdade no log da Vercel.
+  logger: {
+    error(code, metadata) {
+      const msg = (metadata as any)?.message ?? String(metadata ?? '');
+      if (code === 'JWT_SESSION_ERROR' && msg.startsWith('Acesso revogado')) return;
+      console.error(`[next-auth][${code}]`, metadata);
+    },
+    warn(code) { console.warn(`[next-auth][${code}]`); },
+    debug() { /* silencioso */ },
+  },
 };
