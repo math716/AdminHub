@@ -61,7 +61,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             exit={{ opacity: 0, scale: 0.98 }}
             className={cn(
               'relative rounded-2xl shadow-2xl',
-              'w-[calc(100%-2rem)] max-h-[calc(100vh-1rem)] overflow-y-auto',
+              'w-[calc(100%-2rem)] altura-janela overflow-y-auto',
               sizes[size]
             )}
             style={{

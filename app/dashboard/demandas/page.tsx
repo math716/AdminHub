@@ -704,7 +704,7 @@ export default function DemandasPage() {
                 value={formData.endereco}
                 onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
                 placeholder="Rua, número, bairro"
-                className="flex-1 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
+                className="flex-1 min-w-0 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500"
               />
               <button
                 type="button"

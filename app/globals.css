@@ -518,3 +518,25 @@ html, body {
   box-shadow: var(--shadow-raised);
   transform: translateY(-1px);
 }
+
+/* ──────────────────────────────────────────────────────────
+   Altura das janelas sobrepostas, no celular
+   ──────────────────────────────────────────────────────────
+   No Chrome do Android, `100vh` é medido com a barra de endereço
+   ESCONDIDA — quase 100px a mais do que a pessoa está vendo. Uma janela
+   dimensionada assim fica mais alta que a tela, e o rodapé (onde ficam
+   "Cancelar" e "Salvar") cai fora: dá para rolar o conteúdo por dentro,
+   mas os botões nunca aparecem.
+
+   `dvh` mede a área realmente visível e acompanha a barra aparecendo e
+   sumindo. A primeira linha é a reserva para navegador que não conheça
+   a unidade; a segunda vale onde ela existe.
+   ────────────────────────────────────────────────────────── */
+.altura-janela {
+  max-height: calc(100vh - 1rem);
+}
+@supports (height: 1dvh) {
+  .altura-janela {
+    max-height: calc(100dvh - 1rem);
+  }
+}

@@ -105,7 +105,10 @@ function DonutPanel({ vis, isMoney, t }: { vis: Visualizacao; isMoney: boolean; 
   const fmt = isMoney ? fmtMoney : fmtCount;
 
   return (
-    <div style={{ width: '44%' }}>
+    // No celular ocupa a largura toda; lado a lado só a partir de telas médias.
+    // Espremido em 44% de uma tela de 375px sobravam ~145px: o donut não
+    // chegava a desenhar e a legenda virava "RODRIGO D...".
+    <div className="w-full sm:w-[44%]">
       <div style={{ height: 160 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -168,7 +171,7 @@ function BarPanel({ vis, isMoney, t }: { vis: Visualizacao; isMoney: boolean; t:
   const items = allItems.slice(0, isMulti ? 6 : 8);
 
   return (
-    <div style={{ flex: 1, minWidth: 0 }}>
+    <div className="w-full sm:flex-1 min-w-0">
       <div style={{ height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={items} margin={{ top: 20, right: 10, left: 16, bottom: 8 }}>
@@ -397,9 +400,10 @@ export function VisualizacoesCard({
 
         {/* Donut + Barras lado a lado */}
         {donut && barras && (
-          <div className="flex gap-3 items-start">
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-start">
             <DonutPanel vis={donut} isMoney={isMoney} t={t} />
-            <div className="self-stretch w-px flex-shrink-0"
+            {/* A linha divisória é vertical: empilhado ela não separa nada. */}
+            <div className="hidden sm:block self-stretch w-px flex-shrink-0"
               style={{ background: `linear-gradient(180deg, transparent, ${t.divider} 15%, ${t.divider} 85%, transparent)` }} />
             <BarPanel vis={barras} isMoney={isMoney} t={t} />
           </div>
@@ -407,8 +411,8 @@ export function VisualizacoesCard({
 
         {/* Só donut — tamanho maior */}
         {donut && !barras && (
-          <div className="flex gap-4 items-start">
-            <div style={{ width: '44%' }}>
+          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-start">
+            <div className="w-full sm:w-[44%]">
               <div style={{ height: 180 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>

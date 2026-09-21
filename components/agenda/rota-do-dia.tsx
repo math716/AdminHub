@@ -110,6 +110,8 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
   onAbertoChange?: (aberto: boolean) => void;
 }) {
   const [aberto, setAberto] = useState(false);
+  // Gaveta recolhida: só o cabeçalho com o resumo, para o mapa aparecer.
+  const [recolhido, setRecolhido] = useState(false);
   const [dia, setDia] = useState('');
   const [paradas, setParadas] = useState<Parada[]>([]);
   const [rota, setRota] = useState<RotaCalculada | null>(null);
@@ -437,19 +439,51 @@ export function RotaDoDia({ eventos, onLinhaChange, onAbertoChange }: {
         </button>
       )}
 
+      {/* No celular é uma gaveta que sobe do pé da tela.
+        *
+        * Antes ela tomava `76vh` — e no Chrome do Android o `vh` é medido com
+        * a barra de endereço ESCONDIDA, então na prática cobria o mapa
+        * inteiro: sobrava uma faixa de uns 90px e não dava para arrastar o
+        * mapa nem ver a rota traçada. `dvh` mede a área realmente visível.
+        *
+        * Metade da tela, e não 76%, porque o ponto de olhar a rota é ver o
+        * traçado no mapa. Quem quiser a lista inteira rola dentro da gaveta;
+        * quem quiser o mapa recolhe pelo botão ao lado do X. */}
       {aberto && (
-        <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-3 md:right-16 md:left-auto md:w-[21rem] w-full z-[1000] overflow-hidden md:rounded-2xl border-t md:border max-h-[76vh] overflow-y-auto"
+        <div className={`absolute bottom-0 left-0 right-0 md:bottom-auto md:top-3 md:right-16 md:left-auto md:w-[21rem] w-full z-[1000] overflow-hidden md:rounded-2xl border-t md:border overflow-y-auto ${
+          recolhido ? 'max-h-[4.5rem] md:max-h-[4.5rem]' : 'max-h-[52dvh] md:max-h-[76dvh]'
+        }`}
           style={{ background: 'var(--bg-page)', borderColor: 'var(--tint-14)', boxShadow: '0 8px 40px rgba(0,0,0,0.45)' }}>
 
           <div className="flex items-center justify-between px-4 py-3 sticky top-0 z-10"
             style={{ borderBottom: '1px solid var(--tint-14)', background: 'var(--bg-page)' }}>
-            <div className="flex items-center gap-2">
-              <Route className="w-4 h-4" style={{ color: '#2563EB' }} />
-              <span className="font-bold text-[13.5px]" style={{ color: 'var(--text-primary)' }}>Rota do dia</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <Route className="w-4 h-4 flex-shrink-0" style={{ color: '#2563EB' }} />
+              <span className="font-bold text-[13.5px] flex-shrink-0" style={{ color: 'var(--text-primary)' }}>Rota do dia</span>
+              {/* Recolhida, a gaveta ainda diz o essencial: quanto se anda e
+                  quanto tempo leva. Sem isso, recolher viraria fechar. */}
+              {recolhido && rota && (
+                <span className="text-[11.5px] truncate" style={{ color: 'var(--text-tertiary)' }}>
+                  · {rota.distanciaTotalKm} km · {duracao(rota.duracaoTotalMin)}
+                </span>
+              )}
             </div>
-            <button onClick={fechar} className="p-1 rounded-lg hover:opacity-70">
-              <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
-            </button>
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              <button
+                onClick={() => setRecolhido(v => !v)}
+                title={recolhido ? 'Mostrar a lista' : 'Recolher e ver o mapa'}
+                aria-label={recolhido ? 'Mostrar a lista de paradas' : 'Recolher para ver o mapa'}
+                className="p-2 rounded-lg hover:opacity-70"
+              >
+                {recolhido
+                  ? <ChevronUp className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+                  : <ChevronDown className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />}
+              </button>
+              <button onClick={fechar} title="Fechar" aria-label="Fechar a rota do dia"
+                className="p-2 rounded-lg hover:opacity-70">
+                <X className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+              </button>
+            </div>
           </div>
 
           <div className="px-4 py-3 space-y-3">

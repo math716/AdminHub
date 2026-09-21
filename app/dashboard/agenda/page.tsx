@@ -642,9 +642,8 @@ export default function AgendaPage() {
       {showModal && createPortal(
         <div className="fixed inset-0 z-50 flex justify-center" style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', alignItems: 'center', padding: '1rem' }}>
           <div
-            className="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col"
+            className="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col altura-janela"
             style={{
-              maxHeight: 'calc(100vh - 1rem)',
               background: 'var(--bg-card)',
               border: '1px solid rgba(37,99,235,0.25)',
             }}
@@ -762,7 +761,7 @@ export default function AgendaPage() {
                 <div className="flex gap-2 mt-1">
                   <input value={form.endereco}
                     onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
-                    className="flex-1 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none transition-all placeholder-[color:var(--text-tertiary)]"
+                    className="flex-1 min-w-0 rounded-lg px-3 py-2 text-[color:var(--text-primary)] text-sm outline-none transition-all placeholder-[color:var(--text-tertiary)]"
                     style={{ background: 'var(--tint-06)', border: '1px solid var(--tint-10)' }}
                     placeholder="Rua, número, cidade"
                   />

@@ -1077,7 +1077,7 @@ export default function MapaDemandasPage() {
                 <label className="text-[11px] font-semibold uppercase tracking-widest text-[color:var(--text-secondary)]">Endereço completo</label>
                 <div className="flex gap-2 mt-1.5">
                   <input value={form.endereco} onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
-                    className="flex-1 bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 placeholder:text-[color:var(--text-tertiary)] transition-all"
+                    className="flex-1 min-w-0 bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-xl px-3.5 py-2.5 text-[color:var(--text-primary)] text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 placeholder:text-[color:var(--text-tertiary)] transition-all"
                     placeholder="Rua, número, bairro" />
                   <button onClick={geocodeFormAddress} disabled={geoLoading}
                     className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 transition-all shadow-sm hover:opacity-90" style={{ background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#FFFFFF' }}>
