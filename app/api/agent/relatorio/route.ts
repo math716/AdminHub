@@ -93,13 +93,18 @@ function buildPizza(input: ReportInput, isEleitoral: boolean, isEmendas: boolean
     }
 
     // Sem os agregados (conversa salva antes desta mudança): soma o que há.
+    //
+    // O que há é a AMOSTRA — no máximo 100 emendas, as de maior valor. A
+    // distribuição sai enviesada para as áreas de projeto caro, então o título
+    // precisa dizer de onde ela vem. Com o mesmo rótulo da versão agregada,
+    // quem lê não tinha como saber se estava vendo o recorte todo ou 100 linhas.
     const emendas: any[] = input.dadosBrutos?.buscar_emendas?.emendas ?? [];
     if (emendas.length > 0) {
       const byArea: Record<string, number> = {};
       emendas.forEach(e => { byArea[e.area] = (byArea[e.area] || 0) + (e.valorEmpenhado || 0); });
       const itens = Object.entries(byArea).sort((a, b) => b[1] - a[1])
         .map(([area, v]) => ({ label: AREA_LABEL[area] || area, valor: v, valorLabel: fmtMoney(v) }));
-      return renderPizza('Distribuição por área', itens);
+      return renderPizza(`Distribuição por área — ${emendas.length} maiores emendas`, itens);
     }
   }
   // Fallback (inclui demandas) — usa o donut que a Gabi já gerou
@@ -365,9 +370,29 @@ export async function POST(request: NextRequest) {
     } else if (isEmendas) {
       const emendas: any[] = body.dadosBrutos?.buscar_emendas?.emendas ?? [];
       if (emendas.length > 0) {
-        const ufCount: Record<string, number> = {};
-        emendas.forEach(e => { if (e.uf) ufCount[e.uf] = (ufCount[e.uf] ?? 0) + 1; });
-        const uf = Object.entries(ufCount).sort((a, b) => b[1] - a[1])[0]?.[0];
+        // Em quantos estados o recorte se espalha — pela agregação sobre TODAS
+        // as linhas, não pela amostra das 100 maiores.
+        //
+        // Antes o estado saía do `uf` mais frequente na amostra e o mapa era só
+        // dele: uma consulta que cobria SP e MG desenhava SP e calava MG, sem
+        // dizer nada. Com mais de um estado, o mapa passa a ser do país.
+        const porUf: any[] = body.dadosBrutos?.buscar_emendas?.porUf ?? [];
+        const ufsDoRecorte = porUf.length > 0
+          ? porUf.map(u => String(u.uf).toUpperCase())
+          : [...new Set(emendas.map(e => e.uf).filter(Boolean))].map(String);
+
+        if (ufsDoRecorte.length > 1) {
+          const valores: Record<string, number> = {};
+          for (const u of porUf) {
+            valores[String(u.uf).toUpperCase()] = (Number(u.empenhado) || 0) || (Number(u.pago) || 0);
+          }
+          if (Object.keys(valores).length > 0) {
+            mapa = await renderMapaEmendas({ uf: 'BR', valores, width: W, height: H });
+            mapaTitulo = 'Mapa de calor — valor destinado por estado';
+          }
+        }
+
+        const uf = mapa ? null : ufsDoRecorte[0];
         if (uf) {
           // Poucos parlamentares → comparação: colore pelo que mais destinou.
           // Panorama (muitos parlamentares) → mapa de CALOR por valor: com

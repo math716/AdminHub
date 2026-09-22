@@ -142,6 +142,17 @@ function acumularEmendas(prev: any, novo: any) {
       : { ...m });
   }
 
+  // Por estado: mesma ideia. É o que decide se o mapa do relatório é de um
+  // estado ou do país — sem juntar aqui, uma busca de SP somada a uma de MG
+  // ficaria parecendo caber num estado só.
+  const ufs = new Map<string, any>();
+  for (const u of [...(prev.porUf ?? []), ...(novo.porUf ?? [])]) {
+    const atual = ufs.get(u.uf);
+    ufs.set(u.uf, atual
+      ? { uf: u.uf, empenhado: atual.empenhado + u.empenhado, pago: atual.pago + u.pago }
+      : { ...u });
+  }
+
   const porArea = [...areas.values()].sort((a, b) => b.empenhado - a.empenhado);
   const inconsistencia = conferirSomas(
     { total, empenhado: totalEmpenhado, pago: totalPago }, porArea);
@@ -170,6 +181,7 @@ function acumularEmendas(prev: any, novo: any) {
       .sort((a: any, b: any) => b.empenhado - a.empenhado)
       .slice(0, 15),
     porMunicipio: [...municipios.values()],
+    porUf: [...ufs.values()].sort((a, b) => b.empenhado - a.empenhado),
     totalParlamentares: (prev.totalParlamentares ?? 0) + (novo.totalParlamentares ?? 0) || undefined,
     porArea,
     // A junção é o ponto onde os números já saíram errados (R$ 6,1B numa capa

@@ -206,7 +206,7 @@ export async function executarBuscarEmendas(
   // recorte de SP que começa em 2021.
   const whereSemAno = whereEmendas(args, new Set([...filtrosIgnorados, 'ano']));
 
-  const [resumo, porAreaBruto, porParlamentarBruto, porMunicipioBruto, anosBruto] = await Promise.all([
+  const [resumo, porAreaBruto, porParlamentarBruto, porMunicipioBruto, porUfBruto, anosBruto] = await Promise.all([
     prisma.emendaParlamentar.aggregate({
       where: whereFinal,
       _count: { _all: true },
@@ -233,6 +233,14 @@ export async function executarBuscarEmendas(
     // municípios, e isso consumiria o turno inteiro sem a Gabi precisar deles).
     prisma.emendaParlamentar.groupBy({
       by: ['municipioNome'],
+      where: whereFinal,
+      _sum: { valorEmpenhado: true, valorPago: true },
+    }),
+    // Também só para o mapa. Diz em QUANTOS estados o recorte se espalha —
+    // sem isso o relatório escolhia o estado mais frequente da AMOSTRA e
+    // desenhava só ele, calando os demais sem avisar.
+    prisma.emendaParlamentar.groupBy({
+      by: ['uf'],
       where: whereFinal,
       _sum: { valorEmpenhado: true, valorPago: true },
     }),
@@ -340,6 +348,22 @@ export async function executarBuscarEmendas(
     topMunicipios: municipiosComValor.slice(0, 15),
     /** Valor por município, para o mapa de calor. Removido antes de ir ao modelo. */
     porMunicipio: municipiosComValor,
+    /**
+     * Valor por estado, sobre TODAS as linhas do recorte — não sobre a amostra.
+     *
+     * Serve para o relatório saber se o recorte cabe num estado (e aí o mapa é
+     * daquele estado, por município) ou se atravessa vários (e aí o mapa é do
+     * país). Escolher pelo estado mais frequente da amostra desenhava um
+     * estado só e calava os demais.
+     */
+    porUf: porUfBruto
+      .filter(u => u.uf && ((u._sum.valorEmpenhado ?? 0) > 0 || (u._sum.valorPago ?? 0) > 0))
+      .map(u => ({
+        uf: String(u.uf).toUpperCase(),
+        empenhado: u._sum.valorEmpenhado ?? 0,
+        pago: u._sum.valorPago ?? 0,
+      }))
+      .sort((a, b) => b.empenhado - a.empenhado),
     /** Ranking por valor empenhado sobre TODAS as linhas (15 primeiros). */
     topParlamentares: top.map(p => ({
       nome: porId.get(p.parlamentarId!)?.nome ?? 'N/A',
