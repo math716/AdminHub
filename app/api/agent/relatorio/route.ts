@@ -283,7 +283,8 @@ export async function POST(request: NextRequest) {
 
       // Consulta a um MUNICÍPIO → mapa da cidade por bairros. O mapa do estado
       // com um único ponto pintado não diz nada sobre onde estão os votos
-      // dentro da cidade. Cai no mapa estadual se a cidade não tiver malha.
+      // dentro da cidade. Sem a malha da cidade, o documento sai sem mapa
+      // (ver a guarda logo abaixo) — só 895 municípios têm malha de bairros.
       const municipio = body.dadosBrutos?.buscar_votacao?.municipioConsultado;
       if (municipio && c?.uf && c.uf !== 'BR' && (c.votosPorZona?.length ?? 0) > 0) {
         const host  = request.headers.get('host') ?? 'localhost:3000';
@@ -301,9 +302,21 @@ export async function POST(request: NextRequest) {
           mapa = renderMapaBairros({ ...bairros, width: W, height: H });
           mapaTitulo = `Mapa de ${municipio} — votos por bairro`;
         } else {
-          console.warn(`[/api/agent/relatorio] sem malha de bairros para ${municipio}/${c.uf} — usando o mapa do estado`);
+          console.warn(`[/api/agent/relatorio] sem malha de bairros para ${municipio}/${c.uf} — o documento sai sem mapa`);
         }
       }
+
+      // Pedido sobre UM município não recebe mapa do estado.
+      //
+      // Sem a malha de bairros da cidade, o código caía nas opções abaixo, que
+      // são todas estaduais. Num relatório de vereadores de Franco da Rocha
+      // isso pintou o vencedor em cada um dos 645 municípios de São Paulo —
+      // 645 eleições diferentes numa figura só, que não quer dizer nada, e
+      // ainda contradiz o documento inteiro, que fala de uma cidade.
+      //
+      // Melhor sair sem mapa. O texto já explica a divisão por zona eleitoral,
+      // que é o detalhe geográfico que existe para essas cidades.
+      const consultaDeUmMunicipio = Boolean(municipio);
 
       // DF é um único município: o mapa por município pintava o Distrito
       // Federal inteiro de uma cor, com o vencedor GERAL da eleição — que nem
@@ -325,8 +338,9 @@ export async function POST(request: NextRequest) {
         if (!mapa) console.warn('[/api/agent/relatorio] mapa do DF por RA indisponível — usando o mapa padrão');
       }
 
-      if (mapa) {
-        // já resolvido pelo mapa de bairros ou pelo mapa do DF por RA
+      if (mapa || consultaDeUmMunicipio) {
+        // Já resolvido (bairros da cidade, ou Regiões Administrativas do DF);
+        // ou é pedido de um município só, e aí nenhum mapa estadual serve.
       } else if (cands.length === 1) {
         // 1 candidato → heatmap dos votos dele
         const valores: Record<string, number> = {};
