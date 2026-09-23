@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Landmark,
   Upload,
+  X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -135,13 +136,27 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
     <>
       {/* ── Logo / header ───────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-3 px-3 pt-5 pb-5"
+        className="relative flex items-center gap-3 pl-3 pr-12 lg:pr-3 pt-5 pb-5"
         style={{ borderBottom: '1px solid rgba(148,163,184,0.12)' }}
       >
+        {/* No celular o menu cobre a tela: precisa de um jeito óbvio de fechar,
+            além de tocar no escuro ao lado. No computador ele fica fixo e quem
+            recolhe é a aba na borda. */}
+        {onToggle && (
+          <button
+            onClick={onToggle}
+            aria-label="Fechar menu"
+            title="Fechar menu"
+            className="lg:hidden absolute top-3 right-3 flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:[background:rgba(255,255,255,0.10)]"
+            style={{ color: '#CBD5E1', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(148,163,184,0.20)' }}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
         <img
           src="/logo.png"
           alt="AdminHub"
-          className="w-24 h-24 object-contain flex-shrink-0"
+          className="w-20 h-20 lg:w-24 lg:h-24 object-contain flex-shrink-0"
         />
         <div className="min-w-0">
           <p className="text-xl font-semibold text-white leading-tight tracking-tight truncate">
@@ -253,7 +268,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onToggle}
-            className="lg:hidden fixed inset-0 z-40"
+            className="lg:hidden fixed inset-0 z-[1150]"
             style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)' }}
           />
         )}
@@ -262,7 +277,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
       <motion.aside
         animate={{ x: open ? 0 : -280, opacity: open ? 1 : 0 }}
         transition={{ type: 'spring', damping: 26, stiffness: 240 }}
-        className="flex flex-col fixed overflow-hidden z-50"
+        className="flex flex-col fixed overflow-hidden z-[1200]"
         style={{
           top: 0,
           bottom: 0,
@@ -280,14 +295,21 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
         <NavContent />
       </motion.aside>
 
+      {/* Aba de recolher: só no computador. Quem a esconde no celular é o DIV,
+          não o botão. Com `hidden` no próprio botão ela aparecia mesmo assim:
+          ao animar o `left`, a biblioteca de animação mede o elemento e, para
+          medir algo escondido, grava `display: block` direto nele — por cima do
+          `hidden`. Resultado no celular: a aba parada no meio da tela, sobre o
+          conteúdo, na posição de "menu aberto". */}
       {onToggle && (
+        <div className="hidden lg:block">
         <motion.button
           onClick={onToggle}
           aria-label={open ? 'Recolher sidebar' : 'Abrir sidebar'}
           title={open ? 'Recolher menu' : 'Abrir menu'}
           animate={{ left: open ? 260 : 8 }}
           transition={{ type: 'spring', damping: 26, stiffness: 240 }}
-          className="hidden lg:flex fixed top-1/2 -translate-y-1/2 w-6 h-12 items-center justify-center z-50 transition-colors"
+          className="flex fixed top-1/2 -translate-y-1/2 w-6 h-12 items-center justify-center z-[1200] transition-colors"
           style={{
             background: '#0F2240',
             border: '1px solid rgba(148,163,184,0.18)',
@@ -298,6 +320,7 @@ export function Sidebar({ open = true, onToggle }: SidebarProps = {}) {
         >
           {open ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         </motion.button>
+        </div>
       )}
     </>
   );
