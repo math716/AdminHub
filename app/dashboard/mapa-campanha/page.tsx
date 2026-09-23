@@ -2498,7 +2498,9 @@ export default function MapaCampanhaPage() {
                   </span>
                   <span className="text-xs text-slate-600 dark:text-slate-400">{ano} → {anoProjecao}</span>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                {/* No celular os três botões não cabem numa linha: quebram, em vez
+                    de o último sair para fora do card. */}
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:flex-shrink-0">
                   <Button
                     onClick={voltarParaPesquisa}
                     variant="outline"
@@ -2630,8 +2632,12 @@ export default function MapaCampanhaPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 }}
           >
+            {/* No celular cada parte ocupa a própria linha: nome inteiro em cima,
+                estado/eleição/projeção lado a lado, abas e botão na largura toda.
+                Da largura `sm` para cima o arranjo é o de antes, tudo numa faixa
+                (o `sm:contents` desfaz a grade de três colunas). */}
             <div
-              className="flex items-center gap-4 px-4 py-1.5 rounded-2xl flex-wrap"
+              className="flex flex-col gap-3 px-4 py-3 rounded-2xl sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 sm:py-1.5"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}
             >
               {/* Nome + cargo */}
@@ -2639,39 +2645,41 @@ export default function MapaCampanhaPage() {
                 const nomeCandidato = projecao.candidatoNome || electoralData.nomeUrna || electoralData.candidateName || '';
                 const cargo = projecao.cargo || electoralData.cargo || '';
                 return (
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[color:var(--text-primary)] font-bold text-xl truncate leading-tight">{nomeCandidato}</p>
-                    {cargo && <p className="text-sm mt-0.5 truncate" style={{ color: '#6b82a0' }}>{cargo}</p>}
+                  <div className="min-w-0 sm:flex-1">
+                    <p className="text-[color:var(--text-primary)] font-bold text-lg sm:text-xl leading-tight break-words sm:truncate">{nomeCandidato}</p>
+                    {cargo && <p className="text-sm mt-0.5 sm:truncate" style={{ color: '#6b82a0' }}>{cargo}</p>}
                   </div>
                 );
               })()}
 
-              <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Estado</span>
-                <span className="text-base font-bold text-[color:var(--text-primary)]">
-                  {ESTADOS_BRASIL.find(e => e.sigla === projecao.uf)?.nome ?? projecao.uf}
-                </span>
-              </div>
-              <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Eleição</span>
-                <span className="text-base font-bold" style={{ color: 'var(--acento-azul)' }}>{projecao.anoBase}</span>
-              </div>
-              <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Projeção</span>
-                <span className="text-base font-bold" style={{ color: '#2563EB' }}>{projecao.anoProjecao}</span>
+              <div className="grid grid-cols-3 gap-2 sm:contents">
+                <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
+                <div className="flex flex-col items-center gap-0.5 min-w-0">
+                  <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Estado</span>
+                  <span className="text-base font-bold text-[color:var(--text-primary)] text-center">
+                    {ESTADOS_BRASIL.find(e => e.sigla === projecao.uf)?.nome ?? projecao.uf}
+                  </span>
+                </div>
+                <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Eleição</span>
+                  <span className="text-base font-bold" style={{ color: 'var(--acento-azul)' }}>{projecao.anoBase}</span>
+                </div>
+                <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Projeção</span>
+                  <span className="text-base font-bold" style={{ color: '#2563EB' }}>{projecao.anoProjecao}</span>
+                </div>
               </div>
 
               <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
 
               {/* Tabs inline */}
-              <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}>
+              <div className="flex gap-1 p-1 rounded-xl w-full sm:w-auto" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}>
                 {electoralData?.candidatoId && (
                   <button
                     onClick={() => setActiveTab('historico')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                    className={`flex flex-1 sm:flex-none justify-center items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
                       activeTab === 'historico'
                         ? 'bg-cyan-500 text-white shadow'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
@@ -2683,7 +2691,7 @@ export default function MapaCampanhaPage() {
                 )}
                 <button
                   onClick={() => setActiveTab('projecao')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  className={`flex flex-1 sm:flex-none justify-center items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
                     activeTab === 'projecao'
                       ? `${cenarioConfig[cenarioAtivo].bg} text-white shadow`
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
@@ -2698,7 +2706,7 @@ export default function MapaCampanhaPage() {
               <Button
                 onClick={saveProjecao}
                 loading={saving}
-                className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600"
+                className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600"
               >
                 <Save className="h-4 w-4 mr-2" />
                 Salvar Projeção
@@ -3849,39 +3857,39 @@ export default function MapaCampanhaPage() {
 
               {/* Votos base */}
               {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
-                <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
+                <Card noPadding style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
                   <CardContent className="!px-3 !py-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <BarChart3 className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
-                      <span className="text-xs font-semibold uppercase tracking-wide hidden 2xl:inline" style={{ color: '#6b82a0' }}>Votos {ano}</span>
-                      <span className="ml-auto text-sm 2xl:text-base font-bold text-[color:var(--text-primary)] whitespace-nowrap">{getTotalVotosBase().toLocaleString()}</span>
+                      <span className="text-xs lg:text-[10px] 2xl:text-xs font-semibold uppercase tracking-wide lg:tracking-normal 2xl:tracking-wide" style={{ color: '#6b82a0' }}>Votos {ano}</span>
+                      <span className="basis-full 2xl:basis-auto 2xl:ml-auto text-base font-bold text-[color:var(--text-primary)] whitespace-nowrap">{getTotalVotosBase().toLocaleString()}</span>
                     </div>
                   </CardContent>
                 </Card>
               )}
 
               {/* Meta */}
-              <Card style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border-default)', borderRight: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)', borderLeft: `4px solid ${cenarioConfig[cenarioAtivo].hex}` }}>
+              <Card noPadding style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border-default)', borderRight: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)', borderLeft: `4px solid ${cenarioConfig[cenarioAtivo].hex}` }}>
                 <CardContent className="!px-3 !py-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <Target className={`h-4 w-4 flex-shrink-0 ${cenarioConfig[cenarioAtivo].color}`} />
-                    <span className="text-xs font-semibold uppercase tracking-wide hidden 2xl:inline" style={{ color: '#6b82a0' }}>Meta {anoProjecao}</span>
-                    <span className={`ml-auto text-sm 2xl:text-base font-bold whitespace-nowrap ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</span>
+                    <span className="text-xs lg:text-[10px] 2xl:text-xs font-semibold uppercase tracking-wide lg:tracking-normal 2xl:tracking-wide" style={{ color: '#6b82a0' }}>Meta {anoProjecao}</span>
+                    <span className={`basis-full 2xl:basis-auto 2xl:ml-auto text-base font-bold whitespace-nowrap ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</span>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Crescimento */}
               {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
-                <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
+                <Card noPadding style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
                   <CardContent className="!px-3 !py-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       {parseFloat(getCrescimento() as string) >= 0
                         ? <ArrowUp className="h-4 w-4 flex-shrink-0 text-[color:var(--success)]" />
                         : <ArrowDown className="h-4 w-4 flex-shrink-0 text-red-400" />
                       }
-                      <span className="text-xs font-semibold uppercase tracking-wide hidden 2xl:inline" style={{ color: '#6b82a0' }}>Crescimento</span>
-                      <span className={`ml-auto text-sm 2xl:text-base font-bold whitespace-nowrap ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
+                      <span className="text-xs lg:text-[10px] 2xl:text-xs font-semibold uppercase tracking-wide lg:tracking-normal 2xl:tracking-wide" style={{ color: '#6b82a0' }}>Crescimento</span>
+                      <span className={`basis-full 2xl:basis-auto 2xl:ml-auto text-base font-bold whitespace-nowrap ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
                         {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
                       </span>
                     </div>
@@ -3890,12 +3898,12 @@ export default function MapaCampanhaPage() {
               )}
 
               {/* Municípios */}
-              <Card style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
+              <Card noPadding style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
                 <CardContent className="!px-3 !py-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
-                    <span className="text-xs font-semibold uppercase tracking-wide hidden 2xl:inline" style={{ color: '#6b82a0' }}>Municípios</span>
-                    <span className="ml-auto text-sm 2xl:text-base font-bold text-[color:var(--text-primary)] whitespace-nowrap">
+                    <span className="text-xs lg:text-[10px] 2xl:text-xs font-semibold uppercase tracking-wide lg:tracking-normal 2xl:tracking-wide" style={{ color: '#6b82a0' }}>Municípios</span>
+                    <span className="basis-full 2xl:basis-auto 2xl:ml-auto text-base font-bold text-[color:var(--text-primary)] whitespace-nowrap">
                       {getMunicipiosCount()}
                       {filtroTipo !== 'todos' && <span className="text-xs font-normal ml-1" style={{ color: '#6b82a0' }}>/ {projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length}</span>}
                     </span>
@@ -3904,13 +3912,13 @@ export default function MapaCampanhaPage() {
               </Card>
 
               {/* Dobradas */}
-              <Card className={`bg-gradient-to-br from-blue-900/50 to-slate-800 ${filtroTipo === 'com_dobrada' ? 'border-blue-400 ring-2 ring-blue-400/30' : 'border-blue-500/30'}`}>
+              <Card noPadding className={`bg-gradient-to-br from-blue-900/50 to-slate-800 ${filtroTipo === 'com_dobrada' ? 'border-blue-400 ring-2 ring-blue-400/30' : 'border-blue-500/30'}`}>
                 <CardContent className="!px-3 !py-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <Handshake className="h-4 w-4 flex-shrink-0 text-blue-400" />
-                    <span className="text-xs font-semibold uppercase tracking-wide hidden 2xl:inline text-blue-300">Dobradas</span>
-                    <div className="ml-auto text-right">
-                      <span className="text-sm 2xl:text-base font-bold text-blue-400 whitespace-nowrap">{getDobradasCount()}</span>
+                    <span className="text-xs lg:text-[10px] 2xl:text-xs font-semibold uppercase tracking-wide lg:tracking-normal 2xl:tracking-wide text-blue-300">Dobradas</span>
+                    <div className="basis-full 2xl:basis-auto 2xl:ml-auto 2xl:text-right">
+                      <span className="text-base font-bold text-blue-400 whitespace-nowrap">{getDobradasCount()}</span>
                       {getVotosComDobrada() > 0 && <span className="text-[10px] text-slate-400 ml-1">+{getVotosComDobrada().toLocaleString()}v</span>}
                     </div>
                   </div>
@@ -3918,11 +3926,11 @@ export default function MapaCampanhaPage() {
               </Card>
 
               {/* Parcerias */}
-              <Card className={`relative bg-gradient-to-br from-amber-900/50 to-slate-800 transition-all duration-300 ${
+              <Card noPadding className={`relative bg-gradient-to-br from-amber-900/50 to-slate-800 transition-all duration-300 ${
                 filtroTipo === 'parcerias' ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-amber-500/30'
               } ${!includeParcerias ? 'opacity-60' : ''}`}>
                 <CardContent className="!px-3 !py-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <button
                       onClick={() => setIncludeParcerias(!includeParcerias)}
                       className={`p-0.5 rounded-full transition-all duration-200 flex-shrink-0 ${includeParcerias ? 'text-[color:var(--brand-cobalt)]' : 'text-slate-500'}`}
@@ -3930,9 +3938,9 @@ export default function MapaCampanhaPage() {
                     >
                       {includeParcerias ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                     </button>
-                    <span className={`text-xs font-semibold uppercase tracking-wide hidden 2xl:inline ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-500'}`}>Parcerias</span>
-                    <div className="ml-auto text-right">
-                      <span className={`text-sm 2xl:text-base font-bold whitespace-nowrap ${includeParcerias ? 'text-sky-400' : 'text-slate-500'}`}>{parceriasStats?.total || 0}</span>
+                    <span className={`text-xs lg:text-[10px] 2xl:text-xs font-semibold uppercase tracking-wide lg:tracking-normal 2xl:tracking-wide ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-500'}`}>Parcerias</span>
+                    <div className="basis-full 2xl:basis-auto 2xl:ml-auto 2xl:text-right">
+                      <span className={`text-base font-bold whitespace-nowrap ${includeParcerias ? 'text-sky-400' : 'text-slate-500'}`}>{parceriasStats?.total || 0}</span>
                       {includeParcerias && <span className={`text-[10px] ml-1 ${cenarioConfig[cenarioAtivo].color}`}>
                         +{((cenarioAtivo === 'conservador' ? parceriasStats?.metaConservadoraTotal : cenarioAtivo === 'possivel' ? parceriasStats?.metaPossivelTotal : parceriasStats?.metaArrojadaTotal) || 0).toLocaleString()}v
                       </span>}

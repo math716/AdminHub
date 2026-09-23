@@ -115,7 +115,9 @@ export default function DashboardLayout({
         <span className="text-[15px] font-semibold text-white tracking-tight">AdminHub</span>
       </header>
       <main className={`transition-[padding] duration-300 ease-out ${sidebarOpen ? 'lg:pl-[260px]' : 'lg:pl-6'}`}>
-        <div className="px-2 py-4 md:p-4 lg:p-8 landscape-content max-w-[1920px] mx-auto">
+        {/* O `pb-24` no celular e no tablet deixa rolar o fim da página para
+            cima do botão da Gabi, que fica fixo no canto e tapava o último card. */}
+        <div className="px-2 py-4 pb-24 md:p-4 md:pb-24 lg:p-8 landscape-content max-w-[1920px] mx-auto">
           {children}
         </div>
       </main>
