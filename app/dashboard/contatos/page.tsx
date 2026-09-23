@@ -745,7 +745,7 @@ export default function ContatosPage() {
                           }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm truncate leading-snug" style={{ color: 'var(--text-primary)' }} title={c.nome}>
+                        <h3 className="font-semibold text-sm break-words leading-snug" style={{ color: 'var(--text-primary)' }} title={c.nome}>
                           {c.nome}
                         </h3>
                         <span
@@ -765,7 +765,7 @@ export default function ContatosPage() {
                       {c.email && (
                         <div className="flex items-center gap-2.5">
                           <Mail className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
-                          <span className="text-[13px] truncate" style={{ color: 'var(--tint-55)' }} title={c.email}>{c.email}</span>
+                          <span className="text-[13px] min-w-0 break-all" style={{ color: 'var(--tint-55)' }} title={c.email}>{c.email}</span>
                         </div>
                       )}
                       {c.endereco && (
@@ -935,8 +935,8 @@ export default function ContatosPage() {
                             {sel && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[color:var(--text-primary)] text-xs font-medium truncate">{c.nome}</p>
-                            <p className="text-xs truncate" style={{ color: 'var(--tint-45)' }}>{c.numero}</p>
+                            <p className="text-[color:var(--text-primary)] text-xs font-medium break-words">{c.nome}</p>
+                            <p className="text-xs break-words" style={{ color: 'var(--tint-45)' }}>{c.numero}</p>
                           </div>
                         </button>
                       );
@@ -1188,8 +1188,8 @@ export default function ContatosPage() {
                             <User className="w-3.5 h-3.5" style={{ color: '#2563EB' }} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{c.nome}</p>
-                            <p className="text-xs truncate" style={{ color: 'var(--tint-45)' }}>{c.numero}{c.endereco ? ` · ${c.endereco}` : ''}</p>
+                            <p className="text-[color:var(--text-primary)] text-sm font-medium break-words">{c.nome}</p>
+                            <p className="text-xs break-words" style={{ color: 'var(--tint-45)' }}>{c.numero}{c.endereco ? ` · ${c.endereco}` : ''}</p>
                           </div>
                         </div>
                       ))}
@@ -1310,7 +1310,7 @@ export default function ContatosPage() {
                           <Phone className="h-3.5 w-3.5" style={{ color: '#2563EB' }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[color:var(--text-primary)] text-xs font-medium truncate">{c.nome}</p>
+                          <p className="text-[color:var(--text-primary)] text-xs font-medium break-words">{c.nome}</p>
                           <p className="text-xs" style={{ color: 'var(--tint-45)' }}>{c.numero}</p>
                           {st === 'err' && sendErrors[c.id] && (
                             <p className="text-[10px] mt-0.5" style={{ color: 'var(--danger)' }}>{sendErrors[c.id]}</p>

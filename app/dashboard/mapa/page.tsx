@@ -1759,7 +1759,7 @@ export default function MapaPage() {
                                     </div>
                                     <div className="font-bold text-sm leading-tight" style={{ color: 'var(--acento-azul)' }}>
                                       {(votos as number).toLocaleString('pt-BR')}
-                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
+                                      <span className="font-normal ml-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
                                     </div>
                                   </button>
                                 ))
@@ -1801,7 +1801,7 @@ export default function MapaPage() {
                             {locaisPorZona.length > 0 && (
                               <button
                                 onClick={() => setZonasSortBy(s => s === 'votos' ? 'numero' : 'votos')}
-                                className="ml-auto text-[9px] px-1.5 py-0.5 rounded transition-colors"
+                                className="ml-auto text-[10px] px-1.5 py-0.5 rounded transition-colors"
                                 style={{ border: '1px solid rgba(74,158,222,0.25)', color: 'var(--tint-45)' }}
                                 title={zonasSortBy === 'votos' ? 'Ordenar por número' : 'Ordenar por votos'}
                               >
@@ -1832,7 +1832,7 @@ export default function MapaPage() {
                                       <div className="font-bold text-sm" style={{ color: 'var(--acento-azul)' }}>
                                         {(z.votos as number).toLocaleString('pt-BR')}
                                       </div>
-                                      <div className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>votos</div>
+                                      <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>votos</div>
                                     </button>
                                   ))}
                               </div>
@@ -1853,7 +1853,7 @@ export default function MapaPage() {
                                     </div>
                                     <div className="font-bold text-sm leading-tight" style={{ color: 'var(--acento-azul)' }}>
                                       {(z.votos as number).toLocaleString('pt-BR')}
-                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
+                                      <span className="font-normal ml-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
                                     </div>
                                   </button>
                                 ))
@@ -2012,7 +2012,7 @@ export default function MapaPage() {
                                     </div>
                                     <div className="font-bold text-sm leading-tight" style={{ color: 'var(--acento-azul)' }}>
                                       {(votos as number).toLocaleString('pt-BR')}
-                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
+                                      <span className="font-normal ml-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
                                     </div>
                                   </button>
                                 ))
@@ -2064,7 +2064,7 @@ export default function MapaPage() {
                                     </div>
                                     <div className="font-bold text-sm leading-tight" style={{ color: 'var(--acento-azul)' }}>
                                       {(votos as number).toLocaleString('pt-BR')}
-                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
+                                      <span className="font-normal ml-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
                                     </div>
                                   </button>
                                 ))
@@ -2116,7 +2116,7 @@ export default function MapaPage() {
                                     </div>
                                     <div className="font-bold text-sm leading-tight" style={{ color: 'var(--warning)' }}>
                                       {(votos as number).toLocaleString('pt-BR')}
-                                      <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
+                                      <span className="font-normal ml-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
                                     </div>
                                   </button>
                                 ))
@@ -2178,7 +2178,7 @@ export default function MapaPage() {
                                       </div>
                                       <div className="font-bold text-sm leading-tight" style={{ color: 'var(--acento-azul)' }}>
                                         {(votos as number).toLocaleString('pt-BR')}
-                                        <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
+                                        <span className="font-normal ml-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
                                       </div>
                                     </button>
                                   );
@@ -2222,7 +2222,7 @@ export default function MapaPage() {
                         {locaisPorZona.length > 0 && (
                           <button
                             onClick={() => setZonasSortBy(s => s === 'votos' ? 'numero' : 'votos')}
-                            className="ml-auto text-[9px] px-1.5 py-0.5 rounded transition-colors"
+                            className="ml-auto text-[10px] px-1.5 py-0.5 rounded transition-colors"
                             style={{ border: '1px solid rgba(74,158,222,0.25)', color: 'var(--tint-45)' }}
                             title={zonasSortBy === 'votos' ? 'Ordenar por número' : 'Ordenar por votos'}
                           >
@@ -2254,7 +2254,7 @@ export default function MapaPage() {
                                   <div className="font-bold text-sm" style={{ color: 'var(--acento-azul)' }}>
                                     {(z.votos as number).toLocaleString('pt-BR')}
                                   </div>
-                                  <div className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>votos</div>
+                                  <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>votos</div>
                                 </button>
                               ))}
                           </div>
@@ -2275,7 +2275,7 @@ export default function MapaPage() {
                                 </div>
                                 <div className="font-bold text-sm leading-tight" style={{ color: 'var(--acento-azul)' }}>
                                   {(z.votos as number).toLocaleString('pt-BR')}
-                                  <span className="font-normal ml-1 text-[9px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
+                                  <span className="font-normal ml-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>votos</span>
                                 </div>
                               </button>
                             ))

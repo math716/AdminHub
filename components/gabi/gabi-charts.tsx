@@ -136,7 +136,7 @@ function DonutPanel({ vis, isMoney, t }: { vis: Visualizacao; isMoney: boolean; 
               <div className="h-1 rounded-full overflow-hidden" style={{ background: t.track }}>
                 <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
               </div>
-              <p className="text-[9px] mt-0.5 text-right" style={{ color: t.muted }}>{fmt(item.valor)}</p>
+              <p className="text-[10px] mt-0.5 text-right" style={{ color: t.muted }}>{fmt(item.valor)}</p>
             </div>
           );
         })}
@@ -473,7 +473,7 @@ export function VisualizacoesCard({
           <div className="grid grid-cols-2 gap-2 mt-1">
             {kpi.dados.cards.slice(0, 6).map((card: any, i: number) => (
               <div key={i} className="rounded-lg p-2.5" style={{ background: t.kpiBg, border: `1px solid ${t.kpiBorder}` }}>
-                <p className="text-[9px] uppercase tracking-wide mb-0.5" style={{ color: t.title }}>{card.label}</p>
+                <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: t.title }}>{card.label}</p>
                 {(() => {
                   const { texto, sufixo } = fmtKpi(card.valor, card.unidade);
                   return (

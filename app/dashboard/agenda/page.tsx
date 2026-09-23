@@ -474,9 +474,24 @@ export default function AgendaPage() {
                         <span className="w-1.5 h-1.5 rounded-full mt-2 mr-0.5" style={{ background: '#2563EB' }} />
                       )}
                     </div>
-                    <div className="space-y-0.5 overflow-hidden">
+                    {/* No celular a célula tem uns 48px: o título do evento virava
+                        "09:0…" e o nome do feriado, 9px cortado. Ali o dia mostra
+                        um ponto por evento (o feriado já pinta o número de
+                        vermelho) — ao tocar, a lista do dia traz tudo por extenso. */}
+                    {dayEvs.length > 0 && (
+                      <div className="flex sm:hidden flex-wrap items-center gap-0.5 mt-0.5">
+                        {dayEvs.slice(0, 4).map((e) => (
+                          <span key={e.id} className="w-1.5 h-1.5 rounded-full"
+                            style={{ background: e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB' }} />
+                        ))}
+                        {dayEvs.length > 4 && (
+                          <span className="text-[10px] leading-none" style={{ color: 'var(--text-tertiary)' }}>+{dayEvs.length - 4}</span>
+                        )}
+                      </div>
+                    )}
+                    <div className="hidden sm:block space-y-0.5 overflow-hidden">
                       {feriado && (
-                        <div className="text-[9px] truncate leading-tight" style={{ color: 'var(--danger)' }}>{feriado}</div>
+                        <div className="text-[10px] truncate leading-tight" style={{ color: 'var(--danger)' }}>{feriado}</div>
                       )}
                       {dayEvs.slice(0, feriado ? 1 : 2).map((e) => (
                         <div
@@ -558,15 +573,17 @@ export default function AgendaPage() {
                           )}
                         </div>
                         <div className="flex-1 min-w-0 pb-1">
-                          <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{e.titulo}</p>
-                          <div className="flex items-center gap-3 mt-0.5" style={{ color: 'var(--tint-45)' }}>
+                          {/* Título e local quebram linha em vez de cortar: é a
+                              lista que o celular usa para ler o dia inteiro. */}
+                          <p className="text-[color:var(--text-primary)] text-sm font-medium break-words">{e.titulo}</p>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5" style={{ color: 'var(--tint-45)' }}>
                             <span className="flex items-center gap-1 text-xs">
                               <Clock className="w-3 h-3" />
                               {new Date(e.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                             {e.local && (
-                              <span className="flex items-center gap-1 text-xs truncate">
-                                <MapPin className="w-3 h-3" />
+                              <span className="flex items-center gap-1 text-xs min-w-0 break-words">
+                                <MapPin className="w-3 h-3 flex-shrink-0" />
                                 {e.local}
                               </span>
                             )}
@@ -603,7 +620,7 @@ export default function AgendaPage() {
                     <div className="flex items-center gap-2.5">
                       <TipoIconBox tipo={e.tipo} box={28} icon={13} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[color:var(--text-primary)] text-xs font-medium truncate">{e.titulo}</p>
+                        <p className="text-[color:var(--text-primary)] text-xs font-medium break-words">{e.titulo}</p>
                         <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                           {new Date(e.data).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
                           {' · '}

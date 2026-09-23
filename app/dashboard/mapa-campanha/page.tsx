@@ -3457,7 +3457,7 @@ export default function MapaCampanhaPage() {
                                   <div className="flex items-center gap-1 flex-shrink-0">
                                     {isNew && <Badge variant="success" className="text-[10px] px-1 py-0">NOVO</Badge>}
                                     {mun.prioridade === 'ALTA' && <Badge variant="danger" className="text-[10px] px-1 py-0">!</Badge>}
-                                    {bairrosDelta > 0 && <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(56,189,248,0.15)', color: 'var(--acento-azul)', border: '1px solid rgba(56,189,248,0.25)' }}>+{bairrosDelta.toLocaleString()} bairros</span>}
+                                    {bairrosDelta > 0 && <span className="text-[10px] px-1 py-0.5 rounded" style={{ background: 'rgba(56,189,248,0.15)', color: 'var(--acento-azul)', border: '1px solid rgba(56,189,248,0.25)' }}>+{bairrosDelta.toLocaleString()} bairros</span>}
                                     {isNew && (
                                       <button onClick={(e) => { e.stopPropagation(); removeMunicipio(mun.municipio); }} className="p-0.5 text-slate-500 hover:text-red-400 acao-no-hover transition-opacity">
                                         <Trash2 className="h-3 w-3" />

@@ -843,10 +843,10 @@ export default function UsuariosPage() {
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                       <p className="text-[color:var(--text-primary)] text-sm font-medium break-words sm:truncate">{u.name}</p>
                                       {u.id === sessionUserId && (
-                                        <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(37,99,235,0.15)', color: '#2563EB' }}>você</span>
+                                        <span className="text-[10px] px-1 py-0.5 rounded" style={{ background: 'rgba(37,99,235,0.15)', color: '#2563EB' }}>você</span>
                                       )}
                                       {!u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN' && (
-                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
                                           style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--warning)' }}>
                                           Pendente
                                         </span>
@@ -943,7 +943,7 @@ export default function UsuariosPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="text-[color:var(--text-primary)] font-semibold text-sm">{pg.nome}</p>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold tracking-wide"
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold tracking-wide"
                         style={{ background: 'rgba(245,158,11,0.18)', color: 'var(--warning)', border: '1px solid rgba(245,158,11,0.35)' }}>
                         AGUARDANDO APROVAÇÃO
                       </span>
@@ -976,7 +976,7 @@ export default function UsuariosPage() {
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <p className="text-[color:var(--text-primary)] text-sm font-medium break-words sm:truncate">{u.name}</p>
-                                <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
                                   style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--warning)' }}>
                                   Pendente
                                 </span>
@@ -1050,7 +1050,7 @@ export default function UsuariosPage() {
                               <div className="flex items-center gap-1.5">
                                 <p className="text-[color:var(--text-primary)] text-sm font-medium break-words sm:truncate">{u.name}</p>
                                 {u.id === sessionUserId && (
-                                  <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(37,99,235,0.15)', color: '#2563EB' }}>você</span>
+                                  <span className="text-[10px] px-1 py-0.5 rounded" style={{ background: 'rgba(37,99,235,0.15)', color: '#2563EB' }}>você</span>
                                 )}
                               </div>
                               <p className="text-[11px] break-all sm:truncate" style={{ color: 'var(--text-tertiary)' }}>{u.email}</p>

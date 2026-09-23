@@ -921,7 +921,7 @@ export default function AdminGabinetesPage() {
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                       <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{u.name}</p>
                                       {!u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN' && (
-                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
                                           style={{ background:'rgba(245,158,11,0.15)', color:'var(--warning)' }}>Pendente</span>
                                       )}
                                     </div>

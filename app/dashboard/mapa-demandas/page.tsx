@@ -770,13 +770,13 @@ export default function MapaDemandasPage() {
                   <button key={d.id}
                     onClick={() => { selectDemandWithFoto(d); if (d.lat && d.lng) setMapCenter([d.lat, d.lng]); setMobileSidebar(false); }}
                     className={`w-full text-left px-3 py-2.5 border-b border-[var(--tint-06)] hover:bg-[var(--tint-06)] transition-all ${selectedDemand?.id === d.id ? 'bg-sky-900/30 border-l-2 border-l-sky-400' : ''}`}>
-                    <p className="text-[color:var(--text-primary)] text-xs font-semibold truncate mb-0.5">{d.title}</p>
+                    <p className="text-[color:var(--text-primary)] text-xs font-semibold break-words mb-0.5">{d.title}</p>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full"
                         style={{ background: (STATUS_COLORS[d.status as keyof typeof STATUS_COLORS] ?? '#9e9e9e') + '22', color: STATUS_COLORS[d.status as keyof typeof STATUS_COLORS] ?? '#9e9e9e' }}>
                         {STATUS_LABELS[d.status as keyof typeof STATUS_LABELS]}
                       </span>
-                      <span className="text-gray-500 text-[10px] truncate">{d.solicitante}</span>
+                      <span className="text-gray-500 text-[10px] break-words">{d.solicitante}</span>
                     </div>
                   </button>
                 ))}
@@ -789,7 +789,7 @@ export default function MapaDemandasPage() {
                       <button key={e.id}
                         onClick={() => { setSelectedEvent(e); setSelectedDemand(null); if (e.lat && e.lng) setMapCenter([e.lat, e.lng]); setMobileSidebar(false); }}
                         className={`w-full text-left px-3 py-2.5 border-b border-[var(--tint-06)] hover:bg-[var(--tint-06)] transition-all ${selectedEvent?.id === e.id ? 'bg-indigo-900/30 border-l-2 border-l-indigo-400' : ''}`}>
-                        <p className="text-[color:var(--text-primary)] text-xs font-semibold truncate">{e.titulo}</p>
+                        <p className="text-[color:var(--text-primary)] text-xs font-semibold break-words">{e.titulo}</p>
                         <p className="text-gray-500 text-[10px]">{TIPO_AGENDA_LABELS[e.tipo]} · {new Date(e.data).toLocaleDateString('pt-BR')}</p>
                       </button>
                     ))}
@@ -1017,7 +1017,7 @@ export default function MapaDemandasPage() {
       {/* ── Modal nova demanda ── */}
       {showNewModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2100] flex items-end sm:items-center justify-center sm:p-4">
-          <div className="bg-[var(--bg-card)] border border-[var(--tint-10)] rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="bg-[var(--bg-card)] border border-[var(--tint-10)] rounded-t-2xl sm:rounded-2xl w-full max-w-2xl altura-folha overflow-y-auto shadow-2xl">
             {/* Linha de acento no topo */}
             <div className="h-1 rounded-t-2xl bg-gradient-to-r from-sky-500 via-blue-500 to-sky-400" />
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-default)]">

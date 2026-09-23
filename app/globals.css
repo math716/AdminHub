@@ -555,3 +555,25 @@ html, body {
     max-height: calc(100dvh - 1rem);
   }
 }
+
+/* Mesma ideia para duas janelas com medida própria.
+   - Chat da Gabi: `min(740px, 100vh - 32px)`. No Android o 100vh conta a tela
+     SEM a barra de endereço; com a barra à vista, a janela passava uns 30px
+     da área visível e cortava o alto e o campo de digitar.
+   - Folha de nova demanda do Mapa do Gabinete: 95vh no celular, 90vh acima. */
+.altura-gabi {
+  height: min(740px, calc(100vh - 32px));
+}
+.altura-folha {
+  max-height: 95vh;
+}
+@media (min-width: 640px) {
+  .altura-folha { max-height: 90vh; }
+}
+@supports (height: 1dvh) {
+  .altura-gabi { height: min(740px, calc(100dvh - 32px)); }
+  .altura-folha { max-height: 95dvh; }
+  @media (min-width: 640px) {
+    .altura-folha { max-height: 90dvh; }
+  }
+}

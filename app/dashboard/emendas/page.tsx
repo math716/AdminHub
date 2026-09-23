@@ -2125,7 +2125,7 @@ function PopupRow({ label, value, hint }: { label: string; value: string; hint?:
       <span className="text-slate-600 dark:text-slate-400 flex-shrink-0">{label}</span>
       <div className="text-right min-w-0">
         <span className={value === '—' ? 'text-slate-600 dark:text-slate-500' : 'text-[color:var(--text-primary)] font-semibold'}>{value}</span>
-        {hint && <p className="text-[9px] text-slate-600 dark:text-slate-500 italic mt-0.5 leading-tight">{hint}</p>}
+        {hint && <p className="text-[10px] text-slate-600 dark:text-slate-500 italic mt-0.5 leading-tight">{hint}</p>}
       </div>
     </div>
   );
@@ -2252,7 +2252,7 @@ function ParlamentarDashboard({
               {porTipo.map((t) => (
                 <span
                   key={t.tipo}
-                  className="text-[9px] px-1.5 py-0.5 rounded-md font-semibold"
+                  className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
                   style={{
                     background: 'var(--tint-06)',
                     color: 'var(--text-primary)',
@@ -2680,7 +2680,7 @@ function EmendasDetalhadasCard({
                   { key: 'uf',        label: 'UF',          placeholder: 'SP' },
                 ] as const).map(({ key, label, placeholder }) => (
                   <div key={key} className="flex flex-col gap-1">
-                    <label className="text-[9px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500">{label}</label>
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500">{label}</label>
                     <input
                       value={formNR[key]}
                       onChange={(e) => setFormNR((f) => ({ ...f, [key]: e.target.value }))}
@@ -2694,7 +2694,7 @@ function EmendasDetalhadasCard({
               </div>
               <div className="flex items-center gap-2 mb-3">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500">Valor (R$)</label>
+                  <label className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500">Valor (R$)</label>
                   <input
                     value={formNR.valor}
                     onChange={(e) => setFormNR((f) => ({ ...f, valor: e.target.value }))}
@@ -2708,7 +2708,7 @@ function EmendasDetalhadasCard({
               </div>
               {/* Observação */}
               <div className="flex flex-col gap-1 mb-3">
-                <label className="text-[9px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500">Observação</label>
+                <label className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500">Observação</label>
                 <textarea
                   value={formNR.observacao}
                   onChange={(e) => setFormNR((f) => ({ ...f, observacao: e.target.value }))}
@@ -2720,7 +2720,7 @@ function EmendasDetalhadasCard({
               </div>
               {/* Documento */}
               <div className="flex flex-col gap-1 mb-3">
-                <label className="text-[9px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500">Documento</label>
+                <label className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500">Documento</label>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -2787,7 +2787,7 @@ function EmendasDetalhadasCard({
                     {['Nº', 'Tipo', 'Área', 'Favorecido', 'Município', 'Valor', 'Ações'].map((h, i) => (
                       <th
                         key={h}
-                        className={`py-2.5 px-3 text-[9px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500 whitespace-nowrap ${i === 5 ? 'text-right' : i === 6 ? 'text-center' : 'text-left'}`}
+                        className={`py-2.5 px-3 text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500 whitespace-nowrap ${i === 5 ? 'text-right' : i === 6 ? 'text-center' : 'text-left'}`}
                         style={{ borderBottom: '1px solid var(--tint-06)' }}
                       >
                         {h}
@@ -2804,12 +2804,12 @@ function EmendasDetalhadasCard({
                       <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <div className="flex flex-col gap-0.5">
                           {item.tipo ? (
-                            <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}>
+                            <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}>
                               {item.tipo}
                             </span>
                           ) : <span className="text-slate-500">—</span>}
                           {item.estagio && (
-                            <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ background: 'rgba(245,158,11,0.12)', color: '#d97706', border: '1px solid rgba(245,158,11,0.3)' }}>
+                            <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(245,158,11,0.12)', color: '#d97706', border: '1px solid rgba(245,158,11,0.3)' }}>
                               {item.estagio}
                             </span>
                           )}
@@ -2833,7 +2833,7 @@ function EmendasDetalhadasCard({
                       </td>
                       <td className="py-2.5 px-3 text-center whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         {item.deletavel === false ? (
-                          <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ background: 'var(--tint-04)', color: 'var(--text-secondary)', border: '1px solid var(--tint-08)' }}>
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'var(--tint-04)', color: 'var(--text-secondary)', border: '1px solid var(--tint-08)' }}>
                             Portal
                           </span>
                         ) : (
@@ -2979,7 +2979,7 @@ function EmendasDetalhadasCard({
                   {(['Nº', 'Tipo', 'Área', 'Favorecido', 'Município', 'Empenhado', 'Pago', '%'] as const).map((h, i) => (
                     <th
                       key={h}
-                      className={`py-2.5 px-3 text-[9px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500 whitespace-nowrap ${i >= 5 ? 'text-right' : 'text-left'}`}
+                      className={`py-2.5 px-3 text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500 whitespace-nowrap ${i >= 5 ? 'text-right' : 'text-left'}`}
                       style={{ borderBottom: '1px solid var(--tint-06)' }}
                     >
                       {h}
@@ -3010,7 +3010,7 @@ function EmendasDetalhadasCard({
                       <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
                         <span
                           title={tipo.hint}
-                          className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap"
+                          className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold cursor-help whitespace-nowrap"
                           style={{ background: isDark ? `${tipo.color}18` : `${tipo.color}22`, color: isDark ? tipo.color : tipo.colorLight, border: `1px solid ${isDark ? `${tipo.color}40` : `${tipo.color}70`}` }}
                         >
                           {tipo.label}
@@ -3066,7 +3066,7 @@ function EmendasDetalhadasCard({
                   {(['Nº', 'Tipo', 'Área', 'Destino', 'Empenhado', 'Pago', '%'] as const).map((h, i) => (
                     <th
                       key={h}
-                      className={`py-2.5 px-3 text-[9px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500 whitespace-nowrap ${i >= 4 ? 'text-right' : 'text-left'}`}
+                      className={`py-2.5 px-3 text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-500 whitespace-nowrap ${i >= 4 ? 'text-right' : 'text-left'}`}
                       style={{ borderBottom: '1px solid var(--tint-06)' }}
                     >
                       {h}
@@ -3089,7 +3089,7 @@ function EmendasDetalhadasCard({
                     >
                       <td className="py-2.5 px-3 font-mono text-[11px] whitespace-nowrap transition-colors" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#64748b' : '#475569' }}>{e.numero ?? '—'}</td>
                       <td className="py-2.5 px-3" style={{ borderBottom: '1px solid var(--tint-04)' }}>
-                        <span title={tipo.hint} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold cursor-help whitespace-nowrap" style={{ background: isDark ? `${tipo.color}18` : `${tipo.color}22`, color: isDark ? tipo.color : tipo.colorLight, border: `1px solid ${isDark ? `${tipo.color}40` : `${tipo.color}70`}` }}>{tipo.label}</span>
+                        <span title={tipo.hint} className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold cursor-help whitespace-nowrap" style={{ background: isDark ? `${tipo.color}18` : `${tipo.color}22`, color: isDark ? tipo.color : tipo.colorLight, border: `1px solid ${isDark ? `${tipo.color}40` : `${tipo.color}70`}` }}>{tipo.label}</span>
                       </td>
                       <td className="py-2.5 px-3 truncate max-w-[100px] md:max-w-[140px] transition-colors" title={e.funcao ?? ''} style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#cbd5e1' : '#374151' }}>{e.funcao ?? '—'}</td>
                       <td className="py-2.5 px-3 truncate max-w-[200px] font-medium transition-colors" title={e.municipioNome ?? e.objeto ?? ''} style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#f1f5f9' : '#111827' }}>
@@ -3295,7 +3295,7 @@ function MunicipiosPixCard({
       <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
         <div className="flex items-center gap-2">
           <span
-            className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest"
+            className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest"
             style={{ background: 'rgba(168,85,247,0.18)', color: 'var(--acento-violeta)', border: '1px solid rgba(168,85,247,0.35)' }}
           >
             Pix
@@ -3462,7 +3462,7 @@ function DestaqueDoAnoCard({
       {/* Label */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
         <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--brand-cobalt-text)' }} />
-        <p className="text-[9px] uppercase tracking-widest font-bold text-[color:var(--brand-cobalt-text)]/70 whitespace-nowrap">
+        <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--brand-cobalt-text)]/70 whitespace-nowrap">
           Destaque {ano} · {stateName}
         </p>
       </div>
@@ -3480,7 +3480,7 @@ function DestaqueDoAnoCard({
           }}
         >
           <div className="flex flex-col leading-tight">
-            <span className="text-[8px] uppercase tracking-widest font-semibold text-[color:var(--brand-cobalt)]/60">Município</span>
+            <span className="text-[10px] uppercase tracking-widest font-semibold text-[color:var(--brand-cobalt)]/60">Município</span>
             <span className="text-[color:var(--text-primary)] font-bold text-[13px] truncate max-w-[120px] md:max-w-[180px] leading-tight">{municipio.nome}</span>
           </div>
           <div
@@ -3501,10 +3501,10 @@ function DestaqueDoAnoCard({
             }}
           >
             <div className="flex flex-col leading-tight">
-              <span className="text-[8px] uppercase tracking-widest font-semibold text-[color:var(--brand-cobalt-text)]/60">Parlamentar</span>
+              <span className="text-[10px] uppercase tracking-widest font-semibold text-[color:var(--brand-cobalt-text)]/60">Parlamentar</span>
               <div className="flex items-center gap-1.5">
                 <span className="text-[color:var(--text-primary)] font-bold text-[13px] truncate max-w-[120px] md:max-w-[200px] leading-tight">{topParlamentar.nome}</span>
-                <span className="text-[9px] text-slate-600 dark:text-slate-500 whitespace-nowrap hidden sm:block">
+                <span className="text-[10px] text-slate-600 dark:text-slate-500 whitespace-nowrap hidden sm:block">
                   {CARGO_LABELS[topParlamentar.cargo as ParlamentarCargo] ?? topParlamentar.cargo}
                   {topParlamentar.partido ? ` · ${topParlamentar.partido}` : ''}
                 </span>

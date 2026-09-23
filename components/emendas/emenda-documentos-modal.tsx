@@ -475,7 +475,7 @@ export function EmendaDocumentosModal({ codigoEmenda, tituloFallback, filtroUf, 
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <div className="flex items-center gap-2 min-w-0">
                             <span
-                              className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase whitespace-nowrap"
+                              className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase whitespace-nowrap"
                               style={{
                                 background: `${corFase(d.fase)}22`,
                                 color: corFase(d.fase),

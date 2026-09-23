@@ -686,10 +686,11 @@ export function GabiFAB() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 12 }}
               transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-              className="relative flex flex-col w-full"
+              // Altura na classe `altura-gabi` (globals.css): mede pela tela
+              // visível no celular, sem a barra de endereço cortar a janela.
+              className="relative flex flex-col w-full altura-gabi"
               style={{
                 maxWidth: 960,
-                height: 'min(740px, calc(100vh - 32px))',
                 background: 'var(--bg-card)',
                 border: '1px solid rgba(74,158,222,0.2)',
                 borderRadius: 20,
@@ -848,7 +849,7 @@ export function GabiFAB() {
                         <p className="font-bold mt-1 tracking-[-0.01em]"
                           style={{ fontSize: 15, color: 'var(--text-primary)' }}>Gabi</p>
                         <p className="uppercase font-semibold tracking-[0.09em] mt-0.5"
-                          style={{ fontSize: 9.5, color: 'var(--brand-cobalt-text)' }}>
+                          style={{ fontSize: 10, color: 'var(--brand-cobalt-text)' }}>
                           Sua assessora virtual
                         </p>
                       </div>

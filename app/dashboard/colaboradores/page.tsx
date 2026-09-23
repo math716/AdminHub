@@ -2645,7 +2645,7 @@ export default function ColaboradoresPage() {
                                     <th key={h} className="px-3 py-2 text-left font-semibold whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
                                       {h}
                                       {detectedAs && (
-                                        <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase" style={{ background: 'rgba(74,158,222,0.15)', color: 'var(--acento-azul)' }}>
+                                        <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase" style={{ background: 'rgba(74,158,222,0.15)', color: 'var(--acento-azul)' }}>
                                           {detectedAs}
                                         </span>
                                       )}

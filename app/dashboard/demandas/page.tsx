@@ -533,7 +533,7 @@ export default function DemandasPage() {
                                   />
                                 )}
                               </span>
-                              <h3 className="font-semibold text-[color:var(--text-primary)] truncate text-[15px] capitalize">
+                              <h3 className="font-semibold text-[color:var(--text-primary)] break-words text-[15px] capitalize">
                                 {demand?.title}
                               </h3>
                               {isHighPriority && (
