@@ -3995,7 +3995,7 @@ export default function MapaCampanhaPage() {
               
               return (
                 <>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {/* Meta Conservadora */}
                     <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3 border border-amber-200 dark:border-amber-600/40">
                       <div className="flex items-center gap-1 mb-2">
@@ -4065,7 +4065,7 @@ export default function MapaCampanhaPage() {
                         Composição das Metas Finais
                         <Badge variant="warning" className="text-xs ml-auto">{hasBairrosDelta ? 'Inclui Parcerias + Bairros' : 'Inclui Parcerias'}</Badge>
                       </h4>
-                      <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                         {/* Conservadora Final */}
                         <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-amber-200 dark:border-amber-500/20">
                           <p className="text-amber-700 dark:text-amber-400 mb-1 font-medium">Conservadora</p>
@@ -4419,7 +4419,7 @@ export default function MapaCampanhaPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="bg-amber-50 dark:bg-amber-500/20 rounded-lg p-3 border border-amber-400/70 dark:border-amber-400/50">
               <div className="flex items-center gap-1 mb-2">
                 <Shield className="h-4 w-4 text-amber-600 dark:text-amber-400" />
@@ -4808,7 +4808,7 @@ export default function MapaCampanhaPage() {
                 <TrendingUp className="h-5 w-5 text-[color:var(--success)]" />
                 Projeções Sugeridas para {anoProjecao}
               </h4>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="text-center p-3 bg-amber-900/20 rounded-lg border border-amber-500/30">
                   <Shield className="h-5 w-5 text-[color:var(--brand-cobalt)] mx-auto mb-1" />
                   <p className="text-[color:var(--brand-cobalt)] text-xs mb-1">Conservadora</p>
@@ -5142,7 +5142,7 @@ export default function MapaCampanhaPage() {
               <Target className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
               Metas da Parceria
             </h4>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="text-center">
                 <div className="p-3 bg-[var(--bg-card-subtle)] rounded-lg border border-[var(--border-default)]">
                   <Shield className="h-5 w-5 text-slate-600 dark:text-slate-400 mx-auto mb-1" />

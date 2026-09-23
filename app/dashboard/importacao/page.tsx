@@ -391,7 +391,7 @@ export default function ImportacaoPage() {
           </div>
 
           {/* Configurações globais */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Estado (UF)</label>
               <select
@@ -529,7 +529,7 @@ export default function ImportacaoPage() {
                 <p className="text-slate-600 dark:text-slate-400 text-sm">{fileName} · {importResult.total.toLocaleString('pt-BR')} linhas processadas</p>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <StatBox label="Criados" value={importResult.created} color="emerald" />
               <StatBox label="Atualizados" value={importResult.updated} color="blue" />
               <StatBox label="Erros" value={importResult.errors} color="red" />

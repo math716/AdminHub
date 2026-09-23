@@ -224,7 +224,9 @@ export default function DemandaMapLeaflet({
       mapInstanceRef.current = map;
       lRef.current = L;
 
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      // Embaixo à ESQUERDA: no canto direito o botão da Gabi (fixo na janela)
+      // ficava por cima do "−" — no celular o mapa ocupa a tela até ali.
+      L.control.zoom({ position: 'bottomleft' }).addTo(map);
       camadaBase(L).addTo(map);
 
       // ── Contornos de estados e municípios

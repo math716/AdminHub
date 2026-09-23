@@ -480,9 +480,10 @@ export default function MapaDemandasPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Busca de endereço no mapa — só desktop */}
-          <div className="relative hidden md:flex items-center gap-1.5 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          {/* Busca de endereço no mapa. Antes era só no computador (`hidden md:flex`);
+              no celular vem numa linha própria, abaixo dos botões. */}
+          <div className="relative flex w-full md:w-auto order-last md:order-none items-center gap-1.5 bg-[var(--tint-06)] border border-[var(--tint-10)] rounded-xl px-3.5 py-2">
             <Navigation className="w-4 h-4 text-gray-400" />
             <input
               value={geoQuery}
@@ -493,20 +494,20 @@ export default function MapaDemandasPage() {
               }}
               onKeyDown={(e) => e.key === 'Enter' && geocode()}
               placeholder="Buscar endereço no mapa..."
-              className="bg-transparent text-[color:var(--text-primary)] text-sm w-52 outline-none placeholder-gray-500"
+              className="bg-transparent text-[color:var(--text-primary)] text-sm flex-1 min-w-0 md:flex-none md:w-52 outline-none placeholder-gray-500"
             />
             {geoLoading
               ? <Loader2 className="w-4 h-4 text-sky-400 animate-spin" />
               : <button onClick={geocode} className="text-sky-400 hover:text-sky-300"><Search className="w-4 h-4" /></button>
             }
             {geoAviso && (
-              <div className="absolute top-full left-0 mt-1 w-80 rounded-xl px-4 py-2.5 z-50"
+              <div className="absolute top-full left-0 right-0 md:right-auto mt-1 md:w-80 rounded-xl px-4 py-2.5 z-[1050]"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-10)', boxShadow: '0 8px 30px rgba(0,0,0,0.4)' }}>
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{geoAviso}</p>
               </div>
             )}
             {geoResults.length > 0 && (
-              <div className="absolute top-full left-0 mt-1 w-80 bg-[var(--bg-card)] border border-[var(--tint-10)] rounded-xl shadow-2xl z-50 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 md:right-auto mt-1 md:w-80 bg-[var(--bg-card)] border border-[var(--tint-10)] rounded-xl shadow-2xl z-[1050] overflow-hidden">
                 {geoResults.map((r, i) => (
                   <button
                     key={i}
@@ -527,7 +528,7 @@ export default function MapaDemandasPage() {
           {/* Lista — mobile only */}
           <button
             onClick={() => setMobileSidebar(true)}
-            className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-[var(--tint-06)] text-gray-300 hover:bg-[var(--tint-10)] transition-all"
+            className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-[var(--tint-06)] text-[color:var(--text-secondary)] hover:bg-[var(--tint-10)] transition-all"
           >
             <Filter className="w-4 h-4" />
             Lista

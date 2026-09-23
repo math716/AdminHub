@@ -822,8 +822,11 @@ export default function UsuariosPage() {
                                 return name.includes(q) || email.includes(searchMember.toLowerCase());
                               })
                               .map((u) => (
+                              // No celular os botões (cargo, aprovar, permissões, senha,
+                              // remover) descem para a linha de baixo. Lado a lado eles
+                              // ocupavam ~200px fixos e o nome e o e-mail viravam "Ma…".
                               <div key={u.id}
-                                className="flex items-center justify-between px-5 py-3.5 gap-3 transition-all hover:bg-white/[0.02]"
+                                className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-5 py-3.5 gap-2 sm:gap-3 transition-all hover:bg-white/[0.02]"
                                 style={!u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN'
                                   ? { background: 'rgba(245,158,11,0.04)' } : {}}>
 
@@ -838,7 +841,7 @@ export default function UsuariosPage() {
 
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{u.name}</p>
+                                      <p className="text-[color:var(--text-primary)] text-sm font-medium break-words sm:truncate">{u.name}</p>
                                       {u.id === sessionUserId && (
                                         <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(37,99,235,0.15)', color: '#2563EB' }}>você</span>
                                       )}
@@ -849,12 +852,12 @@ export default function UsuariosPage() {
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>{u.email}</p>
+                                    <p className="text-[11px] break-all sm:truncate" style={{ color: 'var(--text-tertiary)' }}>{u.email}</p>
                                   </div>
                                 </div>
 
                                 {/* Ações */}
-                                <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="flex flex-wrap items-center gap-2 pl-11 sm:pl-0 sm:flex-shrink-0">
                                   {/* Cargo */}
                                   {u.id !== sessionUserId && u.role !== 'SUPER_ADMIN'
                                     ? <RoleSelect
@@ -963,7 +966,7 @@ export default function UsuariosPage() {
                     <div className="divide-y" style={{ borderColor: 'var(--tint-04)', borderTop: '1px solid rgba(245,158,11,0.12)' }}>
                       {pg.users.map(u => (
                         <div key={u.id}
-                          className="flex items-center justify-between px-5 py-3.5 gap-3 transition-all hover:bg-white/[0.02]"
+                          className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-5 py-3.5 gap-2 sm:gap-3 transition-all hover:bg-white/[0.02]"
                           style={{ background: 'rgba(245,158,11,0.03)' }}>
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
@@ -972,16 +975,16 @@ export default function UsuariosPage() {
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{u.name}</p>
+                                <p className="text-[color:var(--text-primary)] text-sm font-medium break-words sm:truncate">{u.name}</p>
                                 <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
                                   style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--warning)' }}>
                                   Pendente
                                 </span>
                               </div>
-                              <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>{u.email}</p>
+                              <p className="text-[11px] break-all sm:truncate" style={{ color: 'var(--text-tertiary)' }}>{u.email}</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex flex-wrap items-center gap-2 pl-11 sm:pl-0 sm:flex-shrink-0">
                             <RoleBadge role={u.role} />
                             <button onClick={() => openApproveModal(u)} disabled={actionId === u.id}
                               title="Aprovar usuário e criar gabinete"
@@ -1037,7 +1040,7 @@ export default function UsuariosPage() {
                     exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} style={{ overflow: 'hidden' }}>
                     <div className="divide-y" style={{ borderColor: 'var(--tint-04)', borderTop: '1px solid var(--tint-04)' }}>
                       {noGabinete.map(u => (
-                        <div key={u.id} className="flex items-center justify-between px-5 py-3.5 gap-3 transition-all hover:bg-white/[0.02]">
+                        <div key={u.id} className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-5 py-3.5 gap-2 sm:gap-3 transition-all hover:bg-white/[0.02]">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
                               style={{ background: 'linear-gradient(135deg,#2563EB,#3B82F6)', color: '#FFFFFF' }}>
@@ -1045,15 +1048,15 @@ export default function UsuariosPage() {
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <p className="text-[color:var(--text-primary)] text-sm font-medium truncate">{u.name}</p>
+                                <p className="text-[color:var(--text-primary)] text-sm font-medium break-words sm:truncate">{u.name}</p>
                                 {u.id === sessionUserId && (
                                   <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(37,99,235,0.15)', color: '#2563EB' }}>você</span>
                                 )}
                               </div>
-                              <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>{u.email}</p>
+                              <p className="text-[11px] break-all sm:truncate" style={{ color: 'var(--text-tertiary)' }}>{u.email}</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex flex-wrap items-center gap-2 pl-11 sm:pl-0 sm:flex-shrink-0">
                             {u.id !== sessionUserId && u.role !== 'SUPER_ADMIN'
                               ? <RoleSelect
                                   userId={u.id}

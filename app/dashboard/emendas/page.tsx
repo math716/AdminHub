@@ -1121,7 +1121,10 @@ export default function EmendasPage() {
       {/* Barra de pesquisa de parlamentar — abaixo do título, visível quando há estado selecionado */}
       {view === 'estado' && (
         <div className="relative">
-          <div className="flex items-center gap-2">
+          {/* As duas linhas de busca quebram no celular: esfera, campo e a
+              etiqueta do escolhido lado a lado passavam de 380px, e com um
+              parlamentar escolhido o campo de busca sumia e a linha saía da tela. */}
+          <div className="flex flex-wrap items-center gap-2">
             {/* Toggle de esfera */}
             <div className="flex rounded-xl overflow-hidden flex-shrink-0" style={{ border: '1px solid var(--border-default)', background: 'var(--bg-card-subtle)' }}>
               {(['TODAS', 'FEDERAL', 'ESTADUAL'] as const).map((e) => (
@@ -1138,7 +1141,7 @@ export default function EmendasPage() {
               ))}
             </div>
             {/* Input de busca */}
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-[12rem]">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-500" />
               <input
                 value={parlamentarQuery}
@@ -1151,10 +1154,10 @@ export default function EmendasPage() {
             </div>
             {selectedParlamentar && (
               <div
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl flex-shrink-0"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl flex-shrink-0 max-w-full"
                 style={{ background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.3)' }}
               >
-                <span className="text-xs text-[color:var(--text-primary)] font-semibold truncate max-w-[160px]">{selectedParlamentar.nome}</span>
+                <span className="text-xs text-[color:var(--text-primary)] font-semibold truncate min-w-0 sm:max-w-[160px]">{selectedParlamentar.nome}</span>
                 <button
                   onClick={handleToggleFavorite}
                   disabled={savingFavorite}
@@ -1170,13 +1173,13 @@ export default function EmendasPage() {
             )}
           </div>
           {/* OU + busca de município */}
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
             <div className="flex items-center gap-2 flex-shrink-0">
               <div className="h-px w-6" style={{ background: 'var(--border-default)' }} />
               <span className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: 'var(--text-tertiary)' }}>OU</span>
               <div className="h-px w-6" style={{ background: 'var(--border-default)' }} />
             </div>
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-[12rem]">
               <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-500" />
               <input
                 value={municipioQuery}
@@ -1189,10 +1192,10 @@ export default function EmendasPage() {
             </div>
             {selectedMunicipio && (
               <div
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl flex-shrink-0"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl flex-shrink-0 max-w-full"
                 style={{ background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.3)' }}
               >
-                <span className="text-xs text-[color:var(--text-primary)] font-semibold truncate max-w-[160px]">{selectedMunicipio.nome}</span>
+                <span className="text-xs text-[color:var(--text-primary)] font-semibold truncate min-w-0 sm:max-w-[160px]">{selectedMunicipio.nome}</span>
                 <button onClick={() => setSelectedMunicipio(null)} className="text-slate-600 dark:text-slate-400 hover:text-white">
                   <X className="w-3.5 h-3.5" />
                 </button>

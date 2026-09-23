@@ -354,7 +354,7 @@ export default function ZonasPage() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => setOrdenar(ordenar === 'votos' ? 'municipio' : 'votos')}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-card-subtle)] border border-[var(--border-default)] text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:border-blue-500 transition-colors"
