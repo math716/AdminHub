@@ -399,14 +399,15 @@ export default function MapaPage() {
    * No alto, e não embaixo: embaixo ele cai sob o botão da Gabi, que é fixo no
    * canto da janela. O `right` para antes da lista lateral quando ela existe —
    * a conta repete o tamanho dela (w-[30%] limitado entre 130 e 192px) mais o
-   * vão e a margem.
+   * vão e a margem. Abaixo de `sm` a lista vai para baixo do mapa, e o botão
+   * volta para o canto.
    */
   const botaoTelaCheia = (
     <button
       onClick={() => setMapFullscreen(f => !f)}
-      className="absolute top-3 z-[1000] rounded-xl p-2.5 transition-all"
+      className={`absolute top-3 z-[1000] rounded-xl p-2.5 transition-all right-3 ${
+        listaLateralAberta ? 'sm:right-[calc(clamp(130px,30%,192px)_+_1.5rem)]' : ''}`}
       style={{
-        right: listaLateralAberta ? 'calc(clamp(130px, 30%, 192px) + 1.5rem)' : '0.75rem',
         background: 'var(--bg-card)', border: '1px solid var(--border-default)',
         color: 'var(--text-primary)', boxShadow: 'var(--shadow-raised)',
       }}
@@ -1656,7 +1657,13 @@ export default function MapaPage() {
 
         {/* Mapa principal */}
         <div className={mapFullscreen ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)]' : 'md:col-span-3'}>
-          <Card noPadding className={mapFullscreen ? 'h-full rounded-none border-0 overflow-hidden' : 'h-[400px] md:h-[750px] overflow-hidden'}>
+          {/* No celular a lista lateral (ranking de RAs, bairros, zonas) desce
+              para baixo do mapa em vez de dividir a largura com ele — lado a
+              lado o mapa ficava com uns 190px. Com a lista embaixo, o card
+              cresce para o mapa não perder a altura. */}
+          <Card noPadding className={mapFullscreen
+            ? 'h-full rounded-none border-0 overflow-hidden'
+            : `${listaLateralAberta ? 'h-[620px] sm:h-[400px]' : 'h-[400px]'} md:h-[750px] overflow-hidden`}>
             <CardContent className="h-full p-1.5 relative">
               {/* Tela cheia: só aqui quando o mapa ocupa o card inteiro.
                   Havendo barra de título e lista lateral, ele vai para DENTRO
@@ -1712,8 +1719,8 @@ export default function MapaPage() {
                   <div className="flex-1 min-h-0 relative">
                     {botaoTelaCheia}
                     {dfVisualizacao === 'bairros' && (
-                      <div className="h-full flex gap-3">
-                        <div className="flex-1 min-w-0">
+                      <div className="h-full flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1 min-w-0 min-h-0">
                           <DfRegioesMap
                             votesData={dfRegioesVotes}
                             selectedRegiao={selectedDfRegiao}
@@ -1721,7 +1728,7 @@ export default function MapaPage() {
                             height="100%"
                           />
                         </div>
-                        <div className="flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px] flex flex-col rounded-xl overflow-hidden"
+                        <div className="flex-shrink-0 h-44 sm:h-auto w-full sm:w-[30%] sm:min-w-[130px] sm:max-w-[192px] flex flex-col rounded-xl overflow-hidden"
                           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <Layers className="h-3.5 w-3.5" style={{ color: 'var(--acento-azul)' }} />
@@ -1763,9 +1770,9 @@ export default function MapaPage() {
                     )}
 
                     {dfVisualizacao === 'zonas' && (
-                      <div className="h-full flex gap-3">
+                      <div className="h-full flex flex-col sm:flex-row gap-3">
                         {(!bairrosLoaded || bairrosData.length > 0) && (
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 min-h-0">
                             <MunicipioMap
                               focusZona={focusZonaReq}
                               municipio="BRASÍLIA"
@@ -1783,7 +1790,7 @@ export default function MapaPage() {
                             />
                           </div>
                         )}
-                        <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0) ? 'flex-1' : 'flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px]'}`}
+                        <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0) ? 'flex-1' : 'flex-shrink-0 h-44 sm:h-auto w-full sm:w-[30%] sm:min-w-[130px] sm:max-w-[192px]'}`}
                           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <Layers className="h-3.5 w-3.5" style={{ color: 'var(--acento-azul)' }} />
@@ -1961,12 +1968,12 @@ export default function MapaPage() {
                     </div>
                   </div>
 
-                  <div className="flex-1 flex gap-3 min-h-0 relative">
+                  <div className="flex-1 flex flex-col sm:flex-row gap-3 min-h-0 relative">
                     {botaoTelaCheia}
                     {/* Mapa de distritos SP — só para São Paulo capital */}
                     {isSaoPauloCapital && spVisualizacao === 'distritos' && (
                       <>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 min-h-0">
                           <SpDistritosMap
                             votesData={spDistritosVotes}
                             selectedDistrito={selectedSpDistrito}
@@ -1974,7 +1981,7 @@ export default function MapaPage() {
                             height="100%"
                           />
                         </div>
-                        <div className="flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px] flex flex-col rounded-xl overflow-hidden"
+                        <div className="flex-shrink-0 h-44 sm:h-auto w-full sm:w-[30%] sm:min-w-[130px] sm:max-w-[192px] flex flex-col rounded-xl overflow-hidden"
                           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <Layers className="h-3.5 w-3.5" style={{ color: 'var(--acento-azul)' }} />
@@ -2018,7 +2025,7 @@ export default function MapaPage() {
                     {/* Mapa de bairros RJ — só para Rio de Janeiro capital no modo bairros */}
                     {isRioDeJaneiro && rjVisualizacao === 'bairros' && (
                       <>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 min-h-0">
                           <RjBairrosMap
                             votesData={rjBairrosVotes}
                             selectedBairro={selectedRjBairro}
@@ -2026,7 +2033,7 @@ export default function MapaPage() {
                             height="100%"
                           />
                         </div>
-                        <div className="flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px] flex flex-col rounded-xl overflow-hidden"
+                        <div className="flex-shrink-0 h-44 sm:h-auto w-full sm:w-[30%] sm:min-w-[130px] sm:max-w-[192px] flex flex-col rounded-xl overflow-hidden"
                           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <MapPin className="h-3.5 w-3.5" style={{ color: 'var(--acento-azul)' }} />
@@ -2070,7 +2077,7 @@ export default function MapaPage() {
                     {/* Mapa de bairros CE — só para Fortaleza no modo bairros */}
                     {isFortalezaCe && ceVisualizacao === 'bairros' && (
                       <>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 min-h-0">
                           <CeBairrosMap
                             votesData={ceBairrosVotes}
                             selectedBairro={selectedCeBairro}
@@ -2078,7 +2085,7 @@ export default function MapaPage() {
                             height="100%"
                           />
                         </div>
-                        <div className="flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px] flex flex-col rounded-xl overflow-hidden"
+                        <div className="flex-shrink-0 h-44 sm:h-auto w-full sm:w-[30%] sm:min-w-[130px] sm:max-w-[192px] flex flex-col rounded-xl overflow-hidden"
                           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <MapPin className="h-3.5 w-3.5" style={{ color: 'var(--warning)' }} />
@@ -2122,7 +2129,7 @@ export default function MapaPage() {
                     {/* Mapa de bairros polígonos genéricos — municípios com GeoJSON IBGE CD2022 (exceto SP-SP/RJ-RJ/CE-Fortaleza) */}
                     {isGenPoligonosMunicipio && genVisualizacao === 'bairros' && (
                       <>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 min-h-0">
                           <BairrosPoligonosMap
                             municipio={selectedMunicipio.nome}
                             uf={selectedUf}
@@ -2136,7 +2143,7 @@ export default function MapaPage() {
                             height="100%"
                           />
                         </div>
-                        <div className="flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px] flex flex-col rounded-xl overflow-hidden"
+                        <div className="flex-shrink-0 h-44 sm:h-auto w-full sm:w-[30%] sm:min-w-[130px] sm:max-w-[192px] flex flex-col rounded-xl overflow-hidden"
                           style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                             <MapPin className="h-3.5 w-3.5" style={{ color: 'var(--acento-azul)' }} />
@@ -2184,7 +2191,7 @@ export default function MapaPage() {
 
                     {/* Mapa de bairros (pins) — para outros municípios ou SP/RJ/CE/MG/gen no modo zonas */}
                     {(!isSaoPauloCapital || spVisualizacao === 'bairros') && (!isRioDeJaneiro || rjVisualizacao === 'zonas') && (!isFortalezaCe || ceVisualizacao === 'zonas') && (!isGenPoligonosMunicipio || genVisualizacao === 'zonas') && (!bairrosLoaded || bairrosData.length > 0) && (
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 min-h-0">
                         <MunicipioMap
                           focusZona={focusZonaReq}
                           municipio={selectedMunicipio.nome}
@@ -2204,7 +2211,7 @@ export default function MapaPage() {
                     )}
 
                     {/* Lista de zonas — oculta quando SP/RJ/CE/gen estão no modo bairros/distritos */}
-                    {!(isSaoPauloCapital && spVisualizacao === 'distritos') && !(isRioDeJaneiro && rjVisualizacao === 'bairros') && !(isFortalezaCe && ceVisualizacao === 'bairros') && !(isGenPoligonosMunicipio && genVisualizacao === 'bairros') && <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0 && !isSaoPauloCapital && !isRioDeJaneiro) ? 'flex-1' : 'flex-shrink-0 w-[30%] min-w-[130px] max-w-[192px]'}`}
+                    {!(isSaoPauloCapital && spVisualizacao === 'distritos') && !(isRioDeJaneiro && rjVisualizacao === 'bairros') && !(isFortalezaCe && ceVisualizacao === 'bairros') && !(isGenPoligonosMunicipio && genVisualizacao === 'bairros') && <div className={`flex flex-col rounded-xl overflow-hidden ${(bairrosLoaded && bairrosData.length === 0 && !isSaoPauloCapital && !isRioDeJaneiro) ? 'flex-1' : 'flex-shrink-0 h-44 sm:h-auto w-full sm:w-[30%] sm:min-w-[130px] sm:max-w-[192px]'}`}
                       style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.2)' }}>
                       <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(74,158,222,0.15)' }}>
                         <Layers className="h-3.5 w-3.5" style={{ color: 'var(--acento-azul)' }} />

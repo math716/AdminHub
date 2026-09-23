@@ -2719,14 +2719,17 @@ export default function MapaCampanhaPage() {
             ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)] flex'
             : 'grid grid-cols-12 gap-4 items-start'
           }>
-            {/* LEFT SIDEBAR — scenario + stats + municipality list */}
+            {/* LEFT SIDEBAR — scenario + stats + municipality list
+                Antes era `hidden md:flex`: no celular o seletor de cenário não
+                existia, e a pessoa não tinha como trocar entre Conservador,
+                Realista e Otimista. Agora aparece em qualquer largura — no
+                celular, logo abaixo do mapa, com a altura do próprio conteúdo. */}
             {!mapFullscreen && (
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
-                className="hidden md:flex md:col-span-4 lg:col-span-3 md:order-1 flex-col"
-                style={{ height: 'calc(100vh - 160px)', minHeight: '340px' }}
+                className="flex col-span-12 order-2 md:col-span-4 lg:col-span-3 md:order-1 flex-col md:h-[calc(100vh-160px)] md:min-h-[340px]"
               >
                 {/* Scenario selector */}
                 <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
@@ -2791,14 +2794,18 @@ export default function MapaCampanhaPage() {
               </motion.div>
             )}
 
-            {/* RIGHT SIDEBAR — municipality list */}
+            {/* RIGHT SIDEBAR — municipality list
+                Antes era `hidden lg:flex`: abaixo de 1024px (celular e tablet) a
+                lista de municípios, os filtros e a edição de cada um sumiam.
+                Agora, abaixo disso, ela vem numa linha própria depois do mapa,
+                com altura fixa e rolagem interna — sem altura a lista cresceria
+                até o tamanho de todos os municípios do estado. */}
             {!mapFullscreen && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className="hidden lg:flex lg:col-span-3 lg:order-3 flex-col"
-                style={{ height: 'calc(100vh - 160px)', minHeight: '340px' }}
+                className="flex col-span-12 order-3 lg:col-span-3 lg:order-3 flex-col h-[34rem] lg:h-[calc(100vh-160px)] lg:min-h-[340px]"
               >
                 {/* Municipality List */}
                 <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] flex flex-col h-full">
@@ -3452,7 +3459,7 @@ export default function MapaCampanhaPage() {
                                     {mun.prioridade === 'ALTA' && <Badge variant="danger" className="text-[10px] px-1 py-0">!</Badge>}
                                     {bairrosDelta > 0 && <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(56,189,248,0.15)', color: 'var(--acento-azul)', border: '1px solid rgba(56,189,248,0.25)' }}>+{bairrosDelta.toLocaleString()} bairros</span>}
                                     {isNew && (
-                                      <button onClick={(e) => { e.stopPropagation(); removeMunicipio(mun.municipio); }} className="p-0.5 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button onClick={(e) => { e.stopPropagation(); removeMunicipio(mun.municipio); }} className="p-0.5 text-slate-500 hover:text-red-400 acao-no-hover transition-opacity">
                                         <Trash2 className="h-3 w-3" />
                                       </button>
                                     )}
@@ -5007,7 +5014,7 @@ export default function MapaCampanhaPage() {
                             setProjecaoParaExcluir({ id: proj.id, nome: proj.candidatoNome });
                             setShowDeleteModal(true);
                           }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/20 text-slate-600 dark:text-slate-400 hover:text-red-400"
+                          className="acao-no-hover transition-opacity p-1 rounded hover:bg-red-500/20 text-slate-600 dark:text-slate-400 hover:text-red-400"
                           title="Excluir projeção"
                         >
                           <Trash2 className="h-4 w-4" />

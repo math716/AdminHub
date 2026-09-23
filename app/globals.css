@@ -275,6 +275,21 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 }
 
 /* ──────────────────────────────────────────────────────────
+   Ação que aparece ao passar o mouse
+   ──────────────────────────────────────────────────────────
+   Botões de excluir que ficam escondidos até o mouse passar pela linha.
+   Numa tela de toque não existe "passar o mouse": com `opacity-0` puro o
+   botão ficava invisível para sempre no celular, e a pessoa não tinha como
+   excluir uma conversa ou uma projeção. Aqui ele só se esconde onde há
+   mouse de verdade; no toque, fica sempre à vista. Precisa de um `group`
+   num ancestral. */
+@media (hover: hover) {
+  .acao-no-hover { opacity: 0; }
+  .group:hover .acao-no-hover,
+  .acao-no-hover:focus-visible { opacity: 1; }
+}
+
+/* ──────────────────────────────────────────────────────────
    Landscape mobile
    ────────────────────────────────────────────────────────── */
 @media (orientation: landscape) and (max-height: 600px) {

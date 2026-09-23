@@ -802,7 +802,7 @@ export function GabiFAB() {
                           </div>
                           <button
                             onClick={e => { e.stopPropagation(); deletarConversa(c.id); }}
-                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/15 flex-shrink-0"
+                            className="p-1.5 rounded-lg acao-no-hover transition-all hover:bg-red-500/15 flex-shrink-0"
                             style={{ color: '#ef4444' }}
                           >
                             <Trash2 className="w-3.5 h-3.5" />

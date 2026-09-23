@@ -860,10 +860,15 @@ export default function ContatosPage() {
             )}
           </div>
 
-          {/* Corpo — sidebar + mapa lado a lado */}
-          <div className="flex flex-col md:flex-row" style={{ height: 'calc(100vh - 210px)', minHeight: 500 }}>
+          {/* Corpo — sidebar + mapa lado a lado (no celular, um sobre o outro).
+              No celular a altura fixa ficava com a lista: ela crescia até o
+              tamanho de todos os estados/contatos, empurrava o mapa para baixo
+              do card, e o card (overflow-hidden) cortava o mapa inteiro. Agora,
+              no celular, cada um tem a sua altura — a lista com teto e rolagem
+              própria, o mapa com altura garantida. */}
+          <div className="flex flex-col md:flex-row md:h-[calc(100vh-210px)] md:min-h-[500px]">
             {/* Sidebar */}
-            <div className="md:w-72 lg:w-80 flex-shrink-0 flex flex-col gap-3 p-3 overflow-y-auto border-b md:border-b-0 md:border-r" style={{ borderColor: 'var(--tint-06)' }}>
+            <div className="md:w-72 lg:w-80 flex-shrink-0 flex flex-col gap-3 p-3 overflow-y-auto max-h-[26rem] md:max-h-none border-b md:border-b-0 md:border-r" style={{ borderColor: 'var(--tint-06)' }}>
               {/* Stats */}
               <div className="rounded-xl p-3" style={{ background: 'var(--tint-03)', border: '1px solid var(--tint-06)' }}>
                 <p className="text-[10px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: 'var(--tint-45)' }}>
@@ -950,7 +955,7 @@ export default function ContatosPage() {
             </div>
 
             {/* Map */}
-            <div className="flex-1 relative" style={{ minHeight: 320 }}>
+            <div className="md:flex-1 relative h-[60vh] md:h-auto" style={{ minHeight: 320 }}>
               {(pipLoading || bairroLoading) && (
                 <div className="absolute inset-0 flex items-center justify-center z-10" style={{ background: 'var(--bg-card)' }}>
                   <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: 'var(--acento-azul)' }} />
