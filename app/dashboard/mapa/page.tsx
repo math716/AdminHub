@@ -857,6 +857,18 @@ export default function MapaPage() {
       const res = await fetch(`/api/tse/candidato?${params.toString()}`);
       const data = await res.json();
 
+      // Sem estado, a busca vai à base NACIONAL, que só tem candidatos a
+      // presidente (e nem existe nos anos municipais). Quem buscava um deputado
+      // com "Todos" lia que ele "não foi encontrado" — como se não existisse.
+      // O que falta é o estado; o "não encontrado" fica para quando o estado
+      // foi escolhido e mesmo assim o nome não aparece.
+      if (!res.ok && res.status === 404 && !searchEstado) {
+        const anoGeral = (parseInt(ano) - 2018) % 4 === 0;
+        setSearchError(anoGeral
+          ? 'Selecione o estado do candidato. Sem estado, a busca procura só candidatos a presidente.'
+          : `Selecione o estado do candidato para buscar na eleição de ${ano}.`);
+        return;
+      }
       if (!res.ok) { setSearchError(data?.error ?? 'Erro ao buscar dados'); return; }
       if (data?.multiplos) {
         setCandidatosHomonimos(data.candidatos ?? []);
