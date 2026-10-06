@@ -1177,9 +1177,13 @@ export async function executarGerarRelatorioTerritorial(
   // 3 senadores em exercício vêm de duas eleições (2018 e 2022) — varrer um ano
   // só devolveria uma bancada incompleta. Para deputado, o fallback continua
   // sendo o outro cargo do DF (distrital ↔ federal).
+  // A outra eleição da bancada é a ANTERIOR (2026 ↔ 2022, 2022 ↔ 2018); só
+  // 2018, a mais antiga da base, olha para a frente. Antes era "se não é 2018,
+  // é 2018" — com 2026 isso juntaria os eleitos agora com os de 2018, cujas
+  // vagas são justamente as que 2026 renovou.
   const ehSenado = normalizarTextoTse(cargo).includes('senador');
   const lotes = ehSenado
-    ? [{ ano, cargo: 'Senador' }, { ano: ano === 2018 ? 2022 : 2018, cargo: 'Senador' }]
+    ? [{ ano, cargo: 'Senador' }, { ano: ano === 2018 ? 2022 : ano - 4, cargo: 'Senador' }]
     : [{ ano, cargo }, { ano, cargo: normalizarTextoTse(cargo).includes('distrital') ? 'Deputado Federal' : 'Deputado Distrital' }];
 
   const encontrados: Array<{ nome: string; ano: number; cargo: string }> = [];
@@ -1265,7 +1269,7 @@ export async function executarRankingNacional(
   if (!r) {
     return {
       encontrado: false,
-      mensagem: `Não há índice nacional para ${anos.join(', ')}. Os anos com índice são 2018 e 2022.`,
+      mensagem: `Não há índice nacional para ${anos.join(', ')}. Os anos com índice são 2018, 2022 e 2026.`,
     };
   }
 

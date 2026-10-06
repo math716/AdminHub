@@ -642,7 +642,7 @@ export default function MapaCampanhaPage() {
   useEffect(() => {
     if (uf !== 'MG' || !mgBairrosMunicipio) { setMgBairrosVotes({}); return; }
     const params = new URLSearchParams({ municipio: mgBairrosMunicipio, uf: 'MG' });
-    if (['2018','2020','2022','2024'].includes(ano) && electoralData?.candidatoId) {
+    if (['2018','2020','2022','2024','2026'].includes(ano) && electoralData?.candidatoId) {
       params.set('candidatoId', electoralData.candidatoId);
       params.set('ano', ano);
     }
@@ -2435,6 +2435,7 @@ export default function MapaCampanhaPage() {
   }
 
   const anosOptions = [
+    { value: '2026', label: '2026' },
     { value: '2024', label: '2024' },
     { value: '2022', label: '2022' },
     { value: '2020', label: '2020' },
@@ -3738,8 +3739,8 @@ export default function MapaCampanhaPage() {
                     <MunicipioMap
                       municipio={municipioVereador}
                       uf={uf}
-                      candidatoId={['2018','2020','2022','2024'].includes(ano) ? electoralData?.candidatoId : undefined}
-                      nomeCandidato={['2018','2020','2022','2024'].includes(ano) && electoralData?.candidatoId ? (electoralData?.nomeUrna || electoralData?.nome) : undefined}
+                      candidatoId={['2018','2020','2022','2024','2026'].includes(ano) ? electoralData?.candidatoId : undefined}
+                      nomeCandidato={['2018','2020','2022','2024','2026'].includes(ano) && electoralData?.candidatoId ? (electoralData?.nomeUrna || electoralData?.nome) : undefined}
                       ano={ano}
                       votosPorBairro={munBairrosVotesDisplay}
                       totalVotos={getTotalVotosBairros() || electoralData?.totalVotos}
@@ -3811,9 +3812,9 @@ export default function MapaCampanhaPage() {
                     <BairrosPoligonosMap
                       municipio={genPoligonosMunicipio}
                       uf={genPoligonosUf}
-                      candidatoId={['2018','2020','2022','2024'].includes(ano) ? electoralData?.candidatoId : undefined}
-                      nomeCandidato={['2018','2020','2022','2024'].includes(ano) && electoralData?.candidatoId ? (electoralData?.nomeUrna || electoralData?.nome) : undefined}
-                      ano={['2018','2020','2022','2024'].includes(ano) ? ano : undefined}
+                      candidatoId={['2018','2020','2022','2024','2026'].includes(ano) ? electoralData?.candidatoId : undefined}
+                      nomeCandidato={['2018','2020','2022','2024','2026'].includes(ano) && electoralData?.candidatoId ? (electoralData?.nomeUrna || electoralData?.nome) : undefined}
+                      ano={['2018','2020','2022','2024','2026'].includes(ano) ? ano : undefined}
                       votosPorBairro={genBairrosVotesDisplay}
                       selectedBairro={selectedGenBairro}
                       onBairroClick={(nome, votos) => {

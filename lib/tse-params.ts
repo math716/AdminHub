@@ -3,7 +3,7 @@
  * Previne path traversal ao restringir `ano` e `uf` a valores conhecidos.
  */
 
-export const ANOS_VALIDOS = new Set(['2018', '2020', '2022', '2024']);
+export const ANOS_VALIDOS = new Set(['2018', '2020', '2022', '2024', '2026']);
 
 export const UFS_VALIDAS = new Set([
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO',

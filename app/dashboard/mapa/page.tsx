@@ -1015,6 +1015,7 @@ export default function MapaPage() {
   );
 
   const anoOptions = [
+    { value: '2026', label: '2026 - Federal/Estadual' },
     { value: '2024', label: '2024 - Municipal' },
     { value: '2022', label: '2022 - Federal/Estadual' },
     { value: '2020', label: '2020 - Municipal' },
