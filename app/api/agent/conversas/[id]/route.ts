@@ -5,13 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { enxugar, validarMensagens } from '@/lib/agent/conversa-store';
-
-async function getGabineteId(session: any): Promise<string | null> {
-  const userId = (session.user as any)?.id;
-  if (!userId) return null;
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { gabineteId: true } });
-  return user?.gabineteId ?? null;
-}
+import { donoDaConversa } from '@/lib/agent/dono-conversa';
 
 /**
  * Atualiza uma conversa já salva. É o que faz o autosave funcionar: sem isso a
@@ -26,27 +20,28 @@ export async function PUT(
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const gabineteId = await getGabineteId(session);
-    if (!gabineteId) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 400 });
+    const dono = await donoDaConversa(session);
+    if (!dono) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const { titulo, mensagens } = (await request.json()) ?? {};
     if (!validarMensagens(mensagens)) {
       return NextResponse.json({ error: 'Mensagens inválidas' }, { status: 400 });
     }
 
-    // Escopo do gabinete — impede atualizar conversa de outro gabinete.
-    const existing = await (prisma as any).gabiConversa.findFirst({
-      where: { id: params.id, gabineteId },
+    // Escopo do dono — impede atualizar conversa de outro gabinete ou pessoa.
+    const existing = await prisma.gabiConversa.findFirst({
+      where: { id: params.id, ...dono },
       select: { id: true },
     });
     if (!existing) return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 });
 
-    await (prisma as any).gabiConversa.update({
+    await prisma.gabiConversa.update({
       where: { id: params.id },
       data: {
         mensagens: enxugar(mensagens),
         ...(titulo ? { titulo: String(titulo).slice(0, 120) } : {}),
       },
+      select: { id: true },
     });
 
     return NextResponse.json({ id: params.id });
@@ -64,15 +59,16 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const gabineteId = await getGabineteId(session);
-    if (!gabineteId) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 400 });
+    const dono = await donoDaConversa(session);
+    if (!dono) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const existing = await (prisma as any).gabiConversa.findFirst({
-      where: { id: params.id, gabineteId },
+    const existing = await prisma.gabiConversa.findFirst({
+      where: { id: params.id, ...dono },
+      select: { id: true },
     });
     if (!existing) return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 });
 
-    await (prisma as any).gabiConversa.delete({ where: { id: params.id } });
+    await prisma.gabiConversa.delete({ where: { id: params.id }, select: { id: true } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE /api/agent/conversas/[id] error:', error);

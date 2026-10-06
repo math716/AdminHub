@@ -169,6 +169,7 @@ model User {
   sessions          Session[]
   passwordResetLogs PasswordResetLog[]
   agentUsages       AgentUsage[]
+  gabiConversas     GabiConversa[]
 
   @@index([email])
   @@index([gabineteId])
@@ -933,14 +934,20 @@ model PasswordResetLog {
   @@map("password_reset_logs")
 }
 
+/// Conversa da Gabi. Pertence a um gabinete OU, quando a pessoa não tem
+/// gabinete (ADMIN/SUPER_ADMIN sem gabinete escolhido no seletor), a ela
+/// mesma. O banco impede conversa sem dono (gabi_conversas_dono_check).
 model GabiConversa {
-  id         String   @id @default(cuid())
-  gabineteId String
-  gabinete   Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  gabineteId String?
+  gabinete   Gabinete? @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
+  usuarioId  String?
+  usuario    User?     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   titulo     String?
-  mensagens  Json     @default("[]")
-  criadaEm   DateTime @default(now())
+  mensagens  Json      @default("[]")
+  criadaEm   DateTime  @default(now())
 
   @@index([gabineteId, criadaEm(sort: Desc)])
+  @@index([usuarioId, criadaEm(sort: Desc)])
   @@map("gabi_conversas")
 }

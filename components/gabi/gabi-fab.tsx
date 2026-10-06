@@ -364,6 +364,11 @@ export function GabiFAB() {
   // navegador, para uma conta nunca ler a conversa da outra.
   const { data: sessao } = useSession();
   const gabineteId = ((sessao?.user as any)?.gabineteId as string | undefined) ?? null;
+  // Sem gabinete (conta de administração sem gabinete escolhido), a chave é a
+  // própria conta — mesmo critério do histórico no servidor. Antes, sem
+  // gabinete nada era guardado e a conversa sumia ao recarregar a página.
+  const userId = ((sessao?.user as any)?.id as string | undefined) ?? null;
+  const escopoLocal = gabineteId ?? (userId ? `u:${userId}` : null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -376,20 +381,20 @@ export function GabiFAB() {
   const restaurouRef = useRef(false);
 
   useEffect(() => {
-    if (restaurouRef.current || !gabineteId) return;
+    if (restaurouRef.current || !escopoLocal) return;
     restaurouRef.current = true;
 
     // As chaves antigas eram compartilhadas entre contas no mesmo navegador.
     // Some com elas na primeira vez, para ninguém herdar conversa de outrem.
     lsDel(LS_MSGS_ANTIGO, LS_ID_ANTIGO);
 
-    const storedMsgs = lsGet<Message[]>(chaveMsgs(gabineteId));
+    const storedMsgs = lsGet<Message[]>(chaveMsgs(escopoLocal));
     if (Array.isArray(storedMsgs) && storedMsgs.length > 0) setMessages(storedMsgs);
-    const storedId = lsGet<string>(chaveId(gabineteId));
+    const storedId = lsGet<string>(chaveId(escopoLocal));
     // Popula o ref junto do state: o autosave lê o ref e, sem isso, uma sessão
     // restaurada seria gravada como conversa nova (duplicata no histórico).
     if (storedId) { setSessaoId(storedId); sessaoIdRef.current = storedId; }
-  }, [gabineteId]);
+  }, [escopoLocal]);
 
   // ── Foto da Gabi 3D (capturada do canvas) para os avatares das mensagens ──
   useEffect(() => subscribeGabiFace(() => setGabiFace(getGabiFace())), []);
@@ -402,7 +407,7 @@ export function GabiFAB() {
   // sessão é `novaConversa`, via lsDel.
   useEffect(() => {
     if (messages.length <= 1) return;
-    if (gabineteId) lsSet(chaveMsgs(gabineteId), messages);
+    if (escopoLocal) lsSet(chaveMsgs(escopoLocal), messages);
   }, [messages]);
 
   // ── Scroll e foco ─────────────────────────────────────────────────────────
@@ -478,7 +483,7 @@ export function GabiFAB() {
       if (id && id !== sessaoIdRef.current) {
         sessaoIdRef.current = id;
         setSessaoId(id);
-        if (gabineteId) lsSet(chaveId(gabineteId), id);
+        if (escopoLocal) lsSet(chaveId(escopoLocal), id);
       }
     }).catch(() => {});
     return gravacaoRef.current;
@@ -504,7 +509,7 @@ export function GabiFAB() {
     setMessages([WELCOME]);
     setSessaoId(null);
     sessaoIdRef.current = null;
-    if (gabineteId) lsDel(chaveMsgs(gabineteId), chaveId(gabineteId));
+    if (escopoLocal) lsDel(chaveMsgs(escopoLocal), chaveId(escopoLocal));
     setView('chat');
   }, [messages, gravar]);
 
@@ -537,13 +542,13 @@ export function GabiFAB() {
     setMessages(final);
     setSessaoId(c.id);
     sessaoIdRef.current = c.id; // o autosave passa a atualizar ESTA conversa
-    if (gabineteId) { lsSet(chaveMsgs(gabineteId), final); lsSet(chaveId(gabineteId), c.id); }
+    if (escopoLocal) { lsSet(chaveMsgs(escopoLocal), final); lsSet(chaveId(escopoLocal), c.id); }
     setView('chat');
   }, []);
 
   const deletarConversa = useCallback(async (id: string) => {
     setHistorico(prev => prev.filter(c => c.id !== id));
-    if (sessaoId === id) { setSessaoId(null); sessaoIdRef.current = null; if (gabineteId) lsDel(chaveId(gabineteId)); }
+    if (sessaoId === id) { setSessaoId(null); sessaoIdRef.current = null; if (escopoLocal) lsDel(chaveId(escopoLocal)); }
     try { await fetch(`/api/agent/conversas/${id}`, { method: 'DELETE' }); } catch {}
   }, [sessaoId]);
 

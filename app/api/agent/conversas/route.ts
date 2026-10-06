@@ -5,24 +5,21 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { enxugar, validarMensagens } from '@/lib/agent/conversa-store';
+import { donoDaConversa } from '@/lib/agent/dono-conversa';
 
-async function getGabineteId(session: any): Promise<string | null> {
-  const userId = (session.user as any)?.id;
-  if (!userId) return null;
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { gabineteId: true } });
-  return user?.gabineteId ?? null;
-}
+// O histórico é do gabinete — ou, para quem não tem gabinete (as contas de
+// administração sem gabinete escolhido), da própria pessoa. Ver dono-conversa.
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const gabineteId = await getGabineteId(session);
-    if (!gabineteId) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 400 });
+    const dono = await donoDaConversa(session);
+    if (!dono) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const conversas = await (prisma as any).gabiConversa.findMany({
-      where: { gabineteId },
+    const conversas = await prisma.gabiConversa.findMany({
+      where: dono,
       select: { id: true, titulo: true, mensagens: true, criadaEm: true },
       orderBy: { criadaEm: 'desc' },
       take: 50,
@@ -40,8 +37,8 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const gabineteId = await getGabineteId(session);
-    if (!gabineteId) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 400 });
+    const dono = await donoDaConversa(session);
+    if (!dono) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const body = await request.json();
     const { titulo, mensagens } = body ?? {};
@@ -50,9 +47,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Mensagens inválidas' }, { status: 400 });
     }
 
-    const conversa = await (prisma as any).gabiConversa.create({
+    const conversa = await prisma.gabiConversa.create({
       data: {
-        gabineteId,
+        ...dono,
         titulo: titulo?.slice(0, 120) || null,
         mensagens: enxugar(mensagens),
       },
