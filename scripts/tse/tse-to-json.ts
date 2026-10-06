@@ -41,6 +41,10 @@ function getArg(flag: string, def = ''): string {
 
 const INPUT_DIR  = path.resolve(getArg('--dir', './tse-downloads'));
 const OUTPUT_DIR = path.join(process.cwd(), 'public', 'data', 'tse');
+// --turno 2: gera o 2º turno em {ano}/t2/{UF}.json.gz. O 1º turno continua onde
+// sempre esteve ({ano}/{UF}.json.gz), então nada que já funciona muda de lugar.
+const TURNO = getArg('--turno', '1');
+const pastaDoTurno = (ano: number) => TURNO === '1' ? String(ano) : path.join(String(ano), 't' + TURNO);
 
 // ---------------------------------------------------------------------------
 // ZIP parser
@@ -181,8 +185,10 @@ function findCsvBuffer(tipo: 'votos'|'locais', ano: number, uf?: string): Buffer
       const zipFile = path.join(dir, `votacao_candidato_munzona_${ano}.zip`);
       if (fs.existsSync(zipFile)) {
         const entries = parseZip(fs.readFileSync(zipFile));
-        const e = entries.find(x => x.filename.toLowerCase().includes(`_${uf.toLowerCase()}.csv`))
-               ?? entries.find(x => x.filename.toLowerCase().endsWith('.csv'));
+        // Só o CSV da própria UF. Havia um "senão, qualquer CSV do ZIP": para o
+        // DF em 2020/2024 (sem eleição municipal) ele gravava como "DF" o 2º
+        // turno do país inteiro (São Luís, Rio, Uberaba…).
+        const e = entries.find(x => x.filename.toLowerCase().includes(`_${uf.toLowerCase()}.csv`));
         if (e) { console.log(`  ZIP: ${path.basename(zipFile)} → ${e.filename}`); return e.data; }
       }
       const files = fs.readdirSync(dir).filter(f =>
@@ -268,7 +274,7 @@ interface LocalJson {
 // Processar votos por UF/ano — streaming, sem acumular linhas brutas
 // ---------------------------------------------------------------------------
 function processUfAno(uf: string, ano: number): boolean {
-  const outPath = path.join(OUTPUT_DIR, String(ano), `${uf}.json`);
+  const outPath = path.join(OUTPUT_DIR, pastaDoTurno(ano), `${uf}.json`);
   if (!process.argv.includes('--refazer') && (fs.existsSync(outPath + '.gz') || fs.existsSync(outPath))) {
     console.log(`  [SKIP] ${uf} ${ano} — já gerado (use --refazer para gerar de novo)`);
     return true;
@@ -290,7 +296,7 @@ function processUfAno(uf: string, ano: number): boolean {
     const rowUf  = row['SG_UF'] ?? '';
 
     // Filtro principal: turno 1 do estado
-    if (turno !== '1') return;
+    if (turno !== TURNO) return;
     if (rowUf && rowUf !== uf) return;
 
     const sq  = row['SQ_CANDIDATO'] || row['NR_CPF_CANDIDATO'] || `${row['NM_URNA_CANDIDATO']}|${row['DS_CARGO']}|${row['SG_PARTIDO']}`;
@@ -309,7 +315,7 @@ function processUfAno(uf: string, ano: number): boolean {
   if (byCand.size === 0 && totalRows > 0) {
     console.log(`  [RETRY] ${uf} ${ano} — sem filtro UF (total linhas: ${totalRows})`);
     streamCsv(buf, (row) => {
-      if (getTurno(row) !== '1') return;
+      if (getTurno(row) !== TURNO) return;
       const sq  = row['SQ_CANDIDATO'] || row['NR_CPF_CANDIDATO'] || `${row['NM_URNA_CANDIDATO']}|${row['DS_CARGO']}|${row['SG_PARTIDO']}`;
       const v   = parseVotos(row);
       const mun = normText(row['NM_MUNICIPIO'] || row['NM_UE'] || '');

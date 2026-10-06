@@ -53,10 +53,10 @@ function readJsonFile(filePath: string): unknown | null {
   return null;
 }
 
-async function loadCandidatos(ano: string, uf: string): Promise<CandidatoJson[] | null> {
+async function loadCandidatos(ano: string, uf: string, turno = 1): Promise<CandidatoJson[] | null> {
   // Delegado a lib/tse-static: a base do TSE e buscada por HTTP, e nao
   // lida do disco, para nao viajar dentro da funcao serverless.
-  return (await loadStaticTseData(ano, uf)) as unknown as CandidatoJson[] | null;
+  return (await loadStaticTseData(ano, uf, turno)) as unknown as CandidatoJson[] | null;
 }
 
 function normalizar(s: string): string {
@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const ano         = searchParams.get('ano');
+    const turno       = searchParams.get('turno') === '2' ? 2 : 1;
     const uf          = searchParams.get('uf')?.toUpperCase();
     const candidatoId = searchParams.get('candidatoId');
     const nome        = searchParams.get('nome');
@@ -102,7 +103,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Carregar dados do estado
-    const candidatos = await loadCandidatos(ano, uf);
+    const candidatos = await loadCandidatos(ano, uf, turno);
     if (!candidatos) {
       return NextResponse.json(
         { error: `Dados não disponíveis para ${uf}/${ano}` },

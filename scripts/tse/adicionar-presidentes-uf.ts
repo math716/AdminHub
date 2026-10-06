@@ -15,6 +15,9 @@ import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 
+// --turno 2: injeta os presidentes do 2º turno em {ano}/t2/{UF}.json.gz.
+const turnoIdx = process.argv.indexOf('--turno');
+const TURNO = turnoIdx !== -1 ? process.argv[turnoIdx + 1] : '1';
 const ANOS_GERAIS = [2018, 2022, 2026]; // anos com eleição presidencial
 const anosIdx = process.argv.indexOf('--anos');
 const ANOS = anosIdx !== -1 && process.argv[anosIdx + 1]
@@ -128,7 +131,7 @@ for (const ano of ANOS) {
 
   streamCsv(buf, (row) => {
     const turno = (row['NR_TURNO'] ?? '1').replace(/^0+/, '') || '1';
-    if (turno !== '1') return;
+    if (turno !== TURNO) return;
     const abrangencia = row['TP_ABRANGENCIA']?.trim();
     if (abrangencia && abrangencia !== 'F') return;
 
@@ -154,7 +157,7 @@ for (const ano of ANOS) {
 
   // Para cada UF, adicionar os presidenciais ao arquivo existente
   for (const uf of UFS) {
-    const ufPath = path.join(process.cwd(), 'public', 'data', 'tse', String(ano), uf);
+    const ufPath = path.join(process.cwd(), 'public', 'data', 'tse', String(ano), ...(TURNO === '1' ? [] : ['t' + TURNO]), uf);
     const gzPath = ufPath + '.json.gz';
     const jsonPath = ufPath + '.json';
 
@@ -164,6 +167,12 @@ for (const ano of ANOS) {
         existing = JSON.parse(zlib.gunzipSync(fs.readFileSync(gzPath) as any).toString('utf8'));
       } else if (fs.existsSync(jsonPath)) {
         existing = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+      } else if (TURNO !== '1') {
+        // 2º turno de presidente num estado sem 2º turno de governador: o
+        // arquivo do estado nasce só com os dois presidenciáveis. Sem isto,
+        // MG em 2022 ficava sem Lula × Bolsonaro no 2º turno.
+        fs.mkdirSync(path.dirname(gzPath), { recursive: true });
+        existing = [];
       } else {
         continue;
       }

@@ -13,6 +13,9 @@ import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 
+// --turno 2: o 2º turno vai para {ano}/t2/BR.json.gz.
+const turnoIdx = process.argv.indexOf('--turno');
+const TURNO = turnoIdx !== -1 ? process.argv[turnoIdx + 1] : '1';
 // Presidente só existe nos anos de eleição geral. `--anos 2026` restringe.
 const ANOS_GERAIS = [2018, 2022, 2026];
 const anosIdx = process.argv.indexOf('--anos');
@@ -110,7 +113,7 @@ function processBrCsv(csvPath: string, ano: number): CandidatoBR[] {
   let rows = 0;
 
   streamCsv(buf, (row) => {
-    if (getTurno(row) !== '1') return;
+    if (getTurno(row) !== TURNO) return;
     // Apenas cargos de abrangência federal (F = Federal)
     const abrangencia = row['TP_ABRANGENCIA']?.trim();
     if (abrangencia && abrangencia !== 'F') return;
@@ -158,7 +161,7 @@ function processBrCsv(csvPath: string, ano: number): CandidatoBR[] {
 // Main
 // ---------------------------------------------------------------------------
 for (const ano of ANOS) {
-  const outDir = path.join(process.cwd(), 'public', 'data', 'tse', String(ano));
+  const outDir = path.join(process.cwd(), 'public', 'data', 'tse', String(ano), ...(TURNO === '1' ? [] : ['t' + TURNO]));
   if (!fs.existsSync(outDir)) { console.log(`[${ano}] Pasta de saída não encontrada, pulando.`); continue; }
 
   const srcDir = path.join(downloadDir, `votacao_candidato_munzona_${ano}`);

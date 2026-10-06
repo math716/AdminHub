@@ -118,8 +118,8 @@ export type Vencedor = { candidato: string; partido: string };
 // `filtro` (opcional): quando informado, só considera esses candidatos
 // (nome de urna normalizado) — usado em comparações de N candidatos, para o
 // mapa mostrar o vencedor ENTRE eles, e não o vencedor geral da eleição.
-async function winnersPorMunicipio(ano: number, uf: string, cargo?: string, filtro?: Set<string>): Promise<Record<string, Vencedor>> {
-  const data = await loadStaticTseData(String(ano), uf);
+async function winnersPorMunicipio(ano: number, uf: string, cargo?: string, filtro?: Set<string>, turno = 1): Promise<Record<string, Vencedor>> {
+  const data = await loadStaticTseData(String(ano), uf, turno);
   if (!data) return {};
   const cargoNorm = cargo ? normalizarTextoTse(cargo) : '';
   const best: Record<string, Winner> = {};
@@ -134,8 +134,8 @@ async function winnersPorMunicipio(ano: number, uf: string, cargo?: string, filt
   return Object.fromEntries(Object.entries(best).map(([k, v]) => [k, { candidato: v.candidato, partido: v.partido }]));
 }
 
-async function winnersPorEstado(ano: number, cargo?: string, filtro?: Set<string>): Promise<Record<string, Vencedor>> {
-  const data = await loadStaticTseData(String(ano), 'BR');
+async function winnersPorEstado(ano: number, cargo?: string, filtro?: Set<string>, turno = 1): Promise<Record<string, Vencedor>> {
+  const data = await loadStaticTseData(String(ano), 'BR', turno);
   if (!data) return {};
   const cargoNorm = cargo ? normalizarTextoTse(cargo) : '';
   const best: Record<string, Winner> = {};
@@ -236,6 +236,8 @@ function buildPaths(
 export async function renderMapaEleitoral(params: {
   uf?: string;
   ano: number;
+  /** 1º ou 2º turno (padrão 1) — num relatório do 2º turno o vencedor é outro. */
+  turno?: number;
   cargo?: string;
   municipio?: string;
   candidatos?: string[]; // nomes de urna a comparar — vencedor ENTRE eles
@@ -253,7 +255,7 @@ export async function renderMapaEleitoral(params: {
     if (!ufUp || ufUp === 'BR') {
       // ── Mapa do Brasil, colorido pelo candidato vencedor por UF ──
       const geo = await fetchJson(malhaBrasilUrl());
-      const winners = await winnersPorEstado(params.ano, params.cargo, filtro);
+      const winners = await winnersPorEstado(params.ano, params.cargo, filtro, params.turno ?? 1);
       return montarMapa(winners, (codarea) => CODE_TO_UF[codarea] ?? '', geo.features ?? [], W, H);
     }
 
@@ -264,7 +266,7 @@ export async function renderMapaEleitoral(params: {
       fetchJson(malhaEstadoUrl(ufCode)),
       fetchMunicipiosNome(ufUp),
     ]);
-    const winners = await winnersPorMunicipio(params.ano, ufUp, params.cargo, filtro);
+    const winners = await winnersPorMunicipio(params.ano, ufUp, params.cargo, filtro, params.turno ?? 1);
     const res = montarMapa(winners, (codarea) => nomePorCod[codarea] ?? '', geo.features ?? [], W, H);
     return res.paths.length > 0 ? res : null;
   } catch (err) {

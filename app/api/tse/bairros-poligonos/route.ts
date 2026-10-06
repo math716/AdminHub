@@ -113,13 +113,15 @@ async function loadLocais(uf: string, baseUrl: string): Promise<LocalJson[] | nu
   } catch { return null; }
 }
 
-async function loadCandidatos(ano: string, uf: string, baseUrl: string): Promise<CandidatoJson[] | null> {
-  const key = `${ano}-${uf}`;
+async function loadCandidatos(ano: string, uf: string, baseUrl: string, turno = 1): Promise<CandidatoJson[] | null> {
+  // 2º turno em {ano}/t2/{UF}.json.gz
+  const pasta = turno === 2 ? `${ano}/t2` : ano;
+  const key = `${ano}-${uf}-t${turno}`;
   if (candCache.has(key)) return candCache.get(key)!;
-  const d = readJsonGz(path.join(process.cwd(), 'public', 'data', 'tse', ano, `${uf}.json`)) as CandidatoJson[] | null;
+  const d = readJsonGz(path.join(process.cwd(), 'public', 'data', 'tse', pasta, `${uf}.json`)) as CandidatoJson[] | null;
   if (d) { candCache.set(key, d); return d; }
   try {
-    const res = await fetch(`${baseUrl}/data/tse/${ano}/${uf}.json.gz`);
+    const res = await fetch(`${baseUrl}/data/tse/${pasta}/${uf}.json.gz`);
     if (!res.ok) return null;
     const buf = await res.arrayBuffer();
     const parsed = JSON.parse(zlib.gunzipSync(Buffer.from(buf)).toString('utf8')) as CandidatoJson[];
@@ -166,6 +168,7 @@ export async function GET(request: NextRequest) {
     const candidatoId = searchParams.get('candidatoId');
     const nome        = searchParams.get('nome');
     const ano         = searchParams.get('ano');
+    const turno       = searchParams.get('turno') === '2' ? 2 : 1;
 
     if (!municipio || !uf) {
       return NextResponse.json({ error: 'Parâmetros obrigatórios: municipio, uf' }, { status: 400 });
@@ -221,7 +224,7 @@ export async function GET(request: NextRequest) {
     let totalVotos = 0;
 
     if (ano && (candidatoId || nome)) {
-      const candidatos = await loadCandidatos(ano, uf, baseUrl);
+      const candidatos = await loadCandidatos(ano, uf, baseUrl, turno);
       if (candidatos) {
         let cand: CandidatoJson | undefined;
         if (candidatoId) {

@@ -60,10 +60,10 @@ function readJsonFile(filePath: string): unknown | null {
   return null;
 }
 
-async function loadCandidatos(ano: string, uf: string): Promise<CandidatoJson[] | null> {
+async function loadCandidatos(ano: string, uf: string, turno = 1): Promise<CandidatoJson[] | null> {
   // Delegado a lib/tse-static: a base do TSE e buscada por HTTP, e nao
   // lida do disco, para nao viajar dentro da funcao serverless.
-  return (await loadStaticTseData(ano, uf)) as unknown as CandidatoJson[] | null;
+  return (await loadStaticTseData(ano, uf, turno)) as unknown as CandidatoJson[] | null;
 }
 
 async function loadLocais(uf: string): Promise<LocalJson[] | null> {
@@ -204,6 +204,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const nome        = searchParams.get('nome');
     const ano         = searchParams.get('ano');
+    const turno       = searchParams.get('turno') === '2' ? 2 : 1;
     const uf          = searchParams.get('uf');
     const municipio   = searchParams.get('municipio');
     const candidatoId = searchParams.get('candidatoId');
@@ -214,7 +215,7 @@ export async function GET(request: NextRequest) {
 
     // ── Tentar JSON estático ──────────────────────────────────────────────
     if (uf && ano) {
-      const staticData = await loadCandidatos(ano, uf);
+      const staticData = await loadCandidatos(ano, uf, turno);
       if (staticData) {
         let cand: CandidatoJson | undefined;
         if (candidatoId) {

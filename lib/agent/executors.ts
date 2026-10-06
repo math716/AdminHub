@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db';
 import {
   loadStaticTseData, buscarCandidatoNoJson, buscarCandidatoTolerante, normalizarTextoTse,
-  bairrosPorZona, anosDisponiveisTse, sugerirCandidatos,
+  bairrosPorZona, anosDisponiveisTse, sugerirCandidatos, temSegundoTurno,
 } from '@/lib/tse-static';
 import { buscarCandidatoNacional, inferirUfPorNomes, rankingNacional } from '@/lib/tse-index';
 import { resolverDeputados } from '@/lib/agent/report/df-territorial';
@@ -446,9 +446,11 @@ export async function executarBuscarVotacao(
     cargo?: string;
     apenas_eleitos?: boolean;
     limite?: number;
+    turno?: number;
   },
   _session: UserSession,
 ) {
+  const turno = Number(args.turno) === 2 ? 2 : 1;
   const ufQuery = args.uf?.toUpperCase();
   const anoStr  = args.ano ? String(args.ano) : anoPadraoVotacao(args.cargo, ufQuery);
 
@@ -478,6 +480,31 @@ export async function executarBuscarVotacao(
     };
   }
 
+  // 2º turno pedido onde não houve: diz isso em vez de "não encontrei".
+  if (turno === 2 && !temSegundoTurno(anoStr, isPresidencial ? 'BR' : (ufQuery ?? 'BR'))) {
+    return {
+      encontrado: false,
+      ano: Number(anoStr),
+      turno: 2,
+      mensagem: `Não houve 2º turno ${isPresidencial ? 'para presidente' : `em ${ufQuery ?? 'nenhum estado'}`} em ${anoStr}`
+        + (Number(anoStr) === 2026 ? ' — o 2º turno de 2026 é em 25/10 e ainda não está na base' : '')
+        + '. Diga isso com naturalidade e ofereça o resultado do 1º turno.',
+    };
+  }
+
+  // O estado teve 2º turno, mas não para ESTE cargo (MG em 2022: presidente
+  // sim, governador não). Sem isto a busca voltava vazia e sem motivo.
+  if (turno === 2 && args.cargo && !isPresidencial && ufQuery) {
+    const t2 = await loadStaticTseData(anoStr, ufQuery, 2);
+    if (t2 && !t2.some(c => normalizarTextoTse(c.cargo).includes(cargoNorm))) {
+      return {
+        encontrado: false, ano: Number(anoStr), turno: 2,
+        mensagem: `Não houve 2º turno para ${args.cargo} em ${ufQuery} em ${anoStr} — o cargo foi decidido `
+          + 'no 1º turno. Diga isso com naturalidade e ofereça o resultado do 1º turno.',
+      };
+    }
+  }
+
   // Para presidentes busca BR; para outros tenta o estado, depois BR
   const ufsParaBuscar = isPresidencial
     ? ['BR']
@@ -486,7 +513,7 @@ export async function executarBuscarVotacao(
     : ['BR'];
 
   for (const uf of ufsParaBuscar) {
-    const staticData = await loadStaticTseData(anoStr, uf);
+    const staticData = await loadStaticTseData(anoStr, uf, turno);
     if (!staticData) continue;
 
     let todos = buscarCandidatoNoJson(staticData, semNome ? '' : args.candidato_nome, args.cargo)
@@ -581,6 +608,8 @@ export async function executarBuscarVotacao(
       // Nome do município consultado — o relatório usa para desenhar o mapa da
       // cidade por bairros em vez do mapa do estado com um ponto pintado.
       municipioConsultado: args.municipio ?? null,
+      // De qual turno são os números — o relatório e o texto precisam dizer.
+      turno,
       // Filtrado por município, estes números são DALI — é a resposta certa
       // para "quantos concorreram" e "quantas cadeiras tem a Câmara".
       escopoContagem: noMunicipio

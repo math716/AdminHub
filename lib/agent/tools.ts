@@ -92,6 +92,15 @@ export const AGENT_TOOLS: Tool[] = [
             'excluindo suplentes e não eleitos. Use sempre que o pedido falar em "eleitos", "bancada", ' +
             '"quem assumiu" ou citar o tamanho da casa legislativa.',
         },
+        turno: {
+          type: 'integer',
+          enum: [1, 2],
+          description:
+            '1 (padrão) ou 2. Use 2 quando pedirem o SEGUNDO TURNO ("no 2º turno", "a final", "quem ' +
+            'ganhou a disputa contra X"). Existe para governador e presidente (2018, 2022) e prefeito de ' +
+            'cidade grande (2020, 2024); o 2º turno de 2026 ainda não aconteceu. No 1º turno, quem foi ' +
+            'ao 2º aparece com situação "2º TURNO" — o resultado final está no turno 2.',
+        },
         limite: {
           type: 'integer',
           description:

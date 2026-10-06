@@ -7,7 +7,7 @@ import { anoValido, ufValida } from '@/lib/tse-params';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
-import { loadStaticTseData, ultimaFalhaTse } from '@/lib/tse-static';
+import { loadStaticTseData, ultimaFalhaTse, temSegundoTurno } from '@/lib/tse-static';
 import { chaveMunicipio } from '@/lib/municipio-nome';
 
 // ---------------------------------------------------------------------------
@@ -53,8 +53,18 @@ interface CandidatoJson {
 // disco — com fs.readFileSync o empacotador copiava os 211 MB da base para
 // dentro desta função, que ficava em 245,6 MB contra um teto de 250 MB.
 // O cache em memória vive lá, compartilhado com as demais rotas.
-async function loadStaticData(ano: string, uf: string): Promise<CandidatoJson[] | null> {
-  return (await loadStaticTseData(ano, uf)) as unknown as CandidatoJson[] | null;
+async function loadStaticData(ano: string, uf: string, turno = 1): Promise<CandidatoJson[] | null> {
+  return (await loadStaticTseData(ano, uf, turno)) as unknown as CandidatoJson[] | null;
+}
+
+/**
+ * O candidato também disputou o 2º turno? Mesmo id nos dois turnos (o
+ * SQ_CANDIDATO do TSE não muda). É o que decide se a tela mostra o seletor.
+ */
+async function disputouSegundoTurno(id: string, ano: string, uf: string): Promise<boolean> {
+  if (!temSegundoTurno(ano, uf)) return false;
+  const t2 = await loadStaticData(ano, uf, 2);
+  return Boolean(t2?.some(c => c.id === id));
 }
 
 // ---------------------------------------------------------------------------
@@ -90,7 +100,7 @@ async function getMunicipiosIBGE(uf: string) {
 // ---------------------------------------------------------------------------
 // Construir resposta a partir do candidato JSON estático
 // ---------------------------------------------------------------------------
-async function montarResposta(cand: CandidatoJson, uf: string) {
+async function montarResposta(cand: CandidatoJson, uf: string, ano: string, turno: number) {
   const { porNome: municipiosMap } = await getMunicipiosIBGE(uf);
 
   const votosPorMunicipio: Record<string, number> = {};
@@ -122,6 +132,8 @@ async function montarResposta(cand: CandidatoJson, uf: string) {
     votosPorNomeMunicipio,
     votosPorEstado,
     zonas: cand.zonas ?? [],
+    turno,
+    segundoTurno: turno === 2 || await disputouSegundoTurno(cand.id, ano, uf),
     fonte: 'Dados oficiais do TSE - Portal de Dados Abertos',
   });
 }
@@ -129,9 +141,9 @@ async function montarResposta(cand: CandidatoJson, uf: string) {
 // ---------------------------------------------------------------------------
 // Construir resposta agregada para candidato nacional (uf=BR)
 // ---------------------------------------------------------------------------
-async function montarRespostaBrasil(candidato: string | null, candidatoId: string | null, ano: string) {
+async function montarRespostaBrasil(candidato: string | null, candidatoId: string | null, ano: string, turno = 1) {
   // Carrega o arquivo BR.json.gz pré-agregado (gerado por scripts/gerar-br-json.ts)
-  const brData = await loadStaticData(ano, 'BR');
+  const brData = await loadStaticData(ano, 'BR', turno);
 
   if (!brData || brData.length === 0) {
     // Duas situações diferentes, e antes as duas diziam a mesma coisa: que
@@ -223,6 +235,8 @@ async function montarRespostaBrasil(candidato: string | null, candidatoId: strin
     votosPorMunicipio: {},
     votosPorNomeMunicipio: {},
     votosPorEstado,
+    turno,
+    segundoTurno: turno === 2 || await disputouSegundoTurno(cand.id, ano, 'BR'),
     fonte: 'Dados oficiais do TSE - Portal de Dados Abertos',
   });
 }
@@ -240,6 +254,8 @@ export async function GET(request: NextRequest) {
     const ano         = searchParams.get('ano') || '2022';
     const uf          = searchParams.get('uf');
     const candidatoId = searchParams.get('candidatoId');
+    // 1º ou 2º turno. O 2º só existe onde houve (ver temSegundoTurno).
+    const turno       = searchParams.get('turno') === '2' ? 2 : 1;
 
     if (!uf) return NextResponse.json({ error: 'Selecione um estado para buscar candidatos' }, { status: 400 });
     if (!ufValida(uf)) return NextResponse.json({ error: 'UF inválida' }, { status: 400 });
@@ -247,20 +263,20 @@ export async function GET(request: NextRequest) {
 
     // ── Candidato nacional (presidente / federal) ─────────────────────────
     if (uf === 'BR') {
-      return montarRespostaBrasil(candidato, candidatoId, ano);
+      return montarRespostaBrasil(candidato, candidatoId, ano, turno);
     }
 
     const anoInt = parseInt(ano);
 
     // ── Tentar JSON estático ──────────────────────────────────────────────
-    const staticData = await loadStaticData(ano, uf);
+    const staticData = await loadStaticData(ano, uf, turno);
 
     if (staticData) {
       // Busca por ID específico
       if (candidatoId) {
         const found = staticData.find(c => c.id === candidatoId);
         if (!found) return NextResponse.json({ error: 'Candidato não encontrado' }, { status: 404 });
-        return montarResposta(found, uf);
+        return montarResposta(found, uf, ano, turno);
       }
 
       if (!candidato) return NextResponse.json({ error: 'Nome do candidato é obrigatório' }, { status: 400 });
@@ -293,7 +309,7 @@ export async function GET(request: NextRequest) {
 
       // Único resultado → retornar diretamente
       if (resultados.length === 1) {
-        return montarResposta(resultados[0], uf);
+        return montarResposta(resultados[0], uf, ano, turno);
       }
 
       // Múltiplos → retornar lista para o usuário escolher

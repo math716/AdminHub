@@ -175,14 +175,83 @@ export function palavrasDoNome(c: { nomeUrna: string; nome: string }): string[] 
  */
 const fileCache = new CacheLimitado<CandidatoJson[]>(2);
 
-export async function loadStaticTseData(ano: string, uf: string): Promise<CandidatoJson[] | null> {
-  const key = `${ano}-${uf}`;
+/**
+ * Candidatos de uma UF num ano. `turno` 2 lê {ano}/t2/{UF} — só existe onde
+ * houve 2º turno (ver `temSegundoTurno`). Sem turno, é o 1º, como sempre foi.
+ */
+export async function loadStaticTseData(ano: string, uf: string, turno: number = 1): Promise<CandidatoJson[] | null> {
+  const key = `${ano}-${uf}-t${turno}`;
   const guardado = fileCache.get(key);
   if (guardado) return guardado;
 
-  const data = await baixarTseJson<CandidatoJson[]>(`${ano}/${uf}`);
+  const data = await baixarTseJson<CandidatoJson[]>(turno === 2 ? `${ano}/t2/${uf}` : `${ano}/${uf}`);
   if (data) fileCache.set(key, data);
   return data;
+}
+
+/** A UF teve 2º turno nesse ano (para algum cargo)? Vem do manifesto. */
+export function temSegundoTurno(ano: number | string, uf: string): boolean {
+  const t2 = (manifesto as any).turno2?.[String(ano)] as string[] | undefined;
+  return Boolean(t2?.includes(uf.toUpperCase()));
+}
+
+// ── Votos por local de votação (votacao_secao do TSE) ───────────────────────
+// Um arquivo por município: secao/{ano}/{turno}/{UF}/{MUNICIPIO}.json.gz,
+// gerado por scripts/tse/secao-to-json.ts.
+
+export interface LocalSecao {
+  z: number; l: string; n: string; e: string; b: string;
+  lat: number | null; lng: number | null; s: number;
+}
+export interface SecaoMunicipio {
+  locais: LocalSecao[];
+  cargos: Record<string, string>;
+  /** "<cd cargo>:<número>" → [[índice do local, votos], ...] */
+  votos: Record<string, Array<[number, number]>>;
+}
+
+/** Há votos por local para essa UF, ano e turno? Vem do manifesto. */
+export function temVotosPorLocal(ano: number | string, turno: number, uf: string): boolean {
+  const ufs = (manifesto as any).secao?.[String(ano)]?.[String(turno)] as string[] | undefined;
+  return Boolean(ufs?.includes(uf.toUpperCase()));
+}
+
+/** Nome do arquivo do município: o mesmo normText do gerador. */
+export function nomeArquivoMunicipio(municipio: string): string {
+  return municipio.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/['’`´]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+const secaoCache = new CacheLimitado<SecaoMunicipio>(8);
+
+export async function loadSecaoMunicipio(
+  ano: string, turno: number, uf: string, municipio: string,
+): Promise<SecaoMunicipio | null> {
+  if (!temVotosPorLocal(ano, turno, uf)) return null;
+  const arquivo = nomeArquivoMunicipio(municipio);
+  const key = `${ano}-${turno}-${uf}-${arquivo}`;
+  const guardado = secaoCache.get(key);
+  if (guardado) return guardado;
+  const data = await baixarTseJson<SecaoMunicipio>(
+    `secao/${ano}/${turno}/${uf.toUpperCase()}/${encodeURIComponent(arquivo)}`);
+  if (data) secaoCache.set(key, data);
+  return data;
+}
+
+/**
+ * Votos de UM candidato por local, a partir do arquivo do município.
+ * O candidato é achado por cargo + número na urna (é o que existe em todos
+ * os anos nos arquivos de seção).
+ */
+export function votosDoCandidatoPorLocal(
+  secao: SecaoMunicipio, cargo: string, numero: number | null,
+): Map<number, number> | null {
+  if (numero == null) return null;
+  const alvo = normalizarTextoTse(cargo);
+  const cd = Object.entries(secao.cargos).find(([, nome]) => normalizarTextoTse(nome) === alvo)?.[0];
+  if (!cd) return null;
+  const lista = secao.votos[`${cd}:${numero}`];
+  return lista ? new Map(lista) : new Map();
 }
 
 /**

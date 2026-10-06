@@ -236,6 +236,10 @@ interface ElectoralData {
   votosPorEstado?: Record<string, number>;
   zonas?: Array<{ municipio: string; zona: number; votos: number }>;
   fonte?: string;
+  /** Turno destes dados (1 ou 2). */
+  turno?: number;
+  /** O candidato também disputou o 2º turno — mostra o seletor de turno. */
+  segundoTurno?: boolean;
 }
 
 interface CandidatoHomonimo {
@@ -318,7 +322,12 @@ export default function MapaPage() {
   const [selectedBairroVotos, setSelectedBairroVotos] = useState<number>(0);
 
   // Dados completos dos bairros expostos pelo MunicipioMap (inclui locais com zona)
-  type BairroExposedData = { nome: string; votos: number; locais: { zona: number; codLocal: string }[] };
+  type BairroExposedData = {
+    nome: string; votos: number;
+    locais: { zona: number; codLocal: string; nome?: string; endereco?: string; votos?: number; secoes?: number }[];
+    /** 'secao' = votos reais por local; 'estimativa' = votos da zona repartidos. */
+    fonte?: 'secao' | 'estimativa';
+  };
   const [bairrosData, setBairrosData] = useState<BairroExposedData[]>([]);
   const [bairrosLoaded, setBairrosLoaded] = useState(false);
 
@@ -328,6 +337,15 @@ export default function MapaPage() {
     bairrosData.forEach((b: BairroExposedData) => { map[b.nome.toUpperCase().trim()] = b.votos; });
     return map;
   }, [bairrosData]);
+
+  // Locais de votação do bairro selecionado com o voto REAL de cada um (quando
+  // o arquivo de seção existe). É o que o painel mostra no lugar das zonas.
+  const locaisDoBairro = useMemo(() => {
+    if (!selectedBairro) return null;
+    const b = bairrosData.find(x => x.nome.toUpperCase().trim() === selectedBairro.toUpperCase().trim());
+    if (!b || b.fonte !== 'secao') return null;
+    return [...b.locais].sort((x, y) => (y.votos ?? 0) - (x.votos ?? 0));
+  }, [selectedBairro, bairrosData]);
 
   // Zonas do bairro selecionado — usa locais do bairro + votos de locaisPorZona
   const zonasDoBairro = useMemo<{ zona: number; votos: number }[]>(() => {
@@ -691,6 +709,7 @@ export default function MapaPage() {
         municipio: municipioNome,
         uf,
         ano: String(eData.ano),
+        ...(eData.turno === 2 && { turno: '2' }),
         // O candidatoId é idêntico nos arquivos BR e estaduais — usar sempre para evitar múltiplos
         ...(eData.candidatoId
           ? { candidatoId: eData.candidatoId }
@@ -783,6 +802,7 @@ export default function MapaPage() {
     if (electoralData?.candidatoId) {
       params.set('candidatoId', electoralData.candidatoId);
       params.set('ano', String(electoralData.ano));
+      if (electoralData.turno === 2) params.set('turno', '2');
     }
     fetch(`/api/tse/bairros-poligonos?${params}`)
       .then(r => r.json())
@@ -917,6 +937,41 @@ export default function MapaPage() {
       }
     } catch { setSearchError('Erro ao buscar dados eleitorais'); }
     finally { setSearching(false); }
+  };
+
+  /**
+   * Troca entre 1º e 2º turno do candidato já carregado. Recarrega só os votos
+   * (o id do candidato é o mesmo nos dois turnos) e mantém onde a pessoa
+   * está — estado, município, bairro.
+   */
+  const trocarTurno = async (turno: 1 | 2) => {
+    const atual = electoralData;
+    if (!atual?.candidatoId || (atual.turno ?? 1) === turno) return;
+    setSearching(true);
+    setSearchError('');
+    try {
+      const uf = atual.uf || 'BR';
+      const params = new URLSearchParams({ candidatoId: atual.candidatoId, ano: String(atual.ano), uf, turno: String(turno) });
+      const res = await fetch(`/api/tse/candidato?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok) { setSearchError(data?.error ?? 'Não foi possível carregar este turno.'); return; }
+      let novo: ElectoralData = data;
+      // Presidente visto num estado: o mapa do Brasil precisa dos votos por
+      // estado do mesmo turno, que vêm do arquivo nacional.
+      if (uf !== 'BR' && /president/i.test(data.cargo ?? '')) {
+        const brRes = await fetch(`/api/tse/candidato?${new URLSearchParams({ candidatoId: atual.candidatoId, ano: String(atual.ano), uf: 'BR', turno: String(turno) })}`);
+        if (brRes.ok) {
+          const br = await brRes.json();
+          if (br?.votosPorEstado) novo = { ...novo, votosPorEstado: br.votosPorEstado };
+        }
+      }
+      setElectoralData(novo);
+      if (selectedMunicipio) fetchZonasMunicipio(selectedMunicipio.nome, novo);
+    } catch {
+      setSearchError('Não foi possível carregar este turno.');
+    } finally {
+      setSearching(false);
+    }
   };
 
   const handleSelectHomonimo = async (candidatoId: string) => {
@@ -1304,6 +1359,27 @@ export default function MapaPage() {
                       <Calendar className="h-4 w-4" />
                       {electoralData?.ano} - {electoralData?.cargo}
                     </div>
+                    {/* Só aparece para quem disputou o 2º turno (governador,
+                        presidente, prefeito de cidade grande). Mapas, zonas e
+                        bairros passam a mostrar o turno escolhido. */}
+                    {electoralData?.segundoTurno && (
+                      <div className="flex rounded-lg overflow-hidden w-fit" role="group" aria-label="Turno"
+                        style={{ border: '1px solid var(--border-default)' }}>
+                        {([1, 2] as const).map(t => {
+                          const ativo = (electoralData?.turno ?? 1) === t;
+                          return (
+                            <button key={t} type="button" onClick={() => trocarTurno(t)} disabled={searching}
+                              aria-pressed={ativo}
+                              className="px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60"
+                              style={ativo
+                                ? { background: 'var(--brand-cobalt-soft)', color: 'var(--brand-cobalt-text)' }
+                                : { color: 'var(--text-tertiary)' }}>
+                              {t}º turno
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                     {electoralData?.situacao && (
                       <div className="text-sm">
                         <span className="text-slate-600 dark:text-slate-400">Situação: </span>
@@ -1597,10 +1673,33 @@ export default function MapaPage() {
                         <Loader2 className="h-4 w-4 animate-spin text-slate-600 dark:text-slate-400 mr-2" />
                         <span className="text-slate-600 dark:text-slate-400 text-xs">Carregando zonas...</span>
                       </div>
+                    ) : locaisDoBairro && locaisDoBairro.length > 0 ? (
+                      <>
+                        <p className="text-xs text-slate-600 dark:text-slate-500 font-medium uppercase tracking-wide">
+                          Locais de votação ({locaisDoBairro.length})
+                        </p>
+                        <div className="space-y-1.5 max-h-[280px] overflow-y-auto scrollbar-dark">
+                          {locaisDoBairro.map(l => (
+                            <div key={`${l.zona}-${l.codLocal}`}
+                              className="flex items-start gap-2 px-3 py-2 bg-[var(--bg-card-subtle)]/60 rounded-lg border border-[var(--border-default)]">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium break-words" style={{ color: 'var(--text-primary)' }}>{l.nome}</p>
+                                <p className="text-[10px] break-words" style={{ color: 'var(--text-tertiary)' }}>
+                                  {l.endereco} · Zona {l.zona}{l.secoes ? ` · ${l.secoes} seções` : ''}
+                                </p>
+                              </div>
+                              <p className="font-bold text-sm leading-tight whitespace-nowrap" style={{ color: 'var(--acento-azul)' }}>
+                                {(l.votos ?? 0).toLocaleString('pt-BR')}
+                                <span className="text-slate-600 dark:text-slate-500 font-normal text-[10px] ml-1">votos</span>
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     ) : zonasDoBairro.length > 0 ? (
                       <>
                         <p className="text-xs text-slate-600 dark:text-slate-500 font-medium uppercase tracking-wide">
-                          Zonas eleitorais ({zonasDoBairro.length})
+                          Zonas eleitorais ({zonasDoBairro.length}) · votos da zona inteira
                         </p>
                         <div className="space-y-1.5 max-h-[240px] overflow-y-auto scrollbar-dark">
                           {zonasDoBairro.map(({ zona, votos }) => (
@@ -1814,6 +1913,7 @@ export default function MapaPage() {
                               candidatoId={electoralData?.candidatoId}
                               nomeCandidato={electoralData?.nomeUrna || electoralData?.candidateName}
                               ano={electoralData ? String(electoralData.ano) : undefined}
+                          turno={electoralData?.turno ?? 1}
                               votosPorBairro={votosPorBairro}
                               totalVotos={electoralData?.totalVotos}
                               selectedBairro={selectedBairro}
@@ -2170,6 +2270,7 @@ export default function MapaPage() {
                             candidatoId={electoralData?.candidatoId}
                             nomeCandidato={electoralData?.nomeUrna || electoralData?.candidateName}
                             ano={electoralData ? String(electoralData.ano) : undefined}
+                          turno={electoralData?.turno ?? 1}
                             votosPorBairro={genBairrosApiVotes}
                             selectedBairro={selectedGenBairro}
                             onBairroClick={(nome) => handleGenBairroClick(nome)}
@@ -2233,6 +2334,7 @@ export default function MapaPage() {
                           candidatoId={electoralData?.candidatoId}
                           nomeCandidato={electoralData?.nomeUrna || electoralData?.candidateName}
                           ano={electoralData ? String(electoralData.ano) : undefined}
+                          turno={electoralData?.turno ?? 1}
                           votosPorBairro={votosPorBairro}
                           totalVotos={electoralData?.totalVotos}
                           selectedBairro={selectedBairro}

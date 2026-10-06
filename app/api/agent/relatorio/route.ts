@@ -180,8 +180,12 @@ function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitu
   // consulta cruza votos e emendas, o assunto do documento é o voto.
   const fonte: FonteRelatorio = isEleitoral ? 'votos' : isEmendas ? 'emendas' : 'gabinete';
 
+  // Votos do 2º turno: o documento diz no cabeçalho — sem isso os números
+  // seriam lidos como do 1º turno, que é o padrão de todo o resto.
+  const segundoTurno = isEleitoral && (input as any).dadosBrutos?.buscar_votacao?.turno === 2;
   const pills: Pill[] = [
     { label: 'Tipo:', value: tipoLabel },
+    ...(segundoTurno ? [{ label: 'Turno:', value: '2º turno' }] : []),
     ...(valorPill ? [valorPill] : []),
     { label: 'Emitido:', value: geradoEm },
   ];
@@ -366,14 +370,14 @@ export async function POST(request: NextRequest) {
       } else if (cands.length >= 2 && cands.length <= 6) {
         // comparação de candidatos específicos → vencedor ENTRE eles
         mapa = await renderMapaEleitoral({
-          uf: c.uf, ano: Number(c.ano), cargo: c.cargo,
+          uf: c.uf, ano: Number(c.ano), cargo: c.cargo, turno: body.dadosBrutos?.buscar_votacao?.turno ?? 1,
           candidatos: cands.map((x: any) => x.nomeUrna || x.nome),
           width: W, height: H,
         });
         mapaTitulo = 'Mapa — vencedor por região (entre os candidatos)';
       } else if (cands.length > 6) {
         // lista geral (todos os candidatos) → vencedor geral da eleição
-        mapa = await renderMapaEleitoral({ uf: c.uf, ano: Number(c.ano), cargo: c.cargo, width: W, height: H });
+        mapa = await renderMapaEleitoral({ uf: c.uf, ano: Number(c.ano), cargo: c.cargo, turno: body.dadosBrutos?.buscar_votacao?.turno ?? 1, width: W, height: H });
         mapaTitulo = 'Mapa — vencedor por região';
       }
     } else if (isEmendas) {

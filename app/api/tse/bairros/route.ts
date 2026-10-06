@@ -5,7 +5,7 @@ import { anoValido, ufValida } from '@/lib/tse-params';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
-import { loadStaticTseData, loadLocaisTse } from '@/lib/tse-static';
+import { loadStaticTseData, loadLocaisTse, loadSecaoMunicipio, votosDoCandidatoPorLocal } from '@/lib/tse-static';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +33,8 @@ interface CandidatoJson {
   id: string;
   nome: string;
   nomeUrna: string;
+  cargo: string;
+  numero: number | null;
   zonas: CandidatoZona[];
 }
 
@@ -56,10 +58,10 @@ async function loadLocais(uf: string): Promise<LocalJson[] | null> {
   return (await loadLocaisTse(uf)) as unknown as LocalJson[] | null;
 }
 
-async function loadCandidatos(ano: string, uf: string): Promise<CandidatoJson[] | null> {
+async function loadCandidatos(ano: string, uf: string, turno = 1): Promise<CandidatoJson[] | null> {
   // Delegado a lib/tse-static: a base do TSE e buscada por HTTP, e nao
   // lida do disco, para nao viajar dentro da funcao serverless.
-  return (await loadStaticTseData(ano, uf)) as unknown as CandidatoJson[] | null;
+  return (await loadStaticTseData(ano, uf, turno)) as unknown as CandidatoJson[] | null;
 }
 
 function normalizar(s: string): string {
@@ -77,6 +79,8 @@ export async function GET(request: NextRequest) {
   const candidatoId = searchParams.get('candidatoId');
   const nome        = searchParams.get('nome');
   const ano         = searchParams.get('ano');
+  // 1º ou 2º turno. O 2º só existe onde houve (governador, presidente, prefeito).
+  const turno       = searchParams.get('turno') === '2' ? 2 : 1;
 
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
@@ -109,7 +113,7 @@ export async function GET(request: NextRequest) {
   const votosPorZona = new Map<number, number>();
 
   if (ano && (candidatoId || nome)) {
-    const candidatos = await loadCandidatos(ano, uf);
+    const candidatos = await loadCandidatos(ano, uf, turno);
     let cand: CandidatoJson | undefined;
 
     if (candidatos) {
@@ -133,10 +137,25 @@ export async function GET(request: NextRequest) {
 
     // Fallback: candidatos nacionais (presidente/senado) estão em BR.json mas não em UF.json
     if (!cand && candidatoId) {
-      const brCandidatos = await loadCandidatos(ano, 'BR');
+      const brCandidatos = await loadCandidatos(ano, 'BR', turno);
       if (brCandidatos) {
         cand = brCandidatos.find(c => c.id === candidatoId);
       }
+    }
+
+    // ── Votos REAIS por local de votação, quando o arquivo de seção existe ──
+    // Antes era sempre a estimativa abaixo (votos da zona divididos pelas
+    // seções), e o pino do bairro ficava na média das coordenadas das escolas.
+    if (cand) {
+      const secao = await loadSecaoMunicipio(ano, turno, uf, municipio);
+      const votosLocal = secao ? votosDoCandidatoPorLocal(secao, cand.cargo, cand.numero) : null;
+      // Só vale como voto real se a soma dos locais bate com o total oficial do
+      // candidato na cidade. Não bate onde o TSE juntou uma eleição suplementar
+      // (outra data, mesmo número) ao arquivo do ano — aí fica a estimativa.
+      const doMunicipio = cand.zonas.filter(z => normalizar(z.municipio) === munNorm);
+      const confere = !votosLocal || cand.zonas.length === 0 ||
+        [...votosLocal.values()].reduce((s, v) => s + v, 0) === doMunicipio.reduce((s, z) => s + z.votos, 0);
+      if (secao && votosLocal && confere) return NextResponse.json(bairrosReais(municipio, uf, secao, votosLocal));
     }
 
     if (cand) {
@@ -220,5 +239,49 @@ export async function GET(request: NextRequest) {
 
   bairros.sort((a, b) => b.votos - a.votos || b.totalLocais - a.totalLocais);
 
-  return NextResponse.json({ municipio, uf, bairros, total: bairros.length });
+  // `estimativa`: votos da zona repartidos pelas seções — não é o voto real do
+  // bairro. A tela avisa. Sem candidato, não há voto nenhum.
+  return NextResponse.json({
+    municipio, uf, bairros, total: bairros.length,
+    ...(votosPorZona.size > 0 && { fonte: 'estimativa' }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Bairros a partir dos votos reais por local (arquivo de seção do TSE)
+// ---------------------------------------------------------------------------
+function bairrosReais(
+  municipio: string, uf: string,
+  secao: import('@/lib/tse-static').SecaoMunicipio,
+  votosLocal: Map<number, number>,
+) {
+  type Local = { codLocal: string; nome: string; endereco: string; zona: number; lat: number | null; lng: number | null; secoes: number; votos: number };
+  const porBairro = new Map<string, Local[]>();
+  secao.locais.forEach((l, i) => {
+    const nome = l.b || 'SEM BAIRRO';
+    const lista = porBairro.get(nome) ?? [];
+    lista.push({ codLocal: l.l, nome: l.n, endereco: l.e, zona: l.z, lat: l.lat, lng: l.lng, secoes: l.s, votos: votosLocal.get(i) ?? 0 });
+    porBairro.set(nome, lista);
+  });
+
+  const bairros = [...porBairro.entries()].map(([nome, locais]) => {
+    // Referência do bairro: o local onde o candidato teve mais votos (um
+    // endereço real), e não a média das coordenadas — que caía no meio da
+    // rua, onde não há escola.
+    const comCoord = locais.filter(l => l.lat != null && l.lng != null);
+    const ref = [...comCoord].sort((a, b) => b.votos - a.votos)[0];
+    return {
+      nome,
+      lat: ref?.lat ?? null,
+      lng: ref?.lng ?? null,
+      totalLocais: locais.length,
+      votos: locais.reduce((s, l) => s + l.votos, 0),
+      locais: locais.sort((a, b) => b.votos - a.votos),
+    };
+  });
+  // Bairro cujos locais vieram do TSE sem coordenada fica na lista (sem pino
+  // no mapa): os votos dele são reais e entram no total do município.
+
+  bairros.sort((a, b) => b.votos - a.votos || b.totalLocais - a.totalLocais);
+  return { municipio, uf, bairros, total: bairros.length, fonte: 'secao' as const };
 }

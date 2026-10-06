@@ -13,6 +13,8 @@ interface BairrosPoligonosMapProps {
   candidatoId?: string;
   nomeCandidato?: string;
   ano?: string;
+  /** 1º ou 2º turno (padrão 1). */
+  turno?: number;
   /** Permite sobrepor votos calculados com projeções */
   votosPorBairro?: Record<string, number>;
   selectedBairro?: string | null;
@@ -92,6 +94,7 @@ function BairrosPoligonosMapComponent({
   candidatoId,
   nomeCandidato,
   ano,
+  turno = 1,
   votosPorBairro,
   selectedBairro,
   onBairroClick,
@@ -127,6 +130,7 @@ function BairrosPoligonosMapComponent({
 
     const params = new URLSearchParams({ municipio, uf });
     if (ano) params.set('ano', ano);
+    if (turno === 2) params.set('turno', '2');
     if (candidatoId) params.set('candidatoId', candidatoId);
     else if (nomeCandidato) params.set('nome', nomeCandidato);
 
@@ -148,7 +152,7 @@ function BairrosPoligonosMapComponent({
         setLoading(false);
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [municipio, uf, candidatoId, nomeCandidato, ano]);
+  }, [municipio, uf, candidatoId, nomeCandidato, ano, turno]);
 
   const getEffectiveVotes = useCallback((nome: string): number => {
     const nomeNorm = normalizeNome(nome);

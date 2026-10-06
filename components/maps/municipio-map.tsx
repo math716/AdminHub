@@ -15,7 +15,18 @@ interface BairroLocal {
   zona: number;
   lat: number | null;
   lng: number | null;
+  /** Votos REAIS do candidato neste local (só quando fonte = 'secao'). */
+  votos?: number;
+  secoes?: number;
 }
+
+/**
+ * De onde vêm os votos do mapa:
+ * - 'secao': votos reais por local de votação (arquivo de seção do TSE);
+ * - 'estimativa': votos da zona repartidos pelas seções — não é o voto real do bairro;
+ * - undefined: sem candidato, só os locais.
+ */
+export type FonteVotos = 'secao' | 'estimativa' | undefined;
 
 interface BairroData {
   nome: string;
@@ -29,6 +40,7 @@ export interface BairroExposed {
   nome: string;
   votos: number;
   locais: BairroLocal[];
+  fonte?: FonteVotos;
 }
 
 export interface MunicipioMapHandle {
@@ -50,6 +62,8 @@ interface MunicipioMapProps {
   candidatoId?: string;
   nomeCandidato?: string;
   ano?: string;
+  /** 1º ou 2º turno (padrão 1). */
+  turno?: number;
   votosPorBairro?: Record<string, number>;
   totalVotos?: number;
   selectedBairro?: string | null;
@@ -98,6 +112,7 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
   candidatoId,
   nomeCandidato,
   ano,
+  turno = 1,
   votosPorBairro = {},
   totalVotos = 0,
   selectedBairro = null,
@@ -109,13 +124,16 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
   onDataLoaded,
 }, ref) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  // layersRef stores: marker instance per bairro key
+  // Um pino por LOCAL DE VOTAÇÃO (chave "zona-nºlocal"), no endereço real.
+  // Antes era um pino por bairro, na média das coordenadas das escolas — um
+  // ponto onde não havia escola nenhuma, enquanto a escola real ficava sem
+  // pino (Rua da Mooca, 363, out/2026).
   const layersRef = useRef<Map<string, any>>(new Map());
-  // markerDataRef stores color + size for each bairro (to restore on deselect)
-  const markerDataRef = useRef<Map<string, { color: string; size: number }>>(new Map());
-  // votosRef stores vote count per bairro key — used for cluster totals
+  // cor, tamanho e bairro de cada pino (para restaurar ao desselecionar)
+  const markerDataRef = useRef<Map<string, { color: string; size: number; bairro: string }>>(new Map());
+  // votos de cada pino — somados nos círculos de agrupamento
   const votosRef = useRef<Map<string, number>>(new Map());
-  // zonaMarkersRef maps zona number → bairro keys (for zone zoom)
+  // zona → pinos (para o zoom por zona)
   const zonaMarkersRef = useRef<Map<number, string[]>>(new Map());
   // Leaflet stored after async import so highlight/clear can use it synchronously
   const leafletRef = useRef<any>(null);
@@ -124,9 +142,14 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
   const onBairroHoverRef = useRef(onBairroHover);
   onBairroClickRef.current = onBairroClick;
   onBairroHoverRef.current = onBairroHover;
+  // Bairro selecionado, lido ao terminar de desenhar os pinos: a seleção pode
+  // chegar antes deles (ou o mapa ser redesenhado ao trocar de turno).
+  const selectedBairroRef = useRef(selectedBairro);
+  selectedBairroRef.current = selectedBairro;
 
   const [loading, setLoading] = useState(true);
   const [bairros, setBairros] = useState<BairroData[]>([]);
+  const [fonte, setFonte] = useState<FonteVotos>(undefined);
   const [error, setError] = useState<string | null>(null);
   const isInitializingRef = useRef(false);
 
@@ -145,20 +168,24 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
     const L = leafletRef.current;
     if (!L || !mapInstanceRef.current) return;
     const normalizedName = bairroNome.toUpperCase();
+    const doBairro: [number, number][] = [];
     layersRef.current.forEach((marker, key) => {
       const data = markerDataRef.current.get(key);
       if (!data) return;
-      const isSelected = key === normalizedName;
+      const isSelected = data.bairro === normalizedName;
       marker.setIcon(L.divIcon(makePinIconOptions(data.color, isSelected, data.size)));
-      if (isSelected) {
-        marker.setZIndexOffset(1000);
-        if (marker.getLatLng) {
-          mapInstanceRef.current.setView(marker.getLatLng(), mapInstanceRef.current.getZoom(), { animate: true });
-        }
-      } else {
-        marker.setZIndexOffset(0);
+      marker.setZIndexOffset(isSelected ? 1000 : 0);
+      if (isSelected && marker.getLatLng) {
+        const ll = marker.getLatLng();
+        doBairro.push([ll.lat, ll.lng]);
       }
     });
+    // Mostra todos os locais do bairro, sem aproximar demais quando é um só.
+    if (doBairro.length > 0) {
+      mapInstanceRef.current.fitBounds(L.latLngBounds(doBairro), {
+        padding: [60, 60], maxZoom: 15, animate: true,
+      });
+    }
   }, []);
 
   const clearHighlight = useCallback(() => {
@@ -202,11 +229,13 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
         if (candidatoId) tseParams.set('candidatoId', candidatoId);
         else if (nomeCandidato) tseParams.set('nome', nomeCandidato);
         if (ano) tseParams.set('ano', ano);
+        if (turno === 2) tseParams.set('turno', '2');
 
         const tseRes = await fetch(`/api/tse/bairros?${tseParams.toString()}`);
         if (tseRes.ok) {
           const tseData = await tseRes.json();
           if (tseData.bairros && tseData.bairros.length > 0) {
+            setFonte(tseData.fonte);
             setBairros(tseData.bairros.map((b: any) => ({
               nome: b.nome,
               lat: b.lat,
@@ -218,6 +247,7 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
               nome: b.nome,
               votos: b.votos ?? 0,
               locais: b.locais ?? [],
+              fonte: tseData.fonte,
             })));
             setLoading(false);
             return;
@@ -234,7 +264,7 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
     };
 
     if (municipio && uf) fetchBairros();
-  }, [municipio, uf, candidatoId, nomeCandidato, ano]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [municipio, uf, candidatoId, nomeCandidato, ano, turno]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Inicializar mapa — não depende de selectedBairro nem dos callbacks
   useEffect(() => {
@@ -361,66 +391,90 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
       map.on('zoomend moveend', recluster);
 
       const normKey = (s: string) =>
-        s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+        s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
       const getVotosBairro = (b: BairroData): number => {
         // votosPorBairro tem prioridade (permite sobrepor com projeções)
         const override = votosPorBairro[normKey(b.nome)];
         if (override !== undefined) return override;
         return b.votos ?? 0;
       };
+      const esc = (s: string) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 
+      // Valor de cada PINO (local de votação):
+      // - votos reais do local, quando o bairro mostra o voto real (fonte 'secao'
+      //   e nenhuma projeção por cima);
+      // - senão, o valor do bairro (estimativa ou meta da projeção) — repartido
+      //   entre os locais só para a soma dos agrupamentos não contar o bairro
+      //   várias vezes; a cor e o balão usam o valor do bairro.
+      type Pino = { key: string; local: BairroLocal; bairro: BairroData; valor: number; valorCor: number; real: boolean };
+      const pinos: Pino[] = [];
+      for (const b of bairros) {
+        const valorBairro = getVotosBairro(b);
+        const comCoord = (b.locais ?? []).filter(l => l.lat != null && l.lng != null);
+        const real = fonte === 'secao' && valorBairro === (b.votos ?? 0);
+        for (const l of comCoord) {
+          pinos.push({
+            key: `${l.zona}-${l.codLocal}`,
+            local: l, bairro: b, real,
+            valor: real ? (l.votos ?? 0) : valorBairro / comCoord.length,
+            valorCor: real ? (l.votos ?? 0) : valorBairro,
+          });
+        }
+      }
 
-      const allVotes = bairros.map(b => getVotosBairro(b)).filter(v => v > 0);
-      const maxValue = allVotes.length > 0 ? Math.max(...allVotes) : 1;
-      // Sempre usa a soma dos bairros carregados como total do município
-      const calcTotalVotos = allVotes.reduce((a, b) => a + b, 0) || 1;
+      const maxValue = Math.max(1, ...pinos.map(p => p.valorCor));
+      // Total do município: soma dos bairros (com projeção, a soma das metas).
+      const calcTotalVotos = bairros.reduce((s, b) => s + getVotosBairro(b), 0) || 1;
+      const pct = (v: number) => ((v / calcTotalVotos) * 100).toFixed(1).replace('.', ',');
 
       const bounds: [number, number][] = [];
 
-      bairros.forEach((bairro) => {
-        if (!bairro.lat || !bairro.lng) return;
-        const votos = getVotosBairro(bairro);
-        const percentual = calcTotalVotos > 0 ? ((votos / calcTotalVotos) * 100).toFixed(1) : '0.0';
-        const color = getColor(votos, maxValue);
-        // Pin size: base 22, scales up to 34 with vote intensity
-        const size = votos > 0 ? Math.round(22 + Math.min((votos / maxValue) * 12, 12)) : 22;
-        const key = bairro.nome.toUpperCase();
+      pinos.forEach(({ key, local, bairro, valor, valorCor, real }) => {
+        const color = getColor(valorCor, maxValue);
+        const size = valorCor > 0 ? Math.round(20 + Math.min((valorCor / maxValue) * 12, 12)) : 20;
+        const nomeBairro = bairro.nome.toUpperCase();
+        bounds.push([local.lat!, local.lng!]);
 
-        bounds.push([bairro.lat, bairro.lng]);
+        markerDataRef.current.set(key, { color, size, bairro: nomeBairro });
+        votosRef.current.set(key, valor);
 
-        markerDataRef.current.set(key, { color, size });
-        votosRef.current.set(key, votos);
-
-        const marker = L.marker([bairro.lat, bairro.lng], {
+        const marker = L.marker([local.lat!, local.lng!], {
           icon: L.divIcon(makePinIconOptions(color, false, size)),
           riseOnHover: true,
         });
         marker.addTo(map);
-
         layersRef.current.set(key, marker);
 
-        const zonas = [...new Set((bairro.locais ?? []).map((l: BairroLocal) => l.zona).filter(Boolean))].sort((a, b) => a - b);
-        zonas.forEach(z => {
-          const prev = zonaMarkersRef.current.get(z) ?? [];
-          zonaMarkersRef.current.set(z, [...prev, key]);
-        });
-        const zonasHtml = zonas.length > 0
-          ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px;">${zonas.map(z => `<span style="background:var(--brand-cobalt-soft);color:var(--brand-cobalt-text);border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600;">Zona ${z}</span>`).join('')}</div>`
-          : '';
+        if (local.zona) {
+          const prev = zonaMarkersRef.current.get(local.zona) ?? [];
+          zonaMarkersRef.current.set(local.zona, [...prev, key]);
+        }
+
+        const valorBairro = getVotosBairro(bairro);
+        const linhaVotos = real
+          ? `<div style="color:var(--text-secondary);font-size:17px;font-weight:700;">${(local.votos ?? 0).toLocaleString('pt-BR')} votos neste local</div>
+             <div style="color:var(--text-tertiary);font-size:12px;">Bairro: ${valorBairro.toLocaleString('pt-BR')} votos · ${pct(valorBairro)}% do município</div>`
+          : (candidatoId || nomeCandidato || valorBairro > 0)
+            ? `<div style="color:var(--text-secondary);font-size:15px;font-weight:700;">Bairro: ${valorBairro.toLocaleString('pt-BR')} votos</div>
+               <div style="color:var(--text-tertiary);font-size:11px;">${fonte === 'estimativa' ? 'Estimativa: votos da zona repartidos pelas seções' : `${pct(valorBairro)}% do município`}</div>`
+            : '';
 
         marker.bindTooltip(
-          `<div style="background:var(--bg-card-raised);padding:10px 14px;border-radius:10px;border:1px solid var(--border-default);box-shadow:var(--shadow-raised);min-width:160px;">
-            <div style="font-weight:600;color:var(--acento-azul);font-size:13px;margin-bottom:4px;">${bairro.nome}</div>
-            <div style="color:var(--text-secondary);font-size:17px;font-weight:700;">${votos.toLocaleString('pt-BR')} votos</div>
-            <div style="color:var(--text-tertiary);font-size:12px;">${percentual}% do município</div>
-            ${zonasHtml}
+          `<div style="background:var(--bg-card-raised);padding:10px 14px;border-radius:10px;border:1px solid var(--border-default);box-shadow:var(--shadow-raised);min-width:180px;max-width:260px;white-space:normal;">
+            <div style="font-weight:600;color:var(--acento-azul);font-size:13px;margin-bottom:2px;">${esc(local.nome)}</div>
+            <div style="color:var(--text-tertiary);font-size:11px;margin-bottom:6px;">${esc(local.endereco)} · ${esc(bairro.nome)}</div>
+            ${linhaVotos}
+            <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px;">
+              <span style="background:var(--brand-cobalt-soft);color:var(--brand-cobalt-text);border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600;">Zona ${local.zona}</span>
+              ${local.secoes ? `<span style="background:var(--tint-06);color:var(--text-secondary);border-radius:4px;padding:1px 7px;font-size:10px;">${local.secoes} seções</span>` : ''}
+            </div>
           </div>`,
           { permanent: false, direction: 'top', className: 'bairro-tooltip', interactive: false }
         );
 
         marker.on('click', () => {
           marker.closeTooltip();
-          onBairroClickRef.current?.(bairro.nome, getVotosBairro(bairro));
+          onBairroClickRef.current?.(bairro.nome, valorBairro);
         });
         marker.on('mouseover', () => {
           marker.openTooltip();
@@ -433,11 +487,29 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
       });
 
       if (bounds.length > 0) {
-        map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40] });
+        // Enquadra só quando a caixa do mapa já tem largura. Criado com
+        // largura 0 (ainda em layout), o Leaflet enquadrava tudo no zoom máximo
+        // — 19, nível de prédio — e nenhum pino aparecia na tela.
+        const enquadrar = () => {
+          map.invalidateSize();
+          map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40] });
+        };
+        let tentativas = 0;
+        const quandoTiverLargura = () => {
+          if (cancelled) return;
+          if (map.getContainer().clientWidth > 0 || ++tentativas > 60) enquadrar();
+          else requestAnimationFrame(quandoTiverLargura);
+        };
+        quandoTiverLargura();
       }
 
       // Primeira clusterização após o mapa ajustar os bounds
-      map.once('moveend', recluster);
+      // A seleção é reaplicada DEPOIS do enquadramento inicial: aplicada no
+      // meio da animação, o encaixe no bairro brigava com o da cidade.
+      map.once('moveend', () => {
+        recluster();
+        if (selectedBairroRef.current) highlightBairro(selectedBairroRef.current);
+      });
 
       isInitializingRef.current = false;
     };
@@ -492,7 +564,17 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
     <div className="w-full h-full flex flex-col">
       <div className="flex items-center justify-between mb-2 px-1">
         <span className="text-sm text-gray-400">
-          {bairros.length} bairros em {municipio}
+          {bairros.reduce((s, b) => s + (b.locais ?? []).length, 0).toLocaleString('pt-BR')} locais de votação
+          {' · '}{bairros.length} bairros em {municipio}
+          {/* Sem o voto real por local, o número do bairro é a fatia da zona —
+              quem lê precisa saber antes de tirar conclusão de bairro. */}
+          {fonte === 'estimativa' && (
+            <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded"
+              style={{ background: 'var(--tint-06)', color: 'var(--text-secondary)' }}
+              title="Votos da zona eleitoral repartidos pelas seções de cada local — não é o voto real do bairro">
+              votos por bairro estimados
+            </span>
+          )}
         </span>
         <div className="flex items-center gap-2 text-xs">
           <div className="flex items-center gap-1">
