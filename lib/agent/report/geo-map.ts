@@ -6,6 +6,8 @@
 import fs from 'fs';
 import path from 'path';
 import { loadStaticTseData, normalizarTextoTse } from '@/lib/tse-static';
+// Nome do TSE × nome do IBGE (apóstrofo de "d'Oeste" e grafias diferentes).
+import { chaveMunicipio } from '@/lib/municipio-nome';
 
 // ── Códigos IBGE das UFs ────────────────────────────────────────────────────
 const UF_CODES: Record<string, number> = {
@@ -125,7 +127,7 @@ async function winnersPorMunicipio(ano: number, uf: string, cargo?: string, filt
     if (cargoNorm && !normalizarTextoTse(c.cargo).includes(cargoNorm)) continue;
     if (filtro && !filtro.has(normalizarTextoTse(c.nomeUrna || c.nome))) continue;
     for (const [muni, votos] of Object.entries(c.votos ?? {})) {
-      const key = normalizarTextoTse(muni);
+      const key = chaveMunicipio(muni, uf);
       if (!best[key] || votos > best[key].votos) best[key] = { candidato: c.nomeUrna || c.nome, partido: c.partido, votos };
     }
   }
@@ -152,7 +154,7 @@ async function winnersPorEstado(ano: number, cargo?: string, filtro?: Set<string
 async function fetchMunicipiosNome(uf: string): Promise<Record<string, string>> {
   const list = await fetchJson(municipiosUrl(uf));
   const map: Record<string, string> = {};
-  for (const m of list) map[String(m.id)] = normalizarTextoTse(m.nome ?? '');
+  for (const m of list) map[String(m.id)] = chaveMunicipio(m.nome ?? '', uf);
   return map;
 }
 
@@ -362,7 +364,7 @@ export async function renderMapaHeatmap(params: {
     if (!ufCode) return null;
     const valNorm: Record<string, number> = {};
     for (const [k, v] of Object.entries(params.valores)) {
-      const key = normalizarTextoTse(k);
+      const key = chaveMunicipio(k, ufUp);
       valNorm[key] = (valNorm[key] ?? 0) + (v || 0);
     }
     const [geo, nomePorCod] = await Promise.all([
@@ -407,52 +409,67 @@ export function renderMapaEmendas(params: { uf: string; valores: Record<string, 
   return renderMapaHeatmap({ ...params, faixas: faixasDeDinheiro(max), semCor: SEM_EMENDA });
 }
 
-// Faixas de votos adaptativas ao maior valor (escala azul).
-function faixasDeVotos(max: number): Faixa[] {
-  const fmt = (n: number) =>
-    n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace('.', ',')} mi`
-    : n >= 1000     ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace('.', ',')} mil`
+/** 13127 → "13 mil", 1500 → "1,5 mil", 2900000 → "2,9 mi", 17 → "17". */
+function fmtVotosLegenda(n: number): string {
+  return n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace('.', ',').replace(/,0$/, '')} mi`
+    : n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace('.', ',').replace(/,0$/, '')} mil`
     : String(Math.round(n));
+}
+
+// Faixas de votos adaptativas ao maior valor (escala azul). A legenda diz
+// "votos": sem a unidade, "+ de 17" podia ser votos, mil ou porcentagem.
+function faixasDeVotos(max: number): Faixa[] {
+  const fmt = fmtVotosLegenda;
   const t1 = max * 0.1, t2 = max * 0.25, t3 = max * 0.5;
   return [
-    { max: t1,       cor: '#bfdbfe', label: `até ${fmt(t1)}` },
-    { max: t2,       cor: '#60a5fa', label: `${fmt(t1)}–${fmt(t2)}` },
-    { max: t3,       cor: '#2563eb', label: `${fmt(t2)}–${fmt(t3)}` },
-    { max: Infinity, cor: '#1e3a8a', label: `+ de ${fmt(t3)}` },
+    { max: t1,       cor: '#bfdbfe', label: `até ${fmt(t1)} votos` },
+    { max: t2,       cor: '#60a5fa', label: `${fmt(t1)} a ${fmt(t2)} votos` },
+    { max: t3,       cor: '#2563eb', label: `${fmt(t2)} a ${fmt(t3)} votos` },
+    { max: Infinity, cor: '#1e3a8a', label: `mais de ${fmt(t3)} votos` },
   ];
 }
 
+/** Número redondo (1, 2 ou 5 × 10ⁿ) logo abaixo de `n`. */
+function redondoAbaixo(n: number): number {
+  const p = Math.pow(10, Math.floor(Math.log10(n)));
+  const m = n / p;
+  return (m >= 5 ? 5 : m >= 2 ? 2 : 1) * p;
+}
+
 /**
- * Faixas pelos QUARTIS dos municípios do próprio candidato: cada cor reúne um
- * quarto deles. Com as faixas em fração do máximo, a capital decidia a escala
- * — em SP, Derrite tem 2,9 mi na capital, a primeira faixa ia "até 293 mil" e
- * 640 dos 645 municípios saíam da mesma cor: o mapa não mostrava onde ele é
- * forte. Poucos municípios (ou valores repetidos que colapsam os quartis)
- * voltam à regra antiga.
+ * Faixas por ORDEM DE GRANDEZA, a partir do melhor município do candidato:
+ * cada faixa é 10× a anterior (≈ 1/1000, 1/100 e 1/10 do máximo, arredondados).
+ *
+ * Duas tentativas anteriores erraram em sentidos opostos:
+ * - fração do máximo: em SP a capital (2,9 mi do Derrite) decidia a escala, a
+ *   primeira faixa ia "até 293 mil" e 640 dos 645 municípios saíam da mesma cor;
+ * - quartis: deputado estadual tem centenas de municípios com 1 ou 2 votos, os
+ *   quartis caíam em "até 2" e "+ de 17", e o azul-escuro marcava igual a cidade
+ *   de 18 votos e a de 13 mil (Ricardo Molina, 2026).
+ * Em ordem de grandeza o escuro fica só onde ele é forte de fato, e as faixas
+ * intermediárias ainda separam o "tem presença" do "quase nada".
  */
-function faixasDeVotosPorQuartil(valores: number[]): Faixa[] | null {
-  const v = valores.filter(n => n > 0).sort((a, b) => a - b);
-  if (v.length < 8) return null;
-  const q = (p: number) => v[Math.min(v.length - 1, Math.floor(p * (v.length - 1)))];
-  const q1 = q(0.25), q2 = q(0.5), q3 = q(0.75);
-  if (!(q1 < q2 && q2 < q3)) return null;
-  const fmt = (n: number) =>
-    n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace('.', ',')} mi`
-    : n >= 1000     ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace('.', ',')} mil`
-    : String(Math.round(n));
+function faixasDeVotosPorGrandeza(max: number): Faixa[] | null {
+  const limites = [max / 1000, max / 100, max / 10]
+    .filter(n => n >= 1)
+    .map(redondoAbaixo)
+    .filter((n, i, a) => i === 0 || n > a[i - 1]);
+  if (limites.length < 2) return null;
+  const cores = ['#bfdbfe', '#60a5fa', '#2563eb', '#1e3a8a'].slice(4 - (limites.length + 1));
+  const fmt = fmtVotosLegenda;
   return [
-    { max: q1,       cor: '#bfdbfe', label: `até ${fmt(q1)}` },
-    { max: q2,       cor: '#60a5fa', label: `${fmt(q1)}–${fmt(q2)}` },
-    { max: q3,       cor: '#2563eb', label: `${fmt(q2)}–${fmt(q3)}` },
-    { max: Infinity, cor: '#1e3a8a', label: `+ de ${fmt(q3)}` },
+    { max: limites[0], cor: cores[0], label: `até ${fmt(limites[0])} votos` },
+    ...limites.slice(1).map((lim, i) => ({
+      max: lim, cor: cores[i + 1], label: `${fmt(limites[i])} a ${fmt(lim)} votos`,
+    })),
+    { max: Infinity, cor: cores[cores.length - 1], label: `mais de ${fmt(limites[limites.length - 1])} votos` },
   ];
 }
 
 // Mapa de calor dos votos de UM candidato (onde ele teve mais votos).
 export function renderMapaVotos(params: { uf?: string; valores: Record<string, number>; width?: number; height?: number }) {
-  const vals = Object.values(params.valores);
-  const max = Math.max(1, ...vals);
-  const faixas = faixasDeVotosPorQuartil(vals) ?? faixasDeVotos(max);
+  const max = Math.max(1, ...Object.values(params.valores));
+  const faixas = faixasDeVotosPorGrandeza(max) ?? faixasDeVotos(max);
   return renderMapaHeatmap({ ...params, faixas, semCor: '#eef2f7' });
 }
 
@@ -603,7 +620,7 @@ export async function renderMapaEmendasVencedor(params: {
     const acc: Record<string, Record<string, { valor: number; partido: string }>> = {};
     for (const e of params.emendas) {
       if (!e.municipio) continue;
-      const key = normalizarTextoTse(e.municipio);
+      const key = chaveMunicipio(e.municipio, ufUp);
       const parl = (e.parlamentar || '—').trim();
       const val = (e.valorEmpenhado || e.valorPago || 0);
       acc[key] = acc[key] || {};

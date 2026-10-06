@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 import { loadStaticTseData, ultimaFalhaTse } from '@/lib/tse-static';
+import { chaveMunicipio } from '@/lib/municipio-nome';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -75,6 +76,9 @@ async function getMunicipiosIBGE(uf: string) {
       const norm = normalizarMunicipio(m.nome);
       porNome[norm] = String(m.id);
       porNome[m.nome.toUpperCase()] = String(m.id);
+      // Terceira chave, só consultada se as duas acima falharem: grafias do
+      // TSE que diferem do IBGE ("SAO LUIS DO PARAITINGA" × "São Luiz…").
+      porNome[`~${chaveMunicipio(m.nome, uf)}`] = String(m.id);
       porCodigo[String(m.id)] = m.nome;
     });
     return { porNome, porCodigo };
@@ -97,7 +101,7 @@ async function montarResposta(cand: CandidatoJson, uf: string) {
   for (const [mun, v] of Object.entries(cand.votos)) {
     votosPorNomeMunicipio[mun] = v;
     const norm = normalizarMunicipio(mun);
-    const codigo = municipiosMap[norm] ?? municipiosMap[mun];
+    const codigo = municipiosMap[norm] ?? municipiosMap[mun] ?? municipiosMap[`~${chaveMunicipio(mun, uf)}`];
     if (codigo) votosPorMunicipio[codigo] = v;
     totalVotosEstado += v;
   }
