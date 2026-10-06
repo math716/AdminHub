@@ -407,6 +407,36 @@ export async function executarBuscarEmendas(
 // ---------------------------------------------------------------------------
 // buscar_votacao
 // ---------------------------------------------------------------------------
+
+/**
+ * Ano usado quando a Gabi não informa a eleição.
+ *
+ * Era fixo em 2022. Com 2026 na base, "como foi o deputado X?" respondia com
+ * a eleição de quatro anos atrás — e "os vereadores de Y" sem ano caía numa
+ * eleição GERAL, que não tem vereador. Agora: a mais recente com dados, do
+ * tipo certo. Municipal = anos múltiplos de 4 (2020, 2024); geral = os outros
+ * (2018, 2022, 2026). Presidente só nos anos que têm o arquivo nacional — em
+ * out/2026 o TSE ainda não publicou o de 2026, então presidente cai em 2022.
+ */
+function anoPadraoVotacao(cargo?: string, uf?: string): string {
+  const c = normalizarTextoTse(cargo ?? '');
+  const presidencial = c.includes('president') || uf === 'BR';
+  const municipal = c.includes('vereador') || c.includes('prefeit');
+  const anos = [...anosDisponiveisTse(presidencial ? 'BR' : uf)].sort((a, b) => b - a);
+  const escolhido = anos.find(a => (municipal ? a % 4 === 0 : a % 4 === 2));
+  return String(escolhido ?? anos[0] ?? 2022);
+}
+
+/**
+ * Eleição geral mais recente cujos eleitos JÁ tomaram posse (1º de fevereiro
+ * do ano seguinte). Em out/2026 é 2022; a partir de fev/2027, 2026.
+ */
+function anoDaBancadaEmExercicio(uf?: string, agora = new Date()): number {
+  const gerais = [...anosDisponiveisTse(uf)].filter(a => a % 4 === 2).sort((a, b) => b - a);
+  const emExercicio = gerais.find(a => agora >= new Date(a + 1, 1, 1));
+  return emExercicio ?? gerais[gerais.length - 1] ?? 2022;
+}
+
 export async function executarBuscarVotacao(
   args: {
     candidato_nome: string;
@@ -419,8 +449,8 @@ export async function executarBuscarVotacao(
   },
   _session: UserSession,
 ) {
-  const anoStr  = args.ano ? String(args.ano) : '2022';
   const ufQuery = args.uf?.toUpperCase();
+  const anoStr  = args.ano ? String(args.ano) : anoPadraoVotacao(args.cargo, ufQuery);
 
   const semNome = !args.candidato_nome || String(args.candidato_nome).trim().length < 2;
   // Sem nome exige cargo, senão misturaria todos os cargos
@@ -430,6 +460,23 @@ export async function executarBuscarVotacao(
 
   const cargoNorm      = args.cargo ? normalizarTextoTse(args.cargo) : '';
   const isPresidencial = cargoNorm.includes('president') || ufQuery === 'BR';
+
+  // Presidente num ano sem o arquivo nacional: em out/2026 o TSE publicou os
+  // votos de governador, senador e deputados, mas não os de presidente. Sem
+  // isto a busca voltava vazia e sem motivo, e a Gabi dizia "não encontrei" —
+  // como se não houvesse eleição presidencial. O motivo real vai junto.
+  const anosPresidente = anosDisponiveisTse('BR');
+  if (isPresidencial && !anosPresidente.includes(Number(anoStr))) {
+    return {
+      encontrado: false,
+      ano: Number(anoStr),
+      mensagem: `Os votos para presidente de ${anoStr} ainda não estão na base — o TSE publicou `
+        + `primeiro os de governador, senador e deputados. Disponível para presidente: `
+        + `${[...anosPresidente].sort((a, b) => b - a).join(' e ')}. Diga isso ao usuário com `
+        + 'naturalidade e ofereça a eleição presidencial disponível ou os outros cargos de ' + anoStr + '.',
+      anosDisponiveis: anosPresidente,
+    };
+  }
 
   // Para presidentes busca BR; para outros tenta o estado, depois BR
   const ufsParaBuscar = isPresidencial
@@ -591,6 +638,20 @@ export async function executarBuscarVotacao(
               .map(z => ({ zona: z.zona, votos: z.votos, bairros: bairrosZona[z.zona] ?? [] }))
           : undefined,
       })),
+      // Mapa de calor do PDF (um candidato só): TODOS os municípios. A lista
+      // acima é cortada nos maiores redutos para caber no turno da Gabi — e o
+      // PDF pintava só esses 20, deixando os outros 625 de SP como "sem voto".
+      // Este campo não vai para o modelo (o chat o retira, como faz com
+      // `porMunicipio` das emendas); só o relatório o lê.
+      ...(resultados.length === 1 && {
+        mapaVotos: {
+          nomeUrna: resultados[0].nomeUrna,
+          uf,
+          valores: uf === 'BR'
+            ? { ...(resultados[0].votosPorEstado ?? {}) }
+            : { ...(resultados[0].votos ?? {}) },
+        },
+      }),
     };
   }
 
@@ -1159,9 +1220,23 @@ export async function executarGerarRelatorioTerritorial(
   args: { deputados?: string[]; ano?: number; uf?: string; cargo?: string },
   _session: UserSession,
 ) {
-  const ano   = args.ano ? Number(args.ano) : 2022;
   const uf    = (args.uf ?? 'DF').toUpperCase();
   const cargo = args.cargo ?? 'Deputado Distrital';
+  const ehSenado = normalizarTextoTse(cargo).includes('senador');
+  // Sem ano informado (era fixo em 2022):
+  // - Senado: a bancada EM EXERCÍCIO — a eleição geral mais recente cujos
+  //   eleitos já tomaram posse (1º de fevereiro do ano seguinte). Até
+  //   fev/2027 é 2022 (+ 2018 no segundo lote); depois vira 2026 (+ 2022)
+  //   sozinho, sem ninguém lembrar de trocar.
+  // - Deputados: a eleição mais recente com dados (2026); quem não disputou
+  //   2026 é procurado na anterior (lote extra abaixo), em vez de sair como
+  //   "não localizado".
+  const semAnoInformado = !args.ano;
+  const ano = args.ano
+    ? Number(args.ano)
+    : ehSenado
+      ? anoDaBancadaEmExercicio(uf)
+      : Number(anoPadraoVotacao(cargo, uf));
   const nomes = Array.isArray(args.deputados)
     ? args.deputados.map(n => String(n).trim()).filter(n => n.length > 1)
     : [];
@@ -1181,10 +1256,18 @@ export async function executarGerarRelatorioTerritorial(
   // 2018, a mais antiga da base, olha para a frente. Antes era "se não é 2018,
   // é 2018" — com 2026 isso juntaria os eleitos agora com os de 2018, cujas
   // vagas são justamente as que 2026 renovou.
-  const ehSenado = normalizarTextoTse(cargo).includes('senador');
+  const outroCargoDF = normalizarTextoTse(cargo).includes('distrital') ? 'Deputado Federal' : 'Deputado Distrital';
   const lotes = ehSenado
     ? [{ ano, cargo: 'Senador' }, { ano: ano === 2018 ? 2022 : ano - 4, cargo: 'Senador' }]
-    : [{ ano, cargo }, { ano, cargo: normalizarTextoTse(cargo).includes('distrital') ? 'Deputado Federal' : 'Deputado Distrital' }];
+    : [
+        { ano, cargo },
+        { ano, cargo: outroCargoDF },
+        // Só quando a Gabi não escolheu o ano: o deputado que não disputou a
+        // eleição mais recente ainda é achado na anterior.
+        ...(semAnoInformado && anosDisponiveisTse(uf).includes(ano - 4)
+          ? [{ ano: ano - 4, cargo }, { ano: ano - 4, cargo: outroCargoDF }]
+          : []),
+      ];
 
   const encontrados: Array<{ nome: string; ano: number; cargo: string }> = [];
   const usados: Array<{ ano: number; cargo: string }> = [];
@@ -1215,11 +1298,13 @@ export async function executarGerarRelatorioTerritorial(
     encontrados: encontrados.map(e => e.nome),
     // Quem veio de qual eleição — a Gabi precisa disso para não dizer que os
     // três senadores são da mesma eleição.
-    porEleicao: encontrados.map(e => `${e.nome} — ${e.cargo}, eleito em ${e.ano}`),
+    porEleicao: encontrados.map(e => `${e.nome} — ${e.cargo}, eleição de ${e.ano}`),
     faltantes,
     prontoParaGerar: encontrados.length > 0,
-    ...(extras.length > 0 && {
-      observacao: 'Os parlamentares vêm de eleições diferentes (renovação alternada do Senado). '
+    ...(extras.length > 0 && new Set(usados.map(u => u.ano)).size > 1 && {
+      observacao: (ehSenado
+        ? 'Os parlamentares vêm de eleições diferentes (renovação alternada do Senado). '
+        : `Nem todos disputaram ${ano}: quem não aparece nessa eleição veio da anterior — veja \`porEleicao\`. `)
         + 'Diga isso ao usuário com naturalidade e lembre que votos de eleições distintas não se '
         + 'comparam diretamente — o que se compara é o padrão territorial de cada um.',
     }),

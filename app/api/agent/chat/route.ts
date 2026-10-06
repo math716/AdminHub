@@ -481,7 +481,9 @@ export async function POST(request: NextRequest) {
           // modelo — senão consome o turno sem a Gabi ter uso para ele.
           // O `topMunicipios` (15 linhas) SEGUE, que é o que ela precisa para
           // responder "quais municípios mais receberam".
-          const { porMunicipio: _mapa, ...paraOModelo } = (resultado ?? {}) as any;
+          // `mapaVotos` (buscar_votacao com um candidato): todos os municípios,
+          // só para o mapa de calor do PDF — mesmo motivo.
+          const { porMunicipio: _mapa, mapaVotos: _mapaVotos, ...paraOModelo } = (resultado ?? {}) as any;
 
           toolResults.push({
             type: 'tool_result',

@@ -389,9 +389,12 @@ function PaginasComparativo({ ms, mapa, bandeira, ano, cargo, faltantes, mesmaEl
       MapaBox(mapa, 'Quem domina cada Região Administrativa (mais votos na RA, entre os analisados)'),
     ) : null,
     ...(mesmaEleicao ? [] : renderContent(
-      `**Leitura comparativa entre eleições diferentes.** Os parlamentares deste relatório foram `
-      + `eleitos em anos distintos (${ano}) — no Senado isso é a regra, porque a renovação é `
-      + `alternada. Cada um disputou contra concorrentes diferentes, com eleitorado e contexto `
+      // Também serve a deputados: sem ano pedido, quem não disputou a eleição
+      // mais recente vem da anterior — e "eleitos" seria falso para suplente.
+      `**Leitura comparativa entre eleições diferentes.** Os parlamentares deste relatório `
+      + `disputaram eleições distintas (${ano})`
+      + (/senad/i.test(cargo) ? ' — no Senado isso é a regra, porque a renovação é alternada. ' : '. ')
+      + `Cada um disputou contra concorrentes diferentes, com eleitorado e contexto `
       + `próprios, então os votos absolutos não são diretamente comparáveis. O que se compara com `
       + `segurança é o **padrão territorial de cada um**: onde concentra, onde é fraco e o grau de `
       + `dispersão pelas Regiões Administrativas.\n`,

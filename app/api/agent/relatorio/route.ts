@@ -16,6 +16,7 @@ import { assuntoDoRelatorio } from '@/lib/agent/report/titulo';
 import { tabelaCompletaRanking } from '@/lib/agent/report/tabela-ranking';
 import { bairrosComVotos } from '@/lib/agent/report/mapa-bairros';
 import { mapaDoDF } from '@/lib/agent/report/mapa-df';
+import { normalizarTextoTse } from '@/lib/tse-static';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -348,8 +349,16 @@ export async function POST(request: NextRequest) {
         // ou é pedido de um município só, e aí nenhum mapa estadual serve.
       } else if (cands.length === 1) {
         // 1 candidato → heatmap dos votos dele
+        // Todos os municípios quando a busca os trouxe (`mapaVotos`, do mesmo
+        // candidato); senão, a lista cortada nos maiores redutos — que só
+        // existe para o texto e pintava 20 municípios num mapa de 645.
+        const completo = body.dadosBrutos?.buscar_votacao?.mapaVotos;
         const valores: Record<string, number> = {};
-        (c.votosPorMunicipio ?? []).forEach((m: any) => { if (m.municipio) valores[m.municipio] = m.votos; });
+        if (completo?.valores && normalizarTextoTse(completo.nomeUrna ?? '') === normalizarTextoTse(c.nomeUrna ?? '')) {
+          Object.assign(valores, completo.valores);
+        } else {
+          (c.votosPorMunicipio ?? []).forEach((m: any) => { if (m.municipio) valores[m.municipio] = m.votos; });
+        }
         if (Object.keys(valores).length > 0) {
           mapa = await renderMapaVotos({ uf: c.uf, valores, width: W, height: H });
           mapaTitulo = c.uf === 'BR' ? 'Mapa — votos por estado' : 'Mapa — votos por município';

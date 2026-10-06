@@ -422,10 +422,38 @@ function faixasDeVotos(max: number): Faixa[] {
   ];
 }
 
+/**
+ * Faixas pelos QUARTIS dos municípios do próprio candidato: cada cor reúne um
+ * quarto deles. Com as faixas em fração do máximo, a capital decidia a escala
+ * — em SP, Derrite tem 2,9 mi na capital, a primeira faixa ia "até 293 mil" e
+ * 640 dos 645 municípios saíam da mesma cor: o mapa não mostrava onde ele é
+ * forte. Poucos municípios (ou valores repetidos que colapsam os quartis)
+ * voltam à regra antiga.
+ */
+function faixasDeVotosPorQuartil(valores: number[]): Faixa[] | null {
+  const v = valores.filter(n => n > 0).sort((a, b) => a - b);
+  if (v.length < 8) return null;
+  const q = (p: number) => v[Math.min(v.length - 1, Math.floor(p * (v.length - 1)))];
+  const q1 = q(0.25), q2 = q(0.5), q3 = q(0.75);
+  if (!(q1 < q2 && q2 < q3)) return null;
+  const fmt = (n: number) =>
+    n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace('.', ',')} mi`
+    : n >= 1000     ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace('.', ',')} mil`
+    : String(Math.round(n));
+  return [
+    { max: q1,       cor: '#bfdbfe', label: `até ${fmt(q1)}` },
+    { max: q2,       cor: '#60a5fa', label: `${fmt(q1)}–${fmt(q2)}` },
+    { max: q3,       cor: '#2563eb', label: `${fmt(q2)}–${fmt(q3)}` },
+    { max: Infinity, cor: '#1e3a8a', label: `+ de ${fmt(q3)}` },
+  ];
+}
+
 // Mapa de calor dos votos de UM candidato (onde ele teve mais votos).
 export function renderMapaVotos(params: { uf?: string; valores: Record<string, number>; width?: number; height?: number }) {
-  const max = Math.max(1, ...Object.values(params.valores));
-  return renderMapaHeatmap({ ...params, faixas: faixasDeVotos(max), semCor: '#eef2f7' });
+  const vals = Object.values(params.valores);
+  const max = Math.max(1, ...vals);
+  const faixas = faixasDeVotosPorQuartil(vals) ?? faixasDeVotos(max);
+  return renderMapaHeatmap({ ...params, faixas, semCor: '#eef2f7' });
 }
 
 /**

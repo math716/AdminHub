@@ -65,7 +65,7 @@ export const AGENT_TOOLS: Tool[] = [
         },
         ano: {
           type: 'integer',
-          description: 'Ano da eleição (ex: 2022, 2020, 2018).',
+          description: 'Ano da eleição: 2018, 2020, 2022, 2024 ou 2026 (2026 só 1º turno, sem presidente por enquanto). Se omitido, usa a mais recente do tipo certo — 2024 para vereador/prefeito, 2026 para os demais cargos, 2022 para presidente. Prefira informar o ano.',
         },
         uf: {
           type: 'string',
@@ -316,7 +316,7 @@ export const AGENT_TOOLS: Tool[] = [
         },
         ano: {
           type: 'integer',
-          description: 'Ano da eleição (padrão 2022, se não informado).',
+          description: 'Ano da eleição. Se omitido: deputados → a eleição mais recente (2026), e quem não disputou 2026 é buscado em 2022; senadores → a bancada EM EXERCÍCIO (hoje 2018 + 2022). Informe o ano quando o usuário citar um.',
         },
         uf: {
           type: 'string',
