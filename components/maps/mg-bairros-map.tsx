@@ -192,8 +192,8 @@ function MgBairrosMapComponent({ municipio, votesData, selectedBairro, onBairroC
       const tooltipEl = L.DomUtil.create('div', '', map.getContainer()) as HTMLElement;
       tooltipEl.style.cssText = [
         'position:absolute', 'z-index:10000', 'pointer-events:none', 'display:none',
-        'padding:10px 14px', 'background:rgba(13,27,42,0.97)', 'border-radius:8px',
-        'border:1px solid #1b4965', 'min-width:140px', 'box-shadow:0 4px 20px rgba(0,0,0,0.5)',
+        'padding:10px 14px', 'background:var(--bg-card-raised)', 'border-radius:8px',
+        'border:1px solid var(--border-default)', 'min-width:140px', 'box-shadow:var(--shadow-raised)',
         'white-space:nowrap', 'font-family:system-ui,sans-serif',
       ].join(';');
 

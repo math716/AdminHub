@@ -402,10 +402,16 @@ export default function MapaPage() {
    * vão e a margem. Abaixo de `sm` a lista vai para baixo do mapa, e o botão
    * volta para o canto.
    */
-  const botaoTelaCheia = (
+  //
+  // `abaixoDoCabecalho`: o mapa de bairros por pinos (MunicipioMap) tem uma
+  // linha própria acima do mapa — "28 bairros em Americana" e a legenda. Com
+  // `top-3` o botão caía em cima da legenda, metade fora do mapa. Nesse caso
+  // ele desce a altura dessa linha (20px + 8px de margem). Os outros mapas
+  // começam no topo do quadro e continuam com `top-3`.
+  const botaoTelaCheia = (abaixoDoCabecalho: boolean) => (
     <button
       onClick={() => setMapFullscreen(f => !f)}
-      className={`absolute top-3 z-[1000] rounded-xl p-2.5 transition-all right-3 ${
+      className={`absolute ${abaixoDoCabecalho ? 'top-10' : 'top-3'} z-[1000] rounded-xl p-2.5 transition-all right-3 ${
         listaLateralAberta ? 'sm:right-[calc(clamp(130px,30%,192px)_+_1.5rem)]' : ''}`}
       style={{
         background: 'var(--bg-card)', border: '1px solid var(--border-default)',
@@ -1025,6 +1031,17 @@ export default function MapaPage() {
   if (status === 'loading') return <div className="text-center py-12 text-slate-600 dark:text-slate-400">Carregando...</div>;
   if (!canAccess) return null;
 
+  // Quando a vista de município mostra o mapa de bairros por pinos
+  // (MunicipioMap) — e não os polígonos de SP/RJ/CE/genéricos. Decide qual
+  // mapa aparece E onde fica o botão de tela cheia, que precisa desviar da
+  // linha de legenda que só esse mapa tem.
+  const mapaDePinosNoMunicipio =
+    (!isSaoPauloCapital || spVisualizacao === 'bairros') &&
+    (!isRioDeJaneiro || rjVisualizacao === 'zonas') &&
+    (!isFortalezaCe || ceVisualizacao === 'zonas') &&
+    (!isGenPoligonosMunicipio || genVisualizacao === 'zonas') &&
+    (!bairrosLoaded || bairrosData.length > 0);
+
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
@@ -1591,12 +1608,16 @@ export default function MapaPage() {
                               key={zona}
                               className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-card-subtle)]/60 rounded-lg border border-[var(--border-default)]"
                             >
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[color:var(--text-primary)] text-xs font-bold flex-shrink-0" style={{ background: 'linear-gradient(135deg, #1a5fa8, #0f3d6e)' }}>
+                              {/* Cores do tema: o degradê azul-escuro fixo com o
+                                  número na cor de texto do tema sumia no claro
+                                  (número escuro sobre círculo escuro). */}
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                                style={{ background: 'var(--brand-cobalt-soft)', color: 'var(--brand-cobalt-text)', border: '1px solid var(--brand-cobalt)' }}>
                                 {zona}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-slate-600 dark:text-slate-400 text-[10px]">Zona {zona}</p>
-                                <p className="text-[#4a9ede] font-bold text-sm leading-tight">
+                                <p className="font-bold text-sm leading-tight" style={{ color: 'var(--acento-azul)' }}>
                                   {votos.toLocaleString('pt-BR')}
                                   <span className="text-slate-600 dark:text-slate-500 font-normal text-[10px] ml-1">votos</span>
                                 </p>
@@ -1682,7 +1703,7 @@ export default function MapaPage() {
                   Havendo barra de título e lista lateral, ele vai para DENTRO
                   da área do mapa, mais abaixo — ancorado ao card, cairia na
                   barra de título em vez do canto do mapa. */}
-              {!listaLateralAberta && botaoTelaCheia}
+              {!listaLateralAberta && botaoTelaCheia(false)}
               {/* Overlay de carregamento: cobre o mapa enquanto busca votos (BR→estado) */}
               {loadingVotes && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center rounded-xl"
@@ -1730,7 +1751,7 @@ export default function MapaPage() {
                   </div>
 
                   <div className="flex-1 min-h-0 relative">
-                    {botaoTelaCheia}
+                    {botaoTelaCheia(dfVisualizacao === 'zonas' && (!bairrosLoaded || bairrosData.length > 0))}
                     {dfVisualizacao === 'bairros' && (
                       <div className="h-full flex flex-col sm:flex-row gap-3">
                         <div className="flex-1 min-w-0 min-h-0">
@@ -1982,7 +2003,7 @@ export default function MapaPage() {
                   </div>
 
                   <div className="flex-1 flex flex-col sm:flex-row gap-3 min-h-0 relative">
-                    {botaoTelaCheia}
+                    {botaoTelaCheia(mapaDePinosNoMunicipio)}
                     {/* Mapa de distritos SP — só para São Paulo capital */}
                     {isSaoPauloCapital && spVisualizacao === 'distritos' && (
                       <>
@@ -2203,7 +2224,7 @@ export default function MapaPage() {
                     )}
 
                     {/* Mapa de bairros (pins) — para outros municípios ou SP/RJ/CE/MG/gen no modo zonas */}
-                    {(!isSaoPauloCapital || spVisualizacao === 'bairros') && (!isRioDeJaneiro || rjVisualizacao === 'zonas') && (!isFortalezaCe || ceVisualizacao === 'zonas') && (!isGenPoligonosMunicipio || genVisualizacao === 'zonas') && (!bairrosLoaded || bairrosData.length > 0) && (
+                    {mapaDePinosNoMunicipio && (
                       <div className="flex-1 min-w-0 min-h-0">
                         <MunicipioMap
                           focusZona={focusZonaReq}

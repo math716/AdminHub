@@ -73,7 +73,7 @@ function ZonaPinsMap({ municipio, zonas, bounds, selectedZona, onZonaClick }: Zo
         : 'Não informado';
 
       circle.bindTooltip(`
-        <div style="background:rgba(13,27,42,0.97);padding:10px 14px;border-radius:10px;border:1px solid #1b4965;min-width:180px;">
+        <div style="background:var(--bg-card-raised);padding:10px 14px;border-radius:10px;border:1px solid var(--border-default);box-shadow:var(--shadow-raised);min-width:180px;">
           <div style="font-weight:800;color:var(--acento-azul);font-size:14px;margin-bottom:4px;">Zona ${zona.zona}</div>
           ${zona.votos > 0
             ? `<div style="color:var(--success);font-size:16px;font-weight:700;margin-bottom:4px;">${zona.votos.toLocaleString('pt-BR')} votos</div>`
