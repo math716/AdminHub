@@ -419,6 +419,19 @@ export default function MapaCampanhaPage() {
   const [ano, setAno] = useState('2022');
   const [uf, setUf] = useState('SP');
   const [anoProjecao, setAnoProjecao] = useState('2026');
+
+  // O ano alvo tem de vir DEPOIS da base. Com 2026 virando ano-base, o alvo
+  // padrão (2026) daria "projetar 2026 a partir de 2026". Ao trocar a base,
+  // se o alvo ficou para trás, sugere a próxima eleição do mesmo tipo
+  // (base + 4: 2026 → 2030, 2024 → 2028), ou o primeiro ano que vier depois.
+  useEffect(() => {
+    const base = Number(ano);
+    if (Number(anoProjecao) > base) return;
+    const opcoes = [2026, 2028, 2030];
+    const proximo = opcoes.includes(base + 4) ? base + 4 : opcoes.find(a => a > base);
+    if (proximo) setAnoProjecao(String(proximo));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ano]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingParceria, setSavingParceria] = useState(false);
@@ -2442,11 +2455,12 @@ export default function MapaCampanhaPage() {
     { value: '2018', label: '2018' }
   ];
 
+  // Só anos depois do ano-base (ver o efeito junto do estado `anoProjecao`).
   const anosProjecaoOptions = [
     { value: '2026', label: '2026' },
     { value: '2028', label: '2028' },
     { value: '2030', label: '2030' }
-  ];
+  ].filter(o => Number(o.value) > Number(ano));
 
   const estadosOptions = ESTADOS_BRASIL.map(e => ({ value: e.sigla, label: e.nome }));
 
