@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
       const doMunicipio = cand.zonas.filter(z => normalizar(z.municipio) === munNorm);
       const confere = !votosLocal || cand.zonas.length === 0 ||
         [...votosLocal.values()].reduce((s, v) => s + v, 0) === doMunicipio.reduce((s, z) => s + z.votos, 0);
-      if (secao && votosLocal && confere) return NextResponse.json(bairrosReais(municipio, uf, secao, votosLocal));
+      if (secao && votosLocal && confere) return NextResponse.json(bairrosReais(municipio, uf, secao, votosLocal, locaisMun));
     }
 
     if (cand) {
@@ -254,17 +254,34 @@ function bairrosReais(
   municipio: string, uf: string,
   secao: import('@/lib/tse-static').SecaoMunicipio,
   votosLocal: Map<number, number>,
+  locaisMun: LocalJson[],
 ) {
+  // Nome do bairro = o da lista de locais (a mesma do banco, que o Projeto de
+  // Campanha usa para as metas por bairro), achando a escola pelo código ou
+  // pelo nome na zona. Só a escola que não está na lista usa o nome do ano —
+  // bairros renomeados entre eleições deixavam meta e clique sem par.
+  const porCodigo = new Map(locaisMun.map(l => [`${l.zona}-${l.codLocal}`, l]));
+  const porNome = new Map(locaisMun.map(l => [`${l.zona}|${normalizar(l.nome)}`, l]));
+  const bairroDaLista = (z: number, cod: string, nome: string) => {
+    const c = porCodigo.get(`${z}-${cod}`);
+    const l = c && normalizar(c.nome) === normalizar(nome) ? c : porNome.get(`${z}|${normalizar(nome)}`);
+    return l?.bairro?.trim() || null;
+  };
+
   type Local = { codLocal: string; nome: string; endereco: string; zona: number; lat: number | null; lng: number | null; secoes: number; votos: number };
-  const porBairro = new Map<string, Local[]>();
+  // Agrupa pelo nome normalizado: "SÃO" (lista) e "SAO" (arquivo do ano) são o mesmo bairro.
+  const porBairro = new Map<string, { nome: string; daLista: boolean; locais: Local[] }>();
   secao.locais.forEach((l, i) => {
-    const nome = l.b || 'SEM BAIRRO';
-    const lista = porBairro.get(nome) ?? [];
-    lista.push({ codLocal: l.l, nome: l.n, endereco: l.e, zona: l.z, lat: l.lat, lng: l.lng, secoes: l.s, votos: votosLocal.get(i) ?? 0 });
-    porBairro.set(nome, lista);
+    const daLista = bairroDaLista(l.z, l.l, l.n);
+    const nome = daLista || l.b || 'SEM BAIRRO';
+    const chave = normalizar(nome);
+    const acc = porBairro.get(chave) ?? { nome, daLista: !!daLista, locais: [] };
+    if (daLista && !acc.daLista) { acc.nome = daLista; acc.daLista = true; }
+    acc.locais.push({ codLocal: l.l, nome: l.n, endereco: l.e, zona: l.z, lat: l.lat, lng: l.lng, secoes: l.s, votos: votosLocal.get(i) ?? 0 });
+    porBairro.set(chave, acc);
   });
 
-  const bairros = [...porBairro.entries()].map(([nome, locais]) => {
+  const bairros = [...porBairro.values()].map(({ nome, locais }) => {
     // Referência do bairro: o local onde o candidato teve mais votos (um
     // endereço real), e não a média das coordenadas — que caía no meio da
     // rua, onde não há escola.
