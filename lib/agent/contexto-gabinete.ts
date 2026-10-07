@@ -158,12 +158,14 @@ export function blocoDoGabinete(ctx: ContextoGabinete | null): string {
     );
   }
 
-  if (ctx.uf) linhas.push(`Estado de atuação: ${ctx.uf}. Use como padrão quando o usuário não disser o estado.`);
+  if (ctx.uf) linhas.push(`Estado de atuação: ${ctx.uf}. Use como padrão para cargos estaduais e municipais quando o usuário não disser o estado — nunca para estreitar uma pergunta nacional (presidente, "o 2º turno de 2022", "as eleições de 2018").`);
 
   if (ctx.conversasRecentes.length > 0) {
     linhas.push(
       `Assuntos recentes deste gabinete: ${ctx.conversasRecentes.join(' · ')}. ` +
-      'Serve de contexto para entender pedidos curtos — não os repita nem os cite sem propósito.',
+      'Serve só para entender pedidos curtos que dependem de contexto ("e no 2º turno?", "e o dele?") — ' +
+        'uma pergunta completa se responde pelo que ela diz, não pelo assunto de conversas passadas. ' +
+        'Não os repita nem os cite sem propósito.',
     );
   }
 
