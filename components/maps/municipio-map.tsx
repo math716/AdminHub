@@ -164,17 +164,25 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
     return '#22c55e';
   }, []);
 
+  // Bairro destacado hoje. Trocar o destaque redesenha só os pinos dele e os do
+  // novo — antes eram os milhares de pinos do município a cada clique.
+  const destaqueRef = useRef<string | null>(null);
+
   const highlightBairro = useCallback((bairroNome: string) => {
     const L = leafletRef.current;
     if (!L || !mapInstanceRef.current) return;
     const normalizedName = bairroNome.toUpperCase();
+    const anterior = destaqueRef.current;
+    destaqueRef.current = normalizedName;
     const doBairro: [number, number][] = [];
     layersRef.current.forEach((marker, key) => {
       const data = markerDataRef.current.get(key);
       if (!data) return;
       const isSelected = data.bairro === normalizedName;
-      marker.setIcon(L.divIcon(makePinIconOptions(data.color, isSelected, data.size)));
-      marker.setZIndexOffset(isSelected ? 1000 : 0);
+      if (isSelected !== (data.bairro === anterior)) {
+        marker.setIcon(L.divIcon(makePinIconOptions(data.color, isSelected, data.size)));
+        marker.setZIndexOffset(isSelected ? 1000 : 0);
+      }
       if (isSelected && marker.getLatLng) {
         const ll = marker.getLatLng();
         doBairro.push([ll.lat, ll.lng]);
@@ -191,9 +199,12 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
   const clearHighlight = useCallback(() => {
     const L = leafletRef.current;
     if (!L) return;
+    const anterior = destaqueRef.current;
+    destaqueRef.current = null;
+    if (anterior === null) return;
     layersRef.current.forEach((marker, key) => {
       const data = markerDataRef.current.get(key);
-      if (!data) return;
+      if (!data || data.bairro !== anterior) return;
       marker.setIcon(L.divIcon(makePinIconOptions(data.color, false, data.size)));
       marker.setZIndexOffset(0);
     });
@@ -283,6 +294,7 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
       layersRef.current.clear();
       markerDataRef.current.clear();
       votosRef.current.clear();
+      destaqueRef.current = null;   // pinos novos nascem sem destaque
       zonaMarkersRef.current.clear();
 
       const map = L.map(mapRef.current!, {
@@ -311,16 +323,34 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
         return String(v);
       };
 
+      // Pinos individuais que estão hoje no mapa. Só eles existem na página: com
+      // um pino por local de votação (São Paulo passa de 2 mil), manter todos no
+      // DOM — escondidos dentro de agrupamento ou fora da tela — fazia cada
+      // movimento recalcular milhares de elementos e o mapa congelava 1–2 s.
+      const naTela = new Set<string>();
+
       // Agrupa markers por proximidade em pixels e atualiza a camada de clusters
       const recluster = () => {
         clusterLayerGroup.clearLayers();
         const THRESHOLD = 60; // pixels
 
-        const items = Array.from(layersRef.current.entries()).map(([key, marker]) => ({
-          key,
-          marker,
-          pt: map.latLngToContainerPoint(marker.getLatLng()),
-        }));
+        // Só o que está na tela (com folga). Grade de THRESHOLD px: cada pino é
+        // comparado só com os das 9 células vizinhas — antes era com todos os
+        // outros (milhões de comparações por movimento).
+        const area = map.getBounds().pad(0.25);
+        type Item = { key: string; marker: any; pt: { x: number; y: number }; cx: number; cy: number };
+        const items: Item[] = [];
+        const grade = new Map<string, Item[]>();
+        layersRef.current.forEach((marker, key) => {
+          const ll = marker.getLatLng();
+          if (!area.contains(ll)) return;
+          const pt = map.latLngToContainerPoint(ll);
+          const item = { key, marker, pt, cx: Math.floor(pt.x / THRESHOLD), cy: Math.floor(pt.y / THRESHOLD) };
+          items.push(item);
+          const celula = `${item.cx}:${item.cy}`;
+          const lista = grade.get(celula);
+          if (lista) lista.push(item); else grade.set(celula, [item]);
+        });
 
         const assigned = new Set<string>();
         const groups: Array<{ keys: string[]; latlngs: [number, number][] }> = [];
@@ -329,32 +359,40 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
           if (assigned.has(item.key)) continue;
           const group: typeof groups[0] = { keys: [item.key], latlngs: [getLL(item.marker)] };
           assigned.add(item.key);
-          for (const other of items) {
-            if (assigned.has(other.key)) continue;
-            const dx = item.pt.x - other.pt.x;
-            const dy = item.pt.y - other.pt.y;
-            if (Math.sqrt(dx * dx + dy * dy) < THRESHOLD) {
-              group.keys.push(other.key);
-              group.latlngs.push(getLL(other.marker));
-              assigned.add(other.key);
+          for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+              for (const other of grade.get(`${item.cx + dx}:${item.cy + dy}`) ?? []) {
+                if (assigned.has(other.key)) continue;
+                const ddx = item.pt.x - other.pt.x;
+                const ddy = item.pt.y - other.pt.y;
+                if (ddx * ddx + ddy * ddy < THRESHOLD * THRESHOLD) {
+                  group.keys.push(other.key);
+                  group.latlngs.push(getLL(other.marker));
+                  assigned.add(other.key);
+                }
+              }
             }
           }
           groups.push(group);
         }
 
+        // Põe no mapa só os pinos sozinhos; tira os que entraram num grupo ou
+        // saíram da tela. Mexe apenas no que mudou desde o último movimento.
+        const individuais = new Set(groups.filter(g => g.keys.length === 1).map(g => g.keys[0]));
+        naTela.forEach(key => {
+          if (individuais.has(key)) return;
+          const m = layersRef.current.get(key);
+          if (m) { m.closeTooltip?.(); map.removeLayer(m); }
+          naTela.delete(key);
+        });
+        individuais.forEach(key => {
+          if (naTela.has(key)) return;
+          layersRef.current.get(key)?.addTo(map);
+          naTela.add(key);
+        });
+
         groups.forEach(group => {
           const isCluster = group.keys.length > 1;
-          group.keys.forEach(key => {
-            const m = layersRef.current.get(key);
-            if (m) {
-              const el = m.getElement?.();
-              if (el) {
-                el.style.display = isCluster ? 'none' : '';
-                if (isCluster) m.closeTooltip?.();
-              }
-            }
-          });
-
           if (isCluster) {
             const avgLat = group.latlngs.reduce((s, ll) => s + ll[0], 0) / group.latlngs.length;
             const avgLng = group.latlngs.reduce((s, ll) => s + ll[1], 0) / group.latlngs.length;
@@ -388,7 +426,9 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
         });
       };
 
-      map.on('zoomend moveend', recluster);
+      // Só moveend: o zoom também dispara moveend ao terminar, e ouvir os dois
+      // refazia o agrupamento duas vezes a cada zoom.
+      map.on('moveend', recluster);
 
       const normKey = (s: string) =>
         s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
@@ -442,7 +482,7 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
           icon: L.divIcon(makePinIconOptions(color, false, size)),
           riseOnHover: true,
         });
-        marker.addTo(map);
+        // Não entra no mapa aqui: quem põe na tela é o recluster, só os visíveis.
         layersRef.current.set(key, marker);
 
         if (local.zona) {
@@ -501,13 +541,14 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
           else requestAnimationFrame(quandoTiverLargura);
         };
         quandoTiverLargura();
+      } else {
+        recluster();
       }
 
-      // Primeira clusterização após o mapa ajustar os bounds
-      // A seleção é reaplicada DEPOIS do enquadramento inicial: aplicada no
-      // meio da animação, o encaixe no bairro brigava com o da cidade.
+      // A primeira clusterização vem do moveend do enquadramento (o recluster
+      // acima). A seleção é reaplicada DEPOIS dele: aplicada no meio da
+      // animação, o encaixe no bairro brigava com o da cidade.
       map.once('moveend', () => {
-        recluster();
         if (selectedBairroRef.current) highlightBairro(selectedBairroRef.current);
       });
 
