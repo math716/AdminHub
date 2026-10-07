@@ -15,6 +15,7 @@ import {
 import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
 import { DatePicker, TimePicker, ColorPicker } from '@/components/ui/date-time-picker';
+import { ehDataComemorativaGoogle } from '@/lib/agenda-datas';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -31,6 +32,7 @@ interface AgendaEvent {
   lng?: number;
   tipo: string;
   cor?: string;
+  googleEventId?: string | null;
   createdBy?: { name: string };
 }
 
@@ -126,6 +128,8 @@ export default function AgendaPage() {
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [viewYear, setViewYear]   = useState(today.getFullYear());
   const [events, setEvents] = useState<AgendaEvent[]>([]);
+  // Feriados e datas comemorativas do Google: etiqueta do dia, não compromisso.
+  const [datasGoogle, setDatasGoogle] = useState<AgendaEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
@@ -156,13 +160,31 @@ export default function AgendaPage() {
     try {
       const res = await fetch(`/api/agenda?mes=${viewMonth + 1}&ano=${viewYear}`);
       const data = await res.json();
-      setEvents(Array.isArray(data) ? data : []);
+      const lista: AgendaEvent[] = Array.isArray(data) ? data : [];
+      setEvents(lista.filter(e => !ehDataComemorativaGoogle(e.googleEventId)));
+      setDatasGoogle(lista.filter(e => ehDataComemorativaGoogle(e.googleEventId)));
     } finally {
       setLoading(false);
     }
   };
 
   const feriados = getFeriados(viewYear);
+
+  // Etiquetas de cada dia: o feriado nacional e as datas que vêm do Google, sem
+  // repetir a mesma data duas vezes ("Nossa Senhora Aparecida" vem das duas).
+  const semAcento = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
+  const rotulosPorDia = new Map<number, string[]>();
+  for (let d = 1; d <= new Date(viewYear, viewMonth + 1, 0).getDate(); d++) {
+    const oficial = feriados[`${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`];
+    if (oficial) rotulosPorDia.set(d, [oficial]);
+  }
+  datasGoogle.forEach((e) => {
+    const dt = new Date(e.data);
+    if (dt.getMonth() !== viewMonth || dt.getFullYear() !== viewYear) return;
+    const lista = rotulosPorDia.get(dt.getDate()) ?? [];
+    if (!lista.some(n => semAcento(n) === semAcento(e.titulo))) lista.push(e.titulo);
+    rotulosPorDia.set(dt.getDate(), lista);
+  });
 
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -434,6 +456,7 @@ export default function AgendaPage() {
                 );
                 const dayEvs = eventsByDay.get(day) ?? [];
                 const feriado = feriados[fmtKey(day)];
+                const rotulos = rotulosPorDia.get(day) ?? [];
                 const isTod = isToday(day);
                 const isSel = selectedDay === day;
                 const isWeekend = (() => {
@@ -490,10 +513,12 @@ export default function AgendaPage() {
                       </div>
                     )}
                     <div className="hidden sm:block space-y-0.5 overflow-hidden">
-                      {feriado && (
-                        <div className="text-[10px] truncate leading-tight" style={{ color: 'var(--danger)' }}>{feriado}</div>
+                      {rotulos.length > 0 && (
+                        <div className="text-[10px] truncate leading-tight" style={{ color: 'var(--danger)' }} title={rotulos.join(' · ')}>
+                          {rotulos.join(' · ')}
+                        </div>
                       )}
-                      {dayEvs.slice(0, feriado ? 1 : 2).map((e) => (
+                      {dayEvs.slice(0, rotulos.length ? 1 : 2).map((e) => (
                         <div
                           key={e.id}
                           onClick={(ev) => { ev.stopPropagation(); openEdit(e); }}
@@ -507,9 +532,9 @@ export default function AgendaPage() {
                           {new Date(e.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} {e.titulo}
                         </div>
                       ))}
-                      {dayEvs.length > (feriado ? 1 : 2) && (
+                      {dayEvs.length > (rotulos.length ? 1 : 2) && (
                         <div className="text-[10px] px-1" style={{ color: 'var(--text-tertiary)' }}>
-                          +{dayEvs.length - (feriado ? 1 : 2)} mais
+                          +{dayEvs.length - (rotulos.length ? 1 : 2)} mais
                         </div>
                       )}
                     </div>
@@ -537,8 +562,8 @@ export default function AgendaPage() {
                       ? `Briefing — ${today.getDate()} de ${MESES[today.getMonth()]}`
                       : `${MESES[viewMonth]} ${viewYear}`}
                 </p>
-                {selectedDay && feriados[fmtKey(selectedDay)] && (
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--danger)' }}>{feriados[fmtKey(selectedDay)]}</p>
+                {selectedDay && (rotulosPorDia.get(selectedDay) ?? []).length > 0 && (
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--danger)' }}>{rotulosPorDia.get(selectedDay)!.join(' · ')}</p>
                 )}
                 {!selectedDay && isCurrentMonth && (
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>

@@ -5,6 +5,7 @@ import {
 } from '@/lib/tse-static';
 import { buscarCandidatoNacional, inferirUfPorNomes, rankingNacional } from '@/lib/tse-index';
 import { resolverDeputados } from '@/lib/agent/report/df-territorial';
+import { SQL_DATA_COMEMORATIVA } from '@/lib/agenda-datas';
 import type { Session } from 'next-auth';
 
 type UserSession = Session & { user: any };
@@ -1101,6 +1102,12 @@ export async function executarBuscarAgenda(
     ...((inicio || fim) && { data: { ...(inicio && { gte: inicio }), ...(fim && { lte: fim }) } }),
   };
 
+  // Feriados e datas comemorativas que o Google põe na agenda ("Dia do
+  // Professor") não são compromissos do gabinete — ficam fora da contagem.
+  const datasGoogle = await prisma.$queryRawUnsafe<{ id: string }[]>(
+    `SELECT id FROM agenda_events WHERE "gabineteId" = $1 AND ${SQL_DATA_COMEMORATIVA}`, user.gabineteId);
+  if (datasGoogle.length > 0) where.id = { notIn: datasGoogle.map(d => d.id) };
+
   // `total` vem de count() — a lista é limitada, e usar o length dela faria a
   // Gabi afirmar "50 compromissos" num ano com centenas.
   const [total, eventos, porTipo] = await Promise.all([
@@ -1121,7 +1128,7 @@ export async function executarBuscarAgenda(
     // Sem resultados: diz o que a agenda REALMENTE cobre, para a Gabi propor o
     // recorte mais próximo em vez de responder "não encontrei".
     const existentes = await prisma.agendaEvent.findMany({
-      where: { gabineteId: user.gabineteId },
+      where: { gabineteId: user.gabineteId, ...(where.id && { id: where.id }) },
       select: { data: true },
       orderBy: { data: 'desc' },
       take: 500,
