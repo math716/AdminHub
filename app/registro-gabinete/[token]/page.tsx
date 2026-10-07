@@ -1,4 +1,5 @@
 'use client';
+import { textoDireitos } from '@/lib/direitos';
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
@@ -165,7 +166,7 @@ export default function RegistroGabinetePage() {
         {/* Rodapé */}
         <div className="relative z-10 px-12 pb-10">
           <div className="h-px mb-6" style={{ background: 'var(--tint-06)' }} />
-          <p className="text-gray-600 text-xs">© 2025 AdminHub · Todos os direitos reservados</p>
+          <p className="text-gray-600 text-xs">{textoDireitos()}</p>
         </div>
       </motion.div>
 

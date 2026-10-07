@@ -1,4 +1,5 @@
 'use client';
+import { textoDireitos } from '@/lib/direitos';
 
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
@@ -133,7 +134,7 @@ export default function LoginPage() {
 
         <div className="relative z-10 px-12 pb-10">
           <div className="h-px mb-6" style={{ background: 'rgba(148,163,184,0.10)' }} />
-          <p className="text-xs" style={{ color: '#64748B' }}>© 2025 AdminHub · Todos os direitos reservados</p>
+          <p className="text-xs" style={{ color: '#64748B' }}>{textoDireitos()}</p>
         </div>
       </motion.div>
 
