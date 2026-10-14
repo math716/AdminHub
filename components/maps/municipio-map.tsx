@@ -70,6 +70,8 @@ interface MunicipioMapProps {
   showLabels?: boolean;
   height?: string;
   focusZona?: FocusZonaRequest | null;
+  /** Pedido da busca de bairro: destaca o bairro e aproxima nos locais dele. */
+  focusBairro?: { nome: string; nonce: number } | null;
   onBairroClick?: (bairro: string, votos: number) => void;
   onBairroHover?: (bairro: string | null) => void;
   /** Chamado quando os dados de bairros são carregados — permite que o pai acesse votos e locais */
@@ -106,6 +108,11 @@ function makePinIconOptions(color: string, isSelected: boolean, size = 26): PinI
 // ---------------------------------------------------------------------------
 // Componente
 // ---------------------------------------------------------------------------
+// Padrão fixo: `= {}` no parâmetro criava um objeto novo a cada renderização,
+// e como `votosPorBairro` está nas dependências do mapa, quem não passasse a
+// propriedade recriava o mapa inteiro (voltando à cidade toda) a cada render.
+const SEM_VOTOS_POR_BAIRRO: Record<string, number> = {};
+
 const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(({
   municipio,
   uf,
@@ -113,12 +120,13 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
   nomeCandidato,
   ano,
   turno = 1,
-  votosPorBairro = {},
+  votosPorBairro = SEM_VOTOS_POR_BAIRRO,
   totalVotos = 0,
   selectedBairro = null,
   showLabels = true,
   height = '600px',
   focusZona = null,
+  focusBairro = null,
   onBairroClick,
   onBairroHover,
   onDataLoaded,
@@ -575,6 +583,13 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
     if (!focusZona) return;
     zoomToZona(focusZona.zona, focusZona.lat, focusZona.lng);
   }, [focusZona, zoomToZona]);
+
+  // Busca de bairro: aproxima mesmo se o bairro já estava selecionado (o
+  // nonce muda a cada escolha).
+  useEffect(() => {
+    if (focusBairro) highlightBairro(focusBairro.nome);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusBairro?.nonce]);
 
   if (loading) {
     return (

@@ -34,6 +34,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 import type { FocusZonaRequest } from '@/components/maps/municipio-map';
+import { BuscaBairro, type OpcaoBairro } from '@/components/maps/busca-bairro';
+import { normalizarNomeBairro, type PedidoFocoBairro } from '@/hooks/use-foco-poligono';
 
 // Mapeamento zona eleitoral → distrito municipal de SP
 // Gerado via join espacial entre locais de votação TSE e GeoSampa distritos
@@ -289,6 +291,11 @@ export default function MapaPage() {
   const [loadingZonas, setLoadingZonas] = useState(false);
   const [zonasSortBy, setZonasSortBy] = useState<'votos' | 'numero'>('votos');
   const [focusZonaReq, setFocusZonaReq] = useState<FocusZonaRequest | null>(null);
+  // Busca de bairro: pedido de aproximar no bairro escolhido, e os nomes de
+  // todos os polígonos do mapa aberto (a chave diz de qual mapa vieram, para
+  // não listar bairros de outra cidade enquanto a nova carrega).
+  const [focoBairroReq, setFocoBairroReq] = useState<PedidoFocoBairro | null>(null);
+  const [nomesPoligonos, setNomesPoligonos] = useState<{ chave: string; nomes: string[] }>({ chave: '', nomes: [] });
 
   // SP Distritos (São Paulo município)
   const [spVisualizacao, setSpVisualizacao] = useState<'bairros' | 'distritos'>('distritos');
@@ -1097,6 +1104,49 @@ export default function MapaPage() {
     (!isGenPoligonosMunicipio || genVisualizacao === 'zonas') &&
     (!bairrosLoaded || bairrosData.length > 0);
 
+  // ── Busca de bairro ─────────────────────────────────────────────────────
+  // Lista os bairros do mapa que está aberto e, ao escolher, faz o mesmo que
+  // clicar nele na lista lateral — mais aproximar o mapa nele.
+  const chaveGen = `gen:${selectedUf}:${selectedMunicipio?.nome ?? ''}`;
+  const opcoesPoligonos = (chave: string, votos: Record<string, number>): OpcaoBairro[] => {
+    // (`Map` nesta página é o ícone do lucide — daí objetos simples aqui.)
+    const votoPorNome: Record<string, number> = {};
+    for (const [k, v] of Object.entries(votos)) votoPorNome[normalizarNomeBairro(k)] = v;
+    const nomes = nomesPoligonos.chave === chave ? nomesPoligonos.nomes : [];
+    const porNome: Record<string, OpcaoBairro> = {};
+    // Os nomes do mapa primeiro: são os que o polígono reconhece ao destacar.
+    for (const nome of [...nomes, ...Object.keys(votos)]) {
+      const k = normalizarNomeBairro(nome);
+      if (!porNome[k]) porNome[k] = { nome, votos: votoPorNome[k] };
+    }
+    return Object.values(porNome);
+  };
+  const pedirFoco = (nome: string) => setFocoBairroReq({ nome, nonce: Date.now() });
+  const buscaPinos = {
+    placeholder: 'Buscar bairro…',
+    opcoes: bairrosData.map(b => ({ nome: b.nome, votos: b.votos })),
+    escolher: (nome: string) => {
+      setSelectedBairro(nome);
+      setSelectedBairroVotos(bairrosData.find(b => b.nome === nome)?.votos ?? 0);
+      pedirFoco(nome);
+    },
+  };
+  const buscaBairro: { placeholder: string; opcoes: OpcaoBairro[]; escolher: (nome: string) => void } | null =
+    view === 'estado' && selectedUf === 'DF'
+      ? dfVisualizacao === 'bairros'
+        ? { placeholder: 'Buscar região administrativa…', opcoes: opcoesPoligonos('df', dfRegioesVotes), escolher: n => { setSelectedDfRegiao(n); pedirFoco(n); } }
+        : buscaPinos
+      : view !== 'municipio' || !selectedMunicipio ? null
+      : isSaoPauloCapital && spVisualizacao === 'distritos'
+        ? { placeholder: 'Buscar bairro…', opcoes: opcoesPoligonos('sp', spDistritosVotes), escolher: n => { setSelectedSpDistrito(n); pedirFoco(n); } }
+      : isRioDeJaneiro && rjVisualizacao === 'bairros'
+        ? { placeholder: 'Buscar bairro…', opcoes: opcoesPoligonos('rj', rjBairrosVotes), escolher: n => { setSelectedRjBairro(n); pedirFoco(n); } }
+      : isFortalezaCe && ceVisualizacao === 'bairros'
+        ? { placeholder: 'Buscar bairro…', opcoes: opcoesPoligonos('ce', ceBairrosVotes), escolher: n => { setSelectedCeBairro(n); pedirFoco(n); } }
+      : isGenPoligonosMunicipio && genVisualizacao === 'bairros'
+        ? { placeholder: 'Buscar bairro…', opcoes: opcoesPoligonos(chaveGen, genBairrosApiVotes), escolher: n => { setSelectedGenBairro(n); pedirFoco(n); } }
+      : mapaDePinosNoMunicipio ? buscaPinos : null;
+
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
@@ -1819,12 +1869,16 @@ export default function MapaPage() {
 
               {view === 'estado' && selectedUf === 'DF' ? (
                 <div className="h-full flex flex-col">
-                  <div className="flex items-center justify-between mb-2 px-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1">
                     <div className="flex items-center gap-2">
                       <Layers className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
                       <span className="text-[color:var(--brand-cobalt)] font-semibold text-sm">Distrito Federal</span>
                       {dfVisualizacao === 'zonas' && loadingZonas && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-600 dark:text-slate-400" />}
                     </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                    {buscaBairro && (
+                      <BuscaBairro opcoes={buscaBairro.opcoes} onEscolher={buscaBairro.escolher} placeholder={buscaBairro.placeholder} />
+                    )}
                     <div className="flex items-center bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg p-0.5 text-xs">
                       <button
                         onClick={() => { setDfVisualizacao('bairros'); setSelectedBairro(null); }}
@@ -1847,6 +1901,7 @@ export default function MapaPage() {
                         Zonas
                       </button>
                     </div>
+                    </div>
                   </div>
 
                   <div className="flex-1 min-h-0 relative">
@@ -1857,6 +1912,8 @@ export default function MapaPage() {
                           <DfRegioesMap
                             votesData={dfRegioesVotes}
                             selectedRegiao={selectedDfRegiao}
+                            focoBairro={focoBairroReq}
+                            onNomes={(nomes) => setNomesPoligonos({ chave: 'df', nomes })}
                             onRegiaoClick={(nome) => setSelectedDfRegiao(prev => prev === nome ? null : nome)}
                             height="100%"
                           />
@@ -1908,6 +1965,7 @@ export default function MapaPage() {
                           <div className="flex-1 min-w-0 min-h-0">
                             <MunicipioMap
                               focusZona={focusZonaReq}
+                          focusBairro={focoBairroReq}
                               municipio="BRASÍLIA"
                               uf="DF"
                               candidatoId={electoralData?.candidatoId}
@@ -2011,13 +2069,16 @@ export default function MapaPage() {
               {view === 'municipio' && selectedMunicipio && (
                 <div className="h-full flex flex-col">
                   {/* Subtítulo do município */}
-                  <div className="flex items-center justify-between mb-2 px-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
                       <span className="text-[color:var(--brand-cobalt)] font-semibold text-sm">{selectedMunicipio.nome}</span>
                       {loadingZonas && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-600 dark:text-slate-400" />}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {buscaBairro && (
+                        <BuscaBairro opcoes={buscaBairro.opcoes} onEscolher={buscaBairro.escolher} placeholder={buscaBairro.placeholder} />
+                      )}
                       {/* Toggle distritos/bairros — só para São Paulo */}
                       {isSaoPauloCapital && (
                         <div className="flex items-center bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg p-0.5 text-xs">
@@ -2111,6 +2172,8 @@ export default function MapaPage() {
                           <SpDistritosMap
                             votesData={spDistritosVotes}
                             selectedDistrito={selectedSpDistrito}
+                            focoBairro={focoBairroReq}
+                            onNomes={(nomes) => setNomesPoligonos({ chave: 'sp', nomes })}
                             onDistritoClick={handleSpDistritoClick}
                             height="100%"
                           />
@@ -2163,6 +2226,8 @@ export default function MapaPage() {
                           <RjBairrosMap
                             votesData={rjBairrosVotes}
                             selectedBairro={selectedRjBairro}
+                            focoBairro={focoBairroReq}
+                            onNomes={(nomes) => setNomesPoligonos({ chave: 'rj', nomes })}
                             onBairroClick={handleRjBairroClick}
                             height="100%"
                           />
@@ -2215,6 +2280,8 @@ export default function MapaPage() {
                           <CeBairrosMap
                             votesData={ceBairrosVotes}
                             selectedBairro={selectedCeBairro}
+                            focoBairro={focoBairroReq}
+                            onNomes={(nomes) => setNomesPoligonos({ chave: 'ce', nomes })}
                             onBairroClick={handleCeBairroClick}
                             height="100%"
                           />
@@ -2273,6 +2340,8 @@ export default function MapaPage() {
                           turno={electoralData?.turno ?? 1}
                             votosPorBairro={genBairrosApiVotes}
                             selectedBairro={selectedGenBairro}
+                            focoBairro={focoBairroReq}
+                            onNomes={(nomes) => setNomesPoligonos({ chave: chaveGen, nomes })}
                             onBairroClick={(nome) => handleGenBairroClick(nome)}
                             onDataLoaded={(votes) => setGenBairrosApiVotes(votes)}
                             height="100%"
@@ -2329,6 +2398,7 @@ export default function MapaPage() {
                       <div className="flex-1 min-w-0 min-h-0">
                         <MunicipioMap
                           focusZona={focusZonaReq}
+                          focusBairro={focoBairroReq}
                           municipio={selectedMunicipio.nome}
                           uf={selectedUf || searchUf || electoralData?.uf || ''}
                           candidatoId={electoralData?.candidatoId}

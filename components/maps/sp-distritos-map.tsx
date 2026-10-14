@@ -2,12 +2,17 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
+import { useFocoPoligono, type PedidoFocoBairro } from '@/hooks/use-foco-poligono';
 import { Loader2 } from 'lucide-react';
 import { camadaBase } from '@/lib/maps/basemap';
 import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
 import { htmlDaBolha, tamanhoDaBolha } from '@/lib/maps/bolha-votos';
 
 interface SpDistritosMapProps {
+  /** Pedido da busca de bairro: aproxima no polígono com esse nome. */
+  focoBairro?: PedidoFocoBairro | null;
+  /** Nomes de todos os polígonos carregados (para a busca de bairro). */
+  onNomes?: (nomes: string[]) => void;
   votesData?: Record<string, number>;
   selectedDistrito?: string | null;
   onDistritoClick?: (nome: string) => void;
@@ -28,7 +33,7 @@ function fmtVotos(v: number): string {
   return String(v);
 }
 
-function SpDistritosMapComponent({ votesData, selectedDistrito, onDistritoClick, height = '100%' }: SpDistritosMapProps) {
+function SpDistritosMapComponent({ votesData, selectedDistrito, onDistritoClick, height = '100%', focoBairro, onNomes }: SpDistritosMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const isInitializingRef = useRef(false);
   const geoLayerRef = useRef<any>(null);
@@ -56,6 +61,11 @@ function SpDistritosMapComponent({ votesData, selectedDistrito, onDistritoClick,
 
   const getNome = (feature: any): string =>
     feature?.properties?.nm_distrito_municipal || feature?.properties?.ds_nome || '';
+
+  useFocoPoligono({
+    mapInstanceRef, geoLayerRef, features: geoData?.features,
+    nomeDe: getNome, foco: focoBairro, onNomes,
+  });
 
   const getVotos = useCallback((nome: string): number | undefined => {
     const data = votesDataRef.current;

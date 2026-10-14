@@ -2,12 +2,17 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
+import { useFocoPoligono, type PedidoFocoBairro } from '@/hooks/use-foco-poligono';
 import { Loader2 } from 'lucide-react';
 import { camadaBase } from '@/lib/maps/basemap';
 import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
 import { htmlDaBolha, tamanhoDaBolha } from '@/lib/maps/bolha-votos';
 
 interface RjBairrosMapProps {
+  /** Pedido da busca de bairro: aproxima no polígono com esse nome. */
+  focoBairro?: PedidoFocoBairro | null;
+  /** Nomes de todos os polígonos carregados (para a busca de bairro). */
+  onNomes?: (nomes: string[]) => void;
   votesData?: Record<string, number>;
   selectedBairro?: string | null;
   onBairroClick?: (nome: string) => void;
@@ -31,7 +36,7 @@ function fmtVotos(v: number): string {
   return String(v);
 }
 
-function RjBairrosMapComponent({ votesData, selectedBairro, onBairroClick, height = '100%' }: RjBairrosMapProps) {
+function RjBairrosMapComponent({ votesData, selectedBairro, onBairroClick, height = '100%', focoBairro, onNomes }: RjBairrosMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const isInitializingRef = useRef(false);
   const geoLayerRef = useRef<any>(null);
@@ -59,6 +64,11 @@ function RjBairrosMapComponent({ votesData, selectedBairro, onBairroClick, heigh
 
   const getNome = (feature: any): string =>
     feature?.properties?.nome || feature?.properties?.NOME || '';
+
+  useFocoPoligono({
+    mapInstanceRef, geoLayerRef, features: geoData?.features,
+    nomeDe: getNome, foco: focoBairro, onNomes,
+  });
 
   const getVotos = useCallback((nome: string): number | undefined => {
     const data = votesDataRef.current;

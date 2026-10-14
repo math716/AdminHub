@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
+import { useFocoPoligono, type PedidoFocoBairro } from '@/hooks/use-foco-poligono';
 import { Loader2 } from 'lucide-react';
 import { camadaBase } from '@/lib/maps/basemap';
 import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
@@ -13,6 +14,10 @@ export interface DfRegiaoData {
 }
 
 interface DfRegioesMapProps {
+  /** Pedido da busca de bairro: aproxima no polígono com esse nome. */
+  focoBairro?: PedidoFocoBairro | null;
+  /** Nomes de todos os polígonos carregados (para a busca de bairro). */
+  onNomes?: (nomes: string[]) => void;
   votesData?: Record<string, number>;
   selectedRegiao?: string | null;
   onRegiaoClick?: (nome: string) => void;
@@ -33,7 +38,7 @@ function fmtVotos(v: number): string {
   return String(v);
 }
 
-function DfRegioesMapComponent({ votesData, selectedRegiao, onRegiaoClick, height = '100%' }: DfRegioesMapProps) {
+function DfRegioesMapComponent({ votesData, selectedRegiao, onRegiaoClick, height = '100%', focoBairro, onNomes }: DfRegioesMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const isInitializingRef = useRef(false);
   const geoLayerRef = useRef<any>(null);
@@ -47,6 +52,11 @@ function DfRegioesMapComponent({ votesData, selectedRegiao, onRegiaoClick, heigh
   const [geoData, setGeoData] = useState<any>(null);
 
   const { mapInstanceRef, cleanupMap, registerLayer, isUnmounted } = useMapCleanup();
+
+  useFocoPoligono({
+    mapInstanceRef, geoLayerRef, features: geoData?.features,
+    nomeDe: (f: any) => f?.properties?.nome || '', foco: focoBairro, onNomes,
+  });
 
   useEffect(() => { onRegiaoClickRef.current = onRegiaoClick; }, [onRegiaoClick]);
   useEffect(() => { selectedRegiaoRef.current = selectedRegiao ?? null; }, [selectedRegiao]);
