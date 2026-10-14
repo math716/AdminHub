@@ -35,6 +35,7 @@ import { ESTADOS_BRASIL } from '@/lib/types';
 import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 import type { FocusZonaRequest } from '@/components/maps/municipio-map';
 import { BuscaBairro, type OpcaoBairro } from '@/components/maps/busca-bairro';
+import { ComparadorCandidatos } from '@/components/mapa/comparador-candidatos';
 import { normalizarNomeBairro, type PedidoFocoBairro } from '@/hooks/use-foco-poligono';
 
 // Mapeamento zona eleitoral → distrito municipal de SP
@@ -263,6 +264,9 @@ export default function MapaPage() {
 
   // Hierarquia de navegação: brasil → estado → municipio
   const [mapFullscreen, setMapFullscreen] = useState(false);
+  // "Resultado" é o mapa de um candidato (a tela de sempre); "Comparar" abre o
+  // comparador de até 4 candidatos.
+  const [modoMapa, setModoMapa] = useState<'resultado' | 'comparar'>('resultado');
   const [view, setView] = useState<'brasil' | 'estado' | 'municipio'>('brasil');
   const [selectedUf, setSelectedUf] = useState('');
   const [selectedStateName, setSelectedStateName] = useState('');
@@ -1147,6 +1151,34 @@ export default function MapaPage() {
         ? { placeholder: 'Buscar bairro…', opcoes: opcoesPoligonos(chaveGen, genBairrosApiVotes), escolher: n => { setSelectedGenBairro(n); pedirFoco(n); } }
       : mapaDePinosNoMunicipio ? buscaPinos : null;
 
+  const seletorModo = (
+    <div className="flex items-center rounded-lg p-0.5 text-xs w-fit" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}>
+      {([['resultado', 'Resultado'], ['comparar', 'Comparar candidatos']] as const).map(([valor, rotulo]) => (
+        <button
+          key={valor}
+          type="button"
+          onClick={() => setModoMapa(valor)}
+          className="px-3 py-1.5 rounded-md font-medium transition-all"
+          style={modoMapa === valor ? { background: '#1a73e8', color: '#fff' } : { color: 'var(--text-secondary)' }}
+        >
+          {rotulo}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (modoMapa === 'comparar') {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-3">
+          <PageHeader icon={Map} title="Mapa Eleitoral" subtitle="Compare onde cada candidato venceu" />
+          {seletorModo}
+        </div>
+        <ComparadorCandidatos />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
@@ -1184,6 +1216,8 @@ export default function MapaPage() {
             ) : undefined
           }
         />
+
+        {seletorModo}
 
         {/* Breadcrumb hierárquico */}
         <div className="flex items-center gap-1 text-sm rounded-xl px-4 py-2.5 w-fit flex-wrap"
