@@ -188,7 +188,7 @@ export function MapaCidadeComparacao({ pontos, poligonos, versao, enquadramento,
   }, [foco?.nonce]);
 
   return (
-    <div className="relative w-full h-full rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-default)' }}>
+    <div className="relative w-full h-full overflow-hidden">
       <div ref={mapRef} className="absolute inset-0" />
     </div>
   );

@@ -17,15 +17,15 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, AlertTriangle } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { BuscaBairro } from '@/components/maps/busca-bairro';
 import { FORA, carregarPoligonosCidade, indexarPoligonos, nomeDaLinhaFora, poligonoDoPonto, type PoligonosCidade } from '@/components/mapa/poligonos-cidade';
 import {
-  type CandidatoNaComparacao, type Linha, DetalhesComparacao, LegendaComparacao, ResumoComparacao,
+  type CandidatoNaComparacao, type Linha, DestaquesComparacao, LegendaComparacao, PainelVitorias, PlacarComparacao, TabelaComparacao,
   corDoResultado, fmt, htmlComparacao, opacidadePorFolga, resultado, semAcento,
 } from '@/components/mapa/comparacao-comum';
 import { MapaCidadeComparacao, type PontoComparacao, type PoligonosComparacao } from '@/components/mapa/mapa-cidade-comparacao';
 import { BotaoPdfComparacao } from '@/components/mapa/pdf-comparacao';
+import { CartaoMapa, GradeMapa, Pilulas } from '@/components/mapa/comparacao-visual';
 
 export interface CandidatoCidade extends CandidatoNaComparacao {
   zonas: Array<{ municipio: string; zona: number; votos: number }>;
@@ -219,51 +219,60 @@ export function ComparacaoCidade({ uf, municipio, ano, turno, cands }: {
     ? (rotuloBairros === 'regiões administrativas' ? 'Todas as regiões administrativas' : `Todos os ${rotuloBairros}`)
     : 'Todas as zonas';
 
+  const botaoBairros = rotuloBairros === 'distritos' ? 'Distritos' : rotuloBairros === 'regiões administrativas' ? 'Regiões' : 'Bairros';
+  const tituloMapa = visaoEfetiva === 'locais' ? 'Quem venceu em cada local de votação'
+    : visaoEfetiva === 'bairros' ? `Quem venceu em cada ${rotuloArea.toLowerCase()}` : 'Quem venceu em cada zona eleitoral';
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center rounded-lg p-0.5 text-xs" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}>
-          {([['locais', 'Locais de votação'], ['bairros', rotuloBairros === 'distritos' ? 'Distritos' : rotuloBairros === 'regiões administrativas' ? 'Regiões' : 'Bairros'], ['zonas', 'Zonas']] as const).map(([v, rotulo]) => (
-            <button key={v} type="button" onClick={() => setVisao(v)} disabled={!podeLocal && v !== 'zonas'}
-              className="px-3 py-1.5 rounded-md font-medium transition-all disabled:opacity-40"
-              style={visaoEfetiva === v ? { background: '#1a73e8', color: '#fff' } : { color: 'var(--text-secondary)' }}>
-              {rotulo}
-            </button>
-          ))}
-        </div>
+        <Pilulas
+          opcoes={[['locais', 'Locais de votação'], ['bairros', botaoBairros], ['zonas', 'Zonas']] as const}
+          valor={visaoEfetiva}
+          onChange={setVisao}
+          desabilitada={v => !podeLocal && v !== 'zonas'}
+        />
         {podeLocal && opcoesBusca.length > 0 && (
           <BuscaBairro opcoes={opcoesBusca} onEscolher={escolherBairro}
             placeholder={rotuloBairros === 'distritos' ? 'Buscar distrito…' : rotuloBairros === 'regiões administrativas' ? 'Buscar região…' : 'Buscar bairro…'} />
         )}
         {respostas && (
-          <BotaoPdfComparacao
-            tipo="comparacao"
-            titulo={`${candsDaVisao.map(c => c.nome).join(' × ')} — ${municipio} ${ano}`}
-            subtitulo={`${municipio} (${uf}) · por ${rotuloArea.toLowerCase()} · ${turno}º turno`}
-            colunas={candsDaVisao.map(c => c.nome)}
-            cores={coresDaVisao}
-            rotuloArea={rotuloArea}
-            linhas={linhas.map(l => ({ nome: l.detalhe ? `${l.nome} — ${l.detalhe}` : l.nome, valores: l.votos }))}
-          />
+          <div className="sm:ml-auto">
+            <BotaoPdfComparacao
+              tipo="comparacao"
+              titulo={`${candsDaVisao.map(c => c.nome).join(' × ')} — ${municipio} ${ano}`}
+              subtitulo={`${municipio} (${uf}) · por ${rotuloArea.toLowerCase()} · ${turno}º turno`}
+              colunas={candsDaVisao.map(c => c.nome)}
+              cores={coresDaVisao}
+              rotuloArea={rotuloArea}
+              linhas={linhas.map(l => ({ nome: l.detalhe ? `${l.nome} — ${l.detalhe}` : l.nome, valores: l.votos }))}
+            />
+          </div>
         )}
       </div>
 
       {semReal.length > 0 && (
-        <p className="text-xs flex items-start gap-1.5" style={{ color: 'var(--warning)' }}>
-          <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-px" />
-          {semReal.join(', ')} não {semReal.length > 1 ? 'têm' : 'tem'} voto por local de votação nesta cidade
-          (o TSE juntou ali uma eleição suplementar). {semReal.length > 1 ? 'Ficam' : 'Fica'} de fora das visões por local
-          e por bairro{podeLocal ? '' : ', que precisam de pelo menos dois candidatos'}; na visão por zona, todos entram.
+        <p className="text-xs flex items-start gap-2 rounded-xl px-3 py-2.5" style={{ color: 'var(--warning)', background: 'var(--warning-soft)' }}>
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <span>
+            {semReal.join(', ')} não {semReal.length > 1 ? 'têm' : 'tem'} voto por local de votação nesta cidade
+            (o TSE juntou ali uma eleição suplementar). {semReal.length > 1 ? 'Ficam' : 'Fica'} de fora das visões por local
+            e por bairro{podeLocal ? '' : ', que precisam de pelo menos dois candidatos'}; na visão por zona, todos entram.
+          </span>
         </p>
       )}
 
       {carregando ? (
-        <Card><CardContent className="py-12 flex justify-center"><Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--text-tertiary)' }} /></CardContent></Card>
+        <div className="rounded-2xl py-16 flex flex-col items-center gap-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
+          <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--brand-cobalt-text)' }} />
+          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Carregando os votos de cada local de votação…</span>
+        </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-            <div className="xl:col-span-2 space-y-2">
-              <div className="h-[360px] sm:h-[460px] xl:h-[540px]">
+          <PlacarComparacao cands={candsDaVisao} linhas={linhas} nomeArea={nomeArea} />
+          <GradeMapa
+            mapa={(
+              <CartaoMapa titulo={tituloMapa} dica="Passe o mouse para ver os votos" legenda={<LegendaComparacao cands={candsDaVisao} />}>
                 <MapaCidadeComparacao
                   pontos={pontos}
                   poligonos={poligonos}
@@ -271,12 +280,12 @@ export function ComparacaoCidade({ uf, municipio, ano, turno, cands }: {
                   enquadramento={`${uf}|${municipio}|${visaoEfetiva === 'bairros' && poligonosGeo ? 'pol' : 'pts'}`}
                   foco={foco}
                 />
-              </div>
-              <LegendaComparacao cands={candsDaVisao} />
-            </div>
-            <ResumoComparacao cands={candsDaVisao} linhas={linhas} nomeArea={nomeArea} />
-          </div>
-          <DetalhesComparacao cands={candsDaVisao} linhas={linhas} rotuloArea={rotuloArea} todasAsAreas={todasAsAreas} />
+              </CartaoMapa>
+            )}
+            lateral={<PainelVitorias cands={candsDaVisao} linhas={linhas} nomeArea={nomeArea} />}
+          />
+          <DestaquesComparacao cands={candsDaVisao} linhas={linhas} />
+          <TabelaComparacao cands={candsDaVisao} linhas={linhas} rotuloArea={rotuloArea} todasAsAreas={todasAsAreas} />
           {visaoEfetiva === 'locais' && locais.some(l => l.lat == null) && (
             <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
               {fmt(locais.filter(l => l.lat == null).length)} locais vieram do TSE sem coordenada: estão na tabela, mas sem ponto no mapa.

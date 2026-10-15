@@ -14,8 +14,10 @@
 // mantém. Zonas entram com aviso, pelo mesmo motivo.
 
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowUpDown, AlertTriangle, Loader2, Plus, Search, TrendingUp, X } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  ArrowDownRight, ArrowRight, ArrowUpDown, ArrowUpRight, AlertTriangle, Info, List, Loader2, MousePointerClick, Plus, Search,
+  TrendingDown, TrendingUp, X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -23,12 +25,17 @@ import { BuscaBairro } from '@/components/maps/busca-bairro';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { MapaComparacao, cartaoTooltip, type AparenciaArea } from '@/components/mapa/mapa-comparacao';
 import { MapaCidadeComparacao, type PontoComparacao, type PoligonosComparacao } from '@/components/mapa/mapa-cidade-comparacao';
-import { COR_SEM_VOTO, contagem, esc, fmt, semAcento } from '@/components/mapa/comparacao-comum';
+import { COR_SEM_VOTO, esc, fmt, semAcento } from '@/components/mapa/comparacao-comum';
 import {
   FORA, botaoDe, carregarPoligonosCidade, indexarPoligonos, nomeDaLinhaFora, poligonoDoPonto,
   rotuloColunaDe, todosOsDe, type PoligonosCidade,
 } from '@/components/mapa/poligonos-cidade';
 import { BotaoPdfComparacao } from '@/components/mapa/pdf-comparacao';
+import { coresDosCandidatos } from '@/lib/partidos-espectro';
+import {
+  Avatar, BarraSimples, CampoFiltro, CartaoMapa, ChipFiltro, EstadoVazio, Etiqueta, GradeMapa, LegendaMapa, Painel, Pilulas,
+  Rosca, Trilha, comAlfa, pctBR, type Passo,
+} from '@/components/mapa/comparacao-visual';
 
 const ANOS = ['2026', '2024', '2022', '2020', '2018'];
 const ehAnoMunicipal = (ano: string) => (parseInt(ano, 10) - 2020) % 4 === 0;
@@ -101,18 +108,186 @@ function htmlEvolucao(titulo: string, rotA: string, rotB: string, a: number, b: 
   );
 }
 
-// ── Resumo, destaques e tabela da evolução ───────────────────────────────────
-function usePainelEvolucao({ linhas, rotA, rotB, nomeArea, rotuloArea, todasAsAreas, onClickLinha, dicaClique }: {
-  linhas: LinhaEvolucao[]; rotA: string; rotB: string; nomeArea: string; rotuloArea: string; todasAsAreas: string;
+// ── Peças visuais da evolução ────────────────────────────────────────────────
+export interface LadoVisual { nome: string; ano: string; partido: string; cor: string }
+
+const corDaDiferenca = (d: number) => (d > 0 ? COR_GANHO : d < 0 ? COR_PERDA : '#64748b');
+
+/** Antes → depois: os dois totais, a diferença no meio e as duas barras. */
+function PlacarEvolucao({ lados, linhas }: { lados: [LadoVisual, LadoVisual]; linhas: LinhaEvolucao[] }) {
+  const totA = linhas.reduce((s, l) => s + l.a, 0);
+  const totB = linhas.reduce((s, l) => s + l.b, 0);
+  const d = totB - totA;
+  const cor = corDaDiferenca(d);
+  const maior = Math.max(totA, totB, 1);
+  const Seta = d > 0 ? ArrowUpRight : d < 0 ? ArrowDownRight : ArrowRight;
+
+  const cartao = (l: LadoVisual, total: number, i: 0 | 1) => (
+    <div className={`min-w-0 flex flex-col gap-2.5 ${i === 1 ? 'items-end text-right' : ''}`}>
+      <div className={`flex flex-col sm:flex-row gap-2 sm:gap-3 ${i === 1 ? 'items-end sm:flex-row-reverse' : 'items-start sm:items-center'}`}>
+        <Avatar nome={l.nome} cor={l.cor} tamanho={48} />
+        <div className="min-w-0">
+          <span className="inline-block whitespace-nowrap text-[10px] uppercase tracking-widest font-bold rounded-md px-1.5 py-0.5 mb-1"
+            style={{ background: 'var(--tint-06)', color: 'var(--text-tertiary)' }}>
+            {i === 0 ? 'Antes' : 'Depois'} · {l.ano}
+          </span>
+          <p className="text-sm sm:text-base font-bold leading-tight break-words" style={{ color: 'var(--text-primary)' }}>{l.nome}</p>
+          <p className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>{l.partido}</p>
+        </div>
+      </div>
+      <div>
+        <p className="text-2xl sm:text-4xl font-bold tabular-nums tracking-tight leading-none" style={{ color: 'var(--text-primary)' }}>{fmt(total)}</p>
+        <p className="text-[10px] uppercase tracking-widest font-semibold mt-1" style={{ color: 'var(--text-tertiary)' }}>votos</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <section className="rounded-2xl overflow-hidden"
+      style={{
+        background: 'var(--bg-card)',
+        backgroundImage: `radial-gradient(ellipse at 50% 0%, ${comAlfa(cor, 0.12)}, transparent 60%)`,
+        border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)',
+      }}>
+      <div className="p-4 sm:p-6">
+        <div className="grid grid-cols-2 sm:grid-cols-[1fr_auto_1fr] gap-4 sm:gap-6 items-center">
+          {cartao(lados[0], totA, 0)}
+          <div className="col-span-2 sm:col-span-1 order-last sm:order-none flex flex-col items-center gap-1.5">
+            <span className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center"
+              style={{ background: `linear-gradient(135deg, ${cor}, ${comAlfa(cor, 0.75)})`, boxShadow: `0 0 0 5px ${comAlfa(cor, 0.15)}, 0 10px 24px -8px ${comAlfa(cor, 0.7)}` }}>
+              <Seta className="w-6 h-6 text-white" strokeWidth={2.5} />
+            </span>
+            <span className="text-base sm:text-lg font-bold tabular-nums leading-none" style={{ color: cor }}>{sinal(d)}</span>
+            <Etiqueta cor={cor}>{pct(variacao(totA, totB))}</Etiqueta>
+          </div>
+          {cartao(lados[1], totB, 1)}
+        </div>
+
+        <div className="mt-5 sm:mt-6 space-y-2">
+          {([[lados[0], totA, 0.45], [lados[1], totB, 1]] as const).map(([l, t, alfa], i) => (
+            <div key={i} className="grid grid-cols-[3rem_1fr_auto] items-center gap-3">
+              <span className="text-[11px] font-bold tabular-nums" style={{ color: 'var(--text-tertiary)' }}>{l.ano}</span>
+              <BarraSimples fracao={t / maior} cor={comAlfa(l.cor, alfa)} altura={12} />
+              <span className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }}>{fmt(t)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Rosca de onde cresceu e onde caiu + votos ganhos e perdidos. */
+function PainelBalanco({ linhas, nomeArea }: { linhas: LinhaEvolucao[]; nomeArea: string }) {
+  const cresceu = linhas.filter(l => l.b > l.a);
+  const caiu = linhas.filter(l => l.b < l.a);
+  const igual = linhas.length - cresceu.length - caiu.length;
+  const ganhos = cresceu.reduce((s, l) => s + (l.b - l.a), 0);
+  const perdas = caiu.reduce((s, l) => s + (l.a - l.b), 0);
+  const maior = Math.max(ganhos, perdas, 1);
+  const itens = [
+    { chave: 'cresceu', rotulo: 'Cresceu', valor: cresceu.length, cor: COR_GANHO },
+    { chave: 'caiu', rotulo: 'Caiu', valor: caiu.length, cor: COR_PERDA },
+    { chave: 'igual', rotulo: 'Igual', valor: igual, cor: '#64748b' },
+  ].filter(x => x.chave !== 'igual' || x.valor > 0);
+
+  return (
+    <Painel titulo="Onde cresceu e onde caiu" icone={TrendingUp}>
+      <div className="flex flex-col sm:flex-row xl:flex-col 2xl:flex-row items-center gap-5">
+        <Rosca fatias={itens} centro={fmt(linhas.length)} rotuloCentro={nomeArea} />
+        <ul className="flex-1 w-full space-y-2.5">
+          {itens.map(x => (
+            <li key={x.chave} className="flex items-center gap-2 text-xs">
+              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: x.cor }} />
+              <span className="flex-1 font-medium" style={{ color: 'var(--text-primary)' }}>{x.rotulo}</span>
+              <span className="tabular-nums font-bold" style={{ color: 'var(--text-primary)' }}>{fmt(x.valor)}</span>
+              <span className="tabular-nums w-11 text-right" style={{ color: 'var(--text-tertiary)' }}>{linhas.length ? pctBR(x.valor / linhas.length, 0) : '—'}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="mt-5 pt-4 space-y-3" style={{ borderTop: '1px solid var(--tint-06)' }}>
+        <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>Votos ganhos e perdidos</p>
+        {[
+          { rotulo: `Ganhos onde cresceu`, valor: ganhos, cor: COR_GANHO, sinal: '+' },
+          { rotulo: `Perdidos onde caiu`, valor: perdas, cor: COR_PERDA, sinal: '−' },
+        ].map(x => (
+          <div key={x.rotulo} className="space-y-1">
+            <div className="flex items-center justify-between text-[11px]">
+              <span style={{ color: 'var(--text-secondary)' }}>{x.rotulo}</span>
+              <span className="font-bold tabular-nums" style={{ color: x.cor }}>{x.sinal}{fmt(x.valor)}</span>
+            </div>
+            <BarraSimples fracao={x.valor / maior} cor={x.cor} altura={10} />
+          </div>
+        ))}
+        <div className="flex items-center justify-between text-xs pt-1">
+          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Saldo</span>
+          <Etiqueta cor={corDaDiferenca(ganhos - perdas)} forte>{sinal(ganhos - perdas)} votos</Etiqueta>
+        </div>
+      </div>
+    </Painel>
+  );
+}
+
+/** Exemplos: onde mais ganhou e onde mais perdeu. A tabela traz todas as áreas. */
+function GanhosEPerdas({ linhas }: { linhas: LinhaEvolucao[] }) {
+  const ganhos = [...linhas].filter(l => l.b > l.a).sort((x, y) => (y.b - y.a) - (x.b - x.a)).slice(0, 6);
+  const perdas = [...linhas].filter(l => l.b < l.a).sort((x, y) => (x.b - x.a) - (y.b - y.a)).slice(0, 6);
+  if (ganhos.length === 0 && perdas.length === 0) return null;
+  const maior = Math.max(...[...ganhos, ...perdas].map(l => Math.abs(l.b - l.a)), 1);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {[
+        { titulo: 'Onde mais ganhou', icone: TrendingUp, itens: ganhos, cor: COR_GANHO },
+        { titulo: 'Onde mais perdeu', icone: TrendingDown, itens: perdas, cor: COR_PERDA },
+      ].map(b => (
+        <Painel key={b.titulo} titulo={b.titulo} icone={b.icone}>
+          {b.itens.length === 0 ? (
+            <p className="text-xs py-4 text-center" style={{ color: 'var(--text-tertiary)' }}>Nenhuma área.</p>
+          ) : (
+            <ul className="space-y-3">
+              {b.itens.map(l => (
+                <li key={l.chave}>
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <span className="text-xs font-medium min-w-0 break-words" style={{ color: 'var(--text-primary)' }}>{l.nome}</span>
+                    <span className="text-xs font-bold tabular-nums whitespace-nowrap" style={{ color: b.cor }}>
+                      {sinal(l.b - l.a)} <span className="font-medium" style={{ color: 'var(--text-tertiary)' }}>({pct(variacao(l.a, l.b))})</span>
+                    </span>
+                  </div>
+                  <BarraSimples fracao={Math.abs(l.b - l.a) / maior} cor={`linear-gradient(90deg, ${comAlfa(b.cor, 0.55)}, ${b.cor})`} altura={8} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Painel>
+      ))}
+    </div>
+  );
+}
+
+/** Barrinha da variação: para a direita (verde) cresceu, para a esquerda (vermelho) caiu. */
+function BarraVariacao({ v }: { v: number | null }) {
+  const f = v === null ? 0 : Math.min(Math.abs(v), 1);
+  const cor = v === null || v === 0 ? '#64748b' : v > 0 ? COR_GANHO : COR_PERDA;
+  return (
+    <div className="relative h-2 w-24 rounded-full" style={{ background: 'var(--tint-06)' }}>
+      <span className="absolute top-[-2px] bottom-[-2px] left-1/2 w-px" style={{ background: 'var(--tint-25)' }} />
+      {f > 0 && (
+        <span className="absolute top-0 bottom-0 rounded-full"
+          style={{ background: cor, width: `${f * 50}%`, ...(v! > 0 ? { left: '50%' } : { right: '50%' }) }} />
+      )}
+    </div>
+  );
+}
+
+function TabelaEvolucao({ linhas, lados, rotuloArea, todasAsAreas, onClickLinha, dicaClique }: {
+  linhas: LinhaEvolucao[]; lados: [LadoVisual, LadoVisual]; rotuloArea: string; todasAsAreas: string;
   onClickLinha?: (l: LinhaEvolucao) => void; dicaClique?: string;
 }) {
   const [ordem, setOrdem] = useState<{ por: 'nome' | 'a' | 'b' | 'dif' | 'var'; desc: boolean }>({ por: 'dif', desc: true });
-  const totA = linhas.reduce((s, l) => s + l.a, 0);
-  const totB = linhas.reduce((s, l) => s + l.b, 0);
-  const cresceu = linhas.filter(l => l.b > l.a).length;
-  const caiu = linhas.filter(l => l.b < l.a).length;
-  const ganhos = [...linhas].filter(l => l.b > l.a).sort((x, y) => (y.b - y.a) - (x.b - x.a)).slice(0, 5);
-  const perdas = [...linhas].filter(l => l.b < l.a).sort((x, y) => (x.b - x.a) - (y.b - y.a)).slice(0, 5);
+  const [texto, setTexto] = useState('');
+  const [filtro, setFiltro] = useState<'todos' | 'cresceu' | 'caiu' | 'igual'>('todos');
   const ordenadas = useMemo(() => {
     const s = ordem.desc ? -1 : 1;
     const valor = (l: LinhaEvolucao) => ordem.por === 'a' ? l.a : ordem.por === 'b' ? l.b : ordem.por === 'dif' ? l.b - l.a : (variacao(l.a, l.b) ?? -Infinity);
@@ -121,110 +296,97 @@ function usePainelEvolucao({ linhas, rotA, rotB, nomeArea, rotuloArea, todasAsAr
       : s * (valor(x) - valor(y)));
   }, [linhas, ordem]);
   const ordenarPor = (por: typeof ordem.por) => setOrdem(o => ({ por, desc: o.por === por ? !o.desc : por !== 'nome' }));
-  const Th = ({ por, children, alinhar = 'right' }: { por: typeof ordem.por; children: React.ReactNode; alinhar?: 'left' | 'right' }) => (
-    <th className={`font-semibold px-3 py-2 whitespace-nowrap text-${alinhar}`}>
-      <button type="button" onClick={() => ordenarPor(por)} className="inline-flex items-center gap-1">{children}<ArrowUpDown className="h-3 w-3 opacity-50" /></button>
+  const alvo = semAcento(texto);
+  const tipo = (l: LinhaEvolucao) => (l.b > l.a ? 'cresceu' : l.b < l.a ? 'caiu' : 'igual');
+  const visiveis = ordenadas.filter(l => (filtro === 'todos' || tipo(l) === filtro) && (!alvo || semAcento(l.nome).includes(alvo)));
+  const conta = (t: string) => linhas.filter(l => tipo(l) === t).length;
+
+  const Th = ({ por, children, alinhar = 'right', className = '' }: { por: typeof ordem.por; children: React.ReactNode; alinhar?: 'left' | 'right'; className?: string }) => (
+    <th className={`px-3 py-2.5 whitespace-nowrap text-${alinhar} ${className}`} style={{ background: 'var(--bg-card-subtle)' }}>
+      <button type="button" onClick={() => ordenarPor(por)} className={`inline-flex items-center gap-1 uppercase tracking-wider ${alinhar === 'right' ? 'flex-row-reverse' : ''}`}>
+        <ArrowUpDown className="h-3 w-3 opacity-50 flex-shrink-0" />{children}
+      </button>
     </th>
   );
+  const rotuloLado = (l: LadoVisual) => (
+    <span className="flex flex-col items-end leading-tight normal-case tracking-normal">
+      <span className="uppercase tracking-wider">{l.ano}</span>
+      <span className="font-medium" style={{ color: 'var(--text-tertiary)' }}>{l.nome}</span>
+    </span>
+  );
 
-  return { resumo: (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm">Resumo</CardTitle>
-        <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{contagem(linhas.length, nomeArea)}</p>
-      </CardHeader>
-      <CardContent className="space-y-2 text-xs">
-        <div className="flex justify-between gap-2"><span style={{ color: 'var(--text-secondary)' }}>{rotA}</span><strong style={{ color: 'var(--text-primary)' }}>{fmt(totA)}</strong></div>
-        <div className="flex justify-between gap-2"><span style={{ color: 'var(--text-secondary)' }}>{rotB}</span><strong style={{ color: 'var(--text-primary)' }}>{fmt(totB)}</strong></div>
-        <div className="flex justify-between gap-2 pt-1" style={{ borderTop: '1px solid var(--tint-08)' }}>
-          <span style={{ color: 'var(--text-secondary)' }}>Diferença</span>
-          <strong style={{ color: totB >= totA ? COR_GANHO : COR_PERDA }}>{sinal(totB - totA)} ({pct(variacao(totA, totB))})</strong>
-        </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1">
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COR_GANHO }} />cresceu em <strong>{fmt(cresceu)}</strong></span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COR_PERDA }} />caiu em <strong>{fmt(caiu)}</strong></span>
-        </div>
-      </CardContent>
-    </Card>
-  ), detalhes: (
-    <>
-      {(ganhos.length > 0 || perdas.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[{ titulo: 'Maiores ganhos', itens: ganhos, cor: COR_GANHO }, { titulo: 'Maiores perdas', itens: perdas, cor: COR_PERDA }].map(b => (
-            <Card key={b.titulo}>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">{b.titulo}</CardTitle></CardHeader>
-              <CardContent className="space-y-1.5">
-                {b.itens.length === 0 && <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Nenhum.</p>}
-                {b.itens.map(l => (
-                  <div key={l.chave} className="flex items-center gap-2 text-xs">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: b.cor }} />
-                    <span className="flex-1 min-w-0 truncate" style={{ color: 'var(--text-primary)' }}>{l.nome}</span>
-                    <span className="flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{sinal(l.b - l.a)} ({pct(variacao(l.a, l.b))})</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">{todasAsAreas} ({fmt(linhas.length)})</CardTitle>
-          {dicaClique && <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{dicaClique}</p>}
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-auto max-h-[560px] scrollbar-dark">
-            <table className="w-full text-xs border-collapse">
-              <thead className="sticky top-0 z-10" style={{ background: 'var(--bg-card)' }}>
-                <tr style={{ borderBottom: '1px solid var(--border-default)' }}>
-                  <th className="text-left font-semibold px-3 py-2 sticky left-0 z-10 min-w-[160px]" style={{ background: 'var(--bg-card)' }}>
-                    <button type="button" onClick={() => ordenarPor('nome')} className="flex items-center gap-1">{rotuloArea}<ArrowUpDown className="h-3 w-3 opacity-50" /></button>
-                  </th>
-                  <Th por="a">{rotA}</Th>
-                  <Th por="b">{rotB}</Th>
-                  <Th por="dif">Diferença</Th>
-                  <Th por="var">Variação</Th>
+  return (
+    <Painel
+      titulo={<>{todasAsAreas} <span className="normal-case tracking-normal font-semibold">({fmt(linhas.length)})</span></>}
+      icone={List}
+      direita={<CampoFiltro valor={texto} onChange={setTexto} placeholder={`Filtrar por ${rotuloArea.toLowerCase()}…`} />}
+      corpo="pt-3"
+    >
+      <div className="px-4 sm:px-5 pb-3 flex flex-wrap items-center gap-1.5">
+        <ChipFiltro ativo={filtro === 'todos'} onClick={() => setFiltro('todos')}>Todos · {fmt(linhas.length)}</ChipFiltro>
+        <ChipFiltro ativo={filtro === 'cresceu'} cor={COR_GANHO} onClick={() => setFiltro(filtro === 'cresceu' ? 'todos' : 'cresceu')}>Cresceu · {fmt(conta('cresceu'))}</ChipFiltro>
+        <ChipFiltro ativo={filtro === 'caiu'} cor={COR_PERDA} onClick={() => setFiltro(filtro === 'caiu' ? 'todos' : 'caiu')}>Caiu · {fmt(conta('caiu'))}</ChipFiltro>
+        {conta('igual') > 0 && (
+          <ChipFiltro ativo={filtro === 'igual'} cor="#64748b" onClick={() => setFiltro(filtro === 'igual' ? 'todos' : 'igual')}>Igual · {fmt(conta('igual'))}</ChipFiltro>
+        )}
+        {dicaClique && (
+          <span className="text-[11px] flex items-center gap-1 sm:ml-auto" style={{ color: 'var(--text-tertiary)' }}>
+            <MousePointerClick className="w-3 h-3" />{dicaClique}
+          </span>
+        )}
+      </div>
+      <div className="overflow-auto max-h-[600px] scrollbar-dark" style={{ borderTop: '1px solid var(--tint-06)' }}>
+        <table className="w-full text-xs border-collapse">
+          <thead className="sticky top-0 z-10">
+            <tr className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+              <Th por="nome" alinhar="left" className="sticky left-0 z-10 min-w-[170px] px-4">{rotuloArea}</Th>
+              <Th por="a">{rotuloLado(lados[0])}</Th>
+              <Th por="b">{rotuloLado(lados[1])}</Th>
+              <Th por="dif">Diferença</Th>
+              <Th por="var" className="px-4">Variação</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {visiveis.length === 0 && (
+              <tr><td colSpan={5} className="px-4 py-8 text-center" style={{ color: 'var(--text-tertiary)' }}>Nada encontrado com esse filtro.</td></tr>
+            )}
+            {visiveis.map(l => {
+              const d = l.b - l.a;
+              const v = variacao(l.a, l.b);
+              const cor = corDaDiferenca(d);
+              return (
+                <tr key={l.chave} onClick={onClickLinha ? () => onClickLinha(l) : undefined}
+                  className={`group ${onClickLinha ? 'cursor-pointer' : ''}`} style={{ borderTop: '1px solid var(--tint-06)' }}>
+                  <td className="px-4 py-2.5 sticky left-0 font-medium bg-[var(--bg-card)] group-hover:bg-[var(--bg-hover)]"
+                    style={{ color: 'var(--text-primary)', boxShadow: `inset 3px 0 0 ${comAlfa(cor, aparenciaEvolucao(l.a, l.b)?.opacidade ?? 0.3)}` }}>
+                    {l.nome}
+                  </td>
+                  <td className="px-3 py-2.5 text-right tabular-nums group-hover:bg-[var(--bg-hover)]" style={{ color: 'var(--text-secondary)' }}>{fmt(l.a)}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums font-semibold group-hover:bg-[var(--bg-hover)]" style={{ color: 'var(--text-primary)' }}>{fmt(l.b)}</td>
+                  <td className="px-3 py-2.5 text-right group-hover:bg-[var(--bg-hover)]"><Etiqueta cor={cor}>{sinal(d)}</Etiqueta></td>
+                  <td className="px-4 py-2.5 group-hover:bg-[var(--bg-hover)]">
+                    <span className="flex items-center justify-end gap-2">
+                      <span className="tabular-nums text-[11px] font-semibold" style={{ color: cor }}>{pct(v)}</span>
+                      <BarraVariacao v={v} />
+                    </span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {ordenadas.map(l => {
-                  const ap = aparenciaEvolucao(l.a, l.b);
-                  return (
-                    <tr key={l.chave} onClick={onClickLinha ? () => onClickLinha(l) : undefined}
-                      className={onClickLinha ? 'cursor-pointer hover:bg-[var(--tint-06)]' : undefined}
-                      style={{ borderBottom: '1px solid var(--tint-06)' }}>
-                      <td className="px-3 py-1.5 sticky left-0 font-medium" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: ap?.cor ?? COR_SEM_VOTO }} />{l.nome}
-                        </span>
-                      </td>
-                      <td className="px-3 py-1.5 text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{fmt(l.a)}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{fmt(l.b)}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums font-semibold" style={{ color: l.b > l.a ? COR_GANHO : l.b < l.a ? COR_PERDA : 'var(--text-secondary)' }}>{sinal(l.b - l.a)}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{pct(variacao(l.a, l.b))}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-    </>
-  ) };
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </Painel>
+  );
 }
 
 function LegendaEvolucao() {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-      <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: COR_GANHO }} />ganhou votos</span>
-      <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: COR_PERDA }} />perdeu votos</span>
-      <span className="flex items-center gap-1.5">
-        <span className="flex">{[0.35, 0.6, 0.85].map(o => <span key={o} className="w-3 h-3" style={{ background: '#94a3b8', opacity: o }} />)}</span>
-        variação pequena → grande
-      </span>
-      <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: COR_SEM_VOTO }} />sem votos nas duas</span>
-    </div>
+    <LegendaMapa
+      itens={[{ chave: 'g', cor: COR_GANHO, rotulo: 'ganhou votos' }, { chave: 'p', cor: COR_PERDA, rotulo: 'perdeu votos' }]}
+      escala={{ inicio: 'variação pequena', fim: 'grande' }}
+      semVoto={{ cor: COR_SEM_VOTO, rotulo: 'sem votos nas duas' }}
+    />
   );
 }
 
@@ -232,11 +394,12 @@ function LegendaEvolucao() {
 interface LocalApi { codLocal: string; nome: string; zona: number; lat: number | null; lng: number | null; votos?: number }
 interface RespostaBairros { fonte?: string; bairros?: Array<{ nome: string; locais?: LocalApi[] }> }
 
-function EvolucaoCidade({ uf, municipio, a, b, rotA, rotB, titulo }: {
+function EvolucaoCidade({ uf, municipio, a, b, rotA, rotB, titulo, lados }: {
   uf: string; municipio: string;
   a: { id: string; ano: string; zonas: DadosCandidato['zonas'] };
   b: { id: string; ano: string; zonas: DadosCandidato['zonas'] };
   rotA: string; rotB: string; titulo: string;
+  lados: [LadoVisual, LadoVisual];
 }) {
   const [visao, setVisao] = useState<'bairros' | 'zonas'>('bairros');
   const [resp, setResp] = useState<[RespostaBairros | null, RespostaBairros | null] | null>(null);
@@ -338,60 +501,69 @@ function EvolucaoCidade({ uf, municipio, a, b, rotA, rotB, titulo }: {
     if (pts.length) setFoco({ nonce: Date.now(), pontos: pts });
   };
 
-  const painel = usePainelEvolucao({
-    linhas, rotA, rotB,
-    nomeArea: visaoEfetiva === 'bairros' ? rotulo : 'zonas',
-    rotuloArea: visaoEfetiva === 'bairros' ? rotuloColunaDe(rotulo) : 'Zona',
-    todasAsAreas: visaoEfetiva === 'bairros' ? todosOsDe(rotulo) : 'Todas as zonas',
-  });
+  const rotuloArea = visaoEfetiva === 'bairros' ? rotuloColunaDe(rotulo) : 'Zona';
+  const nomeArea = visaoEfetiva === 'bairros' ? rotulo : 'zonas';
 
-  if (!resp) return <Card><CardContent className="py-12 flex justify-center"><Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--text-tertiary)' }} /></CardContent></Card>;
+  if (!resp) {
+    return (
+      <div className="rounded-2xl py-16 flex flex-col items-center gap-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--brand-cobalt-text)' }} />
+        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Carregando os votos das duas eleições…</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center rounded-lg p-0.5 text-xs" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}>
-          {([['bairros', botaoDe(rotulo)], ['zonas', 'Zonas']] as const).map(([v, r]) => (
-            <button key={v} type="button" onClick={() => setVisao(v)} disabled={!temReal && v === 'bairros'}
-              className="px-3 py-1.5 rounded-md font-medium transition-all disabled:opacity-40"
-              style={visaoEfetiva === v ? { background: '#1a73e8', color: '#fff' } : { color: 'var(--text-secondary)' }}>{r}</button>
-          ))}
-        </div>
+        <Pilulas
+          opcoes={[['bairros', botaoDe(rotulo)], ['zonas', 'Zonas']] as const}
+          valor={visaoEfetiva}
+          onChange={setVisao}
+          desabilitada={v => !temReal && v === 'bairros'}
+        />
         {temReal && linhasBairros.length > 0 && (
           <BuscaBairro opcoes={linhasBairros.filter(l => l.chave !== FORA).map(l => ({ nome: l.nome, votos: l.b }))} onEscolher={escolherBairro}
             placeholder={rotulo === 'distritos' ? 'Buscar distrito…' : rotulo === 'regiões administrativas' ? 'Buscar região…' : 'Buscar bairro…'} />
         )}
-        <BotaoPdfComparacao
-          tipo="evolucao" titulo={titulo} subtitulo={`${municipio} (${uf}) — ${visaoEfetiva === 'bairros' ? botaoDe(rotulo).toLowerCase() : 'zonas'}`}
-          colunas={[rotA, rotB]} rotuloArea={visaoEfetiva === 'bairros' ? rotuloColunaDe(rotulo) : 'Zona'}
-          linhas={linhas.map(l => ({ nome: l.nome, valores: [l.a, l.b] }))}
-        />
+        <div className="sm:ml-auto">
+          <BotaoPdfComparacao
+            tipo="evolucao" titulo={titulo} subtitulo={`${municipio} (${uf}) — ${visaoEfetiva === 'bairros' ? botaoDe(rotulo).toLowerCase() : 'zonas'}`}
+            colunas={[rotA, rotB]} rotuloArea={rotuloArea}
+            linhas={linhas.map(l => ({ nome: l.nome, valores: [l.a, l.b] }))}
+          />
+        </div>
       </div>
       {!temReal && (
-        <p className="text-xs flex items-start gap-1.5" style={{ color: 'var(--warning)' }}>
-          <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-px" />
+        <p className="text-xs flex items-start gap-2 rounded-xl px-3 py-2.5" style={{ color: 'var(--warning)', background: 'var(--warning-soft)' }}>
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           Um dos dois não tem voto por local de votação nesta cidade (o TSE juntou ali uma eleição suplementar): a comparação fica por zona.
         </p>
       )}
       {visaoEfetiva === 'zonas' && (
-        <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+        <p className="text-[11px] flex items-start gap-1.5" style={{ color: 'var(--text-tertiary)' }}>
+          <Info className="h-3.5 w-3.5 flex-shrink-0 mt-px" />
           A Justiça Eleitoral às vezes junta ou renumera zonas entre eleições: uma zona que aparece só num dos anos pode ser essa mudança, e não ganho ou perda de verdade.
         </p>
       )}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 space-y-2">
-          <div className="h-[360px] sm:h-[460px] xl:h-[540px]">
+      <PlacarEvolucao lados={lados} linhas={linhas} />
+      <GradeMapa
+        mapa={(
+          <CartaoMapa
+            titulo={visaoEfetiva === 'bairros' ? `Variação em cada ${rotuloArea.toLowerCase()}` : 'Variação em cada zona eleitoral'}
+            dica="Passe o mouse para ver os votos" legenda={<LegendaEvolucao />}>
             <MapaCidadeComparacao
               pontos={pontos} poligonos={poligonosMapa} foco={foco}
               versao={`${visaoEfetiva}|${a.id}|${b.id}|${locais.length}|${poligonos ? 1 : 0}`}
               enquadramento={`${uf}|${municipio}|${visaoEfetiva === 'bairros' && poligonos ? 'pol' : 'pts'}`}
             />
-          </div>
-          <LegendaEvolucao />
-        </div>
-        {painel.resumo}
-      </div>
-      {painel.detalhes}
+          </CartaoMapa>
+        )}
+        lateral={<PainelBalanco linhas={linhas} nomeArea={nomeArea} />}
+      />
+      <GanhosEPerdas linhas={linhas} />
+      <TabelaEvolucao linhas={linhas} lados={lados} rotuloArea={rotuloArea}
+        todasAsAreas={visaoEfetiva === 'bairros' ? todosOsDe(rotulo) : 'Todas as zonas'} />
     </div>
   );
 }
@@ -504,109 +676,112 @@ export function EvolucaoCandidato() {
     return ap ? { ...ap, html: htmlEvolucao(nome, rotA, rotB, a, b) } : null;
   };
 
-  const painel = usePainelEvolucao({
-    linhas, rotA, rotB,
-    nomeArea: nivel === 'brasil' ? 'estados' : 'cidades',
-    rotuloArea: nivel === 'brasil' ? 'Estado' : 'Cidade',
-    todasAsAreas: nivel === 'brasil' ? 'Todos os estados' : 'Todas as cidades',
-    onClickLinha: nivel === 'brasil' ? (l) => { if (l.chave !== 'ZZ') abrirUf(l.chave); } : (l) => setCidadeAberta(l.nome),
-    dicaClique: nivel === 'brasil' ? 'Clique num estado para ver as cidades.' : 'Clique numa cidade para ver por bairro e zona.',
-  });
 
   const opcoesAnos = (i: number) => ANOS.filter(a => !(escopo === 'BR' && ehAnoMunicipal(a))).map(a => ({ value: a, label: a }));
+  // Cor de cada lado pelo partido; o mesmo candidato nos dois anos fica com a mesma cor.
+  const coresLados = coresDosCandidatos([A.dados?.partido, B.dados?.partido]);
+  // O TSE muda o número do candidato a cada eleição: o mesmo é reconhecido pelo nome.
+  const mesmo = !!A.dados && !!B.dados && semAcento(nomeDe(A.dados)) === semAcento(nomeDe(B.dados));
+  const ladosVisuais: [LadoVisual, LadoVisual] = [
+    { nome: nomeDe(A.dados), ano: A.ano, partido: A.dados?.partido ?? '', cor: coresLados[0] },
+    { nome: nomeDe(B.dados), ano: B.ano, partido: B.dados?.partido ?? '', cor: mesmo ? coresLados[0] : coresLados[1] },
+  ];
+
+  const passos: Passo[] = [
+    ...(escopo === 'BR' ? [{ rotulo: 'Brasil', onClick: voltarAoInicio }] : []),
+    ...(nivel !== 'brasil' ? [{ rotulo: nomeDaUf(ufAtual), onClick: () => setCidadeAberta(null) }] : []),
+    ...(nivel === 'cidade' ? [{ rotulo: cidadeAberta! }] : []),
+  ];
+
+  const cartaoLado = (lado: Lado, i: number) => (
+    <div key={i} className="rounded-xl p-3 sm:p-4 space-y-3 min-w-0"
+      style={{
+        border: lado.dados ? `1px solid ${comAlfa(ladosVisuais[i].cor, 0.35)}` : '1px solid var(--border-default)',
+        background: lado.dados ? `linear-gradient(135deg, ${comAlfa(ladosVisuais[i].cor, 0.08)}, transparent 70%)` : 'var(--bg-card-subtle)',
+      }}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>
+          {i === 0 ? 'Antes' : 'Depois'}
+        </span>
+        <div className="w-24">
+          <Select value={lado.ano} onChange={(e) => atualizar(i, { ano: e.target.value, dados: null, homonimos: [] })} options={opcoesAnos(i)} />
+        </div>
+      </div>
+      {lado.dados ? (
+        <div className="flex items-center gap-3 min-w-0">
+          <Avatar nome={nomeDe(lado.dados)} cor={ladosVisuais[i].cor} tamanho={44} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold leading-tight break-words" style={{ color: 'var(--text-primary)' }}>{nomeDe(lado.dados)}</span>
+            <span className="block text-[11px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{lado.dados.partido} · {lado.dados.cargo}</span>
+            <span className="block text-[11px] font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }}>{fmt(lado.dados.totalVotos)} votos</span>
+          </span>
+          <button type="button" onClick={() => atualizar(i, { dados: null })} className="self-start p-1 rounded-md hover:bg-[var(--tint-08)]" aria-label="Trocar candidato">
+            <X className="h-3.5 w-3.5" style={{ color: 'var(--text-tertiary)' }} />
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none" style={{ color: 'var(--text-tertiary)' }} />
+            <Input value={lado.busca} onChange={(e) => setLados(p => p.map((l, j) => (j === i ? { ...l, busca: e.target.value } : l)) as [Lado, Lado])}
+              onKeyDown={(e) => { if (e.key === 'Enter') buscar(i); }} placeholder="Nome do candidato" className="pl-8" />
+          </div>
+          <Button onClick={() => buscar(i)} disabled={buscando !== null} aria-label="Escolher candidato">
+            {buscando === i ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          </Button>
+        </div>
+      )}
+      {lado.homonimos.length > 0 && (
+        <div className="max-h-48 overflow-y-auto scrollbar-dark rounded-lg" style={{ border: '1px solid var(--border-default)', background: 'var(--bg-card)' }}>
+          {lado.homonimos.map(h => (
+            <button key={h.id} type="button" onClick={() => escolherCandidato(i, h.id)}
+              className="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 text-left hover:bg-[var(--tint-06)]">
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{h.nomeUrna}</span>
+                <span className="block text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{h.partido} · {h.cargo}</span>
+              </span>
+              <span className="text-xs font-semibold flex-shrink-0 tabular-nums" style={{ color: 'var(--acento-azul)' }}>{fmt(h.totalVotos)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <TrendingUp className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
-            Evolução entre eleições
-          </CardTitle>
-          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            Um candidato numa eleição e outro — ou o mesmo — noutra. O mapa mostra onde os votos cresceram (verde) e onde caíram (vermelho).
+      <Painel titulo="Montar a evolução" icone={TrendingUp}>
+        <div className="space-y-1 sm:max-w-sm">
+          <label className="block text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>Onde comparar</label>
+          <Select value={abrangencia} onChange={(e) => { setAbrangencia(e.target.value); setLados(p => [{ ...p[0], dados: null, homonimos: [] }, { ...p[1], dados: null, homonimos: [] }]); voltarAoInicio(); }}
+            options={[{ value: 'BR', label: 'Brasil (presidente)' }, ...ESTADOS_BRASIL.map(e => ({ value: e.sigla, label: e.nome }))]} />
+        </div>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 items-center">
+          {cartaoLado(A, 0)}
+          <span className="mx-auto w-9 h-9 rounded-full flex items-center justify-center rotate-90 md:rotate-0"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', color: 'var(--text-tertiary)' }}>
+            <ArrowRight className="w-4 h-4" />
+          </span>
+          {cartaoLado(B, 1)}
+        </div>
+        {erro && (
+          <p className="mt-3 text-xs flex items-start gap-1.5 rounded-lg px-3 py-2" style={{ color: 'var(--danger)', background: 'var(--danger-soft)' }}>
+            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-px" /> {erro}
           </p>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-0.5 sm:max-w-sm">
-            <label className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>Onde comparar</label>
-            <Select value={abrangencia} onChange={(e) => { setAbrangencia(e.target.value); setLados(p => [{ ...p[0], dados: null, homonimos: [] }, { ...p[1], dados: null, homonimos: [] }]); voltarAoInicio(); }}
-              options={[{ value: 'BR', label: 'Brasil (presidente)' }, ...ESTADOS_BRASIL.map(e => ({ value: e.sigla, label: e.nome }))]} />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {lados.map((lado, i) => (
-              <div key={i} className="rounded-lg p-3 space-y-2" style={{ border: '1px solid var(--border-default)', background: 'var(--bg-card-subtle)' }}>
-                <p className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>{i === 0 ? 'Antes' : 'Depois'}</p>
-                <div className="flex gap-2">
-                  <div className="w-24 flex-shrink-0">
-                    <Select value={lado.ano} onChange={(e) => atualizar(i, { ano: e.target.value, dados: null, homonimos: [] })} options={opcoesAnos(i)} />
-                  </div>
-                  {lado.dados ? (
-                    <div className="flex-1 min-w-0 flex items-center gap-2 rounded-md px-2" style={{ border: '1px solid var(--border-default)' }}>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{nomeDe(lado.dados)}</span>
-                        <span className="block text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>{lado.dados.partido} · {lado.dados.cargo} · {fmt(lado.dados.totalVotos)} votos</span>
-                      </span>
-                      <button type="button" onClick={() => atualizar(i, { dados: null })} className="p-1" aria-label="Trocar candidato">
-                        <X className="h-3.5 w-3.5" style={{ color: 'var(--text-tertiary)' }} />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="relative flex-1">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none" style={{ color: '#4a7a9b' }} />
-                        <Input value={lado.busca} onChange={(e) => setLados(p => p.map((l, j) => (j === i ? { ...l, busca: e.target.value } : l)) as [Lado, Lado])}
-                          onKeyDown={(e) => { if (e.key === 'Enter') buscar(i); }} placeholder="Nome do candidato" className="pl-8" />
-                      </div>
-                      <Button onClick={() => buscar(i)} disabled={buscando !== null} aria-label="Escolher candidato">
-                        {buscando === i ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                      </Button>
-                    </>
-                  )}
-                </div>
-                {lado.homonimos.length > 0 && (
-                  <div className="max-h-48 overflow-y-auto scrollbar-dark rounded-md" style={{ border: '1px solid var(--border-default)' }}>
-                    {lado.homonimos.map(h => (
-                      <button key={h.id} type="button" onClick={() => escolherCandidato(i, h.id)}
-                        className="w-full flex items-center justify-between gap-2 px-2 py-1.5 text-left hover:bg-[var(--tint-06)]">
-                        <span className="min-w-0">
-                          <span className="block text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{h.nomeUrna}</span>
-                          <span className="block text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>{h.partido} · {h.cargo}</span>
-                        </span>
-                        <span className="text-xs font-semibold flex-shrink-0" style={{ color: 'var(--acento-azul)' }}>{fmt(h.totalVotos)}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          {erro && (
-            <p className="text-xs flex items-start gap-1.5" style={{ color: 'var(--danger)' }}>
-              <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-px" /> {erro}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </Painel>
 
       {!pronto ? (
-        <Card><CardContent className="py-10 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
-          Escolha o candidato de cada eleição para ver onde os votos cresceram e onde caíram.
-        </CardContent></Card>
+        <EstadoVazio
+          titulo="Escolha o candidato de cada eleição"
+          texto="Pode ser o mesmo candidato em dois anos, ou dois candidatos diferentes. O mapa mostra onde os votos cresceram e onde caíram."
+        />
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            {nivel === 'cidade' && (
-              <Button variant="outline" size="sm" onClick={() => setCidadeAberta(null)}><ArrowLeft className="h-4 w-4 mr-1" /> {nomeDaUf(ufAtual)}</Button>
-            )}
-            {nivel === 'estado' && ufAberta && (
-              <Button variant="outline" size="sm" onClick={voltarAoInicio}><ArrowLeft className="h-4 w-4 mr-1" /> Brasil</Button>
-            )}
-            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-              {nivel === 'brasil' ? 'Brasil — por estado' : nivel === 'cidade' ? `${cidadeAberta} (${ufAtual})` : `${nomeDaUf(ufAtual)} — por cidade`}
-            </span>
-            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{rotA} → {rotB}</span>
-            {nivel !== 'cidade' && (
+          <Trilha
+            passos={passos}
+            meta={`${A.ano} → ${B.ano}`}
+            acoes={nivel !== 'cidade' && (
               <BotaoPdfComparacao
                 tipo="evolucao" titulo={titulo}
                 subtitulo={nivel === 'brasil' ? 'Brasil — por estado' : `${nomeDaUf(ufAtual)} — por cidade`}
@@ -621,19 +796,24 @@ export function EvolucaoCandidato() {
                 }))}
               />
             )}
-          </div>
+          />
 
           {nivel === 'cidade' ? (
             <EvolucaoCidade
-              uf={ufAtual} municipio={cidadeAberta!} rotA={rotA} rotB={rotB} titulo={titulo}
+              uf={ufAtual} municipio={cidadeAberta!} rotA={rotA} rotB={rotB} titulo={titulo} lados={ladosVisuais}
               a={{ id: A.dados!.candidatoId, ano: A.ano, zonas: dadosNoNivel(0)?.zonas }}
               b={{ id: B.dados!.candidatoId, ano: B.ano, zonas: dadosNoNivel(1)?.zonas }}
             />
           ) : (
             <>
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                <div className="xl:col-span-2 space-y-2">
-                  <div className="h-[340px] sm:h-[440px] xl:h-[520px] relative">
+              <PlacarEvolucao lados={ladosVisuais} linhas={linhas} />
+              <GradeMapa
+                mapa={(
+                  <CartaoMapa
+                    titulo={nivel === 'brasil' ? 'Variação em cada estado' : `Variação em cada cidade de ${nomeDaUf(ufAtual)}`}
+                    dica={nivel === 'brasil' ? 'Clique num estado para ver as cidades' : 'Clique numa cidade para ver por bairro e zona'}
+                    legenda={<LegendaEvolucao />}
+                  >
                     <MapaComparacao
                       tipo={nivel === 'brasil' ? 'brasil' : 'estado'}
                       uf={nivel === 'estado' ? ufAtual : undefined}
@@ -643,16 +823,22 @@ export function EvolucaoCandidato() {
                       onClickArea={nivel === 'brasil' ? (uf) => abrirUf(uf) : (_c, nome) => setCidadeAberta(nome)}
                     />
                     {escopo === 'BR' && ufAberta && !dadosUf && (
-                      <div className="absolute inset-0 flex items-center justify-center rounded-xl" style={{ background: 'rgba(15,23,42,0.25)' }}>
-                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                      <div className="absolute inset-0 z-[500] flex items-center justify-center" style={{ background: 'rgba(15,23,42,0.35)', backdropFilter: 'blur(2px)' }}>
+                        <Loader2 className="h-7 w-7 animate-spin text-white" />
                       </div>
                     )}
-                  </div>
-                  <LegendaEvolucao />
-                </div>
-                {painel.resumo}
-              </div>
-              {painel.detalhes}
+                  </CartaoMapa>
+                )}
+                lateral={<PainelBalanco linhas={linhas} nomeArea={nivel === 'brasil' ? 'estados' : 'cidades'} />}
+              />
+              <GanhosEPerdas linhas={linhas} />
+              <TabelaEvolucao
+                linhas={linhas} lados={ladosVisuais}
+                rotuloArea={nivel === 'brasil' ? 'Estado' : 'Cidade'}
+                todasAsAreas={nivel === 'brasil' ? 'Todos os estados' : 'Todas as cidades'}
+                onClickLinha={nivel === 'brasil' ? (l) => { if (l.chave !== 'ZZ') abrirUf(l.chave); } : (l) => setCidadeAberta(l.nome)}
+                dicaClique={nivel === 'brasil' ? 'Clique num estado para abrir' : 'Clique numa cidade para abrir'}
+              />
             </>
           )}
         </>

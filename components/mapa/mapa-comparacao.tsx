@@ -53,7 +53,7 @@ const SEM_DADO = '#cbd5e1';
 
 /** Cartão do balão no visual dos outros mapas (cores do tema claro/escuro). */
 export function cartaoTooltip(conteudo: string): string {
-  return `<div style="background:var(--bg-card-raised);padding:10px 14px;border-radius:10px;border:1px solid var(--border-default);box-shadow:var(--shadow-raised);min-width:190px;max-width:280px;white-space:normal;">${conteudo}</div>`;
+  return `<div style="background:var(--bg-card-raised);padding:10px 14px;border-radius:10px;border:1px solid var(--border-default);box-shadow:var(--shadow-raised);min-width:220px;max-width:300px;white-space:normal;">${conteudo}</div>`;
 }
 
 export function MapaComparacao({ tipo, uf, aparencia, versao, onClickArea, altura = '520px' }: MapaComparacaoProps) {
@@ -204,7 +204,7 @@ export function MapaComparacao({ tipo, uf, aparencia, versao, onClickArea, altur
   }, [versao, nomes]);
 
   return (
-    <div className="relative w-full rounded-xl overflow-hidden" style={{ height: altura, border: '1px solid var(--border-default)' }}>
+    <div className="relative w-full overflow-hidden" style={{ height: altura }}>
       <div ref={mapRef} className="absolute inset-0" />
       {(carregando || erro) && (
         <div className="absolute inset-0 flex items-center justify-center text-sm" style={{ background: 'var(--bg-card)', color: 'var(--text-tertiary)' }}>

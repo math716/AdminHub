@@ -12,9 +12,8 @@
 // bairro e zona (comparacao-cidade). Prefeito e vereador abrem direto na
 // cidade. Os votos por estado/cidade vêm de /api/tse/candidato.
 
-import { useMemo, useState } from 'react';
-import { Plus, X, Loader2, Search, ArrowLeft, AlertTriangle, Scale } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useMemo, useRef, useState } from 'react';
+import { Plus, X, Loader2, Search, AlertTriangle, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -22,11 +21,12 @@ import { ESTADOS_BRASIL } from '@/lib/types';
 import { campoDoPartido, coresDosCandidatos, NOME_CAMPO } from '@/lib/partidos-espectro';
 import { MapaComparacao, type AparenciaArea } from '@/components/mapa/mapa-comparacao';
 import {
-  type CandidatoNaComparacao, type Linha, DetalhesComparacao, LegendaComparacao, ResumoComparacao,
-  corDoResultado, fmt, htmlComparacao, opacidadePorFolga, resultado, semAcento,
+  type CandidatoNaComparacao, type Linha, DestaquesComparacao, LegendaComparacao, PainelVitorias, PlacarComparacao,
+  TabelaComparacao, corDoResultado, fmt, htmlComparacao, opacidadePorFolga, resultado, semAcento,
 } from '@/components/mapa/comparacao-comum';
 import { ComparacaoCidade } from '@/components/mapa/comparacao-cidade';
 import { BotaoPdfComparacao } from '@/components/mapa/pdf-comparacao';
+import { Avatar, CartaoMapa, EstadoVazio, GradeMapa, Painel, Trilha, comAlfa, type Passo } from '@/components/mapa/comparacao-visual';
 
 const MAX_CANDIDATOS = 4;
 const ANOS = ['2026', '2024', '2022', '2020', '2018'];
@@ -91,6 +91,7 @@ export function ComparadorCandidatos() {
   const [erro, setErro] = useState('');
   const [homonimos, setHomonimos] = useState<Homonimo[]>([]);
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
+  const buscaRef = useRef<HTMLInputElement>(null);
 
   // Presidente: clicar num estado abre as cidades dele.
   const [ufAberta, setUfAberta] = useState<string | null>(null);
@@ -261,145 +262,140 @@ export function ComparadorCandidatos() {
     ...ESTADOS_BRASIL.map(e => ({ value: e.sigla, label: e.nome })),
   ];
 
+  const passos: Passo[] = [
+    ...(escopo === 'BR' ? [{ rotulo: 'Brasil', onClick: voltarAoInicio }] : []),
+    ...(nivel !== 'brasil' ? [{ rotulo: nomeDaUf(ufAtual), onClick: ehMunicipal ? undefined : () => setCidadeAberta(null) }] : []),
+    ...(nivel === 'cidade' ? [{ rotulo: cidadeAtual! }] : []),
+  ];
+
   return (
     <div className="space-y-4">
       {/* ── Montar a comparação ── */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Scale className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
-            Comparar candidatos
-          </CardTitle>
-          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            Até {MAX_CANDIDATOS} candidatos do mesmo ano e turno. As cores seguem o campo político do partido:
-            esquerda em vermelho e laranja, direita em azul e verde, centro em amarelo e roxo.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <div className="space-y-0.5">
-              <label className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>Ano</label>
-              <Select value={ano} onChange={(e) => { setAno(e.target.value); limpar(); if (ehAnoMunicipal(e.target.value) && abrangencia === 'BR') setAbrangencia('SP'); }}
-                options={ANOS.map(a => ({ value: a, label: a }))} />
-            </div>
-            <div className="space-y-0.5">
-              <label className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>Turno</label>
-              <div className="flex rounded-lg p-0.5 text-xs h-9" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}>
-                {([1, 2] as const).map(t => (
-                  <button key={t} type="button" onClick={() => trocarTurno(t)}
-                    className="flex-1 rounded-md font-medium transition-all"
-                    style={turno === t ? { background: '#1a73e8', color: '#fff' } : { color: 'var(--text-secondary)' }}>
-                    {t}º turno
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-0.5 col-span-2">
-              <label className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>Onde comparar</label>
-              <Select value={escopo || abrangencia} onChange={(e) => { setAbrangencia(e.target.value); limpar(); }} options={opcoesAbrangencia} />
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none" style={{ color: '#4a7a9b' }} />
-              <Input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') buscar(); }}
-                placeholder={candidatos.length >= MAX_CANDIDATOS ? 'Limite de 4 candidatos' : 'Nome do candidato'}
-                disabled={candidatos.length >= MAX_CANDIDATOS}
-                className="pl-8"
-              />
-            </div>
-            <Button onClick={buscar} disabled={buscando || candidatos.length >= MAX_CANDIDATOS}>
-              {buscando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              <span className="hidden sm:inline ml-1">Adicionar</span>
-            </Button>
-          </div>
-
-          {erro && (
-            <p className="text-xs flex items-start gap-1.5" style={{ color: 'var(--danger)' }}>
-              <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-px" /> {erro}
-            </p>
-          )}
-
-          {homonimos.length > 0 && (
-            <div className="rounded-lg p-2 space-y-1" style={{ border: '1px solid var(--border-default)', background: 'var(--bg-card-subtle)' }}>
-              <p className="text-xs px-1" style={{ color: 'var(--text-secondary)' }}>Encontramos mais de um. Escolha:</p>
-              <div className="max-h-56 overflow-y-auto scrollbar-dark">
-                {homonimos.map(h => (
-                  <button key={h.id} type="button" onClick={() => adicionarPorId(h.id)}
-                    className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-left hover:bg-[var(--tint-06)]">
-                    <span className="min-w-0">
-                      <span className="block text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{h.nomeUrna}</span>
-                      <span className="block text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>
-                        {h.partido} · {h.cargo}{h.municipioPrincipal ? ` · ${h.municipioPrincipal}` : ''}
-                      </span>
-                    </span>
-                    <span className="text-xs font-semibold flex-shrink-0" style={{ color: 'var(--acento-azul)' }}>{fmt(h.totalVotos)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {candidatos.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {candidatos.map((c, i) => (
-                <div key={c.id} className="flex items-center gap-2 rounded-lg pl-2 pr-1 py-1 max-w-full"
-                  style={{ border: `1.5px solid ${cores[i]}`, background: 'var(--bg-card-subtle)', opacity: c.dados ? 1 : 0.55 }}>
-                  <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: cores[i] }} />
-                  <span className="min-w-0">
-                    <span className="block text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{c.nome}</span>
-                    <span className="block text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>
-                      {c.partido} · {NOME_CAMPO[campoDoPartido(c.partido)]} · {c.cargo}
-                      {!c.dados && ' · sem votos neste turno'}
-                    </span>
-                  </span>
-                  <button type="button" onClick={() => remover(c.id)} className="p-1 rounded hover:bg-[var(--tint-08)]" aria-label={`Tirar ${c.nome} da comparação`}>
-                    <X className="h-3.5 w-3.5" style={{ color: 'var(--text-tertiary)' }} />
-                  </button>
-                </div>
+      <Painel titulo="Montar a comparação" icone={Scale} direita={<CamposPoliticos />}>
+        <div className="grid grid-cols-2 lg:grid-cols-12 gap-3">
+          <Campo rotulo="Ano" className="lg:col-span-2">
+            <Select value={ano} onChange={(e) => { setAno(e.target.value); limpar(); if (ehAnoMunicipal(e.target.value) && abrangencia === 'BR') setAbrangencia('SP'); }}
+              options={ANOS.map(a => ({ value: a, label: a }))} />
+          </Campo>
+          <Campo rotulo="Turno" className="lg:col-span-2">
+            <div className="flex rounded-lg p-0.5 text-xs h-9" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}>
+              {([1, 2] as const).map(t => (
+                <button key={t} type="button" onClick={() => trocarTurno(t)}
+                  className="flex-1 rounded-md font-semibold transition-all"
+                  style={turno === t ? { background: 'var(--brand-cobalt)', color: '#fff', boxShadow: '0 4px 12px -4px rgba(37,99,235,0.6)' } : { color: 'var(--text-secondary)' }}>
+                  {t}º turno
+                </button>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </Campo>
+          <Campo rotulo="Onde comparar" className="col-span-2 lg:col-span-3">
+            <Select value={escopo || abrangencia} onChange={(e) => { setAbrangencia(e.target.value); limpar(); }} options={opcoesAbrangencia} />
+          </Campo>
+          <Campo rotulo="Candidato" className="col-span-2 lg:col-span-5">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none" style={{ color: 'var(--text-tertiary)' }} />
+                <Input
+                  ref={buscaRef}
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') buscar(); }}
+                  placeholder={candidatos.length >= MAX_CANDIDATOS ? 'Limite de 4 candidatos' : 'Digite o nome e tecle Enter'}
+                  disabled={candidatos.length >= MAX_CANDIDATOS}
+                  className="pl-8"
+                />
+              </div>
+              <Button onClick={buscar} disabled={buscando || candidatos.length >= MAX_CANDIDATOS}>
+                {buscando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                <span className="hidden sm:inline ml-1">Adicionar</span>
+              </Button>
+            </div>
+          </Campo>
+        </div>
+
+        {erro && (
+          <p className="mt-3 text-xs flex items-start gap-1.5 rounded-lg px-3 py-2" style={{ color: 'var(--danger)', background: 'var(--danger-soft)' }}>
+            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-px" /> {erro}
+          </p>
+        )}
+
+        {homonimos.length > 0 && (
+          <div className="mt-3 rounded-xl p-2 space-y-1" style={{ border: '1px solid var(--border-default)', background: 'var(--bg-card-subtle)' }}>
+            <p className="text-[10px] uppercase tracking-widest font-bold px-1 pt-1" style={{ color: 'var(--text-tertiary)' }}>Mais de um encontrado — escolha</p>
+            <div className="max-h-56 overflow-y-auto scrollbar-dark">
+              {homonimos.map(h => (
+                <button key={h.id} type="button" onClick={() => adicionarPorId(h.id)}
+                  className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-[var(--tint-06)]">
+                  <span className="min-w-0">
+                    <span className="block text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{h.nomeUrna}</span>
+                    <span className="block text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                      {h.partido} · {h.cargo}{h.municipioPrincipal ? ` · ${h.municipioPrincipal}` : ''}
+                    </span>
+                  </span>
+                  <span className="text-xs font-semibold flex-shrink-0 tabular-nums" style={{ color: 'var(--acento-azul)' }}>{fmt(h.totalVotos)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Vagas: os escolhidos e as que faltam */}
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          {Array.from({ length: MAX_CANDIDATOS }, (_, i) => {
+            const c = candidatos[i];
+            if (!c) {
+              return (
+                <button key={`vaga-${i}`} type="button" onClick={() => buscaRef.current?.focus()}
+                  className="rounded-xl px-3 py-3 flex items-center gap-3 text-left transition-colors hover:bg-[var(--tint-04)]"
+                  style={{ border: '1.5px dashed var(--border-strong)' }}>
+                  <span className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'var(--tint-06)', color: 'var(--text-tertiary)' }}>
+                    <Plus className="w-4 h-4" />
+                  </span>
+                  <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    {i < 2 ? `Candidato ${i + 1}` : `Candidato ${i + 1} (opcional)`}
+                  </span>
+                </button>
+              );
+            }
+            return (
+              <div key={c.id} className="relative rounded-xl px-3 py-3 flex items-center gap-3 min-w-0"
+                style={{
+                  background: `linear-gradient(135deg, ${comAlfa(cores[i], 0.10)}, transparent 70%)`,
+                  border: `1px solid ${comAlfa(cores[i], 0.35)}`,
+                  opacity: c.dados ? 1 : 0.55,
+                }}>
+                <Avatar nome={c.nome} cor={cores[i]} tamanho={40} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold leading-tight break-words" style={{ color: 'var(--text-primary)' }}>{c.nome}</span>
+                  <span className="block text-[11px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                    {c.partido} · {NOME_CAMPO[campoDoPartido(c.partido)]}
+                  </span>
+                  <span className="block text-[11px]" style={{ color: c.dados ? 'var(--text-tertiary)' : 'var(--warning)' }}>
+                    {c.dados ? c.cargo : 'Sem votos neste turno'}
+                  </span>
+                </span>
+                <button type="button" onClick={() => remover(c.id)} className="self-start p-1 rounded-md hover:bg-[var(--tint-08)]" aria-label={`Tirar ${c.nome} da comparação`}>
+                  <X className="h-3.5 w-3.5" style={{ color: 'var(--text-tertiary)' }} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </Painel>
 
       {ativos.length < 2 ? (
-        <Card>
-          <CardContent className="py-10 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
-            {candidatos.length === 0
-              ? 'Adicione pelo menos dois candidatos para ver onde cada um venceu.'
-              : 'Adicione mais um candidato com votos neste turno para comparar.'}
-          </CardContent>
-        </Card>
+        <EstadoVazio
+          titulo={candidatos.length === 0 ? 'Escolha quem vai para o confronto' : 'Falta mais um candidato'}
+          texto={candidatos.length === 0
+            ? 'Com dois ou mais candidatos, o mapa mostra onde cada um venceu.'
+            : 'Adicione mais um candidato com votos neste turno.'}
+        />
       ) : (
         <>
-          {/* ── Onde estamos ── */}
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            {nivel === 'cidade' && !ehMunicipal && (
-              <Button variant="outline" size="sm" onClick={() => setCidadeAberta(null)}>
-                <ArrowLeft className="h-4 w-4 mr-1" /> {nomeDaUf(ufAtual)}
-              </Button>
-            )}
-            {nivel === 'estado' && ufAberta && (
-              <Button variant="outline" size="sm" onClick={voltarAoInicio}>
-                <ArrowLeft className="h-4 w-4 mr-1" /> Brasil
-              </Button>
-            )}
-            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-              {nivel === 'brasil' ? 'Brasil — por estado'
-                : nivel === 'cidade' ? `${cidadeAtual} (${ufAtual})`
-                : `${nomeDaUf(ufAtual)} — por cidade`}
-            </span>
-            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              {ano} · {turno}º turno
-              {nivel === 'brasil' ? ' · clique num estado para ver as cidades' : ''}
-              {nivel === 'estado' ? ' · clique numa cidade para ver por local de votação, bairro e zona' : ''}
-            </span>
-            {nivel !== 'cidade' && (
+          <Trilha
+            passos={passos}
+            meta={`${ano} · ${turno}º turno`}
+            acoes={nivel !== 'cidade' && (
               <BotaoPdfComparacao
                 tipo="comparacao"
                 titulo={`${candsAtivos.map(c => c.nome).join(' × ')} — ${ano}`}
@@ -419,7 +415,7 @@ export function ComparadorCandidatos() {
                 }))}
               />
             )}
-          </div>
+          />
 
           {nivel === 'cidade' ? (
             <ComparacaoCidade
@@ -431,11 +427,14 @@ export function ComparadorCandidatos() {
             />
           ) : (
             <>
-              {/* Lado a lado só em tela larga: com o menu lateral do sistema, um notebook
-                  de 1024–1279px deixaria o resumo espremido — ali ele vai para baixo. */}
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                <div className="xl:col-span-2 space-y-2">
-                  <div className="h-[340px] sm:h-[440px] xl:h-[520px] relative">
+              <PlacarComparacao cands={candsAtivos} linhas={linhas} nomeArea={nivel === 'brasil' ? 'estados' : 'cidades'} />
+              <GradeMapa
+                mapa={(
+                  <CartaoMapa
+                    titulo={nivel === 'brasil' ? 'Quem venceu em cada estado' : `Quem venceu em cada cidade de ${nomeDaUf(ufAtual)}`}
+                    dica={nivel === 'brasil' ? 'Clique num estado para ver as cidades' : 'Clique numa cidade para ver por local de votação, bairro e zona'}
+                    legenda={<LegendaComparacao cands={candsAtivos} />}
+                  >
                     <MapaComparacao
                       tipo={nivel === 'brasil' ? 'brasil' : 'estado'}
                       uf={nivel === 'estado' ? ufAtual : undefined}
@@ -445,21 +444,23 @@ export function ComparadorCandidatos() {
                       onClickArea={nivel === 'brasil' ? (uf) => abrirUf(uf) : (_codigo, nome) => setCidadeAberta(nome)}
                     />
                     {carregandoUf && (
-                      <div className="absolute inset-0 flex items-center justify-center rounded-xl" style={{ background: 'rgba(15,23,42,0.25)' }}>
-                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                      <div className="absolute inset-0 z-[500] flex items-center justify-center" style={{ background: 'rgba(15,23,42,0.35)', backdropFilter: 'blur(2px)' }}>
+                        <Loader2 className="h-7 w-7 animate-spin text-white" />
                       </div>
                     )}
-                  </div>
-                  <LegendaComparacao cands={candsAtivos} />
-                </div>
-                <ResumoComparacao
-                  cands={candsAtivos}
-                  linhas={linhas}
-                  nomeArea={nivel === 'brasil' ? 'estados' : 'cidades'}
-                  extra={temExterior ? { descontar: 1, texto: ' + exterior' } : undefined}
-                />
-              </div>
-              <DetalhesComparacao
+                  </CartaoMapa>
+                )}
+                lateral={(
+                  <PainelVitorias
+                    cands={candsAtivos}
+                    linhas={linhas}
+                    nomeArea={nivel === 'brasil' ? 'estados' : 'cidades'}
+                    extra={temExterior ? { descontar: 1, texto: ' + exterior' } : undefined}
+                  />
+                )}
+              />
+              <DestaquesComparacao cands={candsAtivos} linhas={linhas} />
+              <TabelaComparacao
                 cands={candsAtivos}
                 linhas={linhas}
                 rotuloArea={nivel === 'brasil' ? 'Estado' : 'Cidade'}
@@ -467,12 +468,32 @@ export function ComparadorCandidatos() {
                 onClickLinha={nivel === 'brasil'
                   ? (l) => { if (l.chave !== 'ZZ') abrirUf(l.chave); }
                   : (l) => setCidadeAberta(l.nome)}
-                dicaClique={nivel === 'brasil' ? 'Clique num estado para ver as cidades.' : 'Clique numa cidade para ver por local de votação, bairro e zona.'}
+                dicaClique={nivel === 'brasil' ? 'Clique num estado para abrir' : 'Clique numa cidade para abrir'}
               />
             </>
           )}
         </>
       )}
+    </div>
+  );
+}
+
+function Campo({ rotulo, className = '', children }: { rotulo: string; className?: string; children: React.ReactNode }) {
+  return (
+    <div className={`space-y-1 min-w-0 ${className}`}>
+      <label className="block text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>{rotulo}</label>
+      {children}
+    </div>
+  );
+}
+
+/** As cores seguem o campo político do partido. */
+function CamposPoliticos() {
+  return (
+    <div className="flex items-center gap-3 text-[11px]" style={{ color: 'var(--text-tertiary)' }} title="As cores seguem o campo político do partido">
+      {([['Esquerda', '#dc2626'], ['Centro', '#ca8a04'], ['Direita', '#2563eb']] as const).map(([r, c]) => (
+        <span key={r} className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />{r}</span>
+      ))}
     </div>
   );
 }
