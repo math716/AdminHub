@@ -19,12 +19,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BuscaBairro } from '@/components/maps/busca-bairro';
-import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
+import { FORA, carregarPoligonosCidade, indexarPoligonos, nomeDaLinhaFora, poligonoDoPonto, type PoligonosCidade } from '@/components/mapa/poligonos-cidade';
 import {
   type CandidatoNaComparacao, type Linha, DetalhesComparacao, LegendaComparacao, ResumoComparacao,
   corDoResultado, fmt, htmlComparacao, opacidadePorFolga, resultado, semAcento,
 } from '@/components/mapa/comparacao-comum';
 import { MapaCidadeComparacao, type PontoComparacao, type PoligonosComparacao } from '@/components/mapa/mapa-cidade-comparacao';
+import { BotaoPdfComparacao } from '@/components/mapa/pdf-comparacao';
 
 export interface CandidatoCidade extends CandidatoNaComparacao {
   zonas: Array<{ municipio: string; zona: number; votos: number }>;
@@ -45,60 +46,6 @@ interface LocalComp {
 
 type Visao = 'locais' | 'bairros' | 'zonas';
 
-// Polígonos próprios de algumas capitais; as demais cidades com polígono usam
-// os bairros do IBGE (Censo 2022) via /api/tse/bairros-poligonos.
-const POLIGONOS_PROPRIOS: Array<{ uf: string; municipio: string; url: string; rotulo: string; nomeDe: (f: any) => string }> = [
-  { uf: 'SP', municipio: 'SAO PAULO', url: '/geojson/sp-distritos.geojson', rotulo: 'distritos',
-    nomeDe: f => f?.properties?.nm_distrito_municipal || f?.properties?.ds_nome || '' },
-  { uf: 'RJ', municipio: 'RIO DE JANEIRO', url: '/geojson/rj-bairros.geojson', rotulo: 'bairros',
-    nomeDe: f => f?.properties?.nome || f?.properties?.NOME || '' },
-  { uf: 'CE', municipio: 'FORTALEZA', url: '/geojson/ce-bairros-fortaleza.geojson', rotulo: 'bairros',
-    nomeDe: f => f?.properties?.Nome || f?.properties?.nome || f?.properties?.NOME || '' },
-  { uf: 'DF', municipio: 'BRASILIA', url: '/geojson/df-regioes-administrativas.geojson', rotulo: 'regiões administrativas',
-    nomeDe: f => f?.properties?.nome || '' },
-];
-
-// ── Ponto dentro do polígono (raio), com caixa envolvente para descartar rápido ──
-type Anel = number[][];
-interface PoligonoIndexado { nome: string; aneis: Anel[][]; caixa: [number, number, number, number] }
-
-function indexar(features: any[], nomeDe: (f: any) => string): PoligonoIndexado[] {
-  return features.map(f => {
-    const g = f?.geometry;
-    const poligonos: Anel[][] = g?.type === 'Polygon' ? [g.coordinates] : g?.type === 'MultiPolygon' ? g.coordinates : [];
-    let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
-    for (const p of poligonos) for (const [x, y] of p[0] ?? []) {
-      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
-    }
-    return { nome: nomeDe(f), aneis: poligonos, caixa: [x0, y0, x1, y1] as [number, number, number, number] };
-  });
-}
-
-function dentroDoAnel(x: number, y: number, anel: Anel): boolean {
-  let dentro = false;
-  for (let i = 0, j = anel.length - 1; i < anel.length; j = i++) {
-    const [xi, yi] = anel[i], [xj, yj] = anel[j];
-    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) dentro = !dentro;
-  }
-  return dentro;
-}
-
-function poligonoDoPonto(lng: number, lat: number, indice: PoligonoIndexado[]): string | null {
-  for (const p of indice) {
-    const [x0, y0, x1, y1] = p.caixa;
-    if (lng < x0 || lng > x1 || lat < y0 || lat > y1) continue;
-    for (const aneis of p.aneis) {
-      if (!aneis[0] || !dentroDoAnel(lng, lat, aneis[0])) continue;
-      // Furos (aneis[1..]) — ex.: bairro com outro encravado.
-      if (aneis.slice(1).some(furo => dentroDoAnel(lng, lat, furo))) continue;
-      return p.nome;
-    }
-  }
-  return null;
-}
-
-const FORA = '__fora__';
-
 export function ComparacaoCidade({ uf, municipio, ano, turno, cands }: {
   uf: string;
   municipio: string;
@@ -108,7 +55,7 @@ export function ComparacaoCidade({ uf, municipio, ano, turno, cands }: {
 }) {
   const [visao, setVisao] = useState<Visao>('locais');
   const [respostas, setRespostas] = useState<Array<RespostaBairros | null> | null>(null);
-  const [poligonosGeo, setPoligonosGeo] = useState<{ geojson: any; nomeDe: (f: any) => string; rotulo: string } | null>(null);
+  const [poligonosGeo, setPoligonosGeo] = useState<PoligonosCidade | null>(null);
   const [foco, setFoco] = useState<{ nonce: number; pontos: Array<[number, number]> } | null>(null);
 
   const chaveCands = cands.map(c => c.id).join(',');
@@ -133,17 +80,7 @@ export function ComparacaoCidade({ uf, municipio, ano, turno, cands }: {
   useEffect(() => {
     let cancelado = false;
     setPoligonosGeo(null);
-    const proprio = POLIGONOS_PROPRIOS.find(p => p.uf === uf && p.municipio === semAcento(municipio));
-    const carregar = proprio
-      ? fetch(proprio.url).then(r => (r.ok ? r.json() : null)).then(g => (g ? { geojson: g, nomeDe: proprio.nomeDe, rotulo: proprio.rotulo } : null))
-      : hasBairrosPoligonos(uf, municipio)
-        ? fetch(`/api/tse/bairros-poligonos?${new URLSearchParams({ municipio, uf })}`)
-            .then(r => (r.ok ? r.json() : null))
-            .then(d => (d?.features?.length
-              ? { geojson: { type: 'FeatureCollection', features: d.features }, nomeDe: (f: any) => f?.properties?.NM_BAIRRO ?? '', rotulo: 'bairros' }
-              : null))
-        : Promise.resolve(null);
-    carregar.then(g => { if (!cancelado) setPoligonosGeo(g); }).catch(() => {});
+    carregarPoligonosCidade(uf, municipio).then(g => { if (!cancelado) setPoligonosGeo(g); });
     return () => { cancelado = true; };
   }, [uf, municipio]);
 
@@ -176,21 +113,17 @@ export function ComparacaoCidade({ uf, municipio, ano, turno, cands }: {
   // Cada local → polígono em que está (só nas cidades com polígonos).
   const poligonoDoLocal = useMemo(() => {
     if (!poligonosGeo) return null;
-    const indice = indexar(poligonosGeo.geojson.features ?? [], poligonosGeo.nomeDe);
+    const indice = indexarPoligonos(poligonosGeo);
     const m = new Map<string, string>();
-    for (const l of locais) {
-      const nome = l.lat != null && l.lng != null ? poligonoDoPonto(l.lng, l.lat, indice) : null;
-      m.set(l.chave, nome ?? FORA);
-    }
+    for (const l of locais) m.set(l.chave, poligonoDoPonto(l.lat, l.lng, indice));
     return m;
   }, [poligonosGeo, locais]);
 
   const bairroDe = (l: LocalComp) => (poligonoDoLocal ? poligonoDoLocal.get(l.chave) ?? FORA : l.bairro || 'SEM BAIRRO');
   const rotuloBairros = poligonosGeo?.rotulo ?? 'bairros';
-  const singularBairro = rotuloBairros === 'distritos' ? 'distrito' : rotuloBairros === 'regiões administrativas' ? 'região administrativa' : 'bairro';
   // Local sem coordenada, ou na borda, fora de todos os polígonos: entra numa
   // linha própria em vez de sumir com os votos dele.
-  const nomeDoBairro = (b: string) => (b === FORA ? `Sem ${singularBairro} no mapa (sem coordenada ou fora dos limites)` : b);
+  const nomeDoBairro = (b: string) => (b === FORA ? nomeDaLinhaFora(rotuloBairros) : b);
 
   // ── Linhas de cada visão ───────────────────────────────────────────────────
   const linhasLocais: Linha[] = useMemo(() => locais.map(l => ({
@@ -301,6 +234,17 @@ export function ComparacaoCidade({ uf, municipio, ano, turno, cands }: {
         {podeLocal && opcoesBusca.length > 0 && (
           <BuscaBairro opcoes={opcoesBusca} onEscolher={escolherBairro}
             placeholder={rotuloBairros === 'distritos' ? 'Buscar distrito…' : rotuloBairros === 'regiões administrativas' ? 'Buscar região…' : 'Buscar bairro…'} />
+        )}
+        {respostas && (
+          <BotaoPdfComparacao
+            tipo="comparacao"
+            titulo={`${candsDaVisao.map(c => c.nome).join(' × ')} — ${municipio} ${ano}`}
+            subtitulo={`${municipio} (${uf}) · por ${rotuloArea.toLowerCase()} · ${turno}º turno`}
+            colunas={candsDaVisao.map(c => c.nome)}
+            cores={coresDaVisao}
+            rotuloArea={rotuloArea}
+            linhas={linhas.map(l => ({ nome: l.detalhe ? `${l.nome} — ${l.detalhe}` : l.nome, valores: l.votos }))}
+          />
         )}
       </div>
 

@@ -43,6 +43,13 @@ export const semAcento = (s: string) =>
   String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
     .replace(/['’`´-]/g, ' ').replace(/\s+/g, ' ').trim();
 
+const SINGULAR: Record<string, string> = {
+  cidades: 'cidade', estados: 'estado', bairros: 'bairro', zonas: 'zona', distritos: 'distrito',
+  'regiões administrativas': 'região administrativa', 'locais de votação': 'local de votação',
+};
+/** "1 cidade", "2 cidades" — a área vem sempre no plural. */
+export const contagem = (n: number, plural: string) => `${fmt(n)} ${n === 1 ? SINGULAR[plural] ?? plural : plural}`;
+
 export const COR_EMPATE = '#64748b';
 export const COR_SEM_VOTO = '#cbd5e1';
 
@@ -130,7 +137,7 @@ export function ResumoComparacao({ cands, linhas, nomeArea, extra }: {
       <CardHeader className="pb-2">
         <CardTitle className="text-sm">Resumo</CardTitle>
         <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-          {fmt(comVoto - (extra?.descontar ?? 0))} {nomeArea} com votos{extra?.texto ?? ''}
+          {contagem(comVoto - (extra?.descontar ?? 0), nomeArea)} com votos{extra?.texto ?? ''}
           {empates ? ` · ${empates} empate${empates > 1 ? 's' : ''}` : ''}
         </p>
       </CardHeader>
@@ -149,7 +156,7 @@ export function ResumoComparacao({ cands, linhas, nomeArea, extra }: {
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-xs pl-5">
                 <span style={{ color: 'var(--text-secondary)' }}>{fmt(votos)} votos</span>
                 <span style={{ color: 'var(--text-secondary)' }}>
-                  venceu em <strong style={{ color: 'var(--text-primary)' }}>{fmt(vitorias)}</strong> {nomeArea}
+                  venceu em <strong style={{ color: 'var(--text-primary)' }}>{fmt(vitorias)}</strong> {vitorias === 1 ? contagem(1, nomeArea).replace(/^1 /, '') : nomeArea}
                 </span>
               </div>
               <div className="h-1.5 rounded-full ml-5" style={{ background: 'var(--tint-08)' }}>

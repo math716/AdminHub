@@ -17,6 +17,7 @@ import { tabelaCompletaRanking } from '@/lib/agent/report/tabela-ranking';
 import { bairrosComVotos } from '@/lib/agent/report/mapa-bairros';
 import { mapaDoDF } from '@/lib/agent/report/mapa-df';
 import { normalizarTextoTse } from '@/lib/tse-static';
+import { montarPdfComparacao, type EntradaPdfComparacao } from '@/lib/agent/report/comparacao-pdf';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -173,7 +174,7 @@ function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitu
   );
 
   const tools = input.tools ?? [];
-  const isEleitoral = tools.includes('buscar_votacao') || tools.includes('ranking_nacional');
+  const isEleitoral = tools.includes('buscar_votacao') || tools.includes('ranking_nacional') || tools.includes('comparar_votacao');
   const isEmendas   = tools.includes('buscar_emendas') || tools.includes('comparar_parlamentares');
   const pizza = buildPizza(input, isEleitoral, isEmendas);
   // Rodapé cita a origem real dos números. Eleitoral tem precedência: quando a
@@ -241,6 +242,33 @@ export async function POST(request: NextRequest) {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Disposition': `attachment; filename="gabi-relatorio-territorial-${Date.now()}.pdf"`,
+        },
+      });
+    }
+
+    // ── Comparador e evolução do Mapa Eleitoral ─────────────────────────────
+    // Na mesma rota pelo mesmo motivo do territorial (limite de funções). A
+    // tela manda o que já calculou: colunas, todas as linhas e as cores do mapa.
+    if (body.tipo === 'comparacao') {
+      const e = (body as any).comparacao as EntradaPdfComparacao | undefined;
+      if (!e || !Array.isArray(e.colunas) || !Array.isArray(e.linhas) || e.colunas.length < 1) {
+        return NextResponse.json({ error: 'Comparação incompleta.' }, { status: 400 });
+      }
+      const pdf = await montarPdfComparacao({
+        modo: e.modo === 'evolucao' ? 'evolucao' : 'vencedor',
+        titulo: String(e.titulo ?? 'Comparação de candidatos'),
+        subtitulo: e.subtitulo ? String(e.subtitulo) : undefined,
+        colunas: e.colunas.map(String).slice(0, 4),
+        cores: Array.isArray(e.cores) ? e.cores.map(String).slice(0, 4) : undefined,
+        rotuloArea: String(e.rotuloArea ?? 'Área'),
+        linhas: e.linhas.map(l => ({ nome: String(l?.nome ?? ''), valores: (l?.valores ?? []).map(Number).slice(0, 4) })),
+        mapa: e.mapa && (e.mapa.tipo === 'brasil' || e.mapa.tipo === 'estado') ? e.mapa : undefined,
+      });
+      return new NextResponse(pdf as any, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="comparacao-${Date.now()}.pdf"`,
         },
       });
     }

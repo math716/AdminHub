@@ -36,6 +36,7 @@ import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 import type { FocusZonaRequest } from '@/components/maps/municipio-map';
 import { BuscaBairro, type OpcaoBairro } from '@/components/maps/busca-bairro';
 import { ComparadorCandidatos } from '@/components/mapa/comparador-candidatos';
+import { EvolucaoCandidato } from '@/components/mapa/evolucao-candidato';
 import { normalizarNomeBairro, type PedidoFocoBairro } from '@/hooks/use-foco-poligono';
 
 // Mapeamento zona eleitoral → distrito municipal de SP
@@ -266,7 +267,10 @@ export default function MapaPage() {
   const [mapFullscreen, setMapFullscreen] = useState(false);
   // "Resultado" é o mapa de um candidato (a tela de sempre); "Comparar" abre o
   // comparador de até 4 candidatos.
-  const [modoMapa, setModoMapa] = useState<'resultado' | 'comparar'>('resultado');
+  const [modoMapa, setModoMapa] = useState<'resultado' | 'comparar' | 'evolucao'>('resultado');
+  // Modos já abertos continuam montados (só escondidos): trocar de modo não
+  // perde a comparação montada nem a evolução escolhida.
+  const [modosAbertos, setModosAbertos] = useState<{ comparar: boolean; evolucao: boolean }>({ comparar: false, evolucao: false });
   const [view, setView] = useState<'brasil' | 'estado' | 'municipio'>('brasil');
   const [selectedUf, setSelectedUf] = useState('');
   const [selectedStateName, setSelectedStateName] = useState('');
@@ -1153,11 +1157,11 @@ export default function MapaPage() {
 
   const seletorModo = (
     <div className="flex items-center rounded-lg p-0.5 text-xs w-fit" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}>
-      {([['resultado', 'Resultado'], ['comparar', 'Comparar candidatos']] as const).map(([valor, rotulo]) => (
+      {([['resultado', 'Resultado'], ['comparar', 'Comparar candidatos'], ['evolucao', 'Evolução']] as const).map(([valor, rotulo]) => (
         <button
           key={valor}
           type="button"
-          onClick={() => setModoMapa(valor)}
+          onClick={() => { setModoMapa(valor); if (valor !== 'resultado') setModosAbertos(m => ({ ...m, [valor]: true })); }}
           className="px-3 py-1.5 rounded-md font-medium transition-all"
           style={modoMapa === valor ? { background: '#1a73e8', color: '#fff' } : { color: 'var(--text-secondary)' }}
         >
@@ -1167,14 +1171,24 @@ export default function MapaPage() {
     </div>
   );
 
-  if (modoMapa === 'comparar') {
+  // Com a mesma chave nos dois retornos abaixo, o React reaproveita este bloco
+  // ao trocar de modo em vez de desmontar (e perder) o que estava montado.
+  const outrosModos = (
+    <div key="outros-modos">
+      {modosAbertos.comparar && <div style={{ display: modoMapa === 'comparar' ? undefined : 'none' }}><ComparadorCandidatos /></div>}
+      {modosAbertos.evolucao && <div style={{ display: modoMapa === 'evolucao' ? undefined : 'none' }}><EvolucaoCandidato /></div>}
+    </div>
+  );
+
+  if (modoMapa !== 'resultado') {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-3">
-          <PageHeader icon={Map} title="Mapa Eleitoral" subtitle="Compare onde cada candidato venceu" />
+          <PageHeader icon={Map} title="Mapa Eleitoral"
+            subtitle={modoMapa === 'comparar' ? 'Compare onde cada candidato venceu' : 'Veja onde os votos cresceram e onde caíram de uma eleição para outra'} />
           {seletorModo}
         </div>
-        <ComparadorCandidatos />
+        {outrosModos}
       </div>
     );
   }
@@ -2529,6 +2543,7 @@ export default function MapaPage() {
           </Card>
         </div>
       </div>
+      {outrosModos}
     </div>
   );
 }

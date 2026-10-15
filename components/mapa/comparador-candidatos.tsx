@@ -26,6 +26,7 @@ import {
   corDoResultado, fmt, htmlComparacao, opacidadePorFolga, resultado, semAcento,
 } from '@/components/mapa/comparacao-comum';
 import { ComparacaoCidade } from '@/components/mapa/comparacao-cidade';
+import { BotaoPdfComparacao } from '@/components/mapa/pdf-comparacao';
 
 const MAX_CANDIDATOS = 4;
 const ANOS = ['2026', '2024', '2022', '2020', '2018'];
@@ -386,6 +387,26 @@ export function ComparadorCandidatos() {
               {nivel === 'brasil' ? ' · clique num estado para ver as cidades' : ''}
               {nivel === 'estado' ? ' · clique numa cidade para ver por local de votação, bairro e zona' : ''}
             </span>
+            {nivel !== 'cidade' && (
+              <BotaoPdfComparacao
+                tipo="comparacao"
+                titulo={`${candsAtivos.map(c => c.nome).join(' × ')} — ${ano}`}
+                subtitulo={`${nivel === 'brasil' ? 'Brasil — por estado' : `${nomeDaUf(ufAtual)} — por cidade`} · ${turno}º turno`}
+                colunas={candsAtivos.map(c => c.nome)}
+                cores={candsAtivos.map(c => c.cor)}
+                rotuloArea={nivel === 'brasil' ? 'Estado' : 'Cidade'}
+                linhas={linhas.map(l => ({ nome: l.nome, valores: l.votos }))}
+                mapa={{ tipo: nivel === 'brasil' ? 'brasil' : 'estado', uf: nivel === 'estado' ? ufAtual : undefined }}
+                // Chave: sigla da UF (Brasil) ou nome da cidade (estado).
+                coresMapa={Object.fromEntries(linhas.flatMap(l => {
+                  const r = resultado(l.votos);
+                  if (!r) return [];
+                  return [[nivel === 'brasil' ? l.chave : l.nome, {
+                    cor: corDoResultado(r, coresAtivas), opacidade: r.vencedor === -1 ? 0.5 : opacidadePorFolga(r.folga),
+                  }] as const];
+                }))}
+              />
+            )}
           </div>
 
           {nivel === 'cidade' ? (

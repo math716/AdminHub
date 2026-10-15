@@ -9,6 +9,7 @@ import { loadStaticTseData, normalizarTextoTse } from '@/lib/tse-static';
 // Nome do TSE × nome do IBGE (apóstrofo de "d'Oeste" e grafias diferentes).
 import { chaveMunicipio } from '@/lib/municipio-nome';
 import { listaMunicipiosIbge, malhaBrasilIbge, malhaEstadoIbge } from '@/lib/ibge-local';
+import { campoDoPartido } from '@/lib/partidos-espectro';
 
 // ── Códigos IBGE das UFs ────────────────────────────────────────────────────
 const UF_CODES: Record<string, number> = {
@@ -19,16 +20,16 @@ const UF_CODES: Record<string, number> = {
 const CODE_TO_UF: Record<string, string> =
   Object.fromEntries(Object.entries(UF_CODES).map(([uf, code]) => [String(code), uf]));
 
-// ── Cores por afiliação política (definido pelo cliente) ────────────────────
-//   PT / PSOL                    → vermelho
-//   PL / PSD / REPUBLICANOS      → azul
-//   demais                       → amarelo
+// ── Cores por campo político (definido pelo cliente) ────────────────────────
+//   esquerda → vermelho · direita → verde/azul · centro → amarelo
+// QUAL partido é de qual campo vem de lib/partidos-espectro — a mesma lista do
+// comparador do Mapa Eleitoral, para o PDF e a tela nunca discordarem. Antes
+// aqui só PT/PSOL eram esquerda e PL/PSD/REPUBLICANOS direita; PSB, PDT, PP,
+// UNIÃO, NOVO… caíam todos no amarelo.
 const COR_VERMELHO = '#ef4444';
 const COR_AZUL     = '#1d4ed8';
 const COR_AMARELO  = '#f59e0b';
 const NEUTRAL      = '#e2e8f0'; // município sem vencedor / sem dado
-const PARTIDOS_VERMELHO = new Set(['PT', 'PSOL']);
-const PARTIDOS_AZUL     = new Set(['PL', 'PSD', 'REPUBLICANOS']);
 
 // Faixas de valor (heatmap azul) para o mapa de emendas — igual ao dashboard
 const SEM_EMENDA = '#e8eef6';
@@ -45,10 +46,8 @@ const EMENDA_BUCKETS: { max: number; cor: string; label: string }[] = [
 // nunca repetir a mesma cor entre candidatos diferentes.
 type Familia = 'esq' | 'dir' | 'out';
 function familiaDoPartido(partido: string): Familia {
-  const p = (partido || '').trim().toUpperCase();
-  if (PARTIDOS_VERMELHO.has(p)) return 'esq';
-  if (PARTIDOS_AZUL.has(p)) return 'dir';
-  return 'out';
+  const campo = campoDoPartido(partido);
+  return campo === 'esquerda' ? 'esq' : campo === 'direita' ? 'dir' : 'out';
 }
 // Direita: VERDE é a cor principal; azul entra como 2ª (segundo partido de direita).
 const PALETA: Record<Familia, string[]> = {
@@ -248,6 +247,56 @@ export async function renderMapaEleitoral(params: {
     return res.paths.length > 0 ? res : null;
   } catch (err) {
     console.warn('[geo-map] mapa eleitoral indisponível — PDF sai sem mapa:', String(err));
+    return null;
+  }
+}
+
+/**
+ * Mapa com a cor de cada área decidida por quem chama — o comparador e a
+ * evolução entre eleições do Mapa Eleitoral mandam a cor e a força (0–1) de
+ * cada estado (chave = sigla) ou cidade (chave = nome da cidade, do TSE ou do
+ * IBGE: as duas grafias caem na mesma chave). A força vira mistura com branco,
+ * igual ao mapa da tela.
+ */
+export async function renderMapaPintado(params: {
+  uf?: string;
+  cores: Record<string, { cor: string; opacidade: number }>;
+  legenda: { label: string; cor: string }[];
+  width?: number;
+  height?: number;
+}): Promise<MapaResult | null> {
+  const W = params.width ?? 320;
+  const H = params.height ?? 300;
+  const ufUp = params.uf?.toUpperCase();
+  const misturar = (hex: string, forca: number) => {
+    const n = parseInt(hex.replace('#', ''), 16);
+    const canal = (c: number) => Math.round(c * forca + 255 * (1 - forca)).toString(16).padStart(2, '0');
+    return `#${canal((n >> 16) & 255)}${canal((n >> 8) & 255)}${canal(n & 255)}`;
+  };
+  try {
+    if (!ufUp || ufUp === 'BR') {
+      const geo = await obrigatorio(malhaBrasilIbge(), 'malha do Brasil');
+      const cores = Object.fromEntries(Object.entries(params.cores).map(([k, v]) => [k.toUpperCase(), v]));
+      const paths = buildPaths(geo.features ?? [], W, H, (codarea) => {
+        const c = cores[CODE_TO_UF[codarea] ?? ''];
+        return c ? misturar(c.cor, c.opacidade) : NEUTRAL;
+      });
+      return { width: W, height: H, paths, legend: params.legenda };
+    }
+    const ufCode = UF_CODES[ufUp];
+    if (!ufCode) return null;
+    const [geo, nomePorCod] = await Promise.all([
+      obrigatorio(malhaEstadoIbge(ufCode), `malha do estado ${ufCode}`),
+      fetchMunicipiosNome(ufUp),
+    ]);
+    const cores = Object.fromEntries(Object.entries(params.cores).map(([k, v]) => [chaveMunicipio(k, ufUp), v]));
+    const paths = buildPaths(geo.features ?? [], W, H, (codarea) => {
+      const c = cores[nomePorCod[codarea] ?? ''];
+      return c ? misturar(c.cor, c.opacidade) : NEUTRAL;
+    });
+    return paths.length > 0 ? { width: W, height: H, paths, legend: params.legenda } : null;
+  } catch (err) {
+    console.warn('[geo-map] mapa da comparação indisponível — PDF sai sem mapa:', String(err));
     return null;
   }
 }
