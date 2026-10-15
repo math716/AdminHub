@@ -1,29 +1,36 @@
 'use client';
 
-// Comparador de candidatos do Mapa Eleitoral (fase 1).
+// Comparador de candidatos do Mapa Eleitoral.
 //
 // Escolhe-se de 2 a 4 candidatos do mesmo ano e turno; o mapa pinta cada
 // estado (presidente) ou cidade com a cor de quem venceu ali ENTRE OS
 // ESCOLHIDOS — mais forte quanto maior a vantagem. Ao lado, o resumo (votos e
 // áreas vencidas) e a tabela completa por área.
 //
-// Sem dado novo: usa /api/tse/candidato, que já devolve os votos por estado,
-// por cidade e por zona. Cidades de eleição municipal (prefeito, vereador)
-// comparam por zona aqui; bairro e local de votação são a fase 2.
+// Brasil → estado → cidade: clicar num estado (presidente) abre as cidades;
+// clicar numa cidade abre a comparação dentro dela — por local de votação,
+// bairro e zona (comparacao-cidade). Prefeito e vereador abrem direto na
+// cidade. Os votos por estado/cidade vêm de /api/tse/candidato.
 
 import { useMemo, useState } from 'react';
-import { Plus, X, Loader2, Search, ArrowLeft, ArrowUpDown, AlertTriangle, Scale } from 'lucide-react';
+import { Plus, X, Loader2, Search, ArrowLeft, AlertTriangle, Scale } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { campoDoPartido, coresDosCandidatos, NOME_CAMPO } from '@/lib/partidos-espectro';
-import { MapaComparacao, cartaoTooltip, type AparenciaArea } from '@/components/mapa/mapa-comparacao';
+import { MapaComparacao, type AparenciaArea } from '@/components/mapa/mapa-comparacao';
+import {
+  type CandidatoNaComparacao, type Linha, DetalhesComparacao, LegendaComparacao, ResumoComparacao,
+  corDoResultado, fmt, htmlComparacao, opacidadePorFolga, resultado, semAcento,
+} from '@/components/mapa/comparacao-comum';
+import { ComparacaoCidade } from '@/components/mapa/comparacao-cidade';
 
 const MAX_CANDIDATOS = 4;
 const ANOS = ['2026', '2024', '2022', '2020', '2018'];
 const ehAnoMunicipal = (ano: string) => (parseInt(ano, 10) - 2020) % 4 === 0;
+const nomeDaUf = (uf: string) => ESTADOS_BRASIL.find(e => e.sigla === uf)?.nome ?? uf;
 
 interface DadosCandidato {
   candidatoId: string;
@@ -59,41 +66,6 @@ interface Homonimo {
   municipioPrincipal?: string;
 }
 
-interface Linha {
-  chave: string;
-  nome: string;
-  votos: number[];
-}
-
-interface Resultado {
-  /** Índice do vencedor entre os candidatos ativos; -1 = empate. */
-  vencedor: number;
-  /** Diferença do 1º para o 2º, em votos. */
-  diferenca: number;
-  /** Diferença como fração dos votos dos escolhidos na área (0–1). */
-  folga: number;
-  total: number;
-}
-
-const fmt = (n: number) => n.toLocaleString('pt-BR');
-const esc = (s: string) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
-const semAcento = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
-
-function resultado(votos: number[]): Resultado | null {
-  const total = votos.reduce((s, v) => s + v, 0);
-  if (total === 0) return null;
-  const ordem = votos.map((v, i) => ({ v, i })).sort((a, b) => b.v - a.v);
-  const diferenca = ordem[0].v - (ordem[1]?.v ?? 0);
-  return { vencedor: diferenca === 0 ? -1 : ordem[0].i, diferenca, folga: diferenca / total, total };
-}
-
-/** Vantagem pequena clareia a cor; grande deixa forte. */
-function opacidadePorFolga(folga: number): number {
-  if (folga < 0.05) return 0.35;
-  if (folga < 0.15) return 0.6;
-  return 0.85;
-}
-
 function cidadePrincipal(d: DadosCandidato): string | null {
   const porCidade: Record<string, number> = {};
   for (const z of d.zonas ?? []) porCidade[z.municipio] = (porCidade[z.municipio] ?? 0) + z.votos;
@@ -123,13 +95,14 @@ export function ComparadorCandidatos() {
   const [ufAberta, setUfAberta] = useState<string | null>(null);
   const [dadosUf, setDadosUf] = useState<Record<string, DadosCandidato | null>>({});
   const [carregandoUf, setCarregandoUf] = useState(false);
-
-  const [ordem, setOrdem] = useState<{ por: 'nome' | 'dif' | number; desc: boolean }>({ por: 'dif', desc: false });
+  // Cidade aberta a partir do mapa ou da tabela do estado.
+  const [cidadeAberta, setCidadeAberta] = useState<string | null>(null);
 
   const municipal = ehAnoMunicipal(ano);
   const escopo = municipal && abrangencia === 'BR' ? '' : abrangencia;
 
-  const limpar = () => { setCandidatos([]); setHomonimos([]); setErro(''); setUfAberta(null); setDadosUf({}); };
+  const voltarAoInicio = () => { setUfAberta(null); setDadosUf({}); setCidadeAberta(null); };
+  const limpar = () => { setCandidatos([]); setHomonimos([]); setErro(''); voltarAoInicio(); };
 
   // ── Adicionar ────────────────────────────────────────────────────────────
   const adicionarPorId = async (id: string) => {
@@ -154,8 +127,7 @@ export function ComparadorCandidatos() {
       setCandidatos(prev => [...prev, {
         id, nome: dados.nomeUrna || dados.candidateName, partido: dados.partido, cargo: dados.cargo, dados,
       }]);
-      setUfAberta(null);
-      setDadosUf({});
+      voltarAoInicio();
     } finally { setBuscando(false); }
   };
 
@@ -184,25 +156,28 @@ export function ComparadorCandidatos() {
 
   const remover = (id: string) => {
     setCandidatos(prev => prev.filter(c => c.id !== id));
-    setUfAberta(null);
-    setDadosUf({});
+    voltarAoInicio();
   };
 
-  // Trocar o turno recarrega todos (o id é o mesmo nos dois turnos).
+  // Trocar o turno recarrega todos (o id é o mesmo nos dois turnos) e mantém
+  // a cidade aberta, se houver.
   const trocarTurno = async (t: 1 | 2) => {
     if (t === turno) return;
     setTurno(t);
-    setUfAberta(null);
-    setDadosUf({});
     if (candidatos.length === 0) return;
     setBuscando(true);
     const novos = await Promise.all(candidatos.map(async c => ({ ...c, dados: await carregarCandidato(c.id, ano, escopo, t) })));
     setCandidatos(novos);
+    if (ufAberta) {
+      const pares = await Promise.all(novos.filter(c => c.dados).map(async c => [c.id, await carregarCandidato(c.id, ano, ufAberta, t)] as const));
+      setDadosUf(Object.fromEntries(pares));
+    }
     setBuscando(false);
   };
 
   const abrirUf = async (uf: string) => {
     setUfAberta(uf);
+    setCidadeAberta(null);
     setCarregandoUf(true);
     const pares = await Promise.all(ativos.map(async c => [c.id, await carregarCandidato(c.id, ano, uf, turno)] as const));
     setDadosUf(Object.fromEntries(pares));
@@ -213,84 +188,40 @@ export function ComparadorCandidatos() {
   const cores = useMemo(() => coresDosCandidatos(candidatos.map(c => c.partido)), [candidatos]);
   const ativos = candidatos.filter(c => c.dados);
   const coresAtivas = candidatos.map((c, i) => (c.dados ? cores[i] : null)).filter((c): c is string => !!c);
+  const candsAtivos: CandidatoNaComparacao[] = ativos.map((c, i) => ({ id: c.id, nome: c.nome, partido: c.partido, cor: coresAtivas[i] }));
 
-  // ── Nível e linhas da comparação ─────────────────────────────────────────
+  // ── Nível ────────────────────────────────────────────────────────────────
   const ehMunicipal = ativos.some(c => /PREFEITO|VEREADOR/i.test(c.cargo));
-  const nivel: 'brasil' | 'estado' | 'cidade' =
-    ehMunicipal ? 'cidade' : escopo === 'BR' && !ufAberta ? 'brasil' : 'estado';
   const dadosNoNivel = (c: Candidato): DadosCandidato | null =>
     escopo === 'BR' && ufAberta ? dadosUf[c.id] ?? null : c.dados;
-
   const cidadeDaComparacao = ehMunicipal && ativos[0]?.dados ? cidadePrincipal(ativos[0].dados) : null;
+  const cidadeAtual = ehMunicipal ? cidadeDaComparacao : cidadeAberta;
+  const nivel: 'brasil' | 'estado' | 'cidade' =
+    cidadeAtual ? 'cidade' : escopo === 'BR' && !ufAberta ? 'brasil' : 'estado';
+  const ufAtual = ufAberta ?? escopo;
 
+  // ── Linhas (Brasil e estado; a cidade calcula as suas) ─────────────────────
   const linhas: Linha[] = useMemo(() => {
-    if (ativos.length === 0) return [];
+    if (ativos.length === 0 || nivel === 'cidade') return [];
     if (nivel === 'brasil') {
       const ufs = new Set(ativos.flatMap(c => Object.keys(c.dados?.votosPorEstado ?? {})));
       return [...ufs].map(uf => ({
         chave: uf,
         // ZZ é como o TSE identifica os votos dados no exterior.
-        nome: uf === 'ZZ' ? 'Exterior' : ESTADOS_BRASIL.find(e => e.sigla === uf)?.nome ?? uf,
+        nome: uf === 'ZZ' ? 'Exterior' : nomeDaUf(uf),
         votos: ativos.map(c => c.dados?.votosPorEstado?.[uf] ?? 0),
       }));
-    }
-    if (nivel === 'cidade') {
-      const alvo = cidadeDaComparacao ? semAcento(cidadeDaComparacao) : '';
-      const porZona = ativos.map(c => {
-        const m: Record<number, number> = {};
-        for (const z of c.dados?.zonas ?? []) if (semAcento(z.municipio) === alvo) m[z.zona] = (m[z.zona] ?? 0) + z.votos;
-        return m;
-      });
-      const zonas = new Set(porZona.flatMap(m => Object.keys(m).map(Number)));
-      return [...zonas].map(z => ({ chave: String(z), nome: `Zona ${z}`, votos: porZona.map(m => m[z] ?? 0) }));
     }
     const porCidade = ativos.map(c => dadosNoNivel(c)?.votosPorNomeMunicipio ?? {});
     const cidades = new Set(porCidade.flatMap(m => Object.keys(m)));
     return [...cidades].map(nome => ({ chave: nome, nome, votos: porCidade.map(m => m[nome] ?? 0) }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [candidatos, nivel, ufAberta, dadosUf, cidadeDaComparacao]);
+  }, [candidatos, nivel, ufAberta, dadosUf]);
 
-  const resultados = useMemo(() => linhas.map(l => ({ linha: l, r: resultado(l.votos) })), [linhas]);
+  const temExterior = nivel === 'brasil' && linhas.some(l => l.chave === 'ZZ' && l.votos.some(v => v > 0));
 
-  const resumo = useMemo(() => ativos.map((c, i) => ({
-    votos: linhas.reduce((s, l) => s + l.votos[i], 0),
-    vitorias: resultados.filter(x => x.r?.vencedor === i).length,
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  })), [linhas, resultados]);
-  const areasComVoto = resultados.filter(x => x.r).length;
-  const empates = resultados.filter(x => x.r?.vencedor === -1).length;
-  const temExterior = nivel === 'brasil' && resultados.some(x => x.linha.chave === 'ZZ' && x.r);
-
-  // Destaques: exemplos — a tabela abaixo traz todas as áreas.
-  const disputadas = resultados.filter(x => x.r && x.linha.votos.filter(v => v > 0).length >= 2);
-  const apertadas = [...disputadas].sort((a, b) => a.r!.folga - b.r!.folga).slice(0, 5);
-  const folgadas = [...disputadas].sort((a, b) => b.r!.folga - a.r!.folga).slice(0, 5);
-
-  const nomeArea = nivel === 'brasil' ? 'estados' : nivel === 'cidade' ? 'zonas' : 'cidades';
-  const todasAsAreas = nivel === 'brasil' ? 'Todos os estados' : nivel === 'cidade' ? 'Todas as zonas' : 'Todas as cidades';
-
-  // ── Mapa ─────────────────────────────────────────────────────────────────
-  const htmlArea = (nome: string, votos: number[], r: Resultado): string => {
-    const linhasHtml = ativos.map((c, i) => {
-      const pct = r.total ? ((votos[i] / r.total) * 100).toFixed(1).replace('.', ',') : '0';
-      const venceu = r.vencedor === i;
-      return `<div style="display:flex;align-items:center;gap:6px;margin-top:3px;font-size:12px;">
-        <span style="width:9px;height:9px;border-radius:50%;background:${coresAtivas[i]};flex-shrink:0"></span>
-        <span style="flex:1;color:var(--text-secondary);${venceu ? 'font-weight:700;color:var(--text-primary)' : ''}">${esc(c.nome)}</span>
-        <span style="color:var(--text-primary);font-weight:600">${fmt(votos[i])}</span>
-        <span style="color:var(--text-tertiary);font-size:11px;width:42px;text-align:right">${pct}%</span>
-      </div>`;
-    }).join('');
-    const rodape = r.vencedor === -1
-      ? 'Empate entre os mais votados'
-      : `Vantagem: ${fmt(r.diferenca)} votos`;
-    return cartaoTooltip(
-      `<div style="font-weight:600;color:var(--acento-azul);font-size:13px;margin-bottom:4px">${esc(nome)}</div>${linhasHtml}` +
-      `<div style="margin-top:6px;font-size:11px;color:var(--text-tertiary)">${rodape}</div>`,
-    );
-  };
-
-  // Mapa do estado: a chave é o código IBGE (votosPorMunicipio).
+  // ── Mapa (Brasil e estado) ───────────────────────────────────────────────
+  // No estado, a chave do mapa é o código IBGE (votosPorMunicipio).
   const porCodigo = useMemo(() => {
     if (nivel !== 'estado') return null;
     const listas = ativos.map(c => dadosNoNivel(c)?.votosPorMunicipio ?? {});
@@ -305,25 +236,12 @@ export function ComparadorCandidatos() {
     const r = resultado(votos);
     if (!r) return null;
     return {
-      cor: r.vencedor === -1 ? '#64748b' : coresAtivas[r.vencedor],
+      cor: corDoResultado(r, coresAtivas),
       opacidade: r.vencedor === -1 ? 0.5 : opacidadePorFolga(r.folga),
-      html: htmlArea(nome, votos, r),
+      html: htmlComparacao(nome, nivel === 'estado' ? 'Clique para ver dentro da cidade' : null, candsAtivos, votos, r),
     };
   };
   const versaoMapa = `${candidatos.map(c => `${c.id}:${c.dados ? 1 : 0}`).join(',')}|${turno}|${ufAberta}|${Object.keys(dadosUf).length}`;
-  const ufDoMapa = nivel === 'estado' ? (ufAberta ?? escopo) : undefined;
-
-  // ── Tabela ───────────────────────────────────────────────────────────────
-  const linhasOrdenadas = useMemo(() => {
-    const sinal = ordem.desc ? -1 : 1;
-    return [...resultados].sort((a, b) => {
-      if (ordem.por === 'nome') return sinal * a.linha.nome.localeCompare(b.linha.nome, 'pt-BR', { numeric: true });
-      if (ordem.por === 'dif') return sinal * ((a.r?.folga ?? 2) - (b.r?.folga ?? 2));
-      return sinal * (a.linha.votos[ordem.por] - b.linha.votos[ordem.por]);
-    });
-  }, [resultados, ordem]);
-  const ordenarPor = (por: 'nome' | 'dif' | number) =>
-    setOrdem(o => ({ por, desc: o.por === por ? !o.desc : por !== 'nome' && por !== 'dif' }));
 
   const opcoesAbrangencia = [
     ...(municipal ? [] : [{ value: 'BR', label: 'Brasil (presidente)' }]),
@@ -448,183 +366,78 @@ export function ComparadorCandidatos() {
         <>
           {/* ── Onde estamos ── */}
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            {ufAberta && (
-              <Button variant="outline" size="sm" onClick={() => { setUfAberta(null); setDadosUf({}); }}>
+            {nivel === 'cidade' && !ehMunicipal && (
+              <Button variant="outline" size="sm" onClick={() => setCidadeAberta(null)}>
+                <ArrowLeft className="h-4 w-4 mr-1" /> {nomeDaUf(ufAtual)}
+              </Button>
+            )}
+            {nivel === 'estado' && ufAberta && (
+              <Button variant="outline" size="sm" onClick={voltarAoInicio}>
                 <ArrowLeft className="h-4 w-4 mr-1" /> Brasil
               </Button>
             )}
             <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
               {nivel === 'brasil' ? 'Brasil — por estado'
-                : nivel === 'cidade' ? `${cidadeDaComparacao ?? 'Cidade'} — por zona eleitoral`
-                : `${ESTADOS_BRASIL.find(e => e.sigla === ufDoMapa)?.nome ?? ufDoMapa} — por cidade`}
+                : nivel === 'cidade' ? `${cidadeAtual} (${ufAtual})`
+                : `${nomeDaUf(ufAtual)} — por cidade`}
             </span>
             <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              {ano} · {turno}º turno{nivel === 'brasil' ? ' · clique num estado para ver as cidades' : ''}
+              {ano} · {turno}º turno
+              {nivel === 'brasil' ? ' · clique num estado para ver as cidades' : ''}
+              {nivel === 'estado' ? ' · clique numa cidade para ver por local de votação, bairro e zona' : ''}
             </span>
           </div>
 
-          {/* Lado a lado só em tela larga: com o menu lateral do sistema, um notebook
-              de 1024–1279px deixaria o resumo espremido — ali ele vai para baixo. */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-            {/* ── Mapa ── */}
-            {nivel !== 'cidade' ? (
-              <div className="xl:col-span-2 space-y-2">
-                <div className="h-[340px] sm:h-[440px] xl:h-[520px] relative">
-                  <MapaComparacao
-                    tipo={nivel === 'brasil' ? 'brasil' : 'estado'}
-                    uf={ufDoMapa}
-                    aparencia={aparencia}
-                    versao={versaoMapa}
-                    altura="100%"
-                    onClickArea={nivel === 'brasil' ? (uf) => abrirUf(uf) : undefined}
-                  />
-                  {carregandoUf && (
-                    <div className="absolute inset-0 flex items-center justify-center rounded-xl" style={{ background: 'rgba(15,23,42,0.25)' }}>
-                      <Loader2 className="h-6 w-6 animate-spin text-white" />
-                    </div>
-                  )}
+          {nivel === 'cidade' ? (
+            <ComparacaoCidade
+              uf={ufAtual}
+              municipio={cidadeAtual!}
+              ano={ano}
+              turno={turno}
+              cands={ativos.map((c, i) => ({ ...candsAtivos[i], zonas: dadosNoNivel(c)?.zonas ?? [] }))}
+            />
+          ) : (
+            <>
+              {/* Lado a lado só em tela larga: com o menu lateral do sistema, um notebook
+                  de 1024–1279px deixaria o resumo espremido — ali ele vai para baixo. */}
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                <div className="xl:col-span-2 space-y-2">
+                  <div className="h-[340px] sm:h-[440px] xl:h-[520px] relative">
+                    <MapaComparacao
+                      tipo={nivel === 'brasil' ? 'brasil' : 'estado'}
+                      uf={nivel === 'estado' ? ufAtual : undefined}
+                      aparencia={aparencia}
+                      versao={versaoMapa}
+                      altura="100%"
+                      onClickArea={nivel === 'brasil' ? (uf) => abrirUf(uf) : (_codigo, nome) => setCidadeAberta(nome)}
+                    />
+                    {carregandoUf && (
+                      <div className="absolute inset-0 flex items-center justify-center rounded-xl" style={{ background: 'rgba(15,23,42,0.25)' }}>
+                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <LegendaComparacao cands={candsAtivos} />
                 </div>
-                {/* Legenda */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-                  {ativos.map((c, i) => (
-                    <span key={c.id} className="flex items-center gap-1.5">
-                      <span className="w-3 h-3 rounded-sm" style={{ background: coresAtivas[i] }} />{c.nome}
-                    </span>
-                  ))}
-                  <span className="flex items-center gap-1.5">
-                    <span className="flex">
-                      {[0.35, 0.6, 0.85].map(o => <span key={o} className="w-3 h-3" style={{ background: '#94a3b8', opacity: o }} />)}
-                    </span>
-                    vantagem pequena → grande
-                  </span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: '#cbd5e1' }} />sem votos</span>
-                </div>
+                <ResumoComparacao
+                  cands={candsAtivos}
+                  linhas={linhas}
+                  nomeArea={nivel === 'brasil' ? 'estados' : 'cidades'}
+                  extra={temExterior ? { descontar: 1, texto: ' + exterior' } : undefined}
+                />
               </div>
-            ) : (
-              <Card className="xl:col-span-2">
-                <CardContent className="py-8 text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>
-                  Prefeito e vereador disputam uma cidade só: a comparação abaixo é por zona eleitoral.
-                  O mapa por bairro e por local de votação chega na próxima etapa.
-                </CardContent>
-              </Card>
-            )}
-
-            {/* ── Resumo ── */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Resumo</CardTitle>
-                <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-                  {areasComVoto - (temExterior ? 1 : 0)} {nomeArea} com votos{temExterior ? ' + exterior' : ''}{empates ? ` · ${empates} empate${empates > 1 ? 's' : ''}` : ''}
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {ativos.map((c, i) => {
-                  const pctAreas = areasComVoto ? Math.round((resumo[i].vitorias / areasComVoto) * 100) : 0;
-                  return (
-                    <div key={c.id} className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: coresAtivas[i] }} />
-                        <span className="text-sm font-semibold truncate flex-1" style={{ color: 'var(--text-primary)' }}>{c.nome}</span>
-                        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{c.partido}</span>
-                      </div>
-                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-xs pl-5">
-                        <span style={{ color: 'var(--text-secondary)' }}>{fmt(resumo[i].votos)} votos</span>
-                        <span style={{ color: 'var(--text-secondary)' }}>
-                          venceu em <strong style={{ color: 'var(--text-primary)' }}>{fmt(resumo[i].vitorias)}</strong> {nomeArea}
-                        </span>
-                      </div>
-                      <div className="h-1.5 rounded-full ml-5" style={{ background: 'var(--tint-08)' }}>
-                        <div className="h-full rounded-full" style={{ width: `${pctAreas}%`, background: coresAtivas[i] }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* ── Destaques ── */}
-          {disputadas.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                { titulo: 'Disputas mais apertadas', itens: apertadas },
-                { titulo: 'Maiores vantagens (em %)', itens: folgadas },
-              ].map(bloco => (
-                <Card key={bloco.titulo}>
-                  <CardHeader className="pb-2"><CardTitle className="text-sm">{bloco.titulo}</CardTitle></CardHeader>
-                  <CardContent className="space-y-1.5">
-                    {bloco.itens.map(({ linha, r }) => (
-                      <div key={linha.chave} className="flex items-center gap-2 text-xs">
-                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                          style={{ background: r!.vencedor === -1 ? '#64748b' : coresAtivas[r!.vencedor] }} />
-                        <span className="flex-1 truncate" style={{ color: 'var(--text-primary)' }}>{linha.nome}</span>
-                        <span style={{ color: 'var(--text-secondary)' }}>
-                          {r!.vencedor === -1 ? 'empate' : `${ativos[r!.vencedor].nome} por ${fmt(r!.diferenca)}`}
-                        </span>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+              <DetalhesComparacao
+                cands={candsAtivos}
+                linhas={linhas}
+                rotuloArea={nivel === 'brasil' ? 'Estado' : 'Cidade'}
+                todasAsAreas={nivel === 'brasil' ? 'Todos os estados' : 'Todas as cidades'}
+                onClickLinha={nivel === 'brasil'
+                  ? (l) => { if (l.chave !== 'ZZ') abrirUf(l.chave); }
+                  : (l) => setCidadeAberta(l.nome)}
+                dicaClique={nivel === 'brasil' ? 'Clique num estado para ver as cidades.' : 'Clique numa cidade para ver por local de votação, bairro e zona.'}
+              />
+            </>
           )}
-
-          {/* ── Tabela completa ── */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{todasAsAreas} ({fmt(linhas.length)})</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-auto max-h-[560px] scrollbar-dark">
-                <table className="w-full text-xs border-collapse">
-                  <thead className="sticky top-0 z-10" style={{ background: 'var(--bg-card)' }}>
-                    <tr style={{ borderBottom: '1px solid var(--border-default)' }}>
-                      <th className="text-left font-semibold px-3 py-2 sticky left-0 z-10 min-w-[140px]" style={{ background: 'var(--bg-card)' }}>
-                        <button type="button" onClick={() => ordenarPor('nome')} className="flex items-center gap-1">
-                          {nivel === 'brasil' ? 'Estado' : nivel === 'cidade' ? 'Zona' : 'Cidade'} <ArrowUpDown className="h-3 w-3 opacity-50" />
-                        </button>
-                      </th>
-                      {ativos.map((c, i) => (
-                        <th key={c.id} className="text-right font-semibold px-3 py-2 whitespace-nowrap">
-                          <button type="button" onClick={() => ordenarPor(i)} className="inline-flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full" style={{ background: coresAtivas[i] }} />{c.nome}
-                            <ArrowUpDown className="h-3 w-3 opacity-50" />
-                          </button>
-                        </th>
-                      ))}
-                      <th className="text-right font-semibold px-3 py-2 whitespace-nowrap">
-                        <button type="button" onClick={() => ordenarPor('dif')} className="inline-flex items-center gap-1">
-                          Vantagem <ArrowUpDown className="h-3 w-3 opacity-50" />
-                        </button>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {linhasOrdenadas.map(({ linha, r }) => (
-                      <tr key={linha.chave} style={{ borderBottom: '1px solid var(--tint-06)' }}>
-                        <td className="px-3 py-1.5 sticky left-0 font-medium" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full flex-shrink-0"
-                              style={{ background: !r ? '#cbd5e1' : r.vencedor === -1 ? '#64748b' : coresAtivas[r.vencedor] }} />
-                            {linha.nome}
-                          </span>
-                        </td>
-                        {linha.votos.map((v, i) => (
-                          <td key={i} className="px-3 py-1.5 text-right tabular-nums"
-                            style={{ color: r?.vencedor === i ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: r?.vencedor === i ? 700 : 400 }}>
-                            {fmt(v)}
-                          </td>
-                        ))}
-                        <td className="px-3 py-1.5 text-right tabular-nums whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
-                          {!r ? '—' : r.vencedor === -1 ? 'empate' : `${fmt(r.diferenca)} (${(r.folga * 100).toFixed(1).replace('.', ',')}%)`}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
         </>
       )}
     </div>
