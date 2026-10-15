@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import {
   loadStaticTseData, buscarCandidatoNoJson, buscarCandidatoTolerante, normalizarTextoTse,
   bairrosPorZona, anosDisponiveisTse, sugerirCandidatos, temSegundoTurno,
+  loadSecaoMunicipio, votosDoCandidatoPorLocal, type CandidatoJson,
 } from '@/lib/tse-static';
 import { buscarCandidatoNacional, inferirUfPorNomes, rankingNacional } from '@/lib/tse-index';
 import { resolverDeputados } from '@/lib/agent/report/df-territorial';
@@ -1443,6 +1444,193 @@ export async function executarRankingNacional(
   };
 }
 
+// ── comparar_votacao ─────────────────────────────────────────────────────────
+// O mesmo que o comparador e a evolução do Mapa Eleitoral calculam na tela,
+// para a Gabi: quem venceu em cada bairro/zona de uma cidade entre 2–4
+// candidatos, ou onde um candidato ganhou e perdeu votos entre duas eleições.
+// Linhas COMPLETAS em formato compacto ([área, votos…]) — a tabela do relatório
+// precisa de todas, e o formato curto poupa espaço.
+
+const normMun = (s: string) => normalizarTextoTse(s).replace(/['’`´-]/g, ' ').replace(/\s+/g, ' ').trim();
+
+/** Escolhe o candidato pelo nome; com cidade, prefere quem teve voto nela. */
+function escolherCandidato(data: CandidatoJson[], nome: string, cargo?: string, municipio?: string) {
+  const achados = buscarCandidatoNoJson(data, nome, cargo);
+  const lista = achados.length ? achados : [buscarCandidatoTolerante(data, nome, cargo)].filter(Boolean) as CandidatoJson[];
+  if (!lista.length) return { candidato: null, alternativas: [] as string[] };
+  const alvo = municipio ? normMun(municipio) : '';
+  const votosNaCidade = (c: CandidatoJson) =>
+    alvo ? Object.entries(c.votos ?? {}).filter(([m]) => normMun(m) === alvo).reduce((s, [, v]) => s + v, 0) : c.totalVotos;
+  const ordenados = [...lista].sort((a, b) => votosNaCidade(b) - votosNaCidade(a) || b.totalVotos - a.totalVotos);
+  return {
+    candidato: ordenados[0],
+    alternativas: ordenados.slice(1, 6).map(c => `${c.nomeUrna || c.nome} (${c.partido}, ${c.cargo})`),
+  };
+}
+
+/** Votos reais por bairro numa cidade (arquivo de seção); null se não houver ou não bater com o oficial. */
+async function votosPorBairroReais(ano: string, turno: number, uf: string, municipio: string, c: CandidatoJson) {
+  const secao = await loadSecaoMunicipio(ano, turno, uf, municipio);
+  if (!secao) return null;
+  const porLocal = votosDoCandidatoPorLocal(secao, c.cargo, c.numero);
+  if (!porLocal) return null;
+  const alvo = normMun(municipio);
+  const oficial = (c.zonas ?? []).filter(z => normMun(z.municipio) === alvo).reduce((s, z) => s + z.votos, 0);
+  const soma = [...porLocal.values()].reduce((s, v) => s + v, 0);
+  // Eleição suplementar juntada ao ano pelo TSE: os locais não batem com o
+  // oficial — melhor não dizer nada por bairro do que dizer errado.
+  if (soma !== oficial) return null;
+  const m = new Map<string, number>();
+  secao.locais.forEach((l, i) => {
+    const b = (l.b || 'SEM BAIRRO').trim();
+    m.set(b, (m.get(b) ?? 0) + (porLocal.get(i) ?? 0));
+  });
+  return m;
+}
+
+function votosPorZona(c: CandidatoJson, municipio: string): Map<number, number> {
+  const alvo = normMun(municipio);
+  const m = new Map<number, number>();
+  for (const z of c.zonas ?? []) if (normMun(z.municipio) === alvo) m.set(z.zona, (m.get(z.zona) ?? 0) + z.votos);
+  return m;
+}
+
+export async function executarCompararVotacao(args: {
+  modo?: 'cidade' | 'evolucao';
+  uf?: string; municipio?: string; turno?: number;
+  candidatos?: string[]; ano?: string; cargo?: string;
+  candidato_antes?: string; ano_antes?: string; cargo_antes?: string;
+  candidato_depois?: string; ano_depois?: string; cargo_depois?: string;
+}, _session: UserSession) {
+  const uf = (args.uf ?? '').toUpperCase().trim();
+  if (!uf) return { erro: 'Informe a UF (ou BR para presidente no país).' };
+  const municipio = args.municipio?.trim() || '';
+  const turno = Number(args.turno) === 2 ? 2 : 1;
+
+  if (args.modo === 'evolucao') {
+    const anoA = String(args.ano_antes ?? '').trim(), anoB = String(args.ano_depois ?? '').trim();
+    const nomeA = args.candidato_antes?.trim(), nomeB = (args.candidato_depois ?? args.candidato_antes)?.trim();
+    if (!anoA || !anoB || !nomeA || !nomeB) return { erro: 'Informe candidato_antes, ano_antes e ano_depois (e candidato_depois, se for outra pessoa).' };
+    const [dataA, dataB] = await Promise.all([loadStaticTseData(anoA, uf), loadStaticTseData(anoB, uf)]);
+    if (!dataA || !dataB) return { encontrado: false, mensagem: `Sem dados de ${!dataA ? anoA : anoB} para ${uf}.`, anosDisponiveis: anosDisponiveisTse(uf) };
+    const a = escolherCandidato(dataA, nomeA, args.cargo_antes, municipio);
+    const b = escolherCandidato(dataB, nomeB, args.cargo_depois, municipio);
+    if (!a.candidato || !b.candidato) {
+      return { encontrado: false, mensagem: `Não encontrei ${!a.candidato ? `${nomeA} em ${anoA}` : `${nomeB} em ${anoB}`} (${uf}).` };
+    }
+    const cA = a.candidato, cB = b.candidato;
+    const rot = [`${anoA} · ${cA.nomeUrna || cA.nome}`, `${anoB} · ${cB.nomeUrna || cB.nome}`];
+
+    let recorte: string;
+    let linhas: Array<[string, number, number]>;
+    let observacao: string | undefined;
+    if (uf === 'BR') {
+      recorte = 'por estado';
+      const ufs = new Set([...Object.keys(cA.votosPorEstado ?? {}), ...Object.keys(cB.votosPorEstado ?? {})]);
+      linhas = [...ufs].map(u => [u === 'ZZ' ? 'Exterior' : u, cA.votosPorEstado?.[u] ?? 0, cB.votosPorEstado?.[u] ?? 0]);
+    } else if (municipio) {
+      const [bA, bB] = await Promise.all([votosPorBairroReais(anoA, 1, uf, municipio, cA), votosPorBairroReais(anoB, 1, uf, municipio, cB)]);
+      if (bA && bB) {
+        recorte = `por bairro em ${municipio}`;
+        const nomes = new Map<string, string>();
+        for (const k of [...bA.keys(), ...bB.keys()]) nomes.set(normMun(k), k);
+        const soma = (m: Map<string, number>, alvo: string) => [...m].filter(([k]) => normMun(k) === alvo).reduce((s, [, v]) => s + v, 0);
+        linhas = [...nomes].map(([k, nome]) => [nome, soma(bA, k), soma(bB, k)]);
+      } else {
+        recorte = `por zona em ${municipio}`;
+        observacao = 'Um dos dois não tem voto real por local de votação nesta cidade (eleição suplementar juntada pelo TSE): a comparação ficou por zona. Zonas podem ser renumeradas entre eleições — zona que aparece só num ano pode ser essa mudança.';
+        const zA = votosPorZona(cA, municipio), zB = votosPorZona(cB, municipio);
+        linhas = [...new Set([...zA.keys(), ...zB.keys()])].sort((x, y) => x - y).map(z => [`Zona ${z}`, zA.get(z) ?? 0, zB.get(z) ?? 0]);
+      }
+    } else {
+      recorte = 'por cidade';
+      const m = new Map<string, [string, number, number]>();
+      for (const [nome, v] of Object.entries(cA.votos ?? {})) { const k = normMun(nome); const x = m.get(k) ?? [nome, 0, 0]; x[1] += v; m.set(k, x); }
+      for (const [nome, v] of Object.entries(cB.votos ?? {})) { const k = normMun(nome); const x = m.get(k) ?? [nome, 0, 0]; x[2] += v; m.set(k, x); }
+      linhas = [...m.values()];
+    }
+    linhas.sort((x, y) => (y[2] - y[1]) - (x[2] - x[1]));
+    const totA = linhas.reduce((s, l) => s + l[1], 0), totB = linhas.reduce((s, l) => s + l[2], 0);
+    const varPct = (x: number, y: number) => (x ? Math.round(((y - x) / x) * 1000) / 10 : null);
+    return {
+      encontrado: true,
+      modo: 'evolucao', uf, municipio: municipio || undefined, recorte,
+      antes: { ano: anoA, nome: cA.nomeUrna || cA.nome, partido: cA.partido, cargo: cA.cargo },
+      depois: { ano: anoB, nome: cB.nomeUrna || cB.nome, partido: cB.partido, cargo: cB.cargo },
+      ...(a.alternativas.length || b.alternativas.length ? { outrosComMesmoNome: { antes: a.alternativas, depois: b.alternativas } } : {}),
+      totais: { antes: totA, depois: totB, diferenca: totB - totA, variacaoPct: varPct(totA, totB) },
+      areasQueCresceram: linhas.filter(l => l[2] > l[1]).length,
+      areasQueCairam: linhas.filter(l => l[2] < l[1]).length,
+      colunas: ['área', rot[0], rot[1], 'diferença', 'variação %'],
+      linhas: linhas.map(l => [l[0], l[1], l[2], l[2] - l[1], varPct(l[1], l[2])]),
+      ...(observacao ? { observacao } : {}),
+    };
+  }
+
+  // ── modo cidade ──
+  const ano = String(args.ano ?? '').trim();
+  const nomes = (args.candidatos ?? []).map(n => String(n).trim()).filter(Boolean);
+  if (!ano || nomes.length < 2) return { erro: 'Informe o ano e de 2 a 4 candidatos.' };
+  if (!municipio) return { erro: 'Informe o município: esta comparação é dentro de uma cidade (por bairro e zona). Para estado ou país, use buscar_votacao com os candidatos.' };
+  const data = await loadStaticTseData(ano, uf, turno);
+  if (!data) return { encontrado: false, mensagem: `Sem dados de ${ano} (${turno}º turno) para ${uf}.`, anosDisponiveis: anosDisponiveisTse(uf) };
+  const escolhas = nomes.slice(0, 4).map(n => ({ pedido: n, ...escolherCandidato(data, n, args.cargo, municipio) }));
+  const faltando = escolhas.filter(e => !e.candidato).map(e => e.pedido);
+  const cands = escolhas.filter(e => e.candidato).map(e => e.candidato!) ;
+  if (cands.length < 2) return { encontrado: false, mensagem: `Não encontrei ${faltando.join(', ')} em ${ano} (${uf}).` };
+
+  const bairros = await Promise.all(cands.map(c => votosPorBairroReais(ano, turno, uf, municipio, c)));
+  const comReal = cands.map((_, i) => !!bairros[i]);
+  const vencedorDe = (v: number[], nomesCol: string[]) => {
+    const tot = v.reduce((s, x) => s + x, 0);
+    if (!tot) return null;
+    const o = v.map((x, i) => ({ x, i })).sort((p, q) => q.x - p.x);
+    const dif = o[0].x - (o[1]?.x ?? 0);
+    return { vencedor: dif === 0 ? 'empate' : nomesCol[o[0].i], vantagem: dif };
+  };
+
+  // Bairros: só entre quem tem voto real por local.
+  const idxReais = cands.map((_, i) => i).filter(i => comReal[i]);
+  const nomesReais = idxReais.map(i => cands[i].nomeUrna || cands[i].nome);
+  let porBairro: Array<Array<string | number>> = [];
+  if (idxReais.length >= 2) {
+    const chaves = new Set(idxReais.flatMap(i => [...bairros[i]!.keys()]));
+    porBairro = [...chaves].map(b => {
+      const v = idxReais.map(i => bairros[i]!.get(b) ?? 0);
+      const r = vencedorDe(v, nomesReais);
+      return [b, ...v, r?.vencedor ?? '—', r?.vantagem ?? 0];
+    }).sort((x, y) => (y.slice(1, -2) as number[]).reduce((s, n) => s + n, 0) - (x.slice(1, -2) as number[]).reduce((s, n) => s + n, 0));
+  }
+  const nomesTodos = cands.map(c => c.nomeUrna || c.nome);
+  const zonas = cands.map(c => votosPorZona(c, municipio));
+  const porZona = [...new Set(zonas.flatMap(z => [...z.keys()]))].sort((x, y) => x - y).map(z => {
+    const v = zonas.map(m => m.get(z) ?? 0);
+    const r = vencedorDe(v, nomesTodos);
+    return [`Zona ${z}`, ...v, r?.vencedor ?? '—', r?.vantagem ?? 0];
+  });
+  const vitorias = (linhas: Array<Array<string | number>>, nome: string, n: number) => linhas.filter(l => l[n + 1] === nome).length;
+
+  return {
+    encontrado: true,
+    modo: 'cidade', uf, municipio, ano, turno,
+    candidatos: cands.map((c, i) => ({
+      nome: nomesTodos[i], partido: c.partido, cargo: c.cargo,
+      votosNaCidade: [...zonas[i].values()].reduce((s, v) => s + v, 0),
+      venceuEmZonas: vitorias(porZona, nomesTodos[i], cands.length),
+      venceuEmBairros: comReal[i] ? vitorias(porBairro, nomesTodos[i], idxReais.length) : null,
+      votoRealPorLocal: comReal[i],
+    })),
+    ...(faltando.length ? { naoEncontrados: faltando } : {}),
+    colunasBairro: ['bairro', ...nomesReais, 'vencedor', 'vantagem'],
+    porBairro,
+    colunasZona: ['zona', ...nomesTodos, 'vencedor', 'vantagem'],
+    porZona,
+    ...(comReal.some(x => !x) ? {
+      observacao: `${cands.filter((_, i) => !comReal[i]).map(c => c.nomeUrna || c.nome).join(', ')} não tem voto real por local de votação nesta cidade (eleição suplementar juntada pelo TSE): fica fora da comparação por bairro e entra só na por zona.`,
+    } : {}),
+  };
+}
+
 export async function executarTool(
   nome: string,
   args: Record<string, unknown>,
@@ -1455,6 +1643,8 @@ export async function executarTool(
       return executarBuscarVotacao(args as any, session);
     case 'ranking_nacional':
       return executarRankingNacional(args as any, session);
+    case 'comparar_votacao':
+      return executarCompararVotacao(args as any, session);
     case 'comparar_parlamentares':
       return executarCompararParlamentares(args as any, session);
     case 'dados_municipio':

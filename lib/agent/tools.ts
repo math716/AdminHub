@@ -376,6 +376,40 @@ export const AGENT_TOOLS: Tool[] = [
   },
 
   {
+    name: 'comparar_votacao',
+    description:
+      'Compara VOTAÇÃO em dois casos que buscar_votacao não resolve sozinha. ' +
+      '(1) modo "cidade": 2 a 4 candidatos DENTRO de uma cidade — quem venceu em cada BAIRRO ' +
+      '(votos reais por local de votação) e em cada ZONA, com a vantagem. Use para "quem ganhou ' +
+      'em cada bairro de Niterói entre Castro e Freixo", "compare fulano e ciclano por bairro". ' +
+      '(2) modo "evolucao": onde um candidato GANHOU e PERDEU votos entre duas eleições (o mesmo ' +
+      'candidato, ou um sucessor), por estado (uf BR, presidente), por cidade (com uf) ou por ' +
+      'bairro/zona (com uf + municipio). Use para "onde o Tarcísio cresceu de 2018 para 2022", ' +
+      '"compare a votação do Boulos em 2020 e 2024 por bairro". ' +
+      'Devolve TODAS as linhas (área + votos), totais e contagens. Para comparar candidatos por ' +
+      'estado ou por cidade numa mesma eleição, use buscar_votacao.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        modo: { type: 'string', enum: ['cidade', 'evolucao'], description: '"cidade" (vários candidatos numa cidade) ou "evolucao" (duas eleições).' },
+        uf: { type: 'string', description: 'Sigla do estado. Para presidente por estado na evolução, "BR".' },
+        municipio: { type: 'string', description: 'Cidade. Obrigatória no modo cidade; na evolução, dá o recorte por bairro/zona.' },
+        candidatos: { type: 'array', items: { type: 'string' }, description: 'Modo cidade: 2 a 4 nomes de urna.' },
+        ano: { type: 'string', description: 'Modo cidade: ano da eleição.' },
+        turno: { type: 'integer', description: 'Modo cidade: 1 (padrão) ou 2.' },
+        cargo: { type: 'string', description: 'Modo cidade: cargo, para desempatar nomes iguais (ex.: Prefeito).' },
+        candidato_antes: { type: 'string', description: 'Evolução: candidato da eleição mais antiga.' },
+        ano_antes: { type: 'string', description: 'Evolução: ano da eleição mais antiga.' },
+        cargo_antes: { type: 'string', description: 'Evolução: cargo na eleição mais antiga (opcional).' },
+        candidato_depois: { type: 'string', description: 'Evolução: candidato da eleição mais recente (se omitido, o mesmo de antes).' },
+        ano_depois: { type: 'string', description: 'Evolução: ano da eleição mais recente.' },
+        cargo_depois: { type: 'string', description: 'Evolução: cargo na eleição mais recente (opcional).' },
+      },
+      required: ['modo', 'uf'],
+    },
+  },
+
+  {
     name: 'ranking_nacional',
     description:
       'Ranking de candidatos em TODOS os estados de uma vez, a partir do índice nacional. ' +

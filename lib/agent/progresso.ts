@@ -63,6 +63,8 @@ export function fraseDaBusca(ferramenta: string, args: Record<string, unknown> =
       return 'Comparando os parlamentares';
     case 'buscar_votacao':
       return `Consultando a votação${de}${ANOS(args)}`;
+    case 'comparar_votacao':
+      return args.modo === 'evolucao' ? 'Comparando as duas eleições' : `Comparando a votação${de}`;
     case 'ranking_nacional':
       return `Levantando os dados dos 27 estados${ANOS(args)}`;
     case 'dados_municipio':
