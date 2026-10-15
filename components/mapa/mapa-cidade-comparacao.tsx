@@ -40,6 +40,19 @@ interface Props {
   foco?: { nonce: number; pontos: Array<[number, number]> } | null;
 }
 
+/**
+ * Fecha todos os balões do grupo (inclusive os dos polígonos, que ficam dentro
+ * da camada GeoJSON), menos o do item que recebeu o mouse. Um balão por vez: com o mouse
+ * rápido entre áreas vizinhas, o navegador às vezes não avisa a saída e o
+ * balão anterior ficava preso por cima do mapa.
+ */
+function fecharBaloes(grupo: any, exceto?: any) {
+  grupo?.eachLayer((l: any) => {
+    if (l.eachLayer) l.eachLayer((sub: any) => { if (sub !== exceto) sub.closeTooltip?.(); });
+    else if (l !== exceto) l.closeTooltip?.();
+  });
+}
+
 export function MapaCidadeComparacao({ pontos, poligonos, versao, enquadramento, foco }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const camadasRef = useRef<any>(null);
@@ -75,6 +88,8 @@ export function MapaCidadeComparacao({ pontos, poligonos, versao, enquadramento,
       L.control.zoom({ position: 'bottomleft' }).addTo(map);
       camadaBase(L).addTo(map);
       camadasRef.current = L.layerGroup().addTo(map);
+      // Saiu do mapa, arrastou ou deu zoom: nenhum balão fica aberto.
+      map.on('mouseout movestart zoomstart', () => fecharBaloes(camadasRef.current));
       mapInstanceRef.current = map;
 
       // Caixa mudou bastante de largura (girar o celular etc.): mede de novo.
@@ -116,7 +131,7 @@ export function MapaCidadeComparacao({ pontos, poligonos, versao, enquadramento,
           onEachFeature: (f: any, layer: any) => {
             const nome = poligonos.nomeDe(f);
             layer.bindTooltip(() => poligonos.aparencia(nome)?.html ?? '', { sticky: true, direction: 'top', className: 'bairro-tooltip', opacity: 1 });
-            layer.on('mouseover', () => layer.setStyle({ weight: 2.5, color: '#0f172a' }));
+            layer.on('mouseover', () => { fecharBaloes(grupo, layer); layer.setStyle({ weight: 2.5, color: '#0f172a' }); });
             layer.on('mouseout', () => layer.setStyle({ weight: 0.8, color: '#ffffff' }));
           },
         });
@@ -134,6 +149,7 @@ export function MapaCidadeComparacao({ pontos, poligonos, versao, enquadramento,
           fillOpacity: 0.4 + p.opacidade * 0.6,
         });
         marcador.bindTooltip(p.html, { direction: 'top', className: 'bairro-tooltip', opacity: 1 });
+        marcador.on('mouseover', () => fecharBaloes(grupo, marcador));
         grupo.addLayer(marcador);
         limites.extend([p.lat, p.lng]);
       }

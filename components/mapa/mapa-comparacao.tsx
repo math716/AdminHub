@@ -139,6 +139,7 @@ export function MapaComparacao({ tipo, uf, aparencia, versao, onClickArea, altur
       mapInstanceRef.current = map;
       camadaBase(L).addTo(map);
 
+      const fecharBaloes = (exceto?: any) => camada.eachLayer((l: any) => { if (l !== exceto) l.closeTooltip(); });
       const camada = L.geoJSON(geo, {
         style: (f: any) => { const { chave, nome } = chaveENome(f); return estilo(chave, nome); },
         onEachFeature: (f: any, layer: any) => {
@@ -151,12 +152,19 @@ export function MapaComparacao({ tipo, uf, aparencia, versao, onClickArea, altur
             // Casca transparente dos balões dos mapas (globals.css); o cartão vem no HTML.
             { sticky: true, direction: 'top', className: 'bairro-tooltip', opacity: 1 },
           );
-          layer.on('mouseover', () => layer.setStyle({ weight: 2.5, color: '#0f172a' }));
+          layer.on('mouseover', () => {
+            // Um balão por vez: com o mouse rápido entre cidades vizinhas, o
+            // navegador às vezes não avisa a saída e o balão anterior ficava preso.
+            fecharBaloes(layer);
+            layer.setStyle({ weight: 2.5, color: '#0f172a' });
+          });
           layer.on('mouseout', () => layer.setStyle({ weight: tipo === 'brasil' ? 1.2 : 0.6, color: '#ffffff' }));
-          layer.on('click', () => onClickRef.current?.(chave, nome));
+          layer.on('click', () => { fecharBaloes(); onClickRef.current?.(chave, nome); });
         },
       }).addTo(map);
       geoLayerRef.current = camada;
+      // Saiu do mapa, arrastou ou deu zoom: nenhum balão fica aberto.
+      map.on('mouseout movestart zoomstart', () => fecharBaloes());
 
       // Enquadra quando a caixa já tem largura (criada com 0, o Leaflet
       // enquadraria no zoom máximo).
