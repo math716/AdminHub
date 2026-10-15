@@ -5,6 +5,8 @@
  * o que `lib/portal-transparencia.ts` já faz.
  */
 
+import { listaMunicipiosIbge } from '@/lib/ibge-local';
+
 // ---------------------------------------------------------------------------
 // Mapa UF nome → sigla (cobre todas as 27 UFs com/sem acento)
 // ---------------------------------------------------------------------------
@@ -99,12 +101,9 @@ async function getMunicipiosByUf(uf: string): Promise<{ id: string; nome: string
   if (!code) return [];
 
   try {
-    const res = await fetch(
-      `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${code}/municipios`,
-      { next: { revalidate: 86400 } },
-    );
-    if (!res.ok) return [];
-    const data: { id: number | string; nome: string }[] = await res.json();
+    // Lista guardada no sistema (lib/ibge-local): o IBGE não responde à Vercel.
+    const data = await listaMunicipiosIbge(code);
+    if (!data) return [];
     const out = data.map((m) => ({ id: String(m.id), nome: m.nome }));
     municipiosPorUfCache.set(key, out);
     return out;

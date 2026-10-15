@@ -81,7 +81,9 @@ export function MapaComparacao({ tipo, uf, aparencia, versao, onClickArea, altur
     Promise.all([
       fetch(url).then(r => (r.ok ? r.json() : null)),
       tipo === 'estado' && uf
-        ? fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${UF_CODIGO[uf]}/municipios`)
+        // Lista guardada no sistema; o IBGE só se o arquivo faltar.
+        ? fetch(`/geojson/ibge/municipios/${uf}.json`)
+            .then(r => (r.ok ? r : fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${UF_CODIGO[uf]}/municipios`)))
             .then(r => (r.ok ? r.json() : [])).catch(() => [])
         : Promise.resolve([]),
     ]).then(([g, lista]) => {

@@ -11,6 +11,8 @@
  * sintéticos consistentes para validação de UI sem depender da API real.
  */
 
+import { listaMunicipiosIbge } from '@/lib/ibge-local';
+
 const PORTAL_BASE = 'https://api.portaldatransparencia.gov.br';
 const API_KEY = process.env.PORTAL_TRANSPARENCIA_API_KEY;
 export const PORTAL_MOCK_MODE = !API_KEY;
@@ -367,12 +369,9 @@ async function getMunicipiosByUf(uf: string): Promise<{ id: string; nome: string
   if (!code) return [];
 
   try {
-    const res = await fetch(
-      `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${code}/municipios`,
-      { next: { revalidate: 86400 } },
-    );
-    if (!res.ok) return [];
-    const data: any[] = await res.json();
+    // Lista guardada no sistema (lib/ibge-local): o IBGE não responde à Vercel.
+    const data = await listaMunicipiosIbge(code);
+    if (!data) return [];
     const out = data.map((m) => ({ id: String(m.id), nome: m.nome }));
     municipiosPorUfCache.set(ufKey, out);
     return out;

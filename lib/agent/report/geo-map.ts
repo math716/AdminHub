@@ -8,6 +8,7 @@ import path from 'path';
 import { loadStaticTseData, normalizarTextoTse } from '@/lib/tse-static';
 // Nome do TSE × nome do IBGE (apóstrofo de "d'Oeste" e grafias diferentes).
 import { chaveMunicipio } from '@/lib/municipio-nome';
+import { listaMunicipiosIbge, malhaBrasilIbge, malhaEstadoIbge } from '@/lib/ibge-local';
 
 // ── Códigos IBGE das UFs ────────────────────────────────────────────────────
 const UF_CODES: Record<string, number> = {
@@ -78,36 +79,12 @@ function atribuirCores(info: Map<string, { partido: string; n: number }>): Map<s
   return cor;
 }
 
-// ── Fetch com timeout ───────────────────────────────────────────────────────
-// 8s era apertado para a malha do IBGE (~1 MB) num cold start de serverless —
-// e o timeout derrubava o mapa em silêncio.
-async function fetchJson(url: string, ms = 20000): Promise<any> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ms);
-  const t0 = Date.now();
-  try {
-    const res = await fetch(url, { signal: ctrl.signal, next: { revalidate: 604800 } } as any);
-    if (!res.ok) throw new Error(`HTTP ${res.status} em ${url}`);
-    return await res.json();
-  } catch (err: any) {
-    // Sem isto, uma malha que não veio vira "PDF sem mapa" sem nenhum rastro.
-    const motivo = err?.name === 'AbortError' ? `timeout após ${ms}ms` : String(err?.message ?? err);
-    throw new Error(`${motivo} (${Date.now() - t0}ms) — ${url.slice(0, 90)}`);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-function malhaEstadoUrl(ufCode: number): string {
-  return `https://servicodados.ibge.gov.br/api/v3/malhas/estados/${ufCode}` +
-    `?formato=application/vnd.geo+json&qualidade=intermediaria&intrarregiao=municipio`;
-}
-function malhaBrasilUrl(): string {
-  return `https://servicodados.ibge.gov.br/api/v3/malhas/paises/BR` +
-    `?formato=application/vnd.geo+json&qualidade=minima&intrarregiao=UF`;
-}
-function municipiosUrl(uf: string): string {
-  return `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`;
+// Malhas e listas de cidades vêm do sistema (lib/ibge-local), com o IBGE de
+// reserva: em out/2026 o IBGE parou de responder à Vercel e o PDF saía sem mapa.
+async function obrigatorio<T>(pedido: Promise<T | null>, oque: string): Promise<T> {
+  const dados = await pedido;
+  if (!dados) throw new Error(`não consegui carregar ${oque}`);
+  return dados;
 }
 
 // ── Vencedores por região a partir do TSE ───────────────────────────────────
@@ -152,7 +129,7 @@ async function winnersPorEstado(ano: number, cargo?: string, filtro?: Set<string
 
 // ── codarea (7 díg) → nome normalizado, via IBGE localidades ─────────────────
 async function fetchMunicipiosNome(uf: string): Promise<Record<string, string>> {
-  const list = await fetchJson(municipiosUrl(uf));
+  const list = await obrigatorio(listaMunicipiosIbge(uf), `municípios de ${uf}`);
   const map: Record<string, string> = {};
   for (const m of list) map[String(m.id)] = chaveMunicipio(m.nome ?? '', uf);
   return map;
@@ -254,7 +231,7 @@ export async function renderMapaEleitoral(params: {
   try {
     if (!ufUp || ufUp === 'BR') {
       // ── Mapa do Brasil, colorido pelo candidato vencedor por UF ──
-      const geo = await fetchJson(malhaBrasilUrl());
+      const geo = await obrigatorio(malhaBrasilIbge(), 'malha do Brasil');
       const winners = await winnersPorEstado(params.ano, params.cargo, filtro, params.turno ?? 1);
       return montarMapa(winners, (codarea) => CODE_TO_UF[codarea] ?? '', geo.features ?? [], W, H);
     }
@@ -263,7 +240,7 @@ export async function renderMapaEleitoral(params: {
     const ufCode = UF_CODES[ufUp];
     if (!ufCode) return null;
     const [geo, nomePorCod] = await Promise.all([
-      fetchJson(malhaEstadoUrl(ufCode)),
+      obrigatorio(malhaEstadoIbge(ufCode), `malha do estado ${ufCode}`),
       fetchMunicipiosNome(ufUp),
     ]);
     const winners = await winnersPorMunicipio(params.ano, ufUp, params.cargo, filtro, params.turno ?? 1);
@@ -350,7 +327,7 @@ export async function renderMapaHeatmap(params: {
   try {
     if (!ufUp || ufUp === 'BR') {
       // Mapa do Brasil, colorido por UF
-      const geo = await fetchJson(malhaBrasilUrl());
+      const geo = await obrigatorio(malhaBrasilIbge(), 'malha do Brasil');
       const valUF: Record<string, number> = {};
       for (const [k, v] of Object.entries(params.valores)) {
         const key = k.toUpperCase();
@@ -370,7 +347,7 @@ export async function renderMapaHeatmap(params: {
       valNorm[key] = (valNorm[key] ?? 0) + (v || 0);
     }
     const [geo, nomePorCod] = await Promise.all([
-      fetchJson(malhaEstadoUrl(ufCode)),
+      obrigatorio(malhaEstadoIbge(ufCode), `malha do estado ${ufCode}`),
       fetchMunicipiosNome(ufUp),
     ]);
     const fillFor = (codarea: string) => corDe(valNorm[nomePorCod[codarea]] ?? 0);
@@ -636,7 +613,7 @@ export async function renderMapaEmendasVencedor(params: {
     if (Object.keys(winners).length === 0) return null;
 
     const [geo, nomePorCod] = await Promise.all([
-      fetchJson(malhaEstadoUrl(ufCode)),
+      obrigatorio(malhaEstadoIbge(ufCode), `malha do estado ${ufCode}`),
       fetchMunicipiosNome(ufUp),
     ]);
     const res = montarMapa(winners, (codarea) => nomePorCod[codarea] ?? '', geo.features ?? [], W, H);

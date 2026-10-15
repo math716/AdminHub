@@ -166,7 +166,10 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         // camada de "resto do mapa não selecionado" atrás do estado em foco.
         const [geoRes, nomesRes, brasilRes] = await Promise.all([
           fetch(`/api/ibge/geojson?type=estado&uf=${uf}`),
-          fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${ufCode}/municipios`),
+          // Lista de cidades guardada no sistema (scripts/ibge/baixar-ibge.mjs);
+          // o IBGE só se faltar. Sem esta lista o mapa nem é criado.
+          fetch(`/geojson/ibge/municipios/${uf}.json`)
+            .then(r => (r.ok ? r : fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${ufCode}/municipios`))),
           darkMode ? fetch('/api/ibge/geojson?type=brasil') : Promise.resolve(null),
         ]);
 

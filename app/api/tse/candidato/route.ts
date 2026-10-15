@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { listaMunicipiosIbge } from '@/lib/ibge-local';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { anoValido, ufValida } from '@/lib/tse-params';
@@ -74,12 +75,9 @@ async function getMunicipiosIBGE(uf: string) {
   try {
     const ufCode = UF_TO_CODE[uf];
     if (!ufCode) return { porNome: {}, porCodigo: {} };
-    const response = await fetch(
-      `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${ufCode}/municipios`,
-      { next: { revalidate: 86400 * 7 } }
-    );
-    if (!response.ok) return { porNome: {}, porCodigo: {} };
-    const data = await response.json();
+    // Lista guardada no sistema (lib/ibge-local): o IBGE não responde à Vercel.
+    const data = await listaMunicipiosIbge(uf);
+    if (!data) return { porNome: {}, porCodigo: {} };
     const porNome: Record<string, string> = {};
     const porCodigo: Record<string, string> = {};
     data.forEach((m: any) => {

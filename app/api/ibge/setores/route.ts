@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { listaMunicipiosIbge } from '@/lib/ibge-local';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 
@@ -139,12 +140,10 @@ export async function GET(request: NextRequest) {
       }
       
       // Buscar código do município
-      const municipiosRes = await fetch(
-        `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${ufCode}/municipios`
-      );
-      
-      if (municipiosRes.ok) {
-        const municipios = await municipiosRes.json();
+      // Lista guardada no sistema (lib/ibge-local): o IBGE não responde à Vercel.
+      const municipios = await listaMunicipiosIbge(ufCode);
+
+      if (municipios) {
         const found = municipios.find((m: any) => 
           m.nome.toUpperCase() === municipioNome.toUpperCase()
         );
