@@ -23,9 +23,9 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { BuscaBairro } from '@/components/maps/busca-bairro';
 import { ESTADOS_BRASIL } from '@/lib/types';
-import { MapaComparacao, cartaoTooltip, type AparenciaArea } from '@/components/mapa/mapa-comparacao';
+import { MapaComparacao, cartaoBalao, linhaBalao, pilulaBalao, type AparenciaArea } from '@/components/mapa/mapa-comparacao';
 import { MapaCidadeComparacao, type PontoComparacao, type PoligonosComparacao } from '@/components/mapa/mapa-cidade-comparacao';
-import { COR_SEM_VOTO, esc, fmt, semAcento } from '@/components/mapa/comparacao-comum';
+import { COR_SEM_VOTO, fmt, semAcento } from '@/components/mapa/comparacao-comum';
 import {
   FORA, botaoDe, carregarPoligonosCidade, indexarPoligonos, nomeDaLinhaFora, poligonoDoPonto,
   rotuloColunaDe, todosOsDe, type PoligonosCidade,
@@ -97,15 +97,25 @@ export function aparenciaEvolucao(a: number, b: number): { cor: string; opacidad
 const pct = (v: number | null) => (v === null ? '—' : `${v > 0 ? '+' : ''}${(v * 100).toFixed(1).replace('.', ',')}%`);
 const sinal = (n: number) => `${n > 0 ? '+' : ''}${fmt(n)}`;
 
-function htmlEvolucao(titulo: string, rotA: string, rotB: string, a: number, b: number): string {
+function htmlEvolucao(titulo: string, rotA: string, rotB: string, a: number, b: number, sobre?: string): string {
   const v = variacao(a, b);
-  const cor = b > a ? COR_GANHO : b < a ? COR_PERDA : 'var(--text-secondary)';
-  return cartaoTooltip(
-    `<div style="font-weight:600;color:var(--acento-azul);font-size:13px;margin-bottom:4px">${esc(titulo)}</div>` +
-    `<div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--text-secondary)"><span>${esc(rotA)}</span><strong style="color:var(--text-primary)">${fmt(a)}</strong></div>` +
-    `<div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--text-secondary)"><span>${esc(rotB)}</span><strong style="color:var(--text-primary)">${fmt(b)}</strong></div>` +
-    `<div style="margin-top:6px;font-size:12px;font-weight:700;color:${cor}">${sinal(b - a)} votos (${pct(v)})</div>`,
-  );
+  const d = b - a;
+  const cor = d > 0 ? COR_GANHO : d < 0 ? COR_PERDA : '#64748b';
+  const maior = Math.max(a, b, 1);
+  // rotA/rotB = "2018 · NOME": o ano vai na bolinha, o nome ao lado.
+  const lado = (rot: string, valor: number, corLado: string, destaque: boolean) => {
+    const [ano, ...resto] = rot.split(' · ');
+    return linhaBalao({
+      cor: corLado, iniciais: `’${ano.slice(2)}`, nome: resto.join(' · ') || ano, fracao: valor / maior, destaque,
+      principal: fmt(valor), secundario: `votos em ${ano}`,
+    });
+  };
+  return cartaoBalao({
+    cor, sobre, titulo,
+    corpo: lado(rotA, a, '#94a3b8', false) + lado(rotB, b, cor, true),
+    rodape: `<span>Variação <strong style="color:${cor}">${pct(v)}</strong></span>` +
+      pilulaBalao(cor, `${sinal(d)} ${Math.abs(d) === 1 ? 'voto' : 'votos'}`),
+  });
 }
 
 // ── Peças visuais da evolução ────────────────────────────────────────────────
@@ -481,7 +491,7 @@ function EvolucaoCidade({ uf, municipio, a, b, rotA, rotB, titulo, lados }: {
       const ap = linha ? aparenciaEvolucao(linha.a, linha.b) : null;
       return {
         chave: `${i}`, lat: l.lat!, lng: l.lng!, cor: ap?.cor ?? COR_SEM_VOTO, opacidade: ap?.opacidade ?? 0.2,
-        html: linha ? htmlEvolucao(linha.nome, rotA, rotB, linha.a, linha.b) : '',
+        html: linha ? htmlEvolucao(linha.nome, rotA, rotB, linha.a, linha.b, visaoEfetiva === 'bairros' ? rotuloColunaDe(rotulo) : 'Zona eleitoral') : '',
       };
     });
   }, [locais, visaoEfetiva, porChave, poligonos, rotA, rotB]);
@@ -492,7 +502,7 @@ function EvolucaoCidade({ uf, municipio, a, b, rotA, rotB, titulo, lados }: {
     aparencia: (nome: string) => {
       const l = porChave.get(nome);
       const ap = l ? aparenciaEvolucao(l.a, l.b) : null;
-      return l && ap ? { ...ap, html: htmlEvolucao(nome, rotA, rotB, l.a, l.b) } : null;
+      return l && ap ? { ...ap, html: htmlEvolucao(nome, rotA, rotB, l.a, l.b, rotuloColunaDe(rotulo)) } : null;
     },
   } : null;
 
@@ -673,7 +683,7 @@ export function EvolucaoCandidato() {
       }
     }
     const ap = aparenciaEvolucao(a, b);
-    return ap ? { ...ap, html: htmlEvolucao(nome, rotA, rotB, a, b) } : null;
+    return ap ? { ...ap, html: htmlEvolucao(nome, rotA, rotB, a, b, nivel === 'brasil' ? 'Estado' : 'Cidade') } : null;
   };
 
 

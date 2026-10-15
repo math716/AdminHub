@@ -12,6 +12,7 @@ import { useEffect, useRef } from 'react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
 import { camadaBase } from '@/lib/maps/basemap';
 import { COR_SEM_VOTO } from '@/components/mapa/comparacao-comum';
+import { prenderBalaoNoMapa } from '@/components/mapa/mapa-comparacao';
 
 export interface PontoComparacao {
   chave: string;
@@ -131,6 +132,7 @@ export function MapaCidadeComparacao({ pontos, poligonos, versao, enquadramento,
           onEachFeature: (f: any, layer: any) => {
             const nome = poligonos.nomeDe(f);
             layer.bindTooltip(() => poligonos.aparencia(nome)?.html ?? '', { sticky: true, direction: 'top', className: 'bairro-tooltip', opacity: 1 });
+            prenderBalaoNoMapa(map, layer);
             layer.on('mouseover', () => { fecharBaloes(grupo, layer); layer.setStyle({ weight: 2.5, color: '#0f172a' }); });
             layer.on('mouseout', () => layer.setStyle({ weight: 0.8, color: '#ffffff' }));
           },
@@ -149,6 +151,7 @@ export function MapaCidadeComparacao({ pontos, poligonos, versao, enquadramento,
           fillOpacity: 0.4 + p.opacidade * 0.6,
         });
         marcador.bindTooltip(p.html, { direction: 'top', className: 'bairro-tooltip', opacity: 1 });
+        prenderBalaoNoMapa(map, marcador);
         marcador.on('mouseover', () => fecharBaloes(grupo, marcador));
         grupo.addLayer(marcador);
         limites.extend([p.lat, p.lng]);

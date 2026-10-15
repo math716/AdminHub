@@ -18,7 +18,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { BuscaBairro } from '@/components/maps/busca-bairro';
-import { FORA, carregarPoligonosCidade, indexarPoligonos, nomeDaLinhaFora, poligonoDoPonto, type PoligonosCidade } from '@/components/mapa/poligonos-cidade';
+import { FORA, carregarPoligonosCidade, indexarPoligonos, nomeDaLinhaFora, poligonoDoPonto, rotuloColunaDe, type PoligonosCidade } from '@/components/mapa/poligonos-cidade';
 import {
   type CandidatoNaComparacao, type Linha, DestaquesComparacao, LegendaComparacao, PainelVitorias, PlacarComparacao, TabelaComparacao,
   corDoResultado, fmt, htmlComparacao, opacidadePorFolga, resultado, semAcento,
@@ -172,7 +172,7 @@ export function ComparacaoCidade({ uf, municipio, ano, turno, cands }: {
         const r = resultado(l.votos);
         return {
           chave: l.chave, lat: l.lat!, lng: l.lng!, cor: corDoResultado(r, coresReais), opacidade: r ? opacidadePorFolga(r.folga) : 0.2,
-          html: r ? htmlComparacao(l.nome, `${l.bairro} · Zona ${l.zona}`, candsReais, l.votos, r) : '',
+          html: r ? htmlComparacao(l.nome, `${l.bairro} · Zona ${l.zona}`, candsReais, l.votos, r, { sobre: 'Local de votação' }) : '',
         };
       }
       const alvo = visaoEfetiva === 'bairros' ? resultadoBairro.get(bairroDe(l)) : resultadoZona.get(l.zona);
@@ -181,7 +181,7 @@ export function ComparacaoCidade({ uf, municipio, ano, turno, cands }: {
       return {
         chave: l.chave, lat: l.lat!, lng: l.lng!,
         cor: corDoResultado(r, coresDaVisao), opacidade: r ? opacidadePorFolga(r.folga) : 0.2,
-        html: r && alvo ? htmlComparacao(titulo, l.nome, candsDaVisao, alvo.l.votos, r) : '',
+        html: r && alvo ? htmlComparacao(titulo, `Local: ${l.nome}`, candsDaVisao, alvo.l.votos, r, { sobre: visaoEfetiva === 'bairros' ? rotuloColunaDe(rotuloBairros) : 'Zona eleitoral' }) : '',
       };
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -193,7 +193,7 @@ export function ComparacaoCidade({ uf, municipio, ano, turno, cands }: {
     aparencia: (nome: string) => {
       const x = resultadoBairro.get(nome);
       if (!x?.r) return null;
-      return { cor: corDoResultado(x.r, coresReais), opacidade: opacidadePorFolga(x.r.folga), html: htmlComparacao(nome, null, candsReais, x.l.votos, x.r) };
+      return { cor: corDoResultado(x.r, coresReais), opacidade: opacidadePorFolga(x.r.folga), html: htmlComparacao(nome, null, candsReais, x.l.votos, x.r, { sobre: rotuloColunaDe(rotuloBairros) }) };
     },
   } : null;
 

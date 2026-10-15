@@ -252,7 +252,9 @@ export function ComparadorCandidatos() {
     return {
       cor: corDoResultado(r, coresAtivas),
       opacidade: r.vencedor === -1 ? 0.5 : opacidadePorFolga(r.folga),
-      html: htmlComparacao(nome, nivel === 'estado' ? 'Clique para ver dentro da cidade' : null, candsAtivos, votos, r),
+      html: htmlComparacao(nome, null, candsAtivos, votos, r, nivel === 'brasil'
+        ? { sobre: chave === 'ZZ' ? 'Exterior' : 'Estado', dica: 'Clique para ver as cidades' }
+        : { sobre: 'Cidade', dica: 'Clique para ver dentro da cidade' }),
     };
   };
   const versaoMapa = `${candidatos.map(c => `${c.id}:${c.dados ? 1 : 0}`).join(',')}|${turno}|${ufAberta}|${Object.keys(dadosUf).length}`;

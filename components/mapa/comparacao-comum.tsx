@@ -8,9 +8,9 @@
 import { useMemo, useState } from 'react';
 import { ArrowUpDown, Crown, List, MousePointerClick, Scale, Trophy } from 'lucide-react';
 import { campoDoPartido, NOME_CAMPO } from '@/lib/partidos-espectro';
-import { cartaoTooltip } from '@/components/mapa/mapa-comparacao';
+import { cartaoBalao, linhaBalao, pilulaBalao } from '@/components/mapa/mapa-comparacao';
 import {
-  Avatar, BarraDividida, CampoFiltro, ChipFiltro, Etiqueta, LegendaMapa, Painel, Rosca, comAlfa, pctBR,
+  Avatar, BarraDividida, CampoFiltro, ChipFiltro, Etiqueta, LegendaMapa, Painel, Rosca, comAlfa, iniciais, pctBR,
 } from '@/components/mapa/comparacao-visual';
 
 export interface Linha {
@@ -76,37 +76,28 @@ export function corDoResultado(r: Resultado | null, cores: string[]): string {
   return r.vencedor === -1 ? COR_EMPATE : cores[r.vencedor];
 }
 
-/** Balão do mapa: título, subtítulo opcional e os votos de cada candidato. */
+const SETA_CLIQUE = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.1 12 6"/><path d="m5.1 8-2.9-.8"/><path d="m6 12-1.9 2"/><path d="M7.2 2.2 8 5.1"/><path d="M9.04 12.17a.5.5 0 0 1 .63-.63l11 4a.5.5 0 0 1-.06.96l-4.2 1.1a1 1 0 0 0-.72.71l-1.1 4.21a.5.5 0 0 1-.96.06z"/></svg>';
+
+/** Balão do mapa: área, os candidatos (do mais votado ao menos) e a vantagem. */
 export function htmlComparacao(
   titulo: string, subtitulo: string | null, cands: CandidatoNaComparacao[], votos: number[], r: Resultado,
+  extra?: { sobre?: string; dica?: string },
 ): string {
-  const ordem = cands.map((c, i) => ({ c, i })).sort((a, b) => votos[b.i] - votos[a.i]);
-  const linhas = ordem.map(({ c, i }) => {
-    const fracao = r.total ? votos[i] / r.total : 0;
-    const pct = (fracao * 100).toFixed(1).replace('.', ',');
-    const venceu = r.vencedor === i;
-    return `<div style="margin-top:7px;font-size:12px;">
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span style="width:8px;height:8px;border-radius:50%;background:${c.cor};flex-shrink:0"></span>
-        <span style="flex:1;color:var(--text-secondary);${venceu ? 'font-weight:700;color:var(--text-primary)' : ''}">${esc(c.nome)}</span>
-        <span style="color:var(--text-primary);font-weight:600;font-variant-numeric:tabular-nums">${fmt(votos[i])}</span>
-        <span style="color:var(--text-tertiary);font-size:11px;width:40px;text-align:right;font-variant-numeric:tabular-nums">${pct}%</span>
-      </div>
-      <div style="height:4px;border-radius:4px;background:var(--tint-08);margin:4px 0 0 14px;overflow:hidden">
-        <div style="height:100%;width:${(fracao * 100).toFixed(1)}%;background:${c.cor};border-radius:4px"></div>
-      </div>
-    </div>`;
-  }).join('');
   const venc = r.vencedor === -1 ? null : cands[r.vencedor];
-  const rodape = venc
-    ? `<span style="color:${venc.cor};font-weight:700">${esc(venc.nome)}</span> venceu por ${fmt(r.diferenca)} votos`
-    : 'Empate entre os mais votados';
-  return cartaoTooltip(
-    `<div style="font-weight:700;color:var(--text-primary);font-size:13px">${esc(titulo)}</div>` +
-    (subtitulo ? `<div style="font-size:11px;color:var(--text-tertiary);margin-top:1px">${esc(subtitulo)}</div>` : '') +
-    linhas +
-    `<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--tint-08);font-size:11px;color:var(--text-tertiary)">${rodape}</div>`,
-  );
+  const corpo = cands.map((c, i) => ({ c, i })).sort((a, b) => votos[b.i] - votos[a.i]).map(({ c, i }) => {
+    const fracao = r.total ? votos[i] / r.total : 0;
+    return linhaBalao({
+      cor: c.cor, iniciais: iniciais(c.nome), nome: c.nome, fracao, destaque: r.vencedor === i,
+      principal: pctBR(fracao), secundario: `${fmt(votos[i])} votos`,
+    });
+  }).join('');
+  const esquerda = extra?.dica
+    ? `<span class="bc-dica">${SETA_CLIQUE}${esc(extra.dica)}</span>`
+    : `<span>${venc ? 'Vantagem' : 'Resultado'}</span>`;
+  const pilula = venc
+    ? pilulaBalao(venc.cor, `+${fmt(r.diferenca)} ${r.diferenca === 1 ? 'voto' : 'votos'}`)
+    : pilulaBalao(COR_EMPATE, 'Empate');
+  return cartaoBalao({ cor: venc?.cor ?? COR_EMPATE, sobre: extra?.sobre, titulo, subtitulo, corpo, rodape: esquerda + pilula });
 }
 
 export function useResultados(linhas: Linha[]) {

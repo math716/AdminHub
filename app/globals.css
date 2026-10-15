@@ -508,6 +508,74 @@ html, body {
 .leaflet-tooltip.bairro-tooltip::after,
 .bairro-tooltip::before,
 .bairro-tooltip::after { display: none !important; }
+/* Balão dos mapas do comparador e da evolução (components/mapa/mapa-comparacao.tsx → cartaoBalao) */
+.bc-card {
+  --bc-fundo: rgba(255, 255, 255, 0.94);
+  --bc-borda: rgba(15, 23, 42, 0.08);
+  --bc-sombra: 0 1px 2px rgba(15, 23, 42, 0.06), 0 14px 34px -10px rgba(15, 23, 42, 0.28), 0 28px 56px -28px rgba(15, 23, 42, 0.22);
+  --bc-titulo: #0f172a;
+  --bc-texto: #334155;
+  --bc-fraco: #64748b;
+  --bc-trilho: rgba(15, 23, 42, 0.07);
+  --bc-divisor: rgba(15, 23, 42, 0.07);
+  --bc-destaque: rgba(15, 23, 42, 0.035);
+  width: 272px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bc-fundo);
+  border: 1px solid var(--bc-borda);
+  box-shadow: var(--bc-sombra);
+  backdrop-filter: blur(14px) saturate(1.5);
+  -webkit-backdrop-filter: blur(14px) saturate(1.5);
+  color: var(--bc-texto);
+  white-space: normal;
+  font-variant-numeric: tabular-nums;
+  animation: bc-entrar 0.16s ease-out;
+}
+.dark .bc-card {
+  --bc-fundo: rgba(13, 27, 48, 0.9);
+  --bc-borda: rgba(148, 163, 184, 0.16);
+  --bc-sombra: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 18px 44px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --bc-titulo: #f8fafc;
+  --bc-texto: #cbd5e1;
+  --bc-fraco: #8da2bd;
+  --bc-trilho: rgba(255, 255, 255, 0.08);
+  --bc-divisor: rgba(255, 255, 255, 0.07);
+  --bc-destaque: rgba(255, 255, 255, 0.04);
+}
+@keyframes bc-entrar { from { opacity: 0; transform: translateY(3px) scale(0.98); } to { opacity: 1; transform: none; } }
+.bc-faixa { height: 3px; }
+.bc-topo { padding: 11px 14px 10px; }
+.bc-sobre { font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bc-fraco); margin-bottom: 3px; }
+.bc-titulo { font-size: 14px; font-weight: 700; line-height: 1.25; color: var(--bc-titulo); letter-spacing: -0.01em; }
+.bc-sub { font-size: 11px; color: var(--bc-fraco); margin-top: 3px; line-height: 1.35; }
+.bc-corpo { padding: 4px 8px 6px; }
+.bc-linha { display: flex; align-items: center; gap: 9px; padding: 6px 6px; border-radius: 10px; }
+.bc-linha-destaque { background: var(--bc-destaque); }
+.bc-avatar {
+  width: 26px; height: 26px; border-radius: 999px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 9.5px; font-weight: 800; letter-spacing: 0.02em;
+}
+.bc-ponto { width: 9px; height: 9px; border-radius: 999px; flex-shrink: 0; margin: 0 4px; }
+.bc-info { flex: 1; min-width: 0; }
+.bc-nome { font-size: 11.5px; font-weight: 600; color: var(--bc-titulo); line-height: 1.25; overflow-wrap: anywhere; }
+.bc-linha:not(.bc-linha-destaque) .bc-nome { font-weight: 500; color: var(--bc-texto); }
+.bc-barra { height: 5px; border-radius: 999px; background: var(--bc-trilho); margin-top: 5px; overflow: hidden; }
+.bc-barra > span { display: block; height: 100%; border-radius: 999px; }
+.bc-nums { text-align: right; flex-shrink: 0; }
+.bc-principal { font-size: 13px; font-weight: 700; color: var(--bc-titulo); line-height: 1.1; }
+.bc-secundario { font-size: 10.5px; color: var(--bc-fraco); margin-top: 2px; }
+.bc-rodape {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 14px 11px; border-top: 1px solid var(--bc-divisor); font-size: 11px; color: var(--bc-fraco);
+}
+.bc-pilula {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px;
+  color: #fff; font-size: 11px; font-weight: 700; white-space: nowrap; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+}
+.bc-dica { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--bc-fraco); }
+
 .bairro-label-icon {
   background: transparent !important;
   border: none !important;
