@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { Layers, Eye, EyeOff, Loader2, MapPin, Info } from 'lucide-react';
 import { useMapCleanup, throttle } from '@/hooks/use-map-cleanup';
 import { camadaBase } from '@/lib/maps/basemap';
+import { balaoArea, posicaoEntre, prenderBalaoNoMapa } from '@/lib/maps/balao';
 import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
 
 interface StateMapProps {
@@ -31,6 +32,14 @@ interface StateMapProps {
    * controlados separadamente (ex: dashboard de emendas no tema claro).
    */
   choropleth?: boolean;
+  /** Balão novo do Mapa Eleitoral (lib/maps/balao): votos, % do total e posição. */
+  balaoPremium?: boolean;
+  /**
+   * Pinta cada cidade pela proporção de votos (azul claro → escuro), em vez
+   * de só o contorno. A escala é a raiz da proporção: com a capital muito à
+   * frente, a escala linear deixava quase todo o estado no tom mais claro.
+   */
+  mapaDeCalor?: boolean;
 }
 
 const UF_CODES: Record<string, string> = {
@@ -51,7 +60,7 @@ function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
 
 type SubdivisaoTipo = 'bairros' | 'bairrosTSE' | 'setores' | null;
 
-function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunicipioClick, filteredMunicipios, highlightColor, disableSubdivisao, highlightMunicipioNome, valueLabel = 'votos', darkMode = false, choropleth }: StateMapProps) {
+function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunicipioClick, filteredMunicipios, highlightColor, disableSubdivisao, highlightMunicipioNome, valueLabel = 'votos', darkMode = false, choropleth, balaoPremium = false, mapaDeCalor = false }: StateMapProps) {
   const showChoropleth = choropleth ?? darkMode;
   const [geoData, setGeoData] = useState<any>(null);
   // Contorno do Brasil (outros estados) — usado em darkMode pra deixar claro
@@ -818,6 +827,9 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
         return false;
       };
 
+      const maxCalor = Math.max(1, ...Object.values(
+        votesData && Object.keys(votesData).length > 0 ? votesData : (votesDataByName ?? {}),
+      ));
       const style = (feature: any) => {
         const codarea = feature?.properties?.codarea || '';
         const nomeMun = codigoToNome[codarea] || '';
@@ -834,6 +846,17 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           ? (isFiltered ? '#4a9ede' : 'rgba(74,158,222,0.35)')
           : (isFiltered ? '#5b8db8' : '#9ab8d4');
 
+        if (mapaDeCalor) {
+          const f = votos ? Math.sqrt(votos / maxCalor) : 0;
+          return {
+            fillColor: votos ? `hsl(214, ${Math.round(60 + f * 30)}%, ${Math.round(88 - f * 56)}%)` : (darkMode ? '#0d2545' : '#e2e8f0'),
+            fillOpacity: votos ? 0.85 : 0.25,
+            weight: 0.6,
+            opacity: 0.9,
+            color: darkMode ? 'rgba(148,163,184,0.45)' : '#ffffff',
+          };
+        }
+
         return {
           fillColor: getColor(votos, isFiltered),
           weight: isFiltered ? (darkMode ? 1 : 1.5) : 0.6,
@@ -842,6 +865,12 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           fillOpacity: fillOpacity,
         };
       };
+
+      // Balão novo: total e posição de cada cidade entre as que têm voto.
+      const todosVotos = Object.values(
+        votesData && Object.keys(votesData).length > 0 ? votesData : (votesDataByName ?? {}),
+      ).filter(v => v > 0);
+      const totalVotos = todosVotos.reduce((a, v) => a + v, 0);
 
       const geoLayer = L.geoJSON(geoData, {
         pane: 'municipiosPane',
@@ -905,7 +934,8 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
             }
             hoveredMunLayerRef.current = layer;
             if (selectedMunicipioRef.current !== nome) {
-              e.target.setStyle({
+              // No mapa de calor a cor fica: só o contorno destaca.
+              e.target.setStyle(mapaDeCalor ? { weight: 2.5, color: '#0f172a' } : {
                 weight: 2.5,
                 color: '#1976d2',
                 fillOpacity: 0.1
@@ -927,7 +957,18 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
             }
           });
 
-          layer.bindTooltip(
+          if (balaoPremium) {
+            layer.bindTooltip(
+              () => balaoArea({
+                sobre: 'Cidade', titulo: nome, votos,
+                total: totalVotos, posicao: votos ? posicaoEntre(votos, todosVotos) : undefined,
+                quantas: todosVotos.length, area: 'cidades', rotuloTotal: 'dos votos no estado',
+                dica: disableSubdivisaoRef.current ? null : 'Clique para ver bairros e locais de votação',
+              }),
+              { sticky: true, direction: 'top', opacity: 1, className: 'bairro-tooltip' },
+            );
+            prenderBalaoNoMapa(map, layer);
+          } else layer.bindTooltip(
             `<div style="
               padding: 10px 14px;
               background: var(--bg-card);

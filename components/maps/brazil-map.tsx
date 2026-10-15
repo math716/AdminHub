@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, memo } from 'react';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
 import { camadaBase } from '@/lib/maps/basemap';
+import { balaoArea, posicaoEntre, prenderBalaoNoMapa } from '@/lib/maps/balao';
 
 interface BrazilMapProps {
   onStateClick: (uf: string, name: string) => void;
@@ -16,6 +17,8 @@ interface BrazilMapProps {
   emptyLabel?: string;
   /** Exibe badges circulares com valor sobre cada estado. Default: false. */
   showBadges?: boolean;
+  /** Balão novo do Mapa Eleitoral (lib/maps/balao): votos, % do total e posição. */
+  balaoPremium?: boolean;
 }
 
 const codeToUf: Record<string, string> = {
@@ -36,7 +39,7 @@ const STATE_CENTROIDS: Record<string, [number, number]> = {
   'SP': [-22.2, -48.7], 'SE': [-10.6, -37.4], 'TO': [-10.2, -48.3]
 };
 
-function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false, formatValue, emptyLabel, showBadges = false }: BrazilMapProps) {
+function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false, formatValue, emptyLabel, showBadges = false, balaoPremium = false }: BrazilMapProps) {
   const [geoData, setGeoData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -194,7 +197,19 @@ function BrazilMapComponent({ onStateClick, highlightedStates, darkMode = false,
             layer.closeTooltip();
           });
 
-          if (estado) {
+          if (estado && balaoPremium) {
+            const todos = Object.values(highlightedStates ?? {}).filter(v => v > 0);
+            layer.bindTooltip(
+              () => balaoArea({
+                sobre: 'Estado', titulo: estado.nome, votos: votes,
+                total: todos.reduce((a, v) => a + v, 0), posicao: votes ? posicaoEntre(votes, todos) : undefined,
+                quantas: todos.length, area: 'estados', rotuloTotal: 'dos votos no Brasil',
+                dica: 'Clique para ver as cidades',
+              }),
+              { sticky: true, direction: 'top', className: 'bairro-tooltip', opacity: 1 },
+            );
+            prenderBalaoNoMapa(map, layer);
+          } else if (estado) {
             const votesLabel = votes
               ? (formatValue ? formatValue(votes) : votes.toLocaleString('pt-BR'))
               : null;

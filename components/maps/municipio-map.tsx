@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardR
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
 import { camadaBase } from '@/lib/maps/basemap';
+import { balaoArea, posicaoEntre, prenderBalaoNoMapa } from '@/lib/maps/balao';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -76,6 +77,8 @@ interface MunicipioMapProps {
   onBairroHover?: (bairro: string | null) => void;
   /** Chamado quando os dados de bairros são carregados — permite que o pai acesse votos e locais */
   onDataLoaded?: (bairros: BairroExposed[]) => void;
+  /** Balão novo do Mapa Eleitoral (lib/maps/balao). */
+  balaoPremium?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -130,6 +133,7 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
   onBairroClick,
   onBairroHover,
   onDataLoaded,
+  balaoPremium = false,
 }, ref) => {
   const mapRef = useRef<HTMLDivElement>(null);
   // Um pino por LOCAL DE VOTAÇÃO (chave "zona-nºlocal"), no endereço real.
@@ -476,6 +480,8 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
       const pct = (v: number) => ((v / calcTotalVotos) * 100).toFixed(1).replace('.', ',');
 
       const bounds: [number, number][] = [];
+      // Posição de cada local entre os que têm voto real (balão novo).
+      const votosLocais = pinos.filter(p => p.real && (p.local.votos ?? 0) > 0).map(p => p.local.votos ?? 0);
 
       pinos.forEach(({ key, local, bairro, valor, valorCor, real }) => {
         const color = getColor(valorCor, maxValue);
@@ -507,7 +513,27 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
                <div style="color:var(--text-tertiary);font-size:11px;">${fonte === 'estimativa' ? 'Estimativa: votos da zona repartidos pelas seções' : `${pct(valorBairro)}% do município`}</div>`
             : '';
 
-        marker.bindTooltip(
+        if (balaoPremium) {
+          const comVoto = candidatoId || nomeCandidato || valorBairro > 0;
+          marker.bindTooltip(balaoArea({
+            sobre: 'Local de votação', titulo: local.nome, subtitulo: `${local.endereco} · ${bairro.nome}`,
+            votos: !comVoto ? null : real ? (local.votos ?? 0) : valorBairro,
+            rotuloValor: real ? 'votos aqui' : 'no bairro',
+            total: calcTotalVotos,
+            posicao: real ? posicaoEntre(local.votos ?? 0, votosLocais) : undefined,
+            quantas: votosLocais.length, area: 'locais',
+            rotuloTotal: real ? 'dos votos na cidade'
+              : fonte === 'estimativa' ? 'da cidade (estimativa: votos da zona repartidos pelas seções)' : 'dos votos na cidade',
+            etiquetas: [
+              `Zona ${local.zona}`,
+              ...(local.secoes ? [`${local.secoes} seções`] : []),
+              ...(real ? [`Bairro: ${valorBairro.toLocaleString('pt-BR')} votos`] : []),
+            ],
+            dica: 'Clique para ver o bairro',
+            semDados: 'Sem votos neste local',
+          }), { permanent: false, direction: 'top', className: 'bairro-tooltip', interactive: false, opacity: 1 });
+          prenderBalaoNoMapa(map, marker);
+        } else marker.bindTooltip(
           `<div style="background:var(--bg-card-raised);padding:10px 14px;border-radius:10px;border:1px solid var(--border-default);box-shadow:var(--shadow-raised);min-width:180px;max-width:260px;white-space:normal;">
             <div style="font-weight:600;color:var(--acento-azul);font-size:13px;margin-bottom:2px;">${esc(local.nome)}</div>
             <div style="color:var(--text-tertiary);font-size:11px;margin-bottom:6px;">${esc(local.endereco)} · ${esc(bairro.nome)}</div>

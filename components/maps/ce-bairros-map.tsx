@@ -8,6 +8,7 @@ import { camadaBase } from '@/lib/maps/basemap';
 import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
 import { htmlDaBolha, tamanhoDaBolha } from '@/lib/maps/bolha-votos';
 
+import { ESTILO_CASCA_BALAO, balaoArea, posicaoEntre, posicionarBalaoLivre } from '@/lib/maps/balao';
 interface CeBairrosMapProps {
   /** Pedido da busca de bairro: aproxima no polígono com esse nome. */
   focoBairro?: PedidoFocoBairro | null;
@@ -17,6 +18,8 @@ interface CeBairrosMapProps {
   selectedBairro?: string | null;
   onBairroClick?: (nome: string) => void;
   height?: string;
+  /** Balão novo do Mapa Eleitoral (lib/maps/balao). */
+  balaoPremium?: boolean;
 }
 
 function normalizeNome(nome: string): string {
@@ -35,7 +38,7 @@ function fmtVotos(v: number): string {
   return String(v);
 }
 
-function CeBairrosMapComponent({ votesData, selectedBairro, onBairroClick, height = '100%', focoBairro, onNomes }: CeBairrosMapProps) {
+function CeBairrosMapComponent({ votesData, selectedBairro, onBairroClick, height = '100%', focoBairro, onNomes, balaoPremium = false }: CeBairrosMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const isInitializingRef = useRef(false);
   const geoLayerRef = useRef<any>(null);
@@ -193,6 +196,7 @@ function CeBairrosMapComponent({ votesData, selectedBairro, onBairroClick, heigh
         'border:1px solid var(--border-default)', 'min-width:140px', 'box-shadow:var(--shadow-raised)',
         'white-space:nowrap', 'font-family:system-ui,sans-serif',
       ].join(';');
+      if (balaoPremium) tooltipEl.style.cssText = ESTILO_CASCA_BALAO;
 
       const geoLayer = L.geoJSON(geoData, {
         pane: 'bairrosPane',
@@ -222,19 +226,30 @@ function CeBairrosMapComponent({ votesData, selectedBairro, onBairroClick, heigh
               layer.setStyle({ weight: 2, fillOpacity: 0.18, color: '#2563EB' });
             }
             const v = getVotos(nome);
-            tooltipEl.innerHTML = [
+            tooltipEl.innerHTML = balaoPremium ? (() => {
+              const todos = Object.values(votesDataRef.current as Record<string, number>).filter(x => x > 0);
+              return balaoArea({
+                sobre: 'Bairro', titulo: nome, votos: v,
+                total: todos.reduce((a, x) => a + x, 0), posicao: v ? posicaoEntre(v, todos) : undefined,
+                quantas: todos.length, area: 'bairros', rotuloTotal: 'dos votos na cidade',
+                dica: 'Clique para ver as zonas e os locais de votação',
+              });
+            })() : [
               `<strong style="color:var(--acento-azul);font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
               v !== undefined
                 ? `<span style="color:var(--text-secondary);font-size:13px;">${v.toLocaleString('pt-BR')} votos</span>`
                 : '<span style="color:#64748b;font-size:12px;">Sem dados de votos</span>',
               '<div style="margin-top:6px;padding-top:5px;border-top:1px solid rgba(27,73,101,0.5);">',
               '<span style="color:#78909c;font-size:10px;">Clique para selecionar</span></div>',
-            ].join('');
-            tooltipEl.style.display = 'block';
+            ].join('');            tooltipEl.style.display = 'block';
           });
 
           layer.on('mousemove', (e: any) => {
             const pt = map.latLngToContainerPoint(e.latlng);
+            if (balaoPremium) {
+              posicionarBalaoLivre(tooltipEl, pt.x, pt.y, map.getContainer().offsetWidth, map.getContainer().offsetHeight);
+              return;
+            }
             const w = tooltipEl.offsetWidth || 160;
             const h = tooltipEl.offsetHeight || 80;
             const mapW = map.getContainer().offsetWidth;

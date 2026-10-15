@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
 import { camadaBase } from '@/lib/maps/basemap';
+import { cartaoBalao, prenderBalaoNoMapa } from '@/lib/maps/balao';
 
 export interface AparenciaArea {
   cor: string;
@@ -51,108 +52,8 @@ const NOME_UF: Record<string, string> = {
 
 const SEM_DADO = '#cbd5e1';
 
-const escBalao = (s: string) =>
-  String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
-
-/** Cor em hex com transparência (o balão é HTML puro, sem as peças do React). */
-function alfa(hex: string, a: number): string {
-  const h = hex.replace('#', '');
-  if (h.length !== 6) return hex;
-  const n = parseInt(h, 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
-
-/**
- * Cartão do balão dos mapas do comparador e da evolução. O visual (claro e
- * escuro) está nas classes .bc-* do globals.css; aqui só a estrutura.
- * `cor` tinge o topo do cartão (quem venceu, ou ganho/perda).
- */
-export function cartaoBalao({ cor, sobre, titulo, subtitulo, corpo, rodape }: {
-  cor?: string;
-  /** Linha pequena acima do título ("Estado", "Local de votação"…). */
-  sobre?: string | null;
-  titulo: string;
-  subtitulo?: string | null;
-  /** HTML já escapado. */
-  corpo?: string;
-  /** HTML já escapado. */
-  rodape?: string;
-}): string {
-  const brilho = cor ? `background:linear-gradient(180deg, ${alfa(cor, 0.16)} 0%, ${alfa(cor, 0)} 100%);` : '';
-  return `<div class="bc-card">` +
-    (cor ? `<div class="bc-faixa" style="background:linear-gradient(90deg, ${cor}, ${alfa(cor, 0.35)})"></div>` : '') +
-    `<div class="bc-topo" style="${brilho}">` +
-      (sobre ? `<div class="bc-sobre">${escBalao(sobre)}</div>` : '') +
-      `<div class="bc-titulo">${escBalao(titulo)}</div>` +
-      (subtitulo ? `<div class="bc-sub">${escBalao(subtitulo)}</div>` : '') +
-    `</div>` +
-    (corpo ? `<div class="bc-corpo">${corpo}</div>` : '') +
-    (rodape ? `<div class="bc-rodape">${rodape}</div>` : '') +
-  `</div>`;
-}
-
-/** Linha de um valor no balão: bolinha com iniciais, nome, barra, % e votos. */
-export function linhaBalao({ cor, iniciais, nome, fracao, principal, secundario, destaque }: {
-  cor: string; iniciais?: string; nome: string; fracao: number; principal: string; secundario?: string; destaque?: boolean;
-}): string {
-  const largura = Math.max(0, Math.min(1, fracao)) * 100;
-  return `<div class="bc-linha${destaque ? ' bc-linha-destaque' : ''}">` +
-    (iniciais
-      ? `<span class="bc-avatar" style="background:linear-gradient(135deg, ${cor}, ${alfa(cor, 0.7)});box-shadow:0 0 0 2px ${alfa(cor, 0.22)}">${escBalao(iniciais)}</span>`
-      : `<span class="bc-ponto" style="background:${cor};box-shadow:0 0 0 3px ${alfa(cor, 0.2)}"></span>`) +
-    `<div class="bc-info">` +
-      `<div class="bc-nome">${escBalao(nome)}</div>` +
-      `<div class="bc-barra"><span style="width:${largura.toFixed(1)}%;background:linear-gradient(90deg, ${alfa(cor, 0.65)}, ${cor})"></span></div>` +
-    `</div>` +
-    `<div class="bc-nums"><div class="bc-principal">${principal}</div>` +
-      (secundario ? `<div class="bc-secundario">${secundario}</div>` : '') +
-    `</div>` +
-  `</div>`;
-}
-
-/** Etiqueta colorida do rodapé do balão. */
-export function pilulaBalao(cor: string, texto: string): string {
-  return `<span class="bc-pilula" style="background:linear-gradient(135deg, ${cor}, ${alfa(cor, 0.82)});box-shadow:0 4px 12px -4px ${alfa(cor, 0.7)}">${texto}</span>`;
-}
-
-/**
- * Mantém o balão dentro do mapa. O mapa corta o que passa da borda: perto do
- * topo o balão abre para baixo, nas laterais desliza para dentro e, se não
- * couber nem em cima nem embaixo (mapa baixo, no celular), abre ao lado.
- */
-export function prenderBalaoNoMapa(map: any, layer: any) {
-  const ajustar = () => {
-    const t = layer.getTooltip?.();
-    const el = t?.getElement?.();
-    const ll = t?.getLatLng?.();
-    // Fechado (outro balão abriu, o mouse saiu): nada a posicionar.
-    if (!t || !el || !ll || !map._loaded || !layer.isTooltipOpen?.()) return;
-    const p = map.latLngToContainerPoint(ll);
-    const { x: W, y: H } = map.getSize();
-    const w = el.offsetWidth, h = el.offsetHeight, m = 8, folga = 14;
-    const acima = p.y - folga, abaixo = H - p.y - folga;
-    const dentro = (inicio: number, tamanho: number, limite: number) =>
-      inicio < m ? m - inicio : inicio + tamanho > limite - m ? Math.max(m - inicio, limite - m - (inicio + tamanho)) : 0;
-
-    let direcao: 'top' | 'bottom' | 'left' | 'right';
-    let offset: [number, number];
-    const esquerda = p.x - folga, direita = W - p.x - folga;
-    if (acima >= h + m || (abaixo < h + m && Math.max(esquerda, direita) < w + m && acima >= abaixo)) {
-      direcao = 'top';
-      offset = [dentro(p.x - w / 2, w, W), -folga];
-    } else if (abaixo >= h + m || Math.max(esquerda, direita) < w + m) {
-      direcao = 'bottom';
-      offset = [dentro(p.x - w / 2, w, W), folga];
-    } else {
-      direcao = direita >= esquerda ? 'right' : 'left';
-      offset = [direcao === 'right' ? folga : -folga, dentro(p.y - h / 2, h, H)];
-    }
-    t.options.direction = direcao;
-    t.options.offset = offset;
-    if (t._updatePosition) t._updatePosition(); else t.update();
-  };
-  layer.on('tooltipopen mousemove', ajustar);
-}
+// Cartão e posição do balão: comuns a todos os mapas do Mapa Eleitoral.
+export { cartaoBalao, linhaBalao, pilulaBalao, prenderBalaoNoMapa } from '@/lib/maps/balao';
 
 export function MapaComparacao({ tipo, uf, aparencia, versao, onClickArea, altura = '520px' }: MapaComparacaoProps) {
   const mapRef = useRef<HTMLDivElement>(null);

@@ -575,6 +575,25 @@ html, body {
   color: #fff; font-size: 11px; font-weight: 700; white-space: nowrap; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
 }
 .bc-dica { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--bc-fraco); }
+/* Balão de área do Resultado (lib/maps/balao.ts → balaoArea) */
+.bc-area { padding: 2px 6px 6px; }
+.bc-numero-linha { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.bc-numero { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--bc-titulo); }
+.bc-unidade { font-size: 11px; font-weight: 600; color: var(--bc-fraco); margin-left: 5px; text-transform: uppercase; letter-spacing: 0.08em; }
+.bc-posicao {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 24px; padding: 0 8px;
+  border-radius: 999px; font-size: 11.5px; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 4px 12px -4px rgba(37, 99, 235, 0.7);
+}
+.bc-posicao small { font-size: 9.5px; font-weight: 600; opacity: 0.8; margin-left: 3px; }
+.bc-barra-grossa { height: 7px; margin-top: 10px; }
+.bc-legenda { font-size: 11px; color: var(--bc-fraco); margin-top: 6px; }
+.bc-legenda strong { color: var(--bc-titulo); font-weight: 700; }
+.bc-etiquetas { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.bc-etiquetas > span {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+  background: var(--bc-trilho); color: var(--bc-texto);
+}
 
 .bairro-label-icon {
   background: transparent !important;

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -17,14 +17,10 @@ import {
   Star,
   ArrowLeft,
   User,
-  Calendar,
-  Vote,
   MapPin,
   Loader2,
-  ChevronRight,
   Globe,
   Building2,
-  Home as HomeIcon,
   Layers,
   X,
   Maximize2,
@@ -37,6 +33,8 @@ import type { FocusZonaRequest } from '@/components/maps/municipio-map';
 import { BuscaBairro, type OpcaoBairro } from '@/components/maps/busca-bairro';
 import { ComparadorCandidatos } from '@/components/mapa/comparador-candidatos';
 import { EvolucaoCandidato } from '@/components/mapa/evolucao-candidato';
+import { Painel, Trilha } from '@/components/mapa/comparacao-visual';
+import { AnaliseResultado, CartaoCandidato, MolduraMapa, PainelAreaSelecionada } from '@/components/mapa/resultado-visual';
 import { normalizarNomeBairro, type PedidoFocoBairro } from '@/hooks/use-foco-poligono';
 
 // Mapeamento zona eleitoral → distrito municipal de SP
@@ -616,7 +614,8 @@ export default function MapaPage() {
     const list = q
       ? municipiosOrdenados.filter(({ nome }) => normalize(nome).includes(q))
       : municipiosOrdenados;
-    return list.slice(0, 8);
+    // Todos: a lista rola.
+    return list;
   }, [municipiosOrdenados, municSearch]);
 
   // Computa votos por bairro de Fortaleza usando CE_ZONA_BAIRRO_MAP
@@ -1090,6 +1089,59 @@ export default function MapaPage() {
            f?.uf === (electoralData?.uf ?? searchUf)
   );
 
+  // ── Análise "onde estão os votos" (abaixo do mapa) ─────────────────────────
+  // As mesmas áreas que o mapa está mostrando: estados, cidades, regiões do
+  // DF, distritos/bairros da capital ou bairros/zonas da cidade.
+  const nomeCurto = electoralData?.nomeUrna || electoralData?.candidateName || '';
+  // Clicou numa área da tabela (lá embaixo): sobe até o mapa, que é onde ela abre.
+  const voltarAoMapa = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  const tituloCidade = (n: string) => n.toLowerCase().replace(/(^|\s)(\S)/g, (_: string, sep: string, c: string) => sep + c.toUpperCase());
+  const deRegistro = (r: Record<string, number>) => Object.entries(r).map(([nome, votos]) => ({ chave: nome, nome, votos }));
+  const analise: {
+    linhas: Array<{ chave: string; nome: string; votos: number }>;
+    area: string; areaSingular: string; rotuloColuna: string; titulo: string;
+    onClickLinha?: (l: { chave: string; nome: string }) => void; dicaClique?: string;
+  } | null = !electoralData ? null
+    : view === 'brasil' ? {
+        linhas: Object.entries(electoralData.votosPorEstado ?? {}).map(([uf, votos]) => ({
+          chave: uf, nome: uf === 'ZZ' ? 'Exterior' : ESTADOS_BRASIL.find(e => e.sigla === uf)?.nome ?? uf, votos,
+        })),
+        area: 'estados', areaSingular: 'estado', rotuloColuna: 'Estado', titulo: 'Todos os estados',
+        onClickLinha: (l) => { if (l.chave !== 'ZZ') { voltarAoMapa(); handleStateClick(l.chave, l.nome); } },
+        dicaClique: 'Clique num estado para abrir',
+      }
+    : view === 'estado' && selectedUf === 'DF' && dfVisualizacao === 'bairros' ? {
+        linhas: deRegistro(dfRegioesVotes),
+        area: 'regiões', areaSingular: 'região', rotuloColuna: 'Região administrativa', titulo: 'Todas as regiões administrativas',
+      }
+    : view === 'estado' ? {
+        linhas: Object.entries(electoralData.votosPorNomeMunicipio ?? {}).map(([nome, votos]) => ({ chave: nome, nome: tituloCidade(nome), votos })),
+        area: 'cidades', areaSingular: 'cidade', rotuloColuna: 'Cidade', titulo: 'Todas as cidades',
+        onClickLinha: (l) => { voltarAoMapa(); handleMunicipioClick('', l.nome); },
+        dicaClique: 'Clique numa cidade para abrir',
+      }
+    : view === 'municipio' && isSaoPauloCapital && spVisualizacao === 'distritos' ? {
+        linhas: deRegistro(spDistritosVotes), area: 'distritos', areaSingular: 'distrito', rotuloColuna: 'Distrito', titulo: 'Todos os distritos',
+      }
+    : view === 'municipio' && isRioDeJaneiro && rjVisualizacao === 'bairros' ? {
+        linhas: deRegistro(rjBairrosVotes), area: 'bairros', areaSingular: 'bairro', rotuloColuna: 'Bairro', titulo: 'Todos os bairros',
+      }
+    : view === 'municipio' && isFortalezaCe && ceVisualizacao === 'bairros' ? {
+        linhas: deRegistro(ceBairrosVotes), area: 'bairros', areaSingular: 'bairro', rotuloColuna: 'Bairro', titulo: 'Todos os bairros',
+      }
+    : view === 'municipio' && isGenPoligonosMunicipio && genVisualizacao === 'bairros' ? {
+        linhas: deRegistro(genBairrosApiVotes), area: 'bairros', areaSingular: 'bairro', rotuloColuna: 'Bairro', titulo: 'Todos os bairros',
+      }
+    : view === 'municipio' && bairrosData.length > 0 ? {
+        linhas: bairrosData.map(b => ({ chave: b.nome, nome: b.nome, votos: b.votos ?? 0 })),
+        area: 'bairros', areaSingular: 'bairro', rotuloColuna: 'Bairro', titulo: 'Todos os bairros',
+      }
+    : view === 'municipio' && locaisPorZona.length > 0 ? {
+        linhas: locaisPorZona.map((z: any) => ({ chave: String(z.zona), nome: `Zona ${z.zona}`, votos: z.votos ?? 0 })),
+        area: 'zonas', areaSingular: 'zona', rotuloColuna: 'Zona', titulo: 'Todas as zonas',
+      }
+    : null;
+
   const anoOptions = [
     { value: '2026', label: '2026 - Federal/Estadual' },
     { value: '2024', label: '2024 - Municipal' },
@@ -1233,96 +1285,25 @@ export default function MapaPage() {
 
         {seletorModo}
 
-        {/* Breadcrumb hierárquico */}
-        <div className="flex items-center gap-1 text-sm rounded-xl px-4 py-2.5 w-fit flex-wrap"
-          style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.13)' }}>
-          {/* Brasil */}
-          <button
-            onClick={() => { setView('brasil'); setSelectedUf(''); setSelectedMunicipio(null); setSelectedBairro(null); setLocaisPorZona([]); }}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
-            style={view === 'brasil'
-              ? { background: 'rgba(74,158,222,0.12)', color: 'var(--acento-azul)', fontWeight: 600 }
-              : { color: 'var(--tint-45)' }}
-          >
-            <Globe className="h-3.5 w-3.5" />
-            Brasil
-          </button>
-
-          <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--tint-25)' }} />
-
-          {/* Estado */}
-          {view !== 'brasil' ? (
-            <button
-              onClick={() => { setView('estado'); setSelectedMunicipio(null); setSelectedBairro(null); setLocaisPorZona([]); }}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
-              style={view === 'estado'
-                ? { background: 'rgba(74,158,222,0.12)', color: 'var(--acento-azul)', fontWeight: 600 }
-                : { color: 'var(--tint-45)' }}
-            >
-              <Layers className="h-3.5 w-3.5" />
-              {selectedStateName || 'Estado'}
-            </button>
-          ) : (
-            <span className="flex items-center gap-1.5 px-2 py-1" style={{ color: 'var(--tint-25)' }}>
-              <Layers className="h-3.5 w-3.5" />
-              Estado
-            </span>
-          )}
-
-          <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--tint-25)' }} />
-
-          {/* Município */}
-          {selectedMunicipio ? (
-            <button
-              onClick={() => { setSelectedBairro(null); }}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
-              style={!selectedBairro
-                ? { background: 'rgba(37,99,235,0.12)', color: '#2563EB', fontWeight: 600 }
-                : { color: 'var(--tint-45)' }}
-            >
-              <Building2 className="h-3.5 w-3.5" />
-              {selectedMunicipio.nome}
-            </button>
-          ) : (
-            <span className="flex items-center gap-1.5 px-2 py-1" style={{ color: 'var(--tint-25)' }}>
-              <Building2 className="h-3.5 w-3.5" />
-              Município
-            </span>
-          )}
-
-          {/* Bairro */}
-          {selectedBairro && (
-            <>
-              <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--tint-25)' }} />
-              <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg font-semibold"
-                style={{ background: 'rgba(34,197,94,0.12)', color: 'var(--success)' }}>
-                <HomeIcon className="h-3.5 w-3.5" />
-                {selectedBairro}
-              </span>
-            </>
-          )}
-        </div>
+        {/* Onde estamos: Brasil › Estado › Município › Bairro */}
+        <Trilha
+          passos={[
+            { rotulo: 'Brasil', onClick: () => { setView('brasil'); setSelectedUf(''); setSelectedMunicipio(null); setSelectedBairro(null); setLocaisPorZona([]); } },
+            ...(view !== 'brasil' ? [{ rotulo: selectedStateName || 'Estado', onClick: () => { setView('estado'); setSelectedMunicipio(null); setSelectedBairro(null); setLocaisPorZona([]); } }] : []),
+            ...(selectedMunicipio ? [{ rotulo: selectedMunicipio.nome, onClick: () => setSelectedBairro(null) }] : []),
+            ...(selectedBairro ? [{ rotulo: selectedBairro }] : []),
+          ]}
+          meta={electoralData ? `${electoralData.ano}${electoralData.segundoTurno ? ` · ${electoralData.turno ?? 1}º turno` : ''}` : undefined}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Sidebar */}
         <div className="md:col-span-1 h-auto md:h-[750px] max-h-[60vh] md:max-h-none overflow-y-auto scrollbar-dark space-y-3">
-          {/* Search */}
-          <div
-            className="rounded-xl p-4 space-y-3"
-            style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.15)' }}
-          >
-            {/* Header */}
-            <div className="flex items-center gap-2 pb-2" style={{ borderBottom: '1px solid var(--tint-06)' }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.25)' }}>
-                <Search className="h-3.5 w-3.5 text-[#4a9ede]" />
-              </div>
-              <span className="text-sm font-semibold text-[color:var(--text-primary)]">Buscar Candidato</span>
-            </div>
-
+          {/* Busca */}
+          <Painel titulo="Buscar candidato" icone={Search} corpo="p-4 space-y-3">
             <div className="space-y-0.5">
-              <p className="text-[11px] uppercase tracking-wider font-medium" style={{ color: '#4a7a9b' }}>Nome</p>
+              <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>Nome</p>
               <Input
                 placeholder="Ex: João Silva"
                 value={candidateName}
@@ -1332,7 +1313,7 @@ export default function MapaPage() {
             </div>
 
             <div className="space-y-0.5">
-              <p className="text-[11px] uppercase tracking-wider font-medium" style={{ color: '#4a7a9b' }}>Eleição</p>
+              <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>Eleição</p>
               <Select
                 value={ano}
                 onChange={(e) => setAno(e.target.value)}
@@ -1342,7 +1323,7 @@ export default function MapaPage() {
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-0.5">
-                <p className="text-[11px] uppercase tracking-wider font-medium" style={{ color: '#4a7a9b' }}>País</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>País</p>
                 <div className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-sm"
                   style={{ background: 'var(--tint-04)', border: '1px solid var(--tint-08)' }}>
                   <Globe className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--acento-azul)' }} />
@@ -1350,7 +1331,7 @@ export default function MapaPage() {
                 </div>
               </div>
               <div className="space-y-0.5">
-                <p className="text-[11px] uppercase tracking-wider font-medium" style={{ color: '#4a7a9b' }}>Estado</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>Estado</p>
                 <Select
                   value={searchEstado}
                   onChange={(e) => setSearchEstado(e.target.value)}
@@ -1363,8 +1344,8 @@ export default function MapaPage() {
             </div>
 
             {searchError && (
-              <p className="text-xs text-red-400 flex items-center gap-1">
-                <span>⚠</span> {searchError}
+              <p className="text-xs rounded-lg px-3 py-2" style={{ color: 'var(--danger)', background: 'var(--danger-soft)' }}>
+                {searchError}
               </p>
             )}
 
@@ -1372,20 +1353,13 @@ export default function MapaPage() {
               <Search className="h-4 w-4 mr-2" />
               Buscar
             </Button>
-          </div>
+          </Painel>
 
           {/* Lista de Candidatos Homônimos */}
           <AnimatePresence>
             {candidatosHomonimos.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <User className="h-5 w-5 text-[#4a9ede]" />
-                      Selecione o Candidato
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
+                <Painel titulo="Selecione o candidato" icone={User} corpo="p-4 space-y-2">
                     {mensagemHomonimos && <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{mensagemHomonimos}</p>}
                     <div className="max-h-[400px] overflow-y-auto scrollbar-dark space-y-2">
                       {candidatosHomonimos.map((c) => (
@@ -1393,7 +1367,8 @@ export default function MapaPage() {
                           key={c.id}
                           onClick={() => handleSelectHomonimo(c.id)}
                           disabled={searching}
-                          className="w-full text-left p-3 bg-[var(--bg-card-subtle)]/50 hover:bg-[var(--bg-card-subtle)] border border-[var(--border-default)] hover:border-cyan-500 rounded-lg transition-all disabled:opacity-50"
+                          className="w-full text-left p-3 rounded-xl transition-all disabled:opacity-50 hover:bg-[var(--tint-04)]"
+                          style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -1418,8 +1393,7 @@ export default function MapaPage() {
                         </button>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
+                </Painel>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1428,75 +1402,23 @@ export default function MapaPage() {
           <AnimatePresence>
             {electoralData && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span className="flex items-center gap-2">
-                        <User className="h-5 w-5 text-[#4a9ede]" />
-                        Resultado
-                      </span>
-                      {!isFavorite && (
-                        <Button variant="ghost" size="sm" onClick={handleAddFavorite}>
-                          <Star className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <p className="text-lg font-semibold text-[color:var(--text-primary)]">{electoralData?.candidateName}</p>
-                      {electoralData?.nomeUrna && electoralData?.nomeUrna !== electoralData?.candidateName && (
-                        <p className="text-sm text-slate-600 dark:text-slate-400">Nome de urna: {electoralData?.nomeUrna}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="info">{electoralData?.partido}</Badge>
-                        {electoralData?.numero && <Badge variant="default">Nº {electoralData?.numero}</Badge>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                      <Calendar className="h-4 w-4" />
-                      {electoralData?.ano} - {electoralData?.cargo}
-                    </div>
-                    {/* Só aparece para quem disputou o 2º turno (governador,
-                        presidente, prefeito de cidade grande). Mapas, zonas e
-                        bairros passam a mostrar o turno escolhido. */}
-                    {electoralData?.segundoTurno && (
-                      <div className="flex rounded-lg overflow-hidden w-fit" role="group" aria-label="Turno"
-                        style={{ border: '1px solid var(--border-default)' }}>
-                        {([1, 2] as const).map(t => {
-                          const ativo = (electoralData?.turno ?? 1) === t;
-                          return (
-                            <button key={t} type="button" onClick={() => trocarTurno(t)} disabled={searching}
-                              aria-pressed={ativo}
-                              className="px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60"
-                              style={ativo
-                                ? { background: 'var(--brand-cobalt-soft)', color: 'var(--brand-cobalt-text)' }
-                                : { color: 'var(--text-tertiary)' }}>
-                              {t}º turno
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {electoralData?.situacao && (
-                      <div className="text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">Situação: </span>
-                        <span className="font-medium">{electoralData?.situacao}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 pt-2 border-t">
-                      <Vote className="h-4 w-4 text-[#1D4ED8]" />
-                      <span className="text-lg font-bold text-[#1D4ED8]">
-                        {electoralData?.totalVotos?.toLocaleString?.('pt-BR')} votos
-                      </span>
-                    </div>
-                    {(electoralData as any)?.aviso && (
-                      <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                        ⚠️ {(electoralData as any)?.aviso}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
+                <CartaoCandidato
+                  nome={electoralData.candidateName}
+                  nomeUrna={electoralData.nomeUrna}
+                  partido={electoralData.partido}
+                  numero={electoralData.numero}
+                  ano={electoralData.ano}
+                  cargo={electoralData.cargo}
+                  situacao={electoralData.situacao}
+                  totalVotos={electoralData.totalVotos}
+                  aviso={(electoralData as any)?.aviso}
+                  favorito={!!isFavorite}
+                  onFavoritar={handleAddFavorite}
+                  turno={electoralData.turno ?? 1}
+                  segundoTurno={electoralData.segundoTurno}
+                  onTurno={trocarTurno}
+                  trocandoTurno={searching}
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -1505,19 +1427,7 @@ export default function MapaPage() {
           <AnimatePresence>
             {electoralData && view === 'estado' && municipiosOrdenados.length > 1 && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <div
-                  className="rounded-xl p-3 space-y-2"
-                  style={{ background: 'var(--bg-card)', border: '1px solid rgba(74,158,222,0.15)' }}
-                >
-                  <div className="flex items-center gap-2 pb-1.5" style={{ borderBottom: '1px solid var(--tint-06)' }}>
-                    <div className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
-                      style={{ background: 'rgba(74,158,222,0.12)', border: '1px solid rgba(74,158,222,0.25)' }}>
-                      <MapPin className="h-3 w-3 text-[#4a9ede]" />
-                    </div>
-                    <span className="text-xs font-semibold uppercase tracking-wider text-[color:var(--text-primary)]">
-                      Ir para município
-                    </span>
-                  </div>
+                <Painel titulo="Ir para município" icone={MapPin} corpo="p-3 space-y-2">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none" style={{ color: '#4a7a9b' }} />
                     <Input
@@ -1558,7 +1468,7 @@ export default function MapaPage() {
                       );
                     })}
                   </div>
-                </div>
+                </Painel>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1567,41 +1477,13 @@ export default function MapaPage() {
           <AnimatePresence>
             {selectedSpDistrito && isSaoPauloCapital && spVisualizacao === 'distritos' && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <Card className="border-violet-300 dark:border-violet-500/30">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center justify-between text-base">
-                      <span className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-violet-500 dark:text-violet-400" />
-                        <span className="text-violet-700 dark:text-violet-300 truncate max-w-[150px]" title={selectedSpDistrito}>
-                          {selectedSpDistrito}
-                        </span>
-                      </span>
-                      <button
-                        onClick={() => setSelectedSpDistrito(null)}
-                        className="text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex-shrink-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-violet-50 dark:bg-violet-500/10 rounded-lg border border-violet-200 dark:border-violet-500/20">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs">Votos no distrito</span>
-                      <span className="text-violet-700 dark:text-violet-300 font-bold">
-                        {(spDistritosVotes[selectedSpDistrito] ?? 0).toLocaleString('pt-BR')}
-                      </span>
-                    </div>
-                    {electoralData?.totalVotos && (spDistritosVotes[selectedSpDistrito] ?? 0) > 0 && (
-                      <div className="flex items-center justify-between px-2 py-1">
-                        <span className="text-slate-600 dark:text-slate-500 text-xs">% de São Paulo</span>
-                        <span className="text-slate-700 dark:text-slate-300 text-xs font-medium">
-                          {(((spDistritosVotes[selectedSpDistrito] ?? 0) / electoralData.totalVotos) * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                    )}
-                    <p className="text-slate-500 dark:text-slate-600 text-[10px] text-center pt-1">Distrito Municipal — GeoSampa</p>
-                  </CardContent>
-                </Card>
+                <PainelAreaSelecionada
+                  sobre="Distrito" nome={selectedSpDistrito}
+                  votos={spDistritosVotes[selectedSpDistrito] ?? 0}
+                  total={Object.values(spDistritosVotes).reduce((a, x) => a + x, 0)} rotuloTotal="dos votos em São Paulo"
+                  nota="Distrito municipal — GeoSampa"
+                  onFechar={() => setSelectedSpDistrito(null)}
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -1610,41 +1492,12 @@ export default function MapaPage() {
           <AnimatePresence>
             {selectedDfRegiao && selectedUf === 'DF' && dfVisualizacao === 'bairros' && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <Card className="border-sky-300 dark:border-sky-500/30">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center justify-between text-base">
-                      <span className="flex items-center gap-2">
-                        <Layers className="h-4 w-4 text-sky-500 dark:text-sky-400" />
-                        <span className="text-sky-700 dark:text-sky-300 truncate max-w-[150px]" title={selectedDfRegiao}>
-                          {selectedDfRegiao}
-                        </span>
-                      </span>
-                      <button
-                        onClick={() => setSelectedDfRegiao(null)}
-                        className="text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex-shrink-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-sky-50 dark:bg-sky-500/10 rounded-lg border border-sky-200 dark:border-sky-500/20">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs">Votos na Região</span>
-                      <span className="text-sky-700 dark:text-sky-300 font-bold">
-                        {(dfRegioesVotes[selectedDfRegiao] ?? 0).toLocaleString('pt-BR')}
-                      </span>
-                    </div>
-                    {electoralData?.totalVotos && (dfRegioesVotes[selectedDfRegiao] ?? 0) > 0 && (
-                      <div className="flex items-center justify-between px-2 py-1">
-                        <span className="text-slate-600 dark:text-slate-500 text-xs">% do DF</span>
-                        <span className="text-slate-700 dark:text-slate-300 text-xs font-medium">
-                          {(((dfRegioesVotes[selectedDfRegiao] ?? 0) / electoralData.totalVotos) * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                    )}
-                    <p className="text-slate-500 dark:text-slate-600 text-[10px] text-center pt-1">Região Administrativa — DF</p>
-                  </CardContent>
-                </Card>
+                <PainelAreaSelecionada
+                  sobre="Região administrativa" nome={selectedDfRegiao}
+                  votos={dfRegioesVotes[selectedDfRegiao] ?? 0}
+                  total={Object.values(dfRegioesVotes).reduce((a, x) => a + x, 0)} rotuloTotal="dos votos no DF"
+                  onFechar={() => setSelectedDfRegiao(null)}
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -1653,41 +1506,12 @@ export default function MapaPage() {
           <AnimatePresence>
             {selectedRjBairro && isRioDeJaneiro && rjVisualizacao === 'bairros' && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <Card className="border-emerald-300 dark:border-emerald-500/30">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center justify-between text-base">
-                      <span className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-[color:var(--success)]" />
-                        <span className="text-[color:var(--success)] truncate max-w-[150px]" title={selectedRjBairro}>
-                          {selectedRjBairro}
-                        </span>
-                      </span>
-                      <button
-                        onClick={() => setSelectedRjBairro(null)}
-                        className="text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex-shrink-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg border border-emerald-200 dark:border-emerald-500/20">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs">Votos no bairro</span>
-                      <span className="text-[color:var(--success)] font-bold">
-                        {(rjBairrosVotes[selectedRjBairro] ?? 0).toLocaleString('pt-BR')}
-                      </span>
-                    </div>
-                    {electoralData?.totalVotos && (rjBairrosVotes[selectedRjBairro] ?? 0) > 0 && (
-                      <div className="flex items-center justify-between px-2 py-1">
-                        <span className="text-slate-600 dark:text-slate-500 text-xs">% do Rio</span>
-                        <span className="text-slate-700 dark:text-slate-300 text-xs font-medium">
-                          {(((rjBairrosVotes[selectedRjBairro] ?? 0) / electoralData.totalVotos) * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                    )}
-                    <p className="text-slate-500 dark:text-slate-600 text-[10px] text-center pt-1">Bairro — Rio de Janeiro</p>
-                  </CardContent>
-                </Card>
+                <PainelAreaSelecionada
+                  sobre="Bairro" nome={selectedRjBairro}
+                  votos={rjBairrosVotes[selectedRjBairro] ?? 0}
+                  total={Object.values(rjBairrosVotes).reduce((a, x) => a + x, 0)} rotuloTotal="dos votos no Rio de Janeiro"
+                  onFechar={() => setSelectedRjBairro(null)}
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -1696,41 +1520,12 @@ export default function MapaPage() {
           <AnimatePresence>
             {selectedCeBairro && isFortalezaCe && ceVisualizacao === 'bairros' && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <Card className="border-orange-300 dark:border-orange-500/30">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center justify-between text-base">
-                      <span className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-orange-500 dark:text-orange-400" />
-                        <span className="text-orange-700 dark:text-orange-300 truncate max-w-[150px]" title={selectedCeBairro}>
-                          {selectedCeBairro}
-                        </span>
-                      </span>
-                      <button
-                        onClick={() => setSelectedCeBairro(null)}
-                        className="text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex-shrink-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-orange-50 dark:bg-orange-500/10 rounded-lg border border-orange-200 dark:border-orange-500/20">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs">Votos no bairro</span>
-                      <span className="text-orange-700 dark:text-orange-300 font-bold">
-                        {(selectedCeVotos).toLocaleString('pt-BR')}
-                      </span>
-                    </div>
-                    {electoralData?.totalVotos && (selectedCeVotos) > 0 && (
-                      <div className="flex items-center justify-between px-2 py-1">
-                        <span className="text-slate-600 dark:text-slate-500 text-xs">% de Fortaleza</span>
-                        <span className="text-slate-700 dark:text-slate-300 text-xs font-medium">
-                          {(((selectedCeVotos) / electoralData.totalVotos) * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                    )}
-                    <p className="text-slate-500 dark:text-slate-600 text-[10px] text-center pt-1">Bairro — Fortaleza</p>
-                  </CardContent>
-                </Card>
+                <PainelAreaSelecionada
+                  sobre="Bairro" nome={selectedCeBairro}
+                  votos={selectedCeVotos}
+                  total={Object.values(ceBairrosVotes).reduce((a, x) => a + x, 0)} rotuloTotal="dos votos em Fortaleza"
+                  onFechar={() => setSelectedCeBairro(null)}
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -1739,32 +1534,13 @@ export default function MapaPage() {
           <AnimatePresence>
             {selectedBairro && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <Card className="border-green-300 dark:border-green-500/30">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center justify-between text-base">
-                      <span className="flex items-center gap-2">
-                        <HomeIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        <span className="text-green-700 dark:text-green-300 truncate max-w-[150px]" title={selectedBairro}>
-                          {selectedBairro}
-                        </span>
-                      </span>
-                      <button
-                        onClick={() => setSelectedBairro(null)}
-                        className="text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 transition-colors flex-shrink-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {/* Total de votos do bairro */}
-                    <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-500/10 rounded-lg border border-green-200 dark:border-green-500/20">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs">Total no bairro</span>
-                      <span className="text-green-700 dark:text-green-400 font-bold">
-                        {selectedBairroVotos.toLocaleString('pt-BR')} votos
-                      </span>
-                    </div>
-
+                <PainelAreaSelecionada
+                  sobre="Bairro" nome={selectedBairro}
+                  votos={selectedBairroVotos}
+                  total={bairrosData.reduce((a, b) => a + (b.votos ?? 0), 0)}
+                  rotuloTotal={`dos votos em ${selectedMunicipio?.nome ?? 'toda a cidade'}`}
+                  onFechar={() => setSelectedBairro(null)}
+                >
                     {/* Zonas do bairro */}
                     {loadingZonas ? (
                       <div className="flex items-center justify-center py-4">
@@ -1828,22 +1604,14 @@ export default function MapaPage() {
                         Sem dados de zonas para este bairro.
                       </p>
                     )}
-                  </CardContent>
-                </Card>
+                  </PainelAreaSelecionada>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* Favoritos */}
           {(favorites?.length ?? 0) > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Star className="h-5 w-5 text-yellow-500" />
-                  Favoritos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+            <Painel titulo="Favoritos" icone={Star} corpo="p-3">
                 <div className="space-y-2">
                   {favorites?.map?.((fav) => (
                     <div
@@ -1881,8 +1649,7 @@ export default function MapaPage() {
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+              </Painel>
           )}
         </div>
 
@@ -1894,7 +1661,8 @@ export default function MapaPage() {
               cresce para o mapa não perder a altura. */}
           <Card noPadding className={mapFullscreen
             ? 'h-full rounded-none border-0 overflow-hidden'
-            : `${listaLateralAberta ? 'h-[620px] sm:h-[400px]' : 'h-[400px]'} md:h-[750px] overflow-hidden`}>
+            : `${listaLateralAberta ? 'h-[620px] sm:h-[400px]' : 'h-[400px]'} md:h-[750px] overflow-hidden rounded-2xl`}
+            style={mapFullscreen ? undefined : { boxShadow: 'var(--shadow-card)' }}>
             <CardContent className="h-full p-1.5 relative">
               {/* Tela cheia: só aqui quando o mapa ocupa o card inteiro.
                   Havendo barra de título e lista lateral, ele vai para DENTRO
@@ -1909,10 +1677,16 @@ export default function MapaPage() {
                 </div>
               )}
               {view === 'brasil' && (
-                <BrazilMap
-                  onStateClick={handleStateClick}
-                  highlightedStates={electoralData?.votosPorEstado}
-                />
+                <MolduraMapa
+                  titulo={electoralData ? `Votos de ${nomeCurto} em cada estado` : 'Brasil'}
+                  dica="Clique num estado para ver as cidades"
+                >
+                  <BrazilMap
+                    balaoPremium
+                    onStateClick={handleStateClick}
+                    highlightedStates={electoralData?.votosPorEstado}
+                  />
+                </MolduraMapa>
               )}
 
               {view === 'estado' && selectedUf === 'DF' ? (
@@ -1958,6 +1732,7 @@ export default function MapaPage() {
                       <div className="h-full flex flex-col sm:flex-row gap-3">
                         <div className="flex-1 min-w-0 min-h-0">
                           <DfRegioesMap
+                  balaoPremium
                             votesData={dfRegioesVotes}
                             selectedRegiao={selectedDfRegiao}
                             focoBairro={focoBairroReq}
@@ -2012,6 +1787,7 @@ export default function MapaPage() {
                         {(!bairrosLoaded || bairrosData.length > 0) && (
                           <div className="flex-1 min-w-0 min-h-0">
                             <MunicipioMap
+                  balaoPremium
                               focusZona={focusZonaReq}
                           focusBairro={focoBairroReq}
                               municipio="BRASÍLIA"
@@ -2105,13 +1881,20 @@ export default function MapaPage() {
                   </div>
                 </div>
               ) : view === 'estado' && (
-                <StateMap
-                  uf={selectedUf}
-                  stateName={selectedStateName}
-                  votesData={electoralData?.votosPorMunicipio}
-                  votesDataByName={electoralData?.votosPorNomeMunicipio}
-                  onMunicipioClick={handleMunicipioClick}
-                />
+                <MolduraMapa
+                  titulo={electoralData ? `Votos de ${nomeCurto} em cada cidade de ${selectedStateName}` : selectedStateName}
+                  dica="Clique numa cidade para ver bairros e locais de votação"
+                >
+                  <StateMap
+                    balaoPremium
+                    mapaDeCalor
+                    uf={selectedUf}
+                    stateName={selectedStateName}
+                    votesData={electoralData?.votosPorMunicipio}
+                    votesDataByName={electoralData?.votosPorNomeMunicipio}
+                    onMunicipioClick={handleMunicipioClick}
+                  />
+                </MolduraMapa>
               )}
 
               {view === 'municipio' && selectedMunicipio && (
@@ -2218,6 +2001,7 @@ export default function MapaPage() {
                       <>
                         <div className="flex-1 min-w-0 min-h-0">
                           <SpDistritosMap
+                  balaoPremium
                             votesData={spDistritosVotes}
                             selectedDistrito={selectedSpDistrito}
                             focoBairro={focoBairroReq}
@@ -2272,6 +2056,7 @@ export default function MapaPage() {
                       <>
                         <div className="flex-1 min-w-0 min-h-0">
                           <RjBairrosMap
+                  balaoPremium
                             votesData={rjBairrosVotes}
                             selectedBairro={selectedRjBairro}
                             focoBairro={focoBairroReq}
@@ -2326,6 +2111,7 @@ export default function MapaPage() {
                       <>
                         <div className="flex-1 min-w-0 min-h-0">
                           <CeBairrosMap
+                  balaoPremium
                             votesData={ceBairrosVotes}
                             selectedBairro={selectedCeBairro}
                             focoBairro={focoBairroReq}
@@ -2380,6 +2166,7 @@ export default function MapaPage() {
                       <>
                         <div className="flex-1 min-w-0 min-h-0">
                           <BairrosPoligonosMap
+                  balaoPremium
                             municipio={selectedMunicipio.nome}
                             uf={selectedUf}
                             candidatoId={electoralData?.candidatoId}
@@ -2445,6 +2232,7 @@ export default function MapaPage() {
                     {mapaDePinosNoMunicipio && (
                       <div className="flex-1 min-w-0 min-h-0">
                         <MunicipioMap
+                  balaoPremium
                           focusZona={focusZonaReq}
                           focusBairro={focoBairroReq}
                           municipio={selectedMunicipio.nome}
@@ -2543,6 +2331,19 @@ export default function MapaPage() {
           </Card>
         </div>
       </div>
+
+      {/* Onde estão os votos: números, concentração e a lista completa */}
+      {analise && (
+        <AnaliseResultado
+          linhas={analise.linhas}
+          area={analise.area}
+          areaSingular={analise.areaSingular}
+          rotuloColuna={analise.rotuloColuna}
+          titulo={analise.titulo}
+          onClickLinha={analise.onClickLinha}
+          dicaClique={analise.dicaClique}
+        />
+      )}
       {outrosModos}
     </div>
   );
