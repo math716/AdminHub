@@ -50,3 +50,11 @@ for (const [uf, cod] of Object.entries(UF_CODIGO)) {
   console.log(`${uf}: malha ${(a / 1024).toFixed(0)} KB, lista ${(b / 1024).toFixed(0)} KB`);
 }
 console.log(`Total: ${(total / 1024 / 1024).toFixed(1)} MB em ${SAIDA}`);
+
+// Lista compacta embutida no código (lib/ibge-local lê esta, não a da rede).
+const compacta = {};
+for (const uf of Object.keys(UF_CODIGO)) {
+  compacta[uf] = JSON.parse(fs.readFileSync(path.join(SAIDA, 'municipios', `${uf}.json`), 'utf8')).map(m => [m.id, m.nome]);
+}
+fs.writeFileSync(path.join(process.cwd(), 'lib', 'ibge-municipios.json'), JSON.stringify(compacta));
+console.log('lib/ibge-municipios.json atualizado');

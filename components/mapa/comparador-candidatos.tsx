@@ -226,14 +226,26 @@ export function ComparadorCandidatos() {
   const porCodigo = useMemo(() => {
     if (nivel !== 'estado') return null;
     const listas = ativos.map(c => dadosNoNivel(c)?.votosPorMunicipio ?? {});
-    return (codigo: string): number[] => listas.map(m => m[codigo] ?? m[codigo.slice(0, 6)] ?? 0);
+    // Reserva pelo nome da cidade (sem acento): se o código do IBGE não vier
+    // na resposta, o mapa ainda pinta — como o mapa do modo Resultado faz.
+    const porNome = ativos.map(c => {
+      const m: Record<string, number> = {};
+      for (const [nome, v] of Object.entries(dadosNoNivel(c)?.votosPorNomeMunicipio ?? {})) m[semAcento(nome)] = v;
+      return m;
+    });
+    return (codigo: string, nome?: string): number[] => {
+      const porCod = listas.map(m => m[codigo] ?? m[codigo.slice(0, 6)]);
+      if (porCod.some(v => v !== undefined)) return porCod.map(v => v ?? 0);
+      const k = nome ? semAcento(nome) : '';
+      return porNome.map(m => m[k] ?? 0);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidatos, nivel, ufAberta, dadosUf]);
 
   const aparencia = (chave: string, nome: string): AparenciaArea | null => {
     const votos = nivel === 'brasil'
       ? ativos.map(c => c.dados?.votosPorEstado?.[chave] ?? 0)
-      : porCodigo?.(chave) ?? [];
+      : porCodigo?.(chave, nome) ?? [];
     const r = resultado(votos);
     if (!r) return null;
     return {

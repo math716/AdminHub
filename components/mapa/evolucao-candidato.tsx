@@ -491,7 +491,14 @@ export function EvolucaoCandidato() {
     if (nivel === 'brasil') { a = A.dados?.votosPorEstado?.[chave] ?? 0; b = B.dados?.votosPorEstado?.[chave] ?? 0; }
     else {
       const va = dadosNoNivel(0)?.votosPorMunicipio ?? {}, vb = dadosNoNivel(1)?.votosPorMunicipio ?? {};
-      a = va[chave] ?? va[chave.slice(0, 6)] ?? 0; b = vb[chave] ?? vb[chave.slice(0, 6)] ?? 0;
+      const ca = va[chave] ?? va[chave.slice(0, 6)], cb = vb[chave] ?? vb[chave.slice(0, 6)];
+      if (ca !== undefined || cb !== undefined) { a = ca ?? 0; b = cb ?? 0; }
+      else {
+        // Reserva pelo nome (sem acento), se o código do IBGE não vier na resposta.
+        const k = semAcento(nome);
+        const achar = (m?: Record<string, number>) => Object.entries(m ?? {}).find(([n]) => semAcento(n) === k)?.[1] ?? 0;
+        a = achar(dadosNoNivel(0)?.votosPorNomeMunicipio); b = achar(dadosNoNivel(1)?.votosPorNomeMunicipio);
+      }
     }
     const ap = aparenciaEvolucao(a, b);
     return ap ? { ...ap, html: htmlEvolucao(nome, rotA, rotB, a, b) } : null;

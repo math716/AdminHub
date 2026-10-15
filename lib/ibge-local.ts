@@ -74,10 +74,22 @@ export interface MunicipioIbge {
   [campo: string]: unknown;
 }
 
-/** Lista de cidades do estado, no formato da API de localidades do IBGE. */
+/**
+ * Lista de cidades do estado (código IBGE + nome).
+ *
+ * Embutida no código (lib/ibge-municipios.json, 137 KB, carregada sob demanda)
+ * em vez de buscada pela rede: lida por HTTP, ela chegou vazia no servidor em
+ * homologação, e sem ela a rota de candidato devolvia os votos por cidade sem
+ * o código do IBGE — o mapa do comparador ficou todo cinza.
+ */
 export async function listaMunicipiosIbge(uf: string | number): Promise<MunicipioIbge[] | null> {
   const s = sigla(uf);
   if (!s) return null;
+  try {
+    const todas = (await import('./ibge-municipios.json')).default as unknown as Record<string, Array<[number, string]>>;
+    const lista = todas[s];
+    if (lista?.length) return lista.map(([id, nome]) => ({ id, nome }));
+  } catch { /* cai na leitura por rede abaixo */ }
   return lerJson<MunicipioIbge[]>(caminhoMunicipios(s), `${API}/v1/localidades/estados/${CODIGO_IBGE_UF[s]}/municipios`);
 }
 
