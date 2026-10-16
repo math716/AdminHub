@@ -6,6 +6,8 @@ import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 import { loadStaticTseData, loadLocaisTse, loadSecaoMunicipio, votosDoCandidatoPorLocal } from '@/lib/tse-static';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,6 +86,8 @@ export async function GET(request: NextRequest) {
 
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const negado = semPermissao(session, PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA);
+  if (negado) return negado;
 
   if (!municipio || !uf) {
     return NextResponse.json({ error: 'Parâmetros obrigatórios: municipio, uf' }, { status: 400 });

@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 // PUT /api/agenda/[id]
 export async function PUT(
@@ -13,6 +15,8 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.AGENDA);
+    if (negado) return negado;
 
     const gabineteId = (session.user as any)?.gabineteId;
     const body = await request.json();
@@ -65,6 +69,8 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.AGENDA);
+    if (negado) return negado;
 
     const gabineteId = (session.user as any)?.gabineteId;
 

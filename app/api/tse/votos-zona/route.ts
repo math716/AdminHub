@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +13,8 @@ export async function GET(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    const negado = semPermissao(session, PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA);
+    if (negado) return negado;
 
     const { searchParams } = new URL(request.url);
     const candidatoId = searchParams.get('candidatoId');

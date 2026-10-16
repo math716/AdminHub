@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 const VALID_STATUS   = ['PENDENTE', 'EM_ANDAMENTO', 'RESOLVIDA', 'CANCELADA'];
 const VALID_CATEGORY = ['SAUDE', 'EDUCACAO', 'INFRAESTRUTURA', 'SEGURANCA', 'ASSISTENCIA_SOCIAL', 'MEIO_AMBIENTE', 'CULTURA', 'ESPORTE', 'HABITACAO', 'TRANSPORTE', 'OUTROS'];
@@ -15,6 +17,8 @@ export async function GET(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    const negado = semPermissao(session, PERMISSIONS.DEMANDAS, PERMISSIONS.MAPA_GABINETE);
+    if (negado) return negado;
 
     const user = session.user as any;
     const gabineteId = user?.gabineteId as string | undefined;
@@ -94,6 +98,8 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    const negado = semPermissao(session, PERMISSIONS.DEMANDAS, PERMISSIONS.MAPA_GABINETE);
+    if (negado) return negado;
 
     const body = await request.json();
     const userId    = (session.user as any)?.id;

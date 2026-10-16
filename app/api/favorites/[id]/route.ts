@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function DELETE(
   request: NextRequest,
@@ -14,6 +16,8 @@ export async function DELETE(
     if (!session) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    const negado = semPermissao(session, PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.EMENDAS_MAPA);
+    if (negado) return negado;
 
     const userId = (session.user as any)?.id;
     const favorite = await prisma.favorite.findFirst({

@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET() {
   try {
@@ -11,6 +13,8 @@ export async function GET() {
     if (!session) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    const negado = semPermissao(session, PERMISSIONS.CONTATOS);
+    if (negado) return negado;
 
     const gabineteId = (session.user as any)?.gabineteId;
     if (!gabineteId) {
@@ -36,6 +40,8 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    const negado = semPermissao(session, PERMISSIONS.CONTATOS);
+    if (negado) return negado;
 
     const userId = (session.user as any)?.id;
     const gabineteId = (session.user as any)?.gabineteId;

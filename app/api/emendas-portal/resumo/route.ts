@@ -7,6 +7,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { PORTAL_MOCK_MODE, getAllEmendasDoAno, type PortalEmenda } from '@/lib/portal-transparencia';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 // Resumo de emendas pra um UF inteiro num ano: top municípios, totais por
 // área, top parlamentares.
@@ -36,6 +38,8 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.EMENDAS_MAPA);
+    if (negado) return negado;
 
     const uf = (request.nextUrl.searchParams.get('uf') ?? '').toUpperCase();
     const anoRaw = request.nextUrl.searchParams.get('ano');

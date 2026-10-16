@@ -14,7 +14,7 @@ import {
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ALL_PERMISSIONS, PERMISSION_LABELS, type Permission, hasFullAccess,
+  ALL_PERMISSIONS, permissoesEditaveisDoUsuario, PERMISSION_LABELS, type Permission, hasFullAccess,
 } from '@/lib/permissions';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -164,7 +164,9 @@ function RoleSelect({ userId, current, sessionRole, onChanged, adminOnly }: { us
   );
 }
 
-function PermissionsChecklist({ selected, onToggle, onSelectAll, onClear, accent }: {
+function PermissionsChecklist({ opcoes = ALL_PERMISSIONS, selected, onToggle, onSelectAll, onClear, accent }: {
+  /** Só as que quem está editando pode marcar neste usuário. */
+  opcoes?: Permission[];
   selected: Set<string>; onToggle: (p: string) => void;
   onSelectAll: () => void; onClear: () => void; accent: Accent;
 }) {
@@ -177,7 +179,7 @@ function PermissionsChecklist({ selected, onToggle, onSelectAll, onClear, accent
   return (
     <>
       <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-        {ALL_PERMISSIONS.map(p => {
+        {opcoes.map(p => {
           const checked = selected.has(p);
           return (
             <button key={p} type="button" onClick={() => onToggle(p)}
@@ -943,7 +945,7 @@ export default function AdminGabinetesPage() {
                                     </button>
                                   )}
                                   {/* Editar permissões */}
-                                  {u.approved && !hasFullAccess(u.role) && (
+                                  {u.approved && permissoesEditaveisDoUsuario(u.role, role).length > 0 && (
                                     <button onClick={() => openEditPermsModal(u)} title="Editar permissões"
                                       className="p-1.5 rounded-lg transition-all hover:bg-purple-500/10"
                                       style={{ color:'var(--text-tertiary)' }}>
@@ -1188,7 +1190,8 @@ export default function AdminGabinetesPage() {
               <p className="text-xs" style={{ color:'var(--tint-55)' }}>Selecione quais áreas este usuário poderá acessar:</p>
               <PermissionsChecklist selected={approvePerms}
                 onToggle={p => togglePerm(approvePerms, setApprovePerms, p)}
-                onSelectAll={() => setApprovePerms(new Set(ALL_PERMISSIONS))}
+                opcoes={permissoesEditaveisDoUsuario(approveTarget.role, role)}
+                onSelectAll={() => setApprovePerms(new Set(permissoesEditaveisDoUsuario(approveTarget.role, role)))}
                 onClear={() => setApprovePerms(new Set())}
                 accent={ACCENT_EMERALD} />
               <div className="flex gap-3 pt-1">
@@ -1231,7 +1234,8 @@ export default function AdminGabinetesPage() {
               </div>
               <PermissionsChecklist selected={editPerms}
                 onToggle={p => togglePerm(editPerms, setEditPerms, p)}
-                onSelectAll={() => setEditPerms(new Set(ALL_PERMISSIONS))}
+                opcoes={permissoesEditaveisDoUsuario(editPermsTarget.role, role)}
+                onSelectAll={() => setEditPerms(new Set(permissoesEditaveisDoUsuario(editPermsTarget.role, role)))}
                 onClear={() => setEditPerms(new Set())}
                 accent={ACCENT_PURPLE} />
               <div className="flex gap-3 pt-1">

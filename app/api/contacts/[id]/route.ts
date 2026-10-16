@@ -4,11 +4,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.CONTATOS);
+    if (negado) return negado;
 
     const gabineteId = (session.user as any)?.gabineteId;
     const contato = await prisma.contato.findUnique({ where: { id: params.id } });
@@ -40,6 +44,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
     if (!session) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    const negado = semPermissao(session, PERMISSIONS.CONTATOS);
+    if (negado) return negado;
 
     const gabineteId = (session.user as any)?.gabineteId;
 

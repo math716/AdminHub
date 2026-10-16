@@ -18,6 +18,8 @@ import { bairrosComVotos } from '@/lib/agent/report/mapa-bairros';
 import { mapaDoDF } from '@/lib/agent/report/mapa-df';
 import { normalizarTextoTse } from '@/lib/tse-static';
 import { montarPdfComparacao, type EntradaPdfComparacao } from '@/lib/agent/report/comparacao-pdf';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -217,6 +219,12 @@ export async function POST(request: NextRequest) {
     // ── Relatório Territorial do DF (por Região Administrativa) ────────────
     // Vive nesta mesma rota para não criar outra serverless function
     // (limite de 12 no plano Hobby do Vercel).
+    // Territorial e comparador usam dados eleitorais: exigem a área eleitoral.
+    if (body.tipo === 'territorial' || body.tipo === 'comparacao') {
+      const negado = semPermissao(session, PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA);
+      if (negado) return negado;
+    }
+
     if (body.tipo === 'territorial') {
       const ano   = body.ano ? Number(body.ano) : 2022;
       const uf    = (body.uf ?? 'DF').toUpperCase();

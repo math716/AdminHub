@@ -14,7 +14,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ALL_PERMISSIONS,
+  ALL_PERMISSIONS, permissoesEditaveisDoUsuario,
   PERMISSION_LABELS,
   type Permission,
   hasFullAccess,
@@ -29,12 +29,15 @@ const ACCENT_PURPLE: Accent  = { solid: '#a855f7', bgLight: 'rgba(168,85,247,0.0
 const ACCENT_EMERALD: Accent = { solid: '#22c55e', bgLight: 'rgba(34,197,94,0.08)',  borderLight: 'rgba(34,197,94,0.3)'  };
 
 function PermissionsChecklist({
+  opcoes = ALL_PERMISSIONS,
   selected,
   onToggle,
   onSelectAll,
   onClear,
   accent,
 }: {
+  /** Só as que quem está editando pode marcar neste usuário. */
+  opcoes?: Permission[];
   selected: Set<string>;
   onToggle: (perm: string) => void;
   onSelectAll: () => void;
@@ -50,7 +53,7 @@ function PermissionsChecklist({
   return (
     <>
       <div className="space-y-2 max-h-48 md:max-h-72 overflow-y-auto pr-1">
-        {ALL_PERMISSIONS.map((p) => {
+        {opcoes.map(p => {
           const checked = selected.has(p);
           return (
             <button key={p} type="button" onClick={() => onToggle(p)}
@@ -883,7 +886,7 @@ export default function UsuariosPage() {
                                   )}
 
                                   {/* Editar permissões (apenas usuários aprovados que dependem do array) */}
-                                  {u.approved && !hasFullAccess(u.role) && u.id !== sessionUserId && (
+                                  {u.approved && permissoesEditaveisDoUsuario(u.role, userRole).length > 0 && u.id !== sessionUserId && (
                                     <button onClick={() => openEditPermsModal(u)}
                                       title="Editar permissões"
                                       className="p-1.5 rounded-lg transition-all hover:bg-purple-500/10"
@@ -1365,7 +1368,8 @@ export default function UsuariosPage() {
               <PermissionsChecklist
                 selected={approvePerms}
                 onToggle={(p) => togglePermInSet(approvePerms, setApprovePerms, p)}
-                onSelectAll={() => setApprovePerms(new Set(ALL_PERMISSIONS))}
+                opcoes={permissoesEditaveisDoUsuario(approveTarget.role, userRole)}
+                onSelectAll={() => setApprovePerms(new Set(permissoesEditaveisDoUsuario(approveTarget.role, userRole)))}
                 onClear={() => setApprovePerms(new Set())}
                 accent={ACCENT_EMERALD}
               />
@@ -1418,7 +1422,8 @@ export default function UsuariosPage() {
               <PermissionsChecklist
                 selected={editPerms}
                 onToggle={(p) => togglePermInSet(editPerms, setEditPerms, p)}
-                onSelectAll={() => setEditPerms(new Set(ALL_PERMISSIONS))}
+                opcoes={permissoesEditaveisDoUsuario(editPermsTarget.role, userRole)}
+                onSelectAll={() => setEditPerms(new Set(permissoesEditaveisDoUsuario(editPermsTarget.role, userRole)))}
                 onClear={() => setEditPerms(new Set())}
                 accent={ACCENT_PURPLE}
               />

@@ -8,8 +8,24 @@ import { buscarCandidatoNacional, inferirUfPorNomes, rankingNacional } from '@/l
 import { resolverDeputados } from '@/lib/agent/report/df-territorial';
 import { SQL_DATA_COMEMORATIVA } from '@/lib/agenda-datas';
 import type { Session } from 'next-auth';
+import { PERMISSIONS, hasPermission, type Permission } from '@/lib/permissions';
 
 type UserSession = Session & { user: any };
+
+/** Área (permissão) que cada ferramenta da Gabi exige — basta uma das listadas. */
+const AREA_DA_FERRAMENTA: Record<string, { permissoes: Permission[]; area: string }> = {
+  buscar_emendas:              { permissoes: [PERMISSIONS.EMENDAS_MAPA], area: 'Emendas Parlamentares' },
+  comparar_parlamentares:      { permissoes: [PERMISSIONS.EMENDAS_MAPA], area: 'Emendas Parlamentares' },
+  buscar_votacao:              { permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA], area: 'Mapa Eleitoral' },
+  ranking_nacional:            { permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA], area: 'Mapa Eleitoral' },
+  comparar_votacao:            { permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA], area: 'Mapa Eleitoral' },
+  gerar_relatorio_territorial: { permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA], area: 'Mapa Eleitoral' },
+  localizar_parlamentar:       { permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA, PERMISSIONS.EMENDAS_MAPA], area: 'Mapa Eleitoral ou Emendas' },
+  buscar_demandas:             { permissoes: [PERMISSIONS.DEMANDAS, PERMISSIONS.MAPA_GABINETE], area: 'Demandas' },
+  buscar_agenda:               { permissoes: [PERMISSIONS.AGENDA], area: 'Agenda' },
+  buscar_contatos:             { permissoes: [PERMISSIONS.CONTATOS], area: 'Contatos' },
+  // dados_municipio (IBGE, público) e gerar_visualizacao (desenha o que já veio) ficam livres.
+};
 
 // ---------------------------------------------------------------------------
 // buscar_emendas
@@ -1636,6 +1652,17 @@ export async function executarTool(
   args: Record<string, unknown>,
   session: UserSession,
 ): Promise<unknown> {
+  // A Gabi só busca nas áreas que o usuário tem liberadas — as mesmas que
+  // as rotas de API conferem. Sem isto, quem não tem Demandas (por exemplo)
+  // perguntava à Gabi e via as demandas do gabinete.
+  const regra = AREA_DA_FERRAMENTA[nome];
+  const usuario = { role: session?.user?.role, permissions: session?.user?.permissions ?? [] };
+  if (regra && !regra.permissoes.some(p => hasPermission(usuario, p))) {
+    return {
+      erro: `Este usuário não tem acesso à área ${regra.area}. Diga isso a ele e sugira pedir a liberação ` +
+        'ao administrador do gabinete. Não tente outra ferramenta para conseguir os mesmos dados.',
+    };
+  }
   switch (nome) {
     case 'buscar_emendas':
       return executarBuscarEmendas(args as any, session);

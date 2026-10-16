@@ -8,6 +8,8 @@ import { CacheLimitado } from '@/lib/cache-limitado';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -161,6 +163,8 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA);
+    if (negado) return negado;
 
     const { searchParams } = new URL(request.url);
     const municipio   = searchParams.get('municipio');

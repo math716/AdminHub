@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 async function getGabineteId(session: any): Promise<string | null> {
   const userId = session?.user?.id as string | undefined;
@@ -15,6 +17,8 @@ async function getGabineteId(session: any): Promise<string | null> {
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const negado = semPermissao(session, PERMISSIONS.EMENDAS_MAPA);
+  if (negado) return negado;
 
   const gabineteId = await getGabineteId(session);
   if (!gabineteId) return NextResponse.json({ error: 'Sem gabinete' }, { status: 403 });
@@ -58,6 +62,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const negado = semPermissao(session, PERMISSIONS.EMENDAS_MAPA);
+  if (negado) return negado;
 
   const gabineteId = await getGabineteId(session);
   if (!gabineteId) return NextResponse.json({ error: 'Sem gabinete' }, { status: 403 });

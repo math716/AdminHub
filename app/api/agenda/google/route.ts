@@ -16,6 +16,8 @@ import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { googleConfigurado, urlDeConsentimento, tokenValido, listarAgendas } from '@/lib/google-agenda';
 import { assinarEstado } from '@/lib/google-agenda-estado';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 /** Só quem administra o gabinete conecta a agenda oficial. */
 const PAPEIS_PERMITIDOS = new Set(['ADMIN', 'SUPER_ADMIN', 'CHEFE', 'AGENTE_POLITICO']);
@@ -30,6 +32,8 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.AGENDA);
+    if (negado) return negado;
     const gabineteId = (session.user as any)?.gabineteId;
     if (!gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });
 
@@ -77,6 +81,8 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.AGENDA);
+    if (negado) return negado;
 
     const user = session.user as any;
     if (!user?.gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });
@@ -112,6 +118,8 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.AGENDA);
+    if (negado) return negado;
 
     const user = session.user as any;
     if (!user?.gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });
@@ -156,6 +164,8 @@ export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.AGENDA);
+    if (negado) return negado;
 
     const user = session.user as any;
     if (!user?.gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });

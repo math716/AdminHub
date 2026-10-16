@@ -14,6 +14,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { lerAgendaEmPdf, montarDataBR, type EventoExtraido } from '@/lib/agenda/importar-pdf';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 /** A plataforma limita o corpo da requisição a ~4,5 MB. Uma agenda semanal tem centenas de KB. */
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -22,6 +24,8 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.AGENDA);
+    if (negado) return negado;
 
     const gabineteId = (session.user as any)?.gabineteId;
     if (!gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });

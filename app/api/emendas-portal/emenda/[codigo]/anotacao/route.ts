@@ -4,10 +4,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(_req: NextRequest, { params }: { params: { codigo: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const negado = semPermissao(session, PERMISSIONS.EMENDAS_MAPA);
+  if (negado) return negado;
 
   const emenda = await prisma.emendaParlamentar.findUnique({
     where: { idPortal: params.codigo },
@@ -26,6 +30,8 @@ export async function GET(_req: NextRequest, { params }: { params: { codigo: str
 export async function PUT(req: NextRequest, { params }: { params: { codigo: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const negado = semPermissao(session, PERMISSIONS.EMENDAS_MAPA);
+  if (negado) return negado;
 
   const { texto } = await req.json();
   if (typeof texto !== 'string') {

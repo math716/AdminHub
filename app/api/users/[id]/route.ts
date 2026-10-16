@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { ALL_PERMISSIONS } from '@/lib/permissions';
+import { ALL_PERMISSIONS, mesclarPermissoes } from '@/lib/permissions';
 import type { UserRole } from '@prisma/client';
 
 const VALID_ROLES = ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR'];
@@ -31,7 +31,7 @@ export async function PATCH(
 
     const target = await prisma.user.findUnique({
       where: { id: params.id },
-      select: { id: true, gabineteId: true, role: true, email: true },
+      select: { id: true, gabineteId: true, role: true, email: true, permissions: true },
     });
     if (!target) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
 
@@ -75,8 +75,9 @@ export async function PATCH(
       if (invalid.length > 0) {
         return NextResponse.json({ error: `Permissões inválidas: ${invalid.join(', ')}` }, { status: 400 });
       }
-      // Remove duplicatas mantendo a ordem
-      data.permissions = Array.from(new Set(permissions));
+      // Sem duplicatas; e só ADMIN/SUPER_ADMIN dão ou tiram as permissões
+      // restritas (Colaboradores) — as que o usuário já tem ficam como estão.
+      data.permissions = mesclarPermissoes(permissions, target.permissions ?? [], sessionRole);
     }
 
     if (Object.keys(data).length === 0) {

@@ -13,6 +13,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { geocodificarLote, ancoraDoGabinete } from '@/lib/geocode';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 const MAX_CONTATOS = 500;
 const ORCAMENTO_GEO_MS = 150_000;
@@ -29,6 +31,8 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    const negado = semPermissao(session, PERMISSIONS.CONTATOS);
+    if (negado) return negado;
 
     const userId = (session.user as any)?.id;
     const gabineteId = (session.user as any)?.gabineteId;

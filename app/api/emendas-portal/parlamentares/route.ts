@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { searchParlamentares, PORTAL_MOCK_MODE } from '@/lib/portal-transparencia';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 // Busca parlamentares por nome — banco-first com fallback ao Portal.
 //
@@ -17,6 +19,8 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.EMENDAS_MAPA);
+    if (negado) return negado;
 
     const q = request.nextUrl.searchParams.get('q')?.trim() ?? '';
     if (q.length < 2) return NextResponse.json({ results: [], mock: PORTAL_MOCK_MODE, fonte: 'banco' });

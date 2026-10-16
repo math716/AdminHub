@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { podeUsarColaboradores } from '@/lib/acesso-colaboradores';
 import { derivarZonasDeRas, derivarRasDeZonas } from '@/lib/colaboradores-zonas';
 
 const SELECT = {
@@ -29,6 +30,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    if (!(await podeUsarColaboradores(session))) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
 
     const gabineteId = await getGabineteId(session);
     if (!gabineteId) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 400 });
@@ -114,6 +116,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    if (!(await podeUsarColaboradores(session))) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
 
     const gabineteId = await getGabineteId(session);
     if (!gabineteId) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 400 });

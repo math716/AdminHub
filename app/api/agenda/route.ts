@@ -4,12 +4,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 // GET /api/agenda?mes=4&ano=2026
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.AGENDA);
+    if (negado) return negado;
 
     const gabineteId = (session.user as any)?.gabineteId;
     if (!gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });
@@ -64,6 +68,8 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.AGENDA);
+    if (negado) return negado;
 
     const userId = (session.user as any)?.id;
     const gabineteId = (session.user as any)?.gabineteId;

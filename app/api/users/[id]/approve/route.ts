@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { sendUserApprovedEmail } from '@/lib/email';
-import { ALL_PERMISSIONS, hasFullAccess } from '@/lib/permissions';
+import { ALL_PERMISSIONS, ehPermissaoRestrita, hasFullAccess, mesclarPermissoes } from '@/lib/permissions';
 
 export async function POST(
   request: NextRequest,
@@ -55,8 +55,11 @@ export async function POST(
     }
 
     const updateData: { approved: boolean; permissions?: string[]; gabineteId?: string; pendingGabineteNome?: null } = { approved: true };
-    if (permissions !== undefined && !hasFullAccess(userToApprove.role)) {
-      updateData.permissions = permissions;
+    if (permissions !== undefined) {
+      // Quem tem acesso a tudo (Agente Político, Chefe) só guarda as
+      // restritas; e só ADMIN/SUPER_ADMIN dão ou tiram as restritas.
+      const enviadas = hasFullAccess(userToApprove.role) ? permissions.filter(ehPermissaoRestrita) : permissions;
+      updateData.permissions = mesclarPermissoes(enviadas, userToApprove.permissions ?? [], userRole);
     }
 
     // Se o usuário tem um gabinete pendente de criação, criar agora

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { podeUsarColaboradores } from '@/lib/acesso-colaboradores';
 import { derivarZonasDeRas } from '@/lib/colaboradores-zonas';
 
 const MAX_IMPORT = 500;
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    if (!(await podeUsarColaboradores(session))) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
 
     const ctx = await getGabineteAndUser(session);
     if (!ctx) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 400 });

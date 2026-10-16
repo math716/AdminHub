@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { isConfigured, sendText, getConnectionState, makeInstanceName, motivoDaFalha } from '@/lib/evolution';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 function normalizeWA(n: string): string {
   const d = n.replace(/\D/g, '');
@@ -16,6 +18,8 @@ function normalizeWA(n: string): string {
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const negado = semPermissao(session, PERMISSIONS.CONTATOS, PERMISSIONS.COLABORADORES_CAMPANHA);
+  if (negado) return negado;
 
   const gabineteId = (session.user as any)?.gabineteId;
 

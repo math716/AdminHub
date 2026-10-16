@@ -14,6 +14,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { montarDataBR, TIPOS_EVENTO } from '@/lib/agenda/importar-pdf';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 /** Teto por importação. Uma agenda semanal tem dezenas de itens, não centenas. */
 const MAX_EVENTOS = 200;
@@ -24,6 +26,8 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.AGENDA);
+    if (negado) return negado;
 
     const userId = (session.user as any)?.id;
     const gabineteId = (session.user as any)?.gabineteId;

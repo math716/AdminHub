@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { semPermissao } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 
 // Endpoint combinado que serve o load inicial da pagina Mapa do Gabinete.
 // Substitui 2 chamadas paralelas (/api/demands + /api/agenda) por 1 unica
@@ -13,6 +15,8 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const negado = semPermissao(session, PERMISSIONS.MAPA_GABINETE);
+    if (negado) return negado;
 
     const gabineteId = (session.user as any)?.gabineteId as string | undefined;
     if (!gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete associado' }, { status: 403 });
