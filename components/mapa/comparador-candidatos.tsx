@@ -197,7 +197,13 @@ export function ComparadorCandidatos() {
   const dadosNoNivel = (c: Candidato): DadosCandidato | null =>
     escopo === 'BR' && ufAberta ? dadosUf[c.id] ?? null : c.dados;
   const cidadeDaComparacao = ehMunicipal && ativos[0]?.dados ? cidadePrincipal(ativos[0].dados) : null;
-  const cidadeAtual = ehMunicipal ? cidadeDaComparacao : cidadeAberta;
+  // O DF é uma cidade só (Brasília): "por cidade" seria um bloco único. Ele
+  // abre direto dentro da cidade, nas regiões administrativas.
+  const ehDf = !ehMunicipal && (escopo === 'DF' || ufAberta === 'DF');
+  const cidadeDf = ehDf
+    ? Object.keys(ativos[0] ? dadosNoNivel(ativos[0])?.votosPorNomeMunicipio ?? {} : {})[0] ?? 'BRASÍLIA'
+    : null;
+  const cidadeAtual = ehMunicipal ? cidadeDaComparacao : cidadeAberta ?? cidadeDf;
   const nivel: 'brasil' | 'estado' | 'cidade' =
     cidadeAtual ? 'cidade' : escopo === 'BR' && !ufAberta ? 'brasil' : 'estado';
   const ufAtual = ufAberta ?? escopo;
@@ -266,8 +272,8 @@ export function ComparadorCandidatos() {
 
   const passos: Passo[] = [
     ...(escopo === 'BR' ? [{ rotulo: 'Brasil', onClick: voltarAoInicio }] : []),
-    ...(nivel !== 'brasil' ? [{ rotulo: nomeDaUf(ufAtual), onClick: ehMunicipal ? undefined : () => setCidadeAberta(null) }] : []),
-    ...(nivel === 'cidade' ? [{ rotulo: cidadeAtual! }] : []),
+    ...(nivel !== 'brasil' ? [{ rotulo: nomeDaUf(ufAtual), onClick: ehMunicipal || ehDf ? undefined : () => setCidadeAberta(null) }] : []),
+    ...(nivel === 'cidade' && !ehDf ? [{ rotulo: cidadeAtual! }] : []),
   ];
 
   return (
@@ -423,6 +429,7 @@ export function ComparadorCandidatos() {
             <ComparacaoCidade
               uf={ufAtual}
               municipio={cidadeAtual!}
+              visaoInicial={ehDf ? 'bairros' : 'locais'}
               ano={ano}
               turno={turno}
               cands={ativos.map((c, i) => ({ ...candsAtivos[i], zonas: dadosNoNivel(c)?.zonas ?? [] }))}

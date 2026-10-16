@@ -658,6 +658,19 @@ export default function MapaPage() {
     setSelectedGenBairro(prev => prev === nome ? null : nome);
   }, []);
 
+  // Votos de uma área pelo nome, ignorando maiúsculas, acentos e pontuação.
+  // O mapa chama o bairro de "Del Castilho" e a contagem guarda "DEL
+  // CASTILHO": a busca exata dava 0 voto no painel do bairro selecionado.
+  const votosDoNome = (registro: Record<string, number>, nome: string | null): number => {
+    if (!nome) return 0;
+    const norm = (x: string) =>
+      x.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (registro[nome] !== undefined) return registro[nome];
+    const alvo = norm(nome);
+    for (const [k, v] of Object.entries(registro)) if (norm(k) === alvo) return v;
+    return 0;
+  };
+
   const selectedCeVotos = useMemo(() => {
     if (!selectedCeBairro) return 0;
     const normCe = (s: string) =>
@@ -1479,7 +1492,7 @@ export default function MapaPage() {
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
                 <PainelAreaSelecionada
                   sobre="Distrito" nome={selectedSpDistrito}
-                  votos={spDistritosVotes[selectedSpDistrito] ?? 0}
+                  votos={votosDoNome(spDistritosVotes, selectedSpDistrito)}
                   total={Object.values(spDistritosVotes).reduce((a, x) => a + x, 0)} rotuloTotal="dos votos em São Paulo"
                   nota="Distrito municipal — GeoSampa"
                   onFechar={() => setSelectedSpDistrito(null)}
@@ -1494,7 +1507,7 @@ export default function MapaPage() {
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
                 <PainelAreaSelecionada
                   sobre="Região administrativa" nome={selectedDfRegiao}
-                  votos={dfRegioesVotes[selectedDfRegiao] ?? 0}
+                  votos={votosDoNome(dfRegioesVotes, selectedDfRegiao)}
                   total={Object.values(dfRegioesVotes).reduce((a, x) => a + x, 0)} rotuloTotal="dos votos no DF"
                   onFechar={() => setSelectedDfRegiao(null)}
                 />
@@ -1508,7 +1521,7 @@ export default function MapaPage() {
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
                 <PainelAreaSelecionada
                   sobre="Bairro" nome={selectedRjBairro}
-                  votos={rjBairrosVotes[selectedRjBairro] ?? 0}
+                  votos={votosDoNome(rjBairrosVotes, selectedRjBairro)}
                   total={Object.values(rjBairrosVotes).reduce((a, x) => a + x, 0)} rotuloTotal="dos votos no Rio de Janeiro"
                   onFechar={() => setSelectedRjBairro(null)}
                 />

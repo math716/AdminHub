@@ -46,14 +46,16 @@ interface LocalComp {
 
 type Visao = 'locais' | 'bairros' | 'zonas';
 
-export function ComparacaoCidade({ uf, municipio, ano, turno, cands }: {
+export function ComparacaoCidade({ uf, municipio, ano, turno, cands, visaoInicial = 'locais' }: {
   uf: string;
   municipio: string;
   ano: string;
   turno: number;
   cands: CandidatoCidade[];
+  /** O DF abre nas regiões administrativas. */
+  visaoInicial?: Visao;
 }) {
-  const [visao, setVisao] = useState<Visao>('locais');
+  const [visao, setVisao] = useState<Visao>(visaoInicial);
   const [respostas, setRespostas] = useState<Array<RespostaBairros | null> | null>(null);
   const [poligonosGeo, setPoligonosGeo] = useState<PoligonosCidade | null>(null);
   const [foco, setFoco] = useState<{ nonce: number; pontos: Array<[number, number]> } | null>(null);

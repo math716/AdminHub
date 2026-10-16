@@ -635,9 +635,14 @@ export function EvolucaoCandidato() {
     ? `Evolução de ${nomeDe(A.dados)} — ${A.ano} × ${B.ano}`
     : `${nomeDe(A.dados)} (${A.ano}) × ${nomeDe(B.dados)} (${B.ano})`;
 
-  const nivel: 'brasil' | 'estado' | 'cidade' = cidadeAberta ? 'cidade' : escopo === 'BR' && !ufAberta ? 'brasil' : 'estado';
-  const ufAtual = ufAberta ?? escopo;
   const dadosNoNivel = (i: 0 | 1) => (escopo === 'BR' && ufAberta ? dadosUf?.[i] ?? null : lados[i].dados);
+  // O DF é uma cidade só (Brasília): abre direto nas regiões administrativas.
+  const ehDf = escopo === 'DF' || ufAberta === 'DF';
+  const cidadeAtual = cidadeAberta ?? (ehDf && pronto
+    ? Object.keys(dadosNoNivel(1)?.votosPorNomeMunicipio ?? dadosNoNivel(0)?.votosPorNomeMunicipio ?? {})[0] ?? 'BRASÍLIA'
+    : null);
+  const nivel: 'brasil' | 'estado' | 'cidade' = cidadeAtual ? 'cidade' : escopo === 'BR' && !ufAberta ? 'brasil' : 'estado';
+  const ufAtual = ufAberta ?? escopo;
 
   const abrirUf = async (uf: string) => {
     if (!A.dados || !B.dados) return;
@@ -699,8 +704,8 @@ export function EvolucaoCandidato() {
 
   const passos: Passo[] = [
     ...(escopo === 'BR' ? [{ rotulo: 'Brasil', onClick: voltarAoInicio }] : []),
-    ...(nivel !== 'brasil' ? [{ rotulo: nomeDaUf(ufAtual), onClick: () => setCidadeAberta(null) }] : []),
-    ...(nivel === 'cidade' ? [{ rotulo: cidadeAberta! }] : []),
+    ...(nivel !== 'brasil' ? [{ rotulo: nomeDaUf(ufAtual), onClick: ehDf ? undefined : () => setCidadeAberta(null) }] : []),
+    ...(nivel === 'cidade' && !ehDf ? [{ rotulo: cidadeAtual! }] : []),
   ];
 
   const cartaoLado = (lado: Lado, i: number) => (
@@ -810,7 +815,7 @@ export function EvolucaoCandidato() {
 
           {nivel === 'cidade' ? (
             <EvolucaoCidade
-              uf={ufAtual} municipio={cidadeAberta!} rotA={rotA} rotB={rotB} titulo={titulo} lados={ladosVisuais}
+              uf={ufAtual} municipio={cidadeAtual!} rotA={rotA} rotB={rotB} titulo={titulo} lados={ladosVisuais}
               a={{ id: A.dados!.candidatoId, ano: A.ano, zonas: dadosNoNivel(0)?.zonas }}
               b={{ id: B.dados!.candidatoId, ano: B.ano, zonas: dadosNoNivel(1)?.zonas }}
             />
