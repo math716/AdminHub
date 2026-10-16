@@ -21,8 +21,13 @@ function buildUrl(): string {
   // de a URL ter sido colada completa em cada ambiente.
   if (/:6543\b/.test(raw) && !/[?&]pgbouncer=/.test(raw)) extras.push('pgbouncer=true');
 
-  // Limita conexões da aplicação para não competir com scripts de importação
-  if (!/[?&]connection_limit=/.test(raw)) extras.push('connection_limit=10');
+  // Conexões por instância do site. O pooler do Supabase tem um teto de
+  // clientes somando TODAS as instâncias da Vercel — com muitos usuários a
+  // Vercel abre muitas instâncias, e 10 por instância esgotava o teto
+  // (EMAXCONN). 5 ainda cobre as telas que fazem várias consultas ao mesmo
+  // tempo (o Fluid compute põe vários usuários numa instância) e deixa folga
+  // para o dobro de instâncias.
+  if (!/[?&]connection_limit=/.test(raw)) extras.push('connection_limit=5');
   if (!/[?&]pool_timeout=/.test(raw))     extras.push('pool_timeout=20');
 
   if (extras.length === 0) return raw;

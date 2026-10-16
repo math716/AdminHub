@@ -2,7 +2,7 @@ name: Import Emendas DF (SISCONEP)
 
 on:
   schedule:
-    - cron: '0 4 * * 1'   # Toda segunda-feira 4h UTC → 2025 e 2026
+    - cron: '0 3 * * 3'   # Toda quarta-feira 3h UTC → 2025 e 2026 (segunda é da federal)
     - cron: '0 2 5 * *'   # Dia 5 do mês 2h UTC       → 2021 a 2024
   workflow_dispatch:
     inputs:
@@ -11,6 +11,16 @@ on:
         required: false
         default: '2025,2026'
         type: string
+
+
+# Fila única das importações: um workflow que escreve no banco espera o outro
+# terminar (inclusive disparo manual). Rodando juntos, a federal (150 operações
+# simultâneas), SP e DF disputavam o banco na madrugada de segunda.
+# Atenção: o GitHub guarda só UM pendente por grupo — um terceiro na fila
+# substitui o pendente anterior. Por isso cada importação pesada tem o seu dia.
+concurrency:
+  group: importacao-banco
+  cancel-in-progress: false
 
 jobs:
   import-df:
@@ -26,7 +36,7 @@ jobs:
     env:
       ANOS: >-
         ${{ github.event_name == 'workflow_dispatch' && inputs.anos ||
-            github.event.schedule == '0 4 * * 1' && '2025,2026' ||
+            github.event.schedule == '0 3 * * 3' && '2025,2026' ||
             '2021,2022,2023,2024' }}
 
     steps:

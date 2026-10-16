@@ -12,7 +12,7 @@ name: Import Emendas SP (Transparencia)
 
 on:
   schedule:
-    - cron: '0 3 * * 1'   # Toda segunda-feira 3h UTC → 2025 e 2026
+    - cron: '0 3 * * 2'   # Toda terça-feira 3h UTC → 2025 e 2026 (segunda é da federal)
     - cron: '0 2 3 * *'   # Dia 3 do mes 2h UTC       → 2023 e 2024
   workflow_dispatch:
     inputs:
@@ -31,6 +31,16 @@ on:
         required: false
         default: false
         type: boolean
+
+
+# Fila única das importações: um workflow que escreve no banco espera o outro
+# terminar (inclusive disparo manual). Rodando juntos, a federal (150 operações
+# simultâneas), SP e DF disputavam o banco na madrugada de segunda.
+# Atenção: o GitHub guarda só UM pendente por grupo — um terceiro na fila
+# substitui o pendente anterior. Por isso cada importação pesada tem o seu dia.
+concurrency:
+  group: importacao-banco
+  cancel-in-progress: false
 
 jobs:
   import-sp:
@@ -51,7 +61,7 @@ jobs:
     env:
       ANOS: >-
         ${{ github.event_name == 'workflow_dispatch' && inputs.anos
-            || github.event.schedule == '0 3 * * 1' && '2025,2026'
+            || github.event.schedule == '0 3 * * 2' && '2025,2026'
             || github.event.schedule == '0 2 3 * *' && '2023,2024'
             || '' }}
 

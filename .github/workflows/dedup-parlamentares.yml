@@ -9,6 +9,16 @@ on:
         default: true
         type: boolean
 
+
+# Fila única das importações: um workflow que escreve no banco espera o outro
+# terminar (inclusive disparo manual). Rodando juntos, a federal (150 operações
+# simultâneas), SP e DF disputavam o banco na madrugada de segunda.
+# Atenção: o GitHub guarda só UM pendente por grupo — um terceiro na fila
+# substitui o pendente anterior. Por isso cada importação pesada tem o seu dia.
+concurrency:
+  group: importacao-banco
+  cancel-in-progress: false
+
 jobs:
   dedup:
     name: Dedup parlamentares
