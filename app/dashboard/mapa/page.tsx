@@ -255,6 +255,40 @@ interface CandidatoHomonimo {
   municipioPrincipal?: string;
 }
 
+/**
+ * Votos REAIS por área (distrito, bairro, região administrativa): cada local
+ * de votação — arquivo de seção do TSE, via /api/tse/bairros — cai no
+ * contorno em que está. É o método do comparador e da Gabi; antes o Resultado
+ * repartia os votos de cada zona por uma tabela de proporções, e os três
+ * mostravam números diferentes para o mesmo bairro. Devolve null quando a
+ * eleição não tem voto por local (aí fica a estimativa por zona).
+ */
+async function votosReaisPorArea(
+  uf: string, municipio: string, ed: ElectoralData,
+): Promise<Record<string, number> | null> {
+  const params = new URLSearchParams({ municipio, uf, ano: String(ed.ano) });
+  if (ed.candidatoId) params.set('candidatoId', ed.candidatoId);
+  else params.set('nome', ed.nomeUrna ?? ed.candidateName);
+  if (ed.turno === 2) params.set('turno', '2');
+  const [res, poligonos] = await Promise.all([
+    fetch(`/api/tse/bairros?${params}`).then(r => (r.ok ? r.json() : null)).catch(() => null),
+    carregarPoligonosCidade(uf, municipio),
+  ]);
+  if (res?.fonte !== 'secao' || !poligonos) return null;
+  const indice = indexarPoligonos(poligonos);
+  const votos: Record<string, number> = {};
+  for (const b of res.bairros ?? []) for (const l of b.locais ?? []) {
+    const v = l.votos ?? 0;
+    if (!v) continue;
+    const area = poligonoDoPonto(l.lat, l.lng, indice);
+    // Local sem coordenada ou fora de todos os contornos: linha própria, para
+    // o total da cidade continuar batendo.
+    const chave = area === FORA ? nomeDaLinhaFora(poligonos.rotulo) : area;
+    votos[chave] = (votos[chave] ?? 0) + v;
+  }
+  return votos;
+}
+
 export default function MapaPage() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
@@ -562,32 +596,9 @@ export default function MapaPage() {
       }
       return distVotes;
     };
-    (async () => {
-      try {
-        const params = new URLSearchParams({ municipio: 'São Paulo', uf: 'SP', ano: String(electoralData.ano) });
-        if (electoralData.candidatoId) params.set('candidatoId', electoralData.candidatoId);
-        else params.set('nome', electoralData.nomeUrna ?? electoralData.candidateName);
-        if (electoralData.turno === 2) params.set('turno', '2');
-        const [res, poligonos] = await Promise.all([
-          fetch(`/api/tse/bairros?${params}`).then(r => (r.ok ? r.json() : null)),
-          carregarPoligonosCidade('SP', 'São Paulo'),
-        ]);
-        if (cancelado) return;
-        if (res?.fonte !== 'secao' || !poligonos) { setSpDistritosVotes(estimativa()); return; }
-        const indice = indexarPoligonos(poligonos);
-        const distVotes: Record<string, number> = {};
-        for (const b of res.bairros ?? []) for (const l of b.locais ?? []) {
-          const v = l.votos ?? 0;
-          if (!v) continue;
-          const d = poligonoDoPonto(l.lat, l.lng, indice);
-          const chave = d === FORA ? nomeDaLinhaFora('distritos') : d;
-          distVotes[chave] = (distVotes[chave] ?? 0) + v;
-        }
-        setSpDistritosVotes(distVotes);
-      } catch {
-        if (!cancelado) setSpDistritosVotes(estimativa());
-      }
-    })();
+    votosReaisPorArea('SP', 'São Paulo', electoralData)
+      .then(reais => { if (!cancelado) setSpDistritosVotes(reais ?? estimativa()); })
+      .catch(() => { if (!cancelado) setSpDistritosVotes(estimativa()); });
     return () => { cancelado = true; };
   }, [isSaoPauloCapital, electoralData]);
 
@@ -603,24 +614,33 @@ export default function MapaPage() {
     return norm(selectedMunicipio.nome) === 'RIO DE JANEIRO';
   }, [selectedUf, selectedMunicipio]);
 
-  // Computa votos por bairro do Rio usando RJ_ZONA_BAIRRO_MAP
+  // Votos por bairro do Rio.
+  // Primeiro os votos REAIS por local (votosReaisPorArea); sem eles, a
+  // estimativa: votos de cada zona repartidos pela tabela RJ_ZONA_BAIRRO_MAP.
   useEffect(() => {
     if (!isRioDeJaneiro || !electoralData?.zonas?.length) {
       setRjBairrosVotes({});
       return;
     }
+    let cancelado = false;
     const norm = (s: string) =>
       s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
-    const bairroVotes: Record<string, number> = {};
-    for (const z of electoralData.zonas) {
-      if (norm(z.municipio) !== 'RIO DE JANEIRO') continue;
-      const bairroMap = RJ_ZONA_BAIRRO_MAP[z.zona];
-      if (!bairroMap || !z.votos) continue;
-      for (const [bairro, frac] of Object.entries(bairroMap)) {
-        bairroVotes[bairro] = (bairroVotes[bairro] ?? 0) + Math.round(z.votos * frac);
+    const estimativa = () => {
+      const votos: Record<string, number> = {};
+      for (const z of electoralData?.zonas ?? []) {
+        if (norm(z.municipio) !== 'RIO DE JANEIRO') continue;
+        const frac = RJ_ZONA_BAIRRO_MAP[z.zona];
+        if (!frac || !z.votos) continue;
+        for (const [bairro, f] of Object.entries(frac)) {
+          votos[bairro] = (votos[bairro] ?? 0) + Math.round(z.votos * f);
+        }
       }
-    }
-    setRjBairrosVotes(bairroVotes);
+      return votos;
+    };
+    votosReaisPorArea('RJ', 'Rio de Janeiro', electoralData!)
+      .then(reais => { if (!cancelado) setRjBairrosVotes(reais ?? estimativa()); })
+      .catch(() => { if (!cancelado) setRjBairrosVotes(estimativa()); });
+    return () => { cancelado = true; };
   }, [isRioDeJaneiro, electoralData]);
 
   const handleRjBairroClick = useCallback((nome: string) => {
@@ -654,24 +674,33 @@ export default function MapaPage() {
     return list;
   }, [municipiosOrdenados, municSearch]);
 
-  // Computa votos por bairro de Fortaleza usando CE_ZONA_BAIRRO_MAP
+  // Votos por bairro de Fortaleza.
+  // Primeiro os votos REAIS por local (votosReaisPorArea); sem eles, a
+  // estimativa: votos de cada zona repartidos pela tabela CE_ZONA_BAIRRO_MAP.
   useEffect(() => {
     if (!isFortalezaCe || !electoralData?.zonas?.length) {
       setCeBairrosVotes({});
       return;
     }
+    let cancelado = false;
     const norm = (s: string) =>
       s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
-    const bairroVotes: Record<string, number> = {};
-    for (const z of electoralData.zonas) {
-      if (norm(z.municipio) !== 'FORTALEZA') continue;
-      const bairroMap = CE_ZONA_BAIRRO_MAP[z.zona];
-      if (!bairroMap || !z.votos) continue;
-      for (const [bairro, frac] of Object.entries(bairroMap)) {
-        bairroVotes[bairro] = (bairroVotes[bairro] ?? 0) + Math.round(z.votos * frac);
+    const estimativa = () => {
+      const votos: Record<string, number> = {};
+      for (const z of electoralData?.zonas ?? []) {
+        if (norm(z.municipio) !== 'FORTALEZA') continue;
+        const frac = CE_ZONA_BAIRRO_MAP[z.zona];
+        if (!frac || !z.votos) continue;
+        for (const [bairro, f] of Object.entries(frac)) {
+          votos[bairro] = (votos[bairro] ?? 0) + Math.round(z.votos * f);
+        }
       }
-    }
-    setCeBairrosVotes(bairroVotes);
+      return votos;
+    };
+    votosReaisPorArea('CE', 'Fortaleza', electoralData!)
+      .then(reais => { if (!cancelado) setCeBairrosVotes(reais ?? estimativa()); })
+      .catch(() => { if (!cancelado) setCeBairrosVotes(estimativa()); });
+    return () => { cancelado = true; };
   }, [isFortalezaCe, electoralData]);
 
   const handleCeBairroClick = useCallback((nome: string) => {
@@ -839,22 +868,30 @@ export default function MapaPage() {
     21: { "Recanto das Emas": 0.6897, "Samambaia": 0.2759 },
   };
 
-  // Agrega votos por RA do DF usando o mapeamento pré-calculado + electoralData.zonas
+  // Votos por região administrativa do DF.
+  // Primeiro os votos REAIS por local (votosReaisPorArea); sem eles, a
+  // estimativa: votos de cada zona repartidos pela tabela DF_ZONA_RA_MAP.
   useEffect(() => {
-    if (selectedUf !== 'DF' || !electoralData) { setDfRegioesVotes({}); return; }
-
-    const zonas = electoralData.zonas ?? [];
-    if (zonas.length === 0) { setDfRegioesVotes({}); return; }
-
-    const raVotes: Record<string, number> = {};
-    for (const z of zonas) {
-      const raMap = DF_ZONA_RA_MAP[z.zona];
-      if (!raMap || !z.votos) continue;
-      for (const [ra, frac] of Object.entries(raMap)) {
-        raVotes[ra] = (raVotes[ra] ?? 0) + Math.round(z.votos * frac);
-      }
+    if (selectedUf !== 'DF' || !electoralData?.zonas?.length) {
+      setDfRegioesVotes({});
+      return;
     }
-    setDfRegioesVotes(raVotes);
+    let cancelado = false;
+    const estimativa = () => {
+      const votos: Record<string, number> = {};
+      for (const z of electoralData?.zonas ?? []) {
+        const frac = DF_ZONA_RA_MAP[z.zona];
+        if (!frac || !z.votos) continue;
+        for (const [ra, f] of Object.entries(frac)) {
+          votos[ra] = (votos[ra] ?? 0) + Math.round(z.votos * f);
+        }
+      }
+      return votos;
+    };
+    votosReaisPorArea('DF', 'Brasília', electoralData!)
+      .then(reais => { if (!cancelado) setDfRegioesVotes(reais ?? estimativa()); })
+      .catch(() => { if (!cancelado) setDfRegioesVotes(estimativa()); });
+    return () => { cancelado = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUf, electoralData]);
 

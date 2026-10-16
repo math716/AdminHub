@@ -46,12 +46,18 @@ const cacheBairros = new CacheLimitado<any[] | null>(20);
  * 895 municípios estão cobertos, incluindo as capitais. Devolve `null` quando a
  * cidade não tem malha — aí o relatório cai no mapa do estado, como antes.
  */
-// Cidades cujo recorte oficial não é "bairro" e por isso ficam de fora do
-// arquivo estadual do Censo — cada uma tem malha própria, com outra chave de
-// nome. São Paulo, por exemplo, se divide em 96 distritos.
-// (Fortaleza NÃO entra aqui: já vem no arquivo do Censo do CE, com NM_BAIRRO.)
+// Cidades com malha própria — a MESMA que o Mapa Eleitoral desenha
+// (components/mapa/poligonos-cidade.ts). Assim a Gabi, o Resultado e o
+// comparador dão o mesmo número para o mesmo bairro: com o contorno do Censo,
+// Copacabana dava 48.489 votos ao Paes na Gabi e 48.161 no mapa.
+// São Paulo se divide em 96 distritos; o DF, em regiões administrativas (e
+// nem tem arquivo de bairros do Censo — sem isto a Gabi não tinha contorno
+// para Brasília).
 const MALHAS_ESPECIAIS: Record<string, { arquivo: string; chaveNome: string }> = {
   'SP:sao paulo': { arquivo: 'sp-distritos.geojson', chaveNome: 'nm_distrito_municipal' },
+  'RJ:rio de janeiro': { arquivo: 'rj-bairros.geojson', chaveNome: 'nome' },
+  'CE:fortaleza': { arquivo: 'ce-bairros-fortaleza.geojson', chaveNome: 'Nome' },
+  'DF:brasilia': { arquivo: 'df-regioes-administrativas.geojson', chaveNome: 'nome' },
 };
 
 /** Normaliza a chave do nome para NM_BAIRRO, que é o que o mapa consome. */
