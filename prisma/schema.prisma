@@ -727,7 +727,31 @@ model EmendaParlamentar {
   @@index([area])
   @@index([uf, ano])
   @@index([uf, ano, esfera])
+  @@index([updatedAt])
   @@map("emendas_parlamentares")
+}
+
+/// Resumo pronto da tela de Emendas (lib/emendas/resumo-emendas.ts).
+///
+/// Por que existe:
+///   A tela somava milhares de emendas a cada abertura (2 a 6 s nos estados
+///   grandes). O resumo é calculado no fim de cada importação
+///   (scripts/atualizar-resumo-emendas.ts) e a tela lê pronto. A "impressão"
+///   (qtdEmendas + versões) diz se o banco mudou desde a conta; se mudou, a
+///   tela ignora o resumo e calcula na hora.
+model EmendaResumo {
+  /// "uf:SP:2025:TODAS" (resumo do estado) ou "brasil:2025" (mapa do Brasil)
+  chave               String    @id
+  dados               Json
+  /// Emendas do recorte (uf+ano, ou só ano no Brasil) no momento da conta
+  qtdEmendas          Int
+  /// max(updatedAt) de emendas_parlamentares no momento da conta
+  versaoEmendas       DateTime?
+  /// max(updatedAt) de parlamentares no momento da conta
+  versaoParlamentares DateTime?
+  calculadoEm         DateTime  @default(now())
+
+  @@map("emendas_resumos")
 }
 
 /// Documentos de despesa (empenho / liquidação / pagamento) vinculados a uma

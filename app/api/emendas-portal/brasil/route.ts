@@ -6,6 +6,12 @@ import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { semPermissao } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
+import { calcularTotaisBrasil, chaveResumoBrasil, lerResumoPronto } from '@/lib/emendas/resumo-emendas';
+
+type TotaisBrasil = Awaited<ReturnType<typeof calcularTotaisBrasil>>;
+
+// Ler o resumo pronto (tabela emendas_resumos) — mesma chave da rota /resumo.
+const USAR_RESUMO_PRONTO = false;
 
 // GET /api/emendas-portal/brasil?ano=2026
 // Retorna { totaisPorUF: { SP: 1234567, MG: 890000, ... } }
@@ -20,20 +26,13 @@ export async function GET(request: NextRequest) {
     const anoRaw = request.nextUrl.searchParams.get('ano');
     const ano = anoRaw ? parseInt(anoRaw, 10) : new Date().getFullYear();
 
-    const grupos = await prisma.emendaParlamentar.groupBy({
-      by: ['uf'],
-      where: { ano, uf: { not: null } },
-      _sum: { valorEmpenhado: true },
-    });
-
-    const totaisPorUF: Record<string, number> = {};
-    for (const g of grupos) {
-      if (g.uf) {
-        totaisPorUF[g.uf] = g._sum.valorEmpenhado ?? 0;
-      }
+    if (USAR_RESUMO_PRONTO) {
+      const qtd = await prisma.emendaParlamentar.count({ where: { ano, uf: { not: null } } });
+      const pronto = await lerResumoPronto<TotaisBrasil>(prisma, chaveResumoBrasil(ano), qtd);
+      if (pronto) return NextResponse.json(pronto);
     }
 
-    return NextResponse.json({ ano, totaisPorUF });
+    return NextResponse.json(await calcularTotaisBrasil(prisma, ano));
   } catch (error) {
     console.error('GET /api/emendas-portal/brasil error:', error);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });

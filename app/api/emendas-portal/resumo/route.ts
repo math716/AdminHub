@@ -9,30 +9,24 @@ import { prisma } from '@/lib/db';
 import { PORTAL_MOCK_MODE, getAllEmendasDoAno, type PortalEmenda } from '@/lib/portal-transparencia';
 import { semPermissao } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
+import {
+  calcularResumoUf, chaveResumoUf, lerResumoPronto, normalizarNomeParlamentar, type ResumoUf,
+} from '@/lib/emendas/resumo-emendas';
 
 // Resumo de emendas pra um UF inteiro num ano: top municípios, totais por
 // área, top parlamentares.
 //
 // Estratégia em camadas:
 //   1) Se a tabela emendas_parlamentares tiver registros pro (uf, ano) →
-//      consulta o banco (rápido + completo).
+//      consulta o banco (rápido + completo). A conta está em
+//      lib/emendas/resumo-emendas.ts; quando ligado, lê antes o resumo pronto
+//      calculado no fim da importação (e calcula na hora se ele estiver velho).
 //   2) Senão, cai pro Portal ao vivo (lento + parcial). Vale como fallback
 //      enquanto a sincronização (scripts/sync-emendas-portal.ts) não rodou.
-// Prefixo IBGE de 2 dígitos por UF — usado para garantir que só municípios
-// do estado correto apareçam no top 5 (emendas de parlamentares SP podem ter
-// codigoIbge apontando para municípios de outros estados).
-const UF_IBGE_PREFIX: Record<string, string> = {
-  AC:'12', AL:'27', AP:'16', AM:'13', BA:'29', CE:'23', DF:'53',
-  ES:'32', GO:'52', MA:'21', MT:'51', MS:'50', MG:'31', PA:'15',
-  PB:'25', PR:'41', PE:'26', PI:'22', RJ:'33', RN:'24', RS:'43',
-  RO:'11', RR:'14', SC:'42', SP:'35', SE:'28', TO:'17',
-};
 
-function normalizarNomeParlamentar(nome: string, nomeUrna?: string | null): string {
-  if (nomeUrna) return nomeUrna;
-  return nome.replace(/\s*\(.*\)\s*$/, '').trim()
-    .toLowerCase().replace(/(^|[\s-])(\S)/g, (_, sep, c) => sep + c.toUpperCase());
-}
+// Ler o resumo pronto (tabela emendas_resumos). Fica desligado até a
+// conferência resumo × conta na hora (workflow "Resumo de Emendas") bater.
+const USAR_RESUMO_PRONTO = false;
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,7 +48,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (totalNoBanco > 0) {
-      return await resumoDoBanco(uf, ano, esfera);
+      return await resumoDoBanco(uf, ano, esfera, totalNoBanco);
     }
 
     // ── 2) Fallback: Portal ao vivo ────────────────────────────────────
@@ -71,128 +65,12 @@ export async function GET(request: NextRequest) {
 
 // Separa o cálculo da resposta HTTP para permitir cache via unstable_cache.
 // esferaKey é string pois unstable_cache serializa os args como chave de cache.
-//
-// Estratégia: 4 queries paralelas com GROUP BY no banco em vez de um findMany
-// de 50k linhas → JS. Cada query usa o índice (uf, ano, esfera) e retorna
-// apenas os agregados necessários.
-async function computeResumoBanco(uf: string, ano: number, esferaKey: string) {
-  const esfera = esferaKey === 'FEDERAL' || esferaKey === 'ESTADUAL' ? esferaKey as 'FEDERAL' | 'ESTADUAL' : null;
-  const where = esfera ? { uf, ano, esfera } : { uf, ano };
-
-  const [totAgg, porAreaRaw, porMunicipioRaw, porParlamentarRaw] = await Promise.all([
-    // 1. Totais globais
-    prisma.emendaParlamentar.aggregate({
-      where,
-      _sum: { valorEmpenhado: true, valorPago: true },
-      _count: { _all: true },
-    }),
-    // 2. Por área
-    prisma.emendaParlamentar.groupBy({
-      by: ['area'],
-      where,
-      _sum: { valorEmpenhado: true },
-    }),
-    // 3. Por município (apenas com codigoIbge preenchido)
-    prisma.emendaParlamentar.groupBy({
-      by: ['codigoIbge', 'municipioNome'],
-      where: { ...where, codigoIbge: { not: null } },
-      _sum: { valorEmpenhado: true },
-      _count: { _all: true },
-    }),
-    // 4. Por parlamentarId — depois resolve detalhes em batch
-    prisma.emendaParlamentar.groupBy({
-      by: ['parlamentarId'],
-      where: { ...where, parlamentarId: { not: null } },
-      _sum: { valorEmpenhado: true },
-      _count: { _all: true },
-    }),
-  ]);
-
-  // Resolver detalhes dos parlamentares em uma única query por ID
-  const parlamentarIds = porParlamentarRaw
-    .map(p => p.parlamentarId)
-    .filter((id): id is string => id !== null);
-  const parlamentaresDetalhes = parlamentarIds.length > 0
-    ? await prisma.parlamentar.findMany({
-        where: { id: { in: parlamentarIds } },
-        select: { id: true, cpf: true, idPortal: true, nome: true, nomeUrna: true, cargo: true, partido: true },
-      })
-    : [];
-  const parlamentaresMap = new Map(parlamentaresDetalhes.map(p => [p.id, p]));
-
-  const totalEmpenhado = totAgg._sum.valorEmpenhado ?? 0;
-  const totalPago      = totAgg._sum.valorPago      ?? 0;
-  const totalEmendas   = totAgg._count._all;
-
-  // Municípios — totalMunicipalizado inclui tudo com codigoIbge;
-  // valorPorMunicipio filtra pelo prefixo IBGE do estado
-  const ibgePrefix = UF_IBGE_PREFIX[uf];
-  let totalMunicipalizado = 0;
-  const porMunicipioMap = new Map<string, { codigoIbge: string; nome: string; total: number; qtd: number }>();
-
-  for (const m of porMunicipioRaw) {
-    const ibge = m.codigoIbge!;
-    const val  = m._sum.valorEmpenhado ?? 0;
-    totalMunicipalizado += val;
-    if (!ibgePrefix || ibge.startsWith(ibgePrefix)) {
-      const cur = porMunicipioMap.get(ibge) ?? { codigoIbge: ibge, nome: m.municipioNome ?? ibge, total: 0, qtd: 0 };
-      cur.total += val;
-      cur.qtd   += m._count._all;
-      porMunicipioMap.set(ibge, cur);
-    }
+async function computeResumoBanco(uf: string, ano: number, esferaKey: string, qtdNoBanco: number) {
+  if (USAR_RESUMO_PRONTO) {
+    const pronto = await lerResumoPronto<ResumoUf>(prisma, chaveResumoUf(uf, ano, esferaKey), qtdNoBanco);
+    if (pronto) return pronto;
   }
-
-  const topMunicipios = Array.from(porMunicipioMap.values())
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 5);
-
-  const valorPorMunicipio: Record<string, number>     = {};
-  const valorPorMunicipioNome: Record<string, number> = {};
-  porMunicipioMap.forEach(v => {
-    valorPorMunicipio[v.codigoIbge] = v.total;
-    if (v.nome && v.nome !== v.codigoIbge) valorPorMunicipioNome[v.nome.toUpperCase()] = v.total;
-  });
-
-  const municipiosLista = Array.from(porMunicipioMap.values())
-    .sort((a, b) => b.total - a.total)
-    .map(v => ({ codigoIbge: v.codigoIbge, nome: v.nome }));
-
-  const areas = porAreaRaw
-    .map(a => ({ area: a.area, total: a._sum.valorEmpenhado ?? 0 }))
-    .sort((a, b) => b.total - a.total);
-
-  const CARGOS_FEDERAIS = new Set(['DEPUTADO_FEDERAL', 'SENADOR']);
-  const parlamentares = porParlamentarRaw
-    .map(p => {
-      if (!p.parlamentarId) return null;
-      const parl = parlamentaresMap.get(p.parlamentarId);
-      if (!parl) return null;
-      return {
-        cpf:      parl.cpf,
-        idPortal: parl.idPortal ?? parl.nome,
-        nome:     normalizarNomeParlamentar(parl.nome, parl.nomeUrna),
-        nomeUrna: parl.nomeUrna ?? null,
-        cargo:    parl.cargo,
-        partido:  parl.partido,
-        total:    p._sum.valorEmpenhado ?? 0,
-        qtd:      p._count._all,
-      };
-    })
-    .filter((p): p is NonNullable<typeof p> => p !== null)
-    .filter(p => esfera !== 'ESTADUAL' || !CARGOS_FEDERAIS.has(p.cargo))
-    .sort((a, b) => b.total - a.total);
-
-  return {
-    uf, ano,
-    esfera: esfera ?? 'TODAS',
-    totalEmpenhado, totalPago, totalMunicipalizado,
-    totalEstadual: totalEmpenhado - totalMunicipalizado,
-    totalEmendas,
-    topMunicipios, valorPorMunicipio, valorPorMunicipioNome, municipiosLista,
-    areas, parlamentares,
-    mock: false,
-    fonte: 'banco' as const,
-  };
+  return calcularResumoUf(prisma, uf, ano, esferaKey);
 }
 
 // Cache de 5 min por (uf, ano, esfera) — elimina o custo de re-processar
@@ -203,8 +81,8 @@ const getCachedResumoBanco = unstable_cache(
   { revalidate: 300 },
 );
 
-async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTADUAL' | null = null) {
-  const data = await getCachedResumoBanco(uf, ano, esfera ?? 'TODAS');
+async function resumoDoBanco(uf: string, ano: number, esfera: 'FEDERAL' | 'ESTADUAL' | null, qtdNoBanco: number) {
+  const data = await getCachedResumoBanco(uf, ano, esfera ?? 'TODAS', qtdNoBanco);
   return NextResponse.json(data);
 }
 
