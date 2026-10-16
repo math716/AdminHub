@@ -32,7 +32,7 @@ import { CacheLimitado } from './cache-limitado';
  * A protecao de deploy da Vercel barra a PROPRIA funcao quando ela chama a URL
  * do deployment. O dominio de producao passa direto e ainda e o mais rapido.
  */
-function baseEstaticos(): string {
+export function baseEstaticos(): string {
   const limpa = (u: string) => u.replace(/[/]+$/, '');
   if (process.env.NEXT_PUBLIC_SITE_URL) return limpa(process.env.NEXT_PUBLIC_SITE_URL);
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;

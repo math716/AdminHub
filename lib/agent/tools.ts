@@ -55,6 +55,9 @@ export const AGENT_TOOLS: Tool[] = [
       'entre vários candidatos (comparar_parlamentares é só para emendas). ' +
       'Ao informar "municipio", retorna também a quebra por ZONA ELEITORAL daquele município, ' +
       'com os bairros que cada zona cobre (útil para eleições municipais). ' +
+      'Para votos num BAIRRO ou DISTRITO ("quantos votos fulano teve em Guaianases"), informe ' +
+      '"municipio" E "bairro": o candidato vem com votosNoBairro — votos REAIS (soma dos locais de ' +
+      'votação do bairro), % da cidade, posição entre os bairros, locais de votação e quem venceu ali. ' +
       'Use para perguntas sobre desempenho eleitoral, comparação de votação ou distribuição geográfica de votos.',
     input_schema: {
       type: 'object' as const,
@@ -65,7 +68,7 @@ export const AGENT_TOOLS: Tool[] = [
         },
         ano: {
           type: 'integer',
-          description: 'Ano da eleição: 2018, 2020, 2022, 2024 ou 2026 (2026 só 1º turno, sem presidente por enquanto). Se omitido, usa a mais recente do tipo certo — 2024 para vereador/prefeito, 2026 para os demais cargos, 2022 para presidente. Prefira informar o ano.',
+          description: 'Ano da eleição: 2018, 2020, 2022, 2024 ou 2026 (2026 só 1º turno, sem presidente por enquanto). Use o ano que o USUÁRIO disse. Se ele não disse e o candidato disputou mais de uma eleição, PERGUNTE qual antes de buscar (veja as regras sobre ano). Omitido, a busca usa a mais recente do tipo certo.',
         },
         uf: {
           type: 'string',
@@ -80,6 +83,12 @@ export const AGENT_TOOLS: Tool[] = [
             'Nome do município. Ao informar, o retorno inclui a quebra de votos por ZONA ELEITORAL ' +
             'desse município (campo votosPorZona), com os bairros que cada zona cobre. ' +
             'Use quando o usuário pedir votos por bairro/zona em eleições municipais.',
+        },
+        bairro: {
+          type: 'string',
+          description:
+            'Bairro ou distrito da cidade (ex: "Guaianases", "Copacabana", "Ceilândia"). Exige "municipio". ' +
+            'Traz os votos reais do candidato naquele bairro (campo votosNoBairro de cada candidato).',
         },
         cargo: {
           type: 'string',

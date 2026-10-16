@@ -35,6 +35,7 @@ import { ComparadorCandidatos } from '@/components/mapa/comparador-candidatos';
 import { EvolucaoCandidato } from '@/components/mapa/evolucao-candidato';
 import { Painel, Trilha } from '@/components/mapa/comparacao-visual';
 import { AnaliseResultado, CartaoCandidato, MolduraMapa, PainelAreaSelecionada } from '@/components/mapa/resultado-visual';
+import { FORA, carregarPoligonosCidade, indexarPoligonos, nomeDaLinhaFora, poligonoDoPonto } from '@/components/mapa/poligonos-cidade';
 import { normalizarNomeBairro, type PedidoFocoBairro } from '@/hooks/use-foco-poligono';
 
 // Mapeamento zona eleitoral → distrito municipal de SP
@@ -536,23 +537,58 @@ export default function MapaPage() {
     return () => clearTimeout(t);
   }, [mapFullscreen]);
 
+  // Votos por distrito de São Paulo. Primeiro os REAIS: cada local de votação
+  // (arquivo de seção do TSE) cai no distrito em que está — o mesmo método do
+  // comparador e da Gabi, para os três mostrarem o mesmo número. Sem voto por
+  // local (eleição sem esses arquivos, suplementar), fica a estimativa antiga:
+  // os votos de cada zona repartidos pela tabela SP_ZONA_DISTRITO_MAP.
   useEffect(() => {
     if (!isSaoPauloCapital || !electoralData?.zonas?.length) {
       setSpDistritosVotes({});
       return;
     }
+    let cancelado = false;
     const norm = (s: string) =>
       s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
-    const distVotes: Record<string, number> = {};
-    for (const z of electoralData.zonas) {
-      if (norm(z.municipio) !== 'SAO PAULO') continue;
-      const distMap = SP_ZONA_DISTRITO_MAP[z.zona];
-      if (!distMap || !z.votos) continue;
-      for (const [dist, frac] of Object.entries(distMap)) {
-        distVotes[dist] = (distVotes[dist] ?? 0) + Math.round(z.votos * frac);
+    const estimativa = () => {
+      const distVotes: Record<string, number> = {};
+      for (const z of electoralData.zonas ?? []) {
+        if (norm(z.municipio) !== 'SAO PAULO') continue;
+        const distMap = SP_ZONA_DISTRITO_MAP[z.zona];
+        if (!distMap || !z.votos) continue;
+        for (const [dist, frac] of Object.entries(distMap)) {
+          distVotes[dist] = (distVotes[dist] ?? 0) + Math.round(z.votos * frac);
+        }
       }
-    }
-    setSpDistritosVotes(distVotes);
+      return distVotes;
+    };
+    (async () => {
+      try {
+        const params = new URLSearchParams({ municipio: 'São Paulo', uf: 'SP', ano: String(electoralData.ano) });
+        if (electoralData.candidatoId) params.set('candidatoId', electoralData.candidatoId);
+        else params.set('nome', electoralData.nomeUrna ?? electoralData.candidateName);
+        if (electoralData.turno === 2) params.set('turno', '2');
+        const [res, poligonos] = await Promise.all([
+          fetch(`/api/tse/bairros?${params}`).then(r => (r.ok ? r.json() : null)),
+          carregarPoligonosCidade('SP', 'São Paulo'),
+        ]);
+        if (cancelado) return;
+        if (res?.fonte !== 'secao' || !poligonos) { setSpDistritosVotes(estimativa()); return; }
+        const indice = indexarPoligonos(poligonos);
+        const distVotes: Record<string, number> = {};
+        for (const b of res.bairros ?? []) for (const l of b.locais ?? []) {
+          const v = l.votos ?? 0;
+          if (!v) continue;
+          const d = poligonoDoPonto(l.lat, l.lng, indice);
+          const chave = d === FORA ? nomeDaLinhaFora('distritos') : d;
+          distVotes[chave] = (distVotes[chave] ?? 0) + v;
+        }
+        setSpDistritosVotes(distVotes);
+      } catch {
+        if (!cancelado) setSpDistritosVotes(estimativa());
+      }
+    })();
+    return () => { cancelado = true; };
   }, [isSaoPauloCapital, electoralData]);
 
   const handleSpDistritoClick = useCallback((nome: string) => {

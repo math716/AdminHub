@@ -27,7 +27,7 @@ function pip(pt: [number, number], ring: [number, number][]): boolean {
   return dentro;
 }
 
-function dentroDaFeicao(lng: number, lat: number, geom: any): boolean {
+export function dentroDaFeicao(lng: number, lat: number, geom: any): boolean {
   if (!geom) return false;
   const p: [number, number] = [lng, lat];
   if (geom.type === 'Polygon') return pip(p, geom.coordinates[0]);

@@ -6,6 +6,7 @@ import {
 } from '@/lib/tse-static';
 import { buscarCandidatoNacional, inferirUfPorNomes, rankingNacional } from '@/lib/tse-index';
 import { resolverDeputados } from '@/lib/agent/report/df-territorial';
+import { votosNoBairro } from '@/lib/agent/votos-bairro';
 import { SQL_DATA_COMEMORATIVA } from '@/lib/agenda-datas';
 import type { Session } from 'next-auth';
 import { PERMISSIONS, hasPermission, type Permission } from '@/lib/permissions';
@@ -461,6 +462,8 @@ export async function executarBuscarVotacao(
     ano?: number;
     uf?: string;
     municipio?: string;
+    /** Bairro ou distrito da cidade (exige municipio). */
+    bairro?: string;
     cargo?: string;
     apenas_eleitos?: boolean;
     limite?: number;
@@ -564,9 +567,35 @@ export async function executarBuscarVotacao(
     // "eleitos" ≠ situacao.includes('eleito'): isso casaria "NÃO ELEITO"
     // também. Os eleitos são os que a situação começa com ELEITO
     // (ELEITO POR QP + ELEITO POR MÉDIA) — no RJ/2022, exatamente 70.
-    const totalNoCargo = todos.length;
-    const eleitos = todos.filter(c => /^eleito/.test(normalizarTextoTse(c.situacao)));
-    if (args.apenas_eleitos && eleitos.length > 0) todos = eleitos;
+    // A DISPUTA inteira do cargo, para os números da eleição (total de
+    // candidatos, % do líder, houve 2º turno). Buscando um nome, `todos` tem
+    // só aquele candidato — e o Tarcísio saía "líder com 100% dos votos
+    // válidos" numa disputa contra ninguém (em 2026 foram 62,65%).
+    // Prefeito e vereador disputam numa CIDADE: buscando o nome, a disputa é
+    // a da cidade dele (a de mais votos), não a do estado inteiro.
+    const cargoAchado = normalizarTextoTse(todos[0]?.cargo ?? '');
+    const cidadeDaDisputa = !semNome && /prefeito|vereador/.test(cargoAchado) && todos[0]
+      ? (args.municipio?.trim() || Object.entries(todos[0].votos ?? {}).sort((a, b) => b[1] - a[1])[0]?.[0] || null)
+      : null;
+    const votosNaCidade = (c: any, cidade: string): number => {
+      const alvo = normalizarTextoTse(cidade);
+      for (const [m, v] of Object.entries(c.votos ?? {})) if (normalizarTextoTse(m) === alvo) return v as number;
+      return 0;
+    };
+    const disputa = semNome || todos.length === 0
+      ? todos
+      : staticData
+          .filter(c => normalizarTextoTse(c.cargo) === cargoAchado)
+          .filter(c => !cidadeDaDisputa || votosNaCidade(c, cidadeDaDisputa) > 0)
+          .sort((a, b) => cidadeDaDisputa
+            ? votosNaCidade(b, cidadeDaDisputa) - votosNaCidade(a, cidadeDaDisputa)
+            : b.totalVotos - a.totalVotos);
+    const totalNoCargo = disputa.length;
+    const eleitos = disputa.filter(c => /^eleito/.test(normalizarTextoTse(c.situacao)));
+    if (args.apenas_eleitos) {
+      const soEleitos = todos.filter(c => /^eleito/.test(normalizarTextoTse(c.situacao)));
+      if (soEleitos.length > 0) todos = soEleitos;
+    }
 
     // Uma bancada inteira (ex.: 70 deputados estaduais) não cabia no corte fixo
     // de 12. O teto é maior, mas ainda limitado para o turno não estourar.
@@ -582,9 +611,10 @@ export async function executarBuscarVotacao(
     // Filtrado por município, o denominador são os votos DALI — usar o total do
     // estado faria o líder de Ubatuba parecer ter 0,01% dos votos.
     const noMunicipio = !!muniNorm && uf !== 'BR' && semNome;
-    const totalVotosValidos = todos.reduce(
-      (s, c) => s + (noMunicipio ? votosNoMunicipio(c) : c.totalVotos), 0);
-    const votosLider = noMunicipio ? votosNoMunicipio(todos[0]) : todos[0].totalVotos;
+    const votosNaContagem = (c: any): number =>
+      noMunicipio ? votosNoMunicipio(c) : cidadeDaDisputa ? votosNaCidade(c, cidadeDaDisputa) : c.totalVotos;
+    const totalVotosValidos = disputa.reduce((s, c) => s + votosNaContagem(c), 0);
+    const votosLider = votosNaContagem(disputa[0]);
     const pctLider = totalVotosValidos > 0 ? (votosLider / totalVotosValidos) * 100 : 0;
     // 2º turno só existe em cargos majoritários (governador/prefeito/presidente).
     // Para PREFEITO há um segundo requisito, na Constituição (art. 29, II): só
@@ -615,6 +645,19 @@ export async function executarBuscarVotacao(
     // bairro; os bairros vêm dos locais de votação de cada zona.
     const bairrosZona = muniNorm && uf !== 'BR' ? await bairrosPorZona(uf, args.municipio!) : {};
 
+    // Votos reais no BAIRRO pedido (soma dos locais de votação dele). Até 4
+    // candidatos, para comparar quem foi melhor num bairro.
+    const votosBairro = new Map<CandidatoJson, unknown>();
+    const ufCidade = uf === 'BR' ? ufQuery : uf;
+    if (args.bairro?.trim() && args.municipio && ufCidade && ufCidade !== 'BR') {
+      for (const c of resultados.slice(0, 4)) {
+        votosBairro.set(c, await votosNoBairro({
+          ano: anoStr, turno, uf: ufCidade, municipio: args.municipio, bairro: args.bairro.trim(),
+          candidato: c, disputa,
+        }).catch(err => ({ encontrado: false, motivo: `Falha ao ler os votos por local: ${String(err).slice(0, 120)}` })));
+      }
+    }
+
     const detalheMunicipios =
       resultados.length > 40 ? 2 :
       resultados.length > 20 ? 3 :
@@ -630,7 +673,9 @@ export async function executarBuscarVotacao(
       turno,
       // Filtrado por município, estes números são DALI — é a resposta certa
       // para "quantos concorreram" e "quantas cadeiras tem a Câmara".
-      escopoContagem: noMunicipio
+      escopoContagem: cidadeDaDisputa
+        ? `disputa de ${cidadeDaDisputa} (${uf})`
+        : noMunicipio
         // Para cargo municipal isto é a eleição inteira daquela cidade. Para
         // cargo estadual são os que receberam votos ali — não "os deputados de
         // Ubatuba"; a Gabi precisa da diferença para não escrever besteira.
@@ -645,6 +690,7 @@ export async function executarBuscarVotacao(
           'com "limite" maior (teto 80).',
       }),
       liderPercentualValidos: Math.round(pctLider * 10) / 10,
+      liderDaDisputa: disputa[0]?.nomeUrna ?? null,
       houveSegundoTurno,
       ...(eleitoradoMunicipio !== null && { eleitoradoMunicipio }),
       ...(houveSegundoTurno === null && {
@@ -661,6 +707,11 @@ export async function executarBuscarVotacao(
         uf,
         situacao: c.situacao,
         totalVotos: c.totalVotos,
+        // % dele sobre TODOS os candidatos do cargo (no recorte da contagem).
+        percentualValidos: totalVotosValidos > 0
+          ? Math.round((votosNaContagem(c) / totalVotosValidos) * 1000) / 10
+          : 0,
+        ...(votosBairro.has(c) && { votosNoBairro: votosBairro.get(c) }),
         // Consulta com município: o número que interessa é o de lá. Para
         // vereador coincide com o total; para deputado, não.
         ...(muniNorm && uf !== 'BR' && { votosNoMunicipio: votosNoMunicipio(c) }),
