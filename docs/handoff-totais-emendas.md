@@ -62,8 +62,8 @@ Plano de desempenho do banco aprovado pelo usuário:
   | 2026 | 6.403 → 40.237 | 2.576 → 25.912 | 3.299 |
 
 - Falta simular 2018 a 2023. A primeira tentativa levou 403 por excesso de velocidade; isso já foi corrigido no script.
-- **O usuário RECUSOU** a mudança que ligava o script no fim dos workflows federais (`import-csv-ano-atual.yml`, `import-csv-2025.yml`) e criava um workflow manual (`totais-emendas-federais.yml`). A mudança foi desfeita. **Perguntar ao usuário como ele quer rodar o script** antes de mexer em workflow de novo. Opções: só manual, ligado no fim das importações, ou mostrar a mudança antes de aplicar.
-- Se o script for para o GitHub Actions, o secret `PORTAL_TRANSPARENCIA_API_KEY` precisa existir no repositório math716. Quem cadastra é o usuário.
+- **Aplicado em 16/10/2026 (com o "sim" do usuário):** passo "Atualizar totais oficiais das emendas" no fim de `import-csv-ano-atual.yml` (anos = `$ANOS`) e de `import-csv-2025.yml` (2025), mais o workflow manual `totais-emendas-federais.yml` (inputs `anos` e `dry_run`, que vem marcado). O banco é acessado pelo GitHub Actions, não pela máquina do trabalho.
+- O secret `PORTAL_TRANSPARENCIA_API_KEY` precisa existir no math716 (o usuário cadastra).
 
 ## Próximos passos (cada um com o "sim" do usuário)
 

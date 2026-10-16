@@ -1,0 +1,55 @@
+name: Totais oficiais - emendas federais
+
+# Atualiza empenhado e pago das emendas federais com os valores oficiais do
+# Portal da Transparência. Roda sozinho no fim das importações federais; este
+# disparo manual serve para corrigir anos antigos ou conferir antes de gravar.
+on:
+  workflow_dispatch:
+    inputs:
+      anos:
+        description: 'Anos, separados por vírgula (ex: 2015,2016,2017)'
+        required: true
+        default: '2026'
+        type: string
+      dry_run:
+        description: 'Só simular (mostra o antes e depois, não grava)'
+        required: false
+        default: true
+        type: boolean
+
+# Mesma fila das importações (ver import-csv-ano-atual.yml).
+concurrency:
+  group: importacao-banco
+  cancel-in-progress: false
+
+jobs:
+  totais:
+    name: Totais oficiais
+    if: github.repository == 'math716/AdminHub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Atualizar totais
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PORTAL_TRANSPARENCIA_API_KEY: ${{ secrets.PORTAL_TRANSPARENCIA_API_KEY }}
+        run: |
+          DRY=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
+          npx tsx scripts/atualizar-totais-emendas-federais.ts --anos "${{ inputs.anos }}" $DRY

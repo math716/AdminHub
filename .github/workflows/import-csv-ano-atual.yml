@@ -152,6 +152,14 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx tsx scripts/reclassificar-areas.ts
 
+      - name: Atualizar totais oficiais das emendas
+        # O CSV não traz o total da emenda; o Portal traz (empenhado e pago).
+        if: ${{ !cancelled() }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PORTAL_TRANSPARENCIA_API_KEY: ${{ secrets.PORTAL_TRANSPARENCIA_API_KEY }}
+        run: npx tsx scripts/atualizar-totais-emendas-federais.ts --anos "$ANOS"
+
       - name: Resumo
         if: always()
         run: |
