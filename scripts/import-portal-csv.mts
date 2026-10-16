@@ -23,11 +23,14 @@
  *   --batch       tamanho do chunk de leitura (default 500)
  *   --concurrency máximo de operações simultâneas no banco (default 20)
  *   --limit       pra teste: para após N linhas (default 0 = todas)
+ *   --modo        'linha' (padrão: um documento por vez) ou 'lote' (o lote
+ *                 inteiro de documentos num único envio ao banco)
  *
  * Tempo estimado: 30-60min por arquivo (387k linhas em 2025).
  */
 
 import { createReadStream, readFileSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import * as unzipper from 'unzipper';
 import { parse } from 'csv-parse';
 import { PrismaClient } from '@prisma/client';
@@ -95,6 +98,7 @@ const CONCURRENCY = parseInt(arg('concurrency', '50')!, 10); // ops simultâneas
 const LIMIT       = parseInt(arg('limit', '0')!, 10);
 const SKIP        = parseInt(arg('skip', '0')!, 10);   // pula as primeiras N linhas
 const RETRY_FILE  = arg('retry-file');                  // reimporta só os códigos do arquivo
+const MODO        = arg('modo', 'linha') === 'lote' ? 'lote' : 'linha';
 
 if (!FILE) {
   console.error('❌ --file é obrigatório');
@@ -390,10 +394,107 @@ async function upsertDocumento(emendaId: string, row: Record<string, string>): P
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// Modo lote: os documentos do lote inteiro num único INSERT ... ON CONFLICT
+// ─────────────────────────────────────────────────────────────────────────
+// Mesmo resultado do upsertDocumento linha a linha:
+//   - documento novo: grava tudo, ligado à emenda da linha;
+//   - documento existente: atualiza fase e valor; os outros campos só quando
+//     o arquivo traz valor (vazio não apaga o que já estava); a emenda ligada
+//     e a data do documento não mudam.
+// Antes, cada documento era um envio ao banco (386 mil por mês na federal).
+// Em 2026-05 "lote de 500" significava 500 envios SIMULTÂNEOS e estourava as
+// conexões; aqui é UM envio com 500 documentos, numa conexão só.
+
+const COLS_DOC = [
+  'id', 'codigoDocumento', 'codigoDocumentoResumido', 'emendaId', 'fase', 'data', 'valor',
+  'cnpjFavorecido', 'nomeFavorecido', 'ufFavorecido', 'municipioFavorecido', 'codigoIbgeFavorecido',
+  'subTitulo', 'localizadorGasto', 'observacao', 'programa', 'acao', 'orgao', 'orgaoSuperior',
+] as const;
+const TIPO_DOC: Record<string, string> = { data: 'timestamp(3)', valor: 'double precision' };
+// Campos que o upsert linha a linha só sobrescreve quando vêm preenchidos.
+const MANTEM_SE_VAZIO = [
+  'cnpjFavorecido', 'nomeFavorecido', 'ufFavorecido', 'municipioFavorecido',
+  'subTitulo', 'localizadorGasto', 'programa', 'acao', 'orgao', 'orgaoSuperior',
+] as const;
+
+type Doc = Record<(typeof COLS_DOC)[number], string | number | null>;
+
+function montarDocumento(emendaId: string, row: Record<string, string>): Doc | null {
+  const codigoDocumento = naIfEmpty(row[COL.codigoDocumento]);
+  if (!codigoDocumento) return null;
+  const data = parseDataBR(row[COL.dataDocumento]);
+  return {
+    id:                      randomUUID(),
+    codigoDocumento,
+    codigoDocumentoResumido: codigoDocumento.slice(-12),
+    emendaId,
+    fase:                    normalizeFase(row[COL.fase]),
+    // Meia-noite UTC, igual ao que o Prisma grava a partir do Date.
+    data:                    data ? data.toISOString().slice(0, 19).replace('T', ' ') : null,
+    valor:                   parseValorBR(row[COL.valorPago]) || parseValorBR(row[COL.valorEmpenhado]),
+    cnpjFavorecido:          normalizeCnpj(row[COL.codigoFavorecido]),
+    nomeFavorecido:          naIfEmpty(row[COL.nomeFavorecido]),
+    ufFavorecido:            naIfEmpty(row[COL.ufFavorecido]),
+    municipioFavorecido:     naIfEmpty(row[COL.municipioFavorecido]),
+    codigoIbgeFavorecido:    null,
+    subTitulo:               naIfEmpty(row[COL.subtitulo]),
+    localizadorGasto:        naIfEmpty(row[COL.subtitulo]),
+    observacao:              null,
+    programa:                naIfEmpty(row[COL.programa]),
+    acao:                    naIfEmpty(row[COL.acao]),
+    orgao:                   naIfEmpty(row[COL.orgao]),
+    orgaoSuperior:           naIfEmpty(row[COL.orgaoSuperior]),
+  };
+}
+
+/**
+ * O mesmo documento duas vezes no lote viraria erro no ON CONFLICT ("não dá
+ * para atualizar a mesma linha duas vezes"). Junta como o modo linha faria em
+ * sequência: emenda e data da primeira vez; fase e valor da última; os demais
+ * campos ficam com o último valor preenchido.
+ */
+function juntarRepetidos(docs: Doc[]): Doc[] {
+  const porCodigo = new Map<string, Doc>();
+  for (const d of docs) {
+    const atual = porCodigo.get(d.codigoDocumento as string);
+    if (!atual) { porCodigo.set(d.codigoDocumento as string, { ...d }); continue; }
+    atual.fase = d.fase;
+    atual.valor = d.valor;
+    for (const c of MANTEM_SE_VAZIO) if (d[c] !== null) atual[c] = d[c];
+  }
+  return [...porCodigo.values()];
+}
+
+async function gravarDocumentosEmLote(docs: Doc[]): Promise<void> {
+  if (docs.length === 0) return;
+  const params: (string | null)[] = [];
+  const linhas = docs.map((d) => {
+    // Tudo vai como texto e é convertido no banco: número inteiro enviado
+    // para coluna decimal dá "incorrect binary data format" no Prisma.
+    const ph = COLS_DOC.map((c) => {
+      const v = d[c];
+      params.push(typeof v === 'number' ? String(v) : v);
+      return `$${params.length}::text${TIPO_DOC[c] ? `::${TIPO_DOC[c]}` : ''}`;
+    });
+    return `(${ph.join(', ')}, NOW(), NOW())`;
+  });
+  const q = (c: string) => `"${c}"`;
+  const sql = `
+    INSERT INTO emendas_documentos (${COLS_DOC.map(q).join(', ')}, "fetchedAt", "updatedAt")
+    VALUES ${linhas.join(',\n')}
+    ON CONFLICT ("codigoDocumento") DO UPDATE SET
+      "fase" = EXCLUDED."fase",
+      "valor" = EXCLUDED."valor",
+      ${MANTEM_SE_VAZIO.map((c) => `${q(c)} = COALESCE(EXCLUDED.${q(c)}, emendas_documentos.${q(c)})`).join(',\n      ')},
+      "updatedAt" = EXCLUDED."updatedAt"`;
+  await withRetry(() => prisma.$executeRawUnsafe(sql, ...params));
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // Stream loop principal
 // ─────────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log(`\n📥 Importando ${FILE}\n   batch=${BATCH}, concurrency=${CONCURRENCY}, limit=${LIMIT || 'sem limite'}\n`);
+  console.log(`\n📥 Importando ${FILE}\n   modo=${MODO}, batch=${BATCH}, concurrency=${CONCURRENCY}, limit=${LIMIT || 'sem limite'}\n`);
   const inicio = Date.now();
 
   // CSV parser com decoder ISO-8859-1
@@ -421,7 +522,8 @@ async function main() {
   let buffer: Record<string, string>[] = [];
   const codigosComErro = new Set<string>(); // acumula para salvar no final
 
-  const processRow = async (row: Record<string, string>): Promise<'ok' | 'skip'> => {
+  // Parlamentar e emenda da linha (as já vistas saem do cache, sem ir ao banco).
+  const resolverEmenda = async (row: Record<string, string>): Promise<string | 'skip'> => {
     const codigoEmenda = naIfEmpty(row[COL.codigoEmenda]);
     if (!codigoEmenda) return 'skip';
     if (retryCodigos && !retryCodigos.has(codigoEmenda)) return 'skip';
@@ -448,9 +550,58 @@ async function main() {
       parlamentarId,
       objeto:        naIfEmpty(row[COL.localidadeAplicacao]),
     });
+    return emendaId;
+  };
 
+  const processRow = async (row: Record<string, string>): Promise<'ok' | 'skip'> => {
+    const emendaId = await resolverEmenda(row);
+    if (emendaId === 'skip') return 'skip';
     await upsertDocumento(emendaId, row);
     return 'ok';
+  };
+
+  const registrarErro = (row: Record<string, string>, motivo: unknown) => {
+    erros++;
+    const codigo = naIfEmpty(row[COL.codigoEmenda]);
+    if (codigo) codigosComErro.add(codigo);
+    if (erros <= 10) {
+      console.error(`\n   [erro #${erros}] ${(motivo as any)?.message ?? motivo}`);
+    }
+  };
+
+  // Modo lote: resolve as emendas (com o mesmo limite de simultâneos) e grava
+  // os documentos do lote de uma vez. Se o envio único falhar por outro motivo
+  // que não a conexão, refaz esse lote linha a linha — assim o erro fica
+  // isolado na linha culpada, como no modo antigo, e o resto entra.
+  const flushLote = async (batch: Record<string, string>[]) => {
+    const prontos: { row: Record<string, string>; emendaId: string }[] = [];
+    for (let i = 0; i < batch.length; i += CONCURRENCY) {
+      const sub = batch.slice(i, i + CONCURRENCY);
+      const results = await Promise.allSettled(sub.map(resolverEmenda));
+      results.forEach((r, j) => {
+        if (r.status === 'rejected') registrarErro(sub[j], r.reason);
+        else if (r.value === 'skip') pulados++;
+        else prontos.push({ row: sub[j], emendaId: r.value });
+      });
+    }
+
+    const docs = juntarRepetidos(
+      prontos.map((p) => montarDocumento(p.emendaId, p.row)).filter((d): d is Doc => d !== null),
+    );
+    try {
+      await gravarDocumentosEmLote(docs);
+      docsOk += prontos.length;
+    } catch (e: any) {
+      console.error(`\n   [lote recusado, refazendo linha a linha] ${e?.message?.slice(0, 200) ?? e}`);
+      for (let i = 0; i < prontos.length; i += CONCURRENCY) {
+        const sub = prontos.slice(i, i + CONCURRENCY);
+        const results = await Promise.allSettled(sub.map((p) => upsertDocumento(p.emendaId, p.row)));
+        results.forEach((r, j) => {
+          if (r.status === 'rejected') registrarErro(sub[j].row, r.reason);
+          else docsOk++;
+        });
+      }
+    }
   };
 
   // Processa um batch de linhas respeitando o limite de concorrência no banco.
@@ -464,12 +615,7 @@ async function main() {
       for (let j = 0; j < results.length; j++) {
         const r = results[j];
         if (r.status === 'rejected') {
-          erros++;
-          const codigo = naIfEmpty(sub[j][COL.codigoEmenda]);
-          if (codigo) codigosComErro.add(codigo);
-          if (erros <= 10) {
-            console.error(`\n   [erro #${erros}] ${(r.reason as any)?.message ?? r.reason}`);
-          }
+          registrarErro(sub[j], r.reason);
         } else if (r.value === 'skip') {
           pulados++;
         } else {
@@ -488,7 +634,7 @@ async function main() {
     total++;
 
     if (buffer.length >= BATCH) {
-      await flushBatch(buffer);
+      await (MODO === 'lote' ? flushLote : flushBatch)(buffer);
       buffer = [];
 
       const elapsedMin = ((Date.now() - inicio) / 60_000).toFixed(1);
@@ -499,7 +645,7 @@ async function main() {
     }
   }
 
-  if (buffer.length > 0) await flushBatch(buffer);
+  if (buffer.length > 0) await (MODO === 'lote' ? flushLote : flushBatch)(buffer);
 
   const totalMin = ((Date.now() - inicio) / 60_000).toFixed(1);
   console.log(`\n\n✅ Import concluído!`);
