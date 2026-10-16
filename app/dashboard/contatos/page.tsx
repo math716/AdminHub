@@ -147,6 +147,19 @@ function WhatsAppIcon({ className, style }: { className?: string; style?: React.
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
+// Textos do balão novo dos mapas: aqui o valor é quantidade de contatos.
+const TEXTOS_BALAO_BRASIL = {
+  semDados: 'Veja os contatos por município',
+  dica: 'Clique para abrir o estado',
+};
+const TEXTOS_BALAO_ESTADO = {
+  sobre: 'Município',
+  valor: 'contatos',
+  total: 'dos contatos no estado',
+  semDados: 'Sem contatos',
+  dica: 'Clique para ver os bairros',
+};
+
 export default function ContatosPage() {
   const { status } = useSession();
   const router = useRouter();
@@ -1013,11 +1026,12 @@ export default function ContatosPage() {
               </AnimatePresence>
 
               <div className="h-full p-2">
-                {view === 'brasil' && <BrazilMap onStateClick={handleStateClick} />}
+                {view === 'brasil' && <BrazilMap onStateClick={handleStateClick} balaoPremium textosBalao={TEXTOS_BALAO_BRASIL} />}
                 {view === 'estado' && (
                   <StateMap uf={selectedUf} stateName={selectedStateName}
                     votesData={contactsByMunCode} onMunicipioClick={handleMunicipioClick}
-                    valueLabel="contatos" disableSubdivisao />
+                    valueLabel="contatos" disableSubdivisao
+                    balaoPremium textosBalao={TEXTOS_BALAO_ESTADO} />
                 )}
                 {view === 'municipio' && navMunicipio && bairroLoading && (
                   <div className="h-full flex items-center justify-center">

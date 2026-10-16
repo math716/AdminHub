@@ -110,7 +110,17 @@ export function prenderBalaoNoMapa(map: any, layer: any) {
  * Textos do balão quando o valor não é "votos" — no Projeto de Campanha, a
  * aba Projeção mostra a meta do cenário. `dica: null` tira a dica de clique.
  */
-export interface TextosBalao { valor?: string; total?: string; dica?: string | null }
+export interface TextosBalao {
+  valor?: string;
+  total?: string;
+  dica?: string | null;
+  /** Formato do número em destaque (ex.: reais em Emendas). Padrão: 1.234. */
+  formatarValor?: (n: number) => string;
+  /** Texto quando a área não tem valor ("Sem emendas", "Sem contatos"). */
+  semDados?: string;
+  /** Tipo da área acima do nome, quando não é o padrão do mapa. */
+  sobre?: string;
+}
 
 /** A dica dos textos (null = sem dica) ou a padrão do mapa. */
 export function dicaDoBalao(t: TextosBalao | undefined, padrao: string | null): string | null {
@@ -137,7 +147,7 @@ export function posicaoEntre(valor: number, todos: number[]): number {
  * Balão de uma área no Resultado: votos em destaque, quanto ela representa do
  * total do candidato no mapa (com barra) e a posição entre as áreas.
  */
-export function balaoArea({ sobre, titulo, subtitulo, votos, total, posicao, quantas, area, rotuloTotal, dica, rotuloValor = 'votos', semDados = 'Sem votos aqui', etiquetas }: {
+export function balaoArea({ sobre, titulo, subtitulo, votos, total, posicao, quantas, area, rotuloTotal, dica, rotuloValor = 'votos', semDados = 'Sem votos aqui', etiquetas, formatarValor }: {
   sobre: string;
   titulo: string;
   subtitulo?: string | null;
@@ -156,6 +166,8 @@ export function balaoArea({ sobre, titulo, subtitulo, votos, total, posicao, qua
   semDados?: string;
   /** Etiquetas pequenas sob os números ("Zona 211", "12 seções"). */
   etiquetas?: string[];
+  /** Formato do número em destaque (padrão: 1.234). */
+  formatarValor?: (n: number) => string;
 }): string {
   if (!votos) {
     return cartaoBalao({ sobre, titulo, subtitulo: subtitulo ?? semDados, rodape: dica ? dicaBalao(dica) : undefined });
@@ -164,7 +176,7 @@ export function balaoArea({ sobre, titulo, subtitulo, votos, total, posicao, qua
   const pct = `${(fracao * 100).toFixed(fracao < 0.001 ? 2 : 1).replace('.', ',')}%`;
   const corpo =
     `<div class="bc-numero-linha">` +
-      `<div><span class="bc-numero">${fmtBalao(votos)}</span><span class="bc-unidade">${escBalao(rotuloValor)}</span></div>` +
+      `<div><span class="bc-numero">${escBalao((formatarValor ?? fmtBalao)(votos))}</span><span class="bc-unidade">${escBalao(rotuloValor)}</span></div>` +
       (posicao && area ? `<span class="bc-posicao" title="Posição entre ${quantas ?? ''} ${escBalao(area)} com voto">${posicao}º${quantas ? `<small>/ ${fmtBalao(quantas)}</small>` : ''}</span>` : '') +
     `</div>` +
     (total ? (

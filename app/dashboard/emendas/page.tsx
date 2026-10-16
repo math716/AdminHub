@@ -195,6 +195,15 @@ const ANO_PADRAO = 2026;
 // ---------------------------------------------------------------------------
 // Página
 // ---------------------------------------------------------------------------
+// Balão do mapa do Brasil em Emendas (fixo: não depende do estado da tela).
+const TEXTOS_BALAO_BRASIL = {
+  valor: 'em emendas',
+  total: 'do total no Brasil',
+  semDados: 'Sem emendas',
+  dica: 'Clique para ver os municípios',
+  formatarValor: formatBRLCompact,
+};
+
 export default function EmendasPage() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
@@ -239,6 +248,15 @@ export default function EmendasPage() {
   const [municipioResults, setMunicipioResults] = useState<Array<{ codigoIbge: string; nome: string }>>([]);
   const [municipioDropOpen, setMunicipioDropOpen] = useState(false);
   const [selectedParlamentar, setSelectedParlamentar] = useState<PortalParlamentar | null>(null);
+  // Textos do balão novo dos mapas: aqui o valor é dinheiro em emendas.
+  const textosBalaoEstado = useMemo(() => ({
+    sobre: 'Município',
+    valor: selectedParlamentar ? `de ${selectedParlamentar.nome.split(' ')[0]}` : 'em emendas',
+    total: selectedParlamentar ? 'das emendas dele no estado' : 'do total no estado',
+    semDados: selectedParlamentar ? 'Sem emendas deste parlamentar' : 'Sem emendas',
+    dica: 'Clique para ver as emendas do município',
+    formatarValor: formatBRLCompact,
+  }), [selectedParlamentar]);
   const [parlamentarEmendas, setParlamentarEmendas] = useState<PortalEmenda[]>([]);
   const [parlamentarPix, setParlamentarPix] = useState<TransferenciaPix[]>([]);
   const [parlamentarDestinosFlat, setParlamentarDestinosFlat] = useState<DestinoRow[]>([]);
@@ -1389,6 +1407,7 @@ export default function EmendasPage() {
 
             {view === 'brasil' && (
               <BrazilMap
+                balaoPremium textosBalao={TEXTOS_BALAO_BRASIL}
                 onStateClick={handleStateClick}
                 darkMode={isDarkTheme}
                 highlightedStates={Object.keys(brasilHeatmap).length > 0 ? brasilHeatmap : undefined}
@@ -1403,6 +1422,7 @@ export default function EmendasPage() {
             )}
             {view === 'estado' && selectedUf && (
               <StateMap
+                balaoPremium textosBalao={textosBalaoEstado}
                 uf={selectedUf}
                 stateName={selectedStateName}
                 /* Quando há parlamentar selecionado, mostra só os municípios

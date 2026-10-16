@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { camadaBase } from '@/lib/maps/basemap';
 
+import { balaoArea, posicaoEntre, prenderBalaoNoMapa } from '@/lib/maps/balao';
 interface ContatosBairrosMapProps {
   municipio: string;               // usado no key do wrapper externo
   uf: string;                      // usado no key do wrapper externo
@@ -81,22 +82,28 @@ function ContatosBairrosMapInner({
               propsRef.current.onBairroClick?.(normNm);
             });
 
-            layer.on('mouseover', (e: any) => {
-              const count = propsRef.current.contatosPorBairro[normNm] ?? 0;
+            // Balão novo (lib/maps/balao): contatos do bairro, % da cidade e
+            // posição; não passa da borda do mapa.
+            layer.bindTooltip(() => {
+              const cpb = propsRef.current.contatosPorBairro;
+              const todos = Object.values(cpb).filter(v => v > 0);
+              const count = cpb[normNm] ?? 0;
+              return balaoArea({
+                sobre: 'Bairro', titulo: nmBairro || 'Bairro', votos: count,
+                total: todos.reduce((a, v) => a + v, 0), posicao: count ? posicaoEntre(count, todos) : undefined,
+                quantas: todos.length, area: 'bairros',
+                rotuloValor: count === 1 ? 'contato' : 'contatos', rotuloTotal: 'dos contatos na cidade',
+                semDados: 'Sem contatos', dica: 'Clique para selecionar',
+              });
+            }, { sticky: true, direction: 'top', className: 'bairro-tooltip', opacity: 1 });
+            prenderBalaoNoMapa(map, layer);
+
+            layer.on('mouseover', () => {
               layer.setStyle({ fillOpacity: 0.85, weight: 2 });
-              L.popup({ closeButton: false, className: 'bairro-dark-popup' })
-                .setLatLng(e.latlng)
-                .setContent(
-                  `<div style="padding:8px 12px">` +
-                  `<strong style="color:#2563EB;font-size:13px">${nmBairro || 'Bairro'}</strong><br>` +
-                  `<span style="color:var(--text-tertiary);font-size:12px">${count} contato${count !== 1 ? 's' : ''}</span></div>`
-                )
-                .openOn(map);
             });
 
             layer.on('mouseout', () => {
               geoLayer.resetStyle(layer);
-              map.closePopup();
             });
           },
         }

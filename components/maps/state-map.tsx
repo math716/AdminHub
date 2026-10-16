@@ -966,7 +966,9 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           if (balaoPremium) {
             layer.bindTooltip(
               () => balaoArea({
-                sobre: 'Cidade', titulo: nome, votos,
+                sobre: textosBalaoRef.current?.sobre ?? 'Cidade', titulo: nome, votos,
+                formatarValor: textosBalaoRef.current?.formatarValor,
+                semDados: textosBalaoRef.current?.semDados,
                 total: totalVotos, posicao: votos ? posicaoEntre(votos, todosVotos) : undefined,
                 quantas: todosVotos.length, area: 'cidades', rotuloTotal: textosBalaoRef.current?.total ?? 'dos votos no estado',
                 rotuloValor: textosBalaoRef.current?.valor,
