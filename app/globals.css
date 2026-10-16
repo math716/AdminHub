@@ -577,15 +577,19 @@ html, body {
 .bc-dica { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--bc-fraco); }
 /* Balão de área do Resultado (lib/maps/balao.ts → balaoArea) */
 .bc-area { padding: 2px 6px 6px; }
-.bc-numero-linha { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
-.bc-numero { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--bc-titulo); }
-.bc-unidade { font-size: 11px; font-weight: 600; color: var(--bc-fraco); margin-left: 5px; text-transform: uppercase; letter-spacing: 0.08em; }
+/* Valor + unidade à esquerda, posição à direita, centralizados entre si.
+   Com valor largo (R$ 7,4M), a unidade desce INTEIRA para a linha de baixo —
+   antes quebrava no meio ("EM" / "EMENDAS") e a etiqueta, espremida, também. */
+.bc-numero-linha { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bc-numero-linha > div { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; row-gap: 2px; min-width: 0; }
+.bc-numero { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--bc-titulo); white-space: nowrap; }
+.bc-unidade { font-size: 11px; font-weight: 600; color: var(--bc-fraco); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
 .bc-posicao {
-  display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 24px; padding: 0 8px;
+  display: inline-flex; flex-shrink: 0; white-space: nowrap; gap: 3px; align-items: center; justify-content: center; min-width: 34px; height: 24px; padding: 0 8px;
   border-radius: 999px; font-size: 11.5px; font-weight: 800; color: #fff;
   background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 4px 12px -4px rgba(37, 99, 235, 0.7);
 }
-.bc-posicao small { font-size: 9.5px; font-weight: 600; opacity: 0.8; margin-left: 3px; }
+.bc-posicao small { font-size: 9.5px; font-weight: 600; opacity: 0.8; }
 .bc-barra-grossa { height: 7px; margin-top: 10px; }
 .bc-legenda { font-size: 11px; color: var(--bc-fraco); margin-top: 6px; }
 .bc-legenda strong { color: var(--bc-titulo); font-weight: 700; }
