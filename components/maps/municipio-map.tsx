@@ -5,6 +5,7 @@ import { Loader2, AlertTriangle } from 'lucide-react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
 import { camadaBase } from '@/lib/maps/basemap';
 import { balaoArea, posicaoEntre, prenderBalaoNoMapa } from '@/lib/maps/balao';
+import type { TextosBalao } from '@/lib/maps/balao';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -79,6 +80,8 @@ interface MunicipioMapProps {
   onDataLoaded?: (bairros: BairroExposed[]) => void;
   /** Balão novo do Mapa Eleitoral (lib/maps/balao). */
   balaoPremium?: boolean;
+  /** Textos do balão novo quando o valor não é "votos" (ex.: meta do cenário). */
+  textosBalao?: TextosBalao;
 }
 
 // ---------------------------------------------------------------------------
@@ -134,6 +137,7 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
   onBairroHover,
   onDataLoaded,
   balaoPremium = false,
+  textosBalao,
 }, ref) => {
   const mapRef = useRef<HTMLDivElement>(null);
   // Um pino por LOCAL DE VOTAÇÃO (chave "zona-nºlocal"), no endereço real.
@@ -518,18 +522,18 @@ const MunicipioMapComponent = forwardRef<MunicipioMapHandle, MunicipioMapProps>(
           marker.bindTooltip(balaoArea({
             sobre: 'Local de votação', titulo: local.nome, subtitulo: `${local.endereco} · ${bairro.nome}`,
             votos: !comVoto ? null : real ? (local.votos ?? 0) : valorBairro,
-            rotuloValor: real ? 'votos aqui' : 'no bairro',
+            rotuloValor: real ? 'votos aqui' : (textosBalao?.valor ?? 'no bairro'),
             total: calcTotalVotos,
             posicao: real ? posicaoEntre(local.votos ?? 0, votosLocais) : undefined,
             quantas: votosLocais.length, area: 'locais',
-            rotuloTotal: real ? 'dos votos na cidade'
-              : fonte === 'estimativa' ? 'da cidade (estimativa: votos da zona repartidos pelas seções)' : 'dos votos na cidade',
+            rotuloTotal: textosBalao?.total ?? (real ? 'dos votos na cidade'
+              : fonte === 'estimativa' ? 'da cidade (estimativa: votos da zona repartidos pelas seções)' : 'dos votos na cidade'),
             etiquetas: [
               `Zona ${local.zona}`,
               ...(local.secoes ? [`${local.secoes} seções`] : []),
               ...(real ? [`Bairro: ${valorBairro.toLocaleString('pt-BR')} votos`] : []),
             ],
-            dica: 'Clique para ver o bairro',
+            dica: textosBalao?.dica !== undefined ? textosBalao.dica : 'Clique para ver o bairro',
             semDados: 'Sem votos neste local',
           }), { permanent: false, direction: 'top', className: 'bairro-tooltip', interactive: false, opacity: 1 });
           prenderBalaoNoMapa(map, marker);

@@ -106,6 +106,17 @@ export function prenderBalaoNoMapa(map: any, layer: any) {
   layer.on('tooltipopen mousemove', ajustar);
 }
 
+/**
+ * Textos do balão quando o valor não é "votos" — no Projeto de Campanha, a
+ * aba Projeção mostra a meta do cenário. `dica: null` tira a dica de clique.
+ */
+export interface TextosBalao { valor?: string; total?: string; dica?: string | null }
+
+/** A dica dos textos (null = sem dica) ou a padrão do mapa. */
+export function dicaDoBalao(t: TextosBalao | undefined, padrao: string | null): string | null {
+  return t && t.dica !== undefined ? t.dica : padrao;
+}
+
 const COR_RESULTADO = '#2563eb';
 const fmtBalao = (n: number) => n.toLocaleString('pt-BR');
 const SETA_CLIQUE = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.1 12 6"/><path d="m5.1 8-2.9-.8"/><path d="m6 12-1.9 2"/><path d="M7.2 2.2 8 5.1"/><path d="M9.04 12.17a.5.5 0 0 1 .63-.63l11 4a.5.5 0 0 1-.06.96l-4.2 1.1a1 1 0 0 0-.72.71l-1.1 4.21a.5.5 0 0 1-.96.06z"/></svg>';

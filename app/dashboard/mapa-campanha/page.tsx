@@ -1897,6 +1897,15 @@ export default function MapaCampanhaPage() {
       .reduce((acc, m) => acc + getMetaAtiva(m), 0);
   };
 
+  // Textos do balão novo dos mapas: no Histórico são votos; na Projeção, o
+  // valor de cada área é a meta do cenário (ou o histórico, onde não há meta).
+  const textosBalao = useMemo(() => (activeTab === 'historico'
+    ? { dica: 'Clique para selecionar' }
+    : { valor: 'no cenário', total: 'do total do cenário', dica: 'Clique para selecionar' }), [activeTab]);
+  const textosBalaoEstado = useMemo(() => (activeTab === 'historico'
+    ? { dica: 'Clique para abrir a cidade' }
+    : { valor: 'no cenário', total: 'do total do cenário no estado', dica: 'Clique para abrir a cidade' }), [activeTab]);
+
   // Memoizados para evitar que o StateMap reinicialize o mapa a cada render
   const highlightedMunicipios = useMemo(() => {
     if (!projecao) return {};
@@ -3724,6 +3733,7 @@ export default function MapaCampanhaPage() {
                   {visualizacaoMapa === 'bairro' && municipioVereador && uf === 'SP' && normMunKey(municipioVereador) === 'SAO PAULO' ? (
                     // SP capital municipal (prefeito/vereador) — polígonos de distritos
                     <SpDistritosMap
+                      balaoPremium textosBalao={textosBalao}
                       votesData={spDistritosVotesDisplay}
                       selectedDistrito={selectedSpDistrito}
                       onDistritoClick={handleSpDistritoClick}
@@ -3732,6 +3742,7 @@ export default function MapaCampanhaPage() {
                   ) : visualizacaoMapa === 'bairro' && municipioVereador && uf === 'RJ' && normMunKey(municipioVereador) === 'RIO DE JANEIRO' ? (
                     // RJ capital municipal (prefeito/vereador) — polígonos de bairros
                     <RjBairrosMap
+                      balaoPremium textosBalao={textosBalao}
                       votesData={rjBairrosVotesDisplay}
                       selectedBairro={selectedRjBairro}
                       onBairroClick={handleRjBairroClick}
@@ -3740,6 +3751,7 @@ export default function MapaCampanhaPage() {
                   ) : visualizacaoMapa === 'bairro' && municipioVereador && uf === 'CE' && normMunKey(municipioVereador) === 'FORTALEZA' ? (
                     // CE capital municipal (prefeito/vereador) — polígonos de bairros
                     <CeBairrosMap
+                      balaoPremium textosBalao={textosBalao}
                       votesData={ceBairrosVotesDisplay}
                       selectedBairro={selectedCeBairro}
                       onBairroClick={handleCeBairroClick}
@@ -3751,6 +3763,7 @@ export default function MapaCampanhaPage() {
                     // Para anos futuros (ex: 2026) o candidatoId do estado anterior causaria 400
                     // na API de bairros (validação impede ano inválido + candidato).
                     <MunicipioMap
+                      balaoPremium textosBalao={textosBalao}
                       municipio={municipioVereador}
                       uf={uf}
                       candidatoId={['2018','2020','2022','2024','2026'].includes(ano) ? electoralData?.candidatoId : undefined}
@@ -3764,6 +3777,7 @@ export default function MapaCampanhaPage() {
                     />
                   ) : uf === 'SP' && spVisualizacao === 'distritos' ? (
                     <SpDistritosMap
+                      balaoPremium textosBalao={textosBalao}
                       votesData={spDistritosVotesDisplay}
                       selectedDistrito={selectedSpDistrito}
                       onDistritoClick={handleSpDistritoClick}
@@ -3771,6 +3785,7 @@ export default function MapaCampanhaPage() {
                     />
                   ) : uf === 'DF' && dfVisualizacao === 'regioes' ? (
                     <DfRegioesMap
+                      balaoPremium textosBalao={textosBalao}
                       votesData={dfRegioesVotesDisplay}
                       selectedRegiao={selectedDfRegiao}
                       onRegiaoClick={handleDfRegiaoClick}
@@ -3796,6 +3811,7 @@ export default function MapaCampanhaPage() {
                     </div>
                   ) : uf === 'RJ' && rjVisualizacao === 'bairros' ? (
                     <RjBairrosMap
+                      balaoPremium textosBalao={textosBalao}
                       votesData={rjBairrosVotesDisplay}
                       selectedBairro={selectedRjBairro}
                       onBairroClick={handleRjBairroClick}
@@ -3803,6 +3819,7 @@ export default function MapaCampanhaPage() {
                     />
                   ) : uf === 'CE' && ceVisualizacao === 'bairros' ? (
                     <CeBairrosMap
+                      balaoPremium textosBalao={textosBalao}
                       votesData={ceBairrosVotesDisplay}
                       selectedBairro={selectedCeBairro}
                       onBairroClick={handleCeBairroClick}
@@ -3810,6 +3827,7 @@ export default function MapaCampanhaPage() {
                     />
                   ) : uf === 'MG' && mgVisualizacao === 'bairros' && mgBairrosMunicipio ? (
                     <MgBairrosMap
+                      balaoPremium textosBalao={textosBalao}
                       municipio={mgBairrosMunicipio}
                       votesData={mgBairrosVotesDisplay}
                       selectedBairro={selectedMgBairro}
@@ -3824,6 +3842,7 @@ export default function MapaCampanhaPage() {
                   ) : visualizacaoMapa === 'bairro' && genPoligonosMunicipio && genPoligonosUf ? (
                     // Municípios genéricos com polígonos IBGE (exceto SP/RJ/CE/MG)
                     <BairrosPoligonosMap
+                      balaoPremium textosBalao={textosBalao}
                       municipio={genPoligonosMunicipio}
                       uf={genPoligonosUf}
                       candidatoId={['2018','2020','2022','2024','2026'].includes(ano) ? electoralData?.candidatoId : undefined}
@@ -3841,6 +3860,7 @@ export default function MapaCampanhaPage() {
                   ) : (
                     // Vista de Municípios (padrão)
                     <StateMap
+                      balaoPremium textosBalao={textosBalaoEstado}
                       uf={uf}
                       stateName={ESTADOS_BRASIL.find(e => e.sigla === uf)?.nome || uf}
                       votesDataByName={highlightedMunicipios}

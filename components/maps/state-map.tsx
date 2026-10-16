@@ -5,6 +5,7 @@ import { Layers, Eye, EyeOff, Loader2, MapPin, Info } from 'lucide-react';
 import { useMapCleanup, throttle } from '@/hooks/use-map-cleanup';
 import { camadaBase } from '@/lib/maps/basemap';
 import { balaoArea, posicaoEntre, prenderBalaoNoMapa } from '@/lib/maps/balao';
+import { dicaDoBalao, type TextosBalao } from '@/lib/maps/balao';
 import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
 
 interface StateMapProps {
@@ -40,6 +41,8 @@ interface StateMapProps {
    * frente, a escala linear deixava quase todo o estado no tom mais claro.
    */
   mapaDeCalor?: boolean;
+  /** Textos do balão novo quando o valor não é "votos" (ex.: meta do cenário). */
+  textosBalao?: TextosBalao;
 }
 
 const UF_CODES: Record<string, string> = {
@@ -60,7 +63,10 @@ function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
 
 type SubdivisaoTipo = 'bairros' | 'bairrosTSE' | 'setores' | null;
 
-function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunicipioClick, filteredMunicipios, highlightColor, disableSubdivisao, highlightMunicipioNome, valueLabel = 'votos', darkMode = false, choropleth, balaoPremium = false, mapaDeCalor = false }: StateMapProps) {
+function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunicipioClick, filteredMunicipios, highlightColor, disableSubdivisao, highlightMunicipioNome, valueLabel = 'votos', darkMode = false, choropleth, balaoPremium = false, mapaDeCalor = false, textosBalao }: StateMapProps) {
+  // Lido no momento do balão: trocar de aba (Histórico/Projeção) não recria o mapa.
+  const textosBalaoRef = useRef(textosBalao);
+  textosBalaoRef.current = textosBalao;
   const showChoropleth = choropleth ?? darkMode;
   const [geoData, setGeoData] = useState<any>(null);
   // Contorno do Brasil (outros estados) — usado em darkMode pra deixar claro
@@ -962,8 +968,9 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
               () => balaoArea({
                 sobre: 'Cidade', titulo: nome, votos,
                 total: totalVotos, posicao: votos ? posicaoEntre(votos, todosVotos) : undefined,
-                quantas: todosVotos.length, area: 'cidades', rotuloTotal: 'dos votos no estado',
-                dica: disableSubdivisaoRef.current ? null : 'Clique para ver bairros e locais de votação',
+                quantas: todosVotos.length, area: 'cidades', rotuloTotal: textosBalaoRef.current?.total ?? 'dos votos no estado',
+                rotuloValor: textosBalaoRef.current?.valor,
+                dica: dicaDoBalao(textosBalaoRef.current, disableSubdivisaoRef.current ? null : 'Clique para ver bairros e locais de votação'),
               }),
               { sticky: true, direction: 'top', opacity: 1, className: 'bairro-tooltip' },
             );

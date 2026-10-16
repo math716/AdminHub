@@ -9,6 +9,7 @@ import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
 import { htmlDaBolha, tamanhoDaBolha } from '@/lib/maps/bolha-votos';
 
 import { ESTILO_CASCA_BALAO, balaoArea, posicaoEntre, posicionarBalaoLivre } from '@/lib/maps/balao';
+import { dicaDoBalao, type TextosBalao } from '@/lib/maps/balao';
 interface RjBairrosMapProps {
   /** Pedido da busca de bairro: aproxima no polígono com esse nome. */
   focoBairro?: PedidoFocoBairro | null;
@@ -20,6 +21,8 @@ interface RjBairrosMapProps {
   height?: string;
   /** Balão novo do Mapa Eleitoral (lib/maps/balao). */
   balaoPremium?: boolean;
+  /** Textos do balão novo quando o valor não é "votos" (ex.: meta do cenário). */
+  textosBalao?: TextosBalao;
 }
 
 // Normalizes removing accents, uppercase, strips non-alphanumeric (handles parentheses in bairro names)
@@ -39,7 +42,10 @@ function fmtVotos(v: number): string {
   return String(v);
 }
 
-function RjBairrosMapComponent({ votesData, selectedBairro, onBairroClick, height = '100%', focoBairro, onNomes, balaoPremium = false }: RjBairrosMapProps) {
+function RjBairrosMapComponent({ votesData, selectedBairro, onBairroClick, height = '100%', focoBairro, onNomes, balaoPremium = false, textosBalao }: RjBairrosMapProps) {
+  // Lido no momento do balão: trocar de aba (Histórico/Projeção) não recria o mapa.
+  const textosBalaoRef = useRef(textosBalao);
+  textosBalaoRef.current = textosBalao;
   const mapRef = useRef<HTMLDivElement>(null);
   const isInitializingRef = useRef(false);
   const geoLayerRef = useRef<any>(null);
@@ -232,8 +238,9 @@ function RjBairrosMapComponent({ votesData, selectedBairro, onBairroClick, heigh
               return balaoArea({
                 sobre: 'Bairro', titulo: nome, votos: v,
                 total: todos.reduce((a, x) => a + x, 0), posicao: v ? posicaoEntre(v, todos) : undefined,
-                quantas: todos.length, area: 'bairros', rotuloTotal: 'dos votos na cidade',
-                dica: 'Clique para ver as zonas e os locais de votação',
+                quantas: todos.length, area: 'bairros', rotuloTotal: textosBalaoRef.current?.total ?? 'dos votos na cidade',
+                rotuloValor: textosBalaoRef.current?.valor,
+                dica: dicaDoBalao(textosBalaoRef.current, 'Clique para ver as zonas e os locais de votação'),
               });
             })() : [
               `<strong style="color:var(--acento-azul);font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,

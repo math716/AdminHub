@@ -9,6 +9,7 @@ import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
 import { htmlDaBolha, tamanhoDaBolha } from '@/lib/maps/bolha-votos';
 
 import { ESTILO_CASCA_BALAO, balaoArea, posicaoEntre, posicionarBalaoLivre } from '@/lib/maps/balao';
+import { dicaDoBalao, type TextosBalao } from '@/lib/maps/balao';
 interface BairrosPoligonosMapProps {
   /** Pedido da busca de bairro: aproxima no polígono com esse nome. */
   focoBairro?: PedidoFocoBairro | null;
@@ -30,6 +31,8 @@ interface BairrosPoligonosMapProps {
   height?: string;
   /** Balão novo do Mapa Eleitoral (lib/maps/balao). */
   balaoPremium?: boolean;
+  /** Textos do balão novo quando o valor não é "votos" (ex.: meta do cenário). */
+  textosBalao?: TextosBalao;
 }
 
 function normalizeNome(nome: string): string {
@@ -111,7 +114,11 @@ function BairrosPoligonosMapComponent({
   focoBairro,
   onNomes,
   balaoPremium = false,
+  textosBalao,
 }: BairrosPoligonosMapProps) {
+  // Lido no momento do balão: trocar de aba (Histórico/Projeção) não recria o mapa.
+  const textosBalaoRef = useRef(textosBalao);
+  textosBalaoRef.current = textosBalao;
   const mapRef = useRef<HTMLDivElement>(null);
   const isInitializingRef = useRef(false);
   const geoLayerRef = useRef<any>(null);
@@ -330,8 +337,9 @@ function BairrosPoligonosMapComponent({
               return balaoArea({
                 sobre: 'Bairro', titulo: nome, votos: votos,
                 total: todos.reduce((a, x) => a + x, 0), posicao: votos ? posicaoEntre(votos, todos) : undefined,
-                quantas: todos.length, area: 'bairros', rotuloTotal: 'dos votos na cidade',
-                dica: 'Clique para ver as zonas e os locais de votação',
+                quantas: todos.length, area: 'bairros', rotuloTotal: textosBalaoRef.current?.total ?? 'dos votos na cidade',
+                rotuloValor: textosBalaoRef.current?.valor,
+                dica: dicaDoBalao(textosBalaoRef.current, 'Clique para ver as zonas e os locais de votação'),
               });
             })() : [
               `<strong style="color:var(--acento-azul);font-size:14px;display:block;margin-bottom:4px;">${nome}</strong>`,
