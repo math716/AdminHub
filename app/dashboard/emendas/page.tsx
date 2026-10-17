@@ -7,6 +7,8 @@ import { useTheme } from 'next-themes';
 import dynamic from 'next/dynamic';
 import {
   Landmark,
+  CheckCircle2,
+  MapPinned,
   Loader2,
   Users,
   Vote,
@@ -1348,7 +1350,7 @@ export default function EmendasPage() {
         <div className="col-span-12 md:col-span-7">
           <div
             className="relative rounded-2xl overflow-hidden h-[560px]"
-            style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
           >
             {/* Header do mapa */}
             <div className="absolute top-3 left-3 right-3 z-[400] flex items-center justify-between pointer-events-none">
@@ -1397,7 +1399,7 @@ export default function EmendasPage() {
             {loadingResumo && (
               <div
                 className="absolute inset-0 z-[500] flex items-center justify-center"
-                style={{ background: 'rgba(4,17,31,0.65)', backdropFilter: 'blur(3px)' }}
+                style={{ background: 'var(--modal-backdrop)', backdropFilter: 'blur(3px)' }}
               >
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="h-10 w-10 animate-spin" style={{ color: 'var(--acento-azul)' }} />
@@ -1458,7 +1460,7 @@ export default function EmendasPage() {
                 className="absolute bottom-3 right-3 z-[400] rounded-xl px-3 py-2.5 pointer-events-none"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-raised)' }}
               >
-                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-1.5">Valor de Emendas (R$)</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)] mb-1.5">Valor de Emendas (R$)</p>
                 <LegendaCores />
               </div>
             )}
@@ -1595,6 +1597,69 @@ export default function EmendasPage() {
 // Componentes internos
 // ===========================================================================
 
+// O Portal grava a bancada como "BANCADA DE SAO PAULO", sem acento, e o
+// cadastro dela fica como deputado federal. Na tela: "Bancada de São Paulo",
+// cargo "Bancada estadual". Demais nomes passam iguais.
+const UF_COM_ACENTO: Record<string, string> = {
+  'SAO PAULO': 'de São Paulo', 'PARA': 'do Pará', 'PARAIBA': 'da Paraíba', 'PARANA': 'do Paraná', 'PIAUI': 'do Piauí',
+  'MARANHAO': 'do Maranhão', 'CEARA': 'do Ceará', 'AMAPA': 'do Amapá', 'GOIAS': 'de Goiás', 'RONDONIA': 'de Rondônia',
+  'ESPIRITO SANTO': 'do Espírito Santo', 'AMAZONAS': 'do Amazonas', 'ACRE': 'do Acre', 'ALAGOAS': 'de Alagoas', 'BAHIA': 'da Bahia',
+  'DISTRITO FEDERAL': 'do Distrito Federal', 'MATO GROSSO': 'de Mato Grosso', 'MATO GROSSO DO SUL': 'de Mato Grosso do Sul',
+  'MINAS GERAIS': 'de Minas Gerais', 'PERNAMBUCO': 'de Pernambuco', 'RIO DE JANEIRO': 'do Rio de Janeiro',
+  'RIO GRANDE DO NORTE': 'do Rio Grande do Norte', 'RIO GRANDE DO SUL': 'do Rio Grande do Sul', 'RORAIMA': 'de Roraima',
+  'SANTA CATARINA': 'de Santa Catarina', 'SERGIPE': 'de Sergipe', 'TOCANTINS': 'do Tocantins',
+};
+const ehBancada = (nome: string) => /^bancada\b/i.test(nome.trim());
+function nomeExibicao(nome: string): string {
+  if (!ehBancada(nome)) return nome;
+  const resto = nome.trim().replace(/^bancada\s+(d[aeo]s?\s+)?/i, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  return `Bancada ${UF_COM_ACENTO[resto] ?? nome.trim().replace(/^bancada\s+/i, '')}`;
+}
+function cargoExibicao(nome: string, cargo: string): string {
+  if (ehBancada(nome)) return 'Bancada estadual';
+  return CARGO_LABELS[cargo as ParlamentarCargo] ?? cargo;
+}
+const corCargoEmenda = (nome: string, cargo: string) =>
+  ehBancada(nome) ? '#7c3aed' : cargo === 'SENADOR' ? '#059669' : cargo === 'DEPUTADO_ESTADUAL' ? '#0891b2' : '#2563eb';
+function iniciaisNome(nome: string) {
+  const p = nome.trim().split(/\s+/).filter(x => !/^(d[aeo]s?|e)$/i.test(x));
+  if (p.length === 0) return '?';
+  return (p.length === 1 ? p[0].slice(0, 2) : p[0][0] + p[p.length - 1][0]).toUpperCase();
+}
+
+/** Linha de ranking: posição, (avatar), nome, valor e barra proporcional. */
+function LinhaRanking({ posicao, titulo, subtitulo, valor, fracao, cor, avatar, onClick }: {
+  posicao: number;
+  titulo: string;
+  subtitulo?: string;
+  valor: string;
+  fracao: number;
+  cor: string;
+  avatar?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button onClick={onClick} className="w-full text-left group rounded-xl px-2 py-1.5 -mx-2 transition-colors hover:bg-[var(--tint-06)]">
+      <div className="flex items-center gap-2">
+        {avatar ? (
+          <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white"
+            style={{ background: `linear-gradient(135deg, ${cor}, ${cor}bb)` }}>{avatar}</span>
+        ) : (
+          <span className="w-5 text-[11px] font-bold tabular-nums flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>{posicao}</span>
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block text-xs font-medium truncate group-hover:text-[color:var(--brand-cobalt-text)] transition-colors" style={{ color: 'var(--text-primary)' }} title={titulo}>{titulo}</span>
+          {subtitulo && <span className="block text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>{subtitulo}</span>}
+        </span>
+        <span className="text-xs font-bold tabular-nums flex-shrink-0" style={{ color: 'var(--text-primary)' }}>{valor}</span>
+      </div>
+      <div className="mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: 'var(--tint-06)', marginLeft: avatar ? 36 : 28 }}>
+        <div className="h-full rounded-full" style={{ width: `${Math.max(3, fracao * 100)}%`, background: cor }} />
+      </div>
+    </button>
+  );
+}
+
 function ResumoGeralCard({
   view,
   ano,
@@ -1655,83 +1720,117 @@ function ResumoGeralCard({
     ? `${formatBRLCompact(resumo!.totalEstadual)} adicional sem município`
     : `em ${ano}`;
 
+  const semMunicipio = view === 'estado' && !municipio;
+  const municipiosBeneficiados = Object.keys(resumo?.valorPorMunicipio ?? {}).length;
+  const pctPago = (resumo?.totalEmpenhado ?? 0) > 0 ? (resumo!.totalPago / resumo!.totalEmpenhado) : 0;
+
   return (
     <div
       className="rounded-2xl p-4"
-      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-3">Resumo Geral</p>
-      <div className="space-y-3">
-        <ResumoStat
-          icon={<Users className="w-4 h-4" />}
-          iconBg="rgba(74,158,222,0.15)"
-          iconColor="var(--acento-azul)"
-          label="População Total"
-          value={
-            view === 'brasil'
-              ? '—'
-              : municipio
-                ? habitantes != null ? habitantes.toLocaleString('pt-BR') : '—'
-                : 'Selecione um município'
-          }
-          sub={view === 'estado' && municipio ? 'habitantes' : undefined}
-        />
-        <ResumoStat
-          icon={<Vote className="w-4 h-4" />}
-          iconBg="rgba(99,102,241,0.15)"
-          iconColor="#6366f1"
-          label="Eleitores"
-          value={
-            municipio
-              ? eleitores != null ? eleitores.toLocaleString('pt-BR') : '—'
-              : 'Selecione um município'
-          }
-          sub={municipio ? 'eleitores' : undefined}
-        />
-        <ResumoStat
-          icon={<Landmark className="w-4 h-4" />}
-          iconBg="rgba(16,185,129,0.15)"
-          iconColor="var(--success)"
-          label={totalLabel}
-          value={formatBRLCompact(totalValue)}
-          sub={totalSub}
-        />
-        <ResumoStat
-          icon={<Building2 className="w-4 h-4" />}
-          iconBg="rgba(245,158,11,0.15)"
-          iconColor="var(--warning)"
-          label="Teto MAC"
-          value={
-            tetoMac != null
-              ? formatBRLCompact(tetoMac)
-              : municipio
-                ? 'sem dados'
-                : 'Selecione um município'
-          }
-          sub={municipio && tetoMac != null ? 'Média e Alta Complexidade · anual' : undefined}
-        />
-        <ResumoStat
-          icon={<Building2 className="w-4 h-4" />}
-          iconBg="rgba(20,184,166,0.15)"
-          iconColor="#14b8a6"
-          label="Teto PAP"
-          value={
-            tetoPap != null
-              ? formatBRLCompact(tetoPap)
-              : municipio
-                ? 'sem dados'
-                : 'Selecione um município'
-          }
-          sub={municipio && tetoPap != null ? 'Atenção Primária · anual' : undefined}
-        />
-      </div>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)] mb-3">
+        {view === 'brasil' ? 'Resumo geral' : municipio ? `Resumo · ${municipio.nome}` : `Resumo · ${stateName}`}
+      </p>
+      {view === 'brasil' ? (
+        <p className="text-xs py-2" style={{ color: 'var(--text-tertiary)' }}>
+          Escolha um estado no mapa para ver quanto foi empenhado, pago e para quais cidades.
+        </p>
+      ) : semMunicipio && !parlamentar ? (
+        <div className="space-y-3">
+          <ResumoStat
+            icon={<Landmark className="w-4 h-4" />}
+            iconBg="rgba(37,99,235,0.14)"
+            iconColor="#2563eb"
+            label="Empenhado no estado"
+            value={formatBRLCompact(resumo?.totalEmpenhado ?? 0)}
+            sub={`${(resumo?.totalEmendas ?? 0).toLocaleString('pt-BR')} emendas em ${ano}`}
+          />
+          <ResumoStat
+            icon={<CheckCircle2 className="w-4 h-4" />}
+            iconBg="rgba(16,185,129,0.15)"
+            iconColor="var(--success)"
+            label="Pago"
+            value={formatBRLCompact(resumo?.totalPago ?? 0)}
+            sub={`${(pctPago * 100).toFixed(0)}% do empenhado`}
+            barra={{ fracao: pctPago, cor: '#10b981' }}
+          />
+          <ResumoStat
+            icon={<Building2 className="w-4 h-4" />}
+            iconBg="rgba(245,158,11,0.15)"
+            iconColor="var(--warning)"
+            label="Municipalizado"
+            value={formatBRLCompact(resumo?.totalMunicipalizado ?? 0)}
+            sub={(resumo?.totalEstadual ?? 0) > 0 ? `${formatBRLCompact(resumo!.totalEstadual)} sem município definido` : `em ${ano}`}
+          />
+          <ResumoStat
+            icon={<MapPinned className="w-4 h-4" />}
+            iconBg="rgba(99,102,241,0.15)"
+            iconColor="#6366f1"
+            label="Cidades beneficiadas"
+            value={municipiosBeneficiados.toLocaleString('pt-BR')}
+            sub="Escolha uma no mapa para ver população, eleitores e tetos"
+          />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {municipio && (
+            <>
+              <ResumoStat
+                icon={<Users className="w-4 h-4" />}
+                iconBg="rgba(74,158,222,0.15)"
+                iconColor="var(--acento-azul)"
+                label="População"
+                value={habitantes != null ? habitantes.toLocaleString('pt-BR') : '—'}
+                sub="habitantes"
+              />
+              <ResumoStat
+                icon={<Vote className="w-4 h-4" />}
+                iconBg="rgba(99,102,241,0.15)"
+                iconColor="#6366f1"
+                label="Eleitores"
+                value={eleitores != null ? eleitores.toLocaleString('pt-BR') : '—'}
+                sub="eleitores"
+              />
+            </>
+          )}
+          <ResumoStat
+            icon={<Landmark className="w-4 h-4" />}
+            iconBg="rgba(16,185,129,0.15)"
+            iconColor="var(--success)"
+            label={totalLabel}
+            value={formatBRLCompact(totalValue)}
+            sub={totalSub}
+          />
+          {municipio && (
+            <>
+              <ResumoStat
+                icon={<Building2 className="w-4 h-4" />}
+                iconBg="rgba(245,158,11,0.15)"
+                iconColor="var(--warning)"
+                label="Teto MAC"
+                value={tetoMac != null ? formatBRLCompact(tetoMac) : 'sem dados'}
+                sub={tetoMac != null ? 'Média e Alta Complexidade · anual' : undefined}
+              />
+              <ResumoStat
+                icon={<Building2 className="w-4 h-4" />}
+                iconBg="rgba(20,184,166,0.15)"
+                iconColor="#14b8a6"
+                label="Teto PAP"
+                value={tetoPap != null ? formatBRLCompact(tetoPap) : 'sem dados'}
+                sub={tetoPap != null ? 'Atenção Primária · anual' : undefined}
+              />
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 function ResumoStat({
-  icon, iconBg, iconColor, label, value, sub,
-}: { icon: React.ReactNode; iconBg: string; iconColor: string; label: string; value: string; sub?: string }) {
+  icon, iconBg, iconColor, label, value, sub, barra,
+}: { icon: React.ReactNode; iconBg: string; iconColor: string; label: string; value: string; sub?: string; barra?: { fracao: number; cor: string } }) {
   return (
     <div className="flex items-center gap-3">
       <div
@@ -1742,8 +1841,13 @@ function ResumoStat({
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[10px] uppercase tracking-wider text-slate-600 dark:text-slate-500 font-semibold">{label}</p>
-        <p className="text-[color:var(--text-primary)] font-bold text-base truncate">{value}</p>
-        {sub && <p className="text-[10px] text-slate-600 dark:text-slate-500">{sub}</p>}
+        <p className="text-[color:var(--text-primary)] font-bold text-base tabular-nums break-words">{value}</p>
+        {barra && (
+          <div className="h-1 rounded-full overflow-hidden my-1" style={{ background: 'var(--tint-06)' }}>
+            <div className="h-full rounded-full" style={{ width: `${Math.min(100, barra.fracao * 100)}%`, background: barra.cor }} />
+          </div>
+        )}
+        {sub && <p className="text-[10px] text-[color:var(--text-tertiary)]">{sub}</p>}
       </div>
     </div>
   );
@@ -1788,9 +1892,9 @@ function EmendasPorAreaCard({
   return (
     <div
       className="rounded-2xl p-4 h-full"
-      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-3">Emendas por Área</p>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)] mb-3">Emendas por Área</p>
       {view === 'brasil' || areas.length === 0 ? (
         <p className="text-xs text-slate-600 dark:text-slate-500 text-center py-6">
           {view === 'brasil' ? 'Selecione um estado no mapa' : 'Sem dados para o ano selecionado'}
@@ -1830,9 +1934,9 @@ function SelecionarEstadoCard() {
   return (
     <div
       className="rounded-2xl p-4"
-      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">Como usar</p>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)] mb-2">Como usar</p>
       <ol className="text-xs text-slate-700 dark:text-slate-300 space-y-2 list-decimal list-inside">
         <li>Clique em um estado no mapa</li>
         <li>Escolha um município (popup mostra habitantes, eleitores e tetos)</li>
@@ -1853,9 +1957,9 @@ function Top5ParlamentaresDoMunicipioCard({
   return (
     <div
       className="rounded-2xl p-4 h-full flex flex-col"
-      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-1 flex-shrink-0">Top 5 Parlamentares</p>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)] mb-1 flex-shrink-0">Top 5 Parlamentares</p>
       <p className="text-[10px] text-[color:var(--brand-cobalt-text)]/80 mb-2 truncate flex-shrink-0" title={municipioNome}>
         que mais enviaram para {municipioNome}
       </p>
@@ -1868,20 +1972,19 @@ function Top5ParlamentaresDoMunicipioCard({
         <p className="text-xs text-slate-600 dark:text-slate-500 text-center py-4">Sem dados disponíveis</p>
       )}
       {!loading && parlamentares.length > 0 && (
-        <ol className="flex-1 overflow-y-auto space-y-2 pr-0.5">
+        <ol className="flex-1 overflow-y-auto space-y-1 pr-0.5 px-2">
           {parlamentares.map((p, i) => (
             <li key={p.idPortal}>
-              <button
+              <LinhaRanking
+                posicao={i + 1}
+                avatar={iniciaisNome(nomeExibicao(p.nome))}
+                titulo={nomeExibicao(p.nome)}
+                subtitulo={`${cargoExibicao(p.nome, p.cargo)}${p.partido && !ehBancada(p.nome) ? ` · ${p.partido}` : ''}`}
+                valor={formatBRLCompact(p.total)}
+                fracao={p.total / Math.max(parlamentares[0]?.total ?? 1, 1)}
+                cor={corCargoEmenda(p.nome, p.cargo)}
                 onClick={() => onPick(p)}
-                className="w-full flex items-center gap-2 group hover:bg-[var(--tint-06)] -mx-2 px-2 py-1 rounded-lg transition-colors text-left"
-              >
-                <span className="text-xs font-bold text-slate-600 dark:text-slate-500 w-4">{i + 1}.</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-[color:var(--text-primary)] truncate group-hover:text-[color:var(--brand-cobalt-text)] transition-colors">{p.nome}</p>
-                  <p className="text-[10px] text-slate-600 dark:text-slate-500">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
-                </div>
-                <span className="text-xs font-semibold text-[color:var(--brand-cobalt-text)] flex-shrink-0">{formatBRLCompact(p.total)}</span>
-              </button>
+              />
             </li>
           ))}
         </ol>
@@ -1900,22 +2003,22 @@ function Top5ParlamentaresEstadoCard({
   return (
     <div
       className="rounded-2xl p-4 h-full flex flex-col"
-      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-3 flex-shrink-0">Top 5 Parlamentares</p>
-      <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5">
-        {topResumo.slice(0, 5).map((p) => (
-          <button
+      <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)] mb-3 flex-shrink-0">Top 5 Parlamentares</p>
+      <div className="flex-1 overflow-y-auto space-y-1 pr-0.5 px-2">
+        {topResumo.slice(0, 5).map((p, i) => (
+          <LinhaRanking
             key={p.idPortal}
+            posicao={i + 1}
+            avatar={iniciaisNome(nomeExibicao(p.nome))}
+            titulo={nomeExibicao(p.nome)}
+            subtitulo={`${cargoExibicao(p.nome, p.cargo)}${p.partido && !ehBancada(p.nome) ? ` · ${p.partido}` : ''}`}
+            valor={formatBRLCompact(p.total)}
+            fracao={p.total / Math.max(topResumo[0]?.total ?? 1, 1)}
+            cor={corCargoEmenda(p.nome, p.cargo)}
             onClick={() => onPick(p)}
-            className="w-full flex items-center gap-2 group text-left hover:bg-[var(--tint-06)] -mx-1 px-1 py-1 rounded-lg transition-colors"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] text-[color:var(--text-primary)] truncate group-hover:text-[color:var(--brand-cobalt-text)]">{p.nome}</p>
-              <p className="text-[10px] text-slate-600 dark:text-slate-500">{CARGO_LABELS[p.cargo as ParlamentarCargo] ?? p.cargo}</p>
-            </div>
-            <span className="text-[11px] font-semibold text-[color:var(--brand-cobalt-text)] flex-shrink-0">{formatBRLCompact(p.total)}</span>
-          </button>
+          />
         ))}
       </div>
     </div>
@@ -1944,9 +2047,9 @@ function Top5MunicipiosCard({
   return (
     <div
       className="rounded-2xl p-4 h-full flex flex-col"
-      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-1 flex-shrink-0">
+      <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)] mb-1 flex-shrink-0">
         Top 5 Municípios
       </p>
       {isParlamentar && (
@@ -1969,17 +2072,17 @@ function Top5MunicipiosCard({
         </p>
       )}
       {!loading && top.length > 0 && (
-        <ol className="flex-1 overflow-y-auto space-y-2 pr-0.5">
+        <ol className="flex-1 overflow-y-auto space-y-1 pr-0.5 px-2">
           {top.map((m, i) => (
             <li key={m.codigoIbge}>
-              <button
+              <LinhaRanking
+                posicao={i + 1}
+                titulo={m.nome}
+                valor={formatBRLCompact(m.total)}
+                fracao={m.total / Math.max(top[0]?.total ?? 1, 1)}
+                cor="#2563eb"
                 onClick={() => onClick(m)}
-                className="w-full flex items-center gap-2 group hover:bg-[var(--tint-06)] -mx-2 px-2 py-1 rounded-lg transition-colors text-left"
-              >
-                <span className="text-xs font-bold text-slate-600 dark:text-slate-500 w-4">{i + 1}.</span>
-                <span className="text-xs text-[color:var(--text-primary)] truncate flex-1 group-hover:text-[color:var(--brand-cobalt-text)] transition-colors">{m.nome}</span>
-                <span className="text-xs font-semibold text-[color:var(--brand-cobalt-text)]">{formatBRLCompact(m.total)}</span>
-              </button>
+              />
             </li>
           ))}
         </ol>
@@ -2004,9 +2107,9 @@ function ParlamentarSearchCard({
   return (
     <div
       className="rounded-2xl p-4"
-      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
     >
-      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">Emendas por Parlamentar</p>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)] mb-2">Emendas por Parlamentar</p>
 
       <div className="relative">
         <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-500" />
@@ -2226,7 +2329,7 @@ function ParlamentarDashboard({
   return (
     <div
       className="rounded-2xl p-5"
-      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
     >
       <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
         <div>
@@ -2299,7 +2402,7 @@ function ParlamentarDashboard({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Donut: Emendas por Área */}
           <div className="rounded-xl p-4" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-04)' }}>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">Distribuição por área</p>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)] mb-2">Distribuição por área</p>
             {porArea.length === 0 ? (
               <p className="text-xs text-slate-600 dark:text-slate-500 text-center py-10">Sem emendas em {ano}</p>
             ) : (
@@ -2318,7 +2421,7 @@ function ParlamentarDashboard({
 
           {/* Linha: Valor por Ano */}
           <div className="rounded-xl p-4" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-04)' }}>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">Valor por ano (histórico)</p>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)] mb-2">Valor por ano (histórico)</p>
             {porAno.length === 0 ? (
               <p className="text-xs text-slate-600 dark:text-slate-500 text-center py-10">Sem histórico disponível</p>
             ) : (
@@ -2354,7 +2457,7 @@ function ParlamentarDashboard({
 
           {/* Barras: Comparativo de todas as áreas (do ano selecionado) */}
           <div className="rounded-xl p-4" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-04)' }}>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400 mb-2">Comparativo de áreas em {ano}</p>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)] mb-2">Comparativo de áreas em {ano}</p>
             {porArea.length === 0 ? (
               <p className="text-xs text-slate-600 dark:text-slate-500 text-center py-10">Sem dados</p>
             ) : (
@@ -2607,7 +2710,7 @@ function EmendasDetalhadasCard({
   return (
     <div
       className="mt-4 rounded-2xl overflow-hidden"
-      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
     >
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <div
@@ -3208,7 +3311,7 @@ function MunicipiosBeneficiadosCard({
       style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-04)' }}
     >
       <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
-        <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400">
+        <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)]">
           Municípios beneficiados em {ano}
         </p>
         {porMunicipio.length > 0 && (
@@ -3323,7 +3426,7 @@ function MunicipiosPixCard({
           >
             Pix
           </span>
-          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400">
+          <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)]">
             Municípios que receberam Pix em {ano}
           </p>
         </div>
@@ -3418,10 +3521,10 @@ function ComparativoAreasCard({
   return (
     <div
       className="rounded-2xl p-5"
-      style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
     >
       <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
-        <p className="text-[10px] uppercase tracking-widest font-bold text-slate-600 dark:text-slate-400">
+        <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text-tertiary)]">
           Comparativo por Área
         </p>
         <p className="text-[10px] text-slate-600 dark:text-slate-500">
@@ -3526,10 +3629,10 @@ function DestaqueDoAnoCard({
             <div className="flex flex-col leading-tight">
               <span className="text-[10px] uppercase tracking-widest font-semibold text-[color:var(--brand-cobalt-text)]/60">Parlamentar</span>
               <div className="flex items-center gap-1.5">
-                <span className="text-[color:var(--text-primary)] font-bold text-[13px] truncate max-w-[120px] md:max-w-[200px] leading-tight">{topParlamentar.nome}</span>
+                <span className="text-[color:var(--text-primary)] font-bold text-[13px] truncate max-w-[120px] md:max-w-[200px] leading-tight" title={nomeExibicao(topParlamentar.nome)}>{nomeExibicao(topParlamentar.nome)}</span>
                 <span className="text-[10px] text-slate-600 dark:text-slate-500 whitespace-nowrap hidden sm:block">
-                  {CARGO_LABELS[topParlamentar.cargo as ParlamentarCargo] ?? topParlamentar.cargo}
-                  {topParlamentar.partido ? ` · ${topParlamentar.partido}` : ''}
+                  {cargoExibicao(topParlamentar.nome, topParlamentar.cargo)}
+                  {topParlamentar.partido && !ehBancada(topParlamentar.nome) ? ` · ${topParlamentar.partido}` : ''}
                 </span>
               </div>
             </div>
