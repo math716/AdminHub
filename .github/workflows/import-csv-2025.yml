@@ -99,7 +99,8 @@ jobs:
             --file data/portal-csv-imports/2025_EmendasParlamentaresPorDocumento.zip \
             --batch $BATCH \
             --concurrency $CONC \
-            --limit 190000
+            --limit 190000 \
+            --modo lote
 
       - name: Resumo parte 1
         if: always()
@@ -181,7 +182,8 @@ jobs:
             --file data/portal-csv-imports/2025_EmendasParlamentaresPorDocumento.zip \
             --batch $BATCH \
             --concurrency $CONC \
-            --skip 190000
+            --skip 190000 \
+            --modo lote
 
       - name: Reclassificar senadores
         env:

@@ -23,9 +23,9 @@ on:
         default: '80'
         type: string
       modo:
-        description: 'linha = um documento por vez (atual) | lote = 500 documentos por envio'
+        description: 'lote = 500 documentos por envio (padrão) | linha = um por vez (reserva)'
         required: false
-        default: 'linha'
+        default: 'lote'
         type: choice
         options: ['linha', 'lote']
 
@@ -126,7 +126,7 @@ jobs:
         run: |
           BATCH="${{ github.event.inputs.batch || '500' }}"
           CONC="${{ github.event.inputs.concurrency || '150' }}"
-          MODO="${{ github.event.inputs.modo || 'linha' }}"
+          MODO="${{ github.event.inputs.modo || 'lote' }}"
           IFS=',' read -ra ANOS_ARRAY <<< "$ANOS"
           for ANO in "${ANOS_ARRAY[@]}"; do
             ANO=$(echo "$ANO" | tr -d ' ')
@@ -136,7 +136,8 @@ jobs:
               npx tsx scripts/import-portal-csv.mts \
                 --file "$ZIP" \
                 --batch $BATCH \
-                --concurrency $CONC                 --modo $MODO
+                --concurrency $CONC \
+                --modo $MODO
             else
               echo "ZIP nao encontrado para $ANO, pulando."
             fi
