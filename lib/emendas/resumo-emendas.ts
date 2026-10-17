@@ -226,9 +226,10 @@ export const SQL_CRIAR_RESUMO = [
   )`,
   // Deixa instantânea a pergunta "qual a última alteração nas emendas?".
   `CREATE INDEX IF NOT EXISTS "emendas_parlamentares_updatedAt_idx" ON "emendas_parlamentares"("updatedAt")`,
-  // E nos documentos (o valor por município sai deles). CONCURRENTLY: não
-  // trava a tabela; normalmente já existe (migration 20261017000000).
-  `CREATE INDEX CONCURRENTLY IF NOT EXISTS "emendas_documentos_updatedAt_idx" ON "emendas_documentos"("updatedAt")`,
+  // O índice de "updatedAt" dos documentos NÃO é criado aqui: é a migration
+  // 20261017000000, rodada à mão. CONCURRENTLY não roda pela conexão do
+  // pooler (vira transação — erro 25001), e sem CONCURRENTLY a criação
+  // travaria a tabela de documentos durante a importação.
 ];
 
 export interface Impressao {
