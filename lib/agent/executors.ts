@@ -8,6 +8,7 @@ import { buscarCandidatoNacional, inferirUfPorNomes, rankingNacional } from '@/l
 import { resolverDeputados } from '@/lib/agent/report/df-territorial';
 import { votosNoBairro } from '@/lib/agent/votos-bairro';
 import { SQL_DATA_COMEMORATIVA } from '@/lib/agenda-datas';
+import { chaveMunicipio } from '@/lib/municipio-nome';
 import type { Session } from 'next-auth';
 import { PERMISSIONS, hasPermission, type Permission } from '@/lib/permissions';
 
@@ -225,7 +226,7 @@ export async function executarBuscarEmendas(
   // recorte de SP que começa em 2021.
   const whereSemAno = whereEmendas(args, new Set([...filtrosIgnorados, 'ano']));
 
-  const [resumo, porAreaBruto, porParlamentarBruto, porMunicipioBruto, porUfBruto, anosBruto] = await Promise.all([
+  const [resumo, porAreaBruto, porParlamentarBruto, porMunicipioBruto, porUfBruto, anosBruto, docsPorMunicipio, docsDaLista] = await Promise.all([
     prisma.emendaParlamentar.aggregate({
       where: whereFinal,
       _count: { _all: true },
@@ -247,12 +248,12 @@ export async function executarBuscarEmendas(
       _count: { _all: true },
       _sum: { valorEmpenhado: true, valorPago: true },
     }),
-    // Só para o mapa de calor do PDF. NÃO vai para o modelo — a rota do chat
-    // remove este campo antes de mandar o resultado (um estado tem centenas de
-    // municípios, e isso consumiria o turno inteiro sem a Gabi precisar deles).
+    // Valor por município das emendas SEM documentos (as estaduais: lá cada
+    // emenda é de um município só, e o cadastro diz qual). As que têm
+    // documentos são somadas por eles logo abaixo.
     prisma.emendaParlamentar.groupBy({
       by: ['municipioNome'],
-      where: whereFinal,
+      where: { AND: [whereFinal, { documentos: { none: {} } }] },
       _sum: { valorEmpenhado: true, valorPago: true },
     }),
     // Também só para o mapa. Diz em QUANTOS estados o recorte se espalha —
@@ -268,6 +269,22 @@ export async function executarBuscarEmendas(
       where: whereSemAno,
       _count: { _all: true },
       orderBy: { ano: 'asc' },
+    }),
+    // Uma emenda federal costuma ser DIVIDIDA entre vários municípios (em 2025,
+    // metade delas). O cadastro da emenda guarda um município só, e somar por
+    // ele punha o valor inteiro numa cidade: a Gabi disse "Guará, R$ 17 mi"
+    // para uma emenda Pix repartida entre 28 municípios, em que Guará recebeu
+    // R$ 495 mil. Quem diz para onde foi cada real são os documentos — empenho
+    // e pagamento, cada um com o município de quem recebeu.
+    prisma.emendaDocumento.groupBy({
+      by: ['ufFavorecido', 'municipioFavorecido', 'fase'],
+      where: { fase: { in: ['Empenho', 'Pagamento'] }, municipioFavorecido: { not: null }, emenda: whereFinal },
+      _sum: { valor: true },
+    }),
+    // Em quantos municípios cada emenda da lista foi dividida.
+    prisma.emendaDocumento.groupBy({
+      by: ['emendaId', 'ufFavorecido', 'municipioFavorecido'],
+      where: { emendaId: { in: emendas.map(e => e.id) }, fase: 'Empenho', municipioFavorecido: { not: null } },
     }),
   ]);
 
@@ -306,14 +323,40 @@ export async function executarBuscarEmendas(
   const inconsistencia = conferirSomas(
     { total: totalEmendas, empenhado: totalEmpenhado, pago: totalPago }, porArea);
 
-  const municipiosComValor = porMunicipioBruto
-    .filter(m => m.municipioNome && ((m._sum.valorEmpenhado ?? 0) > 0 || (m._sum.valorPago ?? 0) > 0))
-    .map(m => ({
-      municipio: m.municipioNome as string,
-      empenhado: m._sum.valorEmpenhado ?? 0,
-      pago: m._sum.valorPago ?? 0,
-    }))
+  // Só documentos de quem recebeu no estado da emenda: a taxa do SERPRO, paga
+  // em Brasília, não é um destino da emenda de SP.
+  const ufsDoRecorte = new Set(porUfBruto.map(u => String(u.uf ?? '').toUpperCase()).filter(Boolean));
+  const ufUnica = ufsDoRecorte.size === 1 ? [...ufsDoRecorte][0] : undefined;
+  const porMunicipioMapa = new Map<string, { municipio: string; uf?: string; empenhado: number; pago: number }>();
+  const somarMunicipio = (nome: string, uf: string | undefined, empenhado: number, pago: number) => {
+    const chave = `${uf ?? ''}|${chaveMunicipio(nome, uf)}`;
+    const atual = porMunicipioMapa.get(chave) ?? { municipio: nome, ...(uf && { uf }), empenhado: 0, pago: 0 };
+    atual.empenhado += empenhado;
+    atual.pago += pago;
+    porMunicipioMapa.set(chave, atual);
+  };
+  for (const d of docsPorMunicipio) {
+    const uf = String(d.ufFavorecido ?? '').toUpperCase();
+    if (!d.municipioFavorecido || !ufsDoRecorte.has(uf)) continue;
+    const valor = d._sum.valor ?? 0;
+    somarMunicipio(d.municipioFavorecido, uf, d.fase === 'Empenho' ? valor : 0, d.fase === 'Pagamento' ? valor : 0);
+  }
+  for (const m of porMunicipioBruto) {
+    if (m.municipioNome) somarMunicipio(m.municipioNome, ufUnica, m._sum.valorEmpenhado ?? 0, m._sum.valorPago ?? 0);
+  }
+  const municipiosComValor = [...porMunicipioMapa.values()]
+    .filter(m => m.empenhado > 0 || m.pago > 0)
     .sort((a, b) => b.empenhado - a.empenhado);
+
+  // Municípios de cada emenda da lista, pelos documentos de empenho.
+  const municipiosDaEmenda = new Map<string, Set<string>>();
+  const ufDaEmenda = new Map(emendas.map(e => [e.id, String(e.uf ?? '').toUpperCase()]));
+  for (const d of docsDaLista) {
+    if (!d.municipioFavorecido || String(d.ufFavorecido ?? '').toUpperCase() !== ufDaEmenda.get(d.emendaId)) continue;
+    const s = municipiosDaEmenda.get(d.emendaId) ?? new Set<string>();
+    s.add(chaveMunicipio(d.municipioFavorecido, ufDaEmenda.get(d.emendaId)));
+    municipiosDaEmenda.set(d.emendaId, s);
+  }
 
   return {
     encontrado: true,
@@ -365,6 +408,11 @@ export async function executarBuscarEmendas(
      * Quinze cobrem a pergunta sem pesar no turno.
      */
     topMunicipios: municipiosComValor.slice(0, 15),
+    ...(docsPorMunicipio.length > 0 && {
+      notaMunicipios:
+        'Valor por município somado dos documentos de empenho e de pagamento de cada cidade. O pago por município ' +
+        'pode ficar abaixo de "totalPago", que inclui restos a pagar pagos; o total oficial é "totalPago".',
+    }),
     /** Valor por município, para o mapa de calor. Removido antes de ir ao modelo. */
     porMunicipio: municipiosComValor,
     /**
@@ -411,7 +459,11 @@ export async function executarBuscarEmendas(
       area: e.area,
       // objeto completo pode ter parágrafos — 100 emendas estouravam o turno
       objeto: (e.objeto ?? '').slice(0, 140),
-      municipio: e.municipioNome ?? '',
+      // Dividida entre vários municípios: dizer um só atribuía a ele o valor
+      // inteiro da emenda. O valor de cada cidade está em `topMunicipios`.
+      ...((municipiosDaEmenda.get(e.id)?.size ?? 0) > 1
+        ? { municipio: `Vários municípios (${municipiosDaEmenda.get(e.id)!.size})`, municipios: municipiosDaEmenda.get(e.id)!.size }
+        : { municipio: e.municipioNome ?? '' }),
       uf: e.uf ?? '',
       esfera: e.esfera,
       valorEmpenhado: e.valorEmpenhado,

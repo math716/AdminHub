@@ -109,9 +109,17 @@ function deEmendas(d: any): Visualizacao[] {
         .filter(([n, v]: [string, number]) => n && n !== 'N/A' && v > 0)
     : null;
 
+  // Destinos: pela soma por município (documentos de cada cidade). Agrupar a
+  // lista pelo município da emenda punha numa cidade só o valor de uma emenda
+  // dividida entre dezenas.
+  const destinosAgregados: Array<[string, number]> | null = Array.isArray(d?.topMunicipios) && d.topMunicipios.length > 0
+    ? d.topMunicipios.map((m: any) => [String(m.municipio ?? ''), Number(m.empenhado || m.pago || 0)] as [string, number])
+        .filter(([n, v]: [string, number]) => n && v > 0)
+    : null;
+
   const porQuem = nomes.size > 1
     ? { titulo: 'Total por parlamentar', dados: topAgregado ?? agrupar(emendas, e => String(e.parlamentar ?? ''), e => e.valorEmpenhado || 0) }
-    : { titulo: 'Destinos principais',   dados: agrupar(emendas, e => String(e.municipio ?? ''),  e => e.valorEmpenhado || 0) };
+    : { titulo: 'Destinos principais',   dados: destinosAgregados ?? agrupar(emendas.filter(e => !e.municipios), e => String(e.municipio ?? ''), e => e.valorEmpenhado || 0) };
   if (porQuem.dados.length > 0) {
     vis.push({
       tipo: 'barras',

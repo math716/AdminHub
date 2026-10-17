@@ -161,9 +161,11 @@ function acumularEmendas(prev: any, novo: any) {
   // Mapa de calor: soma o que cai no mesmo município.
   const municipios = new Map<string, any>();
   for (const m of [...(prev.porMunicipio ?? []), ...(novo.porMunicipio ?? [])]) {
-    const atual = municipios.get(m.municipio);
-    municipios.set(m.municipio, atual
-      ? { municipio: m.municipio, empenhado: atual.empenhado + m.empenhado, pago: atual.pago + m.pago }
+    // Com a UF na chave: o mesmo nome existe em mais de um estado.
+    const chave = `${m.uf ?? ''}|${m.municipio}`;
+    const atual = municipios.get(chave);
+    municipios.set(chave, atual
+      ? { ...atual, empenhado: atual.empenhado + m.empenhado, pago: atual.pago + m.pago }
       : { ...m });
   }
 
