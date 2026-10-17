@@ -201,6 +201,13 @@ jobs:
           PORTAL_TRANSPARENCIA_API_KEY: ${{ secrets.PORTAL_TRANSPARENCIA_API_KEY }}
         run: npx tsx scripts/atualizar-totais-emendas-federais.ts --anos 2025
 
+      - name: Atualizar resumo de Emendas
+        # Números prontos da tela de Emendas (scripts/atualizar-resumo-emendas.ts).
+        if: ${{ !cancelled() }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx scripts/atualizar-resumo-emendas.ts
+
       - name: Resumo final
         if: always()
         run: |

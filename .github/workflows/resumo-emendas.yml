@@ -1,0 +1,56 @@
+name: Resumo de Emendas
+
+# Números prontos da tela de Emendas. Atualiza sozinho no fim de cada
+# importação; aqui é para conferir (resumo guardado × conta na hora) ou
+# recalcular sem esperar uma importação.
+on:
+  workflow_dispatch:
+    inputs:
+      acao:
+        description: 'conferir = compara e não grava | atualizar = recalcula e grava'
+        required: true
+        default: 'conferir'
+        type: choice
+        options: ['conferir', 'atualizar']
+      anos:
+        description: 'Anos (vazio = 2021 até o ano atual)'
+        required: false
+        default: ''
+        type: string
+
+# Mesma fila das importações (ver import-csv-ano-atual.yml).
+concurrency:
+  group: importacao-banco
+  cancel-in-progress: false
+
+jobs:
+  resumo:
+    name: Resumo de Emendas
+    if: github.repository == 'math716/AdminHub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Resumo
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.anos }}" ]; then ARGS="--anos ${{ inputs.anos }}"; fi
+          if [ "${{ inputs.acao }}" = "conferir" ]; then ARGS="$ARGS --conferir"; fi
+          npx tsx scripts/atualizar-resumo-emendas.ts $ARGS
