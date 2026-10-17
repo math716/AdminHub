@@ -356,6 +356,8 @@ interface ProjecaoMunicipio {
   dobradaPartido?: string;
   dobradaObservacoes?: string;
   parcerias?: Parceria[];
+  /** Soma das parcerias deste município (só na lista de projeções salvas). */
+  parceriasSoma?: { conservadora: number; possivel: number; arrojada: number };
 }
 
 interface Projecao {
@@ -817,7 +819,9 @@ export default function MapaCampanhaPage() {
     return bairrosInfo.reduce((acc, b) => acc + b.votos, 0);
   };
 
-  // Load saved projections
+  // Load saved projections — de novo a cada volta para a lista: o cartão mostra
+  // a meta com parcerias, que podem ter mudado enquanto a projeção estava aberta.
+  const naLista = !electoralData;
   useEffect(() => {
     const loadProjecoes = async () => {
       try {
@@ -830,10 +834,10 @@ export default function MapaCampanhaPage() {
         console.error('Erro ao carregar projeções:', error);
       }
     };
-    if (canAccess) {
+    if (canAccess && naLista) {
       loadProjecoes();
     }
-  }, [userRole]);
+  }, [userRole, naLista]);
 
   // Força Leaflet a recalcular tamanho ao entrar/sair da tela cheia.
   // Dispara em sequencia para cobrir transicoes CSS e garantir que invalidateSize seja chamado.
@@ -2524,16 +2528,38 @@ export default function MapaCampanhaPage() {
     { value: 'BAIXA', label: 'Baixa Prioridade' }
   ];
 
-  // Números do cartão de uma projeção salva. Conta só os municípios (zonas do
-  // DF, distritos e bairros são detalhamento dentro deles e somariam em dobro).
+  // Números do cartão de uma projeção salva — a MESMA conta da tela da
+  // projeção ao abrir (cenário realista, parcerias incluídas): meta das
+  // cidades + parcerias + o que os bairros acrescentam; em São Paulo capital,
+  // a meta pelos distritos. Antes o cartão somava só a meta das cidades, e
+  // quem planejou por parceria ou por bairro via a meta igual aos votos.
   const resumoDaProjecao = (proj: Projecao): ResumoProjecaoSalva => {
-    const munBase = proj.municipios.filter(m =>
+    const cidades = proj.municipios.filter(m =>
       !isDfZona(m.municipio) && !isDfRegiao(m.municipio) &&
       !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) &&
       !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)
     );
-    const entradas = munBase.length > 0 ? munBase : proj.municipios;
-    const base = entradas.reduce((s, m) => s + (m.votosBase || 0), 0);
+    const parc = (m: ProjecaoMunicipio) => m.parceriasSoma?.possivel ?? 0;
+    // Bairros de vereador/prefeito: somam o que passa dos votos de cada bairro,
+    // e as parcerias deles contam para a cidade.
+    const bairros = proj.municipios.filter(m => isMunBairro(m.municipio) || isMgBairro(m.municipio));
+    const extraBairros = bairros.reduce((s, m) => s + Math.max(0, (m.metaPossivel || 0) - (m.votosBase || 0)) + parc(m), 0);
+    const metaCidade = (m: ProjecaoMunicipio) => (m.metaPossivel || 0) + parc(m);
+
+    const base = cidades.reduce((s, m) => s + (m.votosBase || 0), 0);
+    const distritos = proj.municipios.filter(m => isSpDistrito(m.municipio));
+    let meta: number;
+    if (distritos.length > 0) {
+      const baseCapital = proj.municipios.find(m => m.municipio === 'SAO PAULO')?.votosBase ?? 0;
+      const baseDistritos = distritos.reduce((s, m) => s + (m.votosBase || 0), 0);
+      meta = (baseCapital - baseDistritos)
+        + distritos.reduce((s, m) => s + metaCidade(m), 0)
+        + cidades.filter(m => m.municipio !== 'SAO PAULO').reduce((s, m) => s + metaCidade(m), 0)
+        + extraBairros;
+    } else {
+      meta = cidades.reduce((s, m) => s + metaCidade(m), 0) + extraBairros;
+    }
+
     return {
       nome: proj.candidatoNome,
       cargo: proj.cargo ?? '',
@@ -2541,8 +2567,8 @@ export default function MapaCampanhaPage() {
       anoBase: proj.anoBase,
       anoProjecao: proj.anoProjecao,
       base,
-      meta: entradas.reduce((s, m) => s + (m.metaPossivel || 0), 0),
-      municipios: munBase.length,
+      meta,
+      municipios: cidades.length,
       dobradas: proj.municipios.filter(m => m.dobradaAtiva).length,
       estreante: base === 0,
     };

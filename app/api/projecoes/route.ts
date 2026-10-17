@@ -22,12 +22,27 @@ export async function GET(request: NextRequest) {
         ? { user: { gabineteId } }
         : { userId: user.id },
       include: {
-        municipios: true
+        municipios: {
+          include: { parcerias: { select: { metaConservadora: true, metaPossivel: true, metaArrojada: true } } },
+        },
       },
       orderBy: { updatedAt: 'desc' }
     });
 
-    return NextResponse.json(projecoes);
+    // O cartão de "Projeções salvas" mostra a meta como a tela da projeção:
+    // com os votos das parcerias. Vai só a soma de cada município (não a
+    // parceria inteira), para a lista continuar leve.
+    return NextResponse.json(projecoes.map(p => ({
+      ...p,
+      municipios: p.municipios.map(({ parcerias, ...m }) => ({
+        ...m,
+        parceriasSoma: {
+          conservadora: parcerias.reduce((s, x) => s + (x.metaConservadora || 0), 0),
+          possivel: parcerias.reduce((s, x) => s + (x.metaPossivel || 0), 0),
+          arrojada: parcerias.reduce((s, x) => s + (x.metaArrojada || 0), 0),
+        },
+      })),
+    })));
   } catch (error) {
     console.error('Erro ao buscar projeções:', error);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
