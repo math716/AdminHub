@@ -1,9 +1,13 @@
 name: Totais oficiais - emendas federais
 
 # Atualiza empenhado e pago das emendas federais com os valores oficiais do
-# Portal da Transparência. Roda sozinho no fim das importações federais; este
-# disparo manual serve para corrigir anos antigos ou conferir antes de gravar.
+# Portal da Transparência. Roda sozinho no fim das importações federais
+# (2023 a 2026); este workflow cobre o resto: 2021 e 2022 todo mês (ainda
+# recebem restos a pagar e não têm importação própria) e o disparo manual,
+# para corrigir anos antigos ou conferir antes de gravar.
 on:
+  schedule:
+    - cron: '0 2 20 * *'   # Dia 20 do mês 2h UTC → 2021 e 2022
   workflow_dispatch:
     inputs:
       anos:
@@ -52,7 +56,7 @@ jobs:
         run: |
           DRY=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
-          npx tsx scripts/atualizar-totais-emendas-federais.ts --anos "${{ inputs.anos }}" $DRY
+          npx tsx scripts/atualizar-totais-emendas-federais.ts --anos "${{ inputs.anos || '2021,2022' }}" $DRY
 
       - name: Atualizar resumo de Emendas
         # Números prontos da tela de Emendas (scripts/atualizar-resumo-emendas.ts).
