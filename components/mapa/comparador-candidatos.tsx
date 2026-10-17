@@ -279,7 +279,7 @@ export function ComparadorCandidatos() {
   return (
     <div className="space-y-4">
       {/* ── Montar a comparação ── */}
-      <Painel titulo="Montar a comparação" icone={Scale} direita={<CamposPoliticos />}>
+      <Painel titulo="Montar a comparação" icone={Scale}>
         <div className="grid grid-cols-2 lg:grid-cols-12 gap-3">
           <Campo rotulo="Ano" className="lg:col-span-2">
             <Select value={ano} onChange={(e) => { setAno(e.target.value); limpar(); if (ehAnoMunicipal(e.target.value) && abrangencia === 'BR') setAbrangencia('SP'); }}
@@ -441,7 +441,7 @@ export function ComparadorCandidatos() {
                 mapa={(
                   <CartaoMapa
                     titulo={nivel === 'brasil' ? 'Quem venceu em cada estado' : `Quem venceu em cada cidade de ${nomeDaUf(ufAtual)}`}
-                    dica={nivel === 'brasil' ? 'Clique num estado para ver as cidades' : 'Clique numa cidade para ver por local de votação, bairro e zona'}
+                    dica={nivel === 'brasil' ? 'Selecione um estado para ver as cidades.' : 'Clique numa cidade para ver por local de votação, bairro e zona'}
                     legenda={<LegendaComparacao cands={candsAtivos} />}
                   >
                     <MapaComparacao
@@ -492,17 +492,6 @@ function Campo({ rotulo, className = '', children }: { rotulo: string; className
     <div className={`space-y-1 min-w-0 ${className}`}>
       <label className="block text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>{rotulo}</label>
       {children}
-    </div>
-  );
-}
-
-/** As cores seguem o campo político do partido. */
-function CamposPoliticos() {
-  return (
-    <div className="flex items-center gap-3 text-[11px]" style={{ color: 'var(--text-tertiary)' }} title="As cores seguem o campo político do partido">
-      {([['Esquerda', '#dc2626'], ['Centro', '#ca8a04'], ['Direita', '#2563eb']] as const).map(([r, c]) => (
-        <span key={r} className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />{r}</span>
-      ))}
     </div>
   );
 }

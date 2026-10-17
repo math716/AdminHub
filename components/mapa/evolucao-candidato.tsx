@@ -826,7 +826,7 @@ export function EvolucaoCandidato() {
                 mapa={(
                   <CartaoMapa
                     titulo={nivel === 'brasil' ? 'Variação em cada estado' : `Variação em cada cidade de ${nomeDaUf(ufAtual)}`}
-                    dica={nivel === 'brasil' ? 'Clique num estado para ver as cidades' : 'Clique numa cidade para ver por bairro e zona'}
+                    dica={nivel === 'brasil' ? 'Selecione um estado para ver as cidades.' : 'Clique numa cidade para ver por bairro e zona'}
                     legenda={<LegendaEvolucao />}
                   >
                     <MapaComparacao

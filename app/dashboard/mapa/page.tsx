@@ -1765,7 +1765,7 @@ export default function MapaPage() {
               {view === 'brasil' && (
                 <MolduraMapa
                   titulo={electoralData ? `Votos de ${nomeCurto} em cada estado` : 'Brasil'}
-                  dica="Clique num estado para ver as cidades"
+                  dica="Selecione um estado para ver as cidades."
                 >
                   <BrazilMap
                     balaoPremium
