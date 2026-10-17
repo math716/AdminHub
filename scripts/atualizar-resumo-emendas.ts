@@ -26,9 +26,29 @@ import {
 } from '../lib/emendas/resumo-emendas';
 
 const raw = process.env.DATABASE_URL ?? '';
+// pool_timeout alto: cada recorte dispara 5 consultas, 3 recortes por vez,
+// em 4 conexões. Desde que o valor por município passou a somar os
+// documentos (consulta mais pesada nos estados grandes), esperar a vez por
+// mais de 10 s (o padrão) virou rotina — e o padrão derrubava o script
+// inteiro (P2024). Esperar a conexão é o certo: são as mesmas 4 conexões.
 const db = new PrismaClient({
-  datasources: { db: { url: `${raw}${raw.includes('?') ? '&' : '?'}pgbouncer=true&connection_limit=4` } },
+  datasources: { db: { url: `${raw}${raw.includes('?') ? '&' : '?'}pgbouncer=true&connection_limit=4&pool_timeout=300` } },
 });
+
+/** Uma conta que falhou por conexão (banco ocupado) tenta de novo, até 3 vezes. */
+async function comNovaTentativa<T>(fn: () => Promise<T>): Promise<T> {
+  for (let tentativa = 1; ; tentativa++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      const deConexao = ['P2024', 'P1001', 'P1017'].includes(e?.code) || /connection|timed out/i.test(e?.message ?? '');
+      if (!deConexao || tentativa >= 3) throw e;
+      console.warn(`
+   banco ocupado (${e?.code ?? 'conexão'}) — nova tentativa em ${30 * tentativa} s`);
+      await new Promise((r) => setTimeout(r, 30_000 * tentativa));
+    }
+  }
+}
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -124,7 +144,7 @@ Resumo de Emendas — anos ${ANOS.join(', ')}: nada mudou desde a última conta 
 
   let feitos = 0;
   await emParalelo(tarefas, async (t) => {
-    const dados = (await t.calcular()) as Prisma.InputJsonValue;
+    const dados = (await comNovaTentativa(t.calcular)) as Prisma.InputJsonValue;
     const valores = { dados, qtdEmendas: t.qtd, ...impressao, calculadoEm: new Date() };
     await db.emendaResumo.upsert({ where: { chave: t.chave }, create: { chave: t.chave, ...valores }, update: valores });
     if (++feitos % 50 === 0) process.stdout.write(`\r   ${feitos}/${tarefas.length} recortes...`);
