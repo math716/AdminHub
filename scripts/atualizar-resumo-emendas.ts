@@ -21,7 +21,7 @@
 
 import { Prisma, PrismaClient } from '@prisma/client';
 import {
-  ESFERAS, SQL_CRIAR_RESUMO, calcularResumoUf, calcularTotaisBrasil, chaveResumoBrasil, chaveResumoUf,
+  ESFERAS, SQL_CRIAR_RESUMO, VERSAO_CONTA, calcularResumoUf, calcularTotaisBrasil, chaveResumoBrasil, chaveResumoUf,
   impressaoDoBanco, lerResumoPronto,
 } from '../lib/emendas/resumo-emendas';
 
@@ -96,8 +96,9 @@ async function atualizar() {
   const impressao = await impressaoDoBanco(db);
 
   if (!FORCAR) {
-    const [guardado] = await db.$queryRawUnsafe<{ n: number; ve_min: Date | null; ve_max: Date | null; vp_min: Date | null; vp_max: Date | null; qtd: number | null }[]>(`
+    const [guardado] = await db.$queryRawUnsafe<{ n: number; n_versao: number; ve_min: Date | null; ve_max: Date | null; vp_min: Date | null; vp_max: Date | null; qtd: number | null }[]>(`
       SELECT count(*)::int AS n,
+             count(*) FILTER (WHERE (dados->>'versaoConta')::int = ${VERSAO_CONTA})::int AS n_versao,
              min("versaoEmendas") AS ve_min, max("versaoEmendas") AS ve_max,
              min("versaoParlamentares") AS vp_min, max("versaoParlamentares") AS vp_max,
              sum("qtdEmendas") FILTER (WHERE chave LIKE 'brasil:%')::int AS qtd
@@ -107,6 +108,7 @@ async function atualizar() {
       SELECT count(*)::int AS n FROM emendas_parlamentares WHERE uf IS NOT NULL AND ano = ANY($1::int[])`, ANOS);
     const igual = (a: Date | null, b: Date | null) => (a?.getTime() ?? null) === (b?.getTime() ?? null);
     const nadaMudou = (guardado?.n ?? 0) > 0
+      && guardado.n_versao === guardado.n
       && igual(guardado.ve_min, impressao.versaoEmendas) && igual(guardado.ve_max, impressao.versaoEmendas)
       && igual(guardado.vp_min, impressao.versaoParlamentares) && igual(guardado.vp_max, impressao.versaoParlamentares)
       && (guardado.qtd ?? -1) === agora.n;

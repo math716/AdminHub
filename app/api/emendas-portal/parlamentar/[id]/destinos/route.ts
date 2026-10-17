@@ -84,6 +84,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             municipioFavorecido: true,
             ufFavorecido: true,
             codigoIbgeFavorecido: true,
+            municipioDestino: true,
+            codigoIbgeDestino: true,
             fase: true,
             valor: true,
           },
@@ -101,6 +103,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       municipioFavorecido: string | null;
       ufFavorecido: string | null;
       codigoIbgeFavorecido: string | null;
+      municipioDestino: string | null;
+      codigoIbgeDestino: string | null;
       fase: string;
       valor: number;
     };
@@ -193,9 +197,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           const cur = porFav.get(key) ?? {
             cnpj,
             nome,
-            municipio:  doc.municipioFavorecido,
+            // Município que recebeu o pedaço (com código do IBGE, para o
+            // mapa); o do favorecido só quando o documento não diz.
+            municipio:  doc.municipioDestino ?? doc.municipioFavorecido,
             uf:         doc.ufFavorecido,
-            codigoIbge: doc.codigoIbgeFavorecido,
+            codigoIbge: doc.codigoIbgeDestino ?? doc.codigoIbgeFavorecido,
             empenhado:  0,
             pago:       0,
           };

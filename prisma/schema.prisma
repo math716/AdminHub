@@ -781,6 +781,15 @@ model EmendaDocumento {
   municipioFavorecido  String?
   codigoIbgeFavorecido String?
 
+  /// Município que recebeu ESTE documento. Uma emenda federal costuma ser
+  /// dividida entre vários municípios (metade das de 2025), e o município do
+  /// cadastro da emenda é um só — o valor por cidade sai daqui. Vem do "local
+  /// de aplicação" do CSV; quando o Portal não informa (entidades, como
+  /// hospitais), do município de quem recebeu, se for no estado da emenda.
+  /// Nome e código do IBGE. Vazio = sem município (emenda nacional/estadual).
+  municipioDestino  String?
+  codigoIbgeDestino String?
+
   subTitulo        String?
   localizadorGasto String?
   observacao       String? @db.Text
@@ -796,7 +805,9 @@ model EmendaDocumento {
   @@index([emendaId, fase])
   @@index([cnpjFavorecido])
   @@index([codigoIbgeFavorecido])
+  @@index([codigoIbgeDestino])
   @@index([fase])
+  @@index([updatedAt])
   @@map("emendas_documentos")
 }
 

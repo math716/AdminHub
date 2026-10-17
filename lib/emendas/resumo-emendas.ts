@@ -35,6 +35,13 @@ export function normalizarNomeParlamentar(nome: string, nomeUrna?: string | null
 }
 
 export type EsferaChave = 'FEDERAL' | 'ESTADUAL' | 'TODAS';
+
+/**
+ * Versão da conta. Mudou a conta, sobe o número: resumo guardado com versão
+ * diferente é ignorado (a tela calcula na hora) e o script recalcula.
+ *   2 — valor por município pelos documentos (emenda dividida entre cidades).
+ */
+export const VERSAO_CONTA = 2;
 export const ESFERAS: EsferaChave[] = ['TODAS', 'FEDERAL', 'ESTADUAL'];
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -48,7 +55,7 @@ export async function calcularResumoUf(db: PrismaClient, uf: string, ano: number
   const esfera = esferaKey === 'FEDERAL' || esferaKey === 'ESTADUAL' ? esferaKey as 'FEDERAL' | 'ESTADUAL' : null;
   const where = esfera ? { uf, ano, esfera } : { uf, ano };
 
-  const [totAgg, porAreaRaw, porMunicipioRaw, porParlamentarRaw] = await Promise.all([
+  const [totAgg, porAreaRaw, porDestinoRaw, porMunicipioRaw, porParlamentarRaw] = await Promise.all([
     // 1. Totais globais
     db.emendaParlamentar.aggregate({
       where,
@@ -61,10 +68,26 @@ export async function calcularResumoUf(db: PrismaClient, uf: string, ano: number
       where,
       _sum: { valorEmpenhado: true },
     }),
-    // 3. Por município (apenas com codigoIbge preenchido)
+    // 3. Por município, das emendas cujos documentos dizem a cidade.
+    //
+    // Uma emenda federal costuma ser DIVIDIDA entre vários municípios (metade
+    // das de 2025), e o cadastro da emenda guarda um só: somar por ele punha o
+    // valor inteiro numa cidade e nada nas outras. Cada documento de empenho
+    // traz o município que recebeu aquele pedaço.
+    db.$queryRawUnsafe<{ codigo: string; nome: string | null; total: number | null; qtd: number }[]>(`
+      SELECT d."codigoIbgeDestino" AS codigo, max(d."municipioDestino") AS nome,
+             sum(d.valor) FILTER (WHERE d.fase = 'Empenho')::float AS total,
+             count(DISTINCT d."emendaId")::int AS qtd
+      FROM emendas_documentos d
+      JOIN emendas_parlamentares e ON e.id = d."emendaId"
+      WHERE e.uf = $1 AND e.ano = $2 AND ($3::text IS NULL OR e.esfera::text = $3)
+        AND d."codigoIbgeDestino" IS NOT NULL
+      GROUP BY 1`, uf, ano, esfera),
+    // 3b. Por município, das demais (estaduais, e federais ainda sem o destino
+    // nos documentos): o município do cadastro, como antes.
     db.emendaParlamentar.groupBy({
       by: ['codigoIbge', 'municipioNome'],
-      where: { ...where, codigoIbge: { not: null } },
+      where: { ...where, codigoIbge: { not: null }, documentos: { none: { codigoIbgeDestino: { not: null } } } },
       _sum: { valorEmpenhado: true },
       _count: { _all: true },
     }),
@@ -99,17 +122,17 @@ export async function calcularResumoUf(db: PrismaClient, uf: string, ano: number
   let totalMunicipalizado = 0;
   const porMunicipioMap = new Map<string, { codigoIbge: string; nome: string; total: number; qtd: number }>();
 
-  for (const m of porMunicipioRaw) {
-    const ibge = m.codigoIbge!;
-    const val  = m._sum.valorEmpenhado ?? 0;
+  const somar = (ibge: string, nome: string | null, val: number, qtd: number) => {
     totalMunicipalizado += val;
     if (!ibgePrefix || ibge.startsWith(ibgePrefix)) {
-      const cur = porMunicipioMap.get(ibge) ?? { codigoIbge: ibge, nome: m.municipioNome ?? ibge, total: 0, qtd: 0 };
+      const cur = porMunicipioMap.get(ibge) ?? { codigoIbge: ibge, nome: nome ?? ibge, total: 0, qtd: 0 };
       cur.total += val;
-      cur.qtd   += m._count._all;
+      cur.qtd   += qtd;
       porMunicipioMap.set(ibge, cur);
     }
-  }
+  };
+  for (const d of porDestinoRaw) somar(d.codigo, d.nome, d.total ?? 0, d.qtd);
+  for (const m of porMunicipioRaw) somar(m.codigoIbge!, m.municipioNome, m._sum.valorEmpenhado ?? 0, m._count._all);
 
   const topMunicipios = Array.from(porMunicipioMap.values())
     .sort((a, b) => b.total - a.total)
@@ -152,6 +175,7 @@ export async function calcularResumoUf(db: PrismaClient, uf: string, ano: number
     .sort((a, b) => b.total - a.total);
 
   return {
+    versaoConta: VERSAO_CONTA,
     uf, ano,
     esfera: esfera ?? 'TODAS',
     totalEmpenhado, totalPago, totalMunicipalizado,
@@ -180,7 +204,7 @@ export async function calcularTotaisBrasil(db: PrismaClient, ano: number) {
       totaisPorUF[g.uf] = g._sum.valorEmpenhado ?? 0;
     }
   }
-  return { ano, totaisPorUF };
+  return { versaoConta: VERSAO_CONTA, ano, totaisPorUF };
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -202,6 +226,9 @@ export const SQL_CRIAR_RESUMO = [
   )`,
   // Deixa instantânea a pergunta "qual a última alteração nas emendas?".
   `CREATE INDEX IF NOT EXISTS "emendas_parlamentares_updatedAt_idx" ON "emendas_parlamentares"("updatedAt")`,
+  // E nos documentos (o valor por município sai deles). CONCURRENTLY: não
+  // trava a tabela; normalmente já existe (migration 20261017000000).
+  `CREATE INDEX CONCURRENTLY IF NOT EXISTS "emendas_documentos_updatedAt_idx" ON "emendas_documentos"("updatedAt")`,
 ];
 
 export interface Impressao {
@@ -209,11 +236,15 @@ export interface Impressao {
   versaoParlamentares: Date | null;
 }
 
-/** Última alteração em emendas e em parlamentares (vale para todo o banco). */
+/**
+ * Última alteração em emendas (ou nos documentos delas — o valor por
+ * município sai deles) e em parlamentares. Vale para todo o banco.
+ */
 export async function impressaoDoBanco(db: PrismaClient): Promise<Impressao> {
   const [r] = await db.$queryRawUnsafe<{ ve: Date | null; vp: Date | null }[]>(`
-    SELECT (SELECT max("updatedAt") FROM emendas_parlamentares) AS ve,
-           (SELECT max("updatedAt") FROM parlamentares)         AS vp`);
+    SELECT GREATEST((SELECT max("updatedAt") FROM emendas_parlamentares),
+                    (SELECT max("updatedAt") FROM emendas_documentos)) AS ve,
+           (SELECT max("updatedAt") FROM parlamentares)                AS vp`);
   return { versaoEmendas: r?.ve ?? null, versaoParlamentares: r?.vp ?? null };
 }
 
@@ -229,6 +260,7 @@ export async function lerResumoPronto<T>(db: PrismaClient, chave: string, qtdAtu
   try {
     const linha = await db.emendaResumo.findUnique({ where: { chave } });
     if (!linha || linha.qtdEmendas !== qtdAtual) return null;
+    if ((linha.dados as { versaoConta?: number } | null)?.versaoConta !== VERSAO_CONTA) return null;
     const agora = await impressaoDoBanco(db);
     if (!mesmaData(linha.versaoEmendas, agora.versaoEmendas)) return null;
     if (!mesmaData(linha.versaoParlamentares, agora.versaoParlamentares)) return null;

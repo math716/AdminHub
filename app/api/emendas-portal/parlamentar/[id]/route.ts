@@ -85,23 +85,32 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         const emendaIds = rows.map((e) => e.id);
         const docAggs = emendaIds.length > 0
           ? await prisma.emendaDocumento.groupBy({
-              by: ['emendaId', 'fase'],
+              by: ['emendaId', 'fase', 'codigoIbgeDestino'],
               where: { emendaId: { in: emendaIds } },
               _sum: { valor: true },
             })
           : [];
 
-        const docValMap = new Map<string, { empenhado: number; pago: number }>();
+        // Em quantos municípios cada emenda foi dividida (documentos de empenho).
+        const docValMap = new Map<string, { empenhado: number; pago: number; municipios: Set<string> }>();
         for (const d of docAggs) {
-          const cur = docValMap.get(d.emendaId) ?? { empenhado: 0, pago: 0 };
+          const cur = docValMap.get(d.emendaId) ?? { empenhado: 0, pago: 0, municipios: new Set<string>() };
           const fase = d.fase.toLowerCase();
-          if (fase.includes('empenho')) cur.empenhado += d._sum.valor ?? 0;
+          if (fase.includes('empenho')) {
+            cur.empenhado += d._sum.valor ?? 0;
+            if (d.codigoIbgeDestino) cur.municipios.add(d.codigoIbgeDestino);
+          }
           else if (fase.includes('pagamento')) cur.pago += d._sum.valor ?? 0;
           docValMap.set(d.emendaId, cur);
         }
 
         const emendas = rows.map((e) => {
           const docVals = docValMap.get(e.id);
+          // Dividida entre vários municípios: o do cadastro é um só deles, e
+          // mostrá-lo punha a emenda inteira naquela cidade. Quanto foi para
+          // cada uma está nos destinos (/destinos).
+          const qtdMunicipios = docVals?.municipios.size ?? 0;
+          const dividida = qtdMunicipios > 1;
           return {
             idPortal:       e.idPortal,
             ano:            e.ano,
@@ -123,8 +132,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             beneficiario:   e.beneficiario ?? null,
             cnpjBeneficiario: e.cnpjBeneficiario ?? null,
             uf:             e.uf,
-            codigoIbge:     e.codigoIbge,
-            municipioNome:  e.municipioNome,
+            codigoIbge:     dividida ? null : e.codigoIbge,
+            municipioNome:  dividida ? `Vários municípios (${qtdMunicipios})` : e.municipioNome,
+            ...(dividida && { municipiosNaEmenda: qtdMunicipios }),
             autorCpf:       e.parlamentar?.cpf ?? null,
             autorNome:      e.parlamentar?.nome ?? '—',
             autorCargo:     e.parlamentar?.cargo ?? 'DEPUTADO_FEDERAL',

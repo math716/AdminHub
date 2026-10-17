@@ -201,6 +201,91 @@ function classificarArea(funcaoNome?: string | null): EmendaArea {
   return 'OUTROS';
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Município de destino de cada documento
+// ─────────────────────────────────────────────────────────────────────────
+// Uma emenda federal costuma ser DIVIDIDA entre vários municípios (metade das
+// de 2025): cada documento diz para onde foi aquele pedaço. O CSV traz o
+// "local de aplicação" (nome e código IBGE) — mas não para entidades, como
+// hospitais e santas casas: aí vem "Sem informação", e quem diz a cidade é o
+// município de quem recebeu, que vem só com o nome, sem acento ("GUARATINGUETA").
+// O código sai da lista de municípios do IBGE, baixada uma vez no começo.
+
+const nomeIbgePorCodigo = new Map<string, string>();
+const codigoIbgePorNome = new Map<string, string>(); // "SP|guaratingueta" → código
+
+function chaveNome(uf: string, nome: string): string {
+  const k = nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/\(.*?\)/g, ' ')
+    .replace(/['’`´-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return `${uf.toUpperCase()}|${GRAFIAS_DO_FAVORECIDO[`${uf.toUpperCase()}|${k}`] ?? k}`;
+}
+
+// Nomes do favorecido que não batem com o IBGE nem sem acento (medido no
+// arquivo de 2025: estes eram os únicos).
+const GRAFIAS_DO_FAVORECIDO: Record<string, string> = {
+  'RS|santana do livramento':     'sant ana do livramento',
+  'MT|santo antonio do leverger': 'santo antonio de leverger',
+  'RN|acu':                       'assu',
+  'RR|sao luiz':                  'sao luiz do anaua',
+  'SE|amparo de sao francisco':   'amparo do sao francisco',
+  'SP|sao luis do paraitinga':    'sao luiz do paraitinga',
+  'BA|muquem de sao francisco':   'muquem do sao francisco',
+  'BA|santa teresinha':           'santa terezinha',
+  'SE|gracho cardoso':            'graccho cardoso',
+  'PA|santa isabel do para':      'santa izabel do para',
+  'RJ|parati':                    'paraty',
+  'MG|brasopolis':                'brazopolis',
+};
+
+async function carregarMunicipiosIbge(): Promise<void> {
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    try {
+      const res = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios?view=nivelado',
+        { signal: AbortSignal.timeout(60_000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const lista = await res.json() as Array<Record<string, any>>;
+      for (const m of lista) {
+        const codigo = String(m['municipio-id']);
+        nomeIbgePorCodigo.set(codigo, m['municipio-nome']);
+        codigoIbgePorNome.set(chaveNome(m['UF-sigla'], m['municipio-nome']), codigo);
+      }
+      console.log(`   Municípios do IBGE: ${nomeIbgePorCodigo.size}`);
+      return;
+    } catch (e: any) {
+      console.warn(`   ⚠ Lista de municípios do IBGE indisponível (tentativa ${tentativa}/3): ${e.message}`);
+      await new Promise((r) => setTimeout(r, 5000 * tentativa));
+    }
+  }
+  // Sem a lista, o destino ainda sai do local de aplicação (que já traz o
+  // código); só os documentos de entidades ficam sem município — e vazio não
+  // apaga o que uma importação anterior gravou.
+  console.warn('   ⚠ Seguindo sem a lista do IBGE: documentos de entidades ficam sem município de destino.');
+}
+
+function destinoDoDocumento(row: Record<string, string>): { municipioDestino: string | null; codigoIbgeDestino: string | null } {
+  const codigoAplic = naIfEmpty(row[COL.ibgeAplicacao]);
+  if (codigoAplic && /^\d{7}$/.test(codigoAplic)) {
+    return {
+      codigoIbgeDestino: codigoAplic,
+      municipioDestino: nomeIbgePorCodigo.get(codigoAplic) ?? naIfEmpty(row[COL.municipioAplicacao]),
+    };
+  }
+  // Sem local de aplicação: vale o município de quem recebeu, se for no estado
+  // da emenda. Fora dele é custo central (a taxa do SERPRO, em Brasília), não
+  // destino; e emenda nacional ou do estado inteiro não tem município.
+  const munFav = naIfEmpty(row[COL.municipioFavorecido]);
+  const ufFav = naIfEmpty(row[COL.ufFavorecido]);
+  const ufAplic = naIfEmpty(row[COL.ufAplicacao]);
+  if (munFav && ufFav && ufFav === ufAplic) {
+    const codigo = codigoIbgePorNome.get(chaveNome(ufFav, munFav)) ?? null;
+    return { codigoIbgeDestino: codigo, municipioDestino: codigo ? nomeIbgePorCodigo.get(codigo)! : null };
+  }
+  return { municipioDestino: null, codigoIbgeDestino: null };
+}
+
 function inferCargo(tipoEmenda: string | undefined): ParlamentarCargo {
   const s = (tipoEmenda ?? '').toUpperCase();
   if (s.includes('SENADOR')) return 'SENADOR';
@@ -364,6 +449,7 @@ async function upsertDocumento(emendaId: string, row: Record<string, string>): P
   // Município "do recurso" tem prioridade sobre "do favorecido" pra exibição
   const munFav    = naIfEmpty(row[COL.municipioFavorecido]);
   const ufFav     = naIfEmpty(row[COL.ufFavorecido]);
+  const destino   = destinoDoDocumento(row);
 
   await withRetry(() => prisma.emendaDocumento.upsert({
     where: { codigoDocumento },
@@ -379,6 +465,8 @@ async function upsertDocumento(emendaId: string, row: Record<string, string>): P
       ufFavorecido:        ufFav,
       municipioFavorecido: munFav,
       codigoIbgeFavorecido: null, // CSV não dá IBGE do favorecido, só do "local de aplicação"
+      municipioDestino:    destino.municipioDestino,
+      codigoIbgeDestino:   destino.codigoIbgeDestino,
       subTitulo:           naIfEmpty(row[COL.subtitulo]),
       localizadorGasto:    naIfEmpty(row[COL.subtitulo]), // mesmo campo no CSV
       observacao:          null, // CSV não traz observação (só o detalhe individual /despesas/documentos/{cod})
@@ -394,6 +482,8 @@ async function upsertDocumento(emendaId: string, row: Record<string, string>): P
       nomeFavorecido:      naIfEmpty(row[COL.nomeFavorecido])       ?? undefined,
       ufFavorecido:        ufFav                                    ?? undefined,
       municipioFavorecido: munFav                                   ?? undefined,
+      municipioDestino:    destino.municipioDestino                 ?? undefined,
+      codigoIbgeDestino:   destino.codigoIbgeDestino                ?? undefined,
       subTitulo:           naIfEmpty(row[COL.subtitulo])            ?? undefined,
       localizadorGasto:    naIfEmpty(row[COL.subtitulo])            ?? undefined,
       programa:            naIfEmpty(row[COL.programa])             ?? undefined,
@@ -419,12 +509,14 @@ async function upsertDocumento(emendaId: string, row: Record<string, string>): P
 const COLS_DOC = [
   'id', 'codigoDocumento', 'codigoDocumentoResumido', 'emendaId', 'fase', 'data', 'valor',
   'cnpjFavorecido', 'nomeFavorecido', 'ufFavorecido', 'municipioFavorecido', 'codigoIbgeFavorecido',
+  'municipioDestino', 'codigoIbgeDestino',
   'subTitulo', 'localizadorGasto', 'observacao', 'programa', 'acao', 'orgao', 'orgaoSuperior',
 ] as const;
 const TIPO_DOC: Record<string, string> = { data: 'timestamp(3)', valor: 'double precision' };
 // Campos que o upsert linha a linha só sobrescreve quando vêm preenchidos.
 const MANTEM_SE_VAZIO = [
   'cnpjFavorecido', 'nomeFavorecido', 'ufFavorecido', 'municipioFavorecido',
+  'municipioDestino', 'codigoIbgeDestino',
   'subTitulo', 'localizadorGasto', 'programa', 'acao', 'orgao', 'orgaoSuperior',
 ] as const;
 
@@ -448,6 +540,7 @@ function montarDocumento(emendaId: string, row: Record<string, string>): Doc | n
     ufFavorecido:            naIfEmpty(row[COL.ufFavorecido]),
     municipioFavorecido:     naIfEmpty(row[COL.municipioFavorecido]),
     codigoIbgeFavorecido:    null,
+    ...destinoDoDocumento(row),
     subTitulo:               naIfEmpty(row[COL.subtitulo]),
     localizadorGasto:        naIfEmpty(row[COL.subtitulo]),
     observacao:              null,
@@ -513,6 +606,14 @@ async function gravarDocumentosEmLote(docs: Doc[]): Promise<void> {
 async function main() {
   console.log(`\n📥 Importando ${FILE}\n   modo=${MODO}, batch=${BATCH}, concurrency=${CONCURRENCY}, limit=${LIMIT || 'sem limite'}\n`);
   const inicio = Date.now();
+  // Colunas do município de destino (migration 20261017000000). Normalmente já
+  // existem; sem elas a gravação dos documentos falharia inteira. ADD COLUMN
+  // sem valor padrão é instantâneo.
+  for (const coluna of ['municipioDestino', 'codigoIbgeDestino']) {
+    await withRetry(() => prisma.$executeRawUnsafe(
+      `ALTER TABLE "emendas_documentos" ADD COLUMN IF NOT EXISTS "${coluna}" TEXT`));
+  }
+  await carregarMunicipiosIbge();
 
   // CSV parser com decoder ISO-8859-1
   const parser = parse({

@@ -87,6 +87,12 @@ interface PortalEmenda {
   valorPago: number;
   valorRestoPago: number;
   valorProposto: number | null;
+  /**
+   * Emenda dividida entre vários municípios. Na lista de UMA cidade, os
+   * valores acima são o pedaço dela, e estes dizem de quanto era a emenda.
+   */
+  municipiosNaEmenda?: number;
+  valorEmpenhadoEmenda?: number;
   orgaoExecutor: string | null;
   beneficiario: string | null;
   cnpjBeneficiario: string | null;
@@ -951,7 +957,10 @@ export default function EmendasPage() {
     if (!selectedMunicipio || !selectedParlamentar) return parlamentarDestinosFlat;
     if (parlamentarMunicipioEmendas.length === 0) return [];
     const emendaIds = new Set(parlamentarMunicipioEmendas.map((e) => e.idPortal));
-    return parlamentarDestinosFlat.filter((d) => emendaIds.has(d.codigoEmenda));
+    // Emenda dividida entre cidades: só os destinos DESTA (os sem código são
+    // os de emenda de um município só, que já é este).
+    return parlamentarDestinosFlat.filter((d) => emendaIds.has(d.codigoEmenda)
+      && (!d.codigoIbge || d.codigoIbge === selectedMunicipio.codigo));
   }, [selectedMunicipio, selectedParlamentar, parlamentarMunicipioEmendas, parlamentarDestinosFlat]);
 
   const parlamentarMunicipioAreasAtual = useMemo<{ area: EmendaArea; total: number }[]>(() => {
@@ -3236,7 +3245,12 @@ function EmendasDetalhadasCard({
                         {/* Empenhar acima ou abaixo do que a emenda destinou e
                             comum — em 2025 aconteceu em 37% das do DF — e a
                             diferenca so aparece com os dois numeros juntos. */}
-                        {e.valorProposto != null && e.valorProposto !== e.valorEmpenhado && (
+                        {e.valorEmpenhadoEmenda != null && e.municipiosNaEmenda ? (
+                          <span className="block text-[10px] font-normal" style={{ color: 'var(--text-tertiary)' }}
+                            title={`Esta emenda foi dividida entre ${e.municipiosNaEmenda} municípios; o valor acima é o desta cidade`}>
+                            de {formatBRLCompact(e.valorEmpenhadoEmenda)} · {e.municipiosNaEmenda} municípios
+                          </span>
+                        ) : e.valorProposto != null && e.valorProposto !== e.valorEmpenhado && (
                           <span className="block text-[10px] font-normal" style={{ color: 'var(--text-tertiary)' }}
                             title="Valor destinado pelo parlamentar na emenda">
                             de {formatBRLCompact(e.valorProposto)}

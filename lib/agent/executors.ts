@@ -54,7 +54,15 @@ function whereEmendas(a: FiltrosEmendas, ignorar: Set<string> = new Set()) {
   return {
     ...(a.parlamentar_nome && !ignorar.has('parlamentar') && { parlamentar: filtroNomeParlamentar(a.parlamentar_nome) }),
     ...(a.uf && !ignorar.has('uf') && { uf: a.uf.toUpperCase() }),
-    ...(a.municipio && !ignorar.has('municipio') && { municipioNome: { contains: a.municipio, mode: 'insensitive' as const } }),
+    // Município: a emenda que mandou ALGUM pedaço para lá (documentos), ou —
+    // quando os documentos não dizem o município — a do cadastro.
+    ...(a.municipio && !ignorar.has('municipio') && { OR: [
+      { documentos: { some: { municipioDestino: { contains: a.municipio, mode: 'insensitive' as const } } } },
+      {
+        municipioNome: { contains: a.municipio, mode: 'insensitive' as const },
+        documentos: { none: { codigoIbgeDestino: { not: null } } },
+      },
+    ] }),
     ...(a.area && !ignorar.has('area') && { area: a.area as any }),
     ...(a.ano && !ignorar.has('ano') && { ano: Number(a.ano) }),
     ...(a.esfera && !ignorar.has('esfera') && { esfera: a.esfera as any }),
@@ -126,6 +134,72 @@ function descreverRecorte(a: FiltrosEmendas, ignorados: string[], anos: number[]
       ? `todos os anos (${anos[0]}–${anos[anos.length - 1]})`
       : 'todos os anos');
   return partes.join(' · ');
+}
+
+/** Sigla do estado pelo começo do código do IBGE do município. */
+const UF_POR_PREFIXO_IBGE: Record<string, string> = {
+  '12': 'AC', '27': 'AL', '16': 'AP', '13': 'AM', '29': 'BA', '23': 'CE', '53': 'DF',
+  '32': 'ES', '52': 'GO', '21': 'MA', '51': 'MT', '50': 'MS', '31': 'MG', '15': 'PA',
+  '25': 'PB', '41': 'PR', '26': 'PE', '22': 'PI', '33': 'RJ', '24': 'RN', '43': 'RS',
+  '11': 'RO', '14': 'RR', '42': 'SC', '35': 'SP', '28': 'SE', '17': 'TO',
+};
+
+type Soma = { empenhado: number; pago: number };
+type GrupoComoPrisma<K extends string> = { [k in K]: any } & {
+  _count: { _all: number }; _sum: { valorEmpenhado: number | null; valorPago: number | null };
+};
+
+/**
+ * Quanto de cada emenda do recorte foi para a cidade perguntada, e os totais,
+ * áreas e parlamentares somados por esse pedaço (no mesmo formato dos
+ * agrupamentos do banco, para o resto da função não mudar).
+ *
+ * Emenda com destino nos documentos: soma os documentos daquela cidade.
+ * Emenda sem (estadual, de um município só): conta inteira, como antes.
+ */
+async function pedacosNaCidade(whereFinal: any, cidade: string) {
+  const [linhas, docs] = await Promise.all([
+    prisma.emendaParlamentar.findMany({
+      where: whereFinal,
+      select: { id: true, area: true, parlamentarId: true, valorEmpenhado: true, valorPago: true },
+    }),
+    prisma.emendaDocumento.groupBy({
+      by: ['emendaId', 'fase'],
+      where: {
+        fase: { in: ['Empenho', 'Pagamento'] },
+        municipioDestino: { contains: cidade, mode: 'insensitive' },
+        emenda: whereFinal,
+      },
+      _sum: { valor: true },
+    }),
+  ]);
+
+  const porEmenda = new Map<string, Soma>();
+  for (const d of docs) {
+    const s = porEmenda.get(d.emendaId) ?? { empenhado: 0, pago: 0 };
+    if (d.fase === 'Empenho') s.empenhado += d._sum.valor ?? 0;
+    else s.pago += d._sum.valor ?? 0;
+    porEmenda.set(d.emendaId, s);
+  }
+
+  const total: Soma = { empenhado: 0, pago: 0 };
+  const area = new Map<string, GrupoComoPrisma<'area'>>();
+  const parl = new Map<string, GrupoComoPrisma<'parlamentarId'>>();
+  const juntar = <K extends string>(m: Map<string, GrupoComoPrisma<K>>, campo: K, chave: string | null, v: Soma) => {
+    const g = m.get(String(chave)) ?? ({ [campo]: chave, _count: { _all: 0 }, _sum: { valorEmpenhado: 0, valorPago: 0 } } as GrupoComoPrisma<K>);
+    g._count._all += 1;
+    g._sum.valorEmpenhado = (g._sum.valorEmpenhado ?? 0) + v.empenhado;
+    g._sum.valorPago = (g._sum.valorPago ?? 0) + v.pago;
+    m.set(String(chave), g);
+  };
+  for (const e of linhas) {
+    const v = porEmenda.get(e.id) ?? { empenhado: e.valorEmpenhado, pago: e.valorPago };
+    total.empenhado += v.empenhado;
+    total.pago += v.pago;
+    juntar(area, 'area', e.area, v);
+    juntar(parl, 'parlamentarId', e.parlamentarId, v);
+  }
+  return { porEmenda, total, porArea: [...area.values()], porParlamentar: [...parl.values()] };
 }
 
 export async function executarBuscarEmendas(
@@ -226,7 +300,7 @@ export async function executarBuscarEmendas(
   // recorte de SP que começa em 2021.
   const whereSemAno = whereEmendas(args, new Set([...filtrosIgnorados, 'ano']));
 
-  const [resumo, porAreaBruto, porParlamentarBruto, porMunicipioBruto, porUfBruto, anosBruto, docsPorMunicipio, docsDaLista] = await Promise.all([
+  const [resumo, porAreaBruto, porParlamentarBruto, porMunicipioBruto, porUfBruto, anosBruto, docsPorDestino, docsPorFavorecido, docsDaLista] = await Promise.all([
     prisma.emendaParlamentar.aggregate({
       where: whereFinal,
       _count: { _all: true },
@@ -275,24 +349,43 @@ export async function executarBuscarEmendas(
     // ele punha o valor inteiro numa cidade: a Gabi disse "Guará, R$ 17 mi"
     // para uma emenda Pix repartida entre 28 municípios, em que Guará recebeu
     // R$ 495 mil. Quem diz para onde foi cada real são os documentos — empenho
-    // e pagamento, cada um com o município de quem recebeu.
+    // e pagamento, cada um com o município de destino.
+    prisma.emendaDocumento.groupBy({
+      by: ['codigoIbgeDestino', 'municipioDestino', 'fase'],
+      where: { fase: { in: ['Empenho', 'Pagamento'] }, codigoIbgeDestino: { not: null }, emenda: whereFinal },
+      _sum: { valor: true },
+    }),
+    // Transição: emendas importadas antes de os documentos guardarem o
+    // destino. Vale o município de quem recebeu, no estado da emenda (abaixo).
+    // Some quando todos os anos tiverem sido reimportados.
     prisma.emendaDocumento.groupBy({
       by: ['ufFavorecido', 'municipioFavorecido', 'fase'],
-      where: { fase: { in: ['Empenho', 'Pagamento'] }, municipioFavorecido: { not: null }, emenda: whereFinal },
+      where: {
+        fase: { in: ['Empenho', 'Pagamento'] }, municipioFavorecido: { not: null },
+        emenda: { AND: [whereFinal, { documentos: { none: { codigoIbgeDestino: { not: null } } } }] },
+      },
       _sum: { valor: true },
     }),
     // Em quantos municípios cada emenda da lista foi dividida.
     prisma.emendaDocumento.groupBy({
-      by: ['emendaId', 'ufFavorecido', 'municipioFavorecido'],
-      where: { emendaId: { in: emendas.map(e => e.id) }, fase: 'Empenho', municipioFavorecido: { not: null } },
+      by: ['emendaId', 'codigoIbgeDestino', 'ufFavorecido', 'municipioFavorecido'],
+      where: { emendaId: { in: emendas.map(e => e.id) }, fase: 'Empenho' },
     }),
   ]);
 
-  const totalEmendas = resumo._count._all;
-  const totalEmpenhado = resumo._sum.valorEmpenhado ?? 0;
-  const totalPago = resumo._sum.valorPago ?? 0;
+  // Pergunta sobre UMA cidade: cada emenda conta só o pedaço que foi para ela.
+  // Sem isto, "quanto Osasco recebeu" somava as emendas inteiras que passaram
+  // por Osasco — R$ 8,6 mi de uma emenda em que Osasco recebeu R$ 2 mi.
+  const filtroCidade = args.municipio && !filtrosIgnorados.includes('municipio') ? args.municipio : null;
+  const pedacoNaCidade = filtroCidade
+    ? await pedacosNaCidade(whereFinal, filtroCidade)
+    : null;
 
-  const porParlamentar = porParlamentarBruto
+  const totalEmendas = resumo._count._all;
+  const totalEmpenhado = pedacoNaCidade ? pedacoNaCidade.total.empenhado : resumo._sum.valorEmpenhado ?? 0;
+  const totalPago = pedacoNaCidade ? pedacoNaCidade.total.pago : resumo._sum.valorPago ?? 0;
+
+  const porParlamentar = (pedacoNaCidade ? pedacoNaCidade.porParlamentar : porParlamentarBruto)
     .filter(p => p.parlamentarId)
     .sort((a, b) => (b._sum.valorEmpenhado ?? 0) - (a._sum.valorEmpenhado ?? 0));
   const top = porParlamentar.slice(0, 15);
@@ -309,7 +402,7 @@ export async function executarBuscarEmendas(
 
   const anosDisponiveis = anosBruto.map(a => ({ ano: a.ano, emendas: a._count._all }));
 
-  const porArea = porAreaBruto
+  const porArea = (pedacoNaCidade ? pedacoNaCidade.porArea : porAreaBruto)
     .map(a => ({
       area: a.area,
       emendas: a._count._all,
@@ -335,7 +428,13 @@ export async function executarBuscarEmendas(
     atual.pago += pago;
     porMunicipioMapa.set(chave, atual);
   };
-  for (const d of docsPorMunicipio) {
+  for (const d of docsPorDestino) {
+    if (!d.municipioDestino || !d.codigoIbgeDestino) continue;
+    const valor = d._sum.valor ?? 0;
+    somarMunicipio(d.municipioDestino, UF_POR_PREFIXO_IBGE[d.codigoIbgeDestino.slice(0, 2)],
+      d.fase === 'Empenho' ? valor : 0, d.fase === 'Pagamento' ? valor : 0);
+  }
+  for (const d of docsPorFavorecido) {
     const uf = String(d.ufFavorecido ?? '').toUpperCase();
     if (!d.municipioFavorecido || !ufsDoRecorte.has(uf)) continue;
     const valor = d._sum.valor ?? 0;
@@ -344,17 +443,28 @@ export async function executarBuscarEmendas(
   for (const m of porMunicipioBruto) {
     if (m.municipioNome) somarMunicipio(m.municipioNome, ufUnica, m._sum.valorEmpenhado ?? 0, m._sum.valorPago ?? 0);
   }
+  // Pergunta sobre uma cidade: as emendas que passaram por ela também foram
+  // para outras — o ranking mostra só a cidade perguntada.
+  const chaveCidade = filtroCidade ? chaveMunicipio(filtroCidade) : null;
   const municipiosComValor = [...porMunicipioMapa.values()]
     .filter(m => m.empenhado > 0 || m.pago > 0)
+    .filter(m => !chaveCidade || chaveMunicipio(m.municipio).includes(chaveCidade))
     .sort((a, b) => b.empenhado - a.empenhado);
 
-  // Municípios de cada emenda da lista, pelos documentos de empenho.
+  // Municípios de cada emenda da lista, pelos documentos de empenho: o
+  // destino gravado; na transição, quem recebeu no estado da emenda.
   const municipiosDaEmenda = new Map<string, Set<string>>();
+  const comDestino = new Set(docsDaLista.filter(d => d.codigoIbgeDestino).map(d => d.emendaId));
   const ufDaEmenda = new Map(emendas.map(e => [e.id, String(e.uf ?? '').toUpperCase()]));
   for (const d of docsDaLista) {
-    if (!d.municipioFavorecido || String(d.ufFavorecido ?? '').toUpperCase() !== ufDaEmenda.get(d.emendaId)) continue;
+    let chave: string | null = null;
+    if (comDestino.has(d.emendaId)) chave = d.codigoIbgeDestino;
+    else if (d.municipioFavorecido && String(d.ufFavorecido ?? '').toUpperCase() === ufDaEmenda.get(d.emendaId)) {
+      chave = chaveMunicipio(d.municipioFavorecido, ufDaEmenda.get(d.emendaId));
+    }
+    if (!chave) continue;
     const s = municipiosDaEmenda.get(d.emendaId) ?? new Set<string>();
-    s.add(chaveMunicipio(d.municipioFavorecido, ufDaEmenda.get(d.emendaId)));
+    s.add(chave);
     municipiosDaEmenda.set(d.emendaId, s);
   }
 
@@ -408,7 +518,7 @@ export async function executarBuscarEmendas(
      * Quinze cobrem a pergunta sem pesar no turno.
      */
     topMunicipios: municipiosComValor.slice(0, 15),
-    ...(docsPorMunicipio.length > 0 && {
+    ...((docsPorDestino.length > 0 || docsPorFavorecido.length > 0) && {
       notaMunicipios:
         'Valor por município somado dos documentos de empenho e de pagamento de cada cidade. O pago por município ' +
         'pode ficar abaixo de "totalPago", que inclui restos a pagar pagos; o total oficial é "totalPago".',
@@ -466,11 +576,19 @@ export async function executarBuscarEmendas(
         : { municipio: e.municipioNome ?? '' }),
       uf: e.uf ?? '',
       esfera: e.esfera,
-      valorEmpenhado: e.valorEmpenhado,
-      valorPago: e.valorPago,
-      execucao: e.valorEmpenhado > 0
-        ? Math.round((e.valorPago / e.valorEmpenhado) * 100)
-        : 0,
+      ...(() => {
+        // Pergunta de uma cidade e emenda dividida: o pedaço dela, e de
+        // quanto era a emenda inteira.
+        const p = pedacoNaCidade?.porEmenda.get(e.id);
+        const emp = p ? p.empenhado : e.valorEmpenhado;
+        const pago = p ? p.pago : e.valorPago;
+        return {
+          valorEmpenhado: emp,
+          valorPago: pago,
+          ...(p && { valorEmpenhadoEmendaInteira: e.valorEmpenhado }),
+          execucao: emp > 0 ? Math.round((pago / emp) * 100) : 0,
+        };
+      })(),
     })),
   };
 }
