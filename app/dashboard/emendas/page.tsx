@@ -345,15 +345,18 @@ export default function EmendasPage() {
   }, [view, selectedUf, ano, esfera, fetchResumo]);
 
   // Fetch secundário — ano anterior para o comparativo por área.
-  // Roda em background sem bloquear o overlay do mapa.
+  // Roda em background sem bloquear o overlay do mapa. Usa o MESMO filtro de
+  // esfera do ano atual: sem ele, "federais 2025" era comparado com "federais
+  // + estaduais 2024" e todas as áreas apareciam em queda.
   useEffect(() => {
     if (view !== 'estado' || !selectedUf) return;
     const ctrl = new AbortController();
-    fetchResumo(selectedUf, ano - 1, ctrl.signal)
+    setResumoAnterior(null);
+    fetchResumo(selectedUf, ano - 1, ctrl.signal, esfera)
       .then((anterior) => { if (!ctrl.signal.aborted) setResumoAnterior(anterior); })
       .catch(() => {});
     return () => ctrl.abort();
-  }, [view, selectedUf, ano, fetchResumo]);
+  }, [view, selectedUf, ano, esfera, fetchResumo]);
 
   // ----- Stats + emendas do município selecionado -----
   useEffect(() => {
@@ -369,8 +372,8 @@ export default function EmendasPage() {
       fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/stats?ano=${ano}`, { signal: ctrl.signal }).then((r) => r.json()),
       fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/emendas?uf=${selectedUf}&ano=${ano}${esfera !== 'TODAS' ? `&esfera=${esfera}` : ''}`, { signal: ctrl.signal }).then((r) => r.json()),
       // Emendas do ano anterior — pra alimentar o card de comparativo
-      // quando município está selecionado.
-      fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/emendas?uf=${selectedUf}&ano=${ano - 1}`, { signal: ctrl.signal }).then((r) => r.json()),
+      // quando município está selecionado (mesmo filtro de esfera do ano atual).
+      fetch(`/api/emendas-portal/municipio/${selectedMunicipio.codigo}/emendas?uf=${selectedUf}&ano=${ano - 1}${esfera !== 'TODAS' ? `&esfera=${esfera}` : ''}`, { signal: ctrl.signal }).then((r) => r.json()),
     ])
       .then(([stats, emendas, emendasAnt]) => {
         setMunicipioStats(stats);
