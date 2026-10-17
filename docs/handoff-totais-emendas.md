@@ -77,3 +77,15 @@ Plano de desempenho do banco aprovado pelo usuário:
 5. Depois, à parte, os documentos repetidos no CSV.
    - Em 2023 são 15,5 mil: 5,7 mil são a mesma emenda paga em partes e 9,8 mil são compartilhados entre emendas.
    - Como `codigoDocumento` é único no banco, só uma parte (e uma emenda) fica gravada. Isso afeta só a lista de documentos, não os totais.
+
+## Situação em 16/10/2026, à noite
+
+- Correção real dos totais 2021–2026 disparada pelo usuário no workflow "Totais oficiais" (sem simular). A simulação deu "só no Portal" = 0 em todos os anos; 2025: R$ 2,4 bi → R$ 47,1 bi empenhado.
+- Item 2 pronto e desligado (commits `ac3fe9f4` e `dd52a6ae`): `lib/emendas/resumo-emendas.ts`, `scripts/atualizar-resumo-emendas.ts`, tabela `emendas_resumos`, passo no fim de todas as importações e workflow manual "Resumo de Emendas". Testado local: 258 recortes iguais.
+  - **Falta:** o usuário rodar "Resumo de Emendas" com **conferir** e mandar o resultado. Se bater, trocar `USAR_RESUMO_PRONTO` para `true` em `app/api/emendas-portal/resumo/route.ts` e `brasil/route.ts`.
+- Totais de 2021–2022 todo dia 20 (commit `ce951674`).
+- Documentos faltando no banco: 2021 tem 6.108 (349.005 de 355.113) e 2022 tem 1.640 (262.229 de 263.869).
+  - O usuário vai reimportar em 17/10, **um ano por vez**, com `modo=lote` (o modo linha passaria das 6 h). Isso também serve de teste real do modo lote.
+  - Conferir depois com a consulta abaixo:
+    `SELECT extract(year FROM data)::int, count(*) FROM emendas_documentos WHERE data >= '2021-01-01' AND data < '2023-01-01' GROUP BY 1`
+- Estaduais (SP, DF, RJ) regravam os valores a cada rodada. Limite da fonte: no DF o "pago" é o liquidado; no RJ o pago fica zerado.
