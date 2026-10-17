@@ -16,7 +16,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { LoadingState } from '@/components/ui/loading-state';
+import { Indicador } from '@/components/mapa-campanha/projecao-visual';
+import { BarraSimples, ChipFiltro } from '@/components/mapa/comparacao-visual';
+import { Esqueleto } from '@/components/ui/esqueleto';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { ContatoMapItem } from '@/components/maps/contatos-municipio-map';
 import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
@@ -638,12 +640,24 @@ export default function ContatosPage() {
   };
 
   // ── Lista filter ──
+  const [recorte, setRecorte] = useState<'todos' | 'mapa' | 'sem_local' | 'email'>('todos');
+  const noMapa = (c: Contato) => c.lat != null && c.lng != null;
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return contatos.filter(c =>
-      c.nome.toLowerCase().includes(q) || c.numero.includes(q) || (c.email ?? '').toLowerCase().includes(q) || (c.endereco ?? '').toLowerCase().includes(q)
+      (c.nome.toLowerCase().includes(q) || c.numero.includes(q) || (c.email ?? '').toLowerCase().includes(q) || (c.endereco ?? '').toLowerCase().includes(q))
+      && (recorte === 'todos' || (recorte === 'mapa' && noMapa(c)) || (recorte === 'sem_local' && !noMapa(c)) || (recorte === 'email' && !!c.email))
     );
-  }, [contatos, search]);
+  }, [contatos, search, recorte]);
+  const resumoContatos = useMemo(() => {
+    const limite = Date.now() - 30 * 86_400_000;
+    return {
+      total: contatos.length,
+      mapa: contatos.filter(noMapa).length,
+      email: contatos.filter(c => !!c.email).length,
+      novos: contatos.filter(c => new Date(c.createdAt).getTime() >= limite).length,
+    };
+  }, [contatos]);
 
   const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-[color:var(--text-primary)] placeholder-[color:var(--text-tertiary)] outline-none transition-all';
   const inputStyle = { background: 'var(--tint-06)', border: '1px solid var(--tint-10)' };
@@ -696,22 +710,50 @@ export default function ContatosPage() {
       {/* ══════════════════════════════ LISTA ══════════════════════════════ */}
       {activeTab === 'lista' && (
         <>
+          {/* Números */}
+          {!loading && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <Indicador icone={BookUser} rotulo="Contatos" cor="#2563eb" valor={resumoContatos.total.toLocaleString('pt-BR')}
+                detalhe={resumoContatos.novos > 0 ? `${resumoContatos.novos.toLocaleString('pt-BR')} novos em 30 dias` : 'nenhum novo em 30 dias'} />
+              <Indicador icone={MapPin} rotulo="No mapa" cor="#16a34a" valor={resumoContatos.mapa.toLocaleString('pt-BR')}
+                detalhe={`${resumoContatos.total ? Math.round((resumoContatos.mapa / resumoContatos.total) * 100) : 0}% com endereço localizado`}>
+                <BarraSimples fracao={resumoContatos.total ? resumoContatos.mapa / resumoContatos.total : 0} cor="#16a34a" altura={5} />
+              </Indicador>
+              <Indicador icone={Mail} rotulo="Com e-mail" cor="#7c3aed" valor={resumoContatos.email.toLocaleString('pt-BR')}
+                detalhe={`${resumoContatos.total ? Math.round((resumoContatos.email / resumoContatos.total) * 100) : 0}% do total`}>
+                <BarraSimples fracao={resumoContatos.total ? resumoContatos.email / resumoContatos.total : 0} cor="#7c3aed" altura={5} />
+              </Indicador>
+              <Indicador icone={MapPin} rotulo="Sem localização" cor="#d97706" valor={(resumoContatos.total - resumoContatos.mapa).toLocaleString('pt-BR')}
+                detalhe="use “Localizar” no cartão" />
+            </div>
+          )}
+
           {/* Search */}
-          <div className="relative max-w-md">
+          <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
             <input type="text" placeholder="Buscar por nome, número, email..."
               value={search} onChange={e => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-[color:var(--text-primary)] placeholder-[color:var(--text-tertiary)] outline-none transition-all"
               style={inputStyle} />
           </div>
+          <div className="flex flex-wrap gap-1.5">
+            <ChipFiltro ativo={recorte === 'todos'} onClick={() => setRecorte('todos')}>Todos</ChipFiltro>
+            <ChipFiltro ativo={recorte === 'mapa'} cor="#16a34a" onClick={() => setRecorte(recorte === 'mapa' ? 'todos' : 'mapa')}>No mapa</ChipFiltro>
+            <ChipFiltro ativo={recorte === 'sem_local'} cor="#d97706" onClick={() => setRecorte(recorte === 'sem_local' ? 'todos' : 'sem_local')}>Sem localização</ChipFiltro>
+            <ChipFiltro ativo={recorte === 'email'} cor="#7c3aed" onClick={() => setRecorte(recorte === 'email' ? 'todos' : 'email')}>Com e-mail</ChipFiltro>
+          </div>
+          </div>
 
           {loading ? (
-            <LoadingState />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {Array.from({ length: 6 }, (_, i) => <Esqueleto key={i} className="h-48" />)}
+            </div>
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={BookUser}
-              title={search ? 'Nenhum contato encontrado' : 'Nenhum contato cadastrado ainda'}
-              description={search ? 'Tente ajustar o termo de busca.' : 'Comece cadastrando o primeiro contato do gabinete.'}
+              title={search || recorte !== 'todos' ? 'Nenhum contato encontrado' : 'Nenhum contato cadastrado ainda'}
+              description={search || recorte !== 'todos' ? 'Tente ajustar a busca ou o filtro.' : 'Comece cadastrando o primeiro contato do gabinete.'}
             />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
