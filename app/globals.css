@@ -661,6 +661,33 @@ html, body {
 @media (min-width: 640px) {
   .altura-folha { max-height: 90vh; }
 }
+/* Gabi — caixa de escrita: o foco acende a moldura inteira (texto + botão). */
+.gabi-compositor { transition: border-color .15s ease, box-shadow .15s ease; }
+/* Texto de exemplo numa linha só (no celular quebrava e cortava a 2ª linha). */
+.gabi-compositor textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gabi-compositor:focus-within {
+  border-color: var(--brand-cobalt) !important;
+  box-shadow: var(--gabi-campo-sombra), 0 0 0 3px var(--focus-ring) !important;
+}
+
+/* Gabi — "Analisando…": um brilho corre pelo texto enquanto ela trabalha. */
+.gabi-brilho-texto {
+  background: linear-gradient(90deg, var(--text-secondary) 0%, var(--text-secondary) 40%,
+    var(--brand-cobalt-text) 50%, var(--text-secondary) 60%, var(--text-secondary) 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gabi-brilho 2.2s linear infinite;
+}
+@keyframes gabi-brilho {
+  from { background-position: 100% 0; }
+  to   { background-position: -150% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gabi-brilho-texto { animation: none; color: var(--text-secondary); background: none; }
+}
+
 @supports (height: 1dvh) {
   .altura-gabi { height: min(740px, calc(100dvh - 32px)); }
   .altura-folha { max-height: 95dvh; }

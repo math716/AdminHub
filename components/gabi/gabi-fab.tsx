@@ -2,7 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { X, Send, Loader2, MessageSquare, Clock, Plus, Trash2, ChevronLeft, ScrollText, Sparkles } from 'lucide-react';
+import {
+  X, Send, Loader2, MessageSquare, Clock, Plus, Trash2, ChevronLeft, ScrollText, Sparkles,
+  Landmark, MapPin, Scale, FileBarChart, Copy, Check, Search, ArrowUpRight,
+} from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { getGabiFace, subscribeGabiFace } from './gabi-face-store';
@@ -342,6 +345,46 @@ const WELCOME: Message = {
   content: 'Olá, Sou a Gabi! Assessora Virtual do seu Gabinete, como posso te ajudar hoje?',
 };
 
+// A saudação continua na conversa (é o que a Gabi "disse" primeiro), mas a
+// tela inicial já cumprimenta — repetir o balão em cima da pergunta é ruído.
+const ehSaudacao = (m: Message, i: number) => i === 0 && m.role === 'assistant' && m.content === WELCOME.content;
+
+/**
+ * Atalhos da tela inicial. Clicar PREENCHE a caixa de texto (não envia): a
+ * pessoa completa com o nome, o bairro ou o ano e manda quando quiser.
+ */
+const SUGESTOES = [
+  { icone: Landmark,     titulo: 'Emendas de um parlamentar', texto: 'Para onde foram as emendas',  pergunta: 'Me mostre as emendas de 2025 do deputado ' },
+  { icone: MapPin,       titulo: 'Votos num bairro',          texto: 'Desempenho por região',        pergunta: 'Quantos votos teve no bairro ' },
+  { icone: Scale,        titulo: 'Comparar candidatos',       texto: 'Lado a lado, onde cada um ganhou', pergunta: 'Compare os votos de 2022 entre os candidatos ' },
+  { icone: FileBarChart, titulo: 'Relatório territorial',     texto: 'Deputados por região do DF',   pergunta: 'Gere o relatório territorial do DF por região administrativa' },
+];
+
+// ─── Histórico agrupado ───────────────────────────────────────────────────────
+
+const GRUPOS_HISTORICO = ['Hoje', 'Ontem', 'Últimos 7 dias', 'Mais antigas'] as const;
+
+/** Grupo da conversa pela data, contando dias do calendário (como rotuloDeData). */
+function grupoDaConversa(iso: string, agora = new Date()): (typeof GRUPOS_HISTORICO)[number] {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'Mais antigas';
+  const meiaNoite = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const dias = Math.round((meiaNoite(agora) - meiaNoite(d)) / 86_400_000);
+  if (dias <= 0) return 'Hoje';
+  if (dias === 1) return 'Ontem';
+  if (dias < 7) return 'Últimos 7 dias';
+  return 'Mais antigas';
+}
+
+/** "14:32" para hoje e ontem; a data para o resto. */
+function quandoDaConversa(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const grupo = grupoDaConversa(iso);
+  if (grupo === 'Hoje' || grupo === 'Ontem') return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  return rotuloDeData(iso);
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export function GabiFAB() {
@@ -359,6 +402,43 @@ export function GabiFAB() {
   const [saving, setSaving]     = useState(false);
   // O que a Gabi esta fazendo agora, enquanto a resposta nao chega.
   const [progresso, setProgresso] = useState<string | null>(null);
+  const [histBusca, setHistBusca] = useState('');
+  // Mensagem cuja resposta acabou de ser copiada (mostra "Copiado" por 1,5 s).
+  const [copiada, setCopiada] = useState<number | null>(null);
+
+  const copiarResposta = useCallback(async (i: number, texto: string) => {
+    let ok = false;
+    try { await navigator.clipboard.writeText(texto); ok = true; } catch {}
+    // Plano B: navegador sem permissão para a área de transferência (ou página
+    // fora de https) — copia por um campo escondido.
+    if (!ok) {
+      const campo = Object.assign(document.createElement('textarea'), { value: texto });
+      campo.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+      const antes = document.activeElement as HTMLElement | null;
+      document.body.appendChild(campo);
+      campo.focus();   // sem foco o select() não marca nada e a cópia falha
+      campo.select();
+      try { ok = document.execCommand('copy'); } catch {}
+      campo.remove();
+      antes?.focus?.();
+    }
+    if (!ok) return;
+    setCopiada(i);
+    setTimeout(() => setCopiada(atual => (atual === i ? null : atual)), 1500);
+  }, []);
+
+  /** Atalho da tela inicial: põe a pergunta na caixa e o cursor no fim. */
+  const usarSugestao = useCallback((pergunta: string) => {
+    setInput(pergunta);
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(pergunta.length, pergunta.length);
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    });
+  }, []);
 
   // Gabinete de quem está usando: entra na chave do que fica guardado no
   // navegador, para uma conta nunca ler a conversa da outra.
@@ -507,6 +587,7 @@ export function GabiFAB() {
       setSaving(false);
     }
     setMessages([WELCOME]);
+    setError(null);
     setSessaoId(null);
     sessaoIdRef.current = null;
     if (escopoLocal) lsDel(chaveMsgs(escopoLocal), chaveId(escopoLocal));
@@ -540,6 +621,7 @@ export function GabiFAB() {
       }));
     const final = msgs.length > 0 ? msgs : [WELCOME];
     setMessages(final);
+    setError(null);
     setSessaoId(c.id);
     sessaoIdRef.current = c.id; // o autosave passa a atualizar ESTA conversa
     if (escopoLocal) { lsSet(chaveMsgs(escopoLocal), final); lsSet(chaveId(escopoLocal), c.id); }
@@ -788,35 +870,86 @@ export function GabiFAB() {
                       <p className="text-sm font-medium">Nenhuma conversa salva</p>
                       <p className="text-xs opacity-60">Use o botão + para iniciar uma nova conversa</p>
                     </div>
-                  ) : (
-                    <div className="py-2">
-                      {historico.map(c => (
-                        <button
-                          key={c.id}
-                          onClick={() => carregarConversa(c)}
-                          className="w-full text-left px-5 py-3.5 flex items-start gap-3 transition-colors hover:bg-white/5 group"
-                          style={{ borderBottom: '1px solid var(--border-default)' }}
-                        >
-                          <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--brand-cobalt)', opacity: 0.55 }} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-                              {c.titulo || 'Conversa sem título'}
-                            </p>
-                            <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                              {rotuloDeData(c.criadaEm)} · {(c.mensagens ?? []).length} mensagens
-                            </p>
-                          </div>
-                          <button
-                            onClick={e => { e.stopPropagation(); deletarConversa(c.id); }}
-                            className="p-1.5 rounded-lg acao-no-hover transition-all hover:bg-red-500/15 flex-shrink-0"
-                            style={{ color: '#ef4444' }}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  ) : (() => {
+                    const termo = histBusca.trim().toLowerCase();
+                    const filtradas = termo
+                      ? historico.filter(c => (c.titulo ?? '').toLowerCase().includes(termo))
+                      : historico;
+                    return (
+                      <div className="px-4 sm:px-5 py-4 space-y-5">
+                        {/* Busca pelo título da conversa */}
+                        <div className="relative">
+                          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-tertiary)' }} />
+                          <input
+                            value={histBusca}
+                            onChange={e => setHistBusca(e.target.value)}
+                            placeholder="Buscar nas conversas"
+                            className="w-full pl-10 pr-3 py-2.5 text-sm outline-none rounded-xl"
+                            style={{ background: 'var(--gabi-campo)', border: '1px solid var(--gabi-balao-borda)', color: 'var(--text-primary)', boxShadow: 'var(--gabi-campo-sombra)' }}
+                          />
+                        </div>
+
+                        {filtradas.length === 0 && (
+                          <p className="text-sm text-center py-8" style={{ color: 'var(--text-tertiary)' }}>
+                            Nenhuma conversa com “{histBusca.trim()}”.
+                          </p>
+                        )}
+
+                        {GRUPOS_HISTORICO.map(grupo => {
+                          const doGrupo = filtradas.filter(c => grupoDaConversa(c.criadaEm) === grupo);
+                          if (doGrupo.length === 0) return null;
+                          return (
+                            <section key={grupo} className="space-y-2">
+                              <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] px-1" style={{ color: 'var(--text-tertiary)' }}>
+                                {grupo}
+                              </p>
+                              {doGrupo.map(c => {
+                                const qtd = (c.mensagens ?? []).filter(m => m.role === 'user').length;
+                                return (
+                                  <div
+                                    key={c.id}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => carregarConversa(c)}
+                                    onKeyDown={e => { if (e.key === 'Enter') carregarConversa(c); }}
+                                    className="group flex items-center gap-3 px-3.5 py-3 rounded-xl cursor-pointer transition-all hover:-translate-y-px"
+                                    style={{
+                                      background: 'linear-gradient(180deg, var(--gabi-balao-de), var(--gabi-balao-para))',
+                                      border: `1px solid ${sessaoId === c.id ? 'var(--brand-cobalt)' : 'var(--gabi-balao-borda)'}`,
+                                      boxShadow: 'var(--gabi-balao-sombra)',
+                                    }}
+                                  >
+                                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                                      style={{ background: 'var(--brand-cobalt-soft)', color: 'var(--brand-cobalt-text)' }}>
+                                      <MessageSquare className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[13.5px] font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                                        {c.titulo || 'Conversa sem título'}
+                                      </p>
+                                      <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                                        {quandoDaConversa(c.criadaEm)} · {qtd} {qtd === 1 ? 'pergunta' : 'perguntas'}
+                                        {sessaoId === c.id && <span style={{ color: 'var(--brand-cobalt-text)' }}> · aberta agora</span>}
+                                      </p>
+                                    </div>
+                                    <button
+                                      onClick={e => { e.stopPropagation(); deletarConversa(c.id); }}
+                                      title="Apagar conversa"
+                                      aria-label="Apagar conversa"
+                                      className="p-1.5 rounded-lg acao-no-hover transition-all hover:bg-red-500/15 flex-shrink-0"
+                                      style={{ color: '#ef4444' }}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </section>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -851,16 +984,57 @@ export function GabiFAB() {
                             <GabiAvatar3D size={176} />
                           </div>
                         </div>
-                        <p className="font-bold mt-1 tracking-[-0.01em]"
-                          style={{ fontSize: 15, color: 'var(--text-primary)' }}>Gabi</p>
-                        <p className="uppercase font-semibold tracking-[0.09em] mt-0.5"
+                        <p className="uppercase font-semibold tracking-[0.09em] mt-1"
                           style={{ fontSize: 10, color: 'var(--brand-cobalt-text)' }}>
-                          Sua assessora virtual
+                          Gabi · sua assessora virtual
                         </p>
                       </div>
                     )}
-                    {messages.map((msg, i) => (
-                      <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+
+                    {/* Tela inicial: saudação + atalhos */}
+                    {messages.length <= 1 && (
+                      <div className="flex flex-col items-center text-center gap-5 pb-2">
+                        <div>
+                          <h3 className="font-bold tracking-[-0.02em]" style={{ fontSize: 22, color: 'var(--text-primary)' }}>
+                            Como posso te ajudar hoje?
+                          </h3>
+                          <p className="mt-1.5 text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+                            Pergunte sobre emendas, votos, demandas e candidatos — ou comece por um atalho.
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-2xl text-left">
+                          {SUGESTOES.map(s => {
+                            const Icone = s.icone;
+                            return (
+                              <button
+                                key={s.titulo}
+                                onClick={() => usarSugestao(s.pergunta)}
+                                className="group flex items-center gap-3 px-3.5 py-3 rounded-xl text-left transition-all hover:-translate-y-0.5"
+                                style={{
+                                  background: 'linear-gradient(180deg, var(--gabi-balao-de), var(--gabi-balao-para))',
+                                  border: '1px solid var(--gabi-balao-borda)',
+                                  boxShadow: 'var(--gabi-balao-sombra)',
+                                }}
+                              >
+                                <span className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                                  style={{ background: 'var(--brand-cobalt-soft)', color: 'var(--brand-cobalt-text)' }}>
+                                  <Icone className="w-[18px] h-[18px]" />
+                                </span>
+                                <span className="flex-1 min-w-0">
+                                  <span className="block text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>{s.titulo}</span>
+                                  <span className="block text-[11.5px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{s.texto}</span>
+                                </span>
+                                <ArrowUpRight className="w-4 h-4 flex-shrink-0 opacity-40 transition-opacity group-hover:opacity-100"
+                                  style={{ color: 'var(--brand-cobalt-text)' }} />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {messages.map((msg, i) => ehSaudacao(msg, i) ? null : (
+                      <div key={i} className={`group flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         {/* Avatar Gabi */}
                         {msg.role === 'assistant' && (
                           <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center mt-5 font-semibold text-white text-[11px]"
@@ -912,6 +1086,19 @@ export function GabiFAB() {
                             }
                           </div>
 
+                          {/* Copiar a resposta (aparece ao passar o mouse; no
+                              celular fica sempre visível) */}
+                          {msg.role === 'assistant' && msg.content && (
+                            <button
+                              onClick={() => copiarResposta(i, msg.content)}
+                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium transition-all hover:bg-[var(--tint-06)] ${copiada === i ? '' : 'acao-no-hover'}`}
+                              style={{ color: copiada === i ? 'var(--success)' : 'var(--text-tertiary)' }}
+                            >
+                              {copiada === i ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                              {copiada === i ? 'Copiado' : 'Copiar resposta'}
+                            </button>
+                          )}
+
                           {/* Visualizações combinadas */}
                           {msg.visualizacoes && msg.visualizacoes.length > 0 && (
                             <VisualizacoesCard
@@ -953,14 +1140,11 @@ export function GabiFAB() {
                                   style={{ width: 5, height: 5, background: 'var(--brand-cobalt)', animationDelay: `${delay}ms` }} />
                               ))}
                             </div>
-                            {/* O que ela está fazendo agora. Só aparece quando
-                                há o que dizer — nos primeiros instantes os
-                                pontinhos sozinhos já bastam. */}
-                            {progresso && (
-                              <span className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>
-                                {progresso}…
-                              </span>
-                            )}
+                            {/* O que ela está fazendo agora; antes do primeiro
+                                passo, um "Analisando" com brilho correndo. */}
+                            <span className="gabi-brilho-texto text-[12px] font-medium">
+                              {progresso ?? 'Analisando sua pergunta'}…
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -982,7 +1166,15 @@ export function GabiFAB() {
                         histórico sem o traço seco de uma borda. */}
                     <div aria-hidden className="absolute inset-x-0 top-0 pointer-events-none"
                       style={{ height: 1, background: 'linear-gradient(90deg, transparent, var(--gabi-balao-borda) 18%, var(--gabi-balao-borda) 82%, transparent)' }} />
-                    <div className="flex items-end gap-2.5">
+                    {/* Painel único: o texto e o botão de enviar moram juntos;
+                        o foco acende a moldura inteira (gabi-compositor). */}
+                    <div className="gabi-compositor flex items-end gap-2 p-1.5 pl-1"
+                      style={{
+                        background: 'var(--gabi-campo)',
+                        border: '1px solid var(--gabi-balao-borda)',
+                        borderRadius: 18,
+                        boxShadow: 'var(--gabi-campo-sombra)',
+                      }}>
                       <textarea
                         ref={inputRef}
                         value={input}
@@ -991,24 +1183,12 @@ export function GabiFAB() {
                         placeholder="Pergunte sobre emendas, votos, demandas, candidatos..."
                         rows={1}
                         disabled={loading}
-                        className="flex-1 resize-none px-4 py-3 outline-none transition-all duration-150"
+                        className="flex-1 resize-none px-3 py-2.5 outline-none bg-transparent"
                         style={{
-                          background: 'var(--gabi-campo)',
-                          border: '1px solid var(--gabi-balao-borda)',
-                          borderRadius: 14,
                           color: 'var(--text-primary)',
                           maxHeight: 120,
                           fontSize: 13.5,
                           lineHeight: '1.55',
-                          boxShadow: 'var(--gabi-campo-sombra)',
-                        }}
-                        onFocus={e => {
-                          e.currentTarget.style.borderColor = 'var(--brand-cobalt)';
-                          e.currentTarget.style.boxShadow = 'var(--gabi-campo-sombra), 0 0 0 3px var(--focus-ring)';
-                        }}
-                        onBlur={e => {
-                          e.currentTarget.style.borderColor = 'var(--gabi-balao-borda)';
-                          e.currentTarget.style.boxShadow = 'var(--gabi-campo-sombra)';
                         }}
                         onInput={e => {
                           const el = e.currentTarget;
@@ -1019,21 +1199,21 @@ export function GabiFAB() {
                       <button
                         onClick={send}
                         disabled={!input.trim() || loading}
+                        aria-label="Enviar"
                         className="flex-shrink-0 flex items-center justify-center transition-all duration-150 disabled:cursor-not-allowed"
                         style={{
-                          width: 42, height: 42, borderRadius: 14,
+                          width: 40, height: 40, borderRadius: 13,
                           background: input.trim() && !loading ? 'var(--gabi-envio)' : 'var(--tint-06)',
-                          border: input.trim() && !loading ? 'none' : '1px solid var(--gabi-balao-borda)',
                           color: input.trim() && !loading ? '#fff' : 'var(--text-tertiary)',
                           boxShadow: input.trim() && !loading ? 'var(--gabi-envio-sombra)' : 'none',
-                          transform: input.trim() && !loading ? 'scale(1)' : 'scale(0.97)',
+                          transform: input.trim() && !loading ? 'scale(1)' : 'scale(0.96)',
                         }}
                       >
                         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                       </button>
                     </div>
                     <p className="text-[10px] mt-2 text-center" style={{ color: 'var(--text-tertiary)' }}>
-                      Enter para enviar · Shift+Enter para nova linha
+                      <kbd className="font-sans font-semibold">Enter</kbd> envia · <kbd className="font-sans font-semibold">Shift + Enter</kbd> quebra a linha
                     </p>
                   </div>
                 </>
