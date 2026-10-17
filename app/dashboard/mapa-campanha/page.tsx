@@ -17,9 +17,10 @@ import { toast } from 'sonner';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 import { PERMISSIONS, hasPermission } from '@/lib/permissions';
-import { Painel, CampoFiltro, ChipFiltro, Trilha, BarraSimples } from '@/components/mapa/comparacao-visual';
+import { Painel, CampoFiltro, ChipFiltro, Trilha, BarraSimples, Avatar, comAlfa } from '@/components/mapa/comparacao-visual';
 import { CabecalhoProjecao, Indicador, PainelCenarios, LinhaMunicipio, AnaliseProjecao } from '@/components/mapa-campanha/projecao-visual';
-import { CampoBusca, CartaoProjecaoSalva, type ResumoProjecaoSalva } from '@/components/mapa-campanha/visual';
+import { CampoBusca, CartaoProjecaoSalva, corDoCargo, rotuloCargo, type ResumoProjecaoSalva } from '@/components/mapa-campanha/visual';
+import { BotaoPrincipal, BotaoSecundario, CartaoMetaCenario, CLASSE_CAMPO, ESTILO_CAMPO, Interruptor, SecaoJanela, SeletorPrioridade } from '@/components/mapa-campanha/janelas-visual';
 import {
   Map,
   Target,
@@ -42,7 +43,6 @@ import {
   Home,
   Building2,
   TrendingUp,
-  Percent,
   Pencil,
   Eye,
   EyeOff,
@@ -2507,6 +2507,17 @@ export default function MapaCampanhaPage() {
 
   const estadosOptions = ESTADOS_BRASIL.map(e => ({ value: e.sigla, label: e.nome }));
 
+  // Nome para mostrar de uma entrada da projeção: zona do DF, região, distrito
+  // de SP, bairro do RJ/CE/município — ou o próprio município.
+  const nomeDaArea = (n: string): string =>
+    isDfZona(n) ? `Zona ${getZonaNumber(n)}`
+      : isDfRegiao(n) ? getRegiaoNome(n)
+      : isSpDistrito(n) ? getDistritoNome(n)
+      : isRjBairro(n) ? getRjBairroNome(n)
+      : isCeBairro(n) ? getCeBairroNome(n)
+      : isMunBairro(n) ? getMunBairroNome(n)
+      : n;
+
   const prioridadeOptions = [
     { value: 'ALTA', label: 'Alta Prioridade' },
     { value: 'MEDIA', label: 'Média Prioridade' },
@@ -3919,26 +3930,35 @@ export default function MapaCampanhaPage() {
       <Modal
         isOpen={showModal}
         onClose={() => { setShowModal(false); setSelectedMapMunicipio(null); }}
-        title={selectedMunicipio?.nome && isDfZona(selectedMunicipio.nome) ? `Editar Metas - Zona ${getZonaNumber(selectedMunicipio.nome)}` : selectedMunicipio?.nome && isDfRegiao(selectedMunicipio.nome) ? `Editar Metas - ${getRegiaoNome(selectedMunicipio.nome)}` : selectedMunicipio?.nome && isSpDistrito(selectedMunicipio.nome) ? `Editar Metas - ${getDistritoNome(selectedMunicipio.nome)}` : selectedMunicipio?.nome && isRjBairro(selectedMunicipio.nome) ? `Editar Metas - ${getRjBairroNome(selectedMunicipio.nome)}` : selectedMunicipio?.nome && isCeBairro(selectedMunicipio.nome) ? `Editar Metas - ${getCeBairroNome(selectedMunicipio.nome)}` : selectedMunicipio?.nome && isMunBairro(selectedMunicipio.nome) ? `Editar Metas - ${getMunBairroNome(selectedMunicipio.nome)}` : `Editar Metas - ${selectedMunicipio?.nome}`}
+        title={selectedMunicipio?.nome ? nomeDaArea(selectedMunicipio.nome) : ''}
+        subtitulo={selectedMunicipio ? `Metas para ${anoProjecao} · ${selectedMunicipio.votosBase > 0 ? `${selectedMunicipio.votosBase.toLocaleString('pt-BR')} votos em ${ano}` : `sem votos em ${ano}`}` : undefined}
+        icone={MapPin}
+        cor={cenarioConfig[cenarioAtivo].hex}
         size="lg"
-        dark
+        rodape={selectedMunicipio && (
+          <>
+            <BotaoSecundario onClick={() => { setShowModal(false); setSelectedMapMunicipio(null); }}>Cancelar</BotaoSecundario>
+            <BotaoPrincipal icone={CheckCircle} onClick={() => {
+              updateMunicipioMetas(
+                selectedMunicipio.nome,
+                metaConservadoraTemp,
+                metaPossivelTemp,
+                metaArrojadaTemp,
+                prioridadeTemp,
+                dobradaAtivaTemp,
+                dobradaNomeTemp,
+                dobradaPartidoTemp,
+                dobradaObservacoesTemp
+              );
+              setShowModal(false);
+              setSelectedMapMunicipio(null);
+            }}>Salvar</BotaoPrincipal>
+          </>
+        )}
       >
         {selectedMunicipio && (
           <div className="space-y-5">
-            {/* Votos Base */}
-            <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm">Votos em {ano}</p>
-                  <p className="text-3xl font-bold text-[color:var(--brand-cobalt)]">
-                    {selectedMunicipio.votosBase.toLocaleString()}
-                  </p>
-                </div>
-                <BarChart3 className="h-10 w-10 text-[color:var(--brand-cobalt)]/50" />
-              </div>
-            </div>
-
-            {/* Metas Grid */}
+            {/* Metas por cenário */}
             {(() => {
               const parceriasSum = getParceriasSumForMunicipio(selectedMunicipio.nome);
               const bairrosDeltaC = getBairrosDeltaMunicipio(selectedMunicipio.nome, 'conservador');
@@ -3946,358 +3966,185 @@ export default function MapaCampanhaPage() {
               const bairrosDeltaA = getBairrosDeltaMunicipio(selectedMunicipio.nome, 'arrojado');
               const hasBairrosDelta = bairrosDeltaC > 0 || bairrosDeltaP > 0 || bairrosDeltaA > 0;
               const hasParceriasForMeta = parceriasSum.conservadora > 0 || parceriasSum.possivel > 0 || parceriasSum.arrojada > 0 || hasBairrosDelta;
-              
+              const colunas = [
+                { rotulo: 'Conservadora', cor: cenarioConfig.conservador.hex, meta: metaConservadoraTemp, parc: parceriasSum.conservadora, bairros: bairrosDeltaC },
+                { rotulo: 'Realista', cor: cenarioConfig.possivel.hex, meta: metaPossivelTemp, parc: parceriasSum.possivel, bairros: bairrosDeltaP },
+                { rotulo: 'Otimista', cor: cenarioConfig.arrojado.hex, meta: metaArrojadaTemp, parc: parceriasSum.arrojada, bairros: bairrosDeltaA },
+              ];
+
               return (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {/* Meta Conservadora */}
-                    <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3 border border-amber-200 dark:border-amber-600/40">
-                      <div className="flex items-center gap-1 mb-2">
-                        <Shield className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                        <span className="text-amber-700 dark:text-amber-400 text-xs font-medium">Conservadora</span>
-                      </div>
-                      <Input
-                        type="number"
-                        value={metaConservadoraTemp}
-                        onChange={(e) => setMetaConservadoraTemp(parseInt(e.target.value) || 0)}
-                        className="bg-[var(--bg-card)] border-[var(--border-default)] text-[color:var(--text-primary)] text-sm"
-                      />
-                      <p className={`text-xs mt-1 font-medium ${
-                        metaConservadoraTemp > selectedMunicipio.votosBase ? 'text-[color:var(--success)]' :
-                        metaConservadoraTemp < selectedMunicipio.votosBase ? 'text-red-400' : 'text-slate-600 dark:text-slate-400'
-                      }`}>
-                        {calcCrescimento(selectedMunicipio.votosBase, metaConservadoraTemp)}
-                      </p>
-                    </div>
-
-                    {/* Meta Realista */}
-                    <div className="bg-sky-50 dark:bg-sky-950/30 rounded-lg p-3 border border-sky-200 dark:border-sky-600/40">
-                      <div className="flex items-center gap-1 mb-2">
-                        <Gauge className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                        <span className="text-sky-700 dark:text-sky-400 text-xs font-medium">Realista</span>
-                      </div>
-                      <Input
-                        type="number"
-                        value={metaPossivelTemp}
-                        onChange={(e) => setMetaPossivelTemp(parseInt(e.target.value) || 0)}
-                        className="bg-[var(--bg-card)] border-[var(--border-default)] text-[color:var(--text-primary)] text-sm"
-                      />
-                      <p className={`text-xs mt-1 font-medium ${
-                        metaPossivelTemp > selectedMunicipio.votosBase ? 'text-[color:var(--success)]' :
-                        metaPossivelTemp < selectedMunicipio.votosBase ? 'text-red-400' : 'text-slate-600 dark:text-slate-400'
-                      }`}>
-                        {calcCrescimento(selectedMunicipio.votosBase, metaPossivelTemp)}
-                      </p>
-                    </div>
-
-                    {/* Meta Arrojada */}
-                    <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-3 border border-emerald-200 dark:border-emerald-600/40">
-                      <div className="flex items-center gap-1 mb-2">
-                        <Rocket className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                        <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium">Otimista</span>
-                      </div>
-                      <Input
-                        type="number"
-                        value={metaArrojadaTemp}
-                        onChange={(e) => setMetaArrojadaTemp(parseInt(e.target.value) || 0)}
-                        className="bg-[var(--bg-card)] border-[var(--border-default)] text-[color:var(--text-primary)] text-sm"
-                      />
-                      <p className={`text-xs mt-1 font-medium ${
-                        metaArrojadaTemp > selectedMunicipio.votosBase ? 'text-[color:var(--success)]' :
-                        metaArrojadaTemp < selectedMunicipio.votosBase ? 'text-red-400' : 'text-slate-600 dark:text-slate-400'
-                      }`}>
-                        {calcCrescimento(selectedMunicipio.votosBase, metaArrojadaTemp)}
-                      </p>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest font-bold mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Meta em cada cenário</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <CartaoMetaCenario rotulo="Conservadora" icone={Shield} cor={cenarioConfig.conservador.hex} valor={metaConservadoraTemp} onChange={setMetaConservadoraTemp} base={selectedMunicipio.votosBase} />
+                      <CartaoMetaCenario rotulo="Realista" icone={Gauge} cor={cenarioConfig.possivel.hex} valor={metaPossivelTemp} onChange={setMetaPossivelTemp} base={selectedMunicipio.votosBase} />
+                      <CartaoMetaCenario rotulo="Otimista" icone={Rocket} cor={cenarioConfig.arrojado.hex} valor={metaArrojadaTemp} onChange={setMetaArrojadaTemp} base={selectedMunicipio.votosBase} />
                     </div>
                   </div>
 
-                  {/* Resumo de Metas Finais com Parcerias */}
+                  {/* Meta final = meta + parcerias + bairros */}
                   {hasParceriasForMeta && (
-                    <div className="bg-[var(--bg-card-subtle)] rounded-lg p-4 border border-[var(--border-default)]">
-                      <h4 className="text-[color:var(--text-primary)] font-medium mb-3 flex items-center gap-2">
-                        <Users className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
-                        Composição das Metas Finais
-                        <Badge variant="warning" className="text-xs ml-auto">{hasBairrosDelta ? 'Inclui Parcerias + Bairros' : 'Inclui Parcerias'}</Badge>
-                      </h4>
+                    <SecaoJanela titulo={hasBairrosDelta ? 'Meta final (com parcerias e bairros)' : 'Meta final (com parcerias)'} icone={Users} cor="#d97706">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                        {/* Conservadora Final */}
-                        <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-amber-200 dark:border-amber-500/20">
-                          <p className="text-amber-700 dark:text-amber-400 mb-1 font-medium">Conservadora</p>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                              <span>Meta Base:</span>
-                              <span>{metaConservadoraTemp.toLocaleString()}</span>
-                            </div>
-                            {parceriasSum.conservadora > 0 && <div className="flex justify-between text-[color:var(--brand-cobalt-text)]">
-                              <span>+ Parcerias:</span>
-                              <span>+{parceriasSum.conservadora.toLocaleString()}</span>
-                            </div>}
-                            {bairrosDeltaC > 0 && <div className="flex justify-between" style={{ color: 'var(--acento-azul)' }}>
-                              <span>+ Bairros:</span>
-                              <span>+{bairrosDeltaC.toLocaleString()}</span>
-                            </div>}
-                            <div className="flex justify-between text-[color:var(--text-primary)] font-bold border-t border-[var(--border-default)] pt-1">
-                              <span>= Final:</span>
-                              <span>{(metaConservadoraTemp + parceriasSum.conservadora + bairrosDeltaC).toLocaleString()}</span>
+                        {colunas.map(c => (
+                          <div key={c.rotulo} className="rounded-xl p-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
+                            <p className="font-semibold mb-1.5 flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                              <span className="w-2 h-2 rounded-full" style={{ background: c.cor }} />{c.rotulo}
+                            </p>
+                            <div className="space-y-1 tabular-nums">
+                              <div className="flex justify-between" style={{ color: 'var(--text-secondary)' }}><span>Meta</span><span>{c.meta.toLocaleString('pt-BR')}</span></div>
+                              {c.parc > 0 && <div className="flex justify-between" style={{ color: '#d97706' }}><span>+ Parcerias</span><span>+{c.parc.toLocaleString('pt-BR')}</span></div>}
+                              {c.bairros > 0 && <div className="flex justify-between" style={{ color: 'var(--acento-azul)' }}><span>+ Bairros</span><span>+{c.bairros.toLocaleString('pt-BR')}</span></div>}
+                              <div className="flex justify-between font-bold pt-1" style={{ color: 'var(--text-primary)', borderTop: '1px solid var(--border-default)' }}>
+                                <span>Final</span><span>{(c.meta + c.parc + c.bairros).toLocaleString('pt-BR')}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        {/* Realista Final */}
-                        <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-sky-200 dark:border-cyan-500/20">
-                          <p className="text-sky-700 dark:text-sky-400 mb-1 font-medium">Realista</p>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                              <span>Meta Base:</span>
-                              <span>{metaPossivelTemp.toLocaleString()}</span>
-                            </div>
-                            {parceriasSum.possivel > 0 && <div className="flex justify-between text-[color:var(--brand-cobalt-text)]">
-                              <span>+ Parcerias:</span>
-                              <span>+{parceriasSum.possivel.toLocaleString()}</span>
-                            </div>}
-                            {bairrosDeltaP > 0 && <div className="flex justify-between" style={{ color: 'var(--acento-azul)' }}>
-                              <span>+ Bairros:</span>
-                              <span>+{bairrosDeltaP.toLocaleString()}</span>
-                            </div>}
-                            <div className="flex justify-between text-[color:var(--text-primary)] font-bold border-t border-[var(--border-default)] pt-1">
-                              <span>= Final:</span>
-                              <span>{(metaPossivelTemp + parceriasSum.possivel + bairrosDeltaP).toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </div>
-                        {/* Arrojada Final */}
-                        <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-2 border border-emerald-200 dark:border-emerald-500/20">
-                          <p className="text-[color:var(--success)] mb-1 font-medium">Otimista</p>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                              <span>Meta Base:</span>
-                              <span>{metaArrojadaTemp.toLocaleString()}</span>
-                            </div>
-                            {parceriasSum.arrojada > 0 && <div className="flex justify-between text-[color:var(--brand-cobalt-text)]">
-                              <span>+ Parcerias:</span>
-                              <span>+{parceriasSum.arrojada.toLocaleString()}</span>
-                            </div>}
-                            {bairrosDeltaA > 0 && <div className="flex justify-between" style={{ color: 'var(--acento-azul)' }}>
-                              <span>+ Bairros:</span>
-                              <span>+{bairrosDeltaA.toLocaleString()}</span>
-                            </div>}
-                            <div className="flex justify-between text-[color:var(--text-primary)] font-bold border-t border-[var(--border-default)] pt-1">
-                              <span>= Final:</span>
-                              <span>{(metaArrojadaTemp + parceriasSum.arrojada + bairrosDeltaA).toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    </div>
+                    </SecaoJanela>
                   )}
                 </>
               );
             })()}
 
-            {/* Prioridade */}
-            <Select
-              label="Prioridade"
-              value={prioridadeTemp}
-              onChange={(e) => setPrioridadeTemp(e.target.value)}
-              options={prioridadeOptions}
-              className="bg-[var(--bg-card-subtle)] border-[var(--border-default)] text-[color:var(--text-primary)]"
-            />
+            <SeletorPrioridade valor={prioridadeTemp} onChange={setPrioridadeTemp} />
 
-            {/* Dobradinha Section */}
-            <div className={`rounded-lg p-4 border transition-colors ${
-              dobradaAtivaTemp 
-                ? 'bg-[var(--brand-cobalt-soft)] border-[var(--brand-cobalt)]' 
-                : 'bg-[var(--bg-card-subtle)]/30 border-[var(--border-default)]'
-            }`}>
-              <div className="flex items-center gap-3 mb-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={dobradaAtivaTemp}
-                    onChange={(e) => setDobradaAtivaTemp(e.target.checked)}
-                    className="w-5 h-5 rounded border-[var(--border-default)] bg-[var(--bg-card-subtle)] text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
-                  />
-                  <Handshake className={`h-5 w-5 ${dobradaAtivaTemp ? 'text-blue-500 dark:text-blue-400' : 'text-slate-600 dark:text-slate-500'}`} />
-                  <span className={`font-medium ${dobradaAtivaTemp ? 'text-blue-600 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}>
-                    Dobrada com Deputado Federal
-                  </span>
-                </label>
-              </div>
-
+            {/* Dobrada */}
+            <SecaoJanela titulo="Dobrada" icone={Handshake} cor="#3b82f6">
+              <Interruptor
+                ativo={dobradaAtivaTemp}
+                onChange={setDobradaAtivaTemp}
+                titulo="Dobrada com deputado federal"
+                descricao="Campanha casada neste município"
+                icone={Handshake}
+                cor="#3b82f6"
+              />
               {dobradaAtivaTemp && (
-                <div className="space-y-3 animate-in slide-in-from-top-2">
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      label="Nome do Deputado Federal"
-                      placeholder="Ex: Marcos Pereira"
-                      value={dobradaNomeTemp}
-                      onChange={(e) => setDobradaNomeTemp(e.target.value)}
-                      className="bg-[var(--bg-card-subtle)] border-[var(--border-default)] text-[color:var(--text-primary)]"
-                    />
-                    <Input
-                      label="Partido (opcional)"
-                      placeholder="Ex: REPUBLICANOS"
-                      value={dobradaPartidoTemp}
-                      onChange={(e) => setDobradaPartidoTemp(e.target.value)}
-                      className="bg-[var(--bg-card-subtle)] border-[var(--border-default)] text-[color:var(--text-primary)]"
-                    />
+                <div className="space-y-3 mt-4 animate-in slide-in-from-top-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <CampoBusca rotulo="Deputado federal">
+                      <input placeholder="Ex: Marcos Pereira" value={dobradaNomeTemp} onChange={(e) => setDobradaNomeTemp(e.target.value)}
+                        className={CLASSE_CAMPO} style={ESTILO_CAMPO} />
+                    </CampoBusca>
+                    <CampoBusca rotulo="Partido (opcional)">
+                      <input placeholder="Ex: REPUBLICANOS" value={dobradaPartidoTemp} onChange={(e) => setDobradaPartidoTemp(e.target.value)}
+                        className={CLASSE_CAMPO} style={ESTILO_CAMPO} />
+                    </CampoBusca>
                   </div>
-                  <div>
-                    <label className="text-slate-600 dark:text-slate-400 text-sm mb-1 block">Observações (opcional)</label>
+                  <CampoBusca rotulo="Observações (opcional)">
                     <textarea
-                      placeholder="Anotações sobre a articulação política..."
+                      placeholder="Anotações sobre a articulação política…"
                       value={dobradaObservacoesTemp}
                       onChange={(e) => setDobradaObservacoesTemp(e.target.value)}
                       rows={2}
-                      className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      className={`${CLASSE_CAMPO} h-auto py-2.5 resize-none`}
+                      style={ESTILO_CAMPO}
                     />
-                  </div>
+                  </CampoBusca>
                 </div>
               )}
-            </div>
+            </SecaoJanela>
 
-            {/* Parcerias Section */}
-            <div className="bg-[var(--bg-card-subtle)] rounded-lg p-4 border border-[var(--border-default)]">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
-                  <h4 className="text-[color:var(--text-primary)] font-medium">Parcerias</h4>
-                  <Badge variant="warning" className="text-xs">
-                    {getParceriasMunicipio(selectedMunicipio.nome).length}
-                  </Badge>
-                </div>
+            {/* Parcerias */}
+            <SecaoJanela
+              titulo={<>Parcerias <span className="normal-case tracking-normal font-semibold">· {getParceriasMunicipio(selectedMunicipio.nome).length}</span></>}
+              icone={Users}
+              cor="#d97706"
+              direita={
                 <button
+                  type="button"
                   onClick={() => {
                     setShowModal(false);
                     openParceriaModal(selectedMunicipio.nome);
                   }}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-[color:var(--text-primary)] text-xs rounded-lg transition-colors"
+                  className="inline-flex items-center gap-1 h-8 px-3 rounded-lg text-xs font-semibold text-white transition-all hover:brightness-110"
+                  style={{ background: '#d97706' }}
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus className="h-3.5 w-3.5" />
                   Adicionar
                 </button>
-              </div>
-
+              }
+            >
               {getParceriasMunicipio(selectedMunicipio.nome).length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {getParceriasMunicipio(selectedMunicipio.nome).map((parceria) => (
-                    <div
-                      key={parceria.id}
-                      className={`p-3 bg-[var(--bg-card-subtle)]/50 rounded-lg border transition-colors ${parceria.id?.startsWith('pending-') ? 'border-amber-500/40 border-dashed hover:border-amber-500/70' : 'border-[var(--border-default)] hover:border-amber-500/50'}`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-600/50 text-amber-800 dark:text-[color:var(--brand-cobalt-text)] rounded">
-                            {TIPO_PARCERIA_LABELS[parceria.tipo]}
-                          </span>
-                          {parceria.id?.startsWith('pending-') && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--warning)', border: '1px solid rgba(245,158,11,0.3)' }}>
-                              pendente
-                            </span>
-                          )}
-                          {(() => {
-                            const pMun = parceria.municipio ?? '';
-                            const bairroNome = isMunBairro(pMun) ? getMunBairroNome(pMun)
-                              : isMgBairro(pMun) ? getMgBairroNome(pMun)
-                              : null;
-                            return bairroNome ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0" style={{ background: 'rgba(56,189,248,0.15)', color: 'var(--acento-azul)', border: '1px solid rgba(56,189,248,0.3)' }}>
-                                bairro: {bairroNome}
+                <div className="space-y-2 max-h-56 overflow-y-auto scrollbar-dark">
+                  {getParceriasMunicipio(selectedMunicipio.nome).map((parceria) => {
+                    const pendente = parceria.id?.startsWith('pending-');
+                    const pMun = parceria.municipio ?? '';
+                    const bairroNome = isMunBairro(pMun) ? getMunBairroNome(pMun) : isMgBairro(pMun) ? getMgBairroNome(pMun) : null;
+                    return (
+                      <div key={parceria.id} className="group p-3 rounded-xl transition-colors"
+                        style={{ background: 'var(--bg-card)', border: pendente ? '1px dashed rgba(217,119,6,0.55)' : '1px solid var(--border-default)' }}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(217,119,6,0.14)', color: '#d97706' }}>
+                                {TIPO_PARCERIA_LABELS[parceria.tipo]}
                               </span>
-                            ) : null;
-                          })()}
-                          <span className="text-[color:var(--text-primary)] text-sm font-medium truncate">{parceria.nome}</span>
-                          {parceria.responsavel && (
-                            <span className="text-slate-600 dark:text-slate-500 text-xs">({parceria.responsavel})</span>
+                              {pendente && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--warning)' }}>pendente</span>
+                              )}
+                              {bairroNome && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ background: 'rgba(56,189,248,0.15)', color: 'var(--acento-azul)' }}>bairro: {bairroNome}</span>
+                              )}
+                            </div>
+                            <p className="text-sm font-semibold mt-1 break-words" style={{ color: 'var(--text-primary)' }}>
+                              {parceria.nome}
+                              {parceria.responsavel && <span className="font-normal text-xs ml-1" style={{ color: 'var(--text-tertiary)' }}>({parceria.responsavel})</span>}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowModal(false);
+                                editParceria(parceria);
+                              }}
+                              className="p-1.5 rounded-lg transition-colors hover:bg-[var(--tint-06)]"
+                              style={{ color: 'var(--brand-cobalt-text)' }}
+                              title="Editar parceria"
+                              aria-label="Editar parceria"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteParceria(parceria.id!);
+                              }}
+                              className="p-1.5 rounded-lg transition-colors hover:bg-red-500/15"
+                              style={{ color: '#ef4444' }}
+                              title="Excluir parceria"
+                              aria-label="Excluir parceria"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[11px] tabular-nums">
+                          {([['Conservadora', cenarioConfig.conservador.hex, parceria.metaConservadora], ['Realista', cenarioConfig.possivel.hex, parceria.metaPossivel], ['Otimista', cenarioConfig.arrojado.hex, parceria.metaArrojada]] as const).map(([r, c, v]) => (
+                            <span key={r} className="inline-flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ background: c }} />{r}
+                              <b style={{ color: 'var(--text-primary)' }}>{v.toLocaleString('pt-BR')}</b>
+                            </span>
+                          ))}
+                          {parceria.impactoEstimado > 0 && (
+                            <span className="ml-auto" style={{ color: 'var(--text-tertiary)' }}>Impacto estimado: {parceria.impactoEstimado.toLocaleString('pt-BR')} votos</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowModal(false);
-                              editParceria(parceria);
-                            }}
-                            className="p-1.5 text-[color:var(--brand-cobalt)] hover:text-[color:var(--brand-cobalt-text)] hover:bg-cyan-900/30 rounded transition-colors"
-                            title="Editar parceria"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteParceria(parceria.id!);
-                            }}
-                            className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded transition-colors"
-                            title="Excluir parceria"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
                       </div>
-                      {/* Metas da parceria */}
-                      <div className="flex items-center gap-4 text-xs">
-                        <div className="flex items-center gap-1">
-                          <Shield className="h-3 w-3 text-[color:var(--brand-cobalt)]" />
-                          <span className="text-slate-600 dark:text-slate-400">Cons:</span>
-                          <span className="text-[color:var(--brand-cobalt)] font-medium">{parceria.metaConservadora.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Gauge className="h-3 w-3 text-[color:var(--brand-cobalt)]" />
-                          <span className="text-slate-600 dark:text-slate-400">Poss:</span>
-                          <span className="text-[color:var(--brand-cobalt)] font-medium">{parceria.metaPossivel.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Rocket className="h-3 w-3 text-[color:var(--success)]" />
-                          <span className="text-slate-600 dark:text-slate-400">Arroj:</span>
-                          <span className="text-[color:var(--success)] font-medium">{parceria.metaArrojada.toLocaleString()}</span>
-                        </div>
-                        {parceria.impactoEstimado > 0 && (
-                          <div className="ml-auto text-slate-600 dark:text-slate-500">
-                            Est: {parceria.impactoEstimado.toLocaleString()} votos
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
-                <p className="text-slate-600 dark:text-slate-400 text-sm text-center py-2">
-                  Nenhuma parceria cadastrada neste município
+                <p className="text-sm text-center py-2" style={{ color: 'var(--text-tertiary)' }}>
+                  Nenhuma parceria cadastrada neste município.
                 </p>
               )}
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-2 pt-2">
-              <Button
-                onClick={() => { setShowModal(false); setSelectedMapMunicipio(null); }}
-                variant="outline"
-                className="flex-1 border-[var(--border-default)] text-slate-700 dark:text-slate-300"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={() => {
-                  updateMunicipioMetas(
-                    selectedMunicipio.nome,
-                    metaConservadoraTemp,
-                    metaPossivelTemp,
-                    metaArrojadaTemp,
-                    prioridadeTemp,
-                    dobradaAtivaTemp,
-                    dobradaNomeTemp,
-                    dobradaPartidoTemp,
-                    dobradaObservacoesTemp
-                  );
-                  setShowModal(false);
-                  setSelectedMapMunicipio(null);
-                }}
-                className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Salvar
-              </Button>
-            </div>
+            </SecaoJanela>
           </div>
         )}
       </Modal>
@@ -4306,34 +4153,38 @@ export default function MapaCampanhaPage() {
       <Modal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="Adicionar Município"
-        dark
+        title="Adicionar município"
+        subtitulo="Escolha a cidade e as metas de cada cenário"
+        icone={Plus}
+        cor="#10b981"
         size="lg"
+        rodape={
+          <>
+            <BotaoSecundario onClick={() => setShowAddModal(false)}>Cancelar</BotaoSecundario>
+            <BotaoPrincipal icone={Plus} onClick={addNovoMunicipio} disabled={!novoMunicipioNome}>Adicionar</BotaoPrincipal>
+          </>
+        }
       >
-        <div className="space-y-4">
-          <p className="text-slate-600 dark:text-slate-400 text-sm">
-            Adicione um município para projetar votos.
-          </p>
-
-          <div>
-            <label className="text-slate-600 dark:text-slate-400 text-sm mb-2 block">Buscar Município</label>
+        <div className="space-y-5">
+          <CampoBusca rotulo="Município">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600 dark:text-slate-400" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none" style={{ color: 'var(--text-tertiary)' }} />
               <input
                 type="text"
-                placeholder="Digite para filtrar..."
+                placeholder="Digite para filtrar…"
                 value={filtroMunicipios}
                 onChange={(e) => setFiltroMunicipios(e.target.value)}
-                className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg pl-9 pr-3 py-2 text-sm text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                className={`${CLASSE_CAMPO} pl-10`}
+                style={ESTILO_CAMPO}
               />
             </div>
-          </div>
+          </CampoBusca>
 
-          <div className="max-h-40 overflow-y-auto bg-[var(--bg-card-subtle)]/50 rounded-lg border border-[var(--border-default)]">
+          <div className="max-h-48 overflow-y-auto scrollbar-dark rounded-xl" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}>
             {municipiosDisponiveis.length === 0 ? (
-              <div className="p-4 text-center text-slate-600 dark:text-slate-400 text-sm">
+              <div className="p-4 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-                Carregando municípios...
+                Carregando municípios…
               </div>
             ) : (
               municipiosDisponiveis
@@ -4351,92 +4202,32 @@ export default function MapaCampanhaPage() {
                 .map((mun) => (
                   <button
                     key={mun}
+                    type="button"
                     onClick={() => setNovoMunicipioNome(mun)}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                      novoMunicipioNome === mun
-                        ? 'bg-cyan-600 text-white'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-600'
-                    }`}
+                    className="w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between gap-2 hover:bg-[var(--bg-hover)]"
+                    style={novoMunicipioNome === mun
+                      ? { background: 'rgba(16,185,129,0.14)', color: 'var(--success)', fontWeight: 600 }
+                      : { color: 'var(--text-primary)' }}
                   >
                     {mun}
+                    {novoMunicipioNome === mun && <CheckCircle className="h-4 w-4 flex-shrink-0" />}
                   </button>
                 ))
             )}
           </div>
 
-          {novoMunicipioNome && (
-            <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-3 border border-cyan-500/30">
-              <p className="text-[color:var(--brand-cobalt)] text-sm font-medium">
-                <MapPin className="h-4 w-4 inline mr-1" />
-                Selecionado: {novoMunicipioNome}
-              </p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div className="bg-amber-50 dark:bg-amber-500/20 rounded-lg p-3 border border-amber-400/70 dark:border-amber-400/50">
-              <div className="flex items-center gap-1 mb-2">
-                <Shield className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <span className="text-amber-700 dark:text-amber-300 text-xs font-semibold">Conservadora</span>
-              </div>
-              <Input
-                type="number"
-                value={novoMetaConservadora}
-                onChange={(e) => setNovoMetaConservadora(parseInt(e.target.value) || 0)}
-                className="bg-white dark:bg-[var(--bg-card-subtle)] border-amber-400/60 text-[color:var(--text-primary)]"
-              />
-            </div>
-            <div className="bg-cyan-50 dark:bg-cyan-500/20 rounded-lg p-3 border border-cyan-400/70 dark:border-cyan-400/50">
-              <div className="flex items-center gap-1 mb-2">
-                <Gauge className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />
-                <span className="text-cyan-700 dark:text-cyan-300 text-xs font-semibold">Realista</span>
-              </div>
-              <Input
-                type="number"
-                value={novoMetaPossivel}
-                onChange={(e) => setNovoMetaPossivel(parseInt(e.target.value) || 0)}
-                className="bg-white dark:bg-[var(--bg-card-subtle)] border-cyan-400/60 text-[color:var(--text-primary)]"
-              />
-            </div>
-            <div className="bg-emerald-50 dark:bg-emerald-500/20 rounded-lg p-3 border border-emerald-400/70 dark:border-emerald-400/50">
-              <div className="flex items-center gap-1 mb-2">
-                <Rocket className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-emerald-700 dark:text-emerald-300 text-xs font-semibold">Otimista</span>
-              </div>
-              <Input
-                type="number"
-                value={novoMetaArrojada}
-                onChange={(e) => setNovoMetaArrojada(parseInt(e.target.value) || 0)}
-                className="bg-white dark:bg-[var(--bg-card-subtle)] border-emerald-400/60 text-[color:var(--text-primary)]"
-              />
+          <div>
+            <p className="text-[10px] uppercase tracking-widest font-bold mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
+              Metas {novoMunicipioNome ? `de ${novoMunicipioNome}` : ''}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <CartaoMetaCenario rotulo="Conservadora" icone={Shield} cor={cenarioConfig.conservador.hex} valor={novoMetaConservadora} onChange={setNovoMetaConservadora} />
+              <CartaoMetaCenario rotulo="Realista" icone={Gauge} cor={cenarioConfig.possivel.hex} valor={novoMetaPossivel} onChange={setNovoMetaPossivel} />
+              <CartaoMetaCenario rotulo="Otimista" icone={Rocket} cor={cenarioConfig.arrojado.hex} valor={novoMetaArrojada} onChange={setNovoMetaArrojada} />
             </div>
           </div>
 
-          <Select
-            label="Prioridade"
-            value={novoMunicipioPrioridade}
-            onChange={(e) => setNovoMunicipioPrioridade(e.target.value)}
-            options={prioridadeOptions}
-            className="bg-[var(--bg-card-subtle)] border-[var(--border-default)] text-[color:var(--text-primary)]"
-          />
-
-          <div className="flex gap-2 pt-2">
-            <Button
-              onClick={() => setShowAddModal(false)}
-              variant="outline"
-              className="flex-1 border-[var(--border-default)] text-slate-700 dark:text-slate-300"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={addNovoMunicipio}
-              disabled={!novoMunicipioNome}
-              className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar
-            </Button>
-          </div>
+          <SeletorPrioridade valor={novoMunicipioPrioridade} onChange={setNovoMunicipioPrioridade} />
         </div>
       </Modal>
 
@@ -4444,72 +4235,50 @@ export default function MapaCampanhaPage() {
       <Modal
         isOpen={showCandidatoModal}
         onClose={() => setShowCandidatoModal(false)}
-        title="Selecione o Candidato"
-        dark
+        title="Selecione o candidato"
+        subtitulo={mensagemMultiplos || 'Mais de um candidato tem esse nome'}
+        icone={Users}
         size="xl"
+        rodape={<BotaoSecundario onClick={() => setShowCandidatoModal(false)}>Cancelar</BotaoSecundario>}
       >
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 p-3 bg-amber-900/30 border border-amber-500/30 rounded-lg">
-            <Users className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
-            <p className="text-[color:var(--brand-cobalt-text)] text-sm">{mensagemMultiplos}</p>
-          </div>
-
-          <div className="max-h-[400px] overflow-y-auto space-y-2">
-            {candidatosMultiplos.map((candidato) => (
+        <div className="space-y-2.5">
+          {candidatosMultiplos.map((candidato) => {
+            const vereador = (candidato.cargo ?? '').toUpperCase().includes('VEREADOR');
+            return (
               <div
                 key={candidato.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => selectCandidato(candidato)}
-                className="p-4 bg-[var(--bg-card-subtle)]/50 border border-[var(--border-default)] rounded-lg cursor-pointer hover:border-cyan-500 hover:bg-[var(--bg-card-subtle)] transition-all group"
+                onKeyDown={(e) => { if (e.key === 'Enter') selectCandidato(candidato); }}
+                className="group flex items-center gap-3 p-3.5 rounded-xl cursor-pointer transition-all hover:-translate-y-px"
+                style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <UserCheck className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
-                      <span className="text-[color:var(--text-primary)] font-semibold">{candidato.nomeUrna}</span>
-                      <Badge variant="info" className="text-xs">{candidato.numero}</Badge>
-                    </div>
-                    <p className="text-slate-600 dark:text-slate-400 text-sm mb-1">{candidato.nome}</p>
-                    <div className="flex flex-wrap gap-2 text-xs">
-                      <Badge variant="default" className="bg-slate-600">{candidato.partido}</Badge>
-                      <Badge variant={(candidato.cargo ?? '').toUpperCase().includes('VEREADOR') ? 'warning' : 'success'}>
-                        {candidato.cargo}
-                      </Badge>
-                      {(candidato.cargo ?? '').toUpperCase().includes('VEREADOR') && (
-                        <Badge variant="info" className="bg-purple-600">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {candidato.municipioCandidatura}
-                        </Badge>
-                      )}
-                      <Badge variant="default" className="bg-slate-500">{candidato.ano}</Badge>
-                    </div>
+                <Avatar nome={candidato.nomeUrna || candidato.nome} cor={corDoCargo(candidato.cargo)} tamanho={42} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{candidato.nomeUrna}</span>
+                    <span className="text-[10.5px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'var(--brand-cobalt-soft)', color: 'var(--brand-cobalt-text)' }}>{candidato.numero}</span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[color:var(--brand-cobalt)] font-bold text-lg">
-                      {candidato.totalVotos.toLocaleString()}
-                    </p>
-                    <p className="text-slate-600 dark:text-slate-500 text-xs">votos</p>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-tertiary)' }}>{candidato.nome}</p>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[11px]">
+                    <span className="px-1.5 py-0.5 rounded font-semibold" style={{ background: 'var(--tint-06)', color: 'var(--text-secondary)' }}>{candidato.partido}</span>
+                    <span className="px-1.5 py-0.5 rounded font-semibold" style={{ background: 'var(--tint-06)', color: 'var(--text-secondary)' }}>{rotuloCargo(candidato.cargo)}</span>
+                    <span className="px-1.5 py-0.5 rounded font-semibold" style={{ background: 'var(--tint-06)', color: 'var(--text-secondary)' }}>{candidato.ano}</span>
+                    {vereador ? (
+                      <span className="inline-flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}><MapPin className="h-3 w-3" />{candidato.municipioCandidatura}</span>
+                    ) : candidato.municipioPrincipal !== 'N/A' && (
+                      <span style={{ color: 'var(--text-tertiary)' }}>Maior votação em {candidato.municipioPrincipal}</span>
+                    )}
                   </div>
                 </div>
-                {!(candidato.cargo ?? '').toUpperCase().includes('VEREADOR') && candidato.municipioPrincipal !== 'N/A' && (
-                  <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
-                    <p className="text-slate-600 dark:text-slate-500 text-xs">
-                      Maior votação em: <span className="text-slate-700 dark:text-slate-300">{candidato.municipioPrincipal}</span>
-                    </p>
-                  </div>
-                )}
+                <div className="text-right flex-shrink-0">
+                  <p className="font-bold text-lg tabular-nums" style={{ color: 'var(--brand-cobalt-text)' }}>{candidato.totalVotos.toLocaleString('pt-BR')}</p>
+                  <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>votos</p>
+                </div>
               </div>
-            ))}
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <Button
-              onClick={() => setShowCandidatoModal(false)}
-              variant="outline"
-              className="border-[var(--border-default)] text-slate-700 dark:text-slate-300"
-            >
-              Cancelar
-            </Button>
-          </div>
+            );
+          })}
         </div>
       </Modal>
 
@@ -4517,73 +4286,47 @@ export default function MapaCampanhaPage() {
       <Modal
         isOpen={showNovoCandidatoModal}
         onClose={() => setShowNovoCandidatoModal(false)}
-        title="Novo Candidato (Sem Histórico Eleitoral)"
+        title="Novo candidato"
+        subtitulo="Projeção em branco para quem ainda não disputou eleição — as cidades e metas você adiciona depois"
+        icone={UserCheck}
         size="md"
-        dark
+        rodape={
+          <>
+            <BotaoSecundario onClick={() => setShowNovoCandidatoModal(false)}>Cancelar</BotaoSecundario>
+            <BotaoPrincipal
+              icone={Plus}
+              cor="#2563eb"
+              onClick={criarNovoCandidato}
+              disabled={!novoCandidatoNome.trim() || ((novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') && !novoCandidatoMunicipio)}
+            >
+              Criar projeção
+            </BotaoPrincipal>
+          </>
+        }
       >
-        <div className="space-y-5">
-          {/* Banner informativo */}
-          <div className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.25)' }}>
-            <UserCheck className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: '#2563EB' }} />
-            <p className="text-sm leading-relaxed" style={{ color: '#c9b96a' }}>
-              Cria uma projeção em branco para um candidato que ainda não disputou eleições.
-              Os municípios e metas serão adicionados manualmente.
-            </p>
-          </div>
+        <div className="space-y-4">
+          <CampoBusca rotulo="Nome do candidato *">
+            <input value={novoCandidatoNome} onChange={(e) => setNovoCandidatoNome(e.target.value)} placeholder="Nome completo"
+              className={CLASSE_CAMPO} style={ESTILO_CAMPO} />
+          </CampoBusca>
 
-          {/* Nome */}
-          <div>
-            <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Nome do Candidato <span style={{ color: '#2563EB' }}>*</span></label>
-            <input
-              value={novoCandidatoNome}
-              onChange={(e) => setNovoCandidatoNome(e.target.value)}
-              placeholder="Nome completo"
-              className="w-full rounded-xl px-3.5 py-2.5 text-sm text-[color:var(--text-primary)] outline-none transition-all"
-              style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: 'var(--text-primary)' }}
-              onFocus={e => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
-              onBlur={e => { e.target.style.borderColor = 'rgba(37,99,235,0.2)'; e.target.style.boxShadow = 'none'; }}
-            />
-          </div>
-
-          {/* Partido + UF */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Partido</label>
-              <input
-                value={novoCandidatoPartido}
-                onChange={(e) => setNovoCandidatoPartido(e.target.value)}
-                placeholder="Ex: PSD, PT, MDB..."
-                className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: 'var(--text-primary)' }}
-                onFocus={e => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(37,99,235,0.2)'; e.target.style.boxShadow = 'none'; }}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--text-tertiary)' }}>UF <span style={{ color: '#2563EB' }}>*</span></label>
-              <select
-                value={novoCandidatoUf}
-                onChange={(e) => setNovoCandidatoUf(e.target.value)}
-                className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: 'var(--text-primary)' }}
-              >
+          <div className="grid grid-cols-2 gap-3">
+            <CampoBusca rotulo="Partido">
+              <input value={novoCandidatoPartido} onChange={(e) => setNovoCandidatoPartido(e.target.value)} placeholder="Ex: PSD, PT, MDB…"
+                className={CLASSE_CAMPO} style={ESTILO_CAMPO} />
+            </CampoBusca>
+            <CampoBusca rotulo="Estado *">
+              <select value={novoCandidatoUf} onChange={(e) => setNovoCandidatoUf(e.target.value)} className={CLASSE_CAMPO} style={ESTILO_CAMPO}>
                 {ESTADOS_BRASIL.map((e) => (
-                  <option key={e.sigla} value={e.sigla} style={{ background: 'var(--bg-card)' }}>{e.sigla} — {e.nome}</option>
+                  <option key={e.sigla} value={e.sigla}>{e.sigla} — {e.nome}</option>
                 ))}
               </select>
-            </div>
+            </CampoBusca>
           </div>
 
-          {/* Cargo + Ano */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Cargo <span style={{ color: '#2563EB' }}>*</span></label>
-              <select
-                value={novoCandidatoCargo}
-                onChange={(e) => setNovoCandidatoCargo(e.target.value)}
-                className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: 'var(--text-primary)' }}
-              >
+          <div className="grid grid-cols-2 gap-3">
+            <CampoBusca rotulo="Cargo *">
+              <select value={novoCandidatoCargo} onChange={(e) => setNovoCandidatoCargo(e.target.value)} className={CLASSE_CAMPO} style={ESTILO_CAMPO}>
                 {[
                   ['DEPUTADO_FEDERAL', 'Deputado Federal'],
                   ['DEPUTADO_ESTADUAL', 'Deputado Estadual'],
@@ -4592,31 +4335,22 @@ export default function MapaCampanhaPage() {
                   ['SENADOR', 'Senador'],
                   ['GOVERNADOR', 'Governador'],
                 ].map(([v, l]) => (
-                  <option key={v} value={v} style={{ background: 'var(--bg-card)' }}>{l}</option>
+                  <option key={v} value={v}>{l}</option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Ano da Projeção <span style={{ color: '#2563EB' }}>*</span></label>
-              <select
-                value={novoCandidatoAnoProjecao}
-                onChange={(e) => setNovoCandidatoAnoProjecao(e.target.value)}
-                className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{ background: 'var(--bg-card)', border: '1.5px solid rgba(37,99,235,0.2)', color: 'var(--text-primary)' }}
-              >
-                {['2024','2026','2028','2030'].map((a) => (
-                  <option key={a} value={a} style={{ background: 'var(--bg-card)' }}>{a}</option>
+            </CampoBusca>
+            <CampoBusca rotulo="Ano da projeção *">
+              <select value={novoCandidatoAnoProjecao} onChange={(e) => setNovoCandidatoAnoProjecao(e.target.value)} className={CLASSE_CAMPO} style={ESTILO_CAMPO}>
+                {['2024', '2026', '2028', '2030'].map((a) => (
+                  <option key={a} value={a}>{a}</option>
                 ))}
               </select>
-            </div>
+            </CampoBusca>
           </div>
 
           {/* Município — apenas para Vereador / Prefeito */}
           {(novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') && (
-            <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
-                Município <span style={{ color: '#2563EB' }}>*</span>
-              </label>
+            <CampoBusca rotulo="Município *">
               <div className="relative">
                 <input
                   value={novoCandidatoMunicipioFiltro}
@@ -4624,16 +4358,14 @@ export default function MapaCampanhaPage() {
                     setNovoCandidatoMunicipioFiltro(e.target.value);
                     setNovoCandidatoMunicipio('');
                   }}
-                  placeholder={novoCandidatoMunicipioOpcoes.length ? 'Buscar município...' : 'Carregando...'}
-                  className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
-                  style={{ background: 'var(--bg-card)', border: `1.5px solid ${novoCandidatoMunicipio ? 'rgba(37,99,235,0.6)' : 'rgba(37,99,235,0.2)'}`, color: 'var(--text-primary)' }}
-                  onFocus={e => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
-                  onBlur={e => { e.target.style.borderColor = novoCandidatoMunicipio ? 'rgba(37,99,235,0.6)' : 'rgba(37,99,235,0.2)'; e.target.style.boxShadow = 'none'; }}
+                  placeholder={novoCandidatoMunicipioOpcoes.length ? 'Buscar município…' : 'Carregando…'}
+                  className={CLASSE_CAMPO}
+                  style={{ ...ESTILO_CAMPO, borderColor: novoCandidatoMunicipio ? 'var(--brand-cobalt)' : 'var(--border-default)' }}
                 />
                 {novoCandidatoMunicipioFiltro && !novoCandidatoMunicipio && novoCandidatoMunicipioOpcoes.length > 0 && (
                   <div
                     className="absolute z-50 w-full mt-1 max-h-44 overflow-y-auto rounded-xl"
-                    style={{ background: 'rgba(4,17,31,0.98)', border: '1px solid rgba(37,99,235,0.25)', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-raised)' }}
                   >
                     {novoCandidatoMunicipioOpcoes
                       .filter(m => m.toLowerCase().includes(novoCandidatoMunicipioFiltro.toLowerCase()))
@@ -4642,10 +4374,8 @@ export default function MapaCampanhaPage() {
                         <button
                           key={m}
                           type="button"
-                          className="w-full text-left px-3.5 py-2 text-sm transition-colors"
+                          className="w-full text-left px-3.5 py-2 text-sm transition-colors hover:bg-[var(--bg-hover)]"
                           style={{ color: 'var(--text-primary)' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(37,99,235,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff'; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#cbd5e1'; }}
                           onMouseDown={() => {
                             setNovoCandidatoMunicipio(m);
                             setNovoCandidatoMunicipioFiltro(m);
@@ -4655,40 +4385,18 @@ export default function MapaCampanhaPage() {
                         </button>
                       ))}
                     {novoCandidatoMunicipioOpcoes.filter(m => m.toLowerCase().includes(novoCandidatoMunicipioFiltro.toLowerCase())).length === 0 && (
-                      <p className="px-3.5 py-2.5 text-sm" style={{ color: '#64748b' }}>Nenhum município encontrado</p>
+                      <p className="px-3.5 py-2.5 text-sm" style={{ color: 'var(--text-tertiary)' }}>Nenhum município encontrado</p>
                     )}
                   </div>
                 )}
               </div>
               {novoCandidatoMunicipio && (
-                <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: '#2563EB' }}>
+                <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: 'var(--brand-cobalt-text)' }}>
                   <CheckCircle className="w-3 h-3" /> {novoCandidatoMunicipio}
                 </p>
               )}
-            </div>
+            </CampoBusca>
           )}
-
-          {/* Ações */}
-          <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border-default)' }}>
-            <button
-              onClick={() => setShowNovoCandidatoModal(false)}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-              style={{ color: 'var(--text-tertiary)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={criarNovoCandidato}
-              disabled={!novoCandidatoNome.trim() || ((novoCandidatoCargo === 'VEREADOR' || novoCandidatoCargo === 'PREFEITO') && !novoCandidatoMunicipio)}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 hover:brightness-110"
-              style={{ background: 'var(--brand-cobalt)', color: '#FFFFFF', border: 'none' }}
-            >
-              <Plus className="w-4 h-4" />
-              Criar Projeção
-            </button>
-          </div>
         </div>
       </Modal>
 
@@ -4696,129 +4404,62 @@ export default function MapaCampanhaPage() {
       <Modal
         isOpen={showBairroModal}
         onClose={() => setShowBairroModal(false)}
-        title={selectedBairro ? `Análise - ${selectedBairro.bairro}` : 'Detalhes do Bairro'}
-        dark
+        title={selectedBairro ? selectedBairro.bairro : 'Detalhes do bairro'}
+        subtitulo={selectedBairro ? `${selectedBairro.municipio}${selectedBairro.zonas.length ? ` · ${selectedBairro.zonas.length === 1 ? 'zona' : 'zonas'} ${selectedBairro.zonas.join(', ')}` : ''}` : undefined}
+        icone={Home}
+        cor={selectedBairro && getBairroCategory(selectedBairro.votos) === 'acima' ? '#10b981' : '#2563eb'}
         size="lg"
+        rodape={<BotaoSecundario onClick={() => setShowBairroModal(false)}>Fechar</BotaoSecundario>}
       >
-        {selectedBairro && (
-          <div className="space-y-4">
-            {/* Cabeçalho com categoria */}
-            <div className={`p-4 rounded-lg border-2 ${
-              getBairroCategory(selectedBairro.votos) === 'acima'
-                ? 'bg-emerald-900/30 border-emerald-500/50'
-                : getBairroCategory(selectedBairro.votos) === 'abaixo'
-                  ? 'bg-[var(--brand-cobalt-soft)] border-[var(--brand-cobalt)]'
-                  : 'bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)]'
-            }`}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Home className={`h-6 w-6 ${
-                    getBairroCategory(selectedBairro.votos) === 'acima' ? 'text-[color:var(--success)]' :
-                    getBairroCategory(selectedBairro.votos) === 'abaixo' ? 'text-blue-400' : 'text-slate-600 dark:text-slate-400'
-                  }`} />
-                  <span className="text-lg font-semibold text-[color:var(--text-primary)]">{selectedBairro.bairro}</span>
-                </div>
-                <Badge variant={
-                  getBairroCategory(selectedBairro.votos) === 'acima' ? 'success' :
-                  getBairroCategory(selectedBairro.votos) === 'abaixo' ? 'info' : 'default'
-                } className="text-sm">
-                  {getBairroCategory(selectedBairro.votos) === 'acima' ? '🟢 Acima da média' :
-                   getBairroCategory(selectedBairro.votos) === 'abaixo' ? '🔵 Abaixo da média' : '⚫ Sem votos'}
-                </Badge>
-              </div>
-              <p className="text-slate-600 dark:text-slate-400 text-sm">
-                <MapPin className="h-4 w-4 inline mr-1" />
-                {selectedBairro.municipio} • Zonas: {selectedBairro.zonas.join(', ')}
-              </p>
-            </div>
-
-            {/* Estatísticas */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
-                <div className="flex items-center gap-2 mb-2">
-                  <Vote className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
-                  <span className="text-slate-600 dark:text-slate-400 text-sm">Votos Recebidos</span>
-                </div>
-                <p className="text-3xl font-bold text-[color:var(--brand-cobalt)]">
-                  {selectedBairro.votos.toLocaleString()}
-                </p>
-              </div>
-              <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
-                <div className="flex items-center gap-2 mb-2">
-                  <Percent className="h-5 w-5 text-purple-400" />
-                  <span className="text-slate-600 dark:text-slate-400 text-sm">% do Total</span>
-                </div>
-                <p className="text-3xl font-bold text-purple-400">
-                  {electoralData?.totalVotos 
-                    ? ((selectedBairro.votos / electoralData.totalVotos) * 100).toFixed(1) 
-                    : '0'}%
-                </p>
-              </div>
-            </div>
-
-            {/* Metas Sugeridas */}
-            <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
-              <h4 className="text-[color:var(--text-primary)] font-medium mb-3 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-[color:var(--success)]" />
-                Projeções Sugeridas para {anoProjecao}
-              </h4>
+        {selectedBairro && (() => {
+          const categoria = getBairroCategory(selectedBairro.votos);
+          const corCategoria = categoria === 'acima' ? '#10b981' : categoria === 'abaixo' ? '#2563eb' : '#64748b';
+          const rotuloCategoria = categoria === 'acima' ? 'Acima da média' : categoria === 'abaixo' ? 'Abaixo da média' : 'Sem votos';
+          return (
+            <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="text-center p-3 bg-amber-900/20 rounded-lg border border-amber-500/30">
-                  <Shield className="h-5 w-5 text-[color:var(--brand-cobalt)] mx-auto mb-1" />
-                  <p className="text-[color:var(--brand-cobalt)] text-xs mb-1">Conservadora</p>
-                  <p className="text-[color:var(--text-primary)] font-bold">
-                    {Math.round(selectedBairro.votos * 1.05).toLocaleString()}
-                  </p>
-                  <p className="text-[color:var(--brand-cobalt)] text-xs">+5%</p>
+                <div className="rounded-xl p-3.5" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}>
+                  <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>Votos recebidos</p>
+                  <p className="text-2xl font-bold tabular-nums mt-1" style={{ color: 'var(--text-primary)' }}>{selectedBairro.votos.toLocaleString('pt-BR')}</p>
                 </div>
-                <div className="text-center p-3 bg-cyan-900/20 rounded-lg border border-cyan-500/30">
-                  <Gauge className="h-5 w-5 text-[color:var(--brand-cobalt)] mx-auto mb-1" />
-                  <p className="text-[color:var(--brand-cobalt)] text-xs mb-1">Realista</p>
-                  <p className="text-[color:var(--text-primary)] font-bold">
-                    {Math.round(selectedBairro.votos * 1.15).toLocaleString()}
+                <div className="rounded-xl p-3.5" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}>
+                  <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>% do total</p>
+                  <p className="text-2xl font-bold tabular-nums mt-1" style={{ color: 'var(--text-primary)' }}>
+                    {electoralData?.totalVotos ? ((selectedBairro.votos / electoralData.totalVotos) * 100).toFixed(1).replace('.', ',') : '0'}%
                   </p>
-                  <p className="text-[color:var(--brand-cobalt)] text-xs">+15%</p>
                 </div>
-                <div className="text-center p-3 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
-                  <Rocket className="h-5 w-5 text-[color:var(--success)] mx-auto mb-1" />
-                  <p className="text-[color:var(--success)] text-xs mb-1">Otimista</p>
-                  <p className="text-[color:var(--text-primary)] font-bold">
-                    {Math.round(selectedBairro.votos * 1.30).toLocaleString()}
+                <div className="rounded-xl p-3.5" style={{ background: comAlfa(corCategoria, 0.1), border: `1px solid ${comAlfa(corCategoria, 0.35)}` }}>
+                  <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>Desempenho</p>
+                  <p className="text-sm font-bold mt-2 flex items-center gap-1.5" style={{ color: corCategoria }}>
+                    <span className="w-2 h-2 rounded-full" style={{ background: corCategoria }} />{rotuloCategoria}
                   </p>
-                  <p className="text-emerald-500 text-xs">+30%</p>
                 </div>
               </div>
-            </div>
 
-            {/* Locais de Votação */}
-            {selectedBairro.locais && selectedBairro.locais.length > 0 && (
-              <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
-                <h4 className="text-[color:var(--text-primary)] font-medium mb-3 flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-blue-400" />
-                  Locais de Votação ({selectedBairro.locais.length})
-                </h4>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {selectedBairro.locais.map((local, idx) => (
-                    <div key={idx} className="p-2 bg-[var(--bg-card-subtle)]/50 rounded-lg text-sm">
-                      <p className="text-[color:var(--text-primary)] font-medium">{local.nome}</p>
-                      <p className="text-slate-600 dark:text-slate-400 text-xs">{local.endereco}</p>
-                    </div>
-                  ))}
+              <div>
+                <p className="text-[10px] uppercase tracking-widest font-bold mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Projeções sugeridas para {anoProjecao}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <CartaoMetaCenario rotulo="Conservadora (+5%)" icone={Shield} cor={cenarioConfig.conservador.hex} valor={Math.round(selectedBairro.votos * 1.05)} />
+                  <CartaoMetaCenario rotulo="Realista (+15%)" icone={Gauge} cor={cenarioConfig.possivel.hex} valor={Math.round(selectedBairro.votos * 1.15)} />
+                  <CartaoMetaCenario rotulo="Otimista (+30%)" icone={Rocket} cor={cenarioConfig.arrojado.hex} valor={Math.round(selectedBairro.votos * 1.30)} />
                 </div>
               </div>
-            )}
 
-            <div className="flex justify-end pt-2">
-              <Button
-                onClick={() => setShowBairroModal(false)}
-                variant="outline"
-                className="border-[var(--border-default)] text-slate-700 dark:text-slate-300"
-              >
-                Fechar
-              </Button>
+              {selectedBairro.locais && selectedBairro.locais.length > 0 && (
+                <SecaoJanela titulo={`Locais de votação · ${selectedBairro.locais.length}`} icone={Building2}>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto scrollbar-dark">
+                    {selectedBairro.locais.map((local, idx) => (
+                      <div key={idx} className="px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
+                        <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{local.nome}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{local.endereco}</p>
+                      </div>
+                    ))}
+                  </div>
+                </SecaoJanela>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
       </Modal>
 
       {/* Saved Projections */}
@@ -4870,157 +4511,105 @@ export default function MapaCampanhaPage() {
       {/* Modal de Parceria */}
       <Modal
         isOpen={showParceriaModal}
-        dark
         onClose={() => {
           setShowParceriaModal(false);
           setSelectedParceria(null);
         }}
-        title={`${selectedParceria ? 'Editar' : 'Nova'} Parceria - ${municipioParaParceria}${bairroParaParceria ? ` (${bairroParaParceria})` : ''}`}
+        title={`${selectedParceria ? 'Editar' : 'Nova'} parceria`}
+        subtitulo={`${municipioParaParceria}${bairroParaParceria ? ` · bairro ${bairroParaParceria}` : ''}`}
+        icone={Handshake}
+        cor="#d97706"
         size="lg"
+        rodape={
+          <>
+            <BotaoSecundario onClick={() => setShowParceriaModal(false)}>Cancelar</BotaoSecundario>
+            <BotaoPrincipal icone={savingParceria ? Loader2 : CheckCircle} cor="#d97706" onClick={saveParceria} disabled={savingParceria}>
+              {savingParceria ? 'Salvando…' : 'Salvar parceria'}
+            </BotaoPrincipal>
+          </>
+        }
       >
         <div className="space-y-4">
-          {/* Nome */}
-          <div>
-            <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">Nome da Parceria *</label>
-            <input
-              type="text"
-              value={parceriaForm.nome || ''}
-              onChange={(e) => setParceriaForm(prev => ({ ...prev, nome: e.target.value }))}
-              placeholder="Ex: Igreja São José, ONG Vida Nova..."
-              className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <CampoBusca rotulo="Nome da parceria *" className="sm:col-span-2">
+              <input
+                type="text"
+                value={parceriaForm.nome || ''}
+                onChange={(e) => setParceriaForm(prev => ({ ...prev, nome: e.target.value }))}
+                placeholder="Ex: Igreja São José, ONG Vida Nova…"
+                className={CLASSE_CAMPO}
+                style={ESTILO_CAMPO}
+              />
+            </CampoBusca>
+            <CampoBusca rotulo="Tipo *">
+              <select
+                value={parceriaForm.tipo || 'LIDERANCA'}
+                onChange={(e) => setParceriaForm(prev => ({ ...prev, tipo: e.target.value as TipoParceria }))}
+                className={CLASSE_CAMPO}
+                style={ESTILO_CAMPO}
+              >
+                {Object.entries(TIPO_PARCERIA_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </CampoBusca>
           </div>
 
-          {/* Tipo */}
-          <div>
-            <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">Tipo de Parceria *</label>
-            <select
-              value={parceriaForm.tipo || 'LIDERANCA'}
-              onChange={(e) => setParceriaForm(prev => ({ ...prev, tipo: e.target.value as TipoParceria }))}
-              className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-amber-500"
-            >
-              {Object.entries(TIPO_PARCERIA_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Responsável e Contato */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">Responsável</label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <CampoBusca rotulo="Responsável">
               <input
                 type="text"
                 value={parceriaForm.responsavel || ''}
                 onChange={(e) => setParceriaForm(prev => ({ ...prev, responsavel: e.target.value }))}
                 placeholder="Nome do contato"
-                className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className={CLASSE_CAMPO}
+                style={ESTILO_CAMPO}
               />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">Contato</label>
+            </CampoBusca>
+            <CampoBusca rotulo="Contato">
               <input
                 type="text"
                 value={parceriaForm.contato || ''}
                 onChange={(e) => setParceriaForm(prev => ({ ...prev, contato: e.target.value }))}
-                placeholder="Telefone ou email"
-                className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="Telefone ou e-mail"
+                className={CLASSE_CAMPO}
+                style={ESTILO_CAMPO}
               />
+            </CampoBusca>
+            <CampoBusca rotulo="Impacto estimado (votos)">
+              <input
+                type="number"
+                value={parceriaForm.impactoEstimado || 0}
+                onChange={(e) => setParceriaForm(prev => ({ ...prev, impactoEstimado: parseInt(e.target.value) || 0 }))}
+                min={0}
+                className={CLASSE_CAMPO}
+                style={ESTILO_CAMPO}
+              />
+            </CampoBusca>
+          </div>
+
+          <div>
+            <p className="text-[10px] uppercase tracking-widest font-bold mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Votos que a parceria soma em cada cenário</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <CartaoMetaCenario rotulo="Conservadora" icone={Shield} cor={cenarioConfig.conservador.hex} valor={parceriaForm.metaConservadora || 0}
+                onChange={(v) => setParceriaForm(prev => ({ ...prev, metaConservadora: v }))} />
+              <CartaoMetaCenario rotulo="Realista" icone={Gauge} cor={cenarioConfig.possivel.hex} valor={parceriaForm.metaPossivel || 0}
+                onChange={(v) => setParceriaForm(prev => ({ ...prev, metaPossivel: v }))} />
+              <CartaoMetaCenario rotulo="Otimista" icone={Rocket} cor={cenarioConfig.arrojado.hex} valor={parceriaForm.metaArrojada || 0}
+                onChange={(v) => setParceriaForm(prev => ({ ...prev, metaArrojada: v }))} />
             </div>
           </div>
 
-          {/* Impacto Estimado */}
-          <div>
-            <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">Impacto Estimado (votos)</label>
-            <input
-              type="number"
-              value={parceriaForm.impactoEstimado || 0}
-              onChange={(e) => setParceriaForm(prev => ({ ...prev, impactoEstimado: parseInt(e.target.value) || 0 }))}
-              min={0}
-              className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
-          </div>
-
-          {/* Metas */}
-          <div className="bg-[var(--bg-card-subtle)]/50 rounded-lg p-4 border border-[var(--border-default)]">
-            <h4 className="text-[color:var(--text-primary)] font-medium mb-3 flex items-center gap-2">
-              <Target className="h-4 w-4 text-[color:var(--brand-cobalt)]" />
-              Metas da Parceria
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div className="text-center">
-                <div className="p-3 bg-[var(--bg-card-subtle)] rounded-lg border border-[var(--border-default)]">
-                  <Shield className="h-5 w-5 text-slate-600 dark:text-slate-400 mx-auto mb-1" />
-                  <p className="text-slate-600 dark:text-slate-400 text-xs mb-1">Conservadora</p>
-                  <input
-                    type="number"
-                    value={parceriaForm.metaConservadora || 0}
-                    onChange={(e) => setParceriaForm(prev => ({ ...prev, metaConservadora: parseInt(e.target.value) || 0 }))}
-                    min={0}
-                    className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded px-2 py-1 text-[color:var(--text-primary)] text-center text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
-                  />
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="p-3 bg-amber-900/30 rounded-lg border border-amber-500/50">
-                  <Gauge className="h-5 w-5 text-[color:var(--brand-cobalt)] mx-auto mb-1" />
-                  <p className="text-[color:var(--brand-cobalt)] text-xs mb-1">Realista</p>
-                  <input
-                    type="number"
-                    value={parceriaForm.metaPossivel || 0}
-                    onChange={(e) => setParceriaForm(prev => ({ ...prev, metaPossivel: parseInt(e.target.value) || 0 }))}
-                    min={0}
-                    className="w-full bg-[var(--bg-card-subtle)] border border-amber-500/50 rounded px-2 py-1 text-[color:var(--text-primary)] text-center text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
-                  />
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="p-3 bg-[var(--bg-card-subtle)] rounded-lg border border-[var(--border-default)]">
-                  <Rocket className="h-5 w-5 text-[color:var(--success)] mx-auto mb-1" />
-                  <p className="text-[color:var(--success)] text-xs mb-1">Otimista</p>
-                  <input
-                    type="number"
-                    value={parceriaForm.metaArrojada || 0}
-                    onChange={(e) => setParceriaForm(prev => ({ ...prev, metaArrojada: parseInt(e.target.value) || 0 }))}
-                    min={0}
-                    className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded px-2 py-1 text-[color:var(--text-primary)] text-center text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Observações */}
-          <div>
-            <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">Observações</label>
+          <CampoBusca rotulo="Observações">
             <textarea
               value={parceriaForm.observacoes || ''}
               onChange={(e) => setParceriaForm(prev => ({ ...prev, observacoes: e.target.value }))}
-              placeholder="Notas sobre a parceria..."
+              placeholder="Notas sobre a parceria…"
               rows={3}
-              className="w-full bg-[var(--bg-card-subtle)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-[color:var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+              className={`${CLASSE_CAMPO} h-auto py-2.5 resize-none`}
+              style={ESTILO_CAMPO}
             />
-          </div>
-
-          {/* Ações */}
-          <div className="flex justify-end gap-3 pt-2">
-            <Button
-              onClick={() => setShowParceriaModal(false)}
-              variant="outline"
-              className="border-[var(--border-default)] text-slate-700 dark:text-slate-300"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={saveParceria}
-              disabled={savingParceria}
-              loading={savingParceria}
-              style={{ background: 'var(--brand-cobalt)', color: '#FFFFFF', border: 'none' }}
-            >
-              {!savingParceria && <CheckCircle className="h-4 w-4 mr-2" />}
-              {savingParceria ? 'Salvando…' : 'Salvar Parceria'}
-            </Button>
-          </div>
+          </CampoBusca>
         </div>
       </Modal>
 
@@ -5028,33 +4617,14 @@ export default function MapaCampanhaPage() {
       <Modal
         isOpen={showDeleteModal}
         onClose={() => { setShowDeleteModal(false); setProjecaoParaExcluir(null); }}
-        title="Excluir Projeção"
+        title="Excluir projeção"
+        icone={Trash2}
+        cor="#dc2626"
         size="sm"
-        dark
-      >
-        <div className="flex flex-col items-center gap-5 py-2">
-          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-red-500/15 border border-red-500/30">
-            <Trash2 className="h-7 w-7 text-red-400" />
-          </div>
-          <div className="text-center">
-            <p className="text-[color:var(--text-primary)] font-medium text-base mb-1">
-              Tem certeza que deseja excluir?
-            </p>
-            <p className="text-slate-600 dark:text-slate-400 text-sm">
-              Projeção de <span className="text-[color:var(--text-primary)] font-semibold">{projecaoParaExcluir?.nome}</span> será removida permanentemente.
-            </p>
-          </div>
-          <div className="flex gap-3 w-full pt-1">
-            <Button
-              variant="outline"
-              className="flex-1 border-[var(--border-default)] text-slate-700 dark:text-slate-300 hover:bg-[var(--bg-card-subtle)]"
-              onClick={() => { setShowDeleteModal(false); setProjecaoParaExcluir(null); }}
-            >
-              Cancelar
-            </Button>
-            <Button
-              className="flex-1 bg-red-600 hover:bg-red-500 text-[color:var(--text-primary)]"
-              onClick={async () => {
+        rodape={
+          <>
+            <BotaoSecundario onClick={() => { setShowDeleteModal(false); setProjecaoParaExcluir(null); }}>Cancelar</BotaoSecundario>
+            <BotaoPrincipal icone={Trash2} cor="#dc2626" onClick={async () => {
                 if (!projecaoParaExcluir) return;
                 const res = await fetch(`/api/projecoes?id=${projecaoParaExcluir.id}`, { method: 'DELETE' });
                 if (res.ok) {
@@ -5067,13 +4637,14 @@ export default function MapaCampanhaPage() {
                 }
                 setShowDeleteModal(false);
                 setProjecaoParaExcluir(null);
-              }}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
-            </Button>
-          </div>
-        </div>
+              }}>Excluir</BotaoPrincipal>
+          </>
+        }
+      >
+        <p className="text-sm text-center py-2" style={{ color: 'var(--text-secondary)' }}>
+          A projeção de <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{projecaoParaExcluir?.nome}</span> será
+          removida de vez, com as metas, dobradas e parcerias.
+        </p>
       </Modal>
 
       <ConfirmDialog
