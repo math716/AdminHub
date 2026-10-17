@@ -119,6 +119,14 @@ export interface EmendaEstadualRow {
   autorCargo?: ParlamentarCargo;
   /** Partido do parlamentar */
   autorPartido?: string;
+  /**
+   * Parlamentar já cadastrado a quem a emenda pertence (ex.: deputado federal
+   * que indicou um repasse do governo do estado). Com ele, nenhum cadastro
+   * estadual é criado para o autor.
+   */
+  autorParlamentarId?: string;
+  /** Regrava o cargo do cadastro estadual do autor (que pode ter sido criado errado). */
+  corrigirCargo?: boolean;
   /** Estágio da emenda conforme portal de origem (ex: "Impedida Tecnicamente") */
   estagio?: string;
 }
@@ -170,6 +178,7 @@ export async function importarEmendas(
   const parlamentarPending = new Map<string, Promise<string | null>>();
 
   async function obterParlamentar(row: EmendaEstadualRow): Promise<string | null> {
+    if (row.autorParlamentarId) return row.autorParlamentarId;
     const chave = normalizeNome(row.autorNome);
     if (parlamentarCache.has(chave)) return parlamentarCache.get(chave)!;
     if (dryRun) return null;
@@ -185,7 +194,10 @@ export async function importarEmendas(
           (db) => db.parlamentar.upsert({
             where: { idPortal },
             create: { idPortal, nome: row.autorNome, cargo: row.autorCargo ?? 'DEPUTADO_ESTADUAL', partido: row.autorPartido ?? null, uf },
-            update: { ...(row.autorPartido ? { partido: row.autorPartido } : {}) },
+            update: {
+              ...(row.autorPartido ? { partido: row.autorPartido } : {}),
+              ...(row.corrigirCargo && row.autorCargo ? { cargo: row.autorCargo } : {}),
+            },
           }),
           getPrisma, setPrisma,
         );

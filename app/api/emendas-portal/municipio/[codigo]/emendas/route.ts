@@ -42,6 +42,7 @@ export async function GET(request: NextRequest, { params }: { params: { codigo: 
         id: true,
         idPortal: true, ano: true, numero: true, tipo: true, funcao: true,
         area: true, objeto: true, valorEmpenhado: true, valorPago: true, valorRestoPago: true,
+        valorProposto: true, esfera: true,
         uf: true, codigoIbge: true, municipioNome: true,
         beneficiario: true, cnpjBeneficiario: true,
         parlamentar: { select: { cpf: true, nome: true, cargo: true, partido: true, uf: true } },
@@ -110,6 +111,8 @@ export async function GET(request: NextRequest, { params }: { params: { codigo: 
             valorEmpenhadoEmenda: e.valorEmpenhado,
             municipiosNaEmenda:   docVals.municipios.size,
           }),
+          // O governo do estado não publicou o valor (zeros não são valor).
+          semValorPublicado: e.esfera === 'ESTADUAL' && !e.valorEmpenhado && !e.valorPago && e.valorProposto == null,
           valorProposto:  null,
           orgaoExecutor:  null,
           beneficiario:   e.beneficiario ?? null,

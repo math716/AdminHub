@@ -93,6 +93,8 @@ interface PortalEmenda {
    */
   municipiosNaEmenda?: number;
   valorEmpenhadoEmenda?: number;
+  /** O governo do estado não publicou o valor — os zeros acima não são valor. */
+  semValorPublicado?: boolean;
   orgaoExecutor: string | null;
   beneficiario: string | null;
   cnpjBeneficiario: string | null;
@@ -3240,6 +3242,13 @@ function EmendasDetalhadasCard({
                           </span>
                         )}
                       </td>
+                      {e.semValorPublicado ? (
+                        <td colSpan={3} className="py-2.5 px-3 text-right text-[11px] italic whitespace-nowrap"
+                          style={{ borderBottom: '1px solid var(--tint-04)', color: 'var(--text-tertiary)' }}
+                          title="O governo do estado não divulgou o valor desta emenda">
+                          Valor não publicado pelo governo do estado
+                        </td>
+                      ) : (<>
                       <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap group-hover:text-[color:var(--brand-cobalt-text)] transition-colors" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? 'var(--text-primary)' : '#1e40af' }}>
                         {formatBRLCompact(e.valorEmpenhado)}
                         {/* Empenhar acima ou abaixo do que a emenda destinou e
@@ -3264,6 +3273,7 @@ function EmendasDetalhadasCard({
                           color:      pct >= 80 ? (isDark ? '#10b981' : '#047857') : pct >= 40 ? (isDark ? '#f59e0b' : '#b45309') : (isDark ? '#64748b' : '#475569'),
                         }}>{pct.toFixed(0)}%</span>
                       </td>
+                      </>)}
                     </tr>
                   );
                 })}

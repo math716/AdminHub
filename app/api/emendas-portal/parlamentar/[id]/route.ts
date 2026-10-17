@@ -51,7 +51,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         select: {
           id: true,
           idPortal: true, ano: true, numero: true, tipo: true, natureza: true, funcao: true,
-          subfuncao: true, valorProposto: true,
+          subfuncao: true, valorProposto: true, esfera: true,
           area: true, objeto: true, valorEmpenhado: true, valorPago: true, valorRestoPago: true,
           uf: true, codigoIbge: true, municipioNome: true,
           beneficiario: true, cnpjBeneficiario: true,
@@ -135,6 +135,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             codigoIbge:     dividida ? null : e.codigoIbge,
             municipioNome:  dividida ? `Vários municípios (${qtdMunicipios})` : e.municipioNome,
             ...(dividida && { municipiosNaEmenda: qtdMunicipios }),
+            // O governo do estado não publicou o valor (zeros não são valor).
+            semValorPublicado: e.esfera === 'ESTADUAL' && !e.valorEmpenhado && !e.valorPago && e.valorProposto == null,
             autorCpf:       e.parlamentar?.cpf ?? null,
             autorNome:      e.parlamentar?.nome ?? '—',
             autorCargo:     e.parlamentar?.cargo ?? 'DEPUTADO_FEDERAL',

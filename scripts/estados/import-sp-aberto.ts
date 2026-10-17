@@ -15,10 +15,24 @@
  * Por isso este import APAGA, nos anos que cobre, as emendas estaduais de SP
  * que não vierem nesta base: sem isso as antigas ficariam para sempre, somando
  * valores que o portal não reconhece.
+ *
+ * QUEM é o autor. A base traz dois instrumentos: "Emenda LOA" (as emendas dos
+ * deputados da ALESP) e "Transferência Voluntária" — repasse do governo do
+ * estado indicado por QUALQUER político, inclusive deputados federais e
+ * senadores. Medido em out/2026: 89 autores só aparecem em transferência
+ * (Marcos Pereira, Tabata Amaral, Kim Kataguiri, Mara Gabrilli...), e todos
+ * eram gravados como "deputado estadual" — o deputado federal Marcos Pereira
+ * aparecia duas vezes, como federal e como um estadual homônimo. Agora:
+ *   - autor com Emenda LOA em algum ano da base → deputado estadual;
+ *   - os demais → o cadastro federal (deputado federal ou senador) de mesmo
+ *     nome; sem cadastro federal, um cadastro de SP marcado como deputado
+ *     federal (a lista sai no log para conferir);
+ *   - "AUTORIZO GOVERNAMENTAL - ..." é o próprio governo, não parlamentar:
+ *     fica de fora (e a limpeza abaixo tira o que já estava no banco).
  */
 import fs from 'fs';
 import path from 'path';
-import { buildPrisma, importarEmendas, type EmendaEstadualRow } from './base-import-estadual';
+import { buildPrisma, importarEmendas, normalizeNome, type EmendaEstadualRow } from './base-import-estadual';
 import { classificarArea } from '../../lib/portal-transparencia';
 
 function arg(nome: string): string | undefined {
@@ -102,9 +116,16 @@ function somaDistintos(grupo: Linha[], campo: (l: Linha) => string): number {
   return total;
 }
 
+/** O próprio governo autorizando — não é emenda de parlamentar. */
+const ehGoverno = (autor: string) => /^AUTORIZO GOVERNAMENTAL/i.test(autor.trim());
+
+/** Autores com Emenda LOA em algum ano da base: os deputados da ALESP. */
+const autoresAlesp = new Set<string>();
+
 function mapear(grupo: Linha[]): EmendaEstadualRow | null {
   const l = grupo[0];
   const autor = l.parlamentar.trim();
+  if (ehGoverno(autor)) return null;
   const cod = l.cod.trim();
   const ano = anoDoCodigo(cod);
   // Sem autor não é emenda parlamentar: 9.133 linhas da base (código com sete
@@ -132,9 +153,49 @@ function mapear(grupo: Linha[]): EmendaEstadualRow | null {
     uf:             'SP',
     municipioNome:  l.municipio.trim() || undefined,
     autorNome:      autor,
-    autorCargo:     'DEPUTADO_ESTADUAL',
+    autorCargo:     autoresAlesp.has(normalizeNome(autor)) ? 'DEPUTADO_ESTADUAL' : 'DEPUTADO_FEDERAL',
+    corrigirCargo:  true,
     autorPartido:   l.partido.trim() || undefined,
   };
+}
+
+/**
+ * Liga cada autor de fora da ALESP ao cadastro federal de mesmo nome (o da
+ * importação do Portal da Transparência). Só liga quando há UM candidato —
+ * com dois homônimos federais, fica o de SP; sem certeza, não liga.
+ */
+async function ligarAoCadastroFederal(prisma: ReturnType<typeof buildPrisma>, rows: EmendaEstadualRow[]) {
+  const externos = [...new Set(rows.filter(r => r.autorCargo !== 'DEPUTADO_ESTADUAL').map(r => r.autorNome))];
+  if (externos.length === 0) return { ligados: [] as string[], semCadastro: [] as string[] };
+
+  const federais = await prisma.parlamentar.findMany({
+    where: { cargo: { in: ['DEPUTADO_FEDERAL', 'SENADOR'] }, NOT: { idPortal: { startsWith: 'SP:' } } },
+    select: { id: true, nome: true, nomeUrna: true, uf: true, cargo: true },
+  });
+  const porNome = new Map<string, typeof federais>();
+  for (const f of federais) {
+    for (const n of new Set([f.nome, f.nomeUrna].filter((x): x is string => !!x).map(normalizeNome))) {
+      porNome.set(n, [...(porNome.get(n) ?? []), f]);
+    }
+  }
+
+  const escolhido = new Map<string, (typeof federais)[number]>();
+  const ligados: string[] = [], semCadastro: string[] = [];
+  for (const nome of externos) {
+    let cands = porNome.get(normalizeNome(nome)) ?? [];
+    if (cands.length > 1) cands = cands.filter(c => (c.uf ?? '').toUpperCase() === 'SP');
+    if (cands.length === 1) {
+      escolhido.set(nome, cands[0]);
+      ligados.push(`${nome} → ${cands[0].nome} (${cands[0].cargo === 'SENADOR' ? 'senador' : 'deputado federal'})`);
+    } else {
+      semCadastro.push(nome);
+    }
+  }
+  for (const r of rows) {
+    const f = escolhido.get(r.autorNome);
+    if (f) { r.autorParlamentarId = f.id; r.autorCargo = f.cargo; }
+  }
+  return { ligados, semCadastro };
 }
 
 async function main() {
@@ -170,6 +231,16 @@ async function main() {
     if (!cod) { truncadas++; continue; }
     const grupo = porCodigo.get(cod);
     if (grupo) grupo.push(l); else porCodigo.set(cod, [l]);
+  }
+
+  // Quem é da ALESP: tem Emenda LOA em algum ano da base (todos os anos, não
+  // só os importados — um deputado pode ter só transferência num ano).
+  const autoresGoverno = new Set<string>();
+  for (const grupo of porCodigo.values()) {
+    const autor = grupo[0].parlamentar.trim();
+    if (!autor) continue;
+    if (ehGoverno(autor)) autoresGoverno.add(autor);
+    else if (/^emenda/i.test(grupo[0].origem.trim())) autoresAlesp.add(normalizeNome(autor));
   }
 
   const rows: EmendaEstadualRow[] = [];
@@ -214,6 +285,18 @@ async function main() {
 
   const prisma = buildPrisma();
   try {
+    // ── Autores: ALESP, cadastro federal ou governo ───────────────────────
+    const { ligados, semCadastro } = await ligarAoCadastroFederal(prisma, rows);
+    const daAlesp = new Set(rows.filter(r => r.autorCargo === 'DEPUTADO_ESTADUAL').map(r => r.autorNome)).size;
+    console.log(`\n  autores da ALESP (com Emenda LOA): ${daAlesp}`);
+    console.log(`  autores de fora da ALESP ligados ao cadastro federal: ${ligados.length}`);
+    for (const l of ligados) console.log(`    ${l}`);
+    console.log(`  de fora da ALESP SEM cadastro federal (ficam como deputado federal de SP): ${semCadastro.length}`);
+    for (const n of semCadastro) console.log(`    ${n}`);
+    console.log(`  "AUTORIZO GOVERNAMENTAL" (governo, não parlamentar) — fora: ${[...autoresGoverno].join(', ') || 'nenhum'}`);
+    const semValor = rows.filter(r => !r.valorEmpenhado && !r.valorPago).length;
+    console.log(`  emendas sem valor publicado pelo governo de SP: ${semValor} de ${rows.length}`);
+
     // 40 gravacoes em paralelo, e nao as 20 do padrao: a conexao e aberta com
     // connection_limit=50, entao havia folga sem uso. O gargalo aqui e a ida e
     // volta ate o banco, nao o processamento — dobrar a concorrencia corta o
@@ -250,6 +333,27 @@ async function main() {
           });
         }
         console.log(`  ${sobrando.length} apagadas.`);
+      }
+    }
+
+    // ── Cadastros estaduais que não eram de deputado estadual ────────────
+    //
+    // O deputado federal que estava gravado como "deputado estadual" homônimo
+    // (e o "AUTORIZO GOVERNAMENTAL") ficou sem emendas: as dele passaram para
+    // o cadastro federal acima. Só apaga quem ficou sem nada ligado.
+    const falsos = [...new Set([
+      ...rows.filter(r => r.autorParlamentarId).map(r => r.autorNome),
+      ...autoresGoverno,
+    ])].map(n => `SP:${normalizeNome(n)}`);
+    if (falsos.length > 0) {
+      if (DRY_RUN) {
+        const n = await prisma.parlamentar.count({ where: { idPortal: { in: falsos } } });
+        console.log(`\n  [dry-run] cadastros de "deputado estadual" que deixariam de existir: até ${n}`);
+      } else {
+        const r = await prisma.parlamentar.deleteMany({
+          where: { idPortal: { in: falsos }, emendas: { none: {} }, transferenciasPix: { none: {} } },
+        });
+        console.log(`\n  cadastros de "deputado estadual" que não eram de deputado estadual — removidos: ${r.count}`);
       }
     }
   } finally {

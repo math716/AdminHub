@@ -145,6 +145,16 @@ function descreverRecorte(a: FiltrosEmendas, ignorados: string[], anos: number[]
   return partes.join(' · ');
 }
 
+/**
+ * Emenda sem valor publicado: estadual, sem empenhado, sem pago e sem valor
+ * destinado. É o que o governo de SP faz com a maioria das transferências
+ * voluntárias (91% das de 2025, todas as de 2026) — o arquivo traz as colunas
+ * de valor vazias.
+ */
+const SEM_VALOR_PUBLICADO = { esfera: 'ESTADUAL' as const, valorEmpenhado: 0, valorPago: 0, valorProposto: null };
+const semValorPublicadoEm = (e: { esfera: string; valorEmpenhado: number; valorPago: number; valorProposto: number | null }) =>
+  e.esfera === 'ESTADUAL' && !e.valorEmpenhado && !e.valorPago && e.valorProposto == null;
+
 const CARGO_CURTO: Record<string, string> = {
   DEPUTADO_FEDERAL: 'deputado federal', DEPUTADO_ESTADUAL: 'deputado estadual', SENADOR: 'senador',
   VEREADOR: 'vereador', BANCADA: 'bancada', COMISSAO: 'comissão', RELATOR: 'relator',
@@ -440,6 +450,21 @@ export async function executarBuscarEmendas(
     }),
   ]);
 
+  // Esferas do recorte e emendas sem valor publicado. Um deputado federal pode
+  // ter também repasses do governo do estado indicados por ele (em SP, a
+  // "Transferência Voluntária"): somar as duas coisas sem dizer dava "47
+  // emendas" a quem tinha 5 federais. E o governo de SP não publica valor para
+  // a maioria dessas transferências — aparecem com R$ 0, que não é o valor.
+  const [porEsferaBruto, semValorPublicado] = await Promise.all([
+    prisma.emendaParlamentar.groupBy({
+      by: ['esfera'],
+      where: whereFinal,
+      _count: { _all: true },
+      _sum: { valorEmpenhado: true, valorPago: true },
+    }),
+    prisma.emendaParlamentar.count({ where: { AND: [whereFinal, SEM_VALOR_PUBLICADO] } }),
+  ]);
+
   // Pergunta sobre UMA cidade: cada emenda conta só o pedaço que foi para ela.
   // Sem isto, "quanto Osasco recebeu" somava as emendas inteiras que passaram
   // por Osasco — R$ 8,6 mi de uma emenda em que Osasco recebeu R$ 2 mi.
@@ -640,6 +665,27 @@ export async function executarBuscarEmendas(
       }))
       .sort((a, b) => b.empenhado - a.empenhado),
     /** Ranking por valor empenhado sobre TODAS as linhas (15 primeiros). */
+    ...(porEsferaBruto.length > 1 && {
+      porEsfera: porEsferaBruto.map(g => ({
+        esfera: g.esfera,
+        emendas: g._count._all,
+        empenhado: g._sum.valorEmpenhado ?? 0,
+        pago: g._sum.valorPago ?? 0,
+      })),
+      avisoEsferas:
+        'O recorte junta emendas FEDERAIS (Orçamento da União) e ESTADUAIS (orçamento do estado — no caso de um ' +
+        'deputado federal ou senador, são repasses do governo do estado indicados por ele). Apresente SEPARADO, com ' +
+        'a quantidade e o valor de cada uma (veja "porEsfera"); nunca diga um total de emendas somando as duas sem ' +
+        'dizer quantas são de cada.',
+    }),
+    ...(semValorPublicado > 0 && {
+      emendasSemValorPublicado: semValorPublicado,
+      avisoSemValor:
+        `${semValorPublicado} emenda(s) do recorte não têm valor publicado pelo governo do estado (aparecem com ` +
+        'valorPublicado=false e valores zerados). NÃO diga que valem R$ 0, que não foram empenhadas nem que estão ' +
+        'paradas: o valor simplesmente não foi divulgado. Diga quantas são e que o governo do estado não publicou ' +
+        'o valor; os totais em reais cobrem só as que têm valor.',
+    }),
     ...(homonimos && {
       homonimos,
       avisoHomonimos:
@@ -691,6 +737,10 @@ export async function executarBuscarEmendas(
         const p = pedacoNaCidade?.porEmenda.get(e.id);
         const emp = p ? p.empenhado : e.valorEmpenhado;
         const pago = p ? p.pago : e.valorPago;
+        // Governo do estado não publicou o valor: zero aqui não é valor.
+        if (semValorPublicadoEm(e)) {
+          return { valorEmpenhado: 0, valorPago: 0, valorPublicado: false, execucao: null };
+        }
         return {
           valorEmpenhado: emp,
           valorPago: pago,
