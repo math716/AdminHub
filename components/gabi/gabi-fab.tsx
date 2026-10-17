@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import {
   X, Send, Loader2, MessageSquare, Clock, Plus, Trash2, ChevronLeft, ScrollText, Sparkles,
-  Landmark, MapPin, Scale, FileBarChart, Copy, Check, Search, ArrowUpRight,
+  Landmark, MapPin, Scale, ClipboardList, Copy, Check, Search, ArrowUpRight,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
@@ -352,12 +352,14 @@ const ehSaudacao = (m: Message, i: number) => i === 0 && m.role === 'assistant' 
 /**
  * Atalhos da tela inicial. Clicar PREENCHE a caixa de texto (não envia): a
  * pessoa completa com o nome, o bairro ou o ano e manda quando quiser.
+ * São os mesmos para todo gabinete, de qualquer estado — nada de atalho que
+ * só sirva para um lugar (o relatório territorial, por exemplo, é só do DF).
  */
 const SUGESTOES = [
   { icone: Landmark,     titulo: 'Emendas de um parlamentar', texto: 'Para onde foram as emendas',  pergunta: 'Me mostre as emendas de 2025 do deputado ' },
   { icone: MapPin,       titulo: 'Votos num bairro',          texto: 'Desempenho por região',        pergunta: 'Quantos votos teve no bairro ' },
   { icone: Scale,        titulo: 'Comparar candidatos',       texto: 'Lado a lado, onde cada um ganhou', pergunta: 'Compare os votos de 2022 entre os candidatos ' },
-  { icone: FileBarChart, titulo: 'Relatório territorial',     texto: 'Deputados por região do DF',   pergunta: 'Gere o relatório territorial do DF por região administrativa' },
+  { icone: ClipboardList, titulo: 'Demandas do gabinete',     texto: 'O que está em aberto',         pergunta: 'Quais demandas estão em aberto no gabinete?' },
 ];
 
 // ─── Histórico agrupado ───────────────────────────────────────────────────────
