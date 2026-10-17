@@ -448,7 +448,11 @@ export async function POST(request: NextRequest) {
           // dezenas de nomes o mapa "por vencedor" vira um arco-íris ilegível.
           const parls = new Set(emendas.map(e => (e.parlamentar || '').trim()).filter(Boolean));
           if (parls.size >= 2 && parls.size <= 6) {
-            mapa = await renderMapaEmendasVencedor({ uf, emendas, width: W, height: H });
+            // Quanto cada um mandou para cada cidade, pelos documentos. A lista
+            // `emendas` tem um município por emenda — e a emenda federal
+            // costuma ser dividida entre dezenas ("Vários municípios").
+            const destinos: any[] = body.dadosBrutos?.buscar_emendas?.porMunicipioParlamentar ?? [];
+            mapa = await renderMapaEmendasVencedor({ uf, emendas: destinos.length > 0 ? destinos : emendas, width: W, height: H });
             mapaTitulo = 'Mapa — parlamentar que mais destinou por município';
           } else {
             // Prefere a agregação por município (todas as linhas do recorte);

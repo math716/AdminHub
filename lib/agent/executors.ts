@@ -34,6 +34,7 @@ const AREA_DA_FERRAMENTA: Record<string, { permissoes: Permission[]; area: strin
 // ---------------------------------------------------------------------------
 type FiltrosEmendas = {
   parlamentar_nome?: string;
+  cargo?: string;
   uf?: string;
   municipio?: string;
   area?: string;
@@ -52,7 +53,14 @@ function filtroNomeParlamentar(nome: string) {
 
 function whereEmendas(a: FiltrosEmendas, ignorar: Set<string> = new Set()) {
   return {
-    ...(a.parlamentar_nome && !ignorar.has('parlamentar') && { parlamentar: filtroNomeParlamentar(a.parlamentar_nome) }),
+    // Cargo junto do nome: há homônimos ("Marcos Pereira" é deputado federal
+    // E deputado estadual em SP), e só o nome somava os dois.
+    ...((a.parlamentar_nome && !ignorar.has('parlamentar')) || a.cargo ? {
+      parlamentar: { AND: [
+        ...(a.parlamentar_nome && !ignorar.has('parlamentar') ? [filtroNomeParlamentar(a.parlamentar_nome)] : []),
+        ...(a.cargo ? [{ cargo: a.cargo as any }] : []),
+      ] },
+    } : {}),
     ...(a.uf && !ignorar.has('uf') && { uf: a.uf.toUpperCase() }),
     // Município: a emenda que mandou ALGUM pedaço para lá (documentos), ou —
     // quando os documentos não dizem o município — a do cadastro.
@@ -124,6 +132,7 @@ function descreverRecorte(a: FiltrosEmendas, ignorados: string[], anos: number[]
   const ign = new Set(ignorados);
   const partes: string[] = [];
   if (a.parlamentar_nome && !ign.has('parlamentar')) partes.push(a.parlamentar_nome);
+  if (a.cargo) partes.push(CARGO_CURTO[a.cargo] ?? a.cargo.toLowerCase());
   if (a.uf) partes.push(a.uf.toUpperCase());
   if (a.esfera) partes.push(String(a.esfera).toLowerCase());
   if (a.municipio && !ign.has('municipio')) partes.push(a.municipio);
@@ -134,6 +143,64 @@ function descreverRecorte(a: FiltrosEmendas, ignorados: string[], anos: number[]
       ? `todos os anos (${anos[0]}–${anos[anos.length - 1]})`
       : 'todos os anos');
   return partes.join(' · ');
+}
+
+const CARGO_CURTO: Record<string, string> = {
+  DEPUTADO_FEDERAL: 'deputado federal', DEPUTADO_ESTADUAL: 'deputado estadual', SENADOR: 'senador',
+  VEREADOR: 'vereador', BANCADA: 'bancada', COMISSAO: 'comissão', RELATOR: 'relator',
+  GOVERNADOR: 'governador', PREFEITO: 'prefeito',
+};
+
+/**
+ * Quanto cada parlamentar do recorte mandou para cada município, pelos
+ * documentos de empenho (o mesmo critério do valor por município). Emenda
+ * importada antes de os documentos guardarem o destino: quem recebeu no estado
+ * da emenda; emenda sem documentos (estadual): o município do cadastro.
+ */
+async function destinosPorParlamentar(
+  whereFinal: any,
+  rotulo: (id: string | null) => string,
+  partido: (id: string) => string,
+) {
+  const linhas = await prisma.emendaParlamentar.findMany({
+    where: whereFinal,
+    select: { id: true, parlamentarId: true, municipioNome: true, uf: true, valorEmpenhado: true },
+  });
+  const docs = linhas.length > 0
+    ? await prisma.emendaDocumento.groupBy({
+        by: ['emendaId', 'municipioDestino', 'ufFavorecido', 'municipioFavorecido'],
+        where: { emendaId: { in: linhas.map(l => l.id) }, fase: 'Empenho' },
+        _sum: { valor: true },
+      })
+    : [];
+  const docsPorEmenda = new Map<string, typeof docs>();
+  for (const d of docs) docsPorEmenda.set(d.emendaId, [...(docsPorEmenda.get(d.emendaId) ?? []), d]);
+
+  const soma = new Map<string, { municipio: string; parlamentar: string; partido: string; valorEmpenhado: number }>();
+  const somar = (municipio: string, l: (typeof linhas)[number], valor: number) => {
+    const parlamentar = rotulo(l.parlamentarId);
+    const chave = `${parlamentar}|${chaveMunicipio(municipio, l.uf ?? undefined)}`;
+    const atual = soma.get(chave)
+      ?? { municipio, parlamentar, partido: l.parlamentarId ? partido(l.parlamentarId) : '', valorEmpenhado: 0 };
+    atual.valorEmpenhado += valor;
+    soma.set(chave, atual);
+  };
+  for (const l of linhas) {
+    const ds = docsPorEmenda.get(l.id) ?? [];
+    const comDestino = ds.filter(d => d.municipioDestino);
+    if (comDestino.length > 0) {
+      for (const d of comDestino) somar(d.municipioDestino!, l, d._sum.valor ?? 0);
+    } else if (ds.length > 0) {
+      for (const d of ds) {
+        if (d.municipioFavorecido && String(d.ufFavorecido ?? '').toUpperCase() === String(l.uf ?? '').toUpperCase()) {
+          somar(d.municipioFavorecido, l, d._sum.valor ?? 0);
+        }
+      }
+    } else if (l.municipioNome) {
+      somar(l.municipioNome, l, l.valorEmpenhado);
+    }
+  }
+  return [...soma.values()];
 }
 
 /** Sigla do estado pelo começo do código do IBGE do município. */
@@ -207,7 +274,7 @@ export async function executarBuscarEmendas(
   _session: UserSession,
 ) {
   // Exige pelo menos um filtro para evitar dumps desnecessários
-  if (!args.parlamentar_nome && !args.uf && !args.municipio && !args.area && !args.ano) {
+  if (!args.parlamentar_nome && !args.cargo && !args.uf && !args.municipio && !args.area && !args.ano) {
     return { erro: 'Informe ao menos um filtro (parlamentar, UF, município, área ou ano).' };
   }
 
@@ -395,10 +462,40 @@ export async function executarBuscarEmendas(
   const dadosParlamentar = idsTop.length > 0
     ? await prisma.parlamentar.findMany({
         where: { id: { in: idsTop } },
-        select: { id: true, nome: true, partido: true, uf: true },
+        select: { id: true, nome: true, partido: true, uf: true, cargo: true },
       }).catch(() => [] as any[])
     : [];
   const porId = new Map(dadosParlamentar.map((p: any) => [p.id, p]));
+  // Mesmo nome, pessoas diferentes: o nome sozinho não as separa — nem no
+  // texto, nem na legenda do mapa (saiu "Marcos Pereira" duas vezes).
+  const nomesRepetidos = new Set(
+    dadosParlamentar.map((p: any) => p.nome).filter((n: string, i: number, t: string[]) => t.indexOf(n) !== i));
+  const rotuloParlamentar = (id: string | null | undefined) => {
+    const p = id ? porId.get(id) : undefined;
+    if (!p) return 'N/A';
+    return nomesRepetidos.has(p.nome) ? `${p.nome} (${CARGO_CURTO[p.cargo] ?? p.cargo})` : p.nome;
+  };
+
+  // Busca por nome, sem cargo, que achou mais de uma pessoa: os números acima
+  // somam todas. Caso real: "deputado federal Marcos Pereira" trouxe também o
+  // deputado estadual homônimo, e a resposta falou em "47 emendas em 2025"
+  // (5 do federal + 42 do estadual) como se fossem de um só.
+  const homonimos = args.parlamentar_nome && !args.cargo && !filtrosIgnorados.includes('parlamentar') && porParlamentar.length > 1
+    ? top.map(p => ({
+        nome: porId.get(p.parlamentarId!)?.nome ?? 'N/A',
+        cargo: porId.get(p.parlamentarId!)?.cargo ?? '',
+        uf: porId.get(p.parlamentarId!)?.uf ?? '',
+        partido: porId.get(p.parlamentarId!)?.partido ?? '',
+        emendas: p._count._all,
+      }))
+    : null;
+
+  // Para o mapa "quem mais destinou em cada município" (2 a 6 parlamentares):
+  // quanto cada um mandou para cada cidade, pelos documentos. Não vai ao modelo.
+  const porMunicipioParlamentar = porParlamentar.length >= 2 && porParlamentar.length <= 6
+    ? await destinosPorParlamentar(whereFinal, rotuloParlamentar, (id) => porId.get(id)?.partido ?? '')
+        .catch(() => undefined)
+    : undefined;
 
   const anosDisponiveis = anosBruto.map(a => ({ ano: a.ano, emendas: a._count._all }));
 
@@ -482,6 +579,7 @@ export async function executarBuscarEmendas(
      */
     filtros: {
       parlamentar: args.parlamentar_nome && !filtrosIgnorados.includes('parlamentar') ? args.parlamentar_nome : null,
+      cargo: args.cargo ?? null,
       uf: args.uf ? args.uf.toUpperCase() : null,
       esfera: args.esfera ?? null,
       municipio: args.municipio && !filtrosIgnorados.includes('municipio') ? args.municipio : null,
@@ -542,8 +640,17 @@ export async function executarBuscarEmendas(
       }))
       .sort((a, b) => b.empenhado - a.empenhado),
     /** Ranking por valor empenhado sobre TODAS as linhas (15 primeiros). */
+    ...(homonimos && {
+      homonimos,
+      avisoHomonimos:
+        `O nome "${args.parlamentar_nome}" corresponde a ${homonimos.length} parlamentares DIFERENTES (veja "homonimos"). ` +
+        'Todos os números acima SOMAM todos eles. Se o usuário disse o cargo ("deputado federal", "estadual", "senador"), ' +
+        'refaça a busca com "cargo" antes de responder; se não disse, pergunte de qual deles está falando ou apresente ' +
+        'cada um separado — nunca some pessoas diferentes como se fossem uma.',
+    }),
+    ...(porMunicipioParlamentar && { porMunicipioParlamentar }),
     topParlamentares: top.map(p => ({
-      nome: porId.get(p.parlamentarId!)?.nome ?? 'N/A',
+      nome: rotuloParlamentar(p.parlamentarId),
       partido: porId.get(p.parlamentarId!)?.partido ?? '',
       emendas: p._count._all,
       empenhado: p._sum.valorEmpenhado ?? 0,
@@ -562,7 +669,9 @@ export async function executarBuscarEmendas(
       ? Math.round((totalPago / totalEmpenhado) * 100)
       : 0,
     emendas: emendas.map(e => ({
-      parlamentar: e.parlamentar?.nome ?? 'N/A',
+      parlamentar: nomesRepetidos.has(e.parlamentar?.nome ?? '')
+        ? `${e.parlamentar!.nome} (${CARGO_CURTO[e.parlamentar!.cargo] ?? e.parlamentar!.cargo})`
+        : e.parlamentar?.nome ?? 'N/A',
       partido: e.parlamentar?.partido ?? '',
       cargo: e.parlamentar?.cargo ?? '',
       ano: e.ano,

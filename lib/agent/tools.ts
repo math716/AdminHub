@@ -13,6 +13,14 @@ export const AGENT_TOOLS: Tool[] = [
           type: 'string',
           description: 'Nome ou parte do nome do parlamentar (busca parcial, sem acento).',
         },
+        cargo: {
+          type: 'string',
+          enum: ['DEPUTADO_FEDERAL', 'DEPUTADO_ESTADUAL', 'SENADOR'],
+          description:
+            'Cargo do parlamentar. Passe SEMPRE que o usuário disser o cargo ("deputado federal Fulano", ' +
+            '"o senador X", "deputada estadual Y"): há homônimos — o mesmo nome pode ser um deputado federal ' +
+            'e um estadual — e sem o cargo a busca soma os dois.',
+        },
         uf: {
           type: 'string',
           description: 'Sigla do estado (ex: DF, SP, MG). Dois caracteres maiúsculos.',

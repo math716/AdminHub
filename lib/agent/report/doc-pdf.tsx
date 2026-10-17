@@ -226,20 +226,30 @@ function renderBarChart(headers: string[], rows: string[][]): React.ReactNode | 
 
   // Só colunas realmente numéricas viram série (ignora "Partido", "Situação"…);
   // ignora colunas de porcentagem (escala diferente) e a linha "Total".
-  const ehPct = (h: string) => /%|percent/i.test(h ?? '');
   const ehTotal = (c: string) => (c ?? '').replace(/\*/g, '').trim().toLowerCase() === 'total';
   const linhas = rows.filter(r => !ehTotal(r[0] ?? ''));
+  // Porcentagem pelo título OU pelas células: a coluna "Execução" (99%, 100%)
+  // não tem "%" no título e virava barra ao lado de milhões — uma linha no chão.
+  const ehPct = (ci: number) => /%|percent/i.test(headers[ci] ?? '')
+    || linhas.filter(r => /%\s*$/.test((r[ci] ?? '').trim())).length > linhas.length / 2;
 
   const numericCols: number[] = [];
   for (let ci = 1; ci < headers.length; ci++) {
-    if (ehPct(headers[ci])) continue;
+    if (ehPct(ci)) continue;
     if (linhas.some(r => { const n = parseBrNum(r[ci] ?? ''); return n !== null && n > 0; })) numericCols.push(ci);
   }
   if (numericCols.length === 0) return null;
 
+  // Rótulo do eixo: a primeira coluna de texto que não se repete. Com "Área"
+  // na primeira coluna saía "Saúde, Saúde, Saúde" — impossível saber qual barra
+  // é qual. Se nenhuma for única, fica a primeira.
+  const limpa = (c: string | undefined) => stripEmoji((c ?? '').replace(/\*\*/g, '')).trim();
+  const colunasTexto = headers.map((_, ci) => ci).filter(ci => !numericCols.includes(ci) && !ehPct(ci));
+  const colRotulo = colunasTexto.find(ci => new Set(linhas.map(r => limpa(r[ci]))).size === linhas.length) ?? 0;
+
   const seriesNames = numericCols.map(ci => headers[ci]);
   const dataRowsAll = linhas
-    .map(row => ({ label: stripEmoji(row[0]?.replace(/\*\*/g, '') ?? ''), nums: numericCols.map(ci => parseBrNum(row[ci] ?? '')) }))
+    .map(row => ({ label: limpa(row[colRotulo]), nums: numericCols.map(ci => parseBrNum(row[ci] ?? '')) }))
     .filter(r => r.nums.some(v => v !== null && v > 0));
 
   if (dataRowsAll.length === 0) return null;

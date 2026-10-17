@@ -208,6 +208,10 @@ function acumularEmendas(prev: any, novo: any) {
       .sort((a: any, b: any) => b.empenhado - a.empenhado)
       .slice(0, 15),
     porMunicipio: [...municipios.values()],
+    // Mapa "quem mais destinou": as linhas de cada busca, juntas (o mapa soma).
+    ...((prev.porMunicipioParlamentar || novo.porMunicipioParlamentar) && {
+      porMunicipioParlamentar: [...(prev.porMunicipioParlamentar ?? []), ...(novo.porMunicipioParlamentar ?? [])],
+    }),
     porUf: [...ufs.values()].sort((a, b) => b.empenhado - a.empenhado),
     totalParlamentares: (prev.totalParlamentares ?? 0) + (novo.totalParlamentares ?? 0) || undefined,
     porArea,
@@ -510,7 +514,8 @@ export async function POST(request: NextRequest) {
           // responder "quais municípios mais receberam".
           // `mapaVotos` (buscar_votacao com um candidato): todos os municípios,
           // só para o mapa de calor do PDF — mesmo motivo.
-          const { porMunicipio: _mapa, mapaVotos: _mapaVotos, ...paraOModelo } = (resultado ?? {}) as any;
+          // `porMunicipioParlamentar`: só para o mapa "quem mais destinou" — idem.
+          const { porMunicipio: _mapa, porMunicipioParlamentar: _mapaParl, mapaVotos: _mapaVotos, ...paraOModelo } = (resultado ?? {}) as any;
 
           toolResults.push({
             type: 'tool_result',
