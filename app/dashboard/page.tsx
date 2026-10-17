@@ -25,7 +25,6 @@ import { Esqueleto, EstadoVazioPadrao } from '@/components/ui/esqueleto';
 
 const DemandsTimelineChart = dynamic(() => import('@/components/charts/demands-timeline'), { ssr: false });
 const DemandsByCategoryChart = dynamic(() => import('@/components/charts/demands-by-category'), { ssr: false });
-const DashboardDownloadButton = dynamic(() => import('@/components/pdf/dashboard-download-button'), { ssr: false });
 
 interface DashboardStats {
   total: number;
@@ -211,11 +210,6 @@ export default function DashboardPage() {
               {deHoje.length > 0 ? ` · ${deHoje.length} ${deHoje.length === 1 ? 'compromisso hoje' : 'compromissos hoje'}` : ''}
             </p>
           </div>
-          {verDemandas && (
-            <div className="flex-shrink-0">
-              <DashboardDownloadButton disabled={loading} />
-            </div>
-          )}
         </div>
 
         {/* Pergunta direta para a Gabi */}
