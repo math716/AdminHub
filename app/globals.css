@@ -661,6 +661,28 @@ html, body {
 @media (min-width: 640px) {
   .altura-folha { max-height: 90vh; }
 }
+/* Esqueleto de carregamento (components/ui/esqueleto.tsx): bloco com brilho
+   correndo, nos dois temas. */
+.esqueleto {
+  position: relative;
+  overflow: hidden;
+  background: var(--tint-06);
+}
+.esqueleto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--tint-06), transparent);
+  animation: esqueleto-brilho 1.4s ease-in-out infinite;
+}
+@keyframes esqueleto-brilho {
+  to { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto::after { animation: none; }
+}
+
 /* Gabi — caixa de escrita: o foco acende a moldura inteira (texto + botão). */
 .gabi-compositor { transition: border-color .15s ease, box-shadow .15s ease; }
 /* Texto de exemplo numa linha só (no celular quebrava e cortava a 2ª linha). */

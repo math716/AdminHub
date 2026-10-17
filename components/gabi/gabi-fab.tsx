@@ -638,8 +638,10 @@ export function GabiFAB() {
 
   // ── Enviar mensagem ───────────────────────────────────────────────────────
 
-  const send = async () => {
-    const text = input.trim();
+  // `textoDireto`: pergunta vinda de fora (caixa "Pergunte à Gabi" do
+  // Dashboard) — envia sem passar pela caixa de texto.
+  const send = async (textoDireto?: string) => {
+    const text = (textoDireto ?? input).trim();
     if (!text || loading) return;
     const history = [...messages, { role: 'user' as const, content: text }];
     setMessages(history);
@@ -717,6 +719,22 @@ export function GabiFAB() {
       setProgresso(null);
     }
   };
+
+  // Pergunta enviada de outra tela (Dashboard): abre a Gabi e manda na hora.
+  // O ref aponta sempre para o `send` do render atual (conversa em dia).
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  useEffect(() => {
+    const aoPerguntar = (ev: Event) => {
+      const pergunta = (ev as CustomEvent<{ pergunta?: string }>).detail?.pergunta?.trim();
+      if (!pergunta) return;
+      setOpen(true);
+      setView('chat');
+      setTimeout(() => { sendRef.current(pergunta); }, 60);
+    };
+    window.addEventListener('gabi:perguntar', aoPerguntar);
+    return () => window.removeEventListener('gabi:perguntar', aoPerguntar);
+  }, []);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
@@ -1199,7 +1217,7 @@ export function GabiFAB() {
                         }}
                       />
                       <button
-                        onClick={send}
+                        onClick={() => send()}
                         disabled={!input.trim() || loading}
                         aria-label="Enviar"
                         className="flex-shrink-0 flex items-center justify-center transition-all duration-150 disabled:cursor-not-allowed"
