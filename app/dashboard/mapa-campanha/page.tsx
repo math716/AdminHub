@@ -17,7 +17,8 @@ import { toast } from 'sonner';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 import { PERMISSIONS, hasPermission } from '@/lib/permissions';
-import { Painel, CampoFiltro } from '@/components/mapa/comparacao-visual';
+import { Painel, CampoFiltro, ChipFiltro, Trilha, BarraSimples } from '@/components/mapa/comparacao-visual';
+import { CabecalhoProjecao, Indicador, PainelCenarios, LinhaMunicipio, AnaliseProjecao } from '@/components/mapa-campanha/projecao-visual';
 import { CampoBusca, CartaoProjecaoSalva, type ResumoProjecaoSalva } from '@/components/mapa-campanha/visual';
 import {
   Map,
@@ -29,7 +30,6 @@ import {
   Plus,
   Trash2,
   CheckCircle,
-  ArrowUp,
   ArrowDown,
   Loader2,
   Gauge,
@@ -1860,6 +1860,37 @@ export default function MapaCampanhaPage() {
     return municipios.reduce((acc, m) => acc + m.votosBase, 0);
   };
 
+  // Meta de um município num cenário qualquer — mesma regra de getMetaAtiva
+  // (com parcerias e bairros quando a simulação inclui parcerias).
+  const getMetaNoCenario = (mun: ProjecaoMunicipio, c: CenarioType): number => {
+    if (includeParcerias) return getMetaFinalMunicipio(mun, c);
+    return c === 'conservador' ? mun.metaConservadora : c === 'arrojado' ? mun.metaArrojada : mun.metaPossivel;
+  };
+
+  // Total de um cenário qualquer — mesma conta de getTotalVotosMeta, que é
+  // este total no cenário ativo. Serve para mostrar os três lado a lado.
+  const getTotalMetaCenario = (c: CenarioType): number => {
+    if (!projecao) return 0;
+    const spDistritos = projecao.municipios.filter(m => isSpDistrito(m.municipio));
+    if (spDistritos.length > 0) {
+      const cityBase = projecao.municipios.find(m => m.municipio === 'SAO PAULO')?.votosBase ?? 0;
+      const distritosBase = spDistritos.reduce((acc, m) => acc + m.votosBase, 0);
+      const distritosMeta = spDistritos.reduce((acc, m) => acc + getMetaNoCenario(m, c), 0);
+      const outrosMeta = getMunicipiosFiltrados()
+        .filter(m => m.municipio !== 'SAO PAULO')
+        .reduce((acc, m) => acc + getMetaNoCenario(m, c), 0);
+      return (cityBase - distritosBase) + distritosMeta + outrosMeta;
+    }
+    return getMunicipiosFiltrados().reduce((acc, m) => acc + getMetaNoCenario(m, c), 0);
+  };
+
+  // Votos que as parcerias somam à meta do cenário (0 quando estão fora da simulação).
+  const getParceriasNoCenario = (c: CenarioType): number => {
+    if (!includeParcerias) return 0;
+    const chave = c === 'conservador' ? 'conservadora' : c === 'arrojado' ? 'arrojada' : 'possivel';
+    return getMunicipiosFiltrados().reduce((acc, m) => acc + getParceriasSumForMunicipio(m.municipio)[chave], 0);
+  };
+
   const getTotalVotosMeta = () => {
     if (!projecao) return 0;
     const spDistritos = projecao.municipios.filter(m => isSpDistrito(m.municipio));
@@ -2658,49 +2689,32 @@ export default function MapaCampanhaPage() {
         className="flex-shrink-0"
       >
         {formCollapsed && electoralData ? (
-          <Card style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}>
-            <CardContent className="px-4 py-0.5">
-              <div className="flex items-center gap-4 flex-wrap">
-                <Search className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
-                <div className="flex-1 min-w-0 flex items-center gap-3 flex-wrap">
-                  <span className="text-[color:var(--text-primary)] font-semibold truncate">{candidateName || electoralData.nome}</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(37,99,235,0.12)', color: 'var(--brand-cobalt-text)', border: '1px solid rgba(37,99,235,0.25)' }}>
-                    {ESTADOS_BRASIL.find(e => e.sigla === uf)?.nome ?? uf}
-                  </span>
-                  <span className="text-xs text-slate-600 dark:text-slate-400">{ano} → {anoProjecao}</span>
-                </div>
-                {/* No celular os três botões não cabem numa linha: quebram, em vez
-                    de o último sair para fora do card. */}
-                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:flex-shrink-0">
-                  <Button
-                    onClick={voltarParaPesquisa}
-                    variant="outline"
-                    className="border-[var(--border-default)] text-slate-700 dark:text-slate-300 hover:bg-[var(--bg-card-subtle)] text-xs h-6 px-2.5"
-                  >
-                    <ArrowLeft className="h-3 w-3 mr-1.5" />
-                    Voltar
-                  </Button>
-                  <Button
-                    onClick={() => setFormCollapsed(false)}
-                    variant="outline"
-                    className="border-[var(--border-default)] text-slate-700 dark:text-slate-300 hover:bg-[var(--bg-card-subtle)] text-xs h-6 px-2.5"
-                  >
-                    <Pencil className="h-3 w-3 mr-1.5" />
-                    Editar busca
-                  </Button>
-                  <Button
-                    onClick={() => setShowNovoCandidatoModal(true)}
-                    variant="outline"
-                    style={{ background: 'var(--brand-cobalt-soft)', borderColor: 'var(--brand-cobalt)', color: 'var(--brand-cobalt-text)' }}
-                    className="whitespace-nowrap text-xs h-6 px-2.5 hover:brightness-110"
-                  >
-                    <Plus className="h-3 w-3 mr-1.5" />
-                    Novo Candidato
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <Trilha
+            passos={[
+              { rotulo: 'Projeto de Campanha', onClick: voltarParaPesquisa },
+              { rotulo: candidateName || electoralData.nome || 'Candidato' },
+            ]}
+            meta={`${ESTADOS_BRASIL.find(e => e.sigla === uf)?.nome ?? uf} · ${ano} → ${anoProjecao}`}
+            acoes={
+              <>
+                <button type="button" onClick={voltarParaPesquisa}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-colors hover:bg-[var(--tint-06)]"
+                  style={{ border: '1px solid var(--border-default)', color: 'var(--text-secondary)', background: 'var(--bg-card)' }}>
+                  <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+                </button>
+                <button type="button" onClick={() => setFormCollapsed(false)}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-colors hover:bg-[var(--tint-06)]"
+                  style={{ border: '1px solid var(--border-default)', color: 'var(--text-secondary)', background: 'var(--bg-card)' }}>
+                  <Pencil className="h-3.5 w-3.5" /> Editar busca
+                </button>
+                <button type="button" onClick={() => setShowNovoCandidatoModal(true)}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all hover:brightness-110"
+                  style={{ background: 'var(--brand-cobalt-soft)', border: '1px solid var(--brand-cobalt)', color: 'var(--brand-cobalt-text)' }}>
+                  <Plus className="h-3.5 w-3.5" /> Novo candidato
+                </button>
+              </>
+            }
+          />
         ) : (
           <Painel
             titulo="Buscar candidato"
@@ -2755,93 +2769,80 @@ export default function MapaCampanhaPage() {
 
       {electoralData && projecao && (
         <>
-          {/* Compact top bar: candidate info + tabs + save */}
+          {/* Cabeçalho do candidato: quem, onde, abas e salvar */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 }}
           >
-            {/* No celular cada parte ocupa a própria linha: nome inteiro em cima,
-                estado/eleição/projeção lado a lado, abas e botão na largura toda.
-                Da largura `sm` para cima o arranjo é o de antes, tudo numa faixa
-                (o `sm:contents` desfaz a grade de três colunas). */}
-            <div
-              className="flex flex-col gap-3 px-4 py-3 rounded-2xl sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 sm:py-1.5"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}
-            >
-              {/* Nome + cargo */}
-              {(() => {
-                const nomeCandidato = projecao.candidatoNome || electoralData.nomeUrna || electoralData.candidateName || '';
-                const cargo = projecao.cargo || electoralData.cargo || '';
-                return (
-                  <div className="min-w-0 sm:flex-1">
-                    <p className="text-[color:var(--text-primary)] font-bold text-lg sm:text-xl leading-tight break-words sm:truncate">{nomeCandidato}</p>
-                    {cargo && <p className="text-sm mt-0.5 sm:truncate" style={{ color: '#6b82a0' }}>{cargo}</p>}
-                  </div>
-                );
-              })()}
-
-              <div className="grid grid-cols-3 gap-2 sm:contents">
-                <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
-                <div className="flex flex-col items-center gap-0.5 min-w-0">
-                  <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Estado</span>
-                  <span className="text-base font-bold text-[color:var(--text-primary)] text-center">
-                    {ESTADOS_BRASIL.find(e => e.sigla === projecao.uf)?.nome ?? projecao.uf}
-                  </span>
-                </div>
-                <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Eleição</span>
-                  <span className="text-base font-bold" style={{ color: 'var(--acento-azul)' }}>{projecao.anoBase}</span>
-                </div>
-                <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>Projeção</span>
-                  <span className="text-base font-bold" style={{ color: '#2563EB' }}>{projecao.anoProjecao}</span>
-                </div>
-              </div>
-
-              <div className="hidden sm:block w-px h-10 self-center" style={{ background: 'var(--tint-08)' }} />
-
-              {/* Tabs inline */}
-              <div className="flex gap-1 p-1 rounded-xl w-full sm:w-auto" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--tint-06)' }}>
-                {electoralData?.candidatoId && (
-                  <button
-                    onClick={() => setActiveTab('historico')}
-                    className={`flex flex-1 sm:flex-none justify-center items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                      activeTab === 'historico'
-                        ? 'bg-cyan-500 text-white shadow'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    Dados {ano}
-                  </button>
-                )}
-                <button
-                  onClick={() => setActiveTab('projecao')}
-                  className={`flex flex-1 sm:flex-none justify-center items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                    activeTab === 'projecao'
-                      ? `${cenarioConfig[cenarioAtivo].bg} text-white shadow`
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Target className="h-4 w-4" />
-                  Projeção {anoProjecao}
-                </button>
-              </div>
-
-              {/* Save button */}
-              <Button
-                onClick={saveProjecao}
-                loading={saving}
-                className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Salvar Projeção
-              </Button>
-            </div>
+            <CabecalhoProjecao
+              nome={projecao.candidatoNome || electoralData.nomeUrna || electoralData.candidateName || ''}
+              cargo={projecao.cargo || electoralData.cargo || ''}
+              estado={ESTADOS_BRASIL.find(e => e.sigla === projecao.uf)?.nome ?? projecao.uf}
+              anoBase={projecao.anoBase}
+              anoProjecao={projecao.anoProjecao}
+              estreante={getTotalVotosBase() === 0}
+              abas={[
+                ...(electoralData?.candidatoId ? [{ chave: 'historico' as const, rotulo: `Dados ${ano}`, icone: BarChart3 }] : []),
+                { chave: 'projecao' as const, rotulo: `Projeção ${anoProjecao}`, icone: Target },
+              ]}
+              abaAtiva={activeTab}
+              onAba={setActiveTab}
+              corCenario={cenarioConfig[cenarioAtivo].hex}
+              onSalvar={saveProjecao}
+              salvando={saving}
+            />
           </motion.div>
+
+          {/* Números da projeção */}
+          {!mapFullscreen && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+              <Indicador icone={BarChart3} rotulo={`Votos ${ano}`} cor="#2563eb"
+                valor={getTotalVotosBase() > 0 ? getTotalVotosBase().toLocaleString('pt-BR') : '—'}
+                detalhe={getTotalVotosBase() > 0 ? 'base da projeção' : 'candidatura nova'}
+                destaque={filtroTipo !== 'todos'} />
+              <Indicador icone={Target} rotulo={`Meta ${anoProjecao}`} cor={cenarioConfig[cenarioAtivo].hex}
+                valor={<span style={{ color: cenarioConfig[cenarioAtivo].hex }}>{getTotalVotosMeta().toLocaleString('pt-BR')}</span>}
+                detalhe={`cenário ${cenarioConfig[cenarioAtivo].label.toLowerCase()}`}
+                destaque>
+                {getTotalVotosBase() > 0 && (
+                  <BarraSimples fracao={Math.min(1, getTotalVotosBase() / Math.max(getTotalVotosMeta(), 1))} cor={cenarioConfig[cenarioAtivo].hex} altura={5} />
+                )}
+              </Indicador>
+              <Indicador icone={parseFloat(getCrescimento() as string) >= 0 ? TrendingUp : ArrowDown} rotulo="Crescimento"
+                cor={parseFloat(getCrescimento() as string) >= 0 ? '#10b981' : '#ef4444'}
+                valor={getTotalVotosBase() > 0
+                  ? <span style={{ color: parseFloat(getCrescimento() as string) >= 0 ? 'var(--success)' : 'var(--danger)' }}>{parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento().toString().replace('.', ',')}%</span>
+                  : '—'}
+                detalhe={getTotalVotosBase() > 0 ? `${(getTotalVotosMeta() - getTotalVotosBase()) >= 0 ? '+' : '−'}${Math.abs(getTotalVotosMeta() - getTotalVotosBase()).toLocaleString('pt-BR')} votos` : 'sem base para comparar'} />
+              <Indicador icone={MapPin} rotulo="Municípios" cor="#0891b2"
+                valor={getMunicipiosCount().toLocaleString('pt-BR')}
+                detalhe={filtroTipo !== 'todos'
+                  ? `de ${projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length.toLocaleString('pt-BR')} no total`
+                  : 'na projeção'}
+                destaque={filtroTipo !== 'todos'} />
+              <Indicador icone={Handshake} rotulo="Dobradas" cor="#3b82f6"
+                valor={getDobradasCount().toLocaleString('pt-BR')}
+                detalhe={getVotosComDobrada() > 0 ? `${getVotosComDobrada().toLocaleString('pt-BR')} votos na meta` : 'nenhuma ainda'}
+                destaque={filtroTipo === 'com_dobrada'} />
+              <Indicador icone={Users} rotulo="Parcerias" cor="#d97706"
+                valor={(parceriasStats?.total || 0).toLocaleString('pt-BR')}
+                detalhe={includeParcerias
+                  ? `+${((cenarioAtivo === 'conservador' ? parceriasStats?.metaConservadoraTotal : cenarioAtivo === 'possivel' ? parceriasStats?.metaPossivelTotal : parceriasStats?.metaArrojadaTotal) || 0).toLocaleString('pt-BR')} votos na meta`
+                  : 'fora da simulação'}
+                destaque={filtroTipo === 'parcerias'}
+                apagado={!includeParcerias}
+                acao={
+                  <button type="button" onClick={() => setIncludeParcerias(!includeParcerias)}
+                    className="p-1 rounded-md transition-colors hover:bg-[var(--tint-06)]"
+                    style={{ color: includeParcerias ? '#d97706' : 'var(--text-tertiary)' }}
+                    title={includeParcerias ? 'Tirar as parcerias da simulação' : 'Pôr as parcerias na simulação'}
+                    aria-label={includeParcerias ? 'Tirar as parcerias da simulação' : 'Pôr as parcerias na simulação'}>
+                    {includeParcerias ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  </button>
+                } />
+            </div>
+          )}
 
           {/* Main 12-column grid */}
           <div className={mapFullscreen
@@ -2860,66 +2861,22 @@ export default function MapaCampanhaPage() {
                 transition={{ delay: 0.15 }}
                 className="flex col-span-12 order-2 md:col-span-4 lg:col-span-3 md:order-1 flex-col md:h-[calc(100vh-160px)] md:min-h-[340px]"
               >
-                {/* Scenario selector */}
-                <Card className="flex-1 flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
-                  <CardContent className="p-4 flex flex-col h-full justify-between">
-                    <p className="text-xs 2xl:text-sm font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>
-                      Cenário de Projeção
-                    </p>
-
-                    {(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map((cenario) => {
-                      const config = cenarioConfig[cenario];
-                      const Icon = config.icon;
-                      const isActive = cenarioAtivo === cenario;
-                      const desc: Record<CenarioType, string> = {
-                        conservador: 'Meta alcançável e segura',
-                        possivel: 'Crescimento equilibrado',
-                        arrojado: 'Meta ambiciosa de expansão',
-                      };
-                      return (
-                        <button
-                          key={cenario}
-                          onClick={() => setCenarioAtivo(cenario)}
-                          className={`flex items-center gap-2.5 px-2 py-1.5 2xl:px-3 2xl:py-2.5 rounded-lg transition-all w-full text-left border ${
-                            isActive
-                              ? `${config.bg} text-white shadow-md border-transparent`
-                              : `${config.bgInactive} ${config.textInactive} hover:opacity-90`
-                          }`}
-                        >
-                          <div className={`p-1 rounded-md flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-[var(--bg-card-subtle)]'}`}>
-                            <Icon className="h-4 w-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-xs 2xl:text-sm leading-tight">{config.label}</p>
-                            <p className={`text-xs leading-tight mt-0.5 ${isActive ? 'opacity-80' : 'text-[color:var(--text-tertiary)]'}`}>
-                              {desc[cenario]}
-                            </p>
-                          </div>
-                          {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white/80 flex-shrink-0" />}
-                        </button>
-                      );
-                    })}
-
-                    <div className="pt-3 border-t border-[var(--border-default)]">
-                      <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: '#6b82a0' }}>
-                        Meta Total · {anoProjecao}
-                      </p>
-                      <p className={`text-base 2xl:text-lg font-bold ${cenarioConfig[cenarioAtivo].color}`}>
-                        {getTotalVotosMeta().toLocaleString()}
-                      </p>
-                      {getTotalVotosBase() > 0 && (
-                        <p className="text-[11px] mt-0.5 flex items-center gap-1.5" style={{ color: '#6b82a0' }}>
-                          <span>Base {ano}: {getTotalVotosBase().toLocaleString()}</span>
-                          <span>·</span>
-                          <span className={parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}>
-                            {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
-                          </span>
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
+                <PainelCenarios
+                  cenarios={(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map(c => ({
+                    chave: c,
+                    rotulo: cenarioConfig[c].label,
+                    descricao: c === 'conservador' ? 'Meta alcançável e segura' : c === 'possivel' ? 'Crescimento equilibrado' : 'Meta ambiciosa de expansão',
+                    icone: cenarioConfig[c].icon,
+                    cor: cenarioConfig[c].hex,
+                    meta: getTotalMetaCenario(c),
+                  }))}
+                  ativo={cenarioAtivo}
+                  onEscolher={setCenarioAtivo}
+                  base={getTotalVotosBase()}
+                  anoBase={ano}
+                  anoProjecao={anoProjecao}
+                  parcerias={getParceriasNoCenario(cenarioAtivo)}
+                />
               </motion.div>
             )}
 
@@ -2937,7 +2894,7 @@ export default function MapaCampanhaPage() {
                 className="flex col-span-12 order-3 lg:col-span-3 lg:order-3 flex-col h-[34rem] lg:h-[calc(100vh-160px)] lg:min-h-[340px]"
               >
                 {/* Municipality List */}
-                <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] flex flex-col h-full">
+                <Card className="flex flex-col h-full !rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}>
                   <CardHeader className="border-b border-[var(--border-default)] py-3">
                     <div className="flex items-center justify-between gap-2">
                       <CardTitle className="text-[color:var(--text-primary)] text-sm flex items-center gap-2">
@@ -3001,49 +2958,11 @@ export default function MapaCampanhaPage() {
                       </div>
                       {/* Filtros - só mostrar para view de municípios */}
                       {!(visualizacaoMapa === 'bairro' && ['VEREADOR', 'PREFEITO'].some(c => (electoralData?.cargo ?? '').toUpperCase().includes(c))) && (
-                      <div className="flex gap-1 flex-wrap">
-                        <button
-                          onClick={() => setFiltroTipo('todos')}
-                          className={`flex-1 min-w-[60px] px-2 py-1.5 text-xs rounded-lg transition-colors ${
-                            filtroTipo === 'todos'
-                              ? 'bg-slate-600 text-white'
-                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-600 hover:text-white'
-                          }`}
-                        >
-                          Todos
-                        </button>
-                        <button
-                          onClick={() => setFiltroTipo('com_dobrada')}
-                          className={`flex-1 min-w-[70px] px-2 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-center gap-1 ${
-                            filtroTipo === 'com_dobrada'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-blue-600 hover:text-white'
-                          }`}
-                        >
-                          <Handshake className="h-3 w-3" />
-                          Dobrada
-                        </button>
-                        <button
-                          onClick={() => setFiltroTipo('sem_dobrada')}
-                          className={`flex-1 min-w-[80px] px-2 py-1.5 text-xs rounded-lg transition-colors ${
-                            filtroTipo === 'sem_dobrada'
-                              ? 'bg-slate-500 text-white'
-                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-slate-500 hover:text-white'
-                          }`}
-                        >
-                          Sem Dobrada
-                        </button>
-                        <button
-                          onClick={() => setFiltroTipo('parcerias')}
-                          className={`flex-1 min-w-[80px] px-2 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-center gap-1 ${
-                            filtroTipo === 'parcerias'
-                              ? 'bg-amber-600 text-white'
-                              : 'bg-[var(--bg-card-subtle)]/50 text-slate-600 dark:text-slate-400 hover:bg-amber-600 hover:text-white'
-                          }`}
-                        >
-                          <Users className="h-3 w-3" />
-                          Parcerias
-                        </button>
+                      <div className="flex gap-1.5 flex-wrap">
+                        <ChipFiltro ativo={filtroTipo === 'todos'} onClick={() => setFiltroTipo('todos')}>Todos</ChipFiltro>
+                        <ChipFiltro ativo={filtroTipo === 'com_dobrada'} cor="#3b82f6" onClick={() => setFiltroTipo('com_dobrada')}>Com dobrada</ChipFiltro>
+                        <ChipFiltro ativo={filtroTipo === 'sem_dobrada'} cor="#64748b" onClick={() => setFiltroTipo('sem_dobrada')}>Sem dobrada</ChipFiltro>
+                        <ChipFiltro ativo={filtroTipo === 'parcerias'} cor="#d97706" onClick={() => setFiltroTipo('parcerias')}>Parcerias</ChipFiltro>
                       </div>
                       )}
                     </div>
@@ -3559,62 +3478,37 @@ export default function MapaCampanhaPage() {
                       </div>
                     ) : (
                       <div className="divide-y divide-[var(--border-default)]">
-                        {getFilteredMunicipios()
-                          .sort((a, b) => b.votosBase - a.votosBase)
-                          .map((mun, idx) => {
-                            const metaAtiva = getMetaAtiva(mun);
-                            const diff = metaAtiva - mun.votosBase;
-                            const diffPercent = mun.votosBase > 0 ? ((diff / mun.votosBase) * 100).toFixed(0) : 0;
-                            const isNew = mun.votosBase === 0;
+                        {(() => {
+                          const lista = getFilteredMunicipios().sort((a, b) => b.votosBase - a.votosBase);
+                          const maiorMeta = lista.reduce((mx, m) => Math.max(mx, getMetaAtiva(m)), 0);
+                          return lista.map((mun, idx) => {
                             const bairrosDelta = getBairrosDeltaMunicipio(mun.municipio, cenarioAtivo);
+                            const isNew = mun.votosBase === 0;
                             return (
-                              <div
-                                key={idx}
-                                className={`px-3 py-2.5 hover:bg-[var(--bg-card-subtle)]/70 cursor-pointer transition-colors group border-b border-[var(--border-default)] ${
-                                  isNew ? 'border-l-2 border-l-emerald-500' :
-                                  mun.dobradaAtiva ? 'border-l-2 border-l-blue-400' : ''
-                                }`}
+                              <LinhaMunicipio
+                                key={mun.municipio}
+                                posicao={idx + 1}
+                                nome={mun.municipio}
+                                base={mun.votosBase}
+                                meta={getMetaAtiva(mun)}
+                                anoBase={ano}
+                                maiorMeta={maiorMeta}
+                                cor={cenarioConfig[cenarioAtivo].hex}
+                                novo={isNew}
+                                dobrada={!!mun.dobradaAtiva}
+                                dobradaNome={mun.dobradaNome ? `${mun.dobradaNome}${mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}` : undefined}
+                                prioridadeAlta={mun.prioridade === 'ALTA'}
+                                extra={bairrosDelta > 0 ? (
+                                  <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(56,189,248,0.15)', color: 'var(--acento-azul)' }}>
+                                    +{bairrosDelta.toLocaleString('pt-BR')} bairros
+                                  </span>
+                                ) : undefined}
                                 onClick={() => handleMunicipioClick(mun.municipio)}
-                              >
-                                <div className="flex items-center justify-between gap-1">
-                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                    {mun.dobradaAtiva && <Handshake className="h-3.5 w-3.5 text-blue-400 flex-shrink-0" />}
-                                    <span className="text-[color:var(--text-primary)] font-semibold text-sm truncate">
-                                      {mun.municipio}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1 flex-shrink-0">
-                                    {isNew && <Badge variant="success" className="text-[10px] px-1 py-0">NOVO</Badge>}
-                                    {mun.prioridade === 'ALTA' && <Badge variant="danger" className="text-[10px] px-1 py-0">!</Badge>}
-                                    {bairrosDelta > 0 && <span className="text-[10px] px-1 py-0.5 rounded" style={{ background: 'rgba(56,189,248,0.15)', color: 'var(--acento-azul)', border: '1px solid rgba(56,189,248,0.25)' }}>+{bairrosDelta.toLocaleString()} bairros</span>}
-                                    {isNew && (
-                                      <button onClick={(e) => { e.stopPropagation(); removeMunicipio(mun.municipio); }} className="p-0.5 text-slate-500 hover:text-red-400 acao-no-hover transition-opacity">
-                                        <Trash2 className="h-3 w-3" />
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                  {isNew ? (
-                                    <span className="text-[11px] text-slate-500 italic">Sem votos anteriores → <span className={cenarioConfig[cenarioAtivo].color}>{metaAtiva.toLocaleString()}</span></span>
-                                  ) : (
-                                    <>
-                                      <span className="text-[11px]" style={{ color: '#6b82a0' }}>{ano}:</span>
-                                      <span className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold">{mun.votosBase.toLocaleString()}</span>
-                                      <span className="text-[11px] text-slate-400">→</span>
-                                      <span className={`text-[11px] font-semibold ${cenarioConfig[cenarioAtivo].color}`}>{metaAtiva.toLocaleString()}</span>
-                                      {diff !== 0 && <span className={`text-[10px] ml-auto ${diff > 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>{diff > 0 ? '+' : ''}{diffPercent}%</span>}
-                                    </>
-                                  )}
-                                </div>
-                                {mun.dobradaAtiva && mun.dobradaNome && (
-                                  <div className="mt-1 text-xs text-blue-600 dark:text-blue-300">
-                                    🤝 com {mun.dobradaNome}{mun.dobradaPartido ? ` (${mun.dobradaPartido})` : ''}
-                                  </div>
-                                )}
-                              </div>
+                                onRemover={isNew ? () => removeMunicipio(mun.municipio) : undefined}
+                              />
                             );
-                          })}
+                          });
+                        })()}
                         {getFilteredMunicipios().length === 0 && (() => {
                           if (!searchMunicipio.trim()) {
                             return (
@@ -3688,13 +3582,15 @@ export default function MapaCampanhaPage() {
               className={mapFullscreen ? 'flex-1 min-w-0 relative overflow-hidden' : 'col-span-12 md:col-span-8 lg:col-span-6 md:order-2 overflow-hidden order-1'}
             >
               <Card
-                className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden flex flex-col' : 'bg-[var(--bg-card-subtle)]/50 border-[var(--tint-06)] overflow-hidden flex flex-col pt-2'}
-                style={!mapFullscreen ? { height: 'clamp(400px, calc(100vh - 160px), 900px)', minHeight: '400px' } : undefined}
+                className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden flex flex-col' : '!rounded-2xl overflow-hidden flex flex-col pt-2'}
+                style={!mapFullscreen ? { height: 'clamp(400px, calc(100vh - 160px), 900px)', minHeight: '400px', background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' } : undefined}
               >
                 <CardHeader className={`border-b border-[var(--tint-06)] py-0.5 px-3 ${mapFullscreen ? 'bg-[var(--bg-card)]/95' : ''}`}>
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <CardTitle className="text-sm 2xl:text-base text-[color:var(--text-primary)] flex items-center gap-2">
-                      <Map className="h-4 w-4 2xl:h-5 2xl:w-5 text-[color:var(--brand-cobalt)]" />
+                      <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--brand-cobalt-soft)', color: 'var(--brand-cobalt-text)' }}>
+                        <Map className="h-3.5 w-3.5" />
+                      </span>
                       {activeTab === 'historico' ? `Votos em ${ano}` : `Projeção ${cenarioConfig[cenarioAtivo].label} para ${anoProjecao}`}
                     </CardTitle>
                     <div className="flex items-center gap-2">
@@ -3998,105 +3894,23 @@ export default function MapaCampanhaPage() {
 
           </div>
 
-          {/* Stats row — faixa horizontal abaixo das 3 colunas */}
+          {/* Análise da projeção: concentração, onde crescer, prioridades e tabela */}
           {!mapFullscreen && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-
-              {/* Votos base */}
-              {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
-                <Card noPadding style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                  <CardContent className="!px-3 !py-2">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <BarChart3 className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
-                      <span className="text-xs lg:text-[10px] 2xl:text-xs font-semibold uppercase tracking-wide lg:tracking-normal 2xl:tracking-wide" style={{ color: '#6b82a0' }}>Votos {ano}</span>
-                      <span className="basis-full 2xl:basis-auto 2xl:ml-auto text-base font-bold text-[color:var(--text-primary)] whitespace-nowrap">{getTotalVotosBase().toLocaleString()}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Meta */}
-              <Card noPadding style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border-default)', borderRight: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)', borderLeft: `4px solid ${cenarioConfig[cenarioAtivo].hex}` }}>
-                <CardContent className="!px-3 !py-2">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <Target className={`h-4 w-4 flex-shrink-0 ${cenarioConfig[cenarioAtivo].color}`} />
-                    <span className="text-xs lg:text-[10px] 2xl:text-xs font-semibold uppercase tracking-wide lg:tracking-normal 2xl:tracking-wide" style={{ color: '#6b82a0' }}>Meta {anoProjecao}</span>
-                    <span className={`basis-full 2xl:basis-auto 2xl:ml-auto text-base font-bold whitespace-nowrap ${cenarioConfig[cenarioAtivo].color}`}>{getTotalVotosMeta().toLocaleString()}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Crescimento */}
-              {(!!electoralData?.candidatoId || getTotalVotosBase() > 0 || !!projecao) && (
-                <Card noPadding style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                  <CardContent className="!px-3 !py-2">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      {parseFloat(getCrescimento() as string) >= 0
-                        ? <ArrowUp className="h-4 w-4 flex-shrink-0 text-[color:var(--success)]" />
-                        : <ArrowDown className="h-4 w-4 flex-shrink-0 text-red-400" />
-                      }
-                      <span className="text-xs lg:text-[10px] 2xl:text-xs font-semibold uppercase tracking-wide lg:tracking-normal 2xl:tracking-wide" style={{ color: '#6b82a0' }}>Crescimento</span>
-                      <span className={`basis-full 2xl:basis-auto 2xl:ml-auto text-base font-bold whitespace-nowrap ${parseFloat(getCrescimento() as string) >= 0 ? 'text-[color:var(--success)]' : 'text-red-400'}`}>
-                        {parseFloat(getCrescimento() as string) >= 0 ? '+' : ''}{getCrescimento()}%
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Municípios */}
-              <Card noPadding style={{ background: 'var(--bg-card)', border: filtroTipo !== 'todos' ? '1px solid rgba(37,99,235,0.4)' : '1px solid var(--tint-06)' }}>
-                <CardContent className="!px-3 !py-2">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <MapPin className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
-                    <span className="text-xs lg:text-[10px] 2xl:text-xs font-semibold uppercase tracking-wide lg:tracking-normal 2xl:tracking-wide" style={{ color: '#6b82a0' }}>Municípios</span>
-                    <span className="basis-full 2xl:basis-auto 2xl:ml-auto text-base font-bold text-[color:var(--text-primary)] whitespace-nowrap">
-                      {getMunicipiosCount()}
-                      {filtroTipo !== 'todos' && <span className="text-xs font-normal ml-1" style={{ color: '#6b82a0' }}>/ {projecao.municipios.filter(m => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)).length}</span>}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Dobradas */}
-              <Card noPadding className={`bg-gradient-to-br from-blue-900/50 to-slate-800 ${filtroTipo === 'com_dobrada' ? 'border-blue-400 ring-2 ring-blue-400/30' : 'border-blue-500/30'}`}>
-                <CardContent className="!px-3 !py-2">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <Handshake className="h-4 w-4 flex-shrink-0 text-blue-400" />
-                    <span className="text-xs lg:text-[10px] 2xl:text-xs font-semibold uppercase tracking-wide lg:tracking-normal 2xl:tracking-wide text-blue-300">Dobradas</span>
-                    <div className="basis-full 2xl:basis-auto 2xl:ml-auto 2xl:text-right">
-                      <span className="text-base font-bold text-blue-400 whitespace-nowrap">{getDobradasCount()}</span>
-                      {getVotosComDobrada() > 0 && <span className="text-[10px] text-slate-400 ml-1">+{getVotosComDobrada().toLocaleString()}v</span>}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Parcerias */}
-              <Card noPadding className={`relative bg-gradient-to-br from-amber-900/50 to-slate-800 transition-all duration-300 ${
-                filtroTipo === 'parcerias' ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-amber-500/30'
-              } ${!includeParcerias ? 'opacity-60' : ''}`}>
-                <CardContent className="!px-3 !py-2">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <button
-                      onClick={() => setIncludeParcerias(!includeParcerias)}
-                      className={`p-0.5 rounded-full transition-all duration-200 flex-shrink-0 ${includeParcerias ? 'text-[color:var(--brand-cobalt)]' : 'text-slate-500'}`}
-                      title={includeParcerias ? 'Ocultar parcerias da simulação' : 'Mostrar parcerias na simulação'}
-                    >
-                      {includeParcerias ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                    </button>
-                    <span className={`text-xs lg:text-[10px] 2xl:text-xs font-semibold uppercase tracking-wide lg:tracking-normal 2xl:tracking-wide ${includeParcerias ? 'text-[color:var(--brand-cobalt-text)]' : 'text-slate-500'}`}>Parcerias</span>
-                    <div className="basis-full 2xl:basis-auto 2xl:ml-auto 2xl:text-right">
-                      <span className={`text-base font-bold whitespace-nowrap ${includeParcerias ? 'text-sky-400' : 'text-slate-500'}`}>{parceriasStats?.total || 0}</span>
-                      {includeParcerias && <span className={`text-[10px] ml-1 ${cenarioConfig[cenarioAtivo].color}`}>
-                        +{((cenarioAtivo === 'conservador' ? parceriasStats?.metaConservadoraTotal : cenarioAtivo === 'possivel' ? parceriasStats?.metaPossivelTotal : parceriasStats?.metaArrojadaTotal) || 0).toLocaleString()}v
-                      </span>}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-            </div>
+            <AnaliseProjecao
+              linhas={getMunicipiosFiltrados().map(m => ({
+                nome: m.municipio,
+                base: m.votosBase,
+                meta: getMetaAtiva(m),
+                prioridade: m.prioridade,
+                dobrada: !!m.dobradaAtiva,
+                parceria: municipioTemParcerias(m.municipio),
+              }))}
+              cor={cenarioConfig[cenarioAtivo].hex}
+              rotuloCenario={cenarioConfig[cenarioAtivo].label}
+              anoBase={ano}
+              anoProjecao={anoProjecao}
+              onClickLinha={(nome) => { handleMunicipioClick(nome); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            />
           )}
         </>
       )}
