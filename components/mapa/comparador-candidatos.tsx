@@ -441,7 +441,7 @@ export function ComparadorCandidatos() {
                 mapa={(
                   <CartaoMapa
                     titulo={nivel === 'brasil' ? 'Quem venceu em cada estado' : `Quem venceu em cada cidade de ${nomeDaUf(ufAtual)}`}
-                    dica={nivel === 'brasil' ? 'Selecione um estado para ver as cidades.' : 'Clique numa cidade para ver por local de votação, bairro e zona'}
+                    dica={nivel === 'brasil' ? 'Selecione um estado para ver as cidades.' : 'Selecione uma cidade para ver por local de votação, bairro e zona.'}
                     legenda={<LegendaComparacao cands={candsAtivos} />}
                   >
                     <MapaComparacao
@@ -477,7 +477,7 @@ export function ComparadorCandidatos() {
                 onClickLinha={nivel === 'brasil'
                   ? (l) => { if (l.chave !== 'ZZ') abrirUf(l.chave); }
                   : (l) => setCidadeAberta(l.nome)}
-                dicaClique={nivel === 'brasil' ? 'Clique num estado para abrir' : 'Clique numa cidade para abrir'}
+                dicaClique={nivel === 'brasil' ? 'Selecione um estado para abrir' : 'Selecione uma cidade para abrir'}
               />
             </>
           )}

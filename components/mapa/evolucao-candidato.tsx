@@ -826,7 +826,7 @@ export function EvolucaoCandidato() {
                 mapa={(
                   <CartaoMapa
                     titulo={nivel === 'brasil' ? 'Variação em cada estado' : `Variação em cada cidade de ${nomeDaUf(ufAtual)}`}
-                    dica={nivel === 'brasil' ? 'Selecione um estado para ver as cidades.' : 'Clique numa cidade para ver por bairro e zona'}
+                    dica={nivel === 'brasil' ? 'Selecione um estado para ver as cidades.' : 'Selecione uma cidade para ver por bairro e zona.'}
                     legenda={<LegendaEvolucao />}
                   >
                     <MapaComparacao
@@ -852,7 +852,7 @@ export function EvolucaoCandidato() {
                 rotuloArea={nivel === 'brasil' ? 'Estado' : 'Cidade'}
                 todasAsAreas={nivel === 'brasil' ? 'Todos os estados' : 'Todas as cidades'}
                 onClickLinha={nivel === 'brasil' ? (l) => { if (l.chave !== 'ZZ') abrirUf(l.chave); } : (l) => setCidadeAberta(l.nome)}
-                dicaClique={nivel === 'brasil' ? 'Clique num estado para abrir' : 'Clique numa cidade para abrir'}
+                dicaClique={nivel === 'brasil' ? 'Selecione um estado para abrir' : 'Selecione uma cidade para abrir'}
               />
             </>
           )}

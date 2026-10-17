@@ -259,7 +259,7 @@ export function Pilulas<T extends string | number>({ opcoes, valor, onChange, de
 // ── Cartão do mapa ───────────────────────────────────────────────────────────
 export function CartaoMapa({ titulo, dica, direita, legenda, children }: {
   titulo: React.ReactNode;
-  /** Ação do clique ("Clique numa cidade para abrir"). */
+  /** Ação do clique ("Selecione uma cidade para abrir"). */
   dica?: string;
   direita?: React.ReactNode;
   legenda?: React.ReactNode;

@@ -1194,7 +1194,7 @@ export default function MapaPage() {
         })),
         area: 'estados', areaSingular: 'estado', rotuloColuna: 'Estado', titulo: 'Todos os estados',
         onClickLinha: (l) => { if (l.chave !== 'ZZ') { voltarAoMapa(); handleStateClick(l.chave, l.nome); } },
-        dicaClique: 'Clique num estado para abrir',
+        dicaClique: 'Selecione um estado para abrir',
       }
     : view === 'estado' && selectedUf === 'DF' && dfVisualizacao === 'bairros' ? {
         linhas: deRegistro(dfRegioesVotes),
@@ -1204,7 +1204,7 @@ export default function MapaPage() {
         linhas: Object.entries(electoralData.votosPorNomeMunicipio ?? {}).map(([nome, votos]) => ({ chave: nome, nome: tituloCidade(nome), votos })),
         area: 'cidades', areaSingular: 'cidade', rotuloColuna: 'Cidade', titulo: 'Todas as cidades',
         onClickLinha: (l) => { voltarAoMapa(); handleMunicipioClick('', l.nome); },
-        dicaClique: 'Clique numa cidade para abrir',
+        dicaClique: 'Selecione uma cidade para abrir',
       }
     : view === 'municipio' && isSaoPauloCapital && spVisualizacao === 'distritos' ? {
         linhas: deRegistro(spDistritosVotes), area: 'distritos', areaSingular: 'distrito', rotuloColuna: 'Distrito', titulo: 'Todos os distritos',
@@ -1969,7 +1969,7 @@ export default function MapaPage() {
               ) : view === 'estado' && (
                 <MolduraMapa
                   titulo={electoralData ? `Votos de ${nomeCurto} em cada cidade de ${selectedStateName}` : selectedStateName}
-                  dica="Clique numa cidade para ver bairros e locais de votação"
+                  dica="Selecione uma cidade para ver bairros e locais de votação."
                 >
                   <StateMap
                     balaoPremium
@@ -2074,7 +2074,7 @@ export default function MapaPage() {
                       )}
                       {selectedBairro && spVisualizacao === 'bairros' && (
                         <span className="text-xs text-slate-600 dark:text-slate-400">
-                          Clique em outro bairro ou no &times; para limpar seleção
+                          Selecione outro bairro ou clique no &times; para limpar a seleção.
                         </span>
                       )}
                     </div>
