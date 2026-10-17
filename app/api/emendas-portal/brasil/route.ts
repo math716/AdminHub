@@ -11,7 +11,7 @@ import { calcularTotaisBrasil, chaveResumoBrasil, lerResumoPronto } from '@/lib/
 type TotaisBrasil = Awaited<ReturnType<typeof calcularTotaisBrasil>>;
 
 // Ler o resumo pronto (tabela emendas_resumos) — mesma chave da rota /resumo.
-const USAR_RESUMO_PRONTO = false;
+const USAR_RESUMO_PRONTO = true;
 
 // GET /api/emendas-portal/brasil?ano=2026
 // Retorna { totaisPorUF: { SP: 1234567, MG: 890000, ... } }

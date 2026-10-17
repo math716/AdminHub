@@ -24,9 +24,9 @@ import {
 //   2) Senão, cai pro Portal ao vivo (lento + parcial). Vale como fallback
 //      enquanto a sincronização (scripts/sync-emendas-portal.ts) não rodou.
 
-// Ler o resumo pronto (tabela emendas_resumos). Fica desligado até a
-// conferência resumo × conta na hora (workflow "Resumo de Emendas") bater.
-const USAR_RESUMO_PRONTO = false;
+// Ler o resumo pronto (tabela emendas_resumos). Ligado em 16/10/2026, depois
+// que a conferência (workflow "Resumo de Emendas") deu 522 de 522 iguais.
+const USAR_RESUMO_PRONTO = true;
 
 export async function GET(request: NextRequest) {
   try {
