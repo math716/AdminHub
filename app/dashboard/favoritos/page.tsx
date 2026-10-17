@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -14,6 +13,8 @@ import { Star, Trash2, MapPin, Calendar, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { PERMISSIONS, hasPermission } from '@/lib/permissions';
+import { Avatar, CampoFiltro, comAlfa } from '@/components/mapa/comparacao-visual';
+import { corDoCargo, rotuloCargo } from '@/components/mapa-campanha/visual';
 
 interface Favorite {
   id: string;
@@ -33,6 +34,9 @@ export default function FavoritosPage() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [busca, setBusca] = useState('');
+  const semAcento = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const visiveis = (favorites ?? []).filter(f => !busca.trim() || semAcento(f?.candidateName ?? '').includes(semAcento(busca.trim())));
 
   useEffect(() => {
     if (status === 'authenticated' && !canAccess) {
@@ -116,71 +120,68 @@ export default function FavoritosPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {favorites?.map?.((fav, index) => (
-            <motion.div
-              key={fav?.id}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(index * 0.05, 0.3) }}
-              whileHover={{ y: -2 }}
-            >
-              <Card hover className="h-full flex flex-col">
-                <CardContent className="flex flex-col flex-1">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className="p-2.5 rounded-lg flex-shrink-0"
-                        style={{
-                          background: 'rgba(37,99,235,0.15)',
-                          border: '1px solid rgba(37,99,235,0.35)',
-                          boxShadow: 'inset 0 0 10px rgba(37,99,235,0.10)',
-                        }}
-                      >
-                        <Star className="h-5 w-5" style={{ color: '#2563EB' }} fill="#2563EB" />
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-[color:var(--text-primary)] truncate">{fav?.candidateName}</h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 truncate">{fav?.cargo ?? 'Candidato'}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleDelete(fav?.id)}
-                      className="ml-2 p-1.5 rounded-lg text-slate-600 dark:text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
-                      aria-label="Remover favorito"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  <div className="mt-4 space-y-2 flex-1">
-                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                      <MapPin className="h-4 w-4 text-slate-600 dark:text-slate-500" />
-                      {getEstadoNome(fav?.uf)}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                      <Calendar className="h-4 w-4 text-slate-600 dark:text-slate-500" />
-                      Eleição de {fav?.ano}
-                    </div>
-                  </div>
-
-                  <div
-                    className="mt-4 pt-4"
-                    style={{ borderTop: '1px solid rgba(37,99,235,0.18)' }}
+        <div className="space-y-4">
+          {(favorites?.length ?? 0) > 6 && (
+            <div className="flex justify-end">
+              <CampoFiltro valor={busca} onChange={setBusca} placeholder="Buscar candidato" />
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {visiveis.map((fav, index) => {
+              const cor = corDoCargo(fav?.cargo ?? '');
+              return (
+                <motion.div
+                  key={fav?.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(index * 0.04, 0.3) }}
+                >
+                  <Link
+                    href={`/dashboard/mapa?candidato=${encodeURIComponent(fav?.candidateName ?? '')}&ano=${fav?.ano}&uf=${fav?.uf}`}
+                    className="group relative block rounded-2xl p-4 overflow-hidden transition-all hover:-translate-y-0.5"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
                   >
-                    <Link
-                      href={`/dashboard/mapa?candidato=${encodeURIComponent(fav?.candidateName ?? '')}&ano=${fav?.ano}&uf=${fav?.uf}`}
-                    >
-                      <Button variant="outline" size="sm" className="w-full">
-                        Ver no Mapa
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                    <span aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${cor}, ${comAlfa(cor, 0.25)})` }} />
+                    <span aria-hidden className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-2xl"
+                      style={{ boxShadow: `inset 0 0 0 1px ${comAlfa(cor, 0.5)}` }} />
+                    <div className="flex items-start gap-3">
+                      <Avatar nome={fav?.candidateName ?? ''} cor={cor} tamanho={42} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[14px] font-bold leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }} title={fav?.candidateName}>{fav?.candidateName}</p>
+                        <p className="text-[11.5px] mt-0.5 truncate" style={{ color: 'var(--text-tertiary)' }}>{fav?.cargo ? rotuloCargo(fav.cargo) : 'Candidato'}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(fav?.id); }}
+                        className="acao-no-hover p-1.5 rounded-lg transition-all hover:bg-red-500/15 flex-shrink-0"
+                        style={{ color: '#ef4444' }}
+                        aria-label="Remover favorito"
+                        title="Remover favorito"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold" style={{ background: 'var(--tint-06)', color: 'var(--text-secondary)' }}>
+                        <MapPin className="h-3 w-3" /> {getEstadoNome(fav?.uf)}
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold" style={{ background: comAlfa(cor, 0.14), color: cor }}>
+                        <Calendar className="h-3 w-3" /> Eleição {fav?.ano}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-end mt-3.5 pt-3" style={{ borderTop: '1px solid var(--border-default)' }}>
+                      <span className="inline-flex items-center gap-1 text-[11.5px] font-semibold transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--brand-cobalt-text)' }}>
+                        Ver no mapa <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+          {visiveis.length === 0 && (
+            <p className="text-sm text-center py-8" style={{ color: 'var(--text-tertiary)' }}>Nenhum favorito com “{busca.trim()}”.</p>
+          )}
         </div>
       )}
 
