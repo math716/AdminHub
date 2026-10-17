@@ -573,10 +573,14 @@ async function main() {
   // os documentos do lote de uma vez. Se o envio único falhar por outro motivo
   // que não a conexão, refaz esse lote linha a linha — assim o erro fica
   // isolado na linha culpada, como no modo antigo, e o resto entra.
+  // No lote, o paralelismo só serve para resolver emendas novas (as já vistas
+  // saem do cache); 25 de cada vez basta e não sufoca o banco — com 150, a
+  // importação deixava o sistema lento para quem estava usando (Gabi incluída).
+  const PARALELO_LOTE = Math.min(CONCURRENCY, 25);
   const flushLote = async (batch: Record<string, string>[]) => {
     const prontos: { row: Record<string, string>; emendaId: string }[] = [];
-    for (let i = 0; i < batch.length; i += CONCURRENCY) {
-      const sub = batch.slice(i, i + CONCURRENCY);
+    for (let i = 0; i < batch.length; i += PARALELO_LOTE) {
+      const sub = batch.slice(i, i + PARALELO_LOTE);
       const results = await Promise.allSettled(sub.map(resolverEmenda));
       results.forEach((r, j) => {
         if (r.status === 'rejected') registrarErro(sub[j], r.reason);
@@ -593,8 +597,8 @@ async function main() {
       docsOk += prontos.length;
     } catch (e: any) {
       console.error(`\n   [lote recusado, refazendo linha a linha] ${e?.message?.slice(0, 200) ?? e}`);
-      for (let i = 0; i < prontos.length; i += CONCURRENCY) {
-        const sub = prontos.slice(i, i + CONCURRENCY);
+      for (let i = 0; i < prontos.length; i += PARALELO_LOTE) {
+        const sub = prontos.slice(i, i + PARALELO_LOTE);
         const results = await Promise.allSettled(sub.map((p) => upsertDocumento(p.emendaId, p.row)));
         results.forEach((r, j) => {
           if (r.status === 'rejected') registrarErro(sub[j].row, r.reason);

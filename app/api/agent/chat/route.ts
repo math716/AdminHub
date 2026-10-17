@@ -1,4 +1,29 @@
 export const dynamic = 'force-dynamic';
+// Uma conversa com várias buscas e gráficos leva bem mais que os 15 s padrão
+// de uma função sem configuração; aqui o limite fica explícito (Vercel Pro).
+export const maxDuration = 300;
+
+/**
+ * Tempo máximo de UMA busca. Com o banco ocupado (importação pesada rodando),
+ * uma consulta podia ficar presa e a função acabava derrubada sem resposta —
+ * o usuário via a Gabi "pensando" e depois nada. Passado o limite, a busca
+ * devolve um aviso e a Gabi responde explicando, em vez de travar.
+ */
+const LIMITE_BUSCA_MS = 40_000;
+function comLimiteDeTempo<T>(promessa: Promise<T>, ferramenta: string): Promise<T | { erro: string }> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const aviso = new Promise<{ erro: string }>(resolve => {
+    timer = setTimeout(() => {
+      console.warn(`[gabi] ${ferramenta} passou de ${LIMITE_BUSCA_MS / 1000}s`);
+      resolve({
+        erro: 'A base de dados está demorando para responder agora (pode haver uma atualização de dados em andamento). ' +
+          'Diga ao usuário, em uma frase, que a consulta demorou mais que o normal e peça para tentar de novo em alguns minutos. ' +
+          'Não invente números.',
+      });
+    }, LIMITE_BUSCA_MS);
+  });
+  return Promise.race([promessa, aviso]).finally(() => clearTimeout(timer));
+}
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
@@ -443,11 +468,11 @@ export async function POST(request: NextRequest) {
             texto: fraseDaBusca(block.name, block.input as Record<string, unknown>),
           });
           try {
-            resultado = await executarTool(
+            resultado = await comLimiteDeTempo(executarTool(
               block.name,
               block.input as Record<string, unknown>,
               session as any,
-            );
+            ), block.name);
 
             if (block.name === 'gerar_visualizacao') {
               visualizacoes.push(resultado as Visualizacao);
