@@ -13,7 +13,9 @@ import {
   Users, Mic, Briefcase, TrendingUp,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
-import { StatCard } from '@/components/ui/stat-card';
+import { Indicador } from '@/components/mapa-campanha/projecao-visual';
+import { BarraSimples, Pilulas } from '@/components/mapa/comparacao-visual';
+import { Esqueleto } from '@/components/ui/esqueleto';
 import { DatePicker, TimePicker, ColorPicker } from '@/components/ui/date-time-picker';
 import { ehDataComemorativaGoogle } from '@/lib/agenda-datas';
 
@@ -145,6 +147,10 @@ export default function AgendaPage() {
   // so aparecia depois, no mapa.
   const [geoNome, setGeoNome] = useState<string>('');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  // Mês (calendário) ou semana (sete colunas com todos os compromissos).
+  const [visao, setVisao] = useState<'mes' | 'semana'>('mes');
+  // Linha da semana dentro do mês; -1 = a última (ao voltar do mês seguinte).
+  const [semanaIdx, setSemanaIdx] = useState<number | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -323,9 +329,28 @@ export default function AgendaPage() {
   const dayEvents = selectedDay ? (eventsByDay.get(selectedDay) ?? []) : [];
   const isToday = (day: number) => day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
   const fmtKey = (day: number) => `${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  const goToday = () => { setViewMonth(today.getMonth()); setViewYear(today.getFullYear()); };
+  const goToday = () => { setViewMonth(today.getMonth()); setViewYear(today.getFullYear()); setSemanaIdx(null); setSelectedDay(null); };
   const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); } else setViewMonth(m => m - 1); };
   const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); } else setViewMonth(m => m + 1); };
+
+  // Semanas do mês (linhas do calendário). A semana aberta é a escolhida, ou
+  // a do dia selecionado, ou a de hoje (no mês atual), ou a primeira.
+  const semanas: (number | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) semanas.push(cells.slice(i, i + 7));
+  const semanaPadrao = (() => {
+    const alvo = selectedDay ?? (isCurrentMonth ? today.getDate() : 1);
+    const i = semanas.findIndex(w => w.includes(alvo));
+    return i >= 0 ? i : 0;
+  })();
+  const semanaAtual = semanaIdx === null ? semanaPadrao : semanaIdx < 0 ? semanas.length - 1 : Math.min(semanaIdx, semanas.length - 1);
+  const semanaAnterior = () => {
+    if (semanaAtual > 0) setSemanaIdx(semanaAtual - 1);
+    else { prevMonth(); setSemanaIdx(-1); setSelectedDay(null); }
+  };
+  const semanaSeguinte = () => {
+    if (semanaAtual < semanas.length - 1) setSemanaIdx(semanaAtual + 1);
+    else { nextMonth(); setSemanaIdx(0); setSelectedDay(null); }
+  };
 
   const upcomingEvents = events
     .filter((e) => new Date(e.data) >= today)
@@ -379,14 +404,16 @@ export default function AgendaPage() {
             REUNIAO: Users, VISITA: MapPin, EVENTO: Mic, COMPROMISSO: Briefcase,
           };
           return (
-            <StatCard
+            <Indicador
               key={tipo}
-              label={label}
-              value={count}
-              icon={tipoIconMap[tipo] ?? CalendarDays}
-              color={color}
-              delay={i * 0.05}
-            />
+              rotulo={label}
+              valor={count.toLocaleString('pt-BR')}
+              icone={tipoIconMap[tipo] ?? CalendarDays}
+              cor={color}
+              detalhe={`${events.length ? Math.round((count / events.length) * 100) : 0}% do mês`}
+            >
+              <BarraSimples fracao={events.length ? count / events.length : 0} cor={color} altura={5} />
+            </Indicador>
           );
         })}
       </div>
@@ -399,13 +426,14 @@ export default function AgendaPage() {
         {/* ── Calendário ── */}
         <div
           className="lg:col-span-2 rounded-2xl overflow-hidden"
-          style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.15)', backdropFilter: 'blur(8px)' }}
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
         >
           {/* Navegação do mês */}
           <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--tint-06)' }}>
-            <button onClick={prevMonth}
+            <button onClick={visao === 'semana' ? semanaAnterior : prevMonth}
               className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:bg-[var(--tint-10)]"
-              style={{ color: 'var(--tint-55)' }}>
+              style={{ color: 'var(--tint-55)' }}
+              aria-label={visao === 'semana' ? 'Semana anterior' : 'Mês anterior'}>
               <ChevronLeft className="w-5 h-5" />
             </button>
 
@@ -425,15 +453,23 @@ export default function AgendaPage() {
               )}
             </div>
 
-            <button onClick={nextMonth}
-              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:bg-[var(--tint-10)]"
-              style={{ color: 'var(--tint-55)' }}>
-              <ChevronRight className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:inline-flex"><Pilulas opcoes={[['mes', 'Mês'], ['semana', 'Semana']] as const} valor={visao} onChange={(v) => { setVisao(v); setSemanaIdx(null); }} /></span>
+              <button onClick={visao === 'semana' ? semanaSeguinte : nextMonth}
+                className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:bg-[var(--tint-10)]"
+                style={{ color: 'var(--tint-55)' }}
+                aria-label={visao === 'semana' ? 'Semana seguinte' : 'Mês seguinte'}>
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          {/* No celular o seletor fica numa linha própria */}
+          <div className="sm:hidden px-5 py-2 flex justify-center" style={{ borderBottom: '1px solid var(--tint-06)' }}>
+            <Pilulas opcoes={[['mes', 'Mês'], ['semana', 'Semana']] as const} valor={visao} onChange={(v) => { setVisao(v); setSemanaIdx(null); }} />
           </div>
 
           {/* Dias da semana */}
-          <div className="grid grid-cols-7" style={{ borderBottom: '1px solid var(--tint-06)' }}>
+          <div className={`${visao === 'semana' ? 'hidden' : 'grid'} grid-cols-7`} style={{ borderBottom: '1px solid var(--tint-06)' }}>
             {DIAS_SEMANA.map((d, i) => (
               <div key={d} className="text-center py-2.5 text-xs font-semibold uppercase tracking-widest"
                 style={{ color: i === 0 || i === 6 ? 'var(--acento-azul)' : 'var(--text-tertiary)' }}>
@@ -444,8 +480,49 @@ export default function AgendaPage() {
 
           {/* Células do calendário */}
           {loading ? (
-            <div className="flex items-center justify-center h-48 md:h-64">
-              <Loader2 className="w-7 h-7 animate-spin" style={{ color: '#2563EB' }} />
+            <div className="grid grid-cols-7 gap-1.5 p-3">
+              {Array.from({ length: 35 }, (_, i) => <Esqueleto key={i} className="h-14 md:h-20 !rounded-lg" />)}
+            </div>
+          ) : visao === 'semana' ? (
+            <div className="grid grid-cols-1 md:grid-cols-7">
+              {(semanas[semanaAtual] ?? []).map((day, i) => {
+                const evs = day ? [...(eventsByDay.get(day) ?? [])].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()) : [];
+                const rot = day ? (rotulosPorDia.get(day) ?? []) : [];
+                const isTod = !!day && isToday(day);
+                return (
+                  <div key={i} className="min-h-[88px] md:min-h-[420px] p-2 flex flex-col gap-1.5"
+                    style={{ borderRight: '1px solid var(--tint-04)', borderBottom: '1px solid var(--tint-04)', background: isTod ? 'rgba(37,99,235,0.06)' : !day ? 'var(--tint-04)' : 'transparent' }}>
+                    <div className="flex md:flex-col items-center md:items-start gap-2 md:gap-0 pb-1.5">
+                      <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>{DIAS_SEMANA[i]}</span>
+                      {day ? (
+                        <button type="button" onClick={() => openNewOnDay(day)} title="Novo evento neste dia"
+                          className="text-lg font-bold leading-none w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-[var(--tint-08)]"
+                          style={isTod ? { background: 'linear-gradient(135deg, #2563EB, #3B82F6)', color: '#fff' } : { color: 'var(--text-primary)' }}>
+                          {day}
+                        </button>
+                      ) : <span className="text-lg leading-none" style={{ color: 'var(--text-tertiary)' }}>·</span>}
+                      {rot.length > 0 && <span className="text-[10px] leading-tight md:mt-1" style={{ color: 'var(--danger)' }}>{rot.join(' · ')}</span>}
+                    </div>
+                    {evs.map(e => {
+                      const cor = e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB';
+                      return (
+                        <button key={e.id} type="button" onClick={() => openEdit(e)}
+                          className="w-full text-left rounded-lg px-2 py-1.5 transition-opacity hover:opacity-80"
+                          style={{ background: cor + '1f', borderLeft: `3px solid ${cor}` }}>
+                          <span className="block text-[11px] font-bold tabular-nums" style={{ color: cor }}>
+                            {new Date(e.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className="block text-xs font-medium break-words leading-snug" style={{ color: 'var(--text-primary)' }}>{e.titulo}</span>
+                          {e.local && <span className="block text-[10.5px] break-words mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{e.local}</span>}
+                        </button>
+                      );
+                    })}
+                    {day && evs.length === 0 && (
+                      <span className="hidden md:block text-[11px] mt-1" style={{ color: 'var(--text-tertiary)' }}>Livre</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="grid grid-cols-7">
@@ -474,10 +551,11 @@ export default function AgendaPage() {
                       borderRight: '1px solid var(--tint-04)',
                       background: isSel
                         ? 'rgba(37,99,235,0.08)'
-                        : isWeekend ? 'var(--tint-04)' : 'transparent',
+                        : isTod ? 'rgba(37,99,235,0.05)' : isWeekend ? 'var(--tint-04)' : 'transparent',
+                      boxShadow: isTod ? 'inset 0 0 0 1.5px rgba(37,99,235,0.45)' : undefined,
                     }}
                     onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = 'var(--tint-08)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isSel ? 'rgba(37,99,235,0.08)' : isWeekend ? 'var(--tint-04)' : 'transparent'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isSel ? 'rgba(37,99,235,0.08)' : isTod ? 'rgba(37,99,235,0.05)' : isWeekend ? 'var(--tint-04)' : 'transparent'; }}
                   >
                     <div className="flex items-start justify-between mb-1">
                       <span
@@ -551,7 +629,7 @@ export default function AgendaPage() {
           {/* Briefing do Dia */}
           <div
             className="rounded-2xl overflow-hidden"
-            style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
           >
             <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--tint-06)' }}>
               <div>
@@ -587,9 +665,16 @@ export default function AgendaPage() {
               ) : (
                 (selectedDay ? dayEvents : todayEvents).map((e, idx) => {
                   const color = e.cor ?? TIPO_COLORS[e.tipo] ?? '#2563EB';
+                  // Hoje: o que está acontecendo ganha destaque; o que passou esmaece.
+                  const ehHoje = !selectedDay || (isCurrentMonth && selectedDay === today.getDate());
+                  const ini = new Date(e.data).getTime();
+                  const fim = e.dataFim ? new Date(e.dataFim).getTime() : ini + 3_600_000;
+                  const agoraMs = Date.now();
+                  const estado = !ehHoje ? 'outro' : agoraMs > fim ? 'passou' : agoraMs >= ini ? 'agora' : 'depois';
                   return (
                     <button key={e.id} onClick={() => openEdit(e)}
-                      className="w-full text-left px-4 py-3 transition-all hover:bg-[var(--tint-06)]">
+                      className={`w-full text-left px-4 py-3 transition-all hover:bg-[var(--tint-06)] ${estado === 'passou' ? 'opacity-55' : ''}`}
+                      style={estado === 'agora' ? { background: color + '14', boxShadow: `inset 3px 0 0 ${color}` } : undefined}>
                       <div className="flex items-start gap-3">
                         <div className="flex flex-col items-center mt-0.5">
                           <TipoIconBox tipo={e.tipo} box={28} icon={13} />
@@ -600,7 +685,12 @@ export default function AgendaPage() {
                         <div className="flex-1 min-w-0 pb-1">
                           {/* Título e local quebram linha em vez de cortar: é a
                               lista que o celular usa para ler o dia inteiro. */}
-                          <p className="text-[color:var(--text-primary)] text-sm font-medium break-words">{e.titulo}</p>
+                          <p className="text-[color:var(--text-primary)] text-sm font-medium break-words">
+                            {e.titulo}
+                            {estado === 'agora' && (
+                              <span className="ml-2 align-middle text-[9.5px] font-bold px-1.5 py-0.5 rounded" style={{ background: color, color: '#fff' }}>AGORA</span>
+                            )}
+                          </p>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5" style={{ color: 'var(--tint-45)' }}>
                             <span className="flex items-center gap-1 text-xs">
                               <Clock className="w-3 h-3" />
@@ -626,7 +716,7 @@ export default function AgendaPage() {
           {/* Próximos Compromissos */}
           <div
             className="rounded-2xl overflow-hidden"
-            style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.15)', backdropFilter: 'blur(8px)' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}
           >
             <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid var(--tint-06)' }}>
               <TrendingUp className="w-3.5 h-3.5" style={{ color: '#2563EB' }} />
