@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { LucideIcon } from 'lucide-react';
-import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
@@ -26,23 +25,22 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <Card className={cn('text-center py-12', className)}>
+    <div className={cn('rounded-2xl text-center py-12 px-6', className)}
+      style={{ background: 'var(--bg-card)', border: '1.5px dashed var(--border-strong)', boxShadow: 'var(--shadow-card)' }}>
       {Icon && (
-        <div
-          className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-          style={{
-            background: 'rgba(37,99,235,0.10)',
-            border: '1px solid rgba(37,99,235,0.22)',
-          }}
-        >
-          <Icon className="h-6 w-6" style={{ color: '#2563EB' }} />
-        </div>
+        <span className="relative inline-flex mb-4">
+          <span aria-hidden className="absolute inset-0 rounded-2xl blur-xl" style={{ background: 'var(--brand-cobalt-soft)' }} />
+          <span className="relative w-14 h-14 rounded-2xl flex items-center justify-center"
+            style={{ background: 'var(--brand-cobalt-soft)', border: '1px solid var(--border-default)', color: 'var(--brand-cobalt-text)' }}>
+            <Icon className="h-6 w-6" />
+          </span>
+        </span>
       )}
       <p className="text-[color:var(--text-primary)] font-semibold">{title}</p>
       {description && (
-        <p className="text-slate-600 dark:text-slate-400 text-sm mt-1 max-w-md mx-auto">{description}</p>
+        <p className="text-sm mt-1 max-w-md mx-auto" style={{ color: 'var(--text-tertiary)' }}>{description}</p>
       )}
       {action && <div className="mt-5 flex justify-center">{action}</div>}
-    </Card>
+    </div>
   );
 }

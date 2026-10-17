@@ -13,6 +13,7 @@ import {
 import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Esqueleto, EsqueletoLista } from '@/components/ui/esqueleto';
 import {
   ALL_PERMISSIONS, permissoesEditaveisDoUsuario,
   PERMISSION_LABELS,
@@ -239,8 +240,7 @@ function RoleSelect({
             style={{
               top: dropPos.top,
               right: dropPos.right,
-              background: 'var(--bg-card)',
-              border: '1px solid rgba(37,99,235,0.2)',
+              background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)',
               minWidth: 170,
             }}
           >
@@ -575,16 +575,14 @@ export default function UsuariosPage() {
   // ── loading / guard ───────────────────────────────────────────────────────
   if (status === 'loading' || loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-7 h-7 animate-spin" style={{ color: '#2563EB' }} />
-      </div>
+      <div className="space-y-4"><Esqueleto className="h-16" /><EsqueletoLista linhas={5} /></div>
     );
   }
   if (userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'AGENTE_POLITICO') return null;
 
   const pendingUsers  = users.filter(u => !u.approved && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN');
   const approvedUsers = users.filter(u => u.approved  || u.role === 'ADMIN' || u.role === 'SUPER_ADMIN');
-  const cardStyle     = { background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.13)' };
+  const cardStyle     = { background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' };
   const isAdmin       = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 
   // ── render ────────────────────────────────────────────────────────────────
@@ -638,7 +636,7 @@ export default function UsuariosPage() {
             {showInviteForm && (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'AGENTE_POLITICO') && (
               <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                 className="absolute right-0 mt-1 z-20 rounded-xl overflow-hidden shadow-xl"
-                style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', minWidth: 200 }}>
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', minWidth: 200 }}>
                 <p className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Tipo de convite</p>
                 {(['CHEFE', 'ASSESSOR'] as const).map(r => {
                   const labelColor = r === 'CHEFE' ? '#4a9ede' : '#4ade80';
@@ -1016,7 +1014,7 @@ export default function UsuariosPage() {
           {noGabinete.length > 0 && !searchGabinete && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               className="rounded-2xl overflow-hidden"
-              style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.15)' }}>
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}>
               <button className="w-full flex items-center justify-between px-5 py-4 transition-all hover:bg-white/[0.02] text-left"
                 onClick={() => toggleGabinete('__no_gabinete__')}>
                 <div className="flex items-center gap-3">
@@ -1111,7 +1109,7 @@ export default function UsuariosPage() {
             onClick={e => { if (e.target === e.currentTarget) setShowInviteModal(false); }}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               className="w-full max-w-md rounded-2xl p-6"
-              style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.25)' }}>
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.3)' }}>
@@ -1168,7 +1166,7 @@ export default function UsuariosPage() {
             onClick={e => { if (e.target === e.currentTarget) setShowLogsModal(false); }}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               className="w-full max-w-md rounded-2xl p-6 space-y-4"
-              style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.25)' }}>
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}>
 
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"

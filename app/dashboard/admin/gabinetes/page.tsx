@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PageHeader } from '@/components/ui/page-header';
+import { Esqueleto, EsqueletoLista } from '@/components/ui/esqueleto';
 import {
   ALL_PERMISSIONS, permissoesEditaveisDoUsuario, PERMISSION_LABELS, type Permission, hasFullAccess,
 } from '@/lib/permissions';
@@ -147,7 +149,7 @@ function RoleSelect({ userId, current, sessionRole, onChanged, adminOnly }: { us
           <motion.div ref={dropRef}
             initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
             className="fixed z-[9999] rounded-xl overflow-hidden shadow-xl"
-            style={{ top: dropPos.top, right: dropPos.right, background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', minWidth: 170 }}>
+            style={{ top: dropPos.top, right: dropPos.right, background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', minWidth: 170 }}>
             {roles.map(r => (
               <button key={r} onClick={() => change(r)}
                 className="w-full text-left px-4 py-2.5 text-xs font-medium transition-all hover:bg-[var(--tint-06)] flex items-center gap-2"
@@ -636,7 +638,7 @@ export default function AdminGabinetesPage() {
   const pendentes = solicitacoes.filter(s => s.status === 'PENDENTE').length;
 
   if (status === 'loading') {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="w-7 h-7 animate-spin" style={{ color:'#2563EB' }} /></div>;
+    return <div className="space-y-4"><Esqueleto className="h-16" /><Esqueleto className="h-28" /><EsqueletoLista linhas={4} /></div>;
   }
 
   const filterBtn = (label: string, value: typeof filtro) => (
@@ -651,25 +653,21 @@ export default function AdminGabinetesPage() {
     <div className="space-y-5">
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background:'rgba(37,99,235,0.12)', border:'1px solid rgba(37,99,235,0.25)' }}>
-            <Building2 className="w-5 h-5" style={{ color:'#2563EB' }} />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Administração de Gabinetes</h1>
-            <p className="text-xs" style={{ color:'var(--tint-45)' }}>Gerencie gabinetes, solicitações e usuários</p>
-          </div>
-        </div>
-        <button onClick={carregarTudo}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all"
-          style={{ border:'1px solid var(--tint-10)', background:'var(--tint-04)', color:'var(--tint-65)', cursor:'pointer' }}>
-          <RefreshCw size={13} /> Atualizar
-        </button>
-      </div>
+      <PageHeader
+        icon={Building2}
+        title="Administração de Gabinetes"
+        subtitle="Gerencie gabinetes, solicitações e usuários"
+        actions={
+          <button onClick={carregarTudo}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors hover:bg-[var(--tint-06)]"
+            style={{ border: '1px solid var(--border-default)', background: 'var(--bg-card)', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+            <RefreshCw size={13} /> Atualizar
+          </button>
+        }
+      />
 
       {/* ── Card Gerar Link ───────────────────────────────────────────────────── */}
-      <div className="rounded-2xl p-5" style={{ background:'var(--bg-card)', border:'1px solid rgba(37,99,235,0.2)' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
@@ -715,7 +713,7 @@ export default function AdminGabinetesPage() {
             {adminUsers.length}
           </span>
         </div>
-        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--tint-06)' }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}>
           {loadingSol ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 size={20} className="animate-spin" style={{ color: '#2563EB' }} />
