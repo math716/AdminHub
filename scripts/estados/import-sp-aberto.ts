@@ -122,6 +122,22 @@ const ehGoverno = (autor: string) => /^AUTORIZO GOVERNAMENTAL/i.test(autor.trim(
 /** Autores com Emenda LOA em algum ano da base: os deputados da ALESP. */
 const autoresAlesp = new Set<string>();
 
+/**
+ * Deputados da ALESP que na base só aparecem em transferência (sem Emenda
+ * LOA). Conferido em 17/10/2026: Aldo Demarchi, 27 transferências de 2022.
+ */
+const ALESP_SEM_LOA = ['ALDO DEMARCHI'];
+
+/**
+ * Nomes que a base de SP escreve diferente do cadastro federal (o da
+ * importação do Portal da Transparência). Conferido no banco em 17/10/2026.
+ */
+const NOME_NO_CADASTRO_FEDERAL: Record<string, string> = {
+  'CELSO RUSSOMANO':          'CELSO RUSSOMANNO',
+  'LUIZ PHILIPPE O BRAGANCA': 'LUIZ PHILIPPE DE ORLEANS E BRAGANCA',
+  'PASTOR MARCO FELICIANO':   'PR MARCO FELICIANO',
+};
+
 function mapear(grupo: Linha[]): EmendaEstadualRow | null {
   const l = grupo[0];
   const autor = l.parlamentar.trim();
@@ -170,7 +186,7 @@ async function ligarAoCadastroFederal(prisma: ReturnType<typeof buildPrisma>, ro
 
   const federais = await prisma.parlamentar.findMany({
     where: { cargo: { in: ['DEPUTADO_FEDERAL', 'SENADOR'] }, NOT: { idPortal: { startsWith: 'SP:' } } },
-    select: { id: true, nome: true, nomeUrna: true, uf: true, cargo: true },
+    select: { id: true, nome: true, nomeUrna: true, uf: true, cargo: true, idPortal: true },
   });
   const porNome = new Map<string, typeof federais>();
   for (const f of federais) {
@@ -182,8 +198,12 @@ async function ligarAoCadastroFederal(prisma: ReturnType<typeof buildPrisma>, ro
   const escolhido = new Map<string, (typeof federais)[number]>();
   const ligados: string[] = [], semCadastro: string[] = [];
   for (const nome of externos) {
-    let cands = porNome.get(normalizeNome(nome)) ?? [];
+    const chave = normalizeNome(nome);
+    let cands = porNome.get(NOME_NO_CADASTRO_FEDERAL[chave] ?? chave) ?? [];
     if (cands.length > 1) cands = cands.filter(c => (c.uf ?? '').toUpperCase() === 'SP');
+    // Senadores têm cadastros repetidos (o do Portal e um antigo, sem emendas):
+    // vale o da importação do Portal da Transparência.
+    if (cands.length > 1) cands = cands.filter(c => (c.idPortal ?? '').startsWith('PORTAL:'));
     if (cands.length === 1) {
       escolhido.set(nome, cands[0]);
       ligados.push(`${nome} → ${cands[0].nome} (${cands[0].cargo === 'SENADOR' ? 'senador' : 'deputado federal'})`);
@@ -236,6 +256,7 @@ async function main() {
   // Quem é da ALESP: tem Emenda LOA em algum ano da base (todos os anos, não
   // só os importados — um deputado pode ter só transferência num ano).
   const autoresGoverno = new Set<string>();
+  for (const n of ALESP_SEM_LOA) autoresAlesp.add(n);
   for (const grupo of porCodigo.values()) {
     const autor = grupo[0].parlamentar.trim();
     if (!autor) continue;
