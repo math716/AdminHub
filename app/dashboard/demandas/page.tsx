@@ -9,9 +9,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
 import { PageHeader } from '@/components/ui/page-header';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { StatCard } from '@/components/ui/stat-card';
+import { Indicador } from '@/components/mapa-campanha/projecao-visual';
+import { BarraSimples, ChipFiltro, Pilulas } from '@/components/mapa/comparacao-visual';
+import { EsqueletoLista } from '@/components/ui/esqueleto';
 import { EmptyState } from '@/components/ui/empty-state';
-import { LoadingState } from '@/components/ui/loading-state';
 import {
   Plus,
   Search,
@@ -82,6 +83,8 @@ export default function DemandasPage() {
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  // Lista (padrão) ou quadro em colunas por status.
+  const [visao, setVisao] = useState<'lista' | 'quadro'>('lista');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
@@ -373,16 +376,18 @@ export default function DemandasPage() {
       />
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {statCards.map((s, i) => (
-          <StatCard
+          <Indicador
             key={s.label}
-            label={s.label}
-            value={s.value}
-            icon={s.icon}
-            color={s.color}
-            delay={i * 0.05}
-          />
+            rotulo={s.label}
+            valor={s.value.toLocaleString('pt-BR')}
+            icone={s.icon}
+            cor={s.color}
+            detalhe={i === 0 ? (filterStatus || filterCategory || filterPriority || filterEstado || searchTerm ? 'com os filtros aplicados' : 'no gabinete') : `${stats.total ? Math.round((s.value / stats.total) * 100) : 0}% do total`}
+          >
+            {i > 0 && <BarraSimples fracao={stats.total ? s.value / stats.total : 0} cor={s.color} altura={5} />}
+          </Indicador>
         ))}
       </div>
 
@@ -402,6 +407,18 @@ export default function DemandasPage() {
               <Filter className="h-5 w-5 mr-2" />
               Filtros
             </Button>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+            <div className="flex flex-wrap gap-1.5">
+              <ChipFiltro ativo={filterStatus === ''} onClick={() => setFilterStatus('')}>Todos</ChipFiltro>
+              {(['PENDENTE', 'EM_ANDAMENTO', 'RESOLVIDA'] as const).map(st => (
+                <ChipFiltro key={st} ativo={filterStatus === st} cor={STATUS_COLORS[st]} onClick={() => setFilterStatus(filterStatus === st ? '' : st)}>
+                  {STATUS_LABELS[st]}
+                </ChipFiltro>
+              ))}
+            </div>
+            <Pilulas opcoes={[['lista', 'Lista'], ['quadro', 'Quadro']] as const} valor={visao} onChange={setVisao} />
           </div>
 
           {showFilters && (
@@ -442,7 +459,56 @@ export default function DemandasPage() {
 
       {/* Demands List */}
       {loading ? (
-        <LoadingState />
+        <EsqueletoLista linhas={5} altura="h-[84px]" />
+      ) : (demands?.length ?? 0) > 0 && visao === 'quadro' ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+          {(['PENDENTE', 'EM_ANDAMENTO', 'RESOLVIDA'] as const).map(st => {
+            const daColuna = demands.filter(d => d?.status === st);
+            const cor = STATUS_COLORS[st];
+            return (
+              <section key={st} className="rounded-2xl p-3 min-w-0"
+                style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}>
+                <header className="flex items-center justify-between px-1 pb-2.5 mb-1" style={{ borderBottom: `2px solid ${cor}` }}>
+                  <span className="flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    <span className="w-2 h-2 rounded-full" style={{ background: cor }} />{STATUS_LABELS[st]}
+                  </span>
+                  <span className="text-xs font-bold tabular-nums px-2 py-0.5 rounded-full" style={{ background: `${cor}1f`, color: cor }}>{daColuna.length}</span>
+                </header>
+                <div className="space-y-2 pt-2 max-h-[70vh] overflow-y-auto scrollbar-dark">
+                  {daColuna.length === 0 && (
+                    <p className="text-xs text-center py-6" style={{ color: 'var(--text-tertiary)' }}>Nenhuma demanda aqui.</p>
+                  )}
+                  {daColuna.map(demand => {
+                    const catColor = CATEGORY_COLORS?.[demand?.category] ?? '#94A3B8';
+                    const priorityColor = PRIORITY_COLORS?.[demand?.priority] ?? '#94A3B8';
+                    return (
+                      <button key={demand?.id} type="button" onClick={() => handleEdit(demand)}
+                        className="relative w-full text-left rounded-xl p-3 pl-4 overflow-hidden transition-all hover:-translate-y-0.5"
+                        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}>
+                        <span aria-hidden className="absolute left-0 top-0 bottom-0 w-1" style={{ background: catColor }} />
+                        <p className="text-sm font-semibold break-words capitalize" style={{ color: 'var(--text-primary)' }}>{demand?.title}</p>
+                        <p className="text-[11px] mt-1 flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
+                          <MapPin className="h-3 w-3 flex-shrink-0" />{demand?.municipio}{demand?.estado ? `, ${demand.estado}` : ''}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          <span className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded" style={{ background: `${priorityColor}1f`, color: priorityColor }}>
+                            {PRIORITY_LABELS?.[demand?.priority] ?? demand?.priority}
+                          </span>
+                          <span className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded" style={{ background: `${catColor}1f`, color: catColor }}>
+                            {CATEGORY_LABELS?.[demand?.category] ?? demand?.category}
+                          </span>
+                          <span className="text-[10.5px] ml-auto tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+                            {new Date(demand?.createdAt)?.toLocaleDateString?.('pt-BR')}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
+        </div>
       ) : (demands?.length ?? 0) === 0 ? (
         <EmptyState
           icon={FileText}
