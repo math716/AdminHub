@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, type MouseEvent } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 import { ESTADOS_BRASIL } from '@/lib/types';
 import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 import { PERMISSIONS, hasPermission } from '@/lib/permissions';
+import { Painel, CampoFiltro } from '@/components/mapa/comparacao-visual';
+import { CampoBusca, CartaoProjecaoSalva, type ResumoProjecaoSalva } from '@/components/mapa-campanha/visual';
 import {
   Map,
   Target,
@@ -440,6 +442,7 @@ export default function MapaCampanhaPage() {
   const [electoralData, setElectoralData] = useState<ElectoralData | null>(null);
   const [projecao, setProjecao] = useState<Projecao | null>(null);
   const [projecoesSalvas, setProjecoesSalvas] = useState<Projecao[]>([]);
+  const [buscaProjecoes, setBuscaProjecoes] = useState('');
   const [formCollapsed, setFormCollapsed] = useState(false);
 
   const voltarParaPesquisa = () => {
@@ -2479,6 +2482,152 @@ export default function MapaCampanhaPage() {
     { value: 'BAIXA', label: 'Baixa Prioridade' }
   ];
 
+  // Números do cartão de uma projeção salva. Conta só os municípios (zonas do
+  // DF, distritos e bairros são detalhamento dentro deles e somariam em dobro).
+  const resumoDaProjecao = (proj: Projecao): ResumoProjecaoSalva => {
+    const munBase = proj.municipios.filter(m =>
+      !isDfZona(m.municipio) && !isDfRegiao(m.municipio) &&
+      !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) &&
+      !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)
+    );
+    const entradas = munBase.length > 0 ? munBase : proj.municipios;
+    const base = entradas.reduce((s, m) => s + (m.votosBase || 0), 0);
+    return {
+      nome: proj.candidatoNome,
+      cargo: proj.cargo ?? '',
+      uf: proj.uf,
+      anoBase: proj.anoBase,
+      anoProjecao: proj.anoProjecao,
+      base,
+      meta: entradas.reduce((s, m) => s + (m.metaPossivel || 0), 0),
+      municipios: munBase.length,
+      dobradas: proj.municipios.filter(m => m.dobradaAtiva).length,
+      estreante: base === 0,
+    };
+  };
+
+  // Abre uma projeção salva: restaura a busca, a projeção e o mapa certo
+  // (zonas do DF, distritos de SP, bairros do RJ/CE) a partir do que foi salvo.
+  const abrirProjecaoSalva = async (proj: Projecao) => {
+    setCandidateName(proj.candidatoNome);
+    setAno(proj.anoBase.toString());
+    setUf(proj.uf);
+    setAnoProjecao(proj.anoProjecao.toString());
+    setProjecao(proj);
+    const munBase = proj.municipios.filter((m: ProjecaoMunicipio) => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio));
+    const isEstreanteSalvo = munBase.reduce((s: number, m: ProjecaoMunicipio) => s + m.votosBase, 0) === 0;
+    if (isEstreanteSalvo) setActiveTab('projecao');
+    setElectoralData({
+      nome: proj.candidatoNome,
+      partido: '',
+      cargo: proj.cargo || '',
+      totalVotos: munBase.reduce((acc: number, m: ProjecaoMunicipio) => acc + m.votosBase, 0),
+      uf: proj.uf
+    });
+    setFormCollapsed(true);
+    setSelectedDfZona(null);
+    if (proj.id) loadParcerias(proj.id);
+    const cargoSalvo = (proj.cargo ?? '').toUpperCase();
+    const isMunicipalSalvo = cargoSalvo.includes('VEREADOR') || cargoSalvo.includes('PREFEITO');
+    if (isMunicipalSalvo) {
+      // Derivar município imediatamente a partir dos dados salvos
+      const munFromProj = munBase
+        .sort((a, b) => b.metaPossivel - a.metaPossivel || b.votosBase - a.votosBase)[0]?.municipio;
+      if (munFromProj) {
+        setMunicipioVereador(munFromProj);
+        setVisualizacaoMapa('municipio');
+      } else {
+        // Projeção com entradas de bairros (RJ/SP/CE) mas sem municípios diretos
+        const rjBairros = proj.municipios.filter((m: ProjecaoMunicipio) => isRjBairro(m.municipio));
+        const spDistritos = proj.municipios.filter((m: ProjecaoMunicipio) => isSpDistrito(m.municipio));
+        const ceBairros = proj.municipios.filter((m: ProjecaoMunicipio) => isCeBairro(m.municipio));
+        if (rjBairros.length > 0) {
+          setMunicipioVereador('RIO DE JANEIRO');
+          setVisualizacaoMapa('municipio');
+        } else if (spDistritos.length > 0) {
+          setMunicipioVereador('SAO PAULO');
+          setVisualizacaoMapa('municipio');
+        } else if (ceBairros.length > 0) {
+          setMunicipioVereador('FORTALEZA');
+          setVisualizacaoMapa('municipio');
+        }
+      }
+      // Estreantes não têm histórico no TSE: evitar chamada com ano futuro
+      // isEstreanteSalvo é recalculado incluindo entradas de bairros para não bloquear vereadores com projeção por bairro
+      const totalBase = proj.municipios.reduce((s: number, m: ProjecaoMunicipio) => s + m.votosBase, 0);
+      if (totalBase > 0) {
+        loadBairrosVereador(proj.candidatoNome, proj.anoBase, proj.uf);
+      }
+    } else {
+      setBairrosInfo([]);
+      setMediaVotosBairro(0);
+      setVisualizacaoMapa('municipio');
+    }
+    // CE: restaurar visualização de bairros se houver entradas CE_BAIRRO_
+    if (proj.uf === 'CE') {
+      const ceBairroEntries = proj.municipios.filter(m => isCeBairro(m.municipio));
+      if (ceBairroEntries.length > 0) {
+        setCeVisualizacao('bairros');
+      }
+    }
+    // Carregar zonas do DF se necessário
+    if (proj.uf === 'DF') {
+      const zonaEntries = proj.municipios.filter(m => isDfZona(m.municipio));
+      if (zonaEntries.length === 0) {
+        // Projeção salva sem zonas: buscar dados históricos
+        fetch(`/api/tse/zonas?municipio=BRAS%C3%8DLIA&uf=DF&ano=${proj.anoBase}&nome=${encodeURIComponent(proj.candidatoNome)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => {
+            if (d) {
+              setDfZonas(d.locaisPorZona || []);
+              setDfBounds(d.bounds || null);
+            }
+          })
+          .catch(() => {});
+      } else {
+        // Já tem zonas — reconstruir dfZonas a partir dos dados salvos
+        const zonas = zonaEntries.map(m => ({
+          zona: getZonaNumber(m.municipio),
+          latitude: 0,
+          longitude: 0,
+          votos: m.votosBase,
+          bairros: [],
+          locais: [],
+        }));
+        // Buscar coords reais
+        fetch(`/api/tse/zonas?municipio=BRAS%C3%8DLIA&uf=DF&ano=${proj.anoBase}&nome=${encodeURIComponent(proj.candidatoNome)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => {
+            if (d?.locaisPorZona) {
+              setDfZonas(d.locaisPorZona);
+              setDfBounds(d.bounds || null);
+            } else {
+              setDfZonas(zonas);
+            }
+          })
+          .catch(() => setDfZonas(zonas));
+      }
+    } else {
+      setDfZonas([]);
+      setDfBounds(null);
+      // SP: buscar zonas em background para popular spDistritosVotes
+      if (proj.uf === 'SP') {
+        fetch(`/api/tse/candidato?ano=${proj.anoBase}&uf=SP&candidato=${encodeURIComponent(proj.candidatoNome)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => {
+            if (d && !d.multiplos && d.zonas?.length) {
+              setElectoralData(prev => prev ? {
+                ...prev,
+                zonas: d.zonas,
+                candidatoId: d.candidatoId ?? prev.candidatoId,
+              } : prev);
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  };
+
   const cenarioConfig = {
     conservador: { label: 'Conservador', icon: Shield, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500', border: 'border-amber-500', hex: '#F59E0B', bgInactive: 'bg-amber-50 dark:bg-amber-500/20 border-amber-400/60', textInactive: 'text-amber-700 dark:text-amber-300' },
     possivel:    { label: 'Realista',    icon: Gauge,  color: 'text-cyan-600 dark:text-cyan-300',   bg: 'bg-cyan-500',    border: 'border-cyan-500',    hex: '#22D3EE', bgInactive: 'bg-cyan-50 dark:bg-cyan-500/20 border-cyan-400/60',    textInactive: 'text-cyan-700 dark:text-cyan-300'   },
@@ -2508,11 +2657,9 @@ export default function MapaCampanhaPage() {
         transition={{ delay: 0.1 }}
         className="flex-shrink-0"
       >
-        <Card style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}>
-          <CardContent className="px-4 py-0.5">
-
-            {/* Modo colapsado: resumo + botão editar */}
-            {formCollapsed && electoralData ? (
+        {formCollapsed && electoralData ? (
+          <Card style={{ background: 'var(--bg-card)', border: '1px solid rgba(37,99,235,0.2)', backdropFilter: 'blur(8px)' }}>
+            <CardContent className="px-4 py-0.5">
               <div className="flex items-center gap-4 flex-wrap">
                 <Search className="h-4 w-4 flex-shrink-0" style={{ color: '#2563EB' }} />
                 <div className="flex-1 min-w-0 flex items-center gap-3 flex-wrap">
@@ -2552,100 +2699,58 @@ export default function MapaCampanhaPage() {
                   </Button>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-5">
-                {/* Cabeçalho do card */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4" style={{ color: '#2563EB' }} />
-                    <span className="text-sm font-semibold tracking-wide" style={{ color: '#2563EB' }}>
-                      Buscar Candidato
-                    </span>
-                  </div>
-                  <Button
-                    onClick={() => setShowNovoCandidatoModal(true)}
-                    variant="outline"
-                    style={{ background: 'var(--brand-cobalt-soft)', borderColor: 'var(--brand-cobalt)', color: 'var(--brand-cobalt-text)' }}
-                    className="whitespace-nowrap text-sm h-8 px-3 hover:brightness-110"
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1.5" />
-                    Novo Candidato
-                  </Button>
-                </div>
-
-                {/* Bloco 1 — identificação do candidato */}
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
-                      NOME DO CANDIDATO
-                    </label>
-                    <Input
-                      placeholder="Ex: João Silva, Tarcísio, Lula…"
-                      value={candidateName}
-                      onChange={(e) => setCandidateName(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && searchCandidate()}
-                      className="bg-[var(--bg-card-subtle)]/60 border-[var(--border-default)] text-[color:var(--text-primary)] placeholder:text-slate-600 dark:text-slate-500"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
-                        ANO DA ELEIÇÃO
-                      </label>
-                      <Select
-                        value={ano}
-                        onChange={(e) => setAno(e.target.value)}
-                        options={anosOptions}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
-                        ESTADO
-                      </label>
-                      <Select
-                        value={uf}
-                        onChange={(e) => setUf(e.target.value)}
-                        options={estadosOptions}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Divisor — Projeção */}
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px" style={{ background: 'var(--tint-06)' }} />
-                  <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#6b82a0' }}>
-                    Projeção
-                  </span>
-                  <div className="flex-1 h-px" style={{ background: 'var(--tint-06)' }} />
-                </div>
-
-                {/* Bloco 2 — configuração de projeção + botão buscar */}
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium mb-1.5" style={{ color: '#6b82a0' }}>
-                      ANO ALVO DA PROJEÇÃO
-                    </label>
-                    <Select
-                      value={anoProjecao}
-                      onChange={(e) => setAnoProjecao(e.target.value)}
-                      options={anosProjecaoOptions}
-                    />
-                  </div>
-                  <Button
-                    onClick={() => searchCandidate()}
-                    loading={loading}
-                    className="w-full font-semibold"
-                  >
-                    <Search className="h-4 w-4 mr-2" />
-                    Buscar Candidato
-                  </Button>
-                </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Painel
+            titulo="Buscar candidato"
+            icone={Search}
+            direita={
+              <button
+                type="button"
+                onClick={() => setShowNovoCandidatoModal(true)}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all hover:brightness-110"
+                style={{ background: 'var(--brand-cobalt-soft)', border: '1px solid var(--brand-cobalt)', color: 'var(--brand-cobalt-text)' }}
+                title="Projeção para quem ainda não disputou eleição"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Novo candidato
+              </button>
+            }
+          >
+            {/* Tudo numa faixa no computador; no celular cada campo na sua linha. */}
+            <div className="grid grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+              <CampoBusca rotulo="Nome do candidato" className="col-span-2 lg:col-span-4">
+                <Input
+                  placeholder="Ex: João Silva, Tarcísio, Lula…"
+                  value={candidateName}
+                  onChange={(e) => setCandidateName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && searchCandidate()}
+                  className="bg-[var(--bg-card-subtle)]/60 border-[var(--border-default)] text-[color:var(--text-primary)] placeholder:text-slate-600 dark:text-slate-500"
+                />
+              </CampoBusca>
+              <CampoBusca rotulo="Ano da eleição" className="lg:col-span-2">
+                <Select value={ano} onChange={(e) => setAno(e.target.value)} options={anosOptions} />
+              </CampoBusca>
+              <CampoBusca rotulo="Estado" className="lg:col-span-2">
+                <Select value={uf} onChange={(e) => setUf(e.target.value)} options={estadosOptions} />
+              </CampoBusca>
+              <CampoBusca rotulo="Projetar para" className="col-span-2 lg:col-span-2">
+                <Select value={anoProjecao} onChange={(e) => setAnoProjecao(e.target.value)} options={anosProjecaoOptions} />
+              </CampoBusca>
+              <div className="col-span-2 lg:col-span-2">
+                <Button onClick={() => searchCandidate()} loading={loading} className="w-full font-semibold">
+                  <Search className="h-4 w-4 mr-2" />
+                  Buscar
+                </Button>
               </div>
-            )}
-
-          </CardContent>
-        </Card>
+            </div>
+            <p className="mt-3 text-[11px] flex items-center gap-1.5" style={{ color: 'var(--text-tertiary)' }}>
+              <Target className="h-3 w-3 flex-shrink-0" />
+              A projeção parte dos votos da eleição escolhida e monta as metas de {anoProjecao} cidade por cidade.
+            </p>
+          </Painel>
+        )}
       </motion.div>
 
       {electoralData && projecao && (
@@ -4909,191 +5014,42 @@ export default function MapaCampanhaPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)]">
-            <CardHeader>
-              <CardTitle className="text-[color:var(--text-primary)]">Projeções Salvas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {projecoesSalvas.map((proj) => (
-                  <Card
-                    key={proj.id}
-                    className="bg-[var(--bg-card-subtle)]/50 border-[var(--border-default)] cursor-pointer hover:border-cyan-500 transition-colors relative group"
-                    onClick={async () => {
-                      setCandidateName(proj.candidatoNome);
-                      setAno(proj.anoBase.toString());
-                      setUf(proj.uf);
-                      setAnoProjecao(proj.anoProjecao.toString());
-                      setProjecao(proj);
-                      const munBase = proj.municipios.filter((m: ProjecaoMunicipio) => !isDfZona(m.municipio) && !isDfRegiao(m.municipio) && !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) && !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio));
-                      const isEstreanteSalvo = munBase.reduce((s: number, m: ProjecaoMunicipio) => s + m.votosBase, 0) === 0;
-                      if (isEstreanteSalvo) setActiveTab('projecao');
-                      setElectoralData({
-                        nome: proj.candidatoNome,
-                        partido: '',
-                        cargo: proj.cargo || '',
-                        totalVotos: munBase.reduce((acc: number, m: ProjecaoMunicipio) => acc + m.votosBase, 0),
-                        uf: proj.uf
-                      });
-                      setFormCollapsed(true);
-                      setSelectedDfZona(null);
-                      if (proj.id) loadParcerias(proj.id);
-                      const cargoSalvo = (proj.cargo ?? '').toUpperCase();
-                      const isMunicipalSalvo = cargoSalvo.includes('VEREADOR') || cargoSalvo.includes('PREFEITO');
-                      if (isMunicipalSalvo) {
-                        // Derivar município imediatamente a partir dos dados salvos
-                        const munFromProj = munBase
-                          .sort((a, b) => b.metaPossivel - a.metaPossivel || b.votosBase - a.votosBase)[0]?.municipio;
-                        if (munFromProj) {
-                          setMunicipioVereador(munFromProj);
-                          setVisualizacaoMapa('municipio');
-                        } else {
-                          // Projeção com entradas de bairros (RJ/SP/CE) mas sem municípios diretos
-                          const rjBairros = proj.municipios.filter((m: ProjecaoMunicipio) => isRjBairro(m.municipio));
-                          const spDistritos = proj.municipios.filter((m: ProjecaoMunicipio) => isSpDistrito(m.municipio));
-                          const ceBairros = proj.municipios.filter((m: ProjecaoMunicipio) => isCeBairro(m.municipio));
-                          if (rjBairros.length > 0) {
-                            setMunicipioVereador('RIO DE JANEIRO');
-                            setVisualizacaoMapa('municipio');
-                          } else if (spDistritos.length > 0) {
-                            setMunicipioVereador('SAO PAULO');
-                            setVisualizacaoMapa('municipio');
-                          } else if (ceBairros.length > 0) {
-                            setMunicipioVereador('FORTALEZA');
-                            setVisualizacaoMapa('municipio');
-                          }
-                        }
-                        // Estreantes não têm histórico no TSE: evitar chamada com ano futuro
-                        // isEstreanteSalvo é recalculado incluindo entradas de bairros para não bloquear vereadores com projeção por bairro
-                        const totalBase = proj.municipios.reduce((s: number, m: ProjecaoMunicipio) => s + m.votosBase, 0);
-                        if (totalBase > 0) {
-                          loadBairrosVereador(proj.candidatoNome, proj.anoBase, proj.uf);
-                        }
-                      } else {
-                        setBairrosInfo([]);
-                        setMediaVotosBairro(0);
-                        setVisualizacaoMapa('municipio');
-                      }
-                      // CE: restaurar visualização de bairros se houver entradas CE_BAIRRO_
-                      if (proj.uf === 'CE') {
-                        const ceBairroEntries = proj.municipios.filter(m => isCeBairro(m.municipio));
-                        if (ceBairroEntries.length > 0) {
-                          setCeVisualizacao('bairros');
-                        }
-                      }
-                      // Carregar zonas do DF se necessário
-                      if (proj.uf === 'DF') {
-                        const zonaEntries = proj.municipios.filter(m => isDfZona(m.municipio));
-                        if (zonaEntries.length === 0) {
-                          // Projeção salva sem zonas: buscar dados históricos
-                          fetch(`/api/tse/zonas?municipio=BRAS%C3%8DLIA&uf=DF&ano=${proj.anoBase}&nome=${encodeURIComponent(proj.candidatoNome)}`)
-                            .then(r => r.ok ? r.json() : null)
-                            .then(d => {
-                              if (d) {
-                                setDfZonas(d.locaisPorZona || []);
-                                setDfBounds(d.bounds || null);
-                              }
-                            })
-                            .catch(() => {});
-                        } else {
-                          // Já tem zonas — reconstruir dfZonas a partir dos dados salvos
-                          const zonas = zonaEntries.map(m => ({
-                            zona: getZonaNumber(m.municipio),
-                            latitude: 0,
-                            longitude: 0,
-                            votos: m.votosBase,
-                            bairros: [],
-                            locais: [],
-                          }));
-                          // Buscar coords reais
-                          fetch(`/api/tse/zonas?municipio=BRAS%C3%8DLIA&uf=DF&ano=${proj.anoBase}&nome=${encodeURIComponent(proj.candidatoNome)}`)
-                            .then(r => r.ok ? r.json() : null)
-                            .then(d => {
-                              if (d?.locaisPorZona) {
-                                setDfZonas(d.locaisPorZona);
-                                setDfBounds(d.bounds || null);
-                              } else {
-                                setDfZonas(zonas);
-                              }
-                            })
-                            .catch(() => setDfZonas(zonas));
-                        }
-                      } else {
-                        setDfZonas([]);
-                        setDfBounds(null);
-                        // SP: buscar zonas em background para popular spDistritosVotes
-                        if (proj.uf === 'SP') {
-                          fetch(`/api/tse/candidato?ano=${proj.anoBase}&uf=SP&candidato=${encodeURIComponent(proj.candidatoNome)}`)
-                            .then(r => r.ok ? r.json() : null)
-                            .then(d => {
-                              if (d && !d.multiplos && d.zonas?.length) {
-                                setElectoralData(prev => prev ? {
-                                  ...prev,
-                                  zonas: d.zonas,
-                                  candidatoId: d.candidatoId ?? prev.candidatoId,
-                                } : prev);
-                              }
-                            })
-                            .catch(() => {});
-                        }
-                      }
-                    }}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Target className="h-5 w-5 text-[color:var(--brand-cobalt)]" />
-                        <span className="text-[color:var(--text-primary)] font-medium flex-1">{proj.candidatoNome}</span>
-                        <button
-                          onClick={(e: MouseEvent<HTMLButtonElement>) => {
-                            e.stopPropagation();
-                            setProjecaoParaExcluir({ id: proj.id, nome: proj.candidatoNome });
-                            setShowDeleteModal(true);
-                          }}
-                          className="acao-no-hover transition-opacity p-1 rounded hover:bg-red-500/20 text-slate-600 dark:text-slate-400 hover:text-red-400"
-                          title="Excluir projeção"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      {(() => {
-                        const munBase = proj.municipios.filter(m =>
-                          !isDfZona(m.municipio) && !isDfRegiao(m.municipio) &&
-                          !isSpDistrito(m.municipio) && !isRjBairro(m.municipio) &&
-                          !isCeBairro(m.municipio) && !isMgBairro(m.municipio) && !isMunBairro(m.municipio)
-                        );
-                        const isEstreante = munBase.reduce((s, m) => s + m.votosBase, 0) === 0;
-                        return (
-                          <div className="text-sm text-slate-600 dark:text-slate-400">
-                            <p className="flex items-center gap-1 flex-wrap">
-                              <span>{proj.uf}</span>
-                              <span>•</span>
-                              {isEstreante ? (
-                                <span className="text-[color:var(--success)] font-medium flex items-center gap-0.5">
-                                  <UserCheck className="h-3 w-3" />
-                                  Estreante
-                                </span>
-                              ) : (
-                                <span>{proj.anoBase}</span>
-                              )}
-                              <span>→</span>
-                              <span>{proj.anoProjecao}</span>
-                            </p>
-                            <p>{munBase.length} municípios</p>
-                            {proj.municipios.filter(m => m.dobradaAtiva).length > 0 && (
-                              <p className="text-blue-400 flex items-center gap-1 mt-1">
-                                <Handshake className="h-3 w-3" />
-                                {proj.municipios.filter(m => m.dobradaAtiva).length} dobradas
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <Painel
+            titulo={<>Projeções salvas <span className="ml-1 normal-case tracking-normal font-semibold" style={{ color: 'var(--text-secondary)' }}>· {projecoesSalvas.length}</span></>}
+            icone={Target}
+            direita={projecoesSalvas.length > 3 ? (
+              <CampoFiltro valor={buscaProjecoes} onChange={setBuscaProjecoes} placeholder="Buscar candidato" />
+            ) : undefined}
+          >
+            {(() => {
+              const termo = normMunKey(buscaProjecoes);
+              const lista = termo
+                ? projecoesSalvas.filter(p => normMunKey(p.candidatoNome).includes(termo))
+                : projecoesSalvas;
+              if (lista.length === 0) {
+                return (
+                  <p className="text-sm text-center py-8" style={{ color: 'var(--text-tertiary)' }}>
+                    Nenhuma projeção de “{buscaProjecoes.trim()}”.
+                  </p>
+                );
+              }
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {lista.map((proj) => (
+                    <CartaoProjecaoSalva
+                      key={proj.id}
+                      resumo={resumoDaProjecao(proj)}
+                      onAbrir={() => abrirProjecaoSalva(proj)}
+                      onExcluir={() => {
+                        setProjecaoParaExcluir({ id: proj.id, nome: proj.candidatoNome });
+                        setShowDeleteModal(true);
+                      }}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
+          </Painel>
         </motion.div>
       )}
 
