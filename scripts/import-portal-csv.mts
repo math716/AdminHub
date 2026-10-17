@@ -291,24 +291,35 @@ async function obterEmendaId(opts: {
       municipioNome:  opts.municipioNome,
       parlamentarId:  opts.parlamentarId,
     };
+    // Área: só escreve quando a função dá uma área de verdade. "OUTROS" por
+    // cima apagava o que scripts/reclassificar-areas.ts tinha acertado — e na
+    // semana seguinte o script acertava de novo: a mesma linha regravada toda
+    // semana, à toa.
+    const areaNova = opts.funcao ? classificarArea(opts.funcao) : undefined;
     const updateData = {
       idPortal:      opts.codigoEmenda,
       numero:        opts.numero        ?? undefined,
       tipo:          opts.tipo          ?? undefined,
       funcao:        opts.funcao        ?? undefined,
-      area:          opts.funcao ? classificarArea(opts.funcao) : undefined,
+      area:          areaNova && areaNova !== 'OUTROS' ? areaNova : undefined,
       uf:            opts.uf            ?? undefined,
       codigoIbge:    opts.codigoIbge    ?? undefined,
       municipioNome: opts.municipioNome ?? undefined,
     };
+    // Regravar uma emenda idêntica gasta disco do banco (e a cota diária do
+    // Supabase) sem mudar nada. Só atualiza o que veio diferente.
+    const mudou = (atual: Record<string, unknown>) =>
+      (Object.keys(updateData) as (keyof typeof updateData)[])
+        .some(k => updateData[k] !== undefined && atual[k] !== updateData[k]);
 
     const e = await withRetry(async () => {
       // 1. Busca pelo idPortal (caso mais comum: mesma emenda reimportada)
       const byPortal = await prisma.emendaParlamentar.findUnique({
         where: { idPortal: opts.codigoEmenda },
-        select: { id: true },
+        select: { id: true, idPortal: true, numero: true, tipo: true, funcao: true, area: true, uf: true, codigoIbge: true, municipioNome: true },
       });
       if (byPortal) {
+        if (!mudou(byPortal)) return { id: byPortal.id };
         return prisma.emendaParlamentar.update({
           where: { id: byPortal.id },
           data: updateData,
@@ -486,7 +497,13 @@ async function gravarDocumentosEmLote(docs: Doc[]): Promise<void> {
       "fase" = EXCLUDED."fase",
       "valor" = EXCLUDED."valor",
       ${MANTEM_SE_VAZIO.map((c) => `${q(c)} = COALESCE(EXCLUDED.${q(c)}, emendas_documentos.${q(c)})`).join(',\n      ')},
-      "updatedAt" = EXCLUDED."updatedAt"`;
+      "updatedAt" = EXCLUDED."updatedAt"
+    -- Documento igual ao que já está gravado não é reescrito: a importação
+    -- semanal mandava os ~390 mil de novo e o banco regravava todos (disco e
+    -- cota diária do Supabase gastos sem mudar nada).
+    WHERE emendas_documentos."fase" IS DISTINCT FROM EXCLUDED."fase"
+       OR emendas_documentos."valor" IS DISTINCT FROM EXCLUDED."valor"
+       ${MANTEM_SE_VAZIO.map((c) => `OR (EXCLUDED.${q(c)} IS NOT NULL AND emendas_documentos.${q(c)} IS DISTINCT FROM EXCLUDED.${q(c)})`).join('\n       ')}`;
   await withRetry(() => prisma.$executeRawUnsafe(sql, ...params));
 }
 

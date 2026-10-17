@@ -12,6 +12,11 @@
  *   --conferir  NÃO grava: compara cada resumo guardado com a conta feita
  *               agora, estado por estado, ano por ano, em cada filtro. Sai com
  *               erro se algum número não bater.
+ *   --forcar    recalcula mesmo que nada tenha mudado desde a última conta.
+ *
+ * Sem mudança no banco desde a última conta (mesma última alteração de
+ * emendas e de parlamentares, mesma quantidade de emendas), não recalcula:
+ * são centenas de somas pesadas que dariam o mesmo resultado.
  */
 
 import { Prisma, PrismaClient } from '@prisma/client';
@@ -34,6 +39,7 @@ const ANOS = (arg('anos')
   ?? Array.from({ length: anoAtual - 2021 + 1 }, (_, i) => 2021 + i).join(','))
   .split(',').map((a) => parseInt(a.trim(), 10)).filter((a) => a > 2000);
 const CONFERIR = process.argv.includes('--conferir');
+const FORCAR = process.argv.includes('--forcar');
 const SIMULTANEOS = 3;
 
 interface Tarefa { chave: string; qtd: number; calcular: () => Promise<unknown> }
@@ -88,6 +94,29 @@ async function atualizar() {
   // Impressão ANTES da conta: se o banco mudar no meio, o resumo já nasce
   // velho e a tela calcula na hora — nunca o contrário.
   const impressao = await impressaoDoBanco(db);
+
+  if (!FORCAR) {
+    const [guardado] = await db.$queryRawUnsafe<{ n: number; ve_min: Date | null; ve_max: Date | null; vp_min: Date | null; vp_max: Date | null; qtd: number | null }[]>(`
+      SELECT count(*)::int AS n,
+             min("versaoEmendas") AS ve_min, max("versaoEmendas") AS ve_max,
+             min("versaoParlamentares") AS vp_min, max("versaoParlamentares") AS vp_max,
+             sum("qtdEmendas") FILTER (WHERE chave LIKE 'brasil:%')::int AS qtd
+      FROM emendas_resumos
+      WHERE split_part(chave, ':', CASE WHEN chave LIKE 'brasil:%' THEN 2 ELSE 3 END)::int = ANY($1::int[])`, ANOS);
+    const [agora] = await db.$queryRawUnsafe<{ n: number }[]>(`
+      SELECT count(*)::int AS n FROM emendas_parlamentares WHERE uf IS NOT NULL AND ano = ANY($1::int[])`, ANOS);
+    const igual = (a: Date | null, b: Date | null) => (a?.getTime() ?? null) === (b?.getTime() ?? null);
+    const nadaMudou = (guardado?.n ?? 0) > 0
+      && igual(guardado.ve_min, impressao.versaoEmendas) && igual(guardado.ve_max, impressao.versaoEmendas)
+      && igual(guardado.vp_min, impressao.versaoParlamentares) && igual(guardado.vp_max, impressao.versaoParlamentares)
+      && (guardado.qtd ?? -1) === agora.n;
+    if (nadaMudou) {
+      console.log(`
+Resumo de Emendas — anos ${ANOS.join(', ')}: nada mudou desde a última conta (${guardado.n} recortes). Nada a recalcular.`);
+      return;
+    }
+  }
+
   const tarefas = await montarTarefas();
   console.log(`\nResumo de Emendas — anos ${ANOS.join(', ')}: ${tarefas.length} recortes\n`);
 

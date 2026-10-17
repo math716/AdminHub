@@ -3,6 +3,7 @@ name: Import CSV - emendas federais
 on:
   schedule:
     - cron: '0 2 * * 1'   # Segunda-feira 2h UTC → 2026
+    - cron: '0 1 * * 6'   # Sábado 1h UTC (sexta 22h Brasília) → 2025
     - cron: '0 2 1 * *'   # Dia 1 do mês  2h UTC → 2024
     - cron: '0 2 15 * *'  # Dia 15 do mês 2h UTC → 2023 (a CGU ainda regera o arquivo)
   workflow_dispatch:
@@ -28,6 +29,11 @@ on:
         default: 'lote'
         type: choice
         options: ['linha', 'lote']
+      forcar:
+        description: 'Importar mesmo que o arquivo do governo não tenha mudado'
+        required: false
+        default: false
+        type: boolean
 
 
 # Fila única das importações: um workflow que escreve no banco espera o outro
@@ -50,8 +56,10 @@ jobs:
       ANOS: >-
         ${{ github.event_name == 'workflow_dispatch' && inputs.anos ||
             github.event.schedule == '0 2 * * 1' && '2026' ||
+            github.event.schedule == '0 1 * * 6' && '2025' ||
             github.event.schedule == '0 2 15 * *' && '2023' ||
             '2024' }}
+      FORCAR: ${{ inputs.forcar && 'true' || 'false' }}
 
     steps:
       - name: Checkout
@@ -70,9 +78,23 @@ jobs:
         run: npx prisma generate
 
       - name: Criar diretorio de dados
-        run: mkdir -p data/portal-csv-imports
+        run: mkdir -p data/portal-csv-imports/.vistos
 
-      - name: Baixar CSVs do Portal da Transparencia
+      # Guarda, por ano, a data e o tamanho do arquivo do governo já importado.
+      # Arquivo igual = nada a importar: reimportar 390 mil documentos iguais
+      # toda semana gastava a cota diária de disco do banco e deixava o sistema
+      # lento (Gabi incluída). A chave muda a cada execução para o valor novo
+      # ser salvo; restore-keys recupera o da execução anterior. Cache perdido
+      # custa no máximo uma importação a mais.
+      - name: Recuperar o que já foi importado
+        uses: actions/cache@v4
+        with:
+          path: data/portal-csv-imports/.vistos
+          key: federal-vistos-${{ github.run_id }}
+          restore-keys: |
+            federal-vistos-
+
+      - name: Baixar CSVs do Portal da Transparencia (só o que mudou)
         run: |
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
           BASE="https://portaldatransparencia.gov.br"
@@ -91,7 +113,19 @@ jobs:
             ZIP="data/portal-csv-imports/${ANO}_EmendasParlamentaresPorDocumento.zip"
             URL="$BASE/download-de-dados/emendas-parlamentares-documentos/$ANO"
 
+            # Data e tamanho do arquivo no governo (sem baixar).
+            MARCA=$(curl -sIL -b /tmp/portal-cookies.txt --user-agent "$UA" --max-time 120 "$URL" \
+              | tr -d '\r' \
+              | awk '{ l = tolower($0) } l ~ /^last-modified:/ { lm = substr($0, 16) } l ~ /^content-length:/ { cl = $2 } END { print lm "|" cl }')
+            VISTO=$(cat "data/portal-csv-imports/.vistos/$ANO" 2>/dev/null || true)
             echo ""
+            echo "=== $ANO — arquivo no governo: $MARCA | já importado: ${VISTO:-nunca} ==="
+            if [ "$FORCAR" != "true" ] && [ "$MARCA" != "|" ] && [ "$MARCA" = "$VISTO" ]; then
+              echo "Sem mudança desde a última importação — pulando $ANO."
+              continue
+            fi
+            echo "$MARCA" > "data/portal-csv-imports/.marca-$ANO"
+
             echo "=== Baixando $ANO ==="
             HTTP_INFO=$(curl -L \
               -b /tmp/portal-cookies.txt \
@@ -111,7 +145,7 @@ jobs:
 
             if [ "$MAGIC" != "504b0304" ]; then
               echo "ERRO: $ANO nao e um ZIP valido — pulando"
-              rm -f "$ZIP"
+              rm -f "$ZIP" "data/portal-csv-imports/.marca-$ANO"
               FALHOU=1
             else
               echo "ZIP valido: $(stat -c%s "$ZIP") bytes ($(ls -lh "$ZIP" | awk '{print $5}'))"
@@ -121,12 +155,14 @@ jobs:
           if [ "$FALHOU" != "0" ]; then exit 1; fi
 
       - name: Importar dados no banco
+        id: importar
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           BATCH="${{ github.event.inputs.batch || '500' }}"
           CONC="${{ github.event.inputs.concurrency || '150' }}"
           MODO="${{ github.event.inputs.modo || 'lote' }}"
+          IMPORTOU=false
           IFS=',' read -ra ANOS_ARRAY <<< "$ANOS"
           for ANO in "${ANOS_ARRAY[@]}"; do
             ANO=$(echo "$ANO" | tr -d ' ')
@@ -138,21 +174,29 @@ jobs:
                 --batch $BATCH \
                 --concurrency $CONC \
                 --modo $MODO
+              # Só depois de importar com sucesso o ano conta como "visto".
+              cp "data/portal-csv-imports/.marca-$ANO" "data/portal-csv-imports/.vistos/$ANO"
+              IMPORTOU=true
             else
-              echo "ZIP nao encontrado para $ANO, pulando."
+              echo "Nada a importar para $ANO."
             fi
           done
+          echo "importou=$IMPORTOU" >> "$GITHUB_OUTPUT"
 
       - name: Reclassificar senadores
+        if: steps.importar.outputs.importou == 'true'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx tsx scripts/sync-senadores.ts
 
       - name: Reclassificar areas
+        if: steps.importar.outputs.importou == 'true'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx tsx scripts/reclassificar-areas.ts
 
+      # Os totais vêm da API do Portal, que muda mesmo quando o arquivo não muda:
+      # roda sempre.
       - name: Atualizar totais oficiais das emendas
         # O CSV não traz o total da emenda; o Portal traz (empenhado e pago).
         if: ${{ !cancelled() }}
@@ -163,6 +207,7 @@ jobs:
 
       - name: Atualizar resumo de Emendas
         # Números prontos da tela de Emendas (scripts/atualizar-resumo-emendas.ts).
+        # Sem mudança no banco, o próprio script não recalcula.
         if: ${{ !cancelled() }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -173,4 +218,5 @@ jobs:
         run: |
           echo "## Import CSV Federal concluido" >> $GITHUB_STEP_SUMMARY
           echo "- **Anos:** $ANOS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Importou arquivo novo:** ${{ steps.importar.outputs.importou || 'false' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Horario:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
