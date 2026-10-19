@@ -11,6 +11,7 @@ import zlib from 'zlib';
 import { loadStaticTseData, ultimaFalhaTse, temSegundoTurno } from '@/lib/tse-static';
 import { chaveMunicipio } from '@/lib/municipio-nome';
 import { semPermissao } from '@/lib/acesso-api';
+import manifesto from '@/lib/tse-manifesto.json';
 import { PERMISSIONS } from '@/lib/permissions';
 
 // ---------------------------------------------------------------------------
@@ -142,6 +143,17 @@ async function montarResposta(cand: CandidatoJson, uf: string, ano: string, turn
 // Construir resposta agregada para candidato nacional (uf=BR)
 // ---------------------------------------------------------------------------
 async function montarRespostaBrasil(candidato: string | null, candidatoId: string | null, ano: string, turno = 1) {
+  // Ano sem a base nacional (presidente por município): dizer isso, e não
+  // "tente de novo" — tentar de novo não muda nada. Caso real: Flávio
+  // Bolsonaro em 2026, antes de o TSE publicar presidente por município.
+  const anosBr = ((manifesto as any).anosPorUf?.BR ?? []) as number[];
+  if (!anosBr.includes(Number(ano))) {
+    return NextResponse.json(
+      { error: `Os votos para presidente de ${ano} ainda não estão no sistema. Para os demais cargos, escolha o estado.` },
+      { status: 404 },
+    );
+  }
+
   // Carrega o arquivo BR.json.gz pré-agregado (gerado por scripts/gerar-br-json.ts)
   const brData = await loadStaticData(ano, 'BR', turno);
 
