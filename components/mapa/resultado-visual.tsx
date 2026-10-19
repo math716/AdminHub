@@ -24,6 +24,15 @@ function corDaSituacao(situacao: string): string {
   return '#2563eb';
 }
 
+/**
+ * Texto da situação. O TSE marca "2º TURNO" quem passou para o 2º turno; no
+ * selo, isso parecia dizer que o resultado mostrado era do 2º turno (caso
+ * real: Flávio Bolsonaro, 2026, com só o 1º turno realizado).
+ */
+function rotuloDaSituacao(situacao: string): string {
+  return /2\s*[ºoO°]?\s*TURNO/.test(semAcento(situacao)) ? 'Vai ao 2º turno' : situacao;
+}
+
 export function CartaoCandidato({ nome, nomeUrna, partido, numero, ano, cargo, situacao, totalVotos, aviso, favorito, onFavoritar, turno, segundoTurno, onTurno, trocandoTurno }: {
   nome: string;
   nomeUrna?: string;
@@ -71,7 +80,7 @@ export function CartaoCandidato({ nome, nomeUrna, partido, numero, ano, cargo, s
         <div className="flex flex-wrap items-center gap-1.5">
           <Etiqueta cor={cor}>{partido} · {NOME_CAMPO[campoDoPartido(partido)]}</Etiqueta>
           {numero ? <Etiqueta cor="#64748b">Nº {numero}</Etiqueta> : null}
-          {situacao && <Etiqueta cor={corDaSituacao(situacao)} forte>{situacao}</Etiqueta>}
+          {situacao && <Etiqueta cor={corDaSituacao(situacao)} forte>{rotuloDaSituacao(situacao)}</Etiqueta>}
         </div>
 
         <p className="text-xs flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
