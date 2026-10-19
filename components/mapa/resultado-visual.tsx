@@ -172,8 +172,8 @@ export function PainelAreaSelecionada({ sobre, nome, votos, total, rotuloTotal, 
 export function MolduraMapa({ titulo, dica, legenda = 'intensidade', children }: {
   titulo: string;
   dica?: string;
-  /** intensidade = escala de "menos" a "mais votos"; presenca = "teve votos" / "sem votos". */
-  legenda?: 'intensidade' | 'presenca';
+  /** intensidade = escala de "menos" a "mais votos"; presenca = "teve votos" / "sem votos"; nenhuma = sem legenda (mapa só com contornos). */
+  legenda?: 'intensidade' | 'presenca' | 'nenhuma';
   children: React.ReactNode;
 }) {
   return (
@@ -188,7 +188,7 @@ export function MolduraMapa({ titulo, dica, legenda = 'intensidade', children }:
             </p>
           )}
         </div>
-        {legenda === 'presenca' ? <LegendaPresenca /> : <LegendaIntensidade />}
+        {legenda === 'presenca' ? <LegendaPresenca /> : legenda === 'intensidade' ? <LegendaIntensidade /> : null}
       </div>
       <div className="flex-1 min-h-0 relative rounded-xl overflow-hidden">{children}</div>
     </div>
