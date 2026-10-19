@@ -65,10 +65,10 @@ function whereEmendas(a: FiltrosEmendas, ignorar: Set<string> = new Set()) {
     // Município: a emenda que mandou ALGUM pedaço para lá (documentos), ou —
     // quando os documentos não dizem o município — a do cadastro.
     ...(a.municipio && !ignorar.has('municipio') && { OR: [
-      { documentos: { some: { municipioDestino: { contains: a.municipio, mode: 'insensitive' as const } } } },
+      { municipios: { some: { municipio: { contains: a.municipio, mode: 'insensitive' as const } } } },
       {
         municipioNome: { contains: a.municipio, mode: 'insensitive' as const },
-        documentos: { none: { codigoIbgeDestino: { not: null } } },
+        municipios: { none: {} },
       },
     ] }),
     ...(a.area && !ignorar.has('area') && { area: a.area as any }),
@@ -162,10 +162,10 @@ const CARGO_CURTO: Record<string, string> = {
 };
 
 /**
- * Quanto cada parlamentar do recorte mandou para cada município, pelos
- * documentos de empenho (o mesmo critério do valor por município). Emenda
- * importada antes de os documentos guardarem o destino: quem recebeu no estado
- * da emenda; emenda sem documentos (estadual): o município do cadastro.
+ * Quanto cada parlamentar do recorte mandou para cada município — a soma
+ * pronta por município (emendas_municipios), o mesmo critério do valor por
+ * município. Emenda sem essa soma (estadual, ou federal ainda não
+ * reimportada): o município do cadastro.
  */
 async function destinosPorParlamentar(
   whereFinal: any,
@@ -176,15 +176,14 @@ async function destinosPorParlamentar(
     where: whereFinal,
     select: { id: true, parlamentarId: true, municipioNome: true, uf: true, valorEmpenhado: true },
   });
-  const docs = linhas.length > 0
-    ? await prisma.emendaDocumento.groupBy({
-        by: ['emendaId', 'municipioDestino', 'ufFavorecido', 'municipioFavorecido'],
-        where: { emendaId: { in: linhas.map(l => l.id) }, fase: 'Empenho' },
-        _sum: { valor: true },
+  const pedacos = linhas.length > 0
+    ? await prisma.emendaMunicipio.findMany({
+        where: { emenda: whereFinal },
+        select: { emendaId: true, municipio: true, empenhado: true },
       })
     : [];
-  const docsPorEmenda = new Map<string, typeof docs>();
-  for (const d of docs) docsPorEmenda.set(d.emendaId, [...(docsPorEmenda.get(d.emendaId) ?? []), d]);
+  const pedacosPorEmenda = new Map<string, typeof pedacos>();
+  for (const d of pedacos) pedacosPorEmenda.set(d.emendaId, [...(pedacosPorEmenda.get(d.emendaId) ?? []), d]);
 
   const soma = new Map<string, { municipio: string; parlamentar: string; partido: string; valorEmpenhado: number }>();
   const somar = (municipio: string, l: (typeof linhas)[number], valor: number) => {
@@ -196,16 +195,9 @@ async function destinosPorParlamentar(
     soma.set(chave, atual);
   };
   for (const l of linhas) {
-    const ds = docsPorEmenda.get(l.id) ?? [];
-    const comDestino = ds.filter(d => d.municipioDestino);
-    if (comDestino.length > 0) {
-      for (const d of comDestino) somar(d.municipioDestino!, l, d._sum.valor ?? 0);
-    } else if (ds.length > 0) {
-      for (const d of ds) {
-        if (d.municipioFavorecido && String(d.ufFavorecido ?? '').toUpperCase() === String(l.uf ?? '').toUpperCase()) {
-          somar(d.municipioFavorecido, l, d._sum.valor ?? 0);
-        }
-      }
+    const ps = pedacosPorEmenda.get(l.id) ?? [];
+    if (ps.length > 0) {
+      for (const p of ps) if (p.municipio) somar(p.municipio, l, p.empenhado);
     } else if (l.municipioNome) {
       somar(l.municipioNome, l, l.valorEmpenhado);
     }
@@ -231,33 +223,24 @@ type GrupoComoPrisma<K extends string> = { [k in K]: any } & {
  * áreas e parlamentares somados por esse pedaço (no mesmo formato dos
  * agrupamentos do banco, para o resto da função não mudar).
  *
- * Emenda com destino nos documentos: soma os documentos daquela cidade.
+ * Emenda com a soma por município pronta: o pedaço daquela cidade.
  * Emenda sem (estadual, de um município só): conta inteira, como antes.
  */
 async function pedacosNaCidade(whereFinal: any, cidade: string) {
-  const [linhas, docs] = await Promise.all([
+  const [linhas, pedacos] = await Promise.all([
     prisma.emendaParlamentar.findMany({
       where: whereFinal,
       select: { id: true, area: true, parlamentarId: true, valorEmpenhado: true, valorPago: true },
     }),
-    prisma.emendaDocumento.groupBy({
-      by: ['emendaId', 'fase'],
-      where: {
-        fase: { in: ['Empenho', 'Pagamento'] },
-        municipioDestino: { contains: cidade, mode: 'insensitive' },
-        emenda: whereFinal,
-      },
-      _sum: { valor: true },
+    prisma.emendaMunicipio.groupBy({
+      by: ['emendaId'],
+      where: { municipio: { contains: cidade, mode: 'insensitive' }, emenda: whereFinal },
+      _sum: { empenhado: true, pago: true },
     }),
   ]);
 
-  const porEmenda = new Map<string, Soma>();
-  for (const d of docs) {
-    const s = porEmenda.get(d.emendaId) ?? { empenhado: 0, pago: 0 };
-    if (d.fase === 'Empenho') s.empenhado += d._sum.valor ?? 0;
-    else s.pago += d._sum.valor ?? 0;
-    porEmenda.set(d.emendaId, s);
-  }
+  const porEmenda = new Map<string, Soma>(
+    pedacos.map(p => [p.emendaId, { empenhado: p._sum.empenhado ?? 0, pago: p._sum.pago ?? 0 }]));
 
   const total: Soma = { empenhado: 0, pago: 0 };
   const area = new Map<string, GrupoComoPrisma<'area'>>();
@@ -377,7 +360,7 @@ export async function executarBuscarEmendas(
   // recorte de SP que começa em 2021.
   const whereSemAno = whereEmendas(args, new Set([...filtrosIgnorados, 'ano']));
 
-  const [resumo, porAreaBruto, porParlamentarBruto, porMunicipioBruto, porUfBruto, anosBruto, docsPorDestino, docsPorFavorecido, docsDaLista] = await Promise.all([
+  const [resumo, porAreaBruto, porParlamentarBruto, porMunicipioBruto, porUfBruto, anosBruto, porDestino, semDivisao, docsDaLista] = await Promise.all([
     prisma.emendaParlamentar.aggregate({
       where: whereFinal,
       _count: { _all: true },
@@ -399,12 +382,12 @@ export async function executarBuscarEmendas(
       _count: { _all: true },
       _sum: { valorEmpenhado: true, valorPago: true },
     }),
-    // Valor por município das emendas SEM documentos (as estaduais: lá cada
-    // emenda é de um município só, e o cadastro diz qual). As que têm
-    // documentos são somadas por eles logo abaixo.
+    // Valor por município das emendas SEM a soma por município (estaduais —
+    // lá cada emenda é de um município só, e o cadastro diz qual — e federais
+    // ainda não reimportadas). As demais vêm da soma pronta logo abaixo.
     prisma.emendaParlamentar.groupBy({
       by: ['municipioNome'],
-      where: { AND: [whereFinal, { documentos: { none: {} } }] },
+      where: { AND: [whereFinal, { municipios: { none: {} } }] },
       _sum: { valorEmpenhado: true, valorPago: true },
     }),
     // Também só para o mapa. Diz em QUANTOS estados o recorte se espalha —
@@ -425,23 +408,19 @@ export async function executarBuscarEmendas(
     // metade delas). O cadastro da emenda guarda um município só, e somar por
     // ele punha o valor inteiro numa cidade: a Gabi disse "Guará, R$ 17 mi"
     // para uma emenda Pix repartida entre 28 municípios, em que Guará recebeu
-    // R$ 495 mil. Quem diz para onde foi cada real são os documentos — empenho
-    // e pagamento, cada um com o município de destino.
-    prisma.emendaDocumento.groupBy({
-      by: ['codigoIbgeDestino', 'municipioDestino', 'fase'],
-      where: { fase: { in: ['Empenho', 'Pagamento'] }, codigoIbgeDestino: { not: null }, emenda: whereFinal },
-      _sum: { valor: true },
+    // R$ 495 mil. Quem diz para onde foi cada real são os documentos; a soma
+    // deles por município vem pronta (lib/emendas/emendas-municipios.ts) —
+    // somar os documentos aqui lia centenas de milhares de linhas por estado.
+    prisma.emendaMunicipio.groupBy({
+      by: ['codigoIbge', 'municipio'],
+      where: { emenda: whereFinal },
+      _sum: { empenhado: true, pago: true },
     }),
-    // Transição: emendas importadas antes de os documentos guardarem o
-    // destino. Vale o município de quem recebeu, no estado da emenda (abaixo).
-    // Some quando todos os anos tiverem sido reimportados.
-    prisma.emendaDocumento.groupBy({
-      by: ['ufFavorecido', 'municipioFavorecido', 'fase'],
-      where: {
-        fase: { in: ['Empenho', 'Pagamento'] }, municipioFavorecido: { not: null },
-        emenda: { AND: [whereFinal, { documentos: { none: { codigoIbgeDestino: { not: null } } } }] },
-      },
-      _sum: { valor: true },
+    // Federais ainda sem a soma por município (anos não reimportados): o
+    // valor delas vai pelo município do cadastro, que pode ser só um dos
+    // vários que a emenda atendeu — a Gabi é avisada.
+    prisma.emendaParlamentar.count({
+      where: { AND: [whereFinal, { municipios: { none: {} } }, { documentos: { some: {} } }] },
     }),
     // Em quantos municípios cada emenda da lista foi dividida.
     prisma.emendaDocumento.groupBy({
@@ -550,17 +529,9 @@ export async function executarBuscarEmendas(
     atual.pago += pago;
     porMunicipioMapa.set(chave, atual);
   };
-  for (const d of docsPorDestino) {
-    if (!d.municipioDestino || !d.codigoIbgeDestino) continue;
-    const valor = d._sum.valor ?? 0;
-    somarMunicipio(d.municipioDestino, UF_POR_PREFIXO_IBGE[d.codigoIbgeDestino.slice(0, 2)],
-      d.fase === 'Empenho' ? valor : 0, d.fase === 'Pagamento' ? valor : 0);
-  }
-  for (const d of docsPorFavorecido) {
-    const uf = String(d.ufFavorecido ?? '').toUpperCase();
-    if (!d.municipioFavorecido || !ufsDoRecorte.has(uf)) continue;
-    const valor = d._sum.valor ?? 0;
-    somarMunicipio(d.municipioFavorecido, uf, d.fase === 'Empenho' ? valor : 0, d.fase === 'Pagamento' ? valor : 0);
+  for (const d of porDestino) {
+    if (!d.municipio) continue;
+    somarMunicipio(d.municipio, UF_POR_PREFIXO_IBGE[d.codigoIbge.slice(0, 2)], d._sum.empenhado ?? 0, d._sum.pago ?? 0);
   }
   for (const m of porMunicipioBruto) {
     if (m.municipioNome) somarMunicipio(m.municipioNome, ufUnica, m._sum.valorEmpenhado ?? 0, m._sum.valorPago ?? 0);
@@ -641,7 +612,13 @@ export async function executarBuscarEmendas(
      * Quinze cobrem a pergunta sem pesar no turno.
      */
     topMunicipios: municipiosComValor.slice(0, 15),
-    ...((docsPorDestino.length > 0 || docsPorFavorecido.length > 0) && {
+    ...(semDivisao > 0 && {
+      avisoMunicipiosAproximados:
+        `${semDivisao} emenda(s) federal(is) do recorte ainda não têm o valor dividido por município (o ano está ` +
+        'sendo atualizado): nelas o valor inteiro aparece no município principal da emenda. Ao citar valores por ' +
+        'município, diga que a divisão por cidade ainda está sendo atualizada para parte das emendas.',
+    }),
+    ...(porDestino.length > 0 && {
       notaMunicipios:
         'Valor por município somado dos documentos de empenho e de pagamento de cada cidade. O pago por município ' +
         'pode ficar abaixo de "totalPago", que inclui restos a pagar pagos; o total oficial é "totalPago".',

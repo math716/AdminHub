@@ -24,6 +24,7 @@ import {
   ESFERAS, SQL_CRIAR_RESUMO, VERSAO_CONTA, calcularResumoUf, calcularTotaisBrasil, chaveResumoBrasil, chaveResumoUf,
   impressaoDoBanco, lerResumoPronto,
 } from '../lib/emendas/resumo-emendas';
+import { garantirEmendasMunicipios } from '../lib/emendas/emendas-municipios';
 
 const raw = process.env.DATABASE_URL ?? '';
 // pool_timeout alto: cada recorte dispara 5 consultas, 3 recortes por vez,
@@ -110,6 +111,10 @@ function normalizar(v: unknown): unknown {
 async function atualizar() {
   for (const sql of SQL_CRIAR_RESUMO) await db.$executeRawUnsafe(sql);
 
+  // Valor por município pronto (emendas_municipios): a importação preenche;
+  // aqui só a primeira vez de um ano, ou um ano que ficou pela metade.
+  await garantirEmendasMunicipios(db, ANOS);
+
   const inicio = new Date();
   // Impressão ANTES da conta: se o banco mudar no meio, o resumo já nasce
   // velho e a tela calcula na hora — nunca o contrário.
@@ -142,16 +147,31 @@ Resumo de Emendas — anos ${ANOS.join(', ')}: nada mudou desde a última conta 
   const tarefas = await montarTarefas();
   console.log(`\nResumo de Emendas — anos ${ANOS.join(', ')}: ${tarefas.length} recortes\n`);
 
+  // Um recorte que falha não derruba os outros: antes, um único estado
+  // demorado parava o script inteiro e nenhum resumo era guardado. O que
+  // falhar fica listado no fim (e a tela faz a conta na hora para ele).
   let feitos = 0;
+  const falharam: string[] = [];
   await emParalelo(tarefas, async (t) => {
-    const dados = (await comNovaTentativa(t.calcular)) as Prisma.InputJsonValue;
-    const valores = { dados, qtdEmendas: t.qtd, ...impressao, calculadoEm: new Date() };
-    await db.emendaResumo.upsert({ where: { chave: t.chave }, create: { chave: t.chave, ...valores }, update: valores });
+    try {
+      const dados = (await comNovaTentativa(t.calcular)) as Prisma.InputJsonValue;
+      const valores = { dados, qtdEmendas: t.qtd, ...impressao, calculadoEm: new Date() };
+      await db.emendaResumo.upsert({ where: { chave: t.chave }, create: { chave: t.chave, ...valores }, update: valores });
+    } catch (e: any) {
+      const motivo = String(e?.message ?? e).split('\n').filter(Boolean).pop()?.slice(0, 120);
+      falharam.push(`${t.chave} (${e?.code ?? ''} ${motivo})`);
+    }
     if (++feitos % 50 === 0) process.stdout.write(`\r   ${feitos}/${tarefas.length} recortes...`);
   });
+  if (falharam.length > 0) {
+    console.log(`\n   ${falharam.length} recorte(s) não calculado(s) — a tela faz a conta na hora para eles:`);
+    for (const f of falharam.slice(0, 30)) console.log(`     - ${f}`);
+    process.exitCode = 1;
+  }
 
-  // Recortes desses anos que não existem mais (ex.: estado sem emendas).
-  const apagados = await db.$executeRawUnsafe(`
+  // Recortes desses anos que não existem mais (ex.: estado sem emendas). Só
+  // com todos calculados: o que falhou agora ainda tem o resumo anterior.
+  const apagados = falharam.length > 0 ? 0 : await db.$executeRawUnsafe(`
     DELETE FROM emendas_resumos
     WHERE "calculadoEm" < $1
       AND split_part(chave, ':', CASE WHEN chave LIKE 'brasil:%' THEN 2 ELSE 3 END)::int = ANY($2::int[])`,

@@ -35,6 +35,10 @@ import * as unzipper from 'unzipper';
 import { parse } from 'csv-parse';
 import { PrismaClient } from '@prisma/client';
 import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
+// O lib é CommonJS (é o que o resto do projeto usa); daqui (.mts, ESM) só o
+// "default" chega com tudo — import nomeado falha ("does not provide an export").
+import emendasMunicipios from '../lib/emendas/emendas-municipios';
+const { SQL_CRIAR_EMENDAS_MUNICIPIOS, preencherEmendasMunicipios } = emendasMunicipios as typeof import('../lib/emendas/emendas-municipios');
 
 // Para imports em lote usa sempre o Transaction Pooler (porta 6543) com
 // pgbouncer=true — multiplexia muitas conexões sobre poucas conexões reais,
@@ -780,6 +784,16 @@ async function main() {
   console.log(`   ${parlamentarPorNome.size} parlamentares no cache`);
   console.log(`   ${emendaPorCodigo.size} emendas no cache`);
   console.log(`   ${totalMin}min de execução`);
+
+  // Valor de cada emenda em cada município: a soma dos documentos, pronta
+  // (lib/emendas/emendas-municipios.ts). Refeita para todas as emendas do
+  // arquivo — os documentos delas podem ter mudado nesta importação.
+  console.log(`
+   Somando o valor por município de ${emendaPorCodigo.size} emendas...`);
+  const inicioMun = Date.now();
+  for (const sql of SQL_CRIAR_EMENDAS_MUNICIPIOS) await withRetry(() => prisma.$executeRawUnsafe(sql));
+  const pares = await withRetry(() => preencherEmendasMunicipios(prisma, [...emendaPorCodigo.values()], (m) => console.log(m)));
+  console.log(`   ${pares} pares emenda × município gravados (${((Date.now() - inicioMun) / 60_000).toFixed(1)}min)`);
 
   // Salva códigos com erro para retry futuro
   if (codigosComErro.size > 0) {

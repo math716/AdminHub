@@ -709,6 +709,8 @@ model EmendaParlamentar {
   // Documentos de despesa (empenho/liquidação/pagamento) — populados pelo
   // cron de enrich a partir de /despesas/documentos/{cod}.
   documentos EmendaDocumento[]
+  /// Quanto desta emenda foi para cada município (soma pronta dos documentos).
+  municipios EmendaMunicipio[]
 
   anotacoes EmendaAnotacao[]
 
@@ -809,6 +811,25 @@ model EmendaDocumento {
   @@index([fase])
   @@index([updatedAt])
   @@map("emendas_documentos")
+}
+
+/// Quanto cada emenda mandou para cada município — a soma dos documentos
+/// (empenho e pagamento) por município de destino, feita uma vez pela
+/// importação. Somar os documentos a cada consulta lia centenas de milhares
+/// de linhas por estado (20 s em SP 2025) e estourava o tempo do banco.
+/// Preenchida por lib/emendas/emendas-municipios.ts.
+model EmendaMunicipio {
+  emendaId     String
+  emenda       EmendaParlamentar @relation(fields: [emendaId], references: [id], onDelete: Cascade)
+  codigoIbge   String
+  municipio    String?
+  empenhado    Float    @default(0)
+  pago         Float    @default(0)
+  atualizadoEm DateTime @default(now())
+
+  @@id([emendaId, codigoIbge])
+  @@index([codigoIbge])
+  @@map("emendas_municipios")
 }
 
 /// Transferência Especial (Pix) do Portal da Transparência.

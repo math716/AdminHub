@@ -72,22 +72,22 @@ export async function calcularResumoUf(db: PrismaClient, uf: string, ano: number
     //
     // Uma emenda federal costuma ser DIVIDIDA entre vários municípios (metade
     // das de 2025), e o cadastro da emenda guarda um só: somar por ele punha o
-    // valor inteiro numa cidade e nada nas outras. Cada documento de empenho
-    // traz o município que recebeu aquele pedaço.
+    // valor inteiro numa cidade e nada nas outras. A soma dos documentos por
+    // município vem pronta (lib/emendas/emendas-municipios.ts) — somá-los
+    // aqui levava 20 s em SP e estourava o tempo do banco.
     db.$queryRawUnsafe<{ codigo: string; nome: string | null; total: number | null; qtd: number }[]>(`
-      SELECT d."codigoIbgeDestino" AS codigo, max(d."municipioDestino") AS nome,
-             sum(d.valor) FILTER (WHERE d.fase = 'Empenho')::float AS total,
-             count(DISTINCT d."emendaId")::int AS qtd
-      FROM emendas_documentos d
-      JOIN emendas_parlamentares e ON e.id = d."emendaId"
+      SELECT m."codigoIbge" AS codigo, max(m."municipio") AS nome,
+             sum(m."empenhado")::float AS total,
+             count(*)::int AS qtd
+      FROM emendas_municipios m
+      JOIN emendas_parlamentares e ON e.id = m."emendaId"
       WHERE e.uf = $1 AND e.ano = $2 AND ($3::text IS NULL OR e.esfera::text = $3)
-        AND d."codigoIbgeDestino" IS NOT NULL
       GROUP BY 1`, uf, ano, esfera),
-    // 3b. Por município, das demais (estaduais, e federais ainda sem o destino
-    // nos documentos): o município do cadastro, como antes.
+    // 3b. Por município, das demais (estaduais, e federais ainda sem a soma
+    // por município): o município do cadastro, como antes.
     db.emendaParlamentar.groupBy({
       by: ['codigoIbge', 'municipioNome'],
-      where: { ...where, codigoIbge: { not: null }, documentos: { none: { codigoIbgeDestino: { not: null } } } },
+      where: { ...where, codigoIbge: { not: null }, municipios: { none: {} } },
       _sum: { valorEmpenhado: true },
       _count: { _all: true },
     }),
