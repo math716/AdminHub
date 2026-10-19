@@ -1970,14 +1970,11 @@ export default function MapaPage() {
                 <MolduraMapa
                   titulo={electoralData ? `Votos de ${nomeCurto} em cada cidade de ${selectedStateName}` : selectedStateName}
                   dica="Selecione uma cidade para ver bairros e locais de votação."
-                  legenda="nenhuma"
+                  legenda="presenca"
                 >
-                  {/* Só os contornos, sem cor: pedido do cliente. Com cor (calor
-                      ou "teve votos"), o mapa passava a impressão errada sobre
-                      onde o candidato teve voto; os números ficam no balão e
-                      na lista abaixo do mapa. */}
                   <StateMap
                     balaoPremium
+                    mapaDePresenca
                     uf={selectedUf}
                     stateName={selectedStateName}
                     votesData={electoralData?.votosPorMunicipio}
