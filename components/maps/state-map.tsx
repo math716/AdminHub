@@ -41,6 +41,14 @@ interface StateMapProps {
    * frente, a escala linear deixava quase todo o estado no tom mais claro.
    */
   mapaDeCalor?: boolean;
+  /**
+   * Mapa de presença: toda cidade em que o candidato teve voto no mesmo azul;
+   * sem voto, cinza. Pedido do cliente: no mapa de calor, a capital com 3
+   * milhões de votos deixava o resto do estado quase branco — parecia que o
+   * candidato não tinha voto no interior. A quantidade de cada cidade está no
+   * balão.
+   */
+  mapaDePresenca?: boolean;
   /** Textos do balão novo quando o valor não é "votos" (ex.: meta do cenário). */
   textosBalao?: TextosBalao;
 }
@@ -63,7 +71,7 @@ function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
 
 type SubdivisaoTipo = 'bairros' | 'bairrosTSE' | 'setores' | null;
 
-function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunicipioClick, filteredMunicipios, highlightColor, disableSubdivisao, highlightMunicipioNome, valueLabel = 'votos', darkMode = false, choropleth, balaoPremium = false, mapaDeCalor = false, textosBalao }: StateMapProps) {
+function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunicipioClick, filteredMunicipios, highlightColor, disableSubdivisao, highlightMunicipioNome, valueLabel = 'votos', darkMode = false, choropleth, balaoPremium = false, mapaDeCalor = false, mapaDePresenca = false, textosBalao }: StateMapProps) {
   // Lido no momento do balão: trocar de aba (Histórico/Projeção) não recria o mapa.
   const textosBalaoRef = useRef(textosBalao);
   textosBalaoRef.current = textosBalao;
@@ -852,6 +860,16 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           ? (isFiltered ? '#4a9ede' : 'rgba(74,158,222,0.35)')
           : (isFiltered ? '#5b8db8' : '#9ab8d4');
 
+        if (mapaDePresenca) {
+          return {
+            fillColor: votos ? (darkMode ? '#3b82f6' : '#2f6fd6') : (darkMode ? '#0d2545' : '#e2e8f0'),
+            fillOpacity: votos ? 0.72 : 0.35,
+            weight: 0.6,
+            opacity: 0.9,
+            color: darkMode ? 'rgba(148,163,184,0.45)' : '#ffffff',
+          };
+        }
+
         if (mapaDeCalor) {
           const f = votos ? Math.sqrt(votos / maxCalor) : 0;
           return {
@@ -941,7 +959,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
             hoveredMunLayerRef.current = layer;
             if (selectedMunicipioRef.current !== nome) {
               // No mapa de calor a cor fica: só o contorno destaca.
-              e.target.setStyle(mapaDeCalor ? { weight: 2.5, color: '#0f172a' } : {
+              e.target.setStyle(mapaDeCalor || mapaDePresenca ? { weight: 2.5, color: '#0f172a' } : {
                 weight: 2.5,
                 color: '#1976d2',
                 fillOpacity: 0.1

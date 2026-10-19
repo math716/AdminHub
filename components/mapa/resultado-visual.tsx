@@ -160,7 +160,13 @@ export function PainelAreaSelecionada({ sobre, nome, votos, total, rotuloTotal, 
 }
 
 // ── Moldura do mapa: título, dica e legenda ──────────────────────────────────
-export function MolduraMapa({ titulo, dica, children }: { titulo: string; dica?: string; children: React.ReactNode }) {
+export function MolduraMapa({ titulo, dica, legenda = 'intensidade', children }: {
+  titulo: string;
+  dica?: string;
+  /** intensidade = escala de "menos" a "mais votos"; presenca = "teve votos" / "sem votos". */
+  legenda?: 'intensidade' | 'presenca';
+  children: React.ReactNode;
+}) {
   return (
     <div className="h-full flex flex-col">
       {/* pr-12: o botão de tela cheia fica no canto de cima do cartão. */}
@@ -173,7 +179,7 @@ export function MolduraMapa({ titulo, dica, children }: { titulo: string; dica?:
             </p>
           )}
         </div>
-        <LegendaIntensidade />
+        {legenda === 'presenca' ? <LegendaPresenca /> : <LegendaIntensidade />}
       </div>
       <div className="flex-1 min-h-0 relative rounded-xl overflow-hidden">{children}</div>
     </div>
@@ -186,6 +192,19 @@ export function LegendaIntensidade() {
       menos votos
       <span className="w-16 h-2 rounded-full" style={{ background: 'linear-gradient(90deg, hsl(214,60%,88%), hsl(214,90%,32%))' }} />
       mais votos
+    </span>
+  );
+}
+
+export function LegendaPresenca() {
+  return (
+    <span className="flex items-center gap-3 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+      <span className="flex items-center gap-1.5">
+        <span className="w-3 h-3 rounded-sm" style={{ background: '#2f6fd6', opacity: 0.8 }} />teve votos
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="w-3 h-3 rounded-sm" style={{ background: '#e2e8f0', border: '1px solid var(--border-default)' }} />sem votos
+      </span>
     </span>
   );
 }

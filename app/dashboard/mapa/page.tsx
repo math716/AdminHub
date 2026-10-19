@@ -1970,10 +1970,11 @@ export default function MapaPage() {
                 <MolduraMapa
                   titulo={electoralData ? `Votos de ${nomeCurto} em cada cidade de ${selectedStateName}` : selectedStateName}
                   dica="Selecione uma cidade para ver bairros e locais de votação."
+                  legenda="presenca"
                 >
                   <StateMap
                     balaoPremium
-                    mapaDeCalor
+                    mapaDePresenca
                     uf={selectedUf}
                     stateName={selectedStateName}
                     votesData={electoralData?.votosPorMunicipio}
