@@ -244,8 +244,22 @@ function renderBarChart(headers: string[], rows: string[][]): React.ReactNode | 
   // na primeira coluna saía "Saúde, Saúde, Saúde" — impossível saber qual barra
   // é qual. Se nenhuma for única, fica a primeira.
   const limpa = (c: string | undefined) => stripEmoji((c ?? '').replace(/\*\*/g, '')).trim();
-  const colunasTexto = headers.map((_, ci) => ci).filter(ci => !numericCols.includes(ci) && !ehPct(ci));
+  // Coluna de posição ("#", "1º", "2º") não serve de rótulo: saía "3, 7, 8"
+  // no eixo em vez do nome do candidato.
+  const ehPosicao = (ci: number) => /^#|^pos/i.test((headers[ci] ?? '').trim())
+    || linhas.every(r => /^\s*\d+\s*[ºª°o]?\s*$/.test(limpa(r[ci])));
+  const colunasTexto = headers.map((_, ci) => ci).filter(ci => !numericCols.includes(ci) && !ehPct(ci) && !ehPosicao(ci));
   const colRotulo = colunasTexto.find(ci => new Set(linhas.map(r => limpa(r[ci]))).size === linhas.length) ?? 0;
+
+  // Duas séries de grandezas muito diferentes ("votos em Americana", na casa
+  // dos milhares, e "votos no estado", nos milhões) no mesmo eixo: a menor
+  // vira uma linha no chão. Fica só a primeira — a do recorte da tabela.
+  const maxDa = (ci: number) => Math.max(0, ...linhas.map(r => parseBrNum(r[ci] ?? '') ?? 0));
+  if (numericCols.length > 1) {
+    const base = maxDa(numericCols[0]);
+    const proporcionais = numericCols.filter(ci => base > 0 && maxDa(ci) <= base * 10 && maxDa(ci) * 10 >= base);
+    numericCols.splice(0, numericCols.length, ...proporcionais);
+  }
 
   const seriesNames = numericCols.map(ci => headers[ci]);
   const dataRowsAll = linhas
@@ -307,7 +321,9 @@ function renderBlock(block: Block, i: number): React.ReactNode {
   switch (block.type) {
     case 'heading': {
       const style = block.level === 1 ? S.h1 : block.level === 2 ? S.h2 : S.h3;
-      return React.createElement(Text, { key: i, style }, block.text);
+      // Sem espaço para ao menos umas linhas depois, o título vai para a
+      // próxima página junto do texto ("Recomendação" ficava sozinho no pé).
+      return React.createElement(Text, { key: i, style, minPresenceAhead: 60 }, block.text);
     }
     case 'hr':
       return React.createElement(View, { key: i, style: S.hr });
@@ -408,8 +424,21 @@ export interface PieItem { label: string; valor: number; valorLabel?: string; co
 
 /** Card com gráfico de pizza (donut) + legenda (label · % · valor). */
 export function renderPizza(titulo: string, items: PieItem[]): React.ReactNode | null {
-  const clean = (items ?? []).filter(i => (i.valor ?? 0) > 0);
-  if (clean.length === 0) return null;
+  const positivos = (items ?? []).filter(i => (i.valor ?? 0) > 0);
+  if (positivos.length === 0) return null;
+  // Até 14 fatias (as 13 áreas das emendas cabem inteiras) a legenda cabe no cartão; com mais (o ranking de deputados
+  // de uma cidade trouxe 80), ela passava da página e caía por cima do
+  // cabeçalho. Os 13 maiores + "Demais (N)" — a soma continua a de todos, e a
+  // lista completa está na tabela do relatório.
+  const MAX_FATIAS = 14;
+  const clean = positivos.length <= MAX_FATIAS ? positivos : (() => {
+    const ord = [...positivos].sort((a, b) => b.valor - a.valor);
+    const resto = ord.slice(MAX_FATIAS - 1);
+    return [
+      ...ord.slice(0, MAX_FATIAS - 1),
+      { label: `Demais (${resto.length})`, valor: resto.reduce((s, i) => s + i.valor, 0), cor: '#94a3b8' } as PieItem,
+    ];
+  })();
   const total = clean.reduce((s, i) => s + i.valor, 0);
 
   const size = 128, cx = size / 2, cy = size / 2, R = size * 0.46, r = size * 0.26;

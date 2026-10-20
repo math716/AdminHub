@@ -42,17 +42,23 @@ function deVotacao(d: any): Visualizacao[] {
   const vis: Visualizacao[] = [];
 
   if (cands.length >= 2) {
+    // O número do recorte consultado: numa busca por cidade ou bairro, os
+    // votos DALI. Com o total do estado, o ranking de deputados de Americana
+    // saía com 100 mil votos para quem teve 500 na cidade.
+    const ondeConsultou = d?.municipioConsultado ? ` em ${d.municipioConsultado}` : '';
+    const votos = (c: any) => c.votosNoBairro ?? c.votosNoMunicipio ?? c.totalVotos ?? 0;
+    const ordenados = [...cands].sort((a, b) => votos(b) - votos(a));
     // Rosca: distribuição entre os candidatos consultados
     vis.push({
       tipo: 'donut',
-      titulo: 'Distribuição de votos',
-      dados: { itens: cands.slice(0, 20).map(c => ({ label: c.nomeUrna || c.nome, valor: c.totalVotos || 0 })) },
+      titulo: `Distribuição de votos${ondeConsultou}`,
+      dados: { itens: ordenados.slice(0, 20).map(c => ({ label: c.nomeUrna || c.nome, valor: votos(c) })) },
     });
     // Barras: os mais votados
     vis.push({
       tipo: 'barras',
-      titulo: 'Votação total',
-      dados: { itens: cands.slice(0, 8).map(c => ({ label: c.nomeUrna || c.nome, valor: c.totalVotos || 0 })) },
+      titulo: ondeConsultou ? `Mais votados${ondeConsultou}` : 'Votação total',
+      dados: { itens: ordenados.slice(0, 8).map(c => ({ label: c.nomeUrna || c.nome, valor: votos(c) })) },
     });
     return vis;
   }

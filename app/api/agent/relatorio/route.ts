@@ -65,9 +65,15 @@ function buildPizza(input: ReportInput, isEleitoral: boolean, isEmendas: boolean
     const cands: any[] = input.dadosBrutos?.buscar_votacao?.candidatos ?? [];
     // 2+ candidatos → distribuição por candidato (cores consistentes com o mapa)
     if (cands.length >= 2) {
-      const base = cands.map(c => ({ label: tituloCaso(c.nomeUrna || c.nome || ''), valor: c.totalVotos || 0, partido: c.partido || '' }));
+      // Votos do recorte consultado (cidade ou bairro), não o total do estado.
+      const onde = input.dadosBrutos?.buscar_votacao?.municipioConsultado;
+      const votos = (c: any) => c.votosNoBairro ?? c.votosNoMunicipio ?? c.totalVotos ?? 0;
+      const base = cands
+        .map(c => ({ label: tituloCaso(c.nomeUrna || c.nome || ''), valor: votos(c), partido: c.partido || '' }))
+        .sort((a, b) => b.valor - a.valor);
       const cores = coresPorCandidato(base.map(b => ({ label: b.label, partido: b.partido, peso: b.valor })));
-      return renderPizza('Distribuição de votos', base.map(b => ({ label: b.label, valor: b.valor, cor: cores[b.label] })));
+      return renderPizza(onde ? `Distribuição de votos em ${tituloCaso(String(onde))}` : 'Distribuição de votos',
+        base.map(b => ({ label: b.label, valor: b.valor, cor: cores[b.label] })));
     }
     // 1 candidato → distribuição dos votos DELE por município (útil, não "100%")
     if (cands.length === 1) {

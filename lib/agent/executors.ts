@@ -1013,8 +1013,12 @@ export async function executarBuscarVotacao(
         uf,
         situacao: c.situacao,
         totalVotos: c.totalVotos,
-        // % dele sobre TODOS os candidatos do cargo (no recorte da contagem).
-        percentualValidos: totalVotosValidos > 0
+        // % dele sobre TODOS os candidatos do cargo, no recorte da contagem —
+        // e o NOME do campo diz qual é o recorte. Era sempre
+        // "percentualValidos", e num ranking de Americana a Gabi publicou
+        // "30,2% dos válidos de SP" para quem teve 30,2% da CIDADE (e 0,4% do
+        // estado).
+        [noMunicipio || cidadeDaDisputa ? 'percentualNaCidade' : 'percentualValidos']: totalVotosValidos > 0
           ? Math.round((votosNaContagem(c) / totalVotosValidos) * 1000) / 10
           : 0,
         ...(votosBairro.has(c) && { votosNoBairro: votosBairro.get(c) }),
