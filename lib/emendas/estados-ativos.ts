@@ -1,23 +1,24 @@
 /**
  * Estados cujas emendas ESTADUAIS o sistema mostra.
  *
- * Só os que têm importação automática e conferida com a fonte oficial: SP
- * (portal da transparência), DF (SISCONEP) e RJ (Redeplan). Os outros 22
- * vieram de importações manuais de maio a julho de 2026, nunca mais
- * atualizadas, e a validação de 21/10/2026 achou números irreais (GO com
- * R$ 2 trilhões em 2024, o texto da emenda no lugar do nome do deputado),
- * valores zerados (MS, RN, RO) e emendas sem município (BA, RS). Ficam no
- * banco, mas fora das telas e da Gabi até ganharem importação conferida —
- * aí é só acrescentar a UF aqui.
+ * Decisão de 21/10/2026, depois da validação dos dados:
+ *   - SP, DF e RJ: importação automática conferida com a fonte oficial.
+ *   - ES, MG e PE: importação automática dos portais de dados abertos
+ *     (scripts/estados/import-dados-abertos.ts, workflow das quartas), que
+ *     substitui a importação manual de maio–julho.
+ *   - PB, BA, AL e PI: fonte incompleta (cidade em parte das emendas, só
+ *     2026, ou sem valores); seguem com os dados manuais.
+ *   - Os demais ficam FORA das telas e da Gabi: não há fonte que traga
+ *     deputado, cidade e valores, e os dados manuais têm erros (GO com
+ *     R$ 2 trilhões em 2024 e o texto da emenda no lugar do deputado; MS, RN
+ *     e RO com valores zerados; RS sem município). Continuam no banco.
  *
  * Emendas FEDERAIS aparecem para todos os estados, sempre.
  */
-// DECISÃO PENDENTE (21/10/2026): por ora TODAS as UFs aparecem — nada fica
-// escondido até o usuário decidir. Para mostrar só as conferidas, deixar aqui
-// ['SP', 'DF', 'RJ'] (e devolver à instrução da Gabi a frase sobre isso).
 export const UFS_ESTADUAIS_ATIVAS = [
-  'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA',
-  'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO',
+  'SP', 'DF', 'RJ',
+  'ES', 'MG', 'PE',
+  'PB', 'BA', 'AL', 'PI',
 ] as const;
 
 /** Filtro do Prisma (EmendaParlamentarWhereInput): federal, ou estadual de UF ativa. */

@@ -1,0 +1,162 @@
+name: Rotina · Emendas ES, MG e PE
+
+# ─── Calendário das importações (horário de Brasília) ───────────────────────
+# O GitHub agenda em UTC (Brasília + 3h). Todos os workflows que gravam no banco
+# estão na MESMA fila (concurrency: importacao-banco): um espera o outro. O
+# GitHub guarda só UM esperando — um terceiro que chegue cancela o que estava
+# esperando. Por isso cada rotina tem o seu dia.
+#
+#   Semanal
+#     sexta   22h  Rotina · Emendas federais  2025
+#     sábado  24h  Rotina · Emendas RJ        2025 e 2026
+#     domingo 23h  Rotina · Emendas federais  2026
+#     segunda 24h  Rotina · Emendas SP        2025 e 2026
+#     terça   24h  Rotina · Emendas DF        2025 e 2026
+#     quarta  24h  Rotina · Emendas ES, MG e PE  (os anos cujo arquivo mudou)
+#   Mensal
+#     dia 1   (23h da véspera)  Rotina · Emendas federais  2024
+#     dia 3   (23h da véspera)  Rotina · Emendas SP        2023 e 2024
+#     dia 5   (23h da véspera)  Rotina · Emendas DF        2021 a 2024
+#     dia 15  (23h da véspera)  Rotina · Emendas federais  2023
+#     dia 20  01h               Rotina · Emendas federais  2021 e 2022
+#   Manual
+#     Ferramenta · Resumo de Emendas — recalcula/confere a tela de Emendas
+#     (todas as rotinas já fazem isso no fim; é a reserva).
+#
+# Arquivo do governo igual ao da última vez → a rotina pula a importação e só
+# atualiza totais e resumo (leve). Só os jobs com
+# if: github.repository == 'math716/AdminHub' — o admorbitatech nunca executa.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Fontes: portais de dados abertos dos governos (scripts/estados/import-dados-abertos.ts)
+#   ES — dados.es.gov.br, 2021 em diante (um arquivo por ano)
+#   MG — dados.mg.gov.br, 2023 em diante (um arquivo com todos os anos)
+#   PE — dados.pe.gov.br, 2026 em diante (só a partir de 2026 traz o deputado)
+#
+# Substituem a importação manual de maio–julho desses três estados, que tinha
+# números errados (ES 2025 com o valor previsto no lugar do empenhado; MG e PE
+# 2026 parados em julho). Cada estado roda um depois do outro.
+
+on:
+  schedule:
+    - cron: '0 3 * * 4'   # Toda quinta 3h UTC = quarta 24h em Brasília
+  workflow_dispatch:
+    inputs:
+      uf:
+        description: 'Estado'
+        required: false
+        default: 'todos'
+        type: choice
+        options: [todos, ES, MG, PE]
+      anos:
+        description: 'Anos a importar (vazio = todos os da fonte)'
+        required: false
+        default: ''
+        type: string
+      forcar:
+        description: 'Importar mesmo sem alteração no portal'
+        required: false
+        default: false
+        type: boolean
+      dry_run:
+        description: 'Só conferir os totais, sem gravar nem apagar'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: importacao-banco
+  cancel-in-progress: false
+
+jobs:
+  importar:
+    name: Import ${{ matrix.uf }}
+    if: github.repository == 'math716/AdminHub' && (github.event_name != 'workflow_dispatch' || inputs.uf == 'todos' || inputs.uf == matrix.uf)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      # Um estado por vez (o banco é um só) e o erro de um não para os outros.
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        uf: [ES, MG, PE]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Criar diretório de dados
+        run: mkdir -p data/estados
+
+      # Guarda a data de modificação de cada arquivo entre execuções. A chave
+      # muda a cada run para o valor novo ser salvo; restore-keys recupera o da
+      # execução anterior. Cache perdido custa só uma importação a mais.
+      - name: Recuperar o que já foi visto no portal
+        uses: actions/cache@v4
+        with:
+          path: data/estados/.dados-abertos-estado.json
+          key: dados-abertos-${{ matrix.uf }}-${{ github.run_id }}
+          restore-keys: |
+            dados-abertos-${{ matrix.uf }}-
+
+      - name: Importar ${{ matrix.uf }}
+        timeout-minutes: 170
+        shell: bash   # com pipefail: erro do import não some atrás do tee
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANOS: ${{ inputs.anos }}
+          FORCAR: ${{ inputs.forcar && '--forcar' || '' }}
+          DRY: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          ARGS=""
+          if [ -n "$ANOS" ]; then ARGS="--anos $ANOS"; fi
+          npx tsx --require dotenv/config scripts/estados/import-dados-abertos.ts --uf ${{ matrix.uf }} $ARGS $FORCAR $DRY | tee saida.log
+
+      # Totais por ano e o que foi gravado/apagado, na página da execução.
+      - name: Resumo
+        if: always()
+        run: |
+          touch saida.log
+          echo "## Import ${{ matrix.uf }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E "^\s+(20[0-9]{2}|ano|autores|processadas|no banco|Nada mudou|\[dry-run\]|[0-9]+ emendas antigas|[0-9]+ emenda)" saida.log >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  resumo:
+    name: Atualizar resumo de Emendas
+    needs: importar
+    if: ${{ github.repository == 'math716/AdminHub' && !cancelled() && github.event.inputs.dry_run != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Atualizar resumo
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx scripts/atualizar-resumo-emendas.ts

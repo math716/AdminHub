@@ -135,6 +135,28 @@ export interface ImportResult {
   inseridas: number;
   erros: number;
   parlamentares: number;
+  /** Emendas que já estavam iguais no banco — não foram regravadas. */
+  iguais: number;
+}
+
+/**
+ * A emenda gravada é igual à que veio? Regravar uma emenda idêntica gasta o
+ * disco do banco (e a cota diária do Supabase) sem mudar nada — o import de
+ * SP regravava 18 a 40 mil emendas toda semana. Compara campo a campo; valor
+ * em centavos (o banco guarda float).
+ */
+const CAMPOS_COMPARADOS = [
+  'esfera', 'numero', 'tipo', 'natureza', 'funcao', 'subfuncao', 'area', 'objeto',
+  'valorProposto', 'valorEmpenhado', 'valorPago', 'valorRestoPago',
+  'uf', 'codigoIbge', 'municipioNome', 'estagio', 'parlamentarId',
+] as const;
+function emendaIgual(atual: Record<string, unknown>, nova: Record<string, unknown>): boolean {
+  return CAMPOS_COMPARADOS.every((c) => {
+    if (!(c in nova)) return true;
+    const a = atual[c] ?? null, b = nova[c] ?? null;
+    if (typeof a === 'number' || typeof b === 'number') return Math.round(Number(a ?? 0) * 100) === Math.round(Number(b ?? 0) * 100);
+    return a === b;
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -165,7 +187,7 @@ export async function importarEmendas(
   opts: { batchSize?: number; dryRun?: boolean } = {},
 ): Promise<ImportResult> {
   const { batchSize = 20, dryRun = false } = opts;
-  const result: ImportResult = { inseridas: 0, erros: 0, parlamentares: 0 };
+  const result: ImportResult = { inseridas: 0, erros: 0, parlamentares: 0, iguais: 0 };
 
   // Lookup IBGE para enriquecer municipioNome → codigoIbge automaticamente
   const municipiosIbge = await fetchMunicipiosIBGE(uf);
@@ -250,13 +272,13 @@ export async function importarEmendas(
               async (db) => {
                 // 1. Busca pelo idPortal (caso mais comum: mesma emenda reimportada)
                 const byPortal = await db.emendaParlamentar.findUnique({
-                  where: { idPortal: row.idPortal }, select: { id: true },
+                  where: { idPortal: row.idPortal },
+                  select: { id: true, ...Object.fromEntries(CAMPOS_COMPARADOS.map((c) => [c, true])) },
                 });
                 if (byPortal) {
-                  return db.emendaParlamentar.update({
-                    where: { id: byPortal.id },
-                    data: { ...commonData, ...(parlamentarId ? { parlamentarId } : {}) },
-                  });
+                  const dados = { ...commonData, ...(parlamentarId ? { parlamentarId } : {}) };
+                  if (emendaIgual(byPortal as Record<string, unknown>, dados)) { result.iguais++; return null; }
+                  return db.emendaParlamentar.update({ where: { id: byPortal.id }, data: dados });
                 }
                 // 2. Busca pelo composite key (idPortal mudou ou parlamentarId foi adicionado depois)
                 if (parlamentarId && row.numero) {

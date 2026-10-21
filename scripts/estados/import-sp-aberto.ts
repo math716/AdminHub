@@ -324,7 +324,7 @@ async function main() {
     // tempo quase pela metade. Os 10 que sobram ficam para os upserts de
     // parlamentar, que acontecem no meio do lote.
     const res = await importarEmendas(prisma, 'SP', rows, { dryRun: DRY_RUN, batchSize: 40 });
-    console.log(`\n  gravadas: ${res.inseridas} | erros: ${res.erros} | parlamentares: ${res.parlamentares}`);
+    console.log(`\n  processadas: ${res.inseridas} (iguais, sem regravar: ${res.iguais}) | erros: ${res.erros} | parlamentares: ${res.parlamentares}`);
 
     // ── Limpeza: o que não veio nesta base sai ───────────────────────────
     //

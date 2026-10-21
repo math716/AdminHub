@@ -46,7 +46,7 @@ import {
   type ParlamentarCargo,
 } from '@/lib/portal-transparencia';
 import { EmendaDocumentosModal } from '@/components/emendas/emenda-documentos-modal';
-import { ufTemEstaduais } from '@/lib/emendas/estados-ativos';
+import { UFS_ESTADUAIS_ATIVAS, ufTemEstaduais } from '@/lib/emendas/estados-ativos';
 
 // ---------------------------------------------------------------------------
 // Mapas dinâmicos (Leaflet SSR-off)
@@ -1153,14 +1153,15 @@ export default function EmendasPage() {
         }
       />
 
-      {/* Estaduais só de SP, DF e RJ (lib/emendas/estados-ativos): nos outros
+      {/* Estaduais só das UFs de lib/emendas/estados-ativos: nos outros
           estados a esfera "Estadual" fica vazia — e vazio sem explicação
           parece defeito. */}
       {view === 'estado' && esfera === 'ESTADUAL' && selectedUf && !ufTemEstaduais(selectedUf) && (
         <div className="rounded-xl px-4 py-3 text-xs"
           style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>
-          As emendas estaduais de {selectedStateName} ainda não estão disponíveis no sistema. Hoje temos as emendas
-          estaduais de São Paulo, do Distrito Federal e do Rio de Janeiro; as federais aparecem para todos os estados.
+          As emendas estaduais de {selectedStateName} ainda não estão disponíveis no sistema — não há fonte oficial
+          que traga deputado, cidade e valores. Hoje temos as emendas estaduais de {UFS_ESTADUAIS_ATIVAS.join(', ')};
+          as federais aparecem para todos os estados.
         </div>
       )}
 
