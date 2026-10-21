@@ -79,10 +79,26 @@ async function baixar(url: string): Promise<string> {
   }
 }
 
-/** CSV com ";" e aspas opcionais (os três portais publicam assim). */
+/**
+ * CSV com ";" e aspas opcionais (os três portais publicam assim).
+ *
+ * O de PE traz quebra de linha SEM aspas dentro do texto do objeto ("...no\n
+ * Município de Carpina/PE."): a emenda virava duas linhas e o código, o
+ * deputado e os valores caíam em colunas trocadas. Linha que termina antes de
+ * ter todas as colunas do cabeçalho continua na seguinte.
+ */
 function lerCsv(texto: string): Record<string, string>[] {
   const linhas: string[][] = [];
+  let cab = null as string[] | null;
   let campo = '', linha: string[] = [], aspas = false;
+  const fechar = () => {
+    linha.push(campo); campo = '';
+    if (linha.some(x => x !== '')) {
+      if (!cab) cab = linha.map(h => h.trim());
+      else linhas.push(linha);
+    }
+    linha = [];
+  };
   for (let i = 0; i < texto.length; i++) {
     const c = texto[i];
     if (aspas) {
@@ -92,14 +108,16 @@ function lerCsv(texto: string): Record<string, string>[] {
     else if (c === ';') { linha.push(campo); campo = ''; }
     else if (c === '\n' || c === '\r') {
       if (c === '\r' && texto[i + 1] === '\n') i++;
-      linha.push(campo); campo = '';
-      if (linha.some(x => x !== '')) linhas.push(linha);
-      linha = [];
+      if (cab && linha.length + 1 < cab.length && (linha.length > 0 || campo !== '')) { campo += ' '; continue; }
+      fechar();
     } else campo += c;
   }
-  if (campo !== '' || linha.length) { linha.push(campo); if (linha.some(x => x !== '')) linhas.push(linha); }
-  const [cab, ...resto] = linhas;
-  return resto.map(l => Object.fromEntries(cab.map((h, i) => [h.trim(), (l[i] ?? '').trim()])));
+  if (campo !== '' || linha.length) fechar();
+  if (!cab) return [];
+  const colunas: string[] = cab;
+  const tortas = linhas.filter(l => l.length !== colunas.length).length;
+  if (tortas > 0) console.warn(`   ⚠ ${tortas} linha(s) com número de colunas diferente do cabeçalho`);
+  return linhas.map(l => Object.fromEntries(colunas.map((h, i) => [h, (l[i] ?? '').trim()])));
 }
 
 const num = (v?: string) => {
@@ -163,6 +181,15 @@ const FONTES: Record<string, Fonte> = {
       const classe = (l.classificacao_resp_descricao || '').toUpperCase();
       const cargo: ParlamentarCargo = /BLOCO|BANCADA/.test(classe) ? 'BANCADA' : 'DEPUTADO_ESTADUAL';
       const ibge = (l.municipio_ibge || '').replace(/[,.]0+$/, '');
+      // No ano corrente o "valor_pago" da indicação fica atrasado (MG 2026, em
+      // outubro: R$ 69,6 mi pagos contra R$ 2,18 bi empenhados), e o SIAFI
+      // ("armazém") já tem os pagamentos. Nos anos fechados os dois batem na
+      // transferência especial e na Resolução SES (2025: 785,5 × 785,5 e
+      // 1.001,7 × 1.002,4) — só nesses tipos vale o maior dos dois. No convênio
+      // o armazém soma outros valores do instrumento e não serve.
+      const siafi = /TRANSFER[ÊE]NCIA ESPECIAL|RESOLU[ÇC][ÃA]O SES/i.test(l.tipo_indicacao || '');
+      const empenhado = Math.max(num(l.valor_empenhado), siafi ? num(l.valor_empenhado_armazem) : 0);
+      const pago = Math.min(Math.max(num(l.valor_pago), siafi ? num(l.valor_pago_armazem) : 0), empenhado || Infinity);
       return [{
         idPortal: `MG-${ano}-${l.numero_indicacao}`,
         ano, numero: l.numero_indicacao,
@@ -171,8 +198,8 @@ const FONTES: Record<string, Fonte> = {
         area: classificarArea(null, l.funcao_descricao || null),
         objeto: l.descricao_indicacao || undefined,
         valorProposto: num(l.valor_indicacao) || undefined,
-        valorEmpenhado: num(l.valor_empenhado),
-        valorPago: num(l.valor_pago),
+        valorEmpenhado: empenhado,
+        valorPago: pago,
         uf: 'MG',
         codigoIbge: /^\d{7}$/.test(ibge) ? ibge : undefined,
         municipioNome: l.municipio || undefined,
@@ -200,7 +227,15 @@ const FONTES: Record<string, Fonte> = {
         if (!l.codigo_alepe || !l.autor) continue;
         grupos.set(l.codigo_alepe, [...(grupos.get(l.codigo_alepe) ?? []), l]);
       }
-      return [...grupos.values()].map((g): EmendaEstadualRow => {
+      // Emenda descontinuada (remanejada no ciclo de remanejamento) sem nada
+      // executado: o dinheiro foi para outra emenda, com outro código, que
+      // também está no arquivo — em out/2026, 779 de 2.249, todas sem empenho.
+      // Entrando, cada deputado ganhava dezenas de emendas de R$ 0.
+      const descontinuada = (g: Record<string, string>[]) =>
+        g.every(x => /DESCONTINUADA/i.test(`${x.status_resolucao_tce} ${x.detalhamento_lc_573}`) && !num(x.valor_empenhado) && !num(x.valor_pago));
+      const vivos = [...grupos.values()].filter(g => !descontinuada(g));
+      if (vivos.length < grupos.size) console.log(`   ${modalidade}: ${grupos.size - vivos.length} emendas descontinuadas (remanejadas) ficam de fora`);
+      return vivos.map((g): EmendaEstadualRow => {
         const l = g[0];
         // Uma linha por empenho: soma cada empenho uma vez (linha repetida
         // do mesmo empenho não conta duas).
@@ -215,7 +250,9 @@ const FONTES: Record<string, Fonte> = {
           funcao: l.tematica || undefined,
           area: classificarArea(null, l.tematica || null),
           objeto: l.objeto || l.resumo_objeto || undefined,
-          valorProposto: num(l.orcamento_atual) || num(l.valor_dot_inicial) || undefined,
+          // Orçamento atual: a emenda remanejada fica com 0 e a nova (outro
+          // código) recebe o valor — somar a dotação inicial contaria duas vezes.
+          valorProposto: num(l.orcamento_atual) || undefined,
           valorEmpenhado: soma('valor_empenhado'),
           valorPago: soma('valor_pago') + soma('valor_rp_pago'),
           uf: 'PE',
