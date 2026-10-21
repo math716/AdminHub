@@ -402,7 +402,12 @@ export default function AdminGabinetesPage() {
       gabinetes.map(g => [g.id, { id: g.id, nome: g.nome, users: [] }])
     );
     const sem: UserData[] = [];
+    // Gabinete na lixeira continua com os usuários ligados (o Restaurar traz
+    // tudo de volta) — eles aparecem só no cartão da lixeira, não recriam o
+    // gabinete na lista de ativos.
+    const naLixeira = new Set(gabExcluidos.map(g => g.id));
     allUsers.forEach(u => {
+      if (u.gabinete && naLixeira.has(u.gabinete.id)) return;
       if (u.gabinete) {
         if (!map.has(u.gabinete.id)) map.set(u.gabinete.id, { id: u.gabinete.id, nome: u.gabinete.nome, users: [] });
         map.get(u.gabinete.id)!.users.push(u);
@@ -414,7 +419,7 @@ export default function AdminGabinetesPage() {
       gabineteGroups: Array.from(map.values()).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
       semGabinete: sem,
     };
-  }, [allUsers, gabinetes]);
+  }, [allUsers, gabinetes, gabExcluidos]);
 
   const filteredGroups = useMemo(() => {
     if (!searchGabinete.trim()) return gabineteGroups;
