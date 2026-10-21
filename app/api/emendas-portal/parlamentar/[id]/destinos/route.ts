@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { filtroEsferaAtiva } from '@/lib/emendas/estados-ativos';
 import { semPermissao } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
@@ -54,6 +55,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const emendas = await prisma.emendaParlamentar.findMany({
       where: {
         parlamentarId: parlamentar.id,
+        AND: [filtroEsferaAtiva], // estaduais só das UFs com importação conferida
         ...(ano    ? { ano }    : {}),
         ...(uf     ? { uf }     : {}),
         ...(esfera ? { esfera } : {}),

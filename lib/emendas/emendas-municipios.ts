@@ -56,20 +56,67 @@ export async function preencherEmendasMunicipios(
     const lote = emendaIds.slice(i, i + POR_ENVIO);
     const [, inseridas] = await db.$transaction([
       db.$executeRawUnsafe(`DELETE FROM "emendas_municipios" WHERE "emendaId" = ANY($1::text[])`, lote),
+      // O arquivo da CGU traz os empenhos, mas não as anulações: empenho
+      // cancelado e refeito para outra entidade aparece duas vezes, e a soma
+      // por cidade passava do total oficial da emenda (2% delas; em 2025,
+      // R$ 299 mi a mais — caso real: emenda de R$ 7 mi com quatro empenhos de
+      // R$ 3,43 mi). Quando os empenhos passam do total oficial, o que vai para
+      // as cidades é o total oficial (descontada a parte sem cidade, como a
+      // taxa do SERPRO), repartido pelo que foi PAGO a cada uma — o pagamento
+      // é o destino real; ainda pouco pago, pela proporção dos empenhos.
+      // Só de 2021 em diante: antes disso o total da emenda no banco não foi
+      // conferido com o oficial.
       db.$executeRawUnsafe(`
+        WITH docs AS (
+          SELECT d."emendaId", d."codigoIbgeDestino" AS cod, max(d."municipioDestino") AS mun,
+                 coalesce(sum(d.valor) FILTER (WHERE d.fase = 'Empenho'), 0) AS emp,
+                 coalesce(sum(d.valor) FILTER (WHERE d.fase = 'Pagamento'), 0) AS pago
+          FROM "emendas_documentos" d
+          WHERE d."emendaId" = ANY($1::text[]) AND d."codigoIbgeDestino" IS NOT NULL
+          GROUP BY 1, 2),
+        todos AS (
+          SELECT d."emendaId", coalesce(sum(d.valor) FILTER (WHERE d.fase = 'Empenho'), 0) AS emp_todos
+          FROM "emendas_documentos" d WHERE d."emendaId" = ANY($1::text[]) GROUP BY 1),
+        destino AS (
+          SELECT "emendaId", sum(emp) AS emp_dest, sum(pago) AS pago_dest FROM docs GROUP BY 1),
+        alvo AS (
+          SELECT x."emendaId", x.emp_dest, x.pago_dest,
+                 CASE WHEN e.ano >= 2021 AND e."valorEmpenhado" > 0 AND x.emp_dest > 0
+                       AND t.emp_todos > e."valorEmpenhado" * 1.01 + 1
+                      THEN e."valorEmpenhado" * x.emp_dest / t.emp_todos END AS emp_corrigido
+          FROM destino x
+          JOIN todos t USING ("emendaId")
+          JOIN "emendas_parlamentares" e ON e.id = x."emendaId")
         INSERT INTO "emendas_municipios" ("emendaId", "codigoIbge", "municipio", "empenhado", "pago", "atualizadoEm")
-        SELECT d."emendaId", d."codigoIbgeDestino", max(d."municipioDestino"),
-               coalesce(sum(d.valor) FILTER (WHERE d.fase = 'Empenho'), 0),
-               coalesce(sum(d.valor) FILTER (WHERE d.fase = 'Pagamento'), 0),
-               now()
-        FROM "emendas_documentos" d
-        WHERE d."emendaId" = ANY($1::text[]) AND d."codigoIbgeDestino" IS NOT NULL
-        GROUP BY 1, 2`, lote),
+        SELECT docs."emendaId", docs.cod, docs.mun,
+               CASE WHEN a.emp_corrigido IS NULL THEN docs.emp
+                    WHEN a.pago_dest >= 0.5 * a.emp_corrigido THEN a.emp_corrigido * docs.pago / a.pago_dest
+                    ELSE a.emp_corrigido * docs.emp / a.emp_dest END,
+               docs.pago, now()
+        FROM docs JOIN alvo a USING ("emendaId")`, lote),
     ]);
     linhas += inseridas;
     if ((i / POR_ENVIO) % 10 === 9) log(`   valor por município: ${Math.min(i + POR_ENVIO, emendaIds.length)}/${emendaIds.length} emendas`);
   }
   return linhas;
+}
+
+/**
+ * Refaz a soma por município de TODAS as emendas federais dos anos — quando a
+ * regra da soma muda (a importação só refaz as emendas do arquivo que leu).
+ */
+export async function refazerEmendasMunicipios(
+  db: PrismaClient,
+  anos: number[],
+  log: (msg: string) => void = console.log,
+): Promise<void> {
+  for (const sql of SQL_CRIAR_EMENDAS_MUNICIPIOS) await db.$executeRawUnsafe(sql);
+  for (const ano of anos) {
+    const ids = await emendasFederaisDoAno(db, ano);
+    log(`   ${ano}: refazendo o valor por município de ${ids.length} emendas`);
+    const linhas = await preencherEmendasMunicipios(db, ids, log);
+    log(`   ${ano}: ${linhas} pares emenda × município gravados`);
+  }
 }
 
 /** Todas as emendas federais de um ano (as que têm documentos). */
@@ -107,5 +154,20 @@ export async function garantirEmendasMunicipios(
     const ids = await emendasFederaisDoAno(db, ano);
     const linhas = await preencherEmendasMunicipios(db, ids, log);
     log(`   ${ano}: ${linhas} pares emenda × município gravados`);
+  }
+
+  // Emendas que mudaram DEPOIS da soma por município. O caso que importa: a
+  // importação soma as cidades no fim do arquivo, mas o total oficial de uma
+  // emenda nova só é gravado na etapa seguinte (totais do Portal) — e a soma
+  // usa esse total para descontar empenhos anulados. Sem refazer aqui, a
+  // emenda nova ficava com a divisão calculada sobre o valor errado.
+  const desatualizadas = await db.$queryRawUnsafe<{ id: string }[]>(`
+    SELECT e.id FROM "emendas_parlamentares" e
+    WHERE e.ano = ANY($1::int[]) AND e.esfera::text = 'FEDERAL'
+      AND EXISTS (SELECT 1 FROM "emendas_municipios" m
+                  WHERE m."emendaId" = e.id AND m."atualizadoEm" < e."updatedAt")`, anos);
+  if (desatualizadas.length > 0) {
+    log(`   ${desatualizadas.length} emendas mudaram depois da soma por município — refazendo`);
+    await preencherEmendasMunicipios(db, desatualizadas.map(d => d.id), log);
   }
 }

@@ -34,11 +34,11 @@ on:
   workflow_dispatch:
     inputs:
       acao:
-        description: 'conferir = compara e não grava | atualizar = recalcula e grava'
+        description: 'conferir = compara e não grava | atualizar = recalcula e grava | refazer-cidades = refaz o valor por município das emendas federais e recalcula'
         required: true
         default: 'conferir'
         type: choice
-        options: ['conferir', 'atualizar']
+        options: ['conferir', 'atualizar', 'refazer-cidades']
       anos:
         description: 'Anos (vazio = 2021 até o ano atual)'
         required: false
@@ -80,4 +80,7 @@ jobs:
           ARGS=""
           if [ -n "${{ inputs.anos }}" ]; then ARGS="--anos ${{ inputs.anos }}"; fi
           if [ "${{ inputs.acao }}" = "conferir" ]; then ARGS="$ARGS --conferir"; fi
+          # Quando a regra da soma por município muda (a importação só refaz as
+          # emendas do arquivo que leu).
+          if [ "${{ inputs.acao }}" = "refazer-cidades" ]; then ARGS="$ARGS --refazer-municipios"; fi
           npx tsx scripts/atualizar-resumo-emendas.ts $ARGS

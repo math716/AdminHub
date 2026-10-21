@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { filtroEsferaAtiva } from '@/lib/emendas/estados-ativos';
 import { listEmendasPorMunicipio, PORTAL_MOCK_MODE } from '@/lib/portal-transparencia';
 import { semPermissao } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
@@ -33,6 +34,8 @@ export async function GET(request: NextRequest, { params }: { params: { codigo: 
       where: {
         ...(ano ? { ano } : {}),
         ...(esfera ? { esfera } : {}),
+        // Estaduais só das UFs com importação conferida.
+        AND: [filtroEsferaAtiva],
         OR: [
           { municipios: { some: { codigoIbge } } },
           { codigoIbge, municipios: { none: {} } },

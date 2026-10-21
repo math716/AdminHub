@@ -17,6 +17,7 @@
  */
 
 import type { PrismaClient } from '@prisma/client';
+import { filtroEsferaAtiva, sqlEsferaAtiva } from './estados-ativos';
 
 // Prefixo IBGE de 2 dígitos por UF — usado para garantir que só municípios
 // do estado correto apareçam no top 5 (emendas de parlamentares SP podem ter
@@ -40,8 +41,10 @@ export type EsferaChave = 'FEDERAL' | 'ESTADUAL' | 'TODAS';
  * Versão da conta. Mudou a conta, sobe o número: resumo guardado com versão
  * diferente é ignorado (a tela calcula na hora) e o script recalcula.
  *   2 — valor por município pelos documentos (emenda dividida entre cidades).
+ *   3 — cidade conta toda emenda que chegou a ela (comissões/nacionais);
+ *       estaduais só das UFs ativas (estados-ativos.ts).
  */
-export const VERSAO_CONTA = 2;
+export const VERSAO_CONTA = 3;
 export const ESFERAS: EsferaChave[] = ['TODAS', 'FEDERAL', 'ESTADUAL'];
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -53,7 +56,11 @@ export const ESFERAS: EsferaChave[] = ['TODAS', 'FEDERAL', 'ESTADUAL'];
 // apenas os agregados necessários.
 export async function calcularResumoUf(db: PrismaClient, uf: string, ano: number, esferaKey: string) {
   const esfera = esferaKey === 'FEDERAL' || esferaKey === 'ESTADUAL' ? esferaKey as 'FEDERAL' | 'ESTADUAL' : null;
-  const where = esfera ? { uf, ano, esfera } : { uf, ano };
+  // Estaduais só das UFs com importação conferida (lib/emendas/estados-ativos).
+  const where = { AND: [esfera ? { uf, ano, esfera } : { uf, ano }, filtroEsferaAtiva] };
+  // Faixa de códigos IBGE das cidades do estado ("35" → de "35" a "36").
+  const prefixo = UF_IBGE_PREFIX[uf] ?? '';
+  const prefixoSeguinte = prefixo ? String(Number(prefixo) + 1) : '';
 
   const [totAgg, porAreaRaw, porDestinoRaw, porMunicipioRaw, porParlamentarRaw] = await Promise.all([
     // 1. Totais globais
@@ -75,26 +82,36 @@ export async function calcularResumoUf(db: PrismaClient, uf: string, ano: number
     // valor inteiro numa cidade e nada nas outras. A soma dos documentos por
     // município vem pronta (lib/emendas/emendas-municipios.ts) — somá-los
     // aqui levava 20 s em SP e estourava o tempo do banco.
-    db.$queryRawUnsafe<{ codigo: string; nome: string | null; total: number | null; qtd: number }[]>(`
+    //
+    // Por CIDADE do estado, venha a emenda de onde vier: emenda de comissão ou
+    // nacional fica cadastrada com a UF do primeiro documento (a "Com. da
+    // Saúde" que mandou R$ 1,75 mi a Americana está como ES). Contar só as
+    // emendas "de SP" dava R$ 4,4 mi a Americana no resumo e R$ 6,6 mi nos
+    // cartões de área. `do_estado` é a parte das emendas da UF — a que entra
+    // no "municipalizado" do estado, comparado com o total dele.
+    db.$queryRawUnsafe<{ codigo: string; nome: string | null; total: number | null; do_estado: number | null; qtd: number }[]>(`
       SELECT m."codigoIbge" AS codigo, max(m."municipio") AS nome,
              sum(m."empenhado")::float AS total,
+             (sum(m."empenhado") FILTER (WHERE e.uf = $1))::float AS do_estado,
              count(*)::int AS qtd
       FROM emendas_municipios m
       JOIN emendas_parlamentares e ON e.id = m."emendaId"
-      WHERE e.uf = $1 AND e.ano = $2 AND ($3::text IS NULL OR e.esfera::text = $3)
-      GROUP BY 1`, uf, ano, esfera),
+      WHERE m."codigoIbge" >= $4 AND m."codigoIbge" < $5
+        AND e.ano = $2 AND ($3::text IS NULL OR e.esfera::text = $3)
+        AND ${sqlEsferaAtiva('e')}
+      GROUP BY 1`, uf, ano, esfera, prefixo, prefixoSeguinte),
     // 3b. Por município, das demais (estaduais, e federais ainda sem a soma
     // por município): o município do cadastro, como antes.
     db.emendaParlamentar.groupBy({
       by: ['codigoIbge', 'municipioNome'],
-      where: { ...where, codigoIbge: { not: null }, municipios: { none: {} } },
+      where: { AND: [where, { codigoIbge: { not: null }, municipios: { none: {} } }] },
       _sum: { valorEmpenhado: true },
       _count: { _all: true },
     }),
     // 4. Por parlamentarId — depois resolve detalhes em batch
     db.emendaParlamentar.groupBy({
       by: ['parlamentarId'],
-      where: { ...where, parlamentarId: { not: null } },
+      where: { AND: [where, { parlamentarId: { not: null } }] },
       _sum: { valorEmpenhado: true },
       _count: { _all: true },
     }),
@@ -122,8 +139,8 @@ export async function calcularResumoUf(db: PrismaClient, uf: string, ano: number
   let totalMunicipalizado = 0;
   const porMunicipioMap = new Map<string, { codigoIbge: string; nome: string; total: number; qtd: number }>();
 
-  const somar = (ibge: string, nome: string | null, val: number, qtd: number) => {
-    totalMunicipalizado += val;
+  const somar = (ibge: string, nome: string | null, val: number, qtd: number, doEstado = val) => {
+    totalMunicipalizado += doEstado;
     if (!ibgePrefix || ibge.startsWith(ibgePrefix)) {
       const cur = porMunicipioMap.get(ibge) ?? { codigoIbge: ibge, nome: nome ?? ibge, total: 0, qtd: 0 };
       cur.total += val;
@@ -131,7 +148,7 @@ export async function calcularResumoUf(db: PrismaClient, uf: string, ano: number
       porMunicipioMap.set(ibge, cur);
     }
   };
-  for (const d of porDestinoRaw) somar(d.codigo, d.nome, d.total ?? 0, d.qtd);
+  for (const d of porDestinoRaw) somar(d.codigo, d.nome, d.total ?? 0, d.qtd, d.do_estado ?? 0);
   for (const m of porMunicipioRaw) somar(m.codigoIbge!, m.municipioNome, m._sum.valorEmpenhado ?? 0, m._count._all);
 
   const topMunicipios = Array.from(porMunicipioMap.values())
@@ -194,7 +211,7 @@ export type ResumoUf = Awaited<ReturnType<typeof calcularResumoUf>>;
 export async function calcularTotaisBrasil(db: PrismaClient, ano: number) {
   const grupos = await db.emendaParlamentar.groupBy({
     by: ['uf'],
-    where: { ano, uf: { not: null } },
+    where: { AND: [{ ano, uf: { not: null } }, filtroEsferaAtiva] },
     _sum: { valorEmpenhado: true },
   });
 

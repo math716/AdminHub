@@ -46,6 +46,7 @@ import {
   type ParlamentarCargo,
 } from '@/lib/portal-transparencia';
 import { EmendaDocumentosModal } from '@/components/emendas/emenda-documentos-modal';
+import { ufTemEstaduais } from '@/lib/emendas/estados-ativos';
 
 // ---------------------------------------------------------------------------
 // Mapas dinâmicos (Leaflet SSR-off)
@@ -1152,6 +1153,17 @@ export default function EmendasPage() {
         }
       />
 
+      {/* Estaduais só de SP, DF e RJ (lib/emendas/estados-ativos): nos outros
+          estados a esfera "Estadual" fica vazia — e vazio sem explicação
+          parece defeito. */}
+      {view === 'estado' && esfera === 'ESTADUAL' && selectedUf && !ufTemEstaduais(selectedUf) && (
+        <div className="rounded-xl px-4 py-3 text-xs"
+          style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>
+          As emendas estaduais de {selectedStateName} ainda não estão disponíveis no sistema. Hoje temos as emendas
+          estaduais de São Paulo, do Distrito Federal e do Rio de Janeiro; as federais aparecem para todos os estados.
+        </div>
+      )}
+
       {/* Barra de pesquisa de parlamentar — abaixo do título, visível quando há estado selecionado */}
       {view === 'estado' && (
         <div className="relative">
@@ -1264,7 +1276,7 @@ export default function EmendasPage() {
                   className="w-full text-left px-4 py-2.5 hover:bg-[var(--tint-06)] transition-colors border-b border-[var(--tint-06)] last:border-0"
                 >
                   <p className="text-sm text-[color:var(--text-primary)] font-medium">{p.nome}</p>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400">{CARGO_LABELS[p.cargo]}{p.partido ? ` · ${p.partido}` : ''}</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">{cargoExibicao(p.nome, p.cargo)}{p.partido ? ` · ${p.partido}` : ''}</p>
                 </button>
               ))}
             </div>
@@ -1621,6 +1633,9 @@ const UF_COM_ACENTO: Record<string, string> = {
   'SANTA CATARINA': 'de Santa Catarina', 'SERGIPE': 'de Sergipe', 'TOCANTINS': 'do Tocantins',
 };
 const ehBancada = (nome: string) => /^bancada\b/i.test(nome.trim());
+// Emenda de comissão da Câmara/Senado ("COM. DA SAUDE"): a importação federal
+// grava com cargo de deputado federal, e aparecia como "Deputado Federal".
+const ehComissao = (nome: string) => /^(com\.|comiss[aã]o\b)/i.test(nome.trim());
 function nomeExibicao(nome: string): string {
   if (!ehBancada(nome)) return nome;
   const resto = nome.trim().replace(/^bancada\s+(d[aeo]s?\s+)?/i, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
@@ -1628,10 +1643,11 @@ function nomeExibicao(nome: string): string {
 }
 function cargoExibicao(nome: string, cargo: string): string {
   if (ehBancada(nome)) return 'Bancada estadual';
+  if (ehComissao(nome)) return 'Comissão';
   return CARGO_LABELS[cargo as ParlamentarCargo] ?? cargo;
 }
 const corCargoEmenda = (nome: string, cargo: string) =>
-  ehBancada(nome) ? '#7c3aed' : cargo === 'SENADOR' ? '#059669' : cargo === 'DEPUTADO_ESTADUAL' ? '#0891b2' : '#2563eb';
+  ehBancada(nome) ? '#7c3aed' : ehComissao(nome) ? '#d97706' : cargo === 'SENADOR' ? '#059669' : cargo === 'DEPUTADO_ESTADUAL' ? '#0891b2' : '#2563eb';
 function iniciaisNome(nome: string) {
   const p = nome.trim().split(/\s+/).filter(x => !/^(d[aeo]s?|e)$/i.test(x));
   if (p.length === 0) return '?';
@@ -2143,7 +2159,7 @@ function ParlamentarSearchCard({
             >
               <p className="text-xs text-[color:var(--text-primary)] font-medium truncate">{p.nome}</p>
               <p className="text-[10px] text-slate-600 dark:text-slate-500">
-                {CARGO_LABELS[p.cargo]}
+                {cargoExibicao(p.nome, p.cargo)}
                 {p.partido ? ` · ${p.partido}` : ''}
                 {p.uf ? ` · ${p.uf}` : ''}
               </p>
@@ -2159,7 +2175,7 @@ function ParlamentarSearchCard({
           <div className="flex-1 min-w-0">
             <p className="text-xs text-[color:var(--text-primary)] font-semibold truncate">{selected.nome}</p>
             <p className="text-[10px] text-[color:var(--brand-cobalt-text)]/80">
-              {CARGO_LABELS[selected.cargo]}{selected.partido ? ` · ${selected.partido}` : ''}
+              {cargoExibicao(selected.nome, selected.cargo)}{selected.partido ? ` · ${selected.partido}` : ''}
             </p>
           </div>
           <button onClick={onClear} className="text-slate-600 dark:text-slate-500 hover:text-white p-1 rounded-lg">
@@ -2178,7 +2194,7 @@ function ParlamentarSearchCard({
             >
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] text-[color:var(--text-primary)] truncate group-hover:text-[color:var(--brand-cobalt-text)]">{p.nome}</p>
-                <p className="text-[10px] text-slate-600 dark:text-slate-500">{CARGO_LABELS[p.cargo as ParlamentarCargo] ?? p.cargo}</p>
+                <p className="text-[10px] text-slate-600 dark:text-slate-500">{cargoExibicao(p.nome, p.cargo)}</p>
               </div>
               <span className="text-[11px] font-semibold text-[color:var(--brand-cobalt-text)] flex-shrink-0">{formatBRLCompact(p.total)}</span>
             </button>
@@ -2347,7 +2363,7 @@ function ParlamentarDashboard({
           <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--brand-cobalt-text)]">Dashboard do parlamentar</p>
           <h2 className="text-xl text-[color:var(--text-primary)] font-bold mt-1">{parlamentar.nome}</h2>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-            {CARGO_LABELS[parlamentar.cargo]}
+            {cargoExibicao(parlamentar.nome, parlamentar.cargo)}
             {parlamentar.partido ? ` · ${parlamentar.partido}` : ''}
             {parlamentar.uf ? ` · ${parlamentar.uf}` : ''}
           </p>

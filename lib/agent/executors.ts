@@ -9,6 +9,7 @@ import { resolverDeputados } from '@/lib/agent/report/df-territorial';
 import { votosNoBairro } from '@/lib/agent/votos-bairro';
 import { SQL_DATA_COMEMORATIVA } from '@/lib/agenda-datas';
 import { chaveMunicipio } from '@/lib/municipio-nome';
+import { filtroEsferaAtiva, UFS_ESTADUAIS_ATIVAS } from '@/lib/emendas/estados-ativos';
 import type { Session } from 'next-auth';
 import { PERMISSIONS, hasPermission, type Permission } from '@/lib/permissions';
 
@@ -52,7 +53,8 @@ function filtroNomeParlamentar(nome: string) {
 }
 
 function whereEmendas(a: FiltrosEmendas, ignorar: Set<string> = new Set()) {
-  return {
+  // Estaduais só das UFs com importação conferida (lib/emendas/estados-ativos).
+  return { AND: [filtroEsferaAtiva, {
     // Cargo junto do nome: há homônimos ("Marcos Pereira" é deputado federal
     // E deputado estadual em SP), e só o nome somava os dois.
     ...((a.parlamentar_nome && !ignorar.has('parlamentar')) || a.cargo ? {
@@ -74,7 +76,7 @@ function whereEmendas(a: FiltrosEmendas, ignorar: Set<string> = new Set()) {
     ...(a.area && !ignorar.has('area') && { area: a.area as any }),
     ...(a.ano && !ignorar.has('ano') && { ano: Number(a.ano) }),
     ...(a.esfera && !ignorar.has('esfera') && { esfera: a.esfera as any }),
-  } as any;
+  }] } as any;
 }
 
 const ROTULO_FILTRO: Record<string, string> = {

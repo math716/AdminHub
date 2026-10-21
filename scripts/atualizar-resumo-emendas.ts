@@ -13,6 +13,9 @@
  *               agora, estado por estado, ano por ano, em cada filtro. Sai com
  *               erro se algum número não bater.
  *   --forcar    recalcula mesmo que nada tenha mudado desde a última conta.
+ *   --refazer-municipios  refaz o valor por município de todas as emendas
+ *               federais dos anos (quando a regra da soma muda) e recalcula
+ *               o resumo em seguida (implica --forcar).
  *
  * Sem mudança no banco desde a última conta (mesma última alteração de
  * emendas e de parlamentares, mesma quantidade de emendas), não recalcula:
@@ -24,7 +27,7 @@ import {
   ESFERAS, SQL_CRIAR_RESUMO, VERSAO_CONTA, calcularResumoUf, calcularTotaisBrasil, chaveResumoBrasil, chaveResumoUf,
   impressaoDoBanco, lerResumoPronto,
 } from '../lib/emendas/resumo-emendas';
-import { garantirEmendasMunicipios } from '../lib/emendas/emendas-municipios';
+import { garantirEmendasMunicipios, refazerEmendasMunicipios } from '../lib/emendas/emendas-municipios';
 
 const raw = process.env.DATABASE_URL ?? '';
 // pool_timeout alto: cada recorte dispara 5 consultas, 3 recortes por vez,
@@ -60,7 +63,10 @@ const ANOS = (arg('anos')
   ?? Array.from({ length: anoAtual - 2021 + 1 }, (_, i) => 2021 + i).join(','))
   .split(',').map((a) => parseInt(a.trim(), 10)).filter((a) => a > 2000);
 const CONFERIR = process.argv.includes('--conferir');
-const FORCAR = process.argv.includes('--forcar');
+const REFAZER_MUNICIPIOS = process.argv.includes('--refazer-municipios');
+// A soma por município não muda a "impressão" do banco (ela olha emendas e
+// documentos): refeita a soma, o resumo precisa ser recalculado à força.
+const FORCAR = process.argv.includes('--forcar') || REFAZER_MUNICIPIOS;
 const SIMULTANEOS = 3;
 
 interface Tarefa { chave: string; qtd: number; calcular: () => Promise<unknown> }
@@ -113,7 +119,8 @@ async function atualizar() {
 
   // Valor por município pronto (emendas_municipios): a importação preenche;
   // aqui só a primeira vez de um ano, ou um ano que ficou pela metade.
-  await garantirEmendasMunicipios(db, ANOS);
+  if (REFAZER_MUNICIPIOS) await refazerEmendasMunicipios(db, ANOS);
+  else await garantirEmendasMunicipios(db, ANOS);
 
   const inicio = new Date();
   // Impressão ANTES da conta: se o banco mudar no meio, o resumo já nasce
