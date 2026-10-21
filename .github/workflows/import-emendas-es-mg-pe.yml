@@ -71,15 +71,16 @@ concurrency:
 jobs:
   importar:
     name: Import ${{ matrix.uf }}
-    if: github.repository == 'math716/AdminHub' && (github.event_name != 'workflow_dispatch' || inputs.uf == 'todos' || inputs.uf == matrix.uf)
+    if: github.repository == 'math716/AdminHub'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     strategy:
       # Um estado por vez (o banco é um só) e o erro de um não para os outros.
       max-parallel: 1
       fail-fast: false
+      # Disparo manual com um estado escolhido → só ele; senão os três.
       matrix:
-        uf: [ES, MG, PE]
+        uf: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.uf != 'todos' && format('["{0}"]', inputs.uf) || '["ES","MG","PE"]') }}
 
     steps:
       - name: Checkout
