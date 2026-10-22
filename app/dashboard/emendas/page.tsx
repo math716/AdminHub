@@ -148,6 +148,11 @@ interface DestinoRow {
   valorEmpenhado: number;
   valorPago: number;
   fonte: 'documento' | 'emenda';
+  /** O governo do estado não publicou o valor — os zeros acima não são valor. */
+  semValorPublicado?: boolean;
+  /** Estadual do RJ: só o valor destinado é publicado, sem empenho nem pago. */
+  soValorDestinado?: boolean;
+  valorProposto?: number | null;
 }
 
 interface EmendaNaoRealizadaLocal {
@@ -727,7 +732,7 @@ export default function EmendasPage() {
   // Senadores e deputados podem aparecer em emendas de bancada/comissão também.
   // Mostrar o breakdown ajuda a entender o que vem da cota individual.
   const parlamentarPorTipo = useMemo(() => {
-    const map = new Map<string, { tipo: string; total: number; qtd: number }>();
+    const map = new Map<string, { tipo: string; total: number; qtd: number; semValor: number }>();
     parlamentarEmendas.forEach((e) => {
       const tipo = e.tipo ?? 'Não classificada';
       // Encurta tipos longos pra visualização ("Emenda Individual - ..." → "Individual")
@@ -738,9 +743,10 @@ export default function EmendasPage() {
         : tipo.match(/relator/i)         ? 'Relator'
         : tipo.match(/especiais?/i)      ? 'Transf. Especial'
         : tipo;
-      const cur = map.get(tipoCurto) ?? { tipo: tipoCurto, total: 0, qtd: 0 };
+      const cur = map.get(tipoCurto) ?? { tipo: tipoCurto, total: 0, qtd: 0, semValor: 0 };
       cur.total += e.valorEmpenhado ?? 0;
       cur.qtd++;
+      if (e.semValorPublicado) cur.semValor++;
       map.set(tipoCurto, cur);
     });
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
@@ -1007,7 +1013,7 @@ export default function EmendasPage() {
   );
 
   const parlamentarMunicipioPorTipo = useMemo(() => {
-    const map = new Map<string, { tipo: string; total: number; qtd: number }>();
+    const map = new Map<string, { tipo: string; total: number; qtd: number; semValor: number }>();
     parlamentarMunicipioEmendas.forEach((e) => {
       const tipo = e.tipo ?? 'Não classificada';
       const tipoCurto =
@@ -1017,9 +1023,10 @@ export default function EmendasPage() {
         : tipo.match(/relator/i)    ? 'Relator'
         : tipo.match(/especiais?/i) ? 'Transf. Especial'
         : tipo;
-      const cur = map.get(tipoCurto) ?? { tipo: tipoCurto, total: 0, qtd: 0 };
+      const cur = map.get(tipoCurto) ?? { tipo: tipoCurto, total: 0, qtd: 0, semValor: 0 };
       cur.total += e.valorEmpenhado ?? 0;
       cur.qtd++;
+      if (e.semValorPublicado) cur.semValor++;
       map.set(tipoCurto, cur);
     });
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
@@ -2368,7 +2375,7 @@ function ParlamentarDashboard({
   porAno: { ano: number; total: number }[];
   maxPorAno: number;
   porMunicipio: ParlamentarPorMunicipio[];
-  porTipo: { tipo: string; total: number; qtd: number }[];
+  porTipo: { tipo: string; total: number; qtd: number; semValor: number }[];
   destinos: { municipal: number; estadual: number; qtdMun: number; qtdEst: number };
   destinosFlat: DestinoRow[];
   emendas: PortalEmenda[];
@@ -2379,6 +2386,10 @@ function ParlamentarDashboard({
   const { resolvedTheme } = useTheme();
   const isDarkTheme = resolvedTheme === 'dark';
   const pctPago = totalAno > 0 ? (totalPago / totalAno) * 100 : 0;
+  // Emendas cujo valor o governo do estado não publicou (SP) e deputado cujas
+  // emendas só têm o valor destinado (estaduais do RJ).
+  const semValorPublicado = emendas.filter((e) => e.semValorPublicado).length;
+  const soValorDestinado = emendas.length > 0 && emendas.every((e) => e.soValorDestinado);
   return (
     <div
       className="rounded-2xl p-5"
@@ -2408,12 +2419,17 @@ function ParlamentarDashboard({
           <p className="text-2xl font-bold text-[color:var(--text-primary)] mt-0.5">
             {loading ? <Loader2 className="w-5 h-5 animate-spin inline" /> : formatBRLCompact(totalAno)}
           </p>
-          {!loading && totalAno > 0 && (
+          {!loading && totalAno > 0 && (soValorDestinado ? (
+            <p className="text-[11px] mt-0.5 italic text-[color:var(--text-tertiary)]"
+              title="O governo do RJ não publica o empenho nem o pagamento de cada emenda estadual">
+              Valor destinado · execução não publicada
+            </p>
+          ) : (
             <p className="text-[11px] text-[color:var(--success)] mt-0.5">
               Pago: <span className="font-bold">{formatBRLCompact(totalPago)}</span>
               <span className="text-[color:var(--success)]/60"> ({pctPago.toFixed(0)}%)</span>
             </p>
-          )}
+          ))}
           {!loading && (destinos.municipal > 0 || destinos.estadual > 0) && (
             <div className="mt-2 text-[10px] text-slate-700 dark:text-slate-300 space-y-0.5 text-right">
               <p>
@@ -2424,6 +2440,15 @@ function ParlamentarDashboard({
                 <span className="text-violet-400">●</span> Nível UF (sem município): <span className="font-semibold text-[color:var(--text-primary)]">{formatBRLCompact(destinos.estadual)}</span>
                 <span className="text-slate-600 dark:text-slate-500"> ({destinos.qtdEst})</span>
               </p>
+              {/* SP deixa o valor em branco em muitas emendas (todas as
+                  transferências voluntárias de 2026): elas entram na contagem
+                  acima, mas não no total — e R$ 0 não é o valor delas. */}
+              {semValorPublicado > 0 && (
+                <p title="O governo do estado não divulgou o valor destas emendas; o total acima soma só as que têm valor">
+                  <span className="text-slate-400">●</span> Sem valor publicado pelo governo do estado:{' '}
+                  <span className="font-semibold text-[color:var(--text-primary)]">{semValorPublicado}</span>
+                </p>
+              )}
             </div>
           )}
           {!loading && porTipo.length > 0 && (
@@ -2437,9 +2462,11 @@ function ParlamentarDashboard({
                     color: 'var(--text-primary)',
                     border: '1px solid var(--tint-08)',
                   }}
-                  title={`${t.qtd} ${t.qtd === 1 ? 'emenda' : 'emendas'}`}
+                  title={`${t.qtd} ${t.qtd === 1 ? 'emenda' : 'emendas'}${t.semValor ? ` — ${t.semValor} sem valor publicado pelo governo do estado` : ''}`}
                 >
-                  {t.tipo}: {formatBRLCompact(t.total)}
+                  {t.tipo}: {t.semValor === t.qtd
+                    ? `${t.semValor} sem valor publicado`
+                    : <>{formatBRLCompact(t.total)}{t.semValor > 0 && <span className="font-normal text-[color:var(--text-tertiary)]"> + {t.semValor} sem valor</span>}</>}
                 </span>
               ))}
             </div>
@@ -3211,23 +3238,44 @@ function EmendasDetalhadasCard({
                           </span>
                         ) : <span style={{ color: isDark ? '#64748b' : '#9ca3af' }}>—</span>}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap transition-colors group-hover:text-[color:var(--brand-cobalt-text)]" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? 'var(--text-primary)' : '#1e40af' }}>
-                        {formatBRLCompact(d.valorEmpenhado)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right whitespace-nowrap font-semibold" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#10b981' : '#047857' }}>
-                        {formatBRLCompact(d.valorPago)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
-                        <span
-                          className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                          style={{
-                            background: pct >= 80 ? (isDark ? 'rgba(16,185,129,0.12)' : 'rgba(5,150,105,0.14)') : pct >= 40 ? (isDark ? 'rgba(245,158,11,0.12)' : 'rgba(180,83,9,0.12)') : (isDark ? 'rgba(100,116,139,0.12)' : 'rgba(71,85,105,0.1)'),
-                            color:      pct >= 80 ? (isDark ? '#10b981' : '#047857') : pct >= 40 ? (isDark ? '#f59e0b' : '#b45309') : (isDark ? '#64748b' : '#475569'),
-                          }}
-                        >
-                          {pct.toFixed(0)}%
-                        </span>
-                      </td>
+                      {d.semValorPublicado ? (
+                        // SP: o governo deixou os campos de valor em branco
+                        // (todas as transferências voluntárias de 2026) —
+                        // "R$ 0 · R$ 0 · 0%" diria que a emenda vale zero.
+                        <td colSpan={3} className="py-2.5 px-3 text-right text-[11px] italic whitespace-nowrap"
+                          style={{ borderBottom: '1px solid var(--tint-04)', color: 'var(--text-tertiary)' }}
+                          title="O governo do estado não divulgou o valor desta emenda">
+                          Valor não publicado pelo governo do estado
+                        </td>
+                      ) : d.soValorDestinado ? (<>
+                        <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? 'var(--text-primary)' : '#1e40af' }}>
+                          {formatBRLCompact(d.valorProposto ?? d.valorEmpenhado)}
+                          <span className="block text-[10px] font-normal" style={{ color: 'var(--text-tertiary)' }}>valor destinado</span>
+                        </td>
+                        <td colSpan={2} className="py-2.5 px-3 text-right text-[11px] italic whitespace-nowrap"
+                          style={{ borderBottom: '1px solid var(--tint-04)', color: 'var(--text-tertiary)' }}
+                          title="O governo do RJ não publica o empenho nem o pagamento de cada emenda estadual">
+                          Execução não publicada
+                        </td>
+                      </>) : (<>
+                        <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap transition-colors group-hover:text-[color:var(--brand-cobalt-text)]" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? 'var(--text-primary)' : '#1e40af' }}>
+                          {formatBRLCompact(d.valorEmpenhado)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right whitespace-nowrap font-semibold" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? '#10b981' : '#047857' }}>
+                          {formatBRLCompact(d.valorPago)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)' }}>
+                          <span
+                            className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                            style={{
+                              background: pct >= 80 ? (isDark ? 'rgba(16,185,129,0.12)' : 'rgba(5,150,105,0.14)') : pct >= 40 ? (isDark ? 'rgba(245,158,11,0.12)' : 'rgba(180,83,9,0.12)') : (isDark ? 'rgba(100,116,139,0.12)' : 'rgba(71,85,105,0.1)'),
+                              color:      pct >= 80 ? (isDark ? '#10b981' : '#047857') : pct >= 40 ? (isDark ? '#f59e0b' : '#b45309') : (isDark ? '#64748b' : '#475569'),
+                            }}
+                          >
+                            {pct.toFixed(0)}%
+                          </span>
+                        </td>
+                      </>)}
                     </tr>
                   );
                 })}

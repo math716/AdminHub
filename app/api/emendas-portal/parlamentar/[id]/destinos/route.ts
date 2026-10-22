@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { filtroEsferaAtiva } from '@/lib/emendas/estados-ativos';
+import { filtroEsferaAtiva, soValorDestinado } from '@/lib/emendas/estados-ativos';
 import { semPermissao } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
@@ -78,6 +78,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         beneficiario: true,
         valorEmpenhado: true,
         valorPago: true,
+        // Para dizer "valor não publicado" (SP) e "valor destinado" (RJ) em
+        // vez de R$ 0 — os mesmos avisos da rota da emenda.
+        esfera: true,
+        valorProposto: true,
         documentos: {
           where: uf ? { ufFavorecido: uf } : {},
           select: {
@@ -121,6 +125,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       beneficiario: string | null;
       valorEmpenhado: number;
       valorPago: number;
+      esfera: string;
+      valorProposto: number | null;
       documentos: DocRec[];
     };
     const emendaMergeMap = new Map<string, MergedEmenda>();
@@ -145,6 +151,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           beneficiario:   e.beneficiario,
           valorEmpenhado: e.valorEmpenhado,
           valorPago:      e.valorPago,
+          esfera:         e.esfera,
+          valorProposto:  e.valorProposto,
           documentos:     [...eDocs],
         });
       } else {
@@ -156,6 +164,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         if (!existing.municipioNome && e.municipioNome) existing.municipioNome  = e.municipioNome;
         if (!existing.codigoIbge && e.codigoIbge)       existing.codigoIbge     = e.codigoIbge;
         if (!existing.beneficiario && e.beneficiario)   existing.beneficiario   = e.beneficiario;
+        if (existing.valorProposto == null && e.valorProposto != null) existing.valorProposto = e.valorProposto;
       }
     }
     const emendaDedup = Array.from(emendaMergeMap.values());
@@ -173,6 +182,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       valorEmpenhado: number;
       valorPago: number;
       fonte: 'documento' | 'emenda';
+      /** O governo do estado não publicou o valor — os zeros não são valor. */
+      semValorPublicado?: boolean;
+      /** Estadual do RJ: só o valor destinado é publicado (valorProposto). */
+      soValorDestinado?: boolean;
+      valorProposto?: number | null;
     };
 
     const destinos: DestinoRow[] = [];
@@ -260,6 +274,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           valorEmpenhado: emenda.valorEmpenhado,
           valorPago:      emenda.valorPago,
           fonte:          'emenda',
+          semValorPublicado: emenda.esfera === 'ESTADUAL' && !emenda.valorEmpenhado && !emenda.valorPago && emenda.valorProposto == null,
+          soValorDestinado:  soValorDestinado(emenda),
+          valorProposto:     emenda.valorProposto,
         });
       }
     }
