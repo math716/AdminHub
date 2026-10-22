@@ -317,3 +317,51 @@ export async function importarEmendas(
   console.log('');
   return result;
 }
+
+/**
+ * Apaga as emendas ESTADUAIS da UF, nos anos importados, que não vieram na
+ * fonte — sobras de importações antigas com outro formato de código, que
+ * duplicavam as emendas (DF: 4.172 de jun–jul/2026, o total de 2025 aparecia
+ * R$ 861 mi contra R$ 552 mi no SISCONEP) ou que a fonte retirou.
+ *
+ * Nunca apaga emenda com anotação de usuário (só avisa). Com muitos erros na
+ * gravação (> 5%), não apaga nada: o que não foi regravado ainda é o dado
+ * que existe. Depois remove os cadastros de deputado que ficaram sem emenda.
+ */
+export async function limparForaDaFonte(
+  prisma: PrismaClient,
+  uf: string,
+  anos: number[],
+  idsDaFonte: Set<string>,
+  opts: { dryRun?: boolean; erros?: number } = {},
+): Promise<{ apagadas: number; cadastrosRemovidos: number }> {
+  const existentes = await prisma.emendaParlamentar.findMany({
+    where: { uf, esfera: 'ESTADUAL', ano: { in: anos } },
+    select: { id: true, idPortal: true, _count: { select: { anotacoes: true } } },
+  });
+  const fora = existentes.filter(e => !idsDaFonte.has(e.idPortal));
+  const anotadas = fora.filter(e => e._count.anotacoes > 0);
+  const sobrando = fora.filter(e => e._count.anotacoes === 0);
+  console.log(`   no banco nesses anos: ${existentes.length}; fora da fonte: ${fora.length}`);
+  if (anotadas.length) console.log(`   ${anotadas.length} emenda(s) fora da fonte têm anotação de usuário — mantidas: ${anotadas.map(a => a.idPortal).join(', ')}`);
+  if (sobrando.length === 0) return { apagadas: 0, cadastrosRemovidos: 0 };
+  if (opts.dryRun) {
+    console.log(`   [dry-run] seriam apagadas. Exemplos: ${sobrando.slice(0, 3).map(s => s.idPortal).join(', ')}`);
+    return { apagadas: 0, cadastrosRemovidos: 0 };
+  }
+  if ((opts.erros ?? 0) > idsDaFonte.size * 0.05) {
+    console.log('   Muitos erros na gravação — limpeza adiada para não apagar o que não foi regravado.');
+    return { apagadas: 0, cadastrosRemovidos: 0 };
+  }
+  for (let i = 0; i < sobrando.length; i += 500) {
+    await prisma.emendaParlamentar.deleteMany({ where: { id: { in: sobrando.slice(i, i + 500).map(s => s.id) } } });
+  }
+  const orfaos = await prisma.parlamentar.deleteMany({
+    where: {
+      uf, cargo: { in: ['DEPUTADO_ESTADUAL', 'BANCADA'] },
+      emendas: { none: {} }, transferenciasPix: { none: {} },
+    },
+  });
+  console.log(`   ${sobrando.length} emendas antigas apagadas; ${orfaos.count} cadastros sem emenda removidos.`);
+  return { apagadas: sobrando.length, cadastrosRemovidos: orfaos.count };
+}

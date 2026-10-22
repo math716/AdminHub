@@ -66,6 +66,15 @@ export async function preencherEmendasMunicipios(
       // é o destino real; ainda pouco pago, pela proporção dos empenhos.
       // Só de 2021 em diante: antes disso o total da emenda no banco não foi
       // conferido com o oficial.
+      //
+      // O PAGO tem outro defeito: repasse fundo a fundo (saúde) sai numa ordem
+      // bancária só, em lote, favorecendo o Banco do Brasil ou a Caixa — o
+      // arquivo põe o valor do LOTE inteiro em cada emenda e o destino na
+      // cidade da agência (caso real: emenda de R$ 500 mil para Vassouras com
+      // R$ 8 mi "pagos" em Duque de Caxias). Em 2021–2024, 1.400 a 1.800
+      // emendas por ano. Nesses casos, e quando os pagamentos passam do total
+      // oficial, o pago oficial é repartido pelas cidades na proporção do
+      // empenho, cujo favorecido é o próprio fundo municipal.
       db.$executeRawUnsafe(`
         WITH docs AS (
           SELECT d."emendaId", d."codigoIbgeDestino" AS cod, max(d."municipioDestino") AS mun,
@@ -75,25 +84,42 @@ export async function preencherEmendasMunicipios(
           WHERE d."emendaId" = ANY($1::text[]) AND d."codigoIbgeDestino" IS NOT NULL
           GROUP BY 1, 2),
         todos AS (
-          SELECT d."emendaId", coalesce(sum(d.valor) FILTER (WHERE d.fase = 'Empenho'), 0) AS emp_todos
+          SELECT d."emendaId",
+                 coalesce(sum(d.valor) FILTER (WHERE d.fase = 'Empenho'), 0) AS emp_todos,
+                 coalesce(sum(d.valor) FILTER (WHERE d.fase = 'Pagamento'), 0) AS pago_todos,
+                 coalesce(bool_or(d.fase = 'Pagamento' AND (d."nomeFavorecido" ILIKE 'BANCO DO BRASIL%'
+                                                         OR d."nomeFavorecido" ILIKE 'CAIXA ECON%')), false) AS pago_em_lote
           FROM "emendas_documentos" d WHERE d."emendaId" = ANY($1::text[]) GROUP BY 1),
         destino AS (
           SELECT "emendaId", sum(emp) AS emp_dest, sum(pago) AS pago_dest FROM docs GROUP BY 1),
         alvo AS (
-          SELECT x."emendaId", x.emp_dest, x.pago_dest,
+          SELECT x."emendaId", x.emp_dest, x.pago_dest, t.emp_todos, e."valorPago" AS pago_oficial,
                  CASE WHEN e.ano >= 2021 AND e."valorEmpenhado" > 0 AND x.emp_dest > 0
                        AND t.emp_todos > e."valorEmpenhado" * 1.01 + 1
-                      THEN e."valorEmpenhado" * x.emp_dest / t.emp_todos END AS emp_corrigido
+                      THEN e."valorEmpenhado" * x.emp_dest / t.emp_todos END AS emp_corrigido,
+                 -- Pagamento que não dá para atribuir à cidade pelo documento.
+                 (e.ano >= 2021 AND x.emp_dest > 0
+                   AND (t.pago_em_lote OR t.pago_todos > e."valorPago" * 1.01 + 1)) AS pago_pelo_empenho
           FROM destino x
           JOIN todos t USING ("emendaId")
-          JOIN "emendas_parlamentares" e ON e.id = x."emendaId")
+          JOIN "emendas_parlamentares" e ON e.id = x."emendaId"),
+        corrigido AS (
+          SELECT docs."emendaId", docs.cod, docs.mun, docs.emp, docs.pago, a.emp_dest, a.pago_dest,
+                 a.emp_todos, a.pago_oficial, a.pago_pelo_empenho,
+                 CASE WHEN a.emp_corrigido IS NULL THEN docs.emp
+                      WHEN NOT a.pago_pelo_empenho AND a.pago_dest >= 0.5 * a.emp_corrigido
+                        THEN a.emp_corrigido * docs.pago / a.pago_dest
+                      ELSE a.emp_corrigido * docs.emp / a.emp_dest END AS emp_cidade
+          FROM docs JOIN alvo a USING ("emendaId")),
+        final AS (
+          SELECT c."emendaId", c.cod, c.mun, c.emp_cidade AS empenhado,
+                 CASE WHEN NOT c.pago_pelo_empenho THEN c.pago
+                      ELSE coalesce(c.pago_oficial * c.emp / nullif(c.emp_todos, 0), 0) END AS pago
+          FROM corrigido c)
         INSERT INTO "emendas_municipios" ("emendaId", "codigoIbge", "municipio", "empenhado", "pago", "atualizadoEm")
-        SELECT docs."emendaId", docs.cod, docs.mun,
-               CASE WHEN a.emp_corrigido IS NULL THEN docs.emp
-                    WHEN a.pago_dest >= 0.5 * a.emp_corrigido THEN a.emp_corrigido * docs.pago / a.pago_dest
-                    ELSE a.emp_corrigido * docs.emp / a.emp_dest END,
-               docs.pago, now()
-        FROM docs JOIN alvo a USING ("emendaId")`, lote),
+        -- Cidade que só aparecia pelo pagamento em lote (a da agência) fica de fora.
+        SELECT "emendaId", cod, mun, empenhado, pago, now() FROM final
+        WHERE empenhado > 0 OR pago > 0`, lote),
     ]);
     linhas += inseridas;
     if ((i / POR_ENVIO) % 10 === 9) log(`   valor por município: ${Math.min(i + POR_ENVIO, emendaIds.length)}/${emendaIds.length} emendas`);

@@ -14,7 +14,7 @@
  *     --file data/estados/RJ-2026.xlsx --ano 2026 --dry-run
  */
 import * as XLSX from 'xlsx';
-import { buildPrisma, importarEmendas, parseValorBR, type EmendaEstadualRow } from './base-import-estadual';
+import { buildPrisma, importarEmendas, limparForaDaFonte, parseValorBR, type EmendaEstadualRow } from './base-import-estadual';
 import type { EmendaArea } from '@prisma/client';
 
 function arg(name: string, def?: string): string | undefined {
@@ -59,6 +59,12 @@ function funcaoToArea(funcao: string): EmendaArea {
 
 // ─── Mapeamento ───────────────────────────────────────────────────────────────
 
+/** Grafia da planilha → nome oficial do IBGE (sem isso a cidade não é achada). */
+const GRAFIA_IBGE: Record<string, string> = {
+  'parati': 'Paraty',
+  'trajano de morais': 'Trajano de Moraes',
+};
+
 function mapearLinha(rowRaw: Record<string, any>, ano: number): EmendaEstadualRow | null {
   // Normaliza chaves removendo espaços extras
   const row: Record<string, any> = {};
@@ -80,8 +86,10 @@ function mapearLinha(rowRaw: Record<string, any>, ano: number): EmendaEstadualRo
 
   const area = funcaoToArea(funcao);
 
-  // Município "Estado" = emenda sem município específico
-  const municipioNome = (!municipio || municipio === 'Estado') ? undefined : municipio;
+  // Município "Estado" (2024 escreve "ESTADO") = emenda sem município específico
+  const municipioNome = (!municipio || /^estado$/i.test(municipio))
+    ? undefined
+    : (GRAFIA_IBGE[municipio.toLowerCase()] ?? municipio);
 
   const idPortal = identificador
     ? `RJ-${ano}-${identificador}`
@@ -117,7 +125,12 @@ async function main() {
   console.log(`\n🔄 Import RJ — arquivo=${FILE} ano=${ANO}${DRY_RUN ? ' [DRY RUN]' : ''}\n`);
 
   const wb = XLSX.readFile(FILE);
-  const ws = wb.Sheets[wb.SheetNames[0]];
+  // A planilha de 2024 tem três abas: 1ª análise, 2ª análise e a lista final
+  // das emendas aptas. A 1ª aba (a que era lida) trazia 812 emendas e
+  // R$ 190,3 mi; a final, 779 e R$ 181,9 mi. Prefere a aba final quando há.
+  const aba = wb.SheetNames.find(n => /aptas|final/i.test(n)) ?? wb.SheetNames[0];
+  console.log(`  aba: ${aba}${wb.SheetNames.length > 1 ? ` (de ${wb.SheetNames.join(', ')})` : ''}`);
+  const ws = wb.Sheets[aba];
   const raw = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: '' });
   console.log(`  ${raw.length} linhas lidas`);
   if (raw[0]) console.log('  Colunas:', Object.keys(raw[0]).join(', '));
@@ -147,15 +160,22 @@ async function main() {
   }
 
   if (rows.length === 0) { console.error('\nNenhuma emenda mapeada.'); process.exit(1); }
-  if (DRY_RUN) { console.log('\n[dry-run] nenhuma escrita realizada.'); return; }
 
   const prisma = buildPrisma();
   try {
-    const result = await importarEmendas(prisma, 'RJ', rows);
-    console.log(`\n✅ Import RJ concluído:`);
-    console.log(`   emendas inseridas/atualizadas    : ${result.inseridas}`);
-    console.log(`   parlamentares criados/atualizados: ${result.parlamentares}`);
-    console.log(`   erros                            : ${result.erros}`);
+    let erros = 0;
+    if (DRY_RUN) {
+      console.log('\n[dry-run] nenhuma escrita realizada.');
+    } else {
+      const result = await importarEmendas(prisma, 'RJ', rows);
+      erros = result.erros;
+      console.log(`\n✅ Import RJ concluído:`);
+      console.log(`   emendas inseridas/atualizadas    : ${result.inseridas} (iguais, sem regravar: ${result.iguais})`);
+      console.log(`   parlamentares criados/atualizados: ${result.parlamentares}`);
+      console.log(`   erros                            : ${result.erros}`);
+    }
+    // A planilha traz o ano inteiro: o que não veio nela sai do banco.
+    await limparForaDaFonte(prisma, 'RJ', [ANO], new Set(rows.map(r => r.idPortal)), { dryRun: DRY_RUN, erros });
   } finally {
     await prisma.$disconnect();
   }

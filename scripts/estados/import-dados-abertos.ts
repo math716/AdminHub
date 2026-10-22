@@ -36,7 +36,7 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { buildPrisma, importarEmendas, type EmendaEstadualRow } from './base-import-estadual';
+import { buildPrisma, importarEmendas, limparForaDaFonte, type EmendaEstadualRow } from './base-import-estadual';
 import { classificarArea } from '../../lib/portal-transparencia';
 import type { ParlamentarCargo } from '@prisma/client';
 
@@ -323,37 +323,8 @@ async function main() {
     const res = await importarEmendas(prisma, UF, rows, { dryRun: DRY_RUN, batchSize: 40 });
     console.log(`\n   processadas: ${res.inseridas} (iguais, sem regravar: ${res.iguais}) | erros: ${res.erros} | parlamentares novos: ${res.parlamentares}`);
 
-    // ── Limpeza: emendas estaduais da UF, nesses anos, que não vieram ──────
-    const anosImportados = [...porAno.keys()];
-    const vieram = new Set(rows.map(r => r.idPortal));
-    const existentes = await prisma.emendaParlamentar.findMany({
-      where: { uf: UF, esfera: 'ESTADUAL', ano: { in: anosImportados } },
-      select: { id: true, idPortal: true, _count: { select: { anotacoes: true } } },
-    });
-    const fora = existentes.filter(e => !vieram.has(e.idPortal));
-    const anotadas = fora.filter(e => e._count.anotacoes > 0);
-    if (anotadas.length) console.log(`   ${anotadas.length} emenda(s) fora da fonte têm anotação de usuário — mantidas: ${anotadas.map(a => a.idPortal).join(', ')}`);
-    const sobrando = fora.filter(e => e._count.anotacoes === 0);
-    console.log(`   no banco nesses anos: ${existentes.length}; fora da fonte: ${fora.length}`);
-    if (sobrando.length > 0 && !DRY_RUN) {
-      if (res.erros > rows.length * 0.05) {
-        console.log('   Muitos erros na gravação — limpeza adiada para não apagar o que não foi regravado.');
-      } else {
-        for (let i = 0; i < sobrando.length; i += 500) {
-          await prisma.emendaParlamentar.deleteMany({ where: { id: { in: sobrando.slice(i, i + 500).map(s => s.id) } } });
-        }
-        // Cadastros que ficaram sem emenda nenhuma (os da importação manual).
-        const orfaos = await prisma.parlamentar.deleteMany({
-          where: {
-            uf: UF, cargo: { in: ['DEPUTADO_ESTADUAL', 'BANCADA'] },
-            emendas: { none: {} }, transferenciasPix: { none: {} },
-          },
-        });
-        console.log(`   ${sobrando.length} emendas antigas apagadas; ${orfaos.count} cadastros sem emenda removidos.`);
-      }
-    } else if (sobrando.length > 0) {
-      console.log(`   [dry-run] seriam apagadas. Exemplos: ${sobrando.slice(0, 3).map(s => s.idPortal).join(', ')}`);
-    }
+    // Emendas estaduais da UF, nesses anos, que não vieram na fonte.
+    await limparForaDaFonte(prisma, UF, [...porAno.keys()], new Set(rows.map(r => r.idPortal)), { dryRun: DRY_RUN, erros: res.erros });
 
     if (!DRY_RUN && res.erros === 0) {
       visto[UF] = { ...visto[UF], ...Object.fromEntries(escolhidos.map(e => [e.recurso.id, marca(e.recurso)])) };

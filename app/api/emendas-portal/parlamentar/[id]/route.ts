@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { filtroEsferaAtiva } from '@/lib/emendas/estados-ativos';
+import { filtroEsferaAtiva, soValorDestinado } from '@/lib/emendas/estados-ativos';
 import { listEmendasPorParlamentar, PORTAL_MOCK_MODE } from '@/lib/portal-transparencia';
 import { semPermissao } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
@@ -139,6 +139,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             ...(dividida && { municipiosNaEmenda: qtdMunicipios }),
             // O governo do estado não publicou o valor (zeros não são valor).
             semValorPublicado: e.esfera === 'ESTADUAL' && !e.valorEmpenhado && !e.valorPago && e.valorProposto == null,
+            // RJ: só o valor destinado é publicado (lib/emendas/estados-ativos).
+            soValorDestinado: soValorDestinado(e),
             autorCpf:       e.parlamentar?.cpf ?? null,
             autorNome:      e.parlamentar?.nome ?? '—',
             autorCargo:     e.parlamentar?.cargo ?? 'DEPUTADO_FEDERAL',

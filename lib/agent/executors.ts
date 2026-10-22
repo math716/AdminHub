@@ -9,7 +9,7 @@ import { resolverDeputados } from '@/lib/agent/report/df-territorial';
 import { votosNoBairro } from '@/lib/agent/votos-bairro';
 import { SQL_DATA_COMEMORATIVA } from '@/lib/agenda-datas';
 import { chaveMunicipio } from '@/lib/municipio-nome';
-import { filtroEsferaAtiva, UFS_ESTADUAIS_ATIVAS } from '@/lib/emendas/estados-ativos';
+import { filtroEsferaAtiva, filtroSoValorDestinado, soValorDestinado, UFS_ESTADUAIS_ATIVAS } from '@/lib/emendas/estados-ativos';
 import type { Session } from 'next-auth';
 import { PERMISSIONS, hasPermission, type Permission } from '@/lib/permissions';
 
@@ -436,7 +436,7 @@ export async function executarBuscarEmendas(
   // "Transferência Voluntária"): somar as duas coisas sem dizer dava "47
   // emendas" a quem tinha 5 federais. E o governo de SP não publica valor para
   // a maioria dessas transferências — aparecem com R$ 0, que não é o valor.
-  const [porEsferaBruto, semValorPublicado] = await Promise.all([
+  const [porEsferaBruto, semValorPublicado, soDestinado] = await Promise.all([
     prisma.emendaParlamentar.groupBy({
       by: ['esfera'],
       where: whereFinal,
@@ -444,6 +444,8 @@ export async function executarBuscarEmendas(
       _sum: { valorEmpenhado: true, valorPago: true },
     }),
     prisma.emendaParlamentar.count({ where: { AND: [whereFinal, SEM_VALOR_PUBLICADO] } }),
+    // Estaduais do RJ: só o valor destinado é publicado (lib/emendas/estados-ativos).
+    prisma.emendaParlamentar.count({ where: { AND: [whereFinal, filtroSoValorDestinado] } }),
   ]);
 
   // Pergunta sobre UMA cidade: cada emenda conta só o pedaço que foi para ela.
@@ -665,6 +667,15 @@ export async function executarBuscarEmendas(
         'paradas: o valor simplesmente não foi divulgado. Diga quantas são e que o governo do estado não publicou ' +
         'o valor; os totais em reais cobrem só as que têm valor.',
     }),
+    ...(soDestinado > 0 && {
+      emendasSoValorDestinado: soDestinado,
+      avisoSoValorDestinado:
+        `${soDestinado} emenda(s) estadual(is) do recorte são do RJ, cujo governo publica só o VALOR DESTINADO de ` +
+        'cada emenda — não publica empenho nem pagamento por emenda. Nelas, "valorEmpenhado" é o valor destinado e ' +
+        '"valorPago" fica zerado (veja "somenteValorDestinado"). Chame esse valor de "valor destinado", nunca de ' +
+        'empenhado, e não diga que nada foi pago nem dê percentual de execução: diga que o governo do RJ não publica ' +
+        'a execução por emenda. As federais do RJ têm empenhado e pago normais.',
+    }),
     ...(homonimos && {
       homonimos,
       avisoHomonimos:
@@ -719,6 +730,10 @@ export async function executarBuscarEmendas(
         // Governo do estado não publicou o valor: zero aqui não é valor.
         if (semValorPublicadoEm(e)) {
           return { valorEmpenhado: 0, valorPago: 0, valorPublicado: false, execucao: null };
+        }
+        // RJ: o valor gravado é o destinado; a execução não é publicada.
+        if (soValorDestinado(e)) {
+          return { valorDestinado: e.valorProposto ?? e.valorEmpenhado, somenteValorDestinado: true, execucao: null };
         }
         return {
           valorEmpenhado: emp,

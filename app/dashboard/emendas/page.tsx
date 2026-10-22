@@ -46,7 +46,7 @@ import {
   type ParlamentarCargo,
 } from '@/lib/portal-transparencia';
 import { EmendaDocumentosModal } from '@/components/emendas/emenda-documentos-modal';
-import { UFS_ESTADUAIS_ATIVAS, ufTemEstaduais } from '@/lib/emendas/estados-ativos';
+import { UFS_ESTADUAIS_ATIVAS, ufSoValorDestinado, ufTemEstaduais } from '@/lib/emendas/estados-ativos';
 
 // ---------------------------------------------------------------------------
 // Mapas dinâmicos (Leaflet SSR-off)
@@ -96,6 +96,8 @@ interface PortalEmenda {
   valorEmpenhadoEmenda?: number;
   /** O governo do estado não publicou o valor — os zeros acima não são valor. */
   semValorPublicado?: boolean;
+  /** Estadual do RJ: só o valor destinado é publicado, sem empenho nem pago. */
+  soValorDestinado?: boolean;
   orgaoExecutor: string | null;
   beneficiario: string | null;
   cnpjBeneficiario: string | null;
@@ -1164,6 +1166,14 @@ export default function EmendasPage() {
           as federais aparecem para todos os estados.
         </div>
       )}
+      {view === 'estado' && esfera !== 'FEDERAL' && ufSoValorDestinado(selectedUf) && (
+        <div className="rounded-xl px-4 py-3 text-xs"
+          style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>
+          O governo de {selectedStateName} publica só o <strong>valor destinado</strong> de cada emenda estadual — não
+          publica o empenho nem o pagamento por emenda. Nas estaduais de {selectedStateName}, o valor mostrado é o
+          destinado pelo deputado; as federais trazem empenhado e pago normalmente.
+        </div>
+      )}
 
       {/* Barra de pesquisa de parlamentar — abaixo do título, visível quando há estado selecionado */}
       {view === 'estado' && (
@@ -1347,6 +1357,7 @@ export default function EmendasPage() {
             parlamentar={selectedParlamentar}
             parlamentarTotal={parlamentarTotalAno}
             parlamentarTotalPago={parlamentarTotalPago}
+            soValorDestinado={esfera === 'ESTADUAL' && ufSoValorDestinado(selectedUf)}
             parlamentarMunicipioTotal={
               selectedMunicipio && selectedParlamentar
                 ? parlamentarMunicipioEmendas.reduce((s, e) => s + (e.valorEmpenhado ?? 0), 0)
@@ -1699,6 +1710,7 @@ function ResumoGeralCard({
   parlamentarTotal,
   parlamentarTotalPago,
   parlamentarMunicipioTotal,
+  soValorDestinado = false,
 }: {
   view: 'brasil' | 'estado';
   ano: number;
@@ -1710,6 +1722,8 @@ function ResumoGeralCard({
   parlamentarTotal: number;
   parlamentarTotalPago: number;
   parlamentarMunicipioTotal: number | null;
+  /** Só estaduais de um estado que publica só o valor destinado (RJ). */
+  soValorDestinado?: boolean;
 }) {
   const tetoMac   = municipio ? municipioStats?.tetoMac   ?? null : null;
   const tetoPap   = municipio ? municipioStats?.tetoPap   ?? null : null;
@@ -1770,10 +1784,20 @@ function ResumoGeralCard({
             icon={<Landmark className="w-4 h-4" />}
             iconBg="rgba(37,99,235,0.14)"
             iconColor="#2563eb"
-            label="Empenhado no estado"
+            label={soValorDestinado ? 'Destinado no estado' : 'Empenhado no estado'}
             value={formatBRLCompact(resumo?.totalEmpenhado ?? 0)}
             sub={`${(resumo?.totalEmendas ?? 0).toLocaleString('pt-BR')} emendas em ${ano}`}
           />
+          {soValorDestinado ? (
+            <ResumoStat
+              icon={<CheckCircle2 className="w-4 h-4" />}
+              iconBg="rgba(16,185,129,0.15)"
+              iconColor="var(--success)"
+              label="Pago"
+              value="Não publicado"
+              sub="O governo do estado não publica a execução por emenda"
+            />
+          ) : (
           <ResumoStat
             icon={<CheckCircle2 className="w-4 h-4" />}
             iconBg="rgba(16,185,129,0.15)"
@@ -1783,6 +1807,7 @@ function ResumoGeralCard({
             sub={`${(pctPago * 100).toFixed(0)}% do empenhado`}
             barra={{ fracao: pctPago, cor: '#10b981' }}
           />
+          )}
           <ResumoStat
             icon={<Building2 className="w-4 h-4" />}
             iconBg="rgba(245,158,11,0.15)"
@@ -3265,7 +3290,21 @@ function EmendasDetalhadasCard({
                           title="O governo do estado não divulgou o valor desta emenda">
                           Valor não publicado pelo governo do estado
                         </td>
-                      ) : (<>
+                      ) : e.soValorDestinado ? (<>
+                        {/* RJ: o governo publica só o valor destinado — sem
+                            empenho nem pagamento por emenda. Pago "R$ 0" e
+                            "0%" diriam que nada foi executado, o que não se
+                            sabe. */}
+                        <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? 'var(--text-primary)' : '#1e40af' }}>
+                          {formatBRLCompact(e.valorProposto ?? e.valorEmpenhado)}
+                          <span className="block text-[10px] font-normal" style={{ color: 'var(--text-tertiary)' }}>valor destinado</span>
+                        </td>
+                        <td colSpan={2} className="py-2.5 px-3 text-right text-[11px] italic whitespace-nowrap"
+                          style={{ borderBottom: '1px solid var(--tint-04)', color: 'var(--text-tertiary)' }}
+                          title="O governo do RJ não publica o empenho nem o pagamento de cada emenda estadual">
+                          Execução não publicada
+                        </td>
+                      </>) : (<>
                       <td className="py-2.5 px-3 text-right font-semibold whitespace-nowrap group-hover:text-[color:var(--brand-cobalt-text)] transition-colors" style={{ borderBottom: '1px solid var(--tint-04)', color: isDark ? 'var(--text-primary)' : '#1e40af' }}>
                         {formatBRLCompact(e.valorEmpenhado)}
                         {/* Empenhar acima ou abaixo do que a emenda destinou e

@@ -15,7 +15,7 @@
  */
 import * as XLSX from 'xlsx';
 import * as fs from 'fs';
-import { buildPrisma, importarEmendas, parseValorBR, type EmendaEstadualRow } from './base-import-estadual';
+import { buildPrisma, importarEmendas, limparForaDaFonte, parseValorBR, type EmendaEstadualRow } from './base-import-estadual';
 import { classificarArea } from '../../lib/portal-transparencia';
 
 function arg(name: string, def?: string): string | undefined {
@@ -290,18 +290,23 @@ async function main() {
     process.exit(1);
   }
 
-  if (DRY_RUN) {
-    console.log('\n[dry-run] nenhuma escrita realizada.');
-    return;
-  }
-
   const prisma = buildPrisma();
   try {
-    const result = await importarEmendas(prisma, 'DF', rows, { batchSize: 20 });
-    console.log(`\n✅ Import DF concluído:`);
-    console.log(`   emendas inseridas/atualizadas    : ${result.inseridas}`);
-    console.log(`   parlamentares criados/atualizados: ${result.parlamentares}`);
-    console.log(`   erros                            : ${result.erros}`);
+    let erros = 0;
+    if (DRY_RUN) {
+      console.log('\n[dry-run] nenhuma escrita realizada.');
+    } else {
+      const result = await importarEmendas(prisma, 'DF', rows, { batchSize: 20 });
+      erros = result.erros;
+      console.log(`\n✅ Import DF concluído:`);
+      console.log(`   emendas inseridas/atualizadas    : ${result.inseridas} (iguais, sem regravar: ${result.iguais})`);
+      console.log(`   parlamentares criados/atualizados: ${result.parlamentares}`);
+      console.log(`   erros                            : ${result.erros}`);
+    }
+    // Só o arquivo do SISCONEP (JSON) traz o ano inteiro; a planilha antiga não.
+    if (isJson) {
+      await limparForaDaFonte(prisma, 'DF', [ANO], new Set(rows.map(r => r.idPortal)), { dryRun: DRY_RUN, erros });
+    }
   } finally {
     await prisma.$disconnect();
   }

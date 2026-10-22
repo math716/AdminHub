@@ -35,3 +35,26 @@ export const sqlEsferaAtiva = (apelido = 'e') =>
 
 export const ufTemEstaduais = (uf?: string | null) =>
   !!uf && (UFS_ESTADUAIS_ATIVAS as readonly string[]).includes(uf.toUpperCase());
+
+/**
+ * Estados que publicam só o VALOR DESTINADO de cada emenda estadual, sem
+ * empenho nem pagamento por emenda. No RJ (validação de 22/10/2026) as
+ * planilhas trazem só o valor; o único relatório de execução é de abril de
+ * 2026 e mostra R$ 0 empenhado. O valor fica gravado em valorEmpenhado (e
+ * valorProposto), mas a tela e a Gabi o apresentam como "valor destinado" e
+ * dizem que a execução não é publicada — nunca como empenhado nem pago R$ 0.
+ */
+export const UFS_SO_VALOR_DESTINADO = ['RJ'] as const;
+
+export const ufSoValorDestinado = (uf?: string | null) =>
+  !!uf && (UFS_SO_VALOR_DESTINADO as readonly string[]).includes(uf.toUpperCase());
+
+/** A emenda é estadual de um estado que só publica o valor destinado? */
+export const soValorDestinado = (e: { esfera: string; uf?: string | null }) =>
+  e.esfera === 'ESTADUAL' && ufSoValorDestinado(e.uf);
+
+/** Filtro do Prisma para as mesmas emendas. */
+export const filtroSoValorDestinado = {
+  esfera: 'ESTADUAL' as const,
+  uf: { in: [...UFS_SO_VALOR_DESTINADO] as string[] },
+};
