@@ -3,32 +3,35 @@
  * Cada estado implementa a interface EstadoImporter com suas próprias regras
  * de download e mapeamento de campos.
  */
+import fs from 'fs';
+import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
 import { classificarArea } from '../../lib/portal-transparencia';
 
-/** Busca todos os municípios de uma UF na API do IBGE.
- *  Retorna dois mapas: exato (normalizado) e fallback sem espaços
- *  (resolve nomes como "Doeste" vs "D Oeste" vindos de planilhas). */
+/** Municípios de uma UF, da lista do IBGE embutida no projeto
+ *  (lib/ibge-municipios.json — a mesma de lib/ibge-local.ts).
+ *  Retorna um mapa nome normalizado → código, com fallback sem espaços
+ *  (resolve nomes como "Doeste" vs "D Oeste" vindos de planilhas).
+ *
+ *  Antes buscava na API do IBGE a cada import. Em 22/10/2026 a API não
+ *  respondeu no GitHub, o mapa veio vazio e o import do RJ seguiu em frente
+ *  gravando as 2.071 emendas com cidade SEM o código — por cima do código que
+ *  já existia; sumiram do mapa e da tela da cidade. A lista local não depende
+ *  da rede; e mapa vazio agora PARA o import em vez de apagar códigos. */
 export async function fetchMunicipiosIBGE(uf: string): Promise<Map<string, string>> {
   const map        = new Map<string, string>(); // normalizado → código
   const mapNoSpace = new Map<string, string>(); // sem espaços  → código
-  try {
-    const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
-    if (!res.ok) { console.warn(`[ibge] HTTP ${res.status} ao buscar municípios de ${uf}`); return map; }
-    const data = await res.json() as Array<{ id: number; nome: string }>;
-    for (const m of data) {
-      const norm = normalizeNome(m.nome);
-      const id   = String(m.id);
-      map.set(norm, id);
-      mapNoSpace.set(norm.replace(/\s/g, ''), id);
-    }
-    // Mescla fallback no mesmo Map com chaves sem espaço (prefixadas para não colidir)
-    for (const [k, v] of mapNoSpace) if (!map.has(k)) map.set(k, v);
-    console.log(`[ibge] ${map.size} municípios carregados para ${uf}`);
-  } catch (e: any) {
-    console.warn(`[ibge] Erro ao buscar municípios de ${uf}:`, e.message);
+  const todas = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'lib', 'ibge-municipios.json'), 'utf8')) as
+    Record<string, Array<[number, string]>>;
+  for (const [id, nome] of todas[uf.toUpperCase()] ?? []) {
+    const norm = normalizeNome(nome);
+    map.set(norm, String(id));
+    mapNoSpace.set(norm.replace(/\s/g, ''), String(id));
   }
+  for (const [k, v] of mapNoSpace) if (!map.has(k)) map.set(k, v);
+  if (map.size === 0) throw new Error(`lista de municípios do IBGE vazia para ${uf} — import interrompido para não gravar emendas sem o código da cidade`);
+  console.log(`[ibge] ${map.size} municípios carregados para ${uf}`);
   return map;
 }
 
