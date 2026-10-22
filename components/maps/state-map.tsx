@@ -588,13 +588,17 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
     renderSubdivisao();
   }, [showSubdivisao, subdivisaoData, subdivisaoTipo, setMunicipiosInteractivity, highlightItem, debouncedSetDisplay, getSubdivisaoColors]);
 
-  // Estilos spotlight — Opção A: selecionado em cobalt sólido, demais acinzentados/navy
+  // Estilos spotlight — Opção A: selecionado em cobalt sólido, demais acinzentados/navy.
+  // No escuro não há tile por baixo: com contorno quase invisível (antes 6%)
+  // e preenchimento quase opaco, os vizinhos sumiam e sobravam só as bolhas
+  // de valor soltas no azul. Agora a malha dos municípios fica visível, como
+  // no modo claro, que mostra os limites sobre o mapa de ruas.
   const spotlightDimStyle = (isDark: boolean) => ({
-    fillColor:   isDark ? '#0c1929' : '#94a3b8',
-    fillOpacity: isDark ? 0.9 : 0.55,
-    color:       isDark ? 'rgba(74,158,222,0.06)' : '#64748b',
-    weight:      0.3,
-    opacity:     0.4,
+    fillColor:   isDark ? '#0f2a4a' : '#94a3b8',
+    fillOpacity: isDark ? 0.85 : 0.55,
+    color:       isDark ? 'rgba(148,163,184,0.38)' : '#64748b',
+    weight:      isDark ? 0.6 : 0.3,
+    opacity:     isDark ? 1 : 0.4,
   });
   const spotlightSelectStyle = {
     fillColor:   '#2563EB',
