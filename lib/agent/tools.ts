@@ -76,14 +76,17 @@ export const AGENT_TOOLS: Tool[] = [
         },
         ano: {
           type: 'integer',
-          description: 'Ano da eleição: 2018, 2020, 2022, 2024 ou 2026 (2026 só 1º turno, sem presidente por enquanto). Use o ano que o USUÁRIO disse. Se ele não disse e o candidato disputou mais de uma eleição, PERGUNTE qual antes de buscar (veja as regras sobre ano). Omitido, a busca usa a mais recente do tipo certo.',
+          description: 'Ano da eleição: 2018, 2020, 2022, 2024 ou 2026 (2026 só 1º turno, presidente incluído). Use o ano que o USUÁRIO disse. Se ele não disse e o candidato disputou mais de uma eleição, PERGUNTE qual antes de buscar (veja as regras sobre ano). Omitido, a busca usa a mais recente do tipo certo.',
         },
         uf: {
           type: 'string',
           description:
             'Sigla do estado (ex: DF, SP). OBRIGATÓRIA para cargos estaduais e municipais — sem a UF ' +
             'o candidato NÃO é encontrado (a base nacional cobre apenas a eleição presidencial). ' +
-            'Deduza do contexto ou pergunte ao usuário antes de buscar.',
+            'Deduza do contexto ou pergunte ao usuário antes de buscar. PRESIDENTE numa cidade ou ' +
+            'estado ("Flávio em Itu-SP"): passe a UF (e o municipio) — os votos de presidente existem ' +
+            'por município e por zona; totalVotos vira o do estado e totalVotosNacional traz o do país. ' +
+            'Sem UF, o resultado é nacional, por estado.',
         },
         municipio: {
           type: 'string',

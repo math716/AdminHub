@@ -757,8 +757,7 @@ export async function executarBuscarEmendas(
  * a eleição de quatro anos atrás — e "os vereadores de Y" sem ano caía numa
  * eleição GERAL, que não tem vereador. Agora: a mais recente com dados, do
  * tipo certo. Municipal = anos múltiplos de 4 (2020, 2024); geral = os outros
- * (2018, 2022, 2026). Presidente só nos anos que têm o arquivo nacional — em
- * out/2026 o TSE ainda não publicou o de 2026, então presidente cai em 2022.
+ * (2018, 2022, 2026). Presidente só nos anos que têm o arquivo nacional.
  */
 function anoPadraoVotacao(cargo?: string, uf?: string): string {
   const c = normalizarTextoTse(cargo ?? '');
@@ -849,12 +848,22 @@ export async function executarBuscarVotacao(
     }
   }
 
-  // Para presidentes busca BR; para outros tenta o estado, depois BR
-  const ufsParaBuscar = isPresidencial
-    ? ['BR']
-    : ufQuery
+  // Presidente com estado (ou cidade): o arquivo do ESTADO, que tem os votos
+  // de presidente por município e por zona — o mesmo que o Mapa Eleitoral
+  // usa. O nacional (BR) só tem o total por estado: "Flávio em Itu" voltava
+  // com o total de SP e a Gabi dizia que o recorte por cidade não existia
+  // (em Itu foram 55.736 votos). Sem estado, o nacional, como antes.
+  const ufsParaBuscar = ufQuery && ufQuery !== 'BR'
     ? [ufQuery, 'BR']
     : ['BR'];
+  // Total nacional de cada presidenciável, para quando a busca for no estado
+  // (lá, totalVotos é o do estado).
+  const nacionalPresidente = new Map<string, number>();
+  if (isPresidencial && ufQuery && ufQuery !== 'BR') {
+    for (const c of (await loadStaticTseData(anoStr, 'BR', turno)) ?? []) {
+      if (normalizarTextoTse(c.cargo).includes('president')) nacionalPresidente.set(c.nome, c.totalVotos);
+    }
+  }
 
   for (const uf of ufsParaBuscar) {
     const staticData = await loadStaticTseData(anoStr, uf, turno);
@@ -1030,6 +1039,11 @@ export async function executarBuscarVotacao(
         uf,
         situacao: c.situacao,
         totalVotos: c.totalVotos,
+        // Presidente buscado no estado: totalVotos é o do ESTADO; o do país vem aqui.
+        ...(uf !== 'BR' && nacionalPresidente.has(c.nome) && {
+          totalVotosNoEstado: c.totalVotos,
+          totalVotosNacional: nacionalPresidente.get(c.nome),
+        }),
         // % dele sobre TODOS os candidatos do cargo, no recorte da contagem —
         // e o NOME do campo diz qual é o recorte. Era sempre
         // "percentualValidos", e num ranking de Americana a Gabi publicou
@@ -1042,6 +1056,22 @@ export async function executarBuscarVotacao(
         // Consulta com município: o número que interessa é o de lá. Para
         // vereador coincide com o total; para deputado, não.
         ...(muniNorm && uf !== 'BR' && { votosNoMunicipio: votosNoMunicipio(c) }),
+        // Buscando um NOME numa cidade, o percentual acima é o do estado (o
+        // Flávio saía com 51,9% "em Itu", que era o de SP). O da cidade e a
+        // posição dele lá, contra todos do mesmo cargo:
+        ...(muniNorm && uf !== 'BR' && !semNome && (() => {
+          const rivais = staticData
+            .filter(o => normalizarTextoTse(o.cargo) === normalizarTextoTse(c.cargo))
+            .map(o => ({ o, v: votosNoMunicipio(o) }))
+            .filter(x => x.v > 0)
+            .sort((a, b) => b.v - a.v);
+          const total = rivais.reduce((s2, x) => s2 + x.v, 0);
+          const pos = rivais.findIndex(x => x.o === c);
+          return total > 0 ? {
+            percentualNoMunicipio: Math.round((votosNoMunicipio(c) / total) * 1000) / 10,
+            ...(pos >= 0 && { posicaoNoMunicipio: pos + 1, candidatosNoMunicipio: rivais.length }),
+          } : {};
+        })()),
         // Quanto mais candidatos na resposta, menos municípios por candidato —
         // 70 deputados × 20 municípios estouraria o limite do turno. Num
         // ranking de bancada, o principal reduto de cada um já basta.
