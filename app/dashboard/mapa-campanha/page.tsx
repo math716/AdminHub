@@ -405,6 +405,26 @@ interface BairroInfo {
   }>;
 }
 
+/**
+ * Próxima eleição (ainda por vir) do mesmo tipo do ano-base: municipal
+ * (2020, 2024, 2028…) ou geral (2018, 2022, 2026…). A partir de outubro a
+ * eleição do ano corrente conta como passada.
+ */
+function proximaEleicao(anoBase: number): number {
+  const hoje = new Date();
+  const limite = hoje.getMonth() >= 9 ? hoje.getFullYear() + 1 : hoje.getFullYear();
+  let ano = anoBase + 4;
+  while (ano < limite) ano += 4;
+  return ano;
+}
+
+/** Anos que um candidato novo pode disputar: as duas próximas eleições do cargo. */
+function anosNovoCandidato(cargo: string): string[] {
+  const municipal = cargo === 'PREFEITO' || cargo === 'VEREADOR';
+  const proxima = proximaEleicao(municipal ? 2020 : 2018);
+  return [String(proxima), String(proxima + 4)];
+}
+
 export default function MapaCampanhaPage() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
@@ -422,20 +442,15 @@ export default function MapaCampanhaPage() {
   const [candidateName, setCandidateName] = useState('');
   const [ano, setAno] = useState('2022');
   const [uf, setUf] = useState('SP');
-  const [anoProjecao, setAnoProjecao] = useState('2026');
-
-  // O ano alvo tem de vir DEPOIS da base. Com 2026 virando ano-base, o alvo
-  // padrão (2026) daria "projetar 2026 a partir de 2026". Ao trocar a base,
-  // se o alvo ficou para trás, sugere a próxima eleição do mesmo tipo
-  // (base + 4: 2026 → 2030, 2024 → 2028), ou o primeiro ano que vier depois.
-  useEffect(() => {
-    const base = Number(ano);
-    if (Number(anoProjecao) > base) return;
-    const opcoes = [2026, 2028, 2030];
-    const proximo = opcoes.includes(base + 4) ? base + 4 : opcoes.find(a => a > base);
-    if (proximo) setAnoProjecao(String(proximo));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ano]);
+  // Candidato da pesquisa: a projeção é sempre a próxima eleição do mesmo
+  // cargo (ano municipal → prefeito/vereador; ano geral → deputado, senador,
+  // governador, presidente). Outro cargo = "Novo candidato", que fica no ano
+  // escolhido lá e nunca é trocado.
+  const [anoProjecao, setAnoProjecao] = useState(() => String(proximaEleicao(2022)));
+  const escolherAnoBase = (valor: string) => {
+    setAno(valor);
+    setAnoProjecao(String(proximaEleicao(Number(valor))));
+  };
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingParceria, setSavingParceria] = useState(false);
@@ -534,7 +549,7 @@ export default function MapaCampanhaPage() {
   const [novoCandidatoPartido, setNovoCandidatoPartido] = useState('');
   const [novoCandidatoCargo, setNovoCandidatoCargo] = useState('DEPUTADO_FEDERAL');
   const [novoCandidatoUf, setNovoCandidatoUf] = useState('SP');
-  const [novoCandidatoAnoProjecao, setNovoCandidatoAnoProjecao] = useState('2026');
+  const [novoCandidatoAnoProjecao, setNovoCandidatoAnoProjecao] = useState(() => anosNovoCandidato('DEPUTADO_FEDERAL')[0]);
   const [novoCandidatoMunicipio, setNovoCandidatoMunicipio] = useState('');
   const [novoCandidatoMunicipioFiltro, setNovoCandidatoMunicipioFiltro] = useState('');
   const [novoCandidatoMunicipioOpcoes, setNovoCandidatoMunicipioOpcoes] = useState<string[]>([]);
@@ -1146,6 +1161,7 @@ export default function MapaCampanhaPage() {
     setNovoCandidatoNome('');
     setNovoCandidatoPartido('');
     setNovoCandidatoCargo('DEPUTADO_FEDERAL');
+    setNovoCandidatoAnoProjecao(anosNovoCandidato('DEPUTADO_FEDERAL')[0]);
     setNovoCandidatoMunicipio('');
     setNovoCandidatoMunicipioFiltro('');
   };
@@ -2501,13 +2517,11 @@ export default function MapaCampanhaPage() {
     { value: '2020', label: '2020' },
     { value: '2018', label: '2018' }
   ];
+  // Candidato novo: o "ano da eleição" é o próprio ano em que vai concorrer.
+  if (!anosOptions.some(o => o.value === ano)) anosOptions.unshift({ value: ano, label: ano });
 
-  // Só anos depois do ano-base (ver o efeito junto do estado `anoProjecao`).
-  const anosProjecaoOptions = [
-    { value: '2026', label: '2026' },
-    { value: '2028', label: '2028' },
-    { value: '2030', label: '2030' }
-  ].filter(o => Number(o.value) > Number(ano));
+  // Fixo: segue o ano da eleição (ver `escolherAnoBase`) ou o novo candidato.
+  const anosProjecaoOptions = [{ value: anoProjecao, label: anoProjecao }];
 
   const estadosOptions = ESTADOS_BRASIL.map(e => ({ value: e.sigla, label: e.nome }));
 
@@ -2781,13 +2795,13 @@ export default function MapaCampanhaPage() {
                 />
               </CampoBusca>
               <CampoBusca rotulo="Ano da eleição" className="lg:col-span-2">
-                <Select value={ano} onChange={(e) => setAno(e.target.value)} options={anosOptions} />
+                <Select value={ano} onChange={(e) => escolherAnoBase(e.target.value)} options={anosOptions} />
               </CampoBusca>
               <CampoBusca rotulo="Estado" className="lg:col-span-2">
                 <Select value={uf} onChange={(e) => setUf(e.target.value)} options={estadosOptions} />
               </CampoBusca>
               <CampoBusca rotulo="Projetar para" className="col-span-2 lg:col-span-2">
-                <Select value={anoProjecao} onChange={(e) => setAnoProjecao(e.target.value)} options={anosProjecaoOptions} />
+                <Select value={anoProjecao} onChange={() => {}} options={anosProjecaoOptions} disabled />
               </CampoBusca>
               <div className="col-span-2 lg:col-span-2">
                 <Button onClick={() => searchCandidate()} loading={loading} className="w-full font-semibold">
@@ -4352,7 +4366,7 @@ export default function MapaCampanhaPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <CampoBusca rotulo="Cargo *">
-              <select value={novoCandidatoCargo} onChange={(e) => setNovoCandidatoCargo(e.target.value)} className={CLASSE_CAMPO} style={ESTILO_CAMPO}>
+              <select value={novoCandidatoCargo} onChange={(e) => { setNovoCandidatoCargo(e.target.value); setNovoCandidatoAnoProjecao(anosNovoCandidato(e.target.value)[0]); }} className={CLASSE_CAMPO} style={ESTILO_CAMPO}>
                 {[
                   ['DEPUTADO_FEDERAL', 'Deputado Federal'],
                   ['DEPUTADO_ESTADUAL', 'Deputado Estadual'],
@@ -4367,7 +4381,7 @@ export default function MapaCampanhaPage() {
             </CampoBusca>
             <CampoBusca rotulo="Ano da projeção *">
               <select value={novoCandidatoAnoProjecao} onChange={(e) => setNovoCandidatoAnoProjecao(e.target.value)} className={CLASSE_CAMPO} style={ESTILO_CAMPO}>
-                {['2024', '2026', '2028', '2030'].map((a) => (
+                {anosNovoCandidato(novoCandidatoCargo).map((a) => (
                   <option key={a} value={a}>{a}</option>
                 ))}
               </select>
