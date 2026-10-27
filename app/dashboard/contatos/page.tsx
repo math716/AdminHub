@@ -217,6 +217,8 @@ export default function ContatosPage() {
   const [selectedBairros, setSelectedBairros] = useState<Set<string>>(new Set());
   const [bairroLoading, setBairroLoading] = useState(false);
   const [munHasBairros, setMunHasBairros] = useState(false);
+  // contatos dentro do contorno do município navegado (independe de haver bairros)
+  const [munContactIds, setMunContactIds] = useState<Set<string>>(new Set());
   const [pipLoading, setPipLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [mapSearch, setMapSearch] = useState('');
@@ -333,6 +335,14 @@ export default function ContatosPage() {
     setNavMunicipio({ codigo, nome });
     setView('municipio'); setPopup(null);
     setBairroContacts({}); setBairroCount({}); setBairroFeatures([]); setSelectedBairros(new Set());
+    setMunContactIds(new Set());
+
+    // Lista e contador usam o contorno da cidade — cidades sem mapa de bairros
+    // (ou contatos fora dos bairros mapeados) também aparecem.
+    setPipLoading(true);
+    computeMunicipioContactsForCode(selectedUf, codigo)
+      .then(cs => setMunContactIds(new Set(cs.map(c => c.id))))
+      .finally(() => setPipLoading(false));
 
     const nStr = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
     // converte nome para o formato do filename gerado pelo script (underscore)
@@ -409,7 +419,7 @@ export default function ContatosPage() {
       setBairroCount(bCount);
       setBairroFeatures(features);
     } catch {} finally { setBairroLoading(false); }
-  }, [selectedUf, geocodedContacts, fetchStateGeojson]);
+  }, [selectedUf, geocodedContacts, fetchStateGeojson, computeMunicipioContactsForCode]);
 
   const selectMunicipioContacts = useCallback(async (uf: string, codigo: string) => {
     setPipLoading(true); setPopup(null);
@@ -437,14 +447,14 @@ export default function ContatosPage() {
 
   const goBack = useCallback(() => {
     if (view === 'municipio') {
-      setView('estado'); setNavMunicipio(null);
+      setView('estado'); setNavMunicipio(null); setMunContactIds(new Set());
       setBairroContacts({}); setBairroCount({}); setBairroFeatures([]);
       setSelectedBairros(new Set()); setBairroLoading(false);
       setSelectedIds(new Set());
     } else {
       setView('brasil'); setSelectedUf(''); setSelectedStateName('');
       setContactsByMunCode({}); setStateContactIds(new Set());
-      setNavMunicipio(null); setBairroContacts({}); setBairroCount({}); setBairroFeatures([]);
+      setNavMunicipio(null); setMunContactIds(new Set()); setBairroContacts({}); setBairroCount({}); setBairroFeatures([]);
       setSelectedBairros(new Set());
       setSelectedIds(new Set());
     }
@@ -459,10 +469,7 @@ export default function ContatosPage() {
   const mapSidebarContacts = useMemo(() => {
     let base: { id: string; nome: string; numero: string }[];
     if (view === 'municipio') {
-      const allIds = Object.values(bairroContacts).flat();
-      const seen = new Set<string>();
-      base = allIds.filter(id => { if (seen.has(id)) return false; seen.add(id); return true; })
-        .map(id => geocodedContacts.find(c => c.id === id)!).filter(Boolean);
+      base = geocodedContacts.filter(c => munContactIds.has(c.id));
     } else if (view === 'estado') {
       base = geocodedContacts.filter(c => stateContactIds.has(c.id));
     } else {
@@ -471,7 +478,7 @@ export default function ContatosPage() {
     if (!mapSearch.trim()) return base;
     const q = mapSearch.toLowerCase();
     return base.filter(c => c.nome.toLowerCase().includes(q) || c.numero.includes(q));
-  }, [view, bairroContacts, geocodedContacts, stateContactIds, mapSearch]);
+  }, [view, munContactIds, geocodedContacts, stateContactIds, mapSearch]);
 
   const selectAll = () => setSelectedIds(prev => { const n = new Set(prev); mapSidebarContacts.forEach(c => n.add(c.id)); return n; });
   const clearAll  = () => setSelectedIds(new Set());
@@ -933,7 +940,7 @@ export default function ContatosPage() {
                   <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.15)' }}>
                     <p className="text-lg font-bold" style={{ color: '#2563EB' }}>
                       {view === 'municipio'
-                        ? Object.values(bairroContacts).reduce((a, b) => a + b.length, 0)
+                        ? munContactIds.size
                         : view === 'estado' ? stateContactIds.size : contatos.length}
                     </p>
                     <p className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--tint-45)' }}>
@@ -1095,6 +1102,9 @@ export default function ContatosPage() {
                   <div className="h-full flex flex-col items-center justify-center gap-3">
                     <Building2 className="h-12 w-12 opacity-20" style={{ color: 'var(--acento-azul)' }} />
                     <p className="text-sm" style={{ color: 'var(--tint-45)' }}>Dados de bairros não disponíveis para {navMunicipio.nome}</p>
+                    {munContactIds.size > 0 && (
+                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Os contatos deste município estão na lista ao lado.</p>
+                    )}
                   </div>
                 )}
               </div>
