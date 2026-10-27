@@ -2898,7 +2898,8 @@ export default function MapaCampanhaPage() {
           {/* Main 12-column grid */}
           <div className={mapFullscreen
             ? 'fixed inset-0 z-[2000] bg-[var(--bg-card)] flex'
-            : 'grid grid-cols-12 gap-4 items-start'
+            // Telas grandes: laterais com largura fixa e o mapa com o resto.
+            : 'grid grid-cols-12 2xl:grid-cols-[18rem_minmax(0,1fr)_18rem] gap-4 items-start'
           }>
             {/* LEFT SIDEBAR — scenario + stats + municipality list
                 Antes era `hidden md:flex`: no celular o seletor de cenário não
@@ -2910,7 +2911,7 @@ export default function MapaCampanhaPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 }}
-                className="flex col-span-12 order-2 md:col-span-4 lg:col-span-3 md:order-1 flex-col md:h-[calc(100vh-160px)] md:min-h-[340px]"
+                className="flex col-span-12 order-2 md:col-span-4 lg:col-span-3 2xl:col-span-1 md:order-1 flex-col md:h-[calc(100vh-160px)] md:min-h-[340px]"
               >
                 <PainelCenarios
                   cenarios={(['conservador', 'possivel', 'arrojado'] as CenarioType[]).map(c => ({
@@ -2942,7 +2943,7 @@ export default function MapaCampanhaPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className="flex col-span-12 order-3 lg:col-span-3 lg:order-3 flex-col h-[34rem] lg:h-[calc(100vh-160px)] lg:min-h-[340px]"
+                className="flex col-span-12 order-3 lg:col-span-3 2xl:col-span-1 lg:order-3 flex-col h-[34rem] lg:h-[calc(100vh-160px)] lg:min-h-[340px]"
               >
                 {/* Municipality List */}
                 <Card className="flex flex-col h-full !rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)' }}>
@@ -3630,7 +3631,7 @@ export default function MapaCampanhaPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
-              className={mapFullscreen ? 'flex-1 min-w-0 relative overflow-hidden' : 'col-span-12 md:col-span-8 lg:col-span-6 md:order-2 overflow-hidden order-1'}
+              className={mapFullscreen ? 'flex-1 min-w-0 relative overflow-hidden' : 'col-span-12 md:col-span-8 lg:col-span-6 2xl:col-span-1 md:order-2 overflow-hidden order-1'}
             >
               <Card
                 className={mapFullscreen ? 'h-full rounded-none border-0 bg-transparent overflow-hidden flex flex-col' : '!rounded-2xl overflow-hidden flex flex-col pt-2'}
