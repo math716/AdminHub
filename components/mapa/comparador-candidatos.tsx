@@ -13,7 +13,7 @@
 // cidade. Os votos por estado/cidade vêm de /api/tse/candidato.
 
 import { useMemo, useRef, useState } from 'react';
-import { Plus, X, Loader2, Search, AlertTriangle, Scale } from 'lucide-react';
+import { Plus, X, Loader2, Search, AlertTriangle, Info, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -89,6 +89,7 @@ export function ComparadorCandidatos() {
   const [busca, setBusca] = useState('');
   const [buscando, setBuscando] = useState(false);
   const [erro, setErro] = useState('');
+  const [aviso, setAviso] = useState('');
   const [homonimos, setHomonimos] = useState<Homonimo[]>([]);
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const buscaRef = useRef<HTMLInputElement>(null);
@@ -104,12 +105,18 @@ export function ComparadorCandidatos() {
   const escopo = municipal && abrangencia === 'BR' ? '' : abrangencia;
 
   const voltarAoInicio = () => { setUfAberta(null); setDadosUf({}); setCidadeAberta(null); };
-  const limpar = () => { setCandidatos([]); setHomonimos([]); setErro(''); voltarAoInicio(); };
+  const limpar = () => { setCandidatos([]); setHomonimos([]); setErro(''); setAviso(''); voltarAoInicio(); };
 
   // ── Adicionar ────────────────────────────────────────────────────────────
   const adicionarPorId = async (id: string) => {
     setHomonimos([]);
-    if (candidatos.some(c => c.id === id)) { setErro('Esse candidato já está na comparação.'); return; }
+    setAviso('');
+    // Mesmo candidato entre turnos é ganho e perda de votos: é a aba Evolução.
+    if (candidatos.some(c => c.id === id)) {
+      setErro('');
+      setAviso('Esse candidato já está na comparação. Para comparar o mesmo candidato entre o 1º e o 2º turno, use a aba Evolução.');
+      return;
+    }
     if (candidatos.length >= MAX_CANDIDATOS) { setErro(`A comparação aceita até ${MAX_CANDIDATOS} candidatos.`); return; }
     setBuscando(true);
     try {
@@ -134,6 +141,7 @@ export function ComparadorCandidatos() {
   };
 
   const buscar = async () => {
+    setAviso('');
     const nome = busca.trim();
     if (!nome) { setErro('Digite o nome do candidato.'); return; }
     if (!escopo) { setErro(`Em ${ano} a eleição foi municipal: escolha o estado da cidade.`); return; }
@@ -321,9 +329,14 @@ export function ComparadorCandidatos() {
           </Campo>
         </div>
 
-        {erro && (
+        {erro ? (
           <p className="mt-3 text-xs flex items-start gap-1.5 rounded-lg px-3 py-2" style={{ color: 'var(--danger)', background: 'var(--danger-soft)' }}>
             <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-px" /> {erro}
+          </p>
+        ) : aviso && (
+          <p className="mt-3 text-xs flex items-start gap-1.5 rounded-lg px-3 py-2"
+            style={{ color: 'var(--text-secondary)', background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.30)' }}>
+            <Info className="h-3.5 w-3.5 flex-shrink-0 mt-px" style={{ color: 'var(--warning)' }} /> {aviso}
           </p>
         )}
 

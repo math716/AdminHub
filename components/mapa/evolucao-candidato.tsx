@@ -3,7 +3,8 @@
 // Evolução entre eleições (comparador, fase 3).
 //
 // Um candidato numa eleição ("antes") e outro — ou o mesmo — noutra
-// ("depois"), no mesmo território. O mapa pinta de verde onde os votos
+// ("depois"), no mesmo território. Cada lado escolhe ano e turno, então dá
+// para comparar o mesmo candidato no 1º e no 2º turno de um ano. O mapa pinta de verde onde os votos
 // cresceram e de vermelho onde caíram, mais forte quanto maior a variação.
 // Brasil (presidente) → estado → cidade; dentro da cidade, por bairro e por
 // zona.
@@ -13,7 +14,7 @@
 // "quedas" e "ganhos" que são só troca de código. Bairro é o recorte que se
 // mantém. Zonas entram com aviso, pelo mesmo motivo.
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   ArrowDownRight, ArrowRight, ArrowUpDown, ArrowUpRight, AlertTriangle, Info, List, Loader2, MousePointerClick, Plus, Search,
   TrendingDown, TrendingUp, X,
@@ -54,10 +55,13 @@ interface DadosCandidato {
   votosPorNomeMunicipio?: Record<string, number>;
   votosPorEstado?: Record<string, number>;
   zonas?: Array<{ municipio: string; zona: number; votos: number }>;
+  /** Também disputou o 2º turno deste ano (o id é o mesmo nos dois turnos). */
+  segundoTurno?: boolean;
 }
 
 interface Lado {
   ano: string;
+  turno: 1 | 2;
   busca: string;
   homonimos: Array<{ id: string; nomeUrna: string; partido: string; cargo: string; totalVotos: number }>;
   dados: DadosCandidato | null;
@@ -70,8 +74,8 @@ export interface LinhaEvolucao {
   b: number;
 }
 
-async function carregarCandidato(id: string, ano: string, uf: string): Promise<DadosCandidato | null> {
-  const res = await fetch(`/api/tse/candidato?${new URLSearchParams({ candidatoId: id, ano, uf })}`);
+async function carregarCandidato(id: string, ano: string, uf: string, turno: 1 | 2): Promise<DadosCandidato | null> {
+  const res = await fetch(`/api/tse/candidato?${new URLSearchParams({ candidatoId: id, ano, uf, turno: String(turno) })}`);
   if (!res.ok) return null;
   const d = await res.json();
   return d?.candidatoId ? d : null;
@@ -102,11 +106,13 @@ function htmlEvolucao(titulo: string, rotA: string, rotB: string, a: number, b: 
   const d = b - a;
   const cor = d > 0 ? COR_GANHO : d < 0 ? COR_PERDA : '#64748b';
   const maior = Math.max(a, b, 1);
-  // rotA/rotB = "2018 · NOME": o ano vai na bolinha, o nome ao lado.
+  // rotA/rotB = "2018 · NOME" ou "2022 (2º turno) · NOME": o ano (ou o
+  // turno) vai na bolinha, o nome ao lado.
   const lado = (rot: string, valor: number, corLado: string, destaque: boolean) => {
     const [ano, ...resto] = rot.split(' · ');
+    const turno = ano.match(/(\d)º turno/)?.[1];
     return linhaBalao({
-      cor: corLado, iniciais: `’${ano.slice(2)}`, nome: resto.join(' · ') || ano, fracao: valor / maior, destaque,
+      cor: corLado, iniciais: turno ? `${turno}º` : `’${ano.slice(2, 4)}`, nome: resto.join(' · ') || ano, fracao: valor / maior, destaque,
       principal: fmt(valor), secundario: `votos em ${ano}`,
     });
   };
@@ -173,13 +179,13 @@ function PlacarEvolucao({ lados, linhas }: { lados: [LadoVisual, LadoVisual]; li
           {cartao(lados[1], totB, 1)}
         </div>
 
-        <div className="mt-5 sm:mt-6 space-y-2">
+        <div className="mt-5 sm:mt-6 grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-2">
           {([[lados[0], totA, 0.45], [lados[1], totB, 1]] as const).map(([l, t, alfa], i) => (
-            <div key={i} className="grid grid-cols-[3rem_1fr_auto] items-center gap-3">
-              <span className="text-[11px] font-bold tabular-nums" style={{ color: 'var(--text-tertiary)' }}>{l.ano}</span>
+            <Fragment key={i}>
+              <span className="text-[11px] font-bold tabular-nums whitespace-nowrap" style={{ color: 'var(--text-tertiary)' }}>{l.ano}</span>
               <BarraSimples fracao={t / maior} cor={comAlfa(l.cor, alfa)} altura={12} />
               <span className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }}>{fmt(t)}</span>
-            </div>
+            </Fragment>
           ))}
         </div>
       </div>
@@ -406,8 +412,8 @@ interface RespostaBairros { fonte?: string; bairros?: Array<{ nome: string; loca
 
 function EvolucaoCidade({ uf, municipio, a, b, rotA, rotB, titulo, lados }: {
   uf: string; municipio: string;
-  a: { id: string; ano: string; zonas: DadosCandidato['zonas'] };
-  b: { id: string; ano: string; zonas: DadosCandidato['zonas'] };
+  a: { id: string; ano: string; turno: 1 | 2; zonas: DadosCandidato['zonas'] };
+  b: { id: string; ano: string; turno: 1 | 2; zonas: DadosCandidato['zonas'] };
   rotA: string; rotB: string; titulo: string;
   lados: [LadoVisual, LadoVisual];
 }) {
@@ -419,12 +425,12 @@ function EvolucaoCidade({ uf, municipio, a, b, rotA, rotB, titulo, lados }: {
   useEffect(() => {
     let cancelado = false;
     setResp(null);
-    const buscar = (c: { id: string; ano: string }) =>
-      fetch(`/api/tse/bairros?${new URLSearchParams({ municipio, uf, candidatoId: c.id, ano: c.ano })}`)
+    const buscar = (c: { id: string; ano: string; turno: 1 | 2 }) =>
+      fetch(`/api/tse/bairros?${new URLSearchParams({ municipio, uf, candidatoId: c.id, ano: c.ano, turno: String(c.turno) })}`)
         .then(r => (r.ok ? r.json() : null)).catch(() => null);
     Promise.all([buscar(a), buscar(b)]).then(r => { if (!cancelado) setResp(r as [RespostaBairros | null, RespostaBairros | null]); });
     return () => { cancelado = true; };
-  }, [uf, municipio, a.id, a.ano, b.id, b.ano]);
+  }, [uf, municipio, a.id, a.ano, a.turno, b.id, b.ano, b.turno]);
 
   useEffect(() => {
     let cancelado = false;
@@ -564,7 +570,7 @@ function EvolucaoCidade({ uf, municipio, a, b, rotA, rotB, titulo, lados }: {
             dica="Passe o mouse para ver os votos" legenda={<LegendaEvolucao />}>
             <MapaCidadeComparacao
               pontos={pontos} poligonos={poligonosMapa} foco={foco}
-              versao={`${visaoEfetiva}|${a.id}|${b.id}|${locais.length}|${poligonos ? 1 : 0}`}
+              versao={`${visaoEfetiva}|${a.id}|${a.turno}|${b.id}|${b.turno}|${locais.length}|${poligonos ? 1 : 0}`}
               enquadramento={`${uf}|${municipio}|${visaoEfetiva === 'bairros' && poligonos ? 'pol' : 'pts'}`}
             />
           </CartaoMapa>
@@ -582,8 +588,8 @@ function EvolucaoCidade({ uf, municipio, a, b, rotA, rotB, titulo, lados }: {
 export function EvolucaoCandidato() {
   const [abrangencia, setAbrangencia] = useState('SP');
   const [lados, setLados] = useState<[Lado, Lado]>([
-    { ano: '2018', busca: '', homonimos: [], dados: null },
-    { ano: '2022', busca: '', homonimos: [], dados: null },
+    { ano: '2018', turno: 1, busca: '', homonimos: [], dados: null },
+    { ano: '2022', turno: 1, busca: '', homonimos: [], dados: null },
   ]);
   const [buscando, setBuscando] = useState<number | null>(null);
   const [erro, setErro] = useState('');
@@ -598,13 +604,28 @@ export function EvolucaoCandidato() {
     voltarAoInicio();
   };
 
-  const escolherCandidato = async (i: number, id: string) => {
+  const naoDisputou = (ano: string) => `Esse candidato não aparece no 2º turno de ${ano}. Confira se ele disputou o 2º turno.`;
+
+  const escolherCandidato = async (i: number, id: string, ano = lados[i].ano, turno = lados[i].turno) => {
     setBuscando(i);
-    const d = await carregarCandidato(id, lados[i].ano, escopo);
+    const d = await carregarCandidato(id, ano, escopo, turno);
     setBuscando(null);
-    if (!d) { setErro('Não foi possível carregar esse candidato agora.'); return; }
+    if (!d) { setErro(turno === 2 ? naoDisputou(ano) : 'Não foi possível carregar esse candidato agora.'); return; }
     setErro('');
-    atualizar(i, { dados: d, homonimos: [], busca: '' });
+    atualizar(i, { ano, turno, dados: d, homonimos: [], busca: '' });
+  };
+
+  // Trocar o turno mantém o candidato (o id é o mesmo nos dois turnos).
+  const trocarTurno = async (i: number, turno: 1 | 2) => {
+    const lado = lados[i];
+    if (lado.turno === turno) return;
+    if (!lado.dados) { atualizar(i, { turno, homonimos: [] }); return; }
+    setBuscando(i);
+    const d = await carregarCandidato(lado.dados.candidatoId, lado.ano, escopo, turno);
+    setBuscando(null);
+    if (!d) { setErro(turno === 2 ? naoDisputou(lado.ano) : 'Não foi possível carregar esse candidato agora.'); return; }
+    setErro('');
+    atualizar(i, { turno, dados: d, homonimos: [] });
   };
 
   const buscar = async (i: number) => {
@@ -615,10 +636,10 @@ export function EvolucaoCandidato() {
     setBuscando(i);
     setErro('');
     try {
-      const res = await fetch(`/api/tse/candidato?${new URLSearchParams({ candidato: nome, ano: lado.ano, uf: escopo })}`);
+      const res = await fetch(`/api/tse/candidato?${new URLSearchParams({ candidato: nome, ano: lado.ano, uf: escopo, turno: String(lado.turno) })}`);
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setErro(escopo === 'BR' ? 'Em "Brasil" só aparecem candidatos a presidente. Para outros cargos, escolha o estado.' : (d?.error ?? 'Candidato não encontrado.'));
+        setErro(lado.turno === 2 ? `Não encontramos esse nome no 2º turno de ${lado.ano}. Confira se o candidato disputou o 2º turno.` : escopo === 'BR' ? 'Em "Brasil" só aparecem candidatos a presidente. Para outros cargos, escolha o estado.' : (d?.error ?? 'Candidato não encontrado.'));
         return;
       }
       if (d?.multiplos) { atualizar(i, { homonimos: d.candidatos ?? [] }); return; }
@@ -629,11 +650,15 @@ export function EvolucaoCandidato() {
 
   const [A, B] = lados;
   const pronto = !!A.dados && !!B.dados;
-  const rotA = `${A.ano} · ${nomeDe(A.dados)}`;
-  const rotB = `${B.ano} · ${nomeDe(B.dados)}`;
+  // Com algum lado no 2º turno, o turno entra no rótulo dos dois lados.
+  const comTurno = A.turno === 2 || B.turno === 2;
+  const eleicao = (l: Lado) => (comTurno ? `${l.ano} (${l.turno}º turno)` : l.ano);
+  const eleA = eleicao(A), eleB = eleicao(B);
+  const rotA = `${eleA} · ${nomeDe(A.dados)}`;
+  const rotB = `${eleB} · ${nomeDe(B.dados)}`;
   const titulo = nomeDe(A.dados) === nomeDe(B.dados)
-    ? `Evolução de ${nomeDe(A.dados)} — ${A.ano} × ${B.ano}`
-    : `${nomeDe(A.dados)} (${A.ano}) × ${nomeDe(B.dados)} (${B.ano})`;
+    ? `Evolução de ${nomeDe(A.dados)} — ${eleA} × ${eleB}`
+    : `${nomeDe(A.dados)} (${eleA}) × ${nomeDe(B.dados)} (${eleB})`;
 
   const dadosNoNivel = (i: 0 | 1) => (escopo === 'BR' && ufAberta ? dadosUf?.[i] ?? null : lados[i].dados);
   // O DF é uma cidade só (Brasília): abre direto nas regiões administrativas.
@@ -649,7 +674,7 @@ export function EvolucaoCandidato() {
     setUfAberta(uf);
     setCidadeAberta(null);
     setDadosUf(null);
-    const r = await Promise.all([carregarCandidato(A.dados.candidatoId, A.ano, uf), carregarCandidato(B.dados.candidatoId, B.ano, uf)]);
+    const r = await Promise.all([carregarCandidato(A.dados.candidatoId, A.ano, uf, A.turno), carregarCandidato(B.dados.candidatoId, B.ano, uf, B.turno)]);
     setDadosUf(r as [DadosCandidato | null, DadosCandidato | null]);
   };
 
@@ -698,8 +723,8 @@ export function EvolucaoCandidato() {
   // O TSE muda o número do candidato a cada eleição: o mesmo é reconhecido pelo nome.
   const mesmo = !!A.dados && !!B.dados && semAcento(nomeDe(A.dados)) === semAcento(nomeDe(B.dados));
   const ladosVisuais: [LadoVisual, LadoVisual] = [
-    { nome: nomeDe(A.dados), ano: A.ano, partido: A.dados?.partido ?? '', cor: coresLados[0] },
-    { nome: nomeDe(B.dados), ano: B.ano, partido: B.dados?.partido ?? '', cor: mesmo ? coresLados[0] : coresLados[1] },
+    { nome: nomeDe(A.dados), ano: eleA, partido: A.dados?.partido ?? '', cor: coresLados[0] },
+    { nome: nomeDe(B.dados), ano: eleB, partido: B.dados?.partido ?? '', cor: mesmo ? coresLados[0] : coresLados[1] },
   ];
 
   const passos: Passo[] = [
@@ -707,6 +732,18 @@ export function EvolucaoCandidato() {
     ...(nivel !== 'brasil' ? [{ rotulo: nomeDaUf(ufAtual), onClick: ehDf ? undefined : () => setCidadeAberta(null) }] : []),
     ...(nivel === 'cidade' && !ehDf ? [{ rotulo: cidadeAtual! }] : []),
   ];
+
+  // Atalho: o candidato do "antes" no 2º turno do mesmo ano, sem digitar de novo.
+  const atalhoSegundoTurno = (lado: Lado, i: number) => {
+    if (i !== 1 || lado.dados || !A.dados?.segundoTurno || A.turno !== 1) return null;
+    return (
+      <button type="button" onClick={() => escolherCandidato(1, A.dados!.candidatoId, A.ano, 2)} disabled={buscando !== null}
+        className="w-full flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all hover:opacity-80"
+        style={{ color: 'var(--acento-azul)', background: 'rgba(37,99,235,0.08)', border: '1px dashed rgba(37,99,235,0.35)' }}>
+        <ArrowRight className="h-3.5 w-3.5 flex-shrink-0" /> Usar {nomeDe(A.dados)} no 2º turno de {A.ano}
+      </button>
+    );
+  };
 
   const cartaoLado = (lado: Lado, i: number) => (
     <div key={i} className="rounded-xl p-3 sm:p-4 space-y-3 min-w-0"
@@ -718,8 +755,19 @@ export function EvolucaoCandidato() {
         <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-tertiary)' }}>
           {i === 0 ? 'Antes' : 'Depois'}
         </span>
-        <div className="w-24">
-          <Select value={lado.ano} onChange={(e) => atualizar(i, { ano: e.target.value, dados: null, homonimos: [] })} options={opcoesAnos(i)} />
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg p-0.5 text-xs h-9" style={{ background: 'var(--bg-card-subtle)', border: '1px solid var(--border-default)' }}>
+            {([1, 2] as const).map(t => (
+              <button key={t} type="button" onClick={() => trocarTurno(i, t)} disabled={buscando !== null}
+                className="px-2.5 rounded-md font-semibold whitespace-nowrap transition-all"
+                style={lado.turno === t ? { background: 'var(--brand-cobalt)', color: '#fff', boxShadow: '0 4px 12px -4px rgba(37,99,235,0.6)' } : { color: 'var(--text-secondary)' }}>
+                {t}º turno
+              </button>
+            ))}
+          </div>
+          <div className="w-24">
+            <Select value={lado.ano} onChange={(e) => atualizar(i, { ano: e.target.value, dados: null, homonimos: [] })} options={opcoesAnos(i)} />
+          </div>
         </div>
       </div>
       {lado.dados ? (
@@ -746,6 +794,7 @@ export function EvolucaoCandidato() {
           </Button>
         </div>
       )}
+      {atalhoSegundoTurno(lado, i)}
       {lado.homonimos.length > 0 && (
         <div className="max-h-48 overflow-y-auto scrollbar-dark rounded-lg" style={{ border: '1px solid var(--border-default)', background: 'var(--bg-card)' }}>
           {lado.homonimos.map(h => (
@@ -789,13 +838,13 @@ export function EvolucaoCandidato() {
       {!pronto ? (
         <EstadoVazio
           titulo="Escolha o candidato de cada eleição"
-          texto="Pode ser o mesmo candidato em dois anos, ou dois candidatos diferentes. O mapa mostra onde os votos cresceram e onde caíram."
+          texto="Pode ser o mesmo candidato em dois anos, no 1º e no 2º turno, ou dois candidatos diferentes. O mapa mostra onde os votos cresceram e onde caíram."
         />
       ) : (
         <>
           <Trilha
             passos={passos}
-            meta={`${A.ano} → ${B.ano}`}
+            meta={`${eleA} → ${eleB}`}
             acoes={nivel !== 'cidade' && (
               <BotaoPdfComparacao
                 tipo="evolucao" titulo={titulo}
@@ -816,8 +865,8 @@ export function EvolucaoCandidato() {
           {nivel === 'cidade' ? (
             <EvolucaoCidade
               uf={ufAtual} municipio={cidadeAtual!} rotA={rotA} rotB={rotB} titulo={titulo} lados={ladosVisuais}
-              a={{ id: A.dados!.candidatoId, ano: A.ano, zonas: dadosNoNivel(0)?.zonas }}
-              b={{ id: B.dados!.candidatoId, ano: B.ano, zonas: dadosNoNivel(1)?.zonas }}
+              a={{ id: A.dados!.candidatoId, ano: A.ano, turno: A.turno, zonas: dadosNoNivel(0)?.zonas }}
+              b={{ id: B.dados!.candidatoId, ano: B.ano, turno: B.turno, zonas: dadosNoNivel(1)?.zonas }}
             />
           ) : (
             <>
@@ -833,7 +882,7 @@ export function EvolucaoCandidato() {
                       tipo={nivel === 'brasil' ? 'brasil' : 'estado'}
                       uf={nivel === 'estado' ? ufAtual : undefined}
                       aparencia={aparencia}
-                      versao={`${A.dados!.candidatoId}|${B.dados!.candidatoId}|${A.ano}|${B.ano}|${ufAberta}|${dadosUf ? 1 : 0}`}
+                      versao={`${A.dados!.candidatoId}|${B.dados!.candidatoId}|${A.ano}|${A.turno}|${B.ano}|${B.turno}|${ufAberta}|${dadosUf ? 1 : 0}`}
                       altura="100%"
                       onClickArea={nivel === 'brasil' ? (uf) => abrirUf(uf) : (_c, nome) => setCidadeAberta(nome)}
                     />
