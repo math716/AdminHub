@@ -72,6 +72,13 @@ const nextConfig = {
         source: '/:path*',
         headers: securityHeaders,
       },
+      {
+        // Modelo 3D da Gabi: o navegador guarda por 7 dias sem perguntar ao
+        // servidor a cada abertura do chat. Trocar o modelo = trocar o nome
+        // do arquivo (ou esperar a semana).
+        source: '/models/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }],
+      },
     ];
   },
 };

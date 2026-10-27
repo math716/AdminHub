@@ -2,14 +2,12 @@
 
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { useGLTF, useAnimations, OrbitControls, Html, Environment, Lightformer } from '@react-three/drei';
+import { useGLTF, useAnimations, OrbitControls, Environment, Lightformer } from '@react-three/drei';
 import { SkeletonUtils } from 'three-stdlib';
 import type { Group, Mesh, MeshStandardMaterial } from 'three';
-import { setGabiFace } from './gabi-face-store';
+import { GABI_MODEL_URL, salvarGabiRetrato, setGabiFace } from './gabi-face-store';
 
-// Modelo 3D da Gabi. Vem do próprio sistema (public/models/gabi.glb);
-// pode ser sobrescrito por NEXT_PUBLIC_GABI_MODEL_URL (ex.: uma URL hospedada).
-export const GABI_MODEL_URL = process.env.NEXT_PUBLIC_GABI_MODEL_URL || '/models/gabi.glb';
+export { GABI_MODEL_URL };
 export const GABI_3D_ENABLED = !!GABI_MODEL_URL;
 
 // Enquadramento: rosto/busto (cabeça no topo, ~y 1.8 no modelo Avaturn)
@@ -59,8 +57,20 @@ function Model({ url }: { url: string }) {
   );
 }
 
+// Avisa quando a cena já desenhou (modelo + ambiente prontos): só então o
+// canvas aparece, por cima da foto ou junto com o brilho de fundo.
+function Pronto({ onPronto }: { onPronto?: () => void }) {
+  useEffect(() => {
+    if (!onPronto) return;
+    let id = requestAnimationFrame(() => { id = requestAnimationFrame(() => onPronto()); });
+    return () => cancelAnimationFrame(id);
+  }, [onPronto]);
+  return null;
+}
+
 // Captura uma "foto" da Gabi ~1,4s após carregar, para reusar nos avatares
-// das mensagens (evita um WebGL por mensagem).
+// das mensagens (evita um WebGL por mensagem). A do avatar grande também
+// vira o retrato salvo, mostrado na hora nas próximas aberturas.
 function Capture() {
   const gl = useThree(s => s.gl);
   const scene = useThree(s => s.scene);
@@ -71,7 +81,9 @@ function Capture() {
       if (cancelled) return;
       try {
         gl.render(scene, camera);
-        setGabiFace(gl.domElement.toDataURL('image/png'));
+        const url = gl.domElement.toDataURL('image/png');
+        setGabiFace(url);
+        if (gl.domElement.width >= 150) salvarGabiRetrato(url);
       } catch {}
     }, 1400);
     return () => { cancelled = true; clearTimeout(t); };
@@ -79,7 +91,7 @@ function Capture() {
   return null;
 }
 
-export function GabiAvatar3D({ size = 120 }: { size?: number }) {
+export function GabiAvatar3D({ size = 120, onPronto }: { size?: number; onPronto?: () => void }) {
   if (!GABI_3D_ENABLED) return null;
 
   return (
@@ -94,7 +106,7 @@ export function GabiAvatar3D({ size = 120 }: { size?: number }) {
         <directionalLight position={[2, 4, 3]} intensity={1.0} />
         <directionalLight position={[-3, 2, 2]} intensity={0.4} color="#cfe0ff" />
 
-        <Suspense fallback={<Html center><span style={{ color: 'var(--brand-cyan)', fontSize: 10 }}>…</span></Html>}>
+        <Suspense fallback={null}>
           <Model url={GABI_MODEL_URL} />
           {/* Ambiente suave gerado na cena (sem HDR externo) — só um toque de
               reflexo; a cor vem das texturas (metalness reduzido no Model). */}
@@ -104,6 +116,7 @@ export function GabiAvatar3D({ size = 120 }: { size?: number }) {
             <Lightformer intensity={0.6} position={[5, 1, 2]} scale={[4, 6, 1]} color="#ffe6cc" />
           </Environment>
           <Capture />
+          <Pronto onPronto={onPronto} />
         </Suspense>
 
         {/* Estática (não gira sozinha); ainda dá pra arrastar levemente */}

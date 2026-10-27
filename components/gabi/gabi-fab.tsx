@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import {
   X, Send, Loader2, MessageSquare, Clock, Plus, Trash2, ChevronLeft, ScrollText, Sparkles,
@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
-import { getGabiFace, subscribeGabiFace } from './gabi-face-store';
+import { getGabiFace, getGabiRetrato, subscribeGabiFace } from './gabi-face-store';
 import { rotuloDeData } from '@/lib/data-relativa';
 
 const VisualizacoesCard = dynamic(
@@ -29,6 +29,32 @@ const GabiAvatar3D = dynamic(
 );
 // Modelo embutido em public/models/gabi.glb (pode trocar por env var).
 const HAS_GABI_3D = true;
+
+/**
+ * Gabi 3D sem "aparecer aos pedaços". O 3D leva de 0,5 s a alguns segundos
+ * para ficar pronto; até lá aparece o retrato salvo (foto tirada do próprio
+ * 3D, mesma pose) e o 3D surge por cima dele. Sem retrato (primeira vez no
+ * navegador), o brilho de fundo espera e aparece junto com ela.
+ */
+function GabiAvatar({ size, fundo }: { size: number; fundo?: ReactNode }) {
+  const [retrato] = useState(() => getGabiRetrato());
+  const [pronto, setPronto] = useState(false);
+  const marcarPronto = useCallback(() => setPronto(true), []);
+  const visivel = !!retrato || pronto;
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      {fundo && <div style={{ opacity: visivel ? 1 : 0, transition: 'opacity 0.35s ease' }}>{fundo}</div>}
+      {retrato && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={retrato} alt="" aria-hidden className="absolute inset-0 w-full h-full pointer-events-none"
+          style={{ opacity: pronto ? 0 : 1, transition: 'opacity 0.3s ease 0.3s' }} />
+      )}
+      <div className="absolute inset-0" style={{ opacity: pronto ? 1 : 0, transition: 'opacity 0.35s ease' }}>
+        <GabiAvatar3D size={size} onPronto={marcarPronto} />
+      </div>
+    </div>
+  );
+}
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -481,6 +507,19 @@ export function GabiFAB() {
   // ── Foto da Gabi 3D (capturada do canvas) para os avatares das mensagens ──
   useEffect(() => subscribeGabiFace(() => setGabiFace(getGabiFace())), []);
 
+  // Adianta o 3D: com o navegador ocioso, baixa o motor 3D e o modelo, para
+  // a Gabi já estar pronta quando o chat abrir. Só em computador — no celular
+  // não gasta dados de quem não usa a Gabi.
+  useEffect(() => {
+    if (!HAS_GABI_3D) return;
+    if ((navigator as any).connection?.saveData) return;
+    if (!window.matchMedia('(min-width: 1024px) and (pointer: fine)').matches) return;
+    const ocioso = (window as any).requestIdleCallback as undefined | ((cb: () => void, o?: { timeout: number }) => number);
+    const carregar = () => { import('./gabi-avatar-3d').catch(() => {}); };
+    const t = window.setTimeout(() => (ocioso ? ocioso(carregar, { timeout: 5000 }) : carregar()), 3000);
+    return () => window.clearTimeout(t);
+  }, []);
+
   // ── Sincronizar no localStorage ────────────────────────────────────────────
 
   // Nunca persiste só a saudação. No primeiro ciclo de efeitos `messages` ainda
@@ -823,7 +862,7 @@ export function GabiFAB() {
                   {HAS_GABI_3D ? (
                     <div className="w-14 h-14 rounded-full overflow-hidden"
                       style={{ background: 'linear-gradient(135deg, #123a6b, #0e5e78)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.18), 0 4px 18px rgba(34,211,238,0.45)' }}>
-                      <GabiAvatar3D size={56} />
+                      <GabiAvatar size={56} />
                     </div>
                   ) : (
                     <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-lg"
@@ -985,25 +1024,27 @@ export function GabiFAB() {
                     {/* Gabi 3D grande na tela inicial (sem conversa ainda) */}
                     {HAS_GABI_3D && messages.length <= 1 && (
                       <div className="flex flex-col items-center pt-2 pb-1">
-                        <div className="relative">
-                          {/* O brilho fica FORA do container do avatar e maior
-                              que ele. Dentro, com overflow-hidden, ele era
-                              cortado no quadrado — e esse corte reto é que
-                              parecia uma moldura. Solto e desfocado, some
-                              gradualmente em todas as direções. */}
-                          <div
-                            aria-hidden
-                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                            style={{
-                              width: 250, height: 250, borderRadius: '50%',
-                              background: 'radial-gradient(circle, var(--gabi-halo) 0%, transparent 62%)',
-                              filter: 'blur(26px)',
-                            }}
-                          />
-                          <div className="relative w-44 h-44">
-                            <GabiAvatar3D size={176} />
-                          </div>
-                        </div>
+                        <GabiAvatar
+                          size={176}
+                          fundo={(
+                            <>
+                              {/* O brilho fica FORA do container do avatar e maior
+                                  que ele. Dentro, com overflow-hidden, ele era
+                                  cortado no quadrado — e esse corte reto é que
+                                  parecia uma moldura. Solto e desfocado, some
+                                  gradualmente em todas as direções. */}
+                              <div
+                                aria-hidden
+                                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                                style={{
+                                  width: 250, height: 250, borderRadius: '50%',
+                                  background: 'radial-gradient(circle, var(--gabi-halo) 0%, transparent 62%)',
+                                  filter: 'blur(26px)',
+                                }}
+                              />
+                            </>
+                          )}
+                        />
                         <p className="uppercase font-semibold tracking-[0.09em] mt-1"
                           style={{ fontSize: 10, color: 'var(--brand-cobalt-text)' }}>
                           Gabi · sua assessora virtual
