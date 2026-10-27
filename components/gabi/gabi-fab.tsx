@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
-import { getGabiFace, getGabiRetrato, subscribeGabiFace } from './gabi-face-store';
+import { getGabiFace, subscribeGabiFace } from './gabi-face-store';
 import { rotuloDeData } from '@/lib/data-relativa';
 
 const VisualizacoesCard = dynamic(
@@ -31,25 +31,17 @@ const GabiAvatar3D = dynamic(
 const HAS_GABI_3D = true;
 
 /**
- * Gabi 3D sem "aparecer aos pedaços". O 3D leva de 0,5 s a alguns segundos
- * para ficar pronto; até lá aparece o retrato salvo (foto tirada do próprio
- * 3D, mesma pose) e o 3D surge por cima dele. Sem retrato (primeira vez no
- * navegador), o brilho de fundo espera e aparece junto com ela.
+ * Gabi 3D sem "aparecer aos pedaços": o 3D leva de 0,5 s a alguns segundos
+ * para ficar pronto, e o brilho de fundo espera para aparecer junto com ela.
  */
 function GabiAvatar({ size, fundo }: { size: number; fundo?: ReactNode }) {
-  const [retrato] = useState(() => getGabiRetrato());
   const [pronto, setPronto] = useState(false);
   const marcarPronto = useCallback(() => setPronto(true), []);
-  const visivel = !!retrato || pronto;
+  const aparecer = { opacity: pronto ? 1 : 0, transition: 'opacity 0.35s ease' };
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      {fundo && <div style={{ opacity: visivel ? 1 : 0, transition: 'opacity 0.35s ease' }}>{fundo}</div>}
-      {retrato && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={retrato} alt="" aria-hidden className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ opacity: pronto ? 0 : 1, transition: 'opacity 0.3s ease 0.3s' }} />
-      )}
-      <div className="absolute inset-0" style={{ opacity: pronto ? 1 : 0, transition: 'opacity 0.35s ease' }}>
+      {fundo && <div style={aparecer}>{fundo}</div>}
+      <div className="absolute inset-0" style={aparecer}>
         <GabiAvatar3D size={size} onPronto={marcarPronto} />
       </div>
     </div>

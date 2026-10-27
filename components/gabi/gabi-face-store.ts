@@ -4,9 +4,9 @@
 // avatar nas mensagens do chat sem criar um WebGL por mensagem. Módulo puro
 // (não importa three), para não pesar o bundle de quem só lê a foto.
 //
-// O retrato (a foto do avatar grande) também fica no localStorage: ao abrir o
-// chat ele aparece na hora, enquanto o 3D ainda carrega. A pose do modelo é
-// fixa, então a foto é idêntica ao 3D e a troca não aparece.
+// O retrato (a foto do avatar grande) também fica no localStorage, para os
+// avatares das mensagens já terem a foto antes de o 3D carregar. (Não é
+// mostrado no lugar do 3D: a troca foto → 3D ficava visível.)
 
 // Modelo 3D da Gabi. Vem do próprio sistema (public/models/gabi.glb);
 // pode ser sobrescrito por NEXT_PUBLIC_GABI_MODEL_URL (ex.: uma URL hospedada).
