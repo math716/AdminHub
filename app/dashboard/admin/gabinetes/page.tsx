@@ -642,7 +642,7 @@ export default function AdminGabinetesPage() {
   const filtradas = solicitacoes.filter(s => filtro === 'TODAS' || s.status === filtro);
   const pendentes = solicitacoes.filter(s => s.status === 'PENDENTE').length;
 
-  if (status === 'loading') {
+  if ((status === 'loading' && !session)) {
     return <div className="space-y-4"><Esqueleto className="h-16" /><Esqueleto className="h-28" /><EsqueletoLista linhas={4} /></div>;
   }
 

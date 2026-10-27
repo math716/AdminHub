@@ -2498,7 +2498,7 @@ export default function MapaCampanhaPage() {
     );
   }, [bairrosInfo, searchMunicipio]);
 
-  if (status === 'loading') {
+  if ((status === 'loading' && !session)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[var(--bg-card)]">
         <Loader2 className="h-8 w-8 animate-spin text-[color:var(--brand-cobalt)]" />

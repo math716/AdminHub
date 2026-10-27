@@ -323,7 +323,7 @@ export default function ImportacaoPage() {
     setParseError(null);
   };
 
-  if (status === 'loading') return null;
+  if ((status === 'loading' && !session)) return null;
   if (userRole !== 'SUPER_ADMIN') return null;
 
   return (

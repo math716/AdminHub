@@ -573,7 +573,7 @@ export default function UsuariosPage() {
   }, [gabineteGroups, userRole]);
 
   // ── loading / guard ───────────────────────────────────────────────────────
-  if (status === 'loading' || loading) {
+  if ((status === 'loading' && !session) || loading) {
     return (
       <div className="space-y-4"><Esqueleto className="h-16" /><EsqueletoLista linhas={5} /></div>
     );

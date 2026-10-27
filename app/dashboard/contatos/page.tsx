@@ -163,7 +163,7 @@ const TEXTOS_BALAO_ESTADO = {
 };
 
 export default function ContatosPage() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => { if (status === 'unauthenticated') router.push('/login'); }, [status, router]);
@@ -669,7 +669,7 @@ export default function ContatosPage() {
   const inputClass = 'w-full rounded-xl px-3 py-2.5 text-sm text-[color:var(--text-primary)] placeholder-[color:var(--text-tertiary)] outline-none transition-all';
   const inputStyle = { background: 'var(--tint-06)', border: '1px solid var(--tint-10)' };
 
-  if (status === 'loading') return (
+  if ((status === 'loading' && !session)) return (
     <div className="flex items-center justify-center h-screen">
       <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#2563EB' }} />
     </div>

@@ -451,7 +451,7 @@ export default function MapaDemandasPage() {
     if (e) { setSelectedEvent(e); setSelectedDemand(null); }
   };
 
-  if (status === 'loading' || loading) {
+  if ((status === 'loading' && !session) || loading) {
     return (
       <div className="-m-4 -mt-16 lg:-m-8 h-screen flex items-center justify-center bg-[var(--bg-page)]">
         <Loader2 className="w-10 h-10 animate-spin text-sky-400" />

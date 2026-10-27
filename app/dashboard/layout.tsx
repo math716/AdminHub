@@ -62,7 +62,10 @@ export default function DashboardLayout({
     }
   }, [status, router, mounted]);
 
-  if (!mounted || status === 'loading') {
+  // Só na primeira entrada: uma renovação da sessão no meio do uso também
+  // passa por 'loading', e trocar a tela pelo logo desmontaria a página
+  // (perdendo candidato, mapa e filtros abertos).
+  if (!mounted || (status === 'loading' && !session)) {
     return (
       <div
         className="min-h-screen flex flex-col items-center justify-center"

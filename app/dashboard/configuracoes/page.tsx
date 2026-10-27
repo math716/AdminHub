@@ -136,7 +136,7 @@ export default function ConfiguracoesPage() {
     setRefreshing(false);
   };
 
-  if (status === 'loading') return null;
+  if ((status === 'loading' && !session)) return null;
   if (!canAccess) return null;
 
   const cardStyle = { background: 'var(--bg-card)', border: '1px solid var(--border-default)' };
@@ -325,7 +325,6 @@ export default function ConfiguracoesPage() {
 // ──────────────────────────────────────────────────────────
 function AparenciaCard() {
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const { update } = useSession();
   const [mounted, setMounted] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -343,8 +342,7 @@ function AparenciaCard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme: next }),
       });
-      // Refresca o JWT pra próxima session/tab abrir com o tema correto
-      await update();
+      // Sem session.update(): a aba nova lê o tema do banco (ThemeSync).
     } catch {
       // segue só no localStorage
     } finally {

@@ -1,20 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
 
 /**
  * Botão compacto pra alternar tema. Atualiza:
  *   1. localStorage (next-themes)
- *   2. DB (PATCH /api/users/me/theme)
- *   3. JWT da sessão (useSession.update) — necessário pra evitar que o JWT
- *      cacheado sobrescreva o tema no próximo reload/tab.
+ *   2. DB (PATCH /api/users/me/theme) — a aba nova lê de lá (ThemeSync).
+ *
+ * Não chama useSession.update(): a renovação põe a sessão em 'loading' e as
+ * telas eram desmontadas, perdendo o que estava aberto.
  */
 export function ThemeToggleButton() {
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const { update } = useSession();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -40,8 +39,6 @@ export function ThemeToggleButton() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme: next }),
       });
-      // Refresca o JWT pra próxima session/tab abrir com o tema correto
-      await update();
     } catch {
       // silencioso — preferência segue no localStorage
     }

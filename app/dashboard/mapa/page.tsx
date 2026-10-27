@@ -1236,7 +1236,7 @@ export default function MapaPage() {
     { value: '2018', label: '2018 - Federal/Estadual' },
   ];
 
-  if (status === 'loading') return <div className="text-center py-12 text-slate-600 dark:text-slate-400">Carregando...</div>;
+  if ((status === 'loading' && !session)) return <div className="text-center py-12 text-slate-600 dark:text-slate-400">Carregando...</div>;
   if (!canAccess) return null;
 
   // Quando a vista de município mostra o mapa de bairros por pinos

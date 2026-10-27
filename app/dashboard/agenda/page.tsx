@@ -123,7 +123,7 @@ function TipoIconBox({ tipo, box = 32, icon = 16 }: { tipo: string; box?: number
 // Componente
 // ---------------------------------------------------------------------------
 export default function AgendaPage() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   const today = new Date();
@@ -361,7 +361,7 @@ export default function AgendaPage() {
     + " placeholder-[color:var(--text-tertiary)]"
     + " focus:border-[#2563EB]/60";
 
-  if (status === 'loading') {
+  if ((status === 'loading' && !session)) {
     return (
       <div className="h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, var(--bg-page) 0%, var(--bg-card) 50%, var(--bg-card) 100%)' }}>
         <Loader2 className="w-10 h-10 animate-spin" style={{ color: '#2563EB' }} />

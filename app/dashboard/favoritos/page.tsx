@@ -81,7 +81,7 @@ export default function FavoritosPage() {
     return ESTADOS_BRASIL?.find?.(e => e?.sigla === sigla)?.nome ?? sigla;
   };
 
-  if (status === 'loading' || loading) {
+  if ((status === 'loading' && !session) || loading) {
     return <LoadingState />;
   }
 
