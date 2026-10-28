@@ -22,6 +22,7 @@ import { DemandPriority, DemandStatus } from '@prisma/client';
 import { Painel, Rosca, BarraSimples, comAlfa, pctBR } from '@/components/mapa/comparacao-visual';
 import { Indicador } from '@/components/mapa-campanha/projecao-visual';
 import { Esqueleto, EstadoVazioPadrao } from '@/components/ui/esqueleto';
+import { ehDataComemorativaGoogle, getFeriados } from '@/lib/agenda-datas';
 
 const DemandsTimelineChart = dynamic(() => import('@/components/charts/demands-timeline'), { ssr: false });
 const DemandsByCategoryChart = dynamic(() => import('@/components/charts/demands-by-category'), { ssr: false });
@@ -46,6 +47,7 @@ interface EventoAgenda {
   local?: string | null;
   tipo: 'REUNIAO' | 'VISITA' | 'EVENTO' | 'COMPROMISSO';
   cor?: string | null;
+  googleEventId?: string | null;
 }
 
 const TIPO_EVENTO: Record<EventoAgenda['tipo'], { rotulo: string; cor: string; icone: LucideIcon }> = {
@@ -172,10 +174,22 @@ export default function DashboardPage() {
   // ── Agenda ─────────────────────────────────────────────────────────────────
   const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
   const fimHoje = inicioHoje + 86_400_000;
-  const deHoje = (eventos ?? []).filter(e => { const t = new Date(e.data).getTime(); return t >= inicioHoje && t < fimHoje; })
+  // Feriados e datas comemorativas que o Google põe na agenda ("Dia do
+  // Servidor Público") não são compromissos: viram etiqueta do dia, como na
+  // tela da Agenda, junto com os feriados nacionais do próprio sistema.
+  const ehHoje = (e: EventoAgenda) => { const t = new Date(e.data).getTime(); return t >= inicioHoje && t < fimHoje; };
+  const compromissos = (eventos ?? []).filter(e => !ehDataComemorativaGoogle(e.googleEventId));
+  const deHoje = compromissos.filter(ehHoje)
     .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
-  const proximos = (eventos ?? []).filter(e => new Date(e.data).getTime() >= fimHoje)
+  const proximos = compromissos.filter(e => new Date(e.data).getTime() >= fimHoje)
     .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()).slice(0, 4);
+  const semAcento = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+  const datasDeHoje: string[] = [];
+  const feriadoOficial = getFeriados(agora.getFullYear())[`${String(agora.getMonth() + 1).padStart(2, '0')}-${String(agora.getDate()).padStart(2, '0')}`];
+  if (feriadoOficial) datasDeHoje.push(feriadoOficial);
+  for (const e of eventos ?? []) {
+    if (ehDataComemorativaGoogle(e.googleEventId) && ehHoje(e) && !datasDeHoje.some(n => semAcento(n) === semAcento(e.titulo))) datasDeHoje.push(e.titulo);
+  }
 
   // ── Emendas ────────────────────────────────────────────────────────────────
   const emendasOrdenadas = Object.entries(emendas ?? {}).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
@@ -291,10 +305,21 @@ export default function DashboardPage() {
               direita={<Link href="/dashboard/agenda" className="text-xs font-semibold inline-flex items-center gap-1" style={{ color: 'var(--brand-cobalt-text)' }}>Abrir agenda <ArrowRight className="h-3.5 w-3.5" /></Link>}>
               {eventos === null ? (
                 <div className="space-y-2.5">{[0, 1, 2].map(i => <Esqueleto key={i} className="h-14" />)}</div>
-              ) : deHoje.length === 0 && proximos.length === 0 ? (
+              ) : deHoje.length === 0 && proximos.length === 0 && datasDeHoje.length === 0 ? (
                 <EstadoVazioPadrao icone={CalendarDays} titulo="Agenda livre" texto="Nenhum compromisso hoje nem nos próximos dias." />
               ) : (
                 <div className="space-y-4">
+                  {datasDeHoje.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {datasDeHoje.map(nome => (
+                        <span key={nome} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                          style={{ background: 'var(--tint-06)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>
+                          <CalendarDays className="h-3 w-3 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
+                          Hoje: {nome}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {deHoje.length === 0 ? (
                     <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Nenhum compromisso hoje.</p>
                   ) : (
