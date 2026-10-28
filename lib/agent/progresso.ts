@@ -67,6 +67,8 @@ export function fraseDaBusca(ferramenta: string, args: Record<string, unknown> =
       return args.modo === 'evolucao' ? 'Comparando as duas eleições' : `Comparando a votação${de}`;
     case 'ranking_nacional':
       return `Levantando os dados dos 27 estados${ANOS(args)}`;
+    case 'ranking_cidades_presidente':
+      return `Levantando as cidades do Brasil${ANOS(args)}`;
     case 'dados_municipio':
       return `Buscando os dados${de || ' do município'}`;
     case 'buscar_demandas':

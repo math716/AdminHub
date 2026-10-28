@@ -182,7 +182,8 @@ function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitu
   );
 
   const tools = input.tools ?? [];
-  const isEleitoral = tools.includes('buscar_votacao') || tools.includes('ranking_nacional') || tools.includes('comparar_votacao');
+  const isEleitoral = tools.includes('buscar_votacao') || tools.includes('ranking_nacional') || tools.includes('comparar_votacao')
+    || tools.includes('ranking_cidades_presidente');
   const isEmendas   = tools.includes('buscar_emendas') || tools.includes('comparar_parlamentares');
   const pizza = buildPizza(input, isEleitoral, isEmendas);
   // Rodapé cita a origem real dos números. Eleitoral tem precedência: quando a

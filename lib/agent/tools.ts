@@ -466,4 +466,39 @@ export const AGENT_TOOLS: Tool[] = [
       required: ['anos', 'cargo'],
     },
   },
+
+  {
+    name: 'ranking_cidades_presidente',
+    description:
+      'Ranking das CIDADES DO BRASIL INTEIRO para um candidato a PRESIDENTE, de uma vez: ' +
+      '"a cidade onde Lula teve mais votos", "onde Bolsonaro teve o maior percentual", ' +
+      '"as 10 cidades em que Flávio foi pior", "alguma cidade deu 100% para X?", "em quantas ' +
+      'cidades X venceu". Cobre as 5.570 cidades (2018, 2022 e 2026, 1º e 2º turno) sem abrir ' +
+      'estado por estado. NÃO use buscar_votacao em laço para isso. Percentual = sobre os votos ' +
+      'válidos da cidade (sem brancos e nulos); votos do exterior ficam fora. Só presidente — ' +
+      'para outros cargos, o recorte por cidade é por estado (buscar_votacao).',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        candidato: { type: 'string', description: 'Nome do candidato a presidente (ex.: "Lula", "Bolsonaro").' },
+        ano: { type: 'integer', description: '2018, 2022 ou 2026.' },
+        turno: { type: 'integer', enum: [1, 2], description: '1 (padrão) ou 2.' },
+        ordem: {
+          type: 'string', enum: ['maior', 'menor'],
+          description: '"maior" (padrão) = onde foi melhor; "menor" = onde foi pior.',
+        },
+        criterio: {
+          type: 'string', enum: ['percentual', 'votos'],
+          description: '"percentual" (padrão) = % dos válidos na cidade; "votos" = número absoluto de votos.',
+        },
+        uf: { type: 'string', description: 'Opcional: limita a um estado (sigla). Omitido = Brasil inteiro.' },
+        minimo_votos_validos: {
+          type: 'integer',
+          description: 'Opcional: só cidades com pelo menos esse total de votos válidos (ex.: 50000 para "cidades grandes").',
+        },
+        limite: { type: 'integer', description: 'Quantas cidades listar (padrão 10, teto 100).' },
+      },
+      required: ['candidato', 'ano'],
+    },
+  },
 ];

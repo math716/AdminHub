@@ -2,8 +2,9 @@ import { prisma } from '@/lib/db';
 import {
   loadStaticTseData, buscarCandidatoNoJson, buscarCandidatoTolerante, normalizarTextoTse,
   bairrosPorZona, anosDisponiveisTse, sugerirCandidatos, temSegundoTurno,
-  loadSecaoMunicipio, votosDoCandidatoPorLocal, type CandidatoJson,
+  loadSecaoMunicipio, votosDoCandidatoPorLocal, baixarTseJson, palavrasDoNome, type CandidatoJson,
 } from '@/lib/tse-static';
+import { CacheLimitado } from '@/lib/cache-limitado';
 import { buscarCandidatoNacional, inferirUfPorNomes, rankingNacional } from '@/lib/tse-index';
 import { resolverDeputados } from '@/lib/agent/report/df-territorial';
 import { votosNoBairro } from '@/lib/agent/votos-bairro';
@@ -21,7 +22,8 @@ const AREA_DA_FERRAMENTA: Record<string, { permissoes: Permission[]; area: strin
   comparar_parlamentares:      { permissoes: [PERMISSIONS.EMENDAS_MAPA], area: 'Emendas Parlamentares' },
   buscar_votacao:              { permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA], area: 'Mapa Eleitoral' },
   ranking_nacional:            { permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA], area: 'Mapa Eleitoral' },
-  comparar_votacao:            { permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA], area: 'Mapa Eleitoral' },
+  ranking_cidades_presidente:  { permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA], area: 'Mapa Eleitoral' },
+  comparar_votacao:           { permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA], area: 'Mapa Eleitoral' },
   gerar_relatorio_territorial: { permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA], area: 'Mapa Eleitoral' },
   localizar_parlamentar:       { permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA, PERMISSIONS.EMENDAS_MAPA], area: 'Mapa Eleitoral ou Emendas' },
   buscar_demandas:             { permissoes: [PERMISSIONS.DEMANDAS, PERMISSIONS.MAPA_GABINETE], area: 'Demandas' },
@@ -1867,6 +1869,124 @@ export async function executarRankingNacional(
   };
 }
 
+// ── ranking_cidades_presidente ───────────────────────────────────────────────
+// As 5.570 cidades de uma vez para um presidenciável. Abrir os 27 arquivos do
+// ano estouraria a memória (SP/2018 sozinho: 428 MB); o arquivo
+// presidente-municipios/{ano}-t{turno} traz só os presidenciáveis, cidade a
+// cidade (~100 KB), gerado por scripts/tse/gerar-presidente-municipios.ts.
+
+interface PresidenteMunicipios {
+  ano: number; turno: number;
+  candidatos: Array<{ nomeUrna: string; nome: string; numero: number; partido: string; situacao: string; totalVotos: number }>;
+  municipios: Array<[string, string, ...number[]]>;
+}
+
+const presidenteMunicipiosCache = new CacheLimitado<PresidenteMunicipios>(6);
+
+export async function executarRankingCidadesPresidente(
+  args: {
+    candidato?: string; ano?: number | string; turno?: number; ordem?: 'maior' | 'menor';
+    criterio?: 'percentual' | 'votos'; uf?: string; minimo_votos_validos?: number; limite?: number;
+  },
+  _session: UserSession,
+) {
+  const ano = String(args.ano ?? '').trim();
+  const turno = Number(args.turno) === 2 ? 2 : 1;
+  if (!['2018', '2022', '2026'].includes(ano)) {
+    return { erro: 'Este ranking existe para as eleições presidenciais de 2018, 2022 e 2026.' };
+  }
+  if (!args.candidato?.trim()) return { erro: 'Informe o candidato a presidente.' };
+
+  const chave = `${ano}-t${turno}`;
+  let dados = presidenteMunicipiosCache.get(chave);
+  if (!dados) {
+    dados = (await baixarTseJson<PresidenteMunicipios>(`presidente-municipios/${chave}`)) ?? undefined;
+    if (!dados) return { erro: `Não consegui ler os votos de presidente por cidade de ${ano} (${turno}º turno). Tente de novo em instantes.` };
+    presidenteMunicipiosCache.set(chave, dados);
+  }
+
+  // Nome: todas as palavras pedidas no nome de urna ou no civil.
+  const pedidas = normalizarTextoTse(args.candidato).split(' ').filter(Boolean);
+  const achados = dados.candidatos
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => { const p = palavrasDoNome(c); return pedidas.every(w => p.includes(w)); });
+  if (achados.length === 0) {
+    return {
+      encontrado: false,
+      mensagem: `"${args.candidato}" não disputou a presidência em ${ano} (${turno}º turno).`,
+      candidatosDaEleicao: dados.candidatos.map(c => `${c.nomeUrna} (${c.partido})`),
+    };
+  }
+  if (achados.length > 1) {
+    return {
+      encontrado: false,
+      mensagem: `Mais de um candidato casa com "${args.candidato}". Pergunte qual.`,
+      opcoes: achados.map(({ c }) => `${c.nomeUrna} (${c.partido})`),
+    };
+  }
+  const { c: cand, i: idx } = achados[0];
+
+  const uf = args.uf?.trim().toUpperCase();
+  const minimo = Math.max(0, Number(args.minimo_votos_validos) || 0);
+  const nomeDe = (i: number) => dados!.candidatos[i]?.nomeUrna ?? '';
+
+  const linhas = dados.municipios
+    .filter(m => !uf || m[0] === uf)
+    .map(m => {
+      const votosCands = m.slice(2) as number[];
+      const validos = votosCands.reduce((s, v) => s + v, 0);
+      const votos = votosCands[idx] ?? 0;
+      const ordem = votosCands.map((v, i) => ({ v, i })).sort((a, b) => b.v - a.v);
+      return {
+        uf: m[0], municipio: m[1], votos, validos,
+        pct: validos > 0 ? (votos / validos) * 100 : 0,
+        posicao: ordem.findIndex(o => o.i === idx) + 1,
+        primeiro: ordem[0], segundo: ordem[1],
+      };
+    })
+    .filter(l => l.validos > 0);
+
+  const consideradas = linhas.filter(l => l.validos >= minimo);
+  const sinal = args.ordem === 'menor' ? 1 : -1;
+  const porVotos = args.criterio === 'votos';
+  const ordenadas = [...consideradas].sort((a, b) =>
+    porVotos
+      ? sinal * (a.votos - b.votos) || sinal * (a.pct - b.pct)
+      : sinal * (a.pct - b.pct) || sinal * (a.votos - b.votos));
+  const limite = Math.min(Math.max(Number(args.limite) || 10, 1), 100);
+  const pct = (x: number) => Math.round(x * 100) / 100;
+
+  const venceu = linhas.filter(l => l.posicao === 1 && l.votos > (l.segundo?.v ?? 0));
+  return {
+    encontrado: true,
+    candidato: { nomeUrna: cand.nomeUrna, nome: cand.nome, partido: cand.partido, numero: cand.numero, situacao: cand.situacao, totalVotosNacional: cand.totalVotos },
+    ano: Number(ano),
+    turno,
+    recorte: `${uf ? `cidades de ${uf}` : 'cidades do Brasil'} · ${porVotos ? 'votos' : '% dos válidos'} · ${args.ordem === 'menor' ? 'menores' : 'maiores'}`
+      + (minimo > 0 ? ` · só cidades com ${minimo.toLocaleString('pt-BR')}+ votos válidos` : ''),
+    resumo: {
+      cidadesAnalisadas: linhas.length,
+      ...(minimo > 0 && { cidadesNoRecorte: consideradas.length }),
+      cidadesOndeVenceu: venceu.length,
+      cidadesCom100PorCento: linhas.filter(l => l.votos === l.validos).length,
+      cidadesSemNenhumVoto: linhas.filter(l => l.votos === 0).length,
+    },
+    observacao: 'Percentual sobre os votos válidos da cidade (sem brancos e nulos). Votos do exterior não entram.',
+    cidades: ordenadas.slice(0, limite).map((l, i) => ({
+      posicao: i + 1,
+      municipio: l.municipio,
+      uf: l.uf,
+      votos: l.votos,
+      percentualValidos: pct(l.pct),
+      votosValidosDaCidade: l.validos,
+      colocacaoNaCidade: l.posicao,
+      ...(l.posicao === 1
+        ? { segundoNaCidade: `${nomeDe(l.segundo?.i ?? -1)} (${pct(l.validos ? (l.segundo?.v ?? 0) / l.validos * 100 : 0)}%)` }
+        : { vencedorNaCidade: `${nomeDe(l.primeiro.i)} (${pct(l.primeiro.v / l.validos * 100)}%)` }),
+    })),
+  };
+}
+
 // ── comparar_votacao ─────────────────────────────────────────────────────────
 // O mesmo que o comparador e a evolução do Mapa Eleitoral calculam na tela,
 // para a Gabi: quem venceu em cada bairro/zona de uma cidade entre 2–4
@@ -2077,6 +2197,8 @@ export async function executarTool(
       return executarBuscarVotacao(args as any, session);
     case 'ranking_nacional':
       return executarRankingNacional(args as any, session);
+    case 'ranking_cidades_presidente':
+      return executarRankingCidadesPresidente(args as any, session);
     case 'comparar_votacao':
       return executarCompararVotacao(args as any, session);
     case 'comparar_parlamentares':

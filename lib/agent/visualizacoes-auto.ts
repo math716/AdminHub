@@ -248,12 +248,31 @@ function deRankingNacional(d: any): Visualizacao[] {
   return vis;
 }
 
+// Cidades do Brasil de um presidenciável: as do topo da lista, no critério pedido.
+function deRankingCidadesPresidente(d: any): Visualizacao[] {
+  const cidades: any[] = d?.cidades ?? [];
+  if (!d?.encontrado || cidades.length === 0) return [];
+  const porVotos = /votos ·/.test(String(d.recorte ?? ''));
+  const nome = d.candidato?.nomeUrna ?? '';
+  return [{
+    tipo: 'barras',
+    titulo: `${nome} · ${porVotos ? 'votos' : '% dos válidos'} por cidade (${d.ano}, ${d.turno}º turno)`,
+    dados: {
+      itens: cidades.slice(0, 10).map(c => ({
+        label: `${c.municipio} (${c.uf})`,
+        valor: porVotos ? c.votos : c.percentualValidos,
+      })),
+    },
+  }];
+}
+
 export function visualizacoesAutomaticas(dadosBrutos: Record<string, unknown>): Visualizacao[] {
   const d = dadosBrutos ?? {};
   // Ordem de prioridade: o assunto principal do turno vem primeiro.
   const vis = [
     ...deVotacao(d.buscar_votacao),
     ...deRankingNacional(d.ranking_nacional),
+    ...deRankingCidadesPresidente(d.ranking_cidades_presidente),
     ...deComparativo(d.comparar_parlamentares),
     ...deEmendas(d.buscar_emendas),
     ...deAgenda(d.buscar_agenda),
