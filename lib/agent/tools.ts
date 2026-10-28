@@ -76,7 +76,7 @@ export const AGENT_TOOLS: Tool[] = [
         },
         ano: {
           type: 'integer',
-          description: 'Ano da eleição: 2018, 2020, 2022, 2024 ou 2026 (2026 só 1º turno, presidente incluído). Use o ano que o USUÁRIO disse. Se ele não disse e o candidato disputou mais de uma eleição, PERGUNTE qual antes de buscar (veja as regras sobre ano). Omitido, a busca usa a mais recente do tipo certo.',
+          description: 'Ano da eleição: 2018, 2020, 2022, 2024 ou 2026 (2026 com 1º e 2º turno, presidente incluído). Use o ano que o USUÁRIO disse. Se ele não disse e o candidato disputou mais de uma eleição, PERGUNTE qual antes de buscar (veja as regras sobre ano). Omitido, a busca usa a mais recente do tipo certo.',
         },
         uf: {
           type: 'string',
@@ -117,8 +117,8 @@ export const AGENT_TOOLS: Tool[] = [
           enum: [1, 2],
           description:
             '1 (padrão) ou 2. Use 2 quando pedirem o SEGUNDO TURNO ("no 2º turno", "a final", "quem ' +
-            'ganhou a disputa contra X"). Existe para governador e presidente (2018, 2022) e prefeito de ' +
-            'cidade grande (2020, 2024); o 2º turno de 2026 ainda não aconteceu. No 1º turno, quem foi ' +
+            'ganhou a disputa contra X"). Existe para governador e presidente (2018, 2022, 2026) e prefeito de ' +
+            'cidade grande (2020, 2024). No 1º turno, quem foi ' +
             'ao 2º aparece com situação "2º TURNO" — o resultado final está no turno 2.',
         },
         limite: {

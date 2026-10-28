@@ -830,7 +830,6 @@ export async function executarBuscarVotacao(
       ano: Number(anoStr),
       turno: 2,
       mensagem: `Não houve 2º turno ${isPresidencial ? 'para presidente' : `em ${ufQuery ?? 'nenhum estado'}`} em ${anoStr}`
-        + (Number(anoStr) === 2026 ? ' — o 2º turno de 2026 é em 25/10 e ainda não está na base' : '')
         + '. Diga isso com naturalidade e ofereça o resultado do 1º turno.',
     };
   }
