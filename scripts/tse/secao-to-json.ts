@@ -31,6 +31,9 @@
  *   npx tsx scripts/tse/secao-to-json.ts --dir "C:\...\tse-downloads" --ano 2026 --ufs SP,DF
  *   (pastas esperadas: <dir>\secao\votacao_secao_{ano}_{UF}.csv e
  *    <dir>\locais\eleitorado_local_votacao_{ano}_{UF}.csv — ZIPs já extraídos)
+ *
+ *   --completar-locais: só completa os arquivos do 2º turno já gerados com as
+ *   coordenadas/bairro do 1º turno (não lê CSV; ver completarLocaisDoTurno1).
  */
 
 import fs from 'fs';
@@ -285,11 +288,54 @@ async function processarPresidente() {
     }
   }
   console.log(`  presidente: ${atualizados} arquivos de município atualizados`);
+  completarLocaisDoTurno1();
+}
+
+/**
+ * Os locais de votação são os mesmos nos dois turnos. Onde o 2º turno só teve
+ * presidente, o arquivo do município nasce na passada de presidente, sem o
+ * arquivo de locais — e os locais ficavam sem coordenada (sem pino no mapa).
+ * Completa coordenada, bairro, nome e endereço a partir do 1º turno.
+ */
+function completarLocaisDoTurno1() {
+  let arquivos = 0, completados = 0, semPar = 0;
+  for (const uf of UFS) {
+    const dir2 = path.join(SAIDA, '2', uf);
+    if (!fs.existsSync(dir2)) continue;
+    for (const nome of fs.readdirSync(dir2)) {
+      if (!nome.endsWith('.json.gz')) continue;
+      const arq1 = path.join(SAIDA, '1', uf, nome);
+      if (!fs.existsSync(arq1)) continue;
+      const arq2 = path.join(dir2, nome);
+      const corpo = JSON.parse(zlib.gunzipSync(fs.readFileSync(arq2)).toString('utf8'));
+      const t1 = JSON.parse(zlib.gunzipSync(fs.readFileSync(arq1)).toString('utf8'));
+      const doT1 = new Map<string, Local>((t1.locais as Local[]).map(l => [`${l.z}-${l.l}`, l]));
+      let mudou = false;
+      for (const l of corpo.locais as Local[]) {
+        if (l.lat != null && l.lng != null && l.b) continue;
+        const o = doT1.get(`${l.z}-${l.l}`);
+        if (!o) { semPar++; continue; }
+        if (l.lat == null && o.lat != null) { l.lat = o.lat; l.lng = o.lng; mudou = true; completados++; }
+        if (!l.b && o.b) { l.b = o.b; mudou = true; }
+        if (!l.n && o.n) { l.n = o.n; mudou = true; }
+        if (!l.e && o.e) { l.e = o.e; mudou = true; }
+        if (!l.s && o.s) { l.s = o.s; mudou = true; }
+      }
+      if (mudou) {
+        fs.writeFileSync(arq2, zlib.gzipSync(Buffer.from(JSON.stringify(corpo), 'utf8'), { level: 9 }));
+        arquivos++;
+      }
+    }
+  }
+  console.log(`  locais do 2º turno: ${completados} com coordenada do 1º turno, em ${arquivos} arquivos` +
+    (semPar ? ` (${semPar} locais sem par no 1º turno)` : ''));
 }
 
 (async () => {
   console.log(`Votos por local de votação — ${ANO} — ${UFS.join(', ')}`);
-  if (process.argv.includes('--presidente')) {
+  if (process.argv.includes('--completar-locais')) {
+    completarLocaisDoTurno1();
+  } else if (process.argv.includes('--presidente')) {
     await processarPresidente();
   } else {
     for (const uf of UFS) {
