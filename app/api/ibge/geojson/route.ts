@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { CODIGO_IBGE_UF, caminhoMalhaBrasil, caminhoMalhaEstado } from '@/lib/ibge-local';
 
 // Contornos do Brasil (estados) e de um estado (cidades).
@@ -14,8 +13,8 @@ import { CODIGO_IBGE_UF, caminhoMalhaBrasil, caminhoMalhaEstado } from '@/lib/ib
 // public/geojson/ibge/ (scripts/ibge/baixar-ibge.mjs) — que o CDN entrega mais
 // rápido do que o IBGE entregava.
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const acesso = await exigirAcesso();
+  if (acesso instanceof NextResponse) return acesso;
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type') || 'brasil';

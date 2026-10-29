@@ -13,18 +13,14 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { semPermissao } from '@/lib/acesso-api';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(request: NextRequest, { params }: { params: { codigo: string } }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    const negado = semPermissao(session, PERMISSIONS.EMENDAS_MAPA);
-    if (negado) return negado;
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA] });
+    if (acesso instanceof NextResponse) return acesso;
 
     const codigoEmenda = params.codigo;
     const uf = request.nextUrl.searchParams.get('uf') ?? undefined;

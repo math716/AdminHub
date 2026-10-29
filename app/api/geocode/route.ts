@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { ancoraDoGabinete, variantesDeBusca, ehGenerico, conferirNumeros, type Ancora } from '@/lib/geocode';
 import { CacheLimitado } from '@/lib/cache-limitado';
 
@@ -23,8 +22,8 @@ const VIEWBOX_GRAUS = 1.2;
 // Proxy para o Nominatim (OpenStreetMap) — sem custo, sem chave.
 // GET /api/geocode?address=Rua+das+Flores+123
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const acesso = await exigirAcesso();
+  if (acesso instanceof NextResponse) return acesso;
 
   const address = request.nextUrl.searchParams.get('address');
   if (!address) return NextResponse.json({ error: 'Parâmetro address obrigatório' }, { status: 400 });
@@ -48,7 +47,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: [], semLugar: true });
   }
 
-  const gabineteId = (session.user as any)?.gabineteId as string | undefined;
+  const gabineteId = acesso.gabineteId ?? undefined;
 
   // A âncora entra na chave: o mesmo endereço deve resolver diferente para
   // gabinetes de estados diferentes.

@@ -1,10 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { semPermissao } from '@/lib/acesso-api';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 import { calcularTotaisBrasil, chaveResumoBrasil, lerResumoPronto } from '@/lib/emendas/resumo-emendas';
 
@@ -18,10 +16,8 @@ const USAR_RESUMO_PRONTO = true;
 // Usado pelo BrazilMap no nível Brasil para colorir o heatmap por emendas.
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    const negado = semPermissao(session, PERMISSIONS.EMENDAS_MAPA);
-    if (negado) return negado;
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA] });
+    if (acesso instanceof NextResponse) return acesso;
 
     const anoRaw = request.nextUrl.searchParams.get('ano');
     const ano = anoRaw ? parseInt(anoRaw, 10) : new Date().getFullYear();

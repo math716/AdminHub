@@ -1,17 +1,13 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { semPermissao } from '@/lib/acesso-api';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(_req: NextRequest, { params }: { params: { codigo: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  const negado = semPermissao(session, PERMISSIONS.EMENDAS_MAPA);
-  if (negado) return negado;
+  const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA] });
+  if (acesso instanceof NextResponse) return acesso;
 
   const emenda = await prisma.emendaParlamentar.findUnique({
     where: { idPortal: params.codigo },
@@ -20,7 +16,7 @@ export async function GET(_req: NextRequest, { params }: { params: { codigo: str
   if (!emenda) return NextResponse.json({ texto: '' });
 
   const anotacao = await prisma.emendaAnotacao.findUnique({
-    where: { userId_emendaId: { userId: (session.user as any).id, emendaId: emenda.id } },
+    where: { userId_emendaId: { userId: acesso.userId, emendaId: emenda.id } },
     select: { texto: true, updatedAt: true },
   });
 
@@ -28,10 +24,8 @@ export async function GET(_req: NextRequest, { params }: { params: { codigo: str
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { codigo: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  const negado = semPermissao(session, PERMISSIONS.EMENDAS_MAPA);
-  if (negado) return negado;
+  const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA] });
+  if (acesso instanceof NextResponse) return acesso;
 
   const { texto } = await req.json();
   if (typeof texto !== 'string') {
@@ -46,14 +40,14 @@ export async function PUT(req: NextRequest, { params }: { params: { codigo: stri
 
   if (texto.trim() === '') {
     await prisma.emendaAnotacao.deleteMany({
-      where: { userId: (session.user as any).id, emendaId: emenda.id },
+      where: { userId: acesso.userId, emendaId: emenda.id },
     });
     return NextResponse.json({ texto: '', updatedAt: null });
   }
 
   const result = await prisma.emendaAnotacao.upsert({
-    where: { userId_emendaId: { userId: (session.user as any).id, emendaId: emenda.id } },
-    create: { userId: (session.user as any).id, emendaId: emenda.id, texto },
+    where: { userId_emendaId: { userId: acesso.userId, emendaId: emenda.id } },
+    create: { userId: acesso.userId, emendaId: emenda.id, texto },
     update: { texto },
     select: { texto: true, updatedAt: true },
   });

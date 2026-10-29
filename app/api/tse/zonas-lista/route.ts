@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { anoValido, ufValida } from '@/lib/tse-params';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 import { loadStaticTseData, loadLocaisTse } from '@/lib/tse-static';
-import { semPermissao } from '@/lib/acesso-api';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
@@ -75,10 +73,8 @@ function normalizar(s: string): string {
 // ---------------------------------------------------------------------------
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    const negado = semPermissao(session, PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA);
-    if (negado) return negado;
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA] });
+    if (acesso instanceof NextResponse) return acesso;
 
     const { searchParams } = new URL(request.url);
     const ano         = searchParams.get('ano');
