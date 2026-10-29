@@ -3,22 +3,28 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
+
+const Solicitacao = z.object({
+  token:           v.texto('o link de convite', 128),
+  gabineteNome:    v.texto('o nome do gabinete', 120),
+  userName:        v.texto('o seu nome', 120),
+  userEmail:       v.email(),
+  password:        v.senha(),
+  confirmPassword: z.string({ invalid_type_error: 'Confirmação de senha: valor inválido.' }).max(200).nullish(),
+}).passthrough();
 
 // POST — submete solicitação de criação de gabinete
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
+  // Sem login: tipos e tamanhos conferidos antes de qualquer consulta — um
+  // campo em formato errado derrubava a rota com erro do banco.
+  const body = await lerCorpo(req, Solicitacao);
+  if (body instanceof NextResponse) return body;
   const { token, gabineteNome, userName, userEmail, password, confirmPassword } = body;
-
-  if (!token || !gabineteNome?.trim() || !userName?.trim() || !userEmail?.trim() || !password) {
-    return NextResponse.json({ error: 'Todos os campos são obrigatórios' }, { status: 400 });
-  }
 
   if (password !== confirmPassword) {
     return NextResponse.json({ error: 'As senhas não coincidem' }, { status: 400 });
-  }
-
-  if (password.length < 6) {
-    return NextResponse.json({ error: 'A senha deve ter no mínimo 6 caracteres' }, { status: 400 });
   }
 
   // Valida token

@@ -4,6 +4,36 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { PERMISSIONS } from '@/lib/permissions';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
+
+const NovaParceria = z.object({
+  projecaoMunicipioId: v.id('o município'),
+  nome:                v.texto('o nome', 300),
+  tipo:                v.texto('o tipo', 100),
+  bairro:           v.textoOpcional('o bairro', 200),
+  responsavel:      v.textoOpcional('o responsável', 200),
+  contato:          v.textoOpcional('o contato', 255),
+  observacoes:      v.textoOpcional('as observações', 20000),
+  impactoEstimado:  v.numeroOuTexto('o impacto estimado'),
+  metaConservadora: v.numeroOuTexto('a meta conservadora'),
+  metaPossivel:     v.numeroOuTexto('a meta possível'),
+  metaArrojada:     v.numeroOuTexto('a meta arrojada'),
+}).passthrough();
+const EdicaoParceria = z.object({
+  id:   v.id('a parceria'),
+  nome: v.texto('o nome', 300).optional(),
+  tipo: v.texto('o tipo', 100).optional(),
+  ativa: z.unknown().optional(),
+  bairro:           v.textoOpcional('o bairro', 200),
+  responsavel:      v.textoOpcional('o responsável', 200),
+  contato:          v.textoOpcional('o contato', 255),
+  observacoes:      v.textoOpcional('as observações', 20000),
+  impactoEstimado:  v.numeroOuTexto('o impacto estimado'),
+  metaConservadora: v.numeroOuTexto('a meta conservadora'),
+  metaPossivel:     v.numeroOuTexto('a meta possível'),
+  metaArrojada:     v.numeroOuTexto('a meta arrojada'),
+}).passthrough();
 
 function safeInt(value: unknown, defaultValue = 0): number {
   const n = Number(value);
@@ -127,7 +157,8 @@ export async function POST(request: NextRequest) {
     const userId     = user.id     as string;
     const gabineteId = user.gabineteId as string;
 
-    const body = await request.json();
+    const body = await lerCorpo(request, NovaParceria);
+    if (body instanceof NextResponse) return body;
     const { projecaoMunicipioId, bairro, nome, tipo, responsavel, contato, observacoes,
             impactoEstimado, metaConservadora, metaPossivel, metaArrojada } = body;
 
@@ -178,7 +209,8 @@ export async function PUT(request: NextRequest) {
     const userId     = user.id     as string;
     const gabineteId = user.gabineteId as string;
 
-    const body = await request.json();
+    const body = await lerCorpo(request, EdicaoParceria);
+    if (body instanceof NextResponse) return body;
     const { id } = body;
 
     if (!id) return NextResponse.json({ error: 'ID da parceria é obrigatório' }, { status: 400 });

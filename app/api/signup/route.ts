@@ -5,6 +5,17 @@ import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { sendAdminApprovalEmail } from '@/lib/email';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
+
+const Cadastro = z.object({
+  email:        v.email(),
+  password:     v.senha(),
+  name:         v.texto('o nome', 120),
+  role:         v.textoOpcional('o cargo', 30),
+  gabineteId:   v.idOpcional('o gabinete'),
+  novoGabinete: v.textoOpcional('o nome do gabinete', 120),
+}).passthrough();
 
 function notifyAdmin(userName: string, userEmail: string, userRole: string, gabineteNome: string) {
   const baseUrl = process.env.NEXTAUTH_URL ?? 'https://adminhub.app';
@@ -26,25 +37,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    let { email, password, name, role, gabineteId, novoGabinete } = body;
-
-    if (!email || !password || !name) {
-      return NextResponse.json(
-        { error: 'Email, senha e nome são obrigatórios' },
-        { status: 400 }
-      );
-    }
-
-    // Tamanho mínimo conferido no servidor. A tela já avisa, mas quem chamar a
-    // rota direto criava conta com senha de um caractere — e essa conta entra
-    // no gabinete depois de aprovada. Seis é o que as telas de cadastro dizem.
-    if (String(password).length < 6) {
-      return NextResponse.json(
-        { error: 'A senha deve ter no mínimo 6 caracteres' },
-        { status: 400 }
-      );
-    }
+    // Tipos e tamanhos conferidos antes de tudo: um campo em formato errado
+    // virava erro 500 do banco. A senha mínima de 6 é o que as telas dizem —
+    // quem chamava a rota direto criava conta com senha de um caractere.
+    const body = await lerCorpo(request, Cadastro);
+    if (body instanceof NextResponse) return body;
+    const { email, password, name, novoGabinete } = body;
+    let { role, gabineteId } = body;
 
     // Verificar se há gabinetes no sistema
     const gabineteCount = await prisma.gabinete.count();

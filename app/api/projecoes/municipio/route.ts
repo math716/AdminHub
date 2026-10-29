@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { PERMISSIONS } from '@/lib/permissions';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
+
+const MunicipioEditado = z.object({
+  projecaoId:         v.id('a projeção'),
+  municipio:          v.texto('o município', 200),
+  votosBase:          v.inteiroOpcional('os votos base'),
+  metaConservadora:   v.inteiroOpcional('a meta conservadora'),
+  metaPossivel:       v.inteiroOpcional('a meta possível'),
+  metaArrojada:       v.inteiroOpcional('a meta arrojada'),
+  observacoes:        v.textoOpcional('as observações', 20000),
+  prioridade:         v.textoOpcional('a prioridade', 40),
+  dobradaAtiva:       v.booleanoOpcional('a dobrada'),
+  dobradaNome:        v.textoOpcional('o nome da dobrada', 300),
+  dobradaPartido:     v.textoOpcional('o partido da dobrada', 100),
+  dobradaObservacoes: v.textoOpcional('as observações da dobrada', 20000),
+}).passthrough();
 
 // Atualizar um município específico na projeção
 export async function PUT(request: NextRequest) {
@@ -10,7 +27,8 @@ export async function PUT(request: NextRequest) {
     if (acesso instanceof NextResponse) return acesso;
     const user = { id: acesso.userId, gabineteId: acesso.gabineteId, role: acesso.role };
 
-    const body = await request.json();
+    const body = await lerCorpo(request, MunicipioEditado);
+    if (body instanceof NextResponse) return body;
     const {
       projecaoId, municipio, votosBase, metaConservadora, metaPossivel, metaArrojada,
       observacoes, prioridade, dobradaAtiva, dobradaNome, dobradaPartido, dobradaObservacoes

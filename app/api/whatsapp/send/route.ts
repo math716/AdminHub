@@ -4,7 +4,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { isConfigured, sendText, getConnectionState, makeInstanceName, motivoDaFalha } from '@/lib/evolution';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
+
+const Envio = z.object({
+  numero:  v.texto('o número', 40),
+  message: v.texto('a mensagem', 4096),
+}).passthrough();
 
 function normalizeWA(n: string): string {
   const d = n.replace(/\D/g, '');
@@ -41,8 +48,9 @@ export async function POST(request: NextRequest) {
     }).catch(() => {});
   }
 
-  const body = await request.json();
-  const { numero, message } = body as { numero: string; message: string };
+  const body = await lerCorpo(request, Envio);
+  if (body instanceof NextResponse) return body;
+  const { numero, message } = body;
 
   if (!numero || !message?.trim()) {
     return NextResponse.json({ error: 'Número e mensagem são obrigatórios' }, { status: 400 });

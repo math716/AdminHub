@@ -3,7 +3,22 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
+
+const NovoEvento = z.object({
+  titulo:    v.textoOpcional('o título', 500),
+  data:      v.data('a data'),
+  descricao: v.textoOpcional('a descrição', 50000),
+  dataFim:   v.dataOpcional('o fim'),
+  local:     v.textoOpcional('o local', 500),
+  endereco:  v.textoOpcional('o endereço', 500),
+  lat:       v.latitude(),
+  lng:       v.longitude(),
+  tipo:      z.enum(['REUNIAO', 'VISITA', 'EVENTO', 'COMPROMISSO'], { errorMap: () => ({ message: 'Tipo de compromisso inválido.' }) }).nullish(),
+  cor:       v.textoOpcional('a cor', 30),
+}).passthrough();
 
 // GET /api/agenda?mes=4&ano=2026
 export async function GET(request: NextRequest) {
@@ -64,7 +79,8 @@ export async function POST(request: NextRequest) {
     if (acesso instanceof NextResponse) return acesso;
     const { userId, gabineteId } = acesso;
 
-    const body = await request.json();
+    const body = await lerCorpo(request, NovoEvento);
+    if (body instanceof NextResponse) return body;
 
     const event = await prisma.agendaEvent.create({
       data: {

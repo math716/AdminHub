@@ -3,7 +3,22 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
+
+const EdicaoEmenda = z.object({
+  favorecido:      v.textoOpcional('o favorecido', 500),
+  numero:          v.textoOpcional('o número', 100),
+  tipo:            v.textoOpcional('o tipo', 100),
+  area:            v.textoOpcional('a área', 200),
+  municipio:       v.textoOpcional('o município', 200),
+  uf:              v.textoOpcional('a UF', 2),
+  valor:           v.numeroOuTexto('o valor'),
+  observacao:      v.textoOpcional('a observação', 20000),
+  documentoBase64: v.textoOpcional('o documento', 50_000_000),
+  documentoNome:   v.textoOpcional('o nome do documento', 300),
+}).passthrough();
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA], gabinete: 'banco' });
@@ -15,7 +30,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   });
   if (!existing) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
 
-  const body = await req.json();
+  const body = await lerCorpo(req, EdicaoEmenda);
+  if (body instanceof NextResponse) return body;
   const { numero, tipo, area, favorecido, municipio, uf, valor, observacao, documentoBase64, documentoNome } = body;
 
   if (!favorecido?.trim()) {

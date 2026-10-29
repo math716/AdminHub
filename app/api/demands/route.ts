@@ -2,8 +2,29 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import type { DemandCategory, DemandPriority, DemandStatus } from '@prisma/client';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
+
+const NovaDemanda = z.object({
+  title:        v.textoOpcional('o título', 20000),
+  solicitante:  v.textoOpcional('o solicitante', 20000),
+  description:  v.textoOpcional('a descrição', 20000),
+  contato:      v.textoOpcional('o contato', 255),
+  estado:       v.textoOpcional('o estado', 50),
+  municipio:    v.textoOpcional('o município', 200),
+  bairro:       v.textoOpcional('o bairro', 200),
+  endereco:     v.textoOpcional('o endereço', 500),
+  lat:          v.latitude(),
+  lng:          v.longitude(),
+  foto:         v.textoOpcional('a foto', 50_000_000),
+  category:     v.textoOpcional('a categoria', 40),
+  status:       v.textoOpcional('o status', 40),
+  priority:     v.textoOpcional('a prioridade', 40),
+  observations: v.textoOpcional('as observações', 20000),
+}).passthrough();
 
 const VALID_STATUS   = ['PENDENTE', 'EM_ANDAMENTO', 'RESOLVIDA', 'CANCELADA'];
 const VALID_CATEGORY = ['SAUDE', 'EDUCACAO', 'INFRAESTRUTURA', 'SEGURANCA', 'ASSISTENCIA_SOCIAL', 'MEIO_AMBIENTE', 'CULTURA', 'ESPORTE', 'HABITACAO', 'TRANSPORTE', 'OUTROS'];
@@ -85,7 +106,8 @@ export async function POST(request: NextRequest) {
     const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.DEMANDAS, PERMISSIONS.MAPA_GABINETE], gabinete: 'sessao' });
     if (acesso instanceof NextResponse) return acesso;
     const { userId, gabineteId } = acesso;
-    const body = await request.json();
+    const body = await lerCorpo(request, NovaDemanda);
+    if (body instanceof NextResponse) return body;
 
     const title      = String(body?.title      ?? '').trim();
     const solicitante = String(body?.solicitante ?? '').trim();
@@ -109,9 +131,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Foto muito grande (limite 5MB)' }, { status: 413 });
     }
 
-    const status   = VALID_STATUS.includes(body?.status)     ? body.status   : 'PENDENTE';
-    const category = VALID_CATEGORY.includes(body?.category) ? body.category : 'OUTROS';
-    const priority = VALID_PRIORITY.includes(body?.priority) ? body.priority : 'MEDIA';
+    const status   = (VALID_STATUS.includes(body.status ?? '')     ? body.status   : 'PENDENTE') as DemandStatus;
+    const category = (VALID_CATEGORY.includes(body.category ?? '') ? body.category : 'OUTROS') as DemandCategory;
+    const priority = (VALID_PRIORITY.includes(body.priority ?? '') ? body.priority : 'MEDIA') as DemandPriority;
 
     const demand = await prisma.demand.create({
       data: {

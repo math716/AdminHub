@@ -3,8 +3,27 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
 import { derivarZonasDeRas, derivarRasDeZonas } from '@/lib/colaboradores-zonas';
+
+const NovoColaborador = z.object({
+  nome:       v.texto('o nome', 200),
+  telefone:   v.textoOpcional('o telefone', 40),
+  email:      v.textoOpcional('o e-mail', 254),
+  endereco:   v.textoOpcional('o endereço', 500),
+  lat:        v.latitude(),
+  lng:        v.longitude(),
+  funcao:     v.textoOpcional('a função', 200),
+  padrinhoId: v.idOpcional('o padrinho'),
+  observacao: v.textoOpcional('a observação', 20000),
+  status:     v.textoOpcional('o status', 20),
+  cor:        v.textoOpcional('a cor', 30),
+  regioes:    v.lista('as regiões', v.texto('a região', 200), 500).nullish(),
+  // Números de zona, como texto ("1", "3").
+  zonas:      v.lista('as zonas', v.texto('a zona', 20), 500).nullish(),
+}).passthrough();
 
 const SELECT = {
   id: true, nome: true, telefone: true, email: true,
@@ -40,7 +59,8 @@ export async function POST(request: NextRequest) {
     if (acesso instanceof NextResponse) return acesso;
     const { userId, gabineteId } = acesso;
 
-    const body = await request.json();
+    const body = await lerCorpo(request, NovoColaborador);
+    if (body instanceof NextResponse) return body;
     const { nome, telefone, email, endereco, lat, lng, funcao, padrinhoId, observacao, status, cor, regioes, zonas } = body ?? {};
 
     if (!nome?.trim()) return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });

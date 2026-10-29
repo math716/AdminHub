@@ -3,7 +3,19 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
+
+const EdicaoContato = z.object({
+  // Opcionais na edição (o mapa manda só lat/lng), mas nunca vazios.
+  nome:     v.texto('o nome', 200).optional(),
+  numero:   v.texto('o número', 40).optional(),
+  email:    v.textoOpcional('o e-mail', 254),
+  endereco: v.textoOpcional('o endereço', 500),
+  lat:      v.latitude(),
+  lng:      v.longitude(),
+}).passthrough();
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -14,7 +26,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (!contato || contato.gabineteId !== gabineteId)
       return NextResponse.json({ error: 'Contato não encontrado' }, { status: 404 });
 
-    const body = await request.json();
+    const body = await lerCorpo(request, EdicaoContato);
+    if (body instanceof NextResponse) return body;
     const updated = await prisma.contato.update({
       where: { id: params.id },
       data: {

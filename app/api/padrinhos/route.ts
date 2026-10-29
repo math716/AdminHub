@@ -3,7 +3,16 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
+
+const NovoPadrinho = z.object({
+  nome:    v.texto('o nome', 200),
+  cargo:   v.texto('o cargo', 200),
+  partido: v.texto('o partido', 100),
+  cor:     v.textoOpcional('a cor', 30),
+}).passthrough();
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,7 +39,8 @@ export async function POST(request: NextRequest) {
     if (acesso instanceof NextResponse) return acesso;
     const { gabineteId } = acesso;
 
-    const body = await request.json();
+    const body = await lerCorpo(request, NovoPadrinho);
+    if (body instanceof NextResponse) return body;
     const { nome, cargo, partido, cor } = body ?? {};
     if (!nome?.trim()) return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
     if (!cargo?.trim()) return NextResponse.json({ error: 'Cargo é obrigatório' }, { status: 400 });

@@ -3,7 +3,27 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
+
+const EdicaoDemanda = z.object({
+  title:        v.textoOpcional('o título', 20000),
+  solicitante:  v.textoOpcional('o solicitante', 20000),
+  description:  v.textoOpcional('a descrição', 20000),
+  contato:      v.textoOpcional('o contato', 255),
+  estado:       v.textoOpcional('o estado', 50),
+  municipio:    v.textoOpcional('o município', 200),
+  bairro:       v.textoOpcional('o bairro', 200),
+  endereco:     v.textoOpcional('o endereço', 500),
+  lat:          v.latitude(),
+  lng:          v.longitude(),
+  foto:         v.textoOpcional('a foto', 50_000_000),
+  category:     v.textoOpcional('a categoria', 40),
+  status:       v.textoOpcional('o status', 40),
+  priority:     v.textoOpcional('a prioridade', 40),
+  observations: v.textoOpcional('as observações', 20000),
+}).passthrough();
 
 const VALID_STATUS   = ['PENDENTE', 'EM_ANDAMENTO', 'RESOLVIDA', 'CANCELADA'];
 const VALID_CATEGORY = ['SAUDE', 'EDUCACAO', 'INFRAESTRUTURA', 'SEGURANCA', 'ASSISTENCIA_SOCIAL', 'MEIO_AMBIENTE', 'CULTURA', 'ESPORTE', 'HABITACAO', 'TRANSPORTE', 'OUTROS'];
@@ -61,7 +81,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Sem permissão para editar esta demanda' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const body = await lerCorpo(request, EdicaoDemanda);
+    if (body instanceof NextResponse) return body;
 
     if (body?.title !== undefined && String(body.title).trim().length === 0)
       return NextResponse.json({ error: 'Título não pode ser vazio' }, { status: 400 });

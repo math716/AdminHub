@@ -3,7 +3,18 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
+
+const NovoContato = z.object({
+  nome:     v.texto('o nome', 200),
+  numero:   v.texto('o número', 40),
+  email:    v.textoOpcional('o e-mail', 254),
+  endereco: v.textoOpcional('o endereço', 500),
+  lat:      v.latitude(),
+  lng:      v.longitude(),
+}).passthrough();
 
 export async function GET() {
   try {
@@ -30,7 +41,8 @@ export async function POST(request: NextRequest) {
     if (acesso instanceof NextResponse) return acesso;
     const { userId, gabineteId } = acesso;
 
-    const body = await request.json();
+    const body = await lerCorpo(request, NovoContato);
+    if (body instanceof NextResponse) return body;
 
     if (!body?.nome || !body?.numero) {
       return NextResponse.json({ error: 'Nome e número são obrigatórios' }, { status: 400 });

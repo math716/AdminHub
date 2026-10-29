@@ -3,7 +3,22 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
+
+const EdicaoEvento = z.object({
+  titulo:    v.textoOpcional('o título', 500),
+  data:      v.dataOpcional('a data'),
+  descricao: v.textoOpcional('a descrição', 50000),
+  dataFim:   v.dataOpcional('o fim'),
+  local:     v.textoOpcional('o local', 500),
+  endereco:  v.textoOpcional('o endereço', 500),
+  lat:       v.latitude(),
+  lng:       v.longitude(),
+  tipo:      z.enum(['REUNIAO', 'VISITA', 'EVENTO', 'COMPROMISSO'], { errorMap: () => ({ message: 'Tipo de compromisso inválido.' }) }).nullish(),
+  cor:       v.textoOpcional('a cor', 30),
+}).passthrough();
 
 // PUT /api/agenda/[id]
 export async function PUT(
@@ -14,7 +29,8 @@ export async function PUT(
     const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.AGENDA], gabinete: 'sessao' });
     if (acesso instanceof NextResponse) return acesso;
     const { gabineteId } = acesso;
-    const body = await request.json();
+    const body = await lerCorpo(request, EdicaoEvento);
+    if (body instanceof NextResponse) return body;
 
     const existing = await prisma.agendaEvent.findUnique({ where: { id: params.id } });
     if (!existing || existing.gabineteId !== gabineteId) {

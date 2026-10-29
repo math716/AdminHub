@@ -12,7 +12,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { geocodificarLote, ancoraDoGabinete } from '@/lib/geocode';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
+
+// O teto de quantidade (MAX_CONTATOS) continua conferido abaixo, com a
+// mensagem de sempre; aqui só o formato de cada linha.
+const LinhaImportada = z.object({
+  nome:     v.textoOpcional('o nome', 200),
+  numero:   v.textoOpcional('o número', 40),
+  email:    v.textoOpcional('o e-mail', 254),
+  endereco: v.textoOpcional('o endereço', 500),
+}).passthrough();
+const Importacao = z.object({ contatos: z.array(LinhaImportada).nullish() }).passthrough();
 
 const MAX_CONTATOS = 500;
 const ORCAMENTO_GEO_MS = 150_000;
@@ -29,9 +41,10 @@ export async function POST(request: NextRequest) {
     if (acesso instanceof NextResponse) return acesso;
     const { userId, gabineteId } = acesso;
 
-    const body = await request.json();
-    const contatos: Array<{ nome: string; numero: string; email?: string; endereco?: string }> =
-      body?.contatos ?? [];
+    const body = await lerCorpo(request, Importacao);
+    if (body instanceof NextResponse) return body;
+    // Linhas sem nome ou número são descartadas logo abaixo (comDados).
+    const contatos = (body.contatos ?? []) as Array<{ nome: string; numero: string; email?: string | null; endereco?: string | null }>;
 
     if (!Array.isArray(contatos) || contatos.length === 0) {
       return NextResponse.json({ error: 'Nenhum contato enviado' }, { status: 400 });

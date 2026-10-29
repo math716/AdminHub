@@ -2,6 +2,32 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { PERMISSIONS } from '@/lib/permissions';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
+
+// Item sem município é descartado pela rota (como sempre foi), não recusado.
+const MunicipioProjetado = z.object({
+  municipio:          v.textoOpcional('o município', 200),
+  votosBase:          v.inteiroOpcional('os votos base'),
+  metaConservadora:   v.inteiroOpcional('a meta conservadora'),
+  metaPossivel:       v.inteiroOpcional('a meta possível'),
+  metaArrojada:       v.inteiroOpcional('a meta arrojada'),
+  observacoes:        v.textoOpcional('as observações', 20000),
+  prioridade:         v.textoOpcional('a prioridade', 40),
+  dobradaAtiva:       v.booleanoOpcional('a dobrada'),
+  dobradaNome:        v.textoOpcional('o nome da dobrada', 300),
+  dobradaPartido:     v.textoOpcional('o partido da dobrada', 100),
+  dobradaObservacoes: v.textoOpcional('as observações da dobrada', 20000),
+}).passthrough();
+// Uma projeção estadual cobre centenas de municípios (MG tem 853).
+const Projecao = z.object({
+  candidatoNome: v.texto('o candidato', 300),
+  anoBase:       v.numero('o ano base', 1990, 2100).int('Ano base inválido.'),
+  anoProjecao:   v.numero('o ano da projeção', 1990, 2100).int('Ano da projeção inválido.'),
+  uf:            v.texto('a UF', 2),
+  cargo:         v.textoOpcional('o cargo', 100),
+  municipios:    v.lista('os municípios', MunicipioProjetado, 6000).nullish(),
+}).passthrough();
 
 export async function GET(request: NextRequest) {
   try {
@@ -75,7 +101,8 @@ export async function POST(request: NextRequest) {
     if (acesso instanceof NextResponse) return acesso;
     const user = { id: acesso.userId, gabineteId: acesso.gabineteId, role: acesso.role };
 
-    const body = await request.json();
+    const body = await lerCorpo(request, Projecao);
+    if (body instanceof NextResponse) return body;
     const { candidatoNome, anoBase, anoProjecao, uf, cargo, municipios } = body;
 
     if (!candidatoNome || !anoBase || !anoProjecao || !uf) {

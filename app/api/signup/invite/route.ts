@@ -6,6 +6,15 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendAdminApprovalEmail } from '@/lib/email';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
+
+const CadastroPorConvite = z.object({
+  name:     v.texto('o nome', 120),
+  email:    v.email(),
+  password: v.senha(),
+  token:    v.texto('o convite', 4000),
+}).passthrough();
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,22 +30,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    // Tipos e tamanhos conferidos antes de tudo (senha mínima de 6, como as
+    // telas dizem — quem chamava a rota direto criava senha de um caractere).
+    const body = await lerCorpo(request, CadastroPorConvite);
+    if (body instanceof NextResponse) return body;
     const { name, email, password, token } = body;
-
-    if (!name || !email || !password || !token) {
-      return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 });
-    }
-
-    // Tamanho mínimo conferido no servidor. A tela já avisa, mas quem chamar a
-    // rota direto criava conta com senha de um caractere — e essa conta entra
-    // no gabinete depois de aprovada. Seis é o que as telas de cadastro dizem.
-    if (String(password).length < 6) {
-      return NextResponse.json(
-        { error: 'A senha deve ter no mínimo 6 caracteres' },
-        { status: 400 }
-      );
-    }
 
     const secret = process.env.NEXTAUTH_SECRET;
     if (!secret) {

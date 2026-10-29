@@ -3,7 +3,16 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
+
+const EdicaoPadrinho = z.object({
+  nome:    v.texto('o nome', 200).optional(),
+  cargo:   v.texto('o cargo', 200).optional(),
+  partido: v.texto('o partido', 100).optional(),
+  cor:     v.textoOpcional('a cor', 30),
+}).passthrough();
 
 export async function DELETE(
   request: NextRequest,
@@ -47,7 +56,8 @@ export async function PATCH(
     });
     if (!existing) return NextResponse.json({ error: 'Padrinho não encontrado' }, { status: 404 });
 
-    const body = await request.json();
+    const body = await lerCorpo(request, EdicaoPadrinho);
+    if (body instanceof NextResponse) return body;
     const { nome, cargo, partido, cor } = body ?? {};
     if (!nome?.trim()) return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
 

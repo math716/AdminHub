@@ -3,8 +3,23 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
 import { derivarZonasDeRas } from '@/lib/colaboradores-zonas';
+
+// O teto de linhas (MAX_IMPORT) continua conferido abaixo, com a mesma frase.
+const LinhaColaborador = z.object({
+  nome:         v.textoOpcional('o nome', 200),
+  telefone:     v.textoOpcional('o telefone', 40),
+  email:        v.textoOpcional('o e-mail', 254),
+  endereco:     v.textoOpcional('o endereço', 500),
+  funcao:       v.textoOpcional('a função', 200),
+  observacao:   v.textoOpcional('a observação', 20000),
+  regioes:      v.textoOpcional('as regiões', 2000),
+  padrinhoNome: v.textoOpcional('o padrinho', 200),
+}).passthrough();
+const Importacao = z.object({ colaboradores: z.array(LinhaColaborador).nullish() }).passthrough();
 
 const MAX_IMPORT = 500;
 const BATCH_SIZE = 20;
@@ -66,8 +81,10 @@ export async function POST(request: NextRequest) {
     const ctx = await exigirAcesso({ permissoes: [PERMISSIONS.COLABORADORES_CAMPANHA], gabinete: 'banco' });
     if (ctx instanceof NextResponse) return ctx;
 
-    const body = await request.json();
-    const { colaboradores } = body ?? {};
+    const body = await lerCorpo(request, Importacao);
+    if (body instanceof NextResponse) return body;
+    // Linhas sem nome são descartadas logo abaixo (valid).
+    const colaboradores = body.colaboradores as Array<Record<string, any>> | null | undefined;
     if (!Array.isArray(colaboradores) || colaboradores.length === 0) {
       return NextResponse.json({ error: 'Nenhum colaborador enviado' }, { status: 400 });
     }
