@@ -52,3 +52,10 @@ prisma/migrations/dev.db
 
 .vercel
 .env*
+
+# Base do TSE e mapas: ficam no Storage do Supabase (bucket "dados"), de onde o
+# sistema os busca (lib/dados-url.ts). As cópias locais servem para gerar e
+# reenviar (scripts/dados/enviar-storage.mjs). O índice da Gabi
+# (public/data/tse-index) continua no repositório: é lido do disco.
+/public/data/tse/
+/public/geojson/
