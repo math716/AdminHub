@@ -26,8 +26,6 @@ function comLimiteDeTempo<T>(promessa: Promise<T>, ferramenta: string): Promise<
 }
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import anthropic from '@/lib/anthropic';
 import { AGENT_TOOLS } from '@/lib/agent/tools';
 import { executarTool, conferirSomas } from '@/lib/agent/executors';
@@ -37,6 +35,7 @@ import { contextoDoGabinete, blocoDoGabinete } from '@/lib/agent/contexto-gabine
 import { fraseDaBusca, FRASES } from '@/lib/agent/progresso';
 
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 import type { Session } from 'next-auth';
 
 /**
@@ -289,14 +288,11 @@ function salvarUsage(
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-    // A sessão já conferida, guardada num `const`. O turno agora roda dentro de
-    // uma função (para poder ir emitindo o progresso), e ali o TypeScript não
-    // enxerga mais a conferência feita aqui em cima.
-    const sessaoAtiva = session;
+    const acesso = await exigirAcesso();
+    if (acesso instanceof NextResponse) return acesso;
+    // A sessão já conferida. O turno roda dentro de uma função (para ir
+    // emitindo o progresso) e as ferramentas recebem a sessão inteira.
+    const sessaoAtiva = acesso.session;
 
     const body = await request.json();
     const msgs: ChatMsg[] = Array.isArray(body?.messages) ? body.messages : [];
@@ -327,7 +323,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Verifica limite mensal de tokens do gabinete ─────────────────────────
-    const gabineteId = (session.user as any)?.gabineteId as string | null;
+    const { gabineteId } = acesso;
     try {
       if (gabineteId) {
         const gabinete = await prisma.gabinete.findUnique({
@@ -477,7 +473,7 @@ export async function POST(request: NextRequest) {
             resultado = await comLimiteDeTempo(executarTool(
               block.name,
               block.input as Record<string, unknown>,
-              session as any,
+              sessaoAtiva as any,
             ), block.name);
 
             if (block.name === 'gerar_visualizacao') {

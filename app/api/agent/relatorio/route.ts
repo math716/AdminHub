@@ -1,8 +1,6 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { renderToBuffer, Svg, Path } from '@react-pdf/renderer';
 import React from 'react';
 import {
@@ -18,7 +16,7 @@ import { bairrosComVotos } from '@/lib/agent/report/mapa-bairros';
 import { mapaDoDF } from '@/lib/agent/report/mapa-df';
 import { normalizarTextoTse } from '@/lib/tse-static';
 import { montarPdfComparacao, type EntradaPdfComparacao } from '@/lib/agent/report/comparacao-pdf';
-import { semPermissao } from '@/lib/acesso-api';
+import { semPermissao, exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
@@ -214,8 +212,8 @@ function RelatorioDocPDF({ input, tipoLabel, geradoEm, valorPill, mapa, mapaTitu
 // ─── Route handler ────────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const acesso = await exigirAcesso();
+    if (acesso instanceof NextResponse) return acesso;
 
     const body: ReportInput & {
       tipo?: string; ano?: number; uf?: string; cargo?: string; deputados?: string[];
@@ -228,7 +226,7 @@ export async function POST(request: NextRequest) {
     // (limite de 12 no plano Hobby do Vercel).
     // Territorial e comparador usam dados eleitorais: exigem a área eleitoral.
     if (body.tipo === 'territorial' || body.tipo === 'comparacao') {
-      const negado = semPermissao(session, PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA);
+      const negado = semPermissao(acesso.session, PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.PROJETO_CAMPANHA);
       if (negado) return negado;
     }
 

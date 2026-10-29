@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 // ---------------------------------------------------------------------------
 // GET /api/agent/usage
@@ -11,15 +10,9 @@ import { prisma } from '@/lib/db';
 // ---------------------------------------------------------------------------
 export async function GET(_request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-
-    const gabineteId = (session.user as any)?.gabineteId as string | null;
-    if (!gabineteId) {
-      return NextResponse.json({ error: 'Sem gabinete associado' }, { status: 400 });
-    }
+    const acesso = await exigirAcesso({ gabinete: 'sessao' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { gabineteId } = acesso;
 
     // Início e fim do mês corrente em UTC
     const agora   = new Date();

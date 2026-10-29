@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth-options';
 import anthropic from '@/lib/anthropic';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 const SYSTEM_PROMPT = `Você é a Gabi, assistente de IA integrada ao AdminHub — plataforma de gestão de gabinete político.
 
@@ -20,10 +19,8 @@ Diretrizes:
 - Seja proativa em sugerir funcionalidades relevantes do AdminHub`;
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  }
+  const acesso = await exigirAcesso();
+  if (acesso instanceof NextResponse) return acesso;
 
   let messages: { role: 'user' | 'assistant'; content: string }[];
   try {
@@ -34,7 +31,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Corpo inválido' }, { status: 400 });
   }
 
-  const user = session.user as any;
+  const user = { id: acesso.userId, gabineteId: acesso.gabineteId };
 
   try {
     const response = await anthropic.messages.create({

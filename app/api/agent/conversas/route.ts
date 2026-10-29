@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { enxugar, validarMensagens } from '@/lib/agent/conversa-store';
 import { donoDaConversa } from '@/lib/agent/dono-conversa';
 
@@ -12,10 +11,10 @@ import { donoDaConversa } from '@/lib/agent/dono-conversa';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const acesso = await exigirAcesso();
+    if (acesso instanceof NextResponse) return acesso;
 
-    const dono = await donoDaConversa(session);
+    const dono = await donoDaConversa(acesso.session);
     if (!dono) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const conversas = await prisma.gabiConversa.findMany({
@@ -34,10 +33,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const acesso = await exigirAcesso();
+    if (acesso instanceof NextResponse) return acesso;
 
-    const dono = await donoDaConversa(session);
+    const dono = await donoDaConversa(acesso.session);
     if (!dono) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const body = await request.json();

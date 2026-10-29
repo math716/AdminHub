@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { renderToBuffer } from '@react-pdf/renderer';
 import React from 'react';
 import {
@@ -75,8 +74,8 @@ function GabiPDF({ titulo, messages, geradoEm, fonte }: { titulo: string; messag
 // ─── Route handler ────────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const acesso = await exigirAcesso();
+    if (acesso instanceof NextResponse) return acesso;
 
     const body = await request.json();
     const messages: Msg[] = Array.isArray(body?.messages) ? body.messages : [];
