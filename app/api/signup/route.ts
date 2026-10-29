@@ -48,7 +48,20 @@ export async function POST(request: NextRequest) {
     // Verificar se há gabinetes no sistema
     const gabineteCount = await prisma.gabinete.count();
     const userCount = await prisma.user.count();
-    
+
+    // Entrar num gabinete que já existe é só pelo link de convite
+    // (/api/signup/invite). O cadastro aberto escolhia o gabinete numa lista
+    // pública, que expunha o nome de todos os clientes. Aqui fica só o chefe
+    // que pede um gabinete novo (aprovado pelo administrador) — e o primeiro
+    // acesso do sistema, quando ainda não há ninguém cadastrado.
+    const criandoGabinete = role === 'CHEFE' && !!novoGabinete?.trim();
+    if (userCount > 0 && !criandoGabinete) {
+      return NextResponse.json(
+        { error: 'Para entrar num gabinete que já existe, use o link de convite enviado pelo chefe do gabinete.' },
+        { status: 400 }
+      );
+    }
+
     // Se não há role/gabinete especificado:
     // 1. Se não há usuários no sistema - criar como CHEFE com gabinete padrão
     // 2. Se há usuários mas não role - usar primeiro gabinete disponível como fallback

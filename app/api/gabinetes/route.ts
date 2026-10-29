@@ -9,9 +9,16 @@ const NovoGabinete = z.object({
   descricao: v.textoOpcional('a descrição', 1000),
 }).passthrough();
 
-// GET - Listar gabinetes (público para o formulário de cadastro)
+// GET - Listar gabinetes (administração: seletor de gabinete, Usuários).
+//
+// Era pública para o cadastro escolher o gabinete numa lista — e entregava a
+// qualquer pessoa, sem login, o nome de todos os gabinetes clientes. Desde
+// 29/10/2026 quem entra num gabinete existente entra pelo link de convite.
 export async function GET() {
   try {
+    const acesso = await exigirAcesso({ papeis: ['ADMIN', 'SUPER_ADMIN'] });
+    if (acesso instanceof NextResponse) return acesso;
+
     const gabinetes = await prisma.gabinete.findMany({
       where: { ativo: true, deletedAt: null },
       select: {

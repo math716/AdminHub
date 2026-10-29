@@ -1,13 +1,13 @@
 'use client';
 import { textoDireitos } from '@/lib/direitos';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Mail, Lock, User, Building2, Briefcase, Plus, Shield,
-  ChevronRight, Loader2, BarChart3, Users, MapPin, ChevronDown, Check, Landmark,
+  Mail, Lock, User, Building2, Briefcase, Shield,
+  ChevronRight, Loader2, BarChart3, Users, MapPin, Check, Landmark,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,12 +17,6 @@ const FEATURES = [
   { icon: MapPin,    label: 'Projeção de Campanha por Município' },
   { icon: Landmark,  label: 'Emendas Parlamentares Federais e Estaduais' },
 ];
-
-interface Gabinete {
-  id: string;
-  nome: string;
-  descricao?: string;
-}
 
 const inputBase: React.CSSProperties = {
   width: '100%',
@@ -89,100 +83,6 @@ function StyledInput({
   );
 }
 
-interface DropdownOption { value: string; label: string }
-
-function CustomDropdown({
-  value, onChange, options, placeholder, icon, disabled,
-}: {
-  value: string;
-  onChange: (val: string) => void;
-  options: DropdownOption[];
-  placeholder: string;
-  icon: React.ReactNode;
-  disabled?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const selected = options.find(o => o.value === value);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => !disabled && setOpen(v => !v)}
-        style={{
-          ...inputBase,
-          display: 'flex', alignItems: 'center', gap: '0.5rem',
-          paddingLeft: '2.5rem', paddingRight: '2.5rem',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          textAlign: 'left',
-          borderColor: open ? '#0c2a4f' : '#e5e7eb',
-          boxShadow: open ? '0 0 0 3px rgba(12,42,79,0.10)' : 'none',
-          background: open ? '#fff' : '#f9fafb',
-          opacity: disabled ? 0.6 : 1,
-        }}
-      >
-        <span style={{ position: 'absolute', left: '0.875rem', color: '#9ca3af', display: 'flex', alignItems: 'center' }}>
-          {icon}
-        </span>
-        <span style={{ flex: 1, color: selected ? '#111827' : '#9ca3af', fontSize: '0.875rem' }}>
-          {selected ? selected.label : placeholder}
-        </span>
-        <span style={{ position: 'absolute', right: '0.875rem', color: '#9ca3af', display: 'flex', alignItems: 'center', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-          <ChevronDown size={15} />
-        </span>
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
-            transition={{ duration: 0.15 }}
-            style={{
-              position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 50,
-              background: '#fff', borderRadius: '0.75rem', overflow: 'hidden',
-              border: '1.5px solid #e5e7eb',
-              boxShadow: '0 8px 30px rgba(4,17,31,0.12), 0 2px 8px rgba(4,17,31,0.06)',
-            }}
-          >
-            {options.map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => { onChange(opt.value); setOpen(false); }}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '0.65rem 1rem', fontSize: '0.875rem', textAlign: 'left',
-                  background: opt.value === value ? '#f0f4f9' : 'transparent',
-                  color: opt.value === value ? '#0c2a4f' : '#374151',
-                  fontWeight: opt.value === value ? 600 : 400,
-                  border: 'none', cursor: 'pointer', transition: 'background 0.1s',
-                }}
-                onMouseEnter={e => { if (opt.value !== value) (e.currentTarget as HTMLButtonElement).style.background = '#f9fafb'; }}
-                onMouseLeave={e => { if (opt.value !== value) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-              >
-                {opt.label}
-                {opt.value === value && <Check size={14} style={{ color: '#0c2a4f', flexShrink: 0 }} />}
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 function FieldLabel({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <label
@@ -197,29 +97,20 @@ function FieldLabel({ icon, children }: { icon: React.ReactNode; children: React
   );
 }
 
+const AVISO_CONVITE =
+  'Assessores entram pelo link de convite: peça ao chefe do seu gabinete que gere um em Usuários e envie para você.';
+
 export default function SignupPage() {
   const [name, setName]                   = useState('');
   const [email, setEmail]                 = useState('');
   const [password, setPassword]           = useState('');
   const [confirmPassword, setConfirm]     = useState('');
   const [role, setRole]                   = useState('');
-  const [gabineteId, setGabineteId]       = useState('');
   const [novoGabinete, setNovoGabinete]   = useState('');
-  const [criarNovo, setCriarNovo]         = useState(false);
-  const [gabinetes, setGabinetes]         = useState<Gabinete[]>([]);
-  const [loadingGabs, setLoadingGabs]     = useState(true);
   const [error, setError]                 = useState('');
   const [success, setSuccess]             = useState('');
   const [loading, setLoading]             = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    fetch('/api/gabinetes')
-      .then(r => r.ok ? r.json() : [])
-      .then(d => setGabinetes(d))
-      .catch(() => {})
-      .finally(() => setLoadingGabs(false));
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,12 +118,10 @@ export default function SignupPage() {
     setSuccess('');
 
     if (!role) { setError('Selecione sua função'); return; }
-    if (criarNovo && role === 'CHEFE') {
-      if (!novoGabinete.trim()) { setError('Digite o nome do novo gabinete'); return; }
-    } else if (!gabineteId) {
-      setError('Selecione um gabinete');
-      return;
-    }
+    // Quem entra num gabinete que já existe usa o link de convite: a lista de
+    // gabinetes deixou de ser pública (expunha o nome de todos os clientes).
+    if (role !== 'CHEFE') { setError(AVISO_CONVITE); return; }
+    if (!novoGabinete.trim()) { setError('Digite o nome do novo gabinete'); return; }
     if (password !== confirmPassword) { setError('As senhas não coincidem'); return; }
     if (password.length < 6) { setError('A senha deve ter pelo menos 6 caracteres'); return; }
 
@@ -243,8 +132,8 @@ export default function SignupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name, email, password, role,
-          gabineteId: criarNovo ? null : gabineteId,
-          novoGabinete: criarNovo ? novoGabinete : null,
+          gabineteId: null,
+          novoGabinete,
         }),
       });
       const data = await res.json();
@@ -438,7 +327,7 @@ export default function SignupPage() {
                       <button
                         key={v}
                         type="button"
-                        onClick={() => { setRole(v); if (v === 'ASSESSOR') setCriarNovo(false); }}
+                        onClick={() => { setRole(v); setError(''); }}
                         style={{
                           display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
                           gap: '0.375rem', padding: '0.875rem', borderRadius: '0.875rem',
@@ -480,56 +369,27 @@ export default function SignupPage() {
               </div>
 
               {/* Gabinete */}
-              {role && (
+              {role === 'CHEFE' && (
                 <div>
-                  <FieldLabel icon={<Building2 size={15} />}>Gabinete</FieldLabel>
-                  {!criarNovo ? (
-                    <>
-                      <CustomDropdown
-                        value={gabineteId}
-                        onChange={val => setGabineteId(val)}
-                        placeholder={loadingGabs ? 'Carregando...' : 'Selecione um gabinete'}
-                        icon={<Building2 size={15} />}
-                        disabled={loadingGabs}
-                        options={gabinetes.map(g => ({ value: g.id, label: g.nome }))}
-                      />
-                      {role === 'CHEFE' && (
-                        <button
-                          type="button"
-                          onClick={() => setCriarNovo(true)}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '0.25rem',
-                            marginTop: '0.5rem', fontSize: '0.8125rem', fontWeight: 600,
-                            color: '#0c2a4f', background: 'none', border: 'none',
-                            cursor: 'pointer', padding: 0,
-                          }}
-                        >
-                          <Plus size={14} />
-                          Criar novo gabinete
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <StyledInput
-                        placeholder="Ex: Gabinete Deputado Silva"
-                        value={novoGabinete}
-                        onChange={e => setNovoGabinete(e.target.value)}
-                        icon={<Building2 size={15} />}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => { setCriarNovo(false); setNovoGabinete(''); }}
-                        style={{
-                          marginTop: '0.5rem', fontSize: '0.8125rem',
-                          color: '#6b7280', background: 'none', border: 'none',
-                          cursor: 'pointer', padding: 0,
-                        }}
-                      >
-                        ← Selecionar gabinete existente
-                      </button>
-                    </>
-                  )}
+                  <FieldLabel icon={<Building2 size={15} />}>Nome do novo gabinete</FieldLabel>
+                  <StyledInput
+                    placeholder="Ex: Gabinete Deputado Silva"
+                    value={novoGabinete}
+                    onChange={e => setNovoGabinete(e.target.value)}
+                    icon={<Building2 size={15} />}
+                  />
+                  <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#6b7280', lineHeight: 1.5 }}>
+                    O gabinete é criado depois da aprovação do administrador. Se o seu gabinete
+                    já usa o sistema, peça o link de convite a quem administra.
+                  </p>
+                </div>
+              )}
+              {role === 'ASSESSOR' && (
+                <div style={{
+                  padding: '0.875rem 1rem', borderRadius: '0.875rem', fontSize: '0.8125rem', lineHeight: 1.5,
+                  background: '#f0f4f9', border: '1.5px solid #c7d6ea', color: '#0c2a4f',
+                }}>
+                  {AVISO_CONVITE}
                 </div>
               )}
 
@@ -590,7 +450,7 @@ export default function SignupPage() {
               {/* Botão */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || role === 'ASSESSOR'}
                 className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
                 style={{
                   background: loading
