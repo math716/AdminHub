@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import anthropic from '@/lib/anthropic';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
+
+const Mensagem = z.object({
+  role:    z.enum(['user', 'assistant'], { errorMap: () => ({ message: 'Mensagem com remetente inválido.' }) }),
+  content: z.string({ invalid_type_error: 'Mensagem: valor inválido.' }).max(500_000, 'Mensagem longa demais.'),
+}).passthrough();
+const Conversa = z.object({ messages: v.lista('as mensagens', Mensagem, 2000).nullish() }).passthrough();
 
 const SYSTEM_PROMPT = `Você é a Gabi, assistente de IA integrada ao AdminHub — plataforma de gestão de gabinete político.
 
@@ -24,8 +32,8 @@ export async function POST(req: NextRequest) {
 
   let messages: { role: 'user' | 'assistant'; content: string }[];
   try {
-    const body = await req.json();
-    messages = body.messages;
+    const body = Conversa.parse(await req.json());
+    messages = body.messages as typeof messages;
     if (!Array.isArray(messages) || messages.length === 0) throw new Error();
   } catch {
     return NextResponse.json({ error: 'Corpo inválido' }, { status: 400 });

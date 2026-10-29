@@ -4,8 +4,17 @@ export const maxDuration = 120;
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { classificarArea } from '@/lib/portal-transparencia';
 import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
+
+const Importacao = z.object({
+  rows:   v.lista('as linhas', z.record(z.unknown()), 100_000),
+  uf:     v.textoOpcional('a UF', 2),
+  ano:    v.numeroOuTexto('o ano'),
+  esfera: v.textoOpcional('a esfera', 20),
+}).passthrough();
 
 // ──────────────────────────────────────────────────────────────
 // Tipos
@@ -76,12 +85,9 @@ export async function POST(req: NextRequest) {
   const acesso = await exigirAcesso({ papeis: ['SUPER_ADMIN'] });
   if (acesso instanceof NextResponse) return acesso;
 
-  const body = await req.json() as {
-    rows: MappedRow[];
-    uf: string;
-    ano: number;
-    esfera: 'FEDERAL' | 'ESTADUAL';
-  };
+  const lido = await lerCorpo(req, Importacao);
+  if (lido instanceof NextResponse) return lido;
+  const body = lido as unknown as { rows: MappedRow[]; uf: string; ano: number; esfera: 'FEDERAL' | 'ESTADUAL' };
 
   const { rows, esfera } = body;
   const ufGlobal = body.uf?.toUpperCase() || null;

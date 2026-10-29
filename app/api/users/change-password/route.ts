@@ -3,7 +3,16 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import bcrypt from 'bcryptjs';
+
+const TrocaDeSenha = z.object({
+  newPassword: z.string({ required_error: 'A senha deve ter ao menos 8 caracteres', invalid_type_error: 'Nova senha: valor inválido.' })
+    .min(8, 'A senha deve ter ao menos 8 caracteres')
+    .max(200, 'Nova senha: no máximo 200 caracteres.'),
+  currentPassword: z.string({ invalid_type_error: 'Senha atual: valor inválido.' }).max(200).nullish(),
+}).passthrough();
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,10 +20,9 @@ export async function POST(req: NextRequest) {
     if (acesso instanceof NextResponse) return acesso;
     const { userId } = acesso;
 
-    const { newPassword, currentPassword } = await req.json();
-    if (!newPassword || newPassword.length < 8) {
-      return NextResponse.json({ error: 'A senha deve ter ao menos 8 caracteres' }, { status: 400 });
-    }
+    const body = await lerCorpo(req, TrocaDeSenha);
+    if (body instanceof NextResponse) return body;
+    const { newPassword, currentPassword } = body;
 
     // Trocar senha exigia só uma sessão aberta — nem a senha antiga.
     //

@@ -2,12 +2,20 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { renderToBuffer } from '@react-pdf/renderer';
 import React from 'react';
 import {
   Document, Page, Text, View,
   HeaderBand, DocFooter, renderContent, docStyles as S, stripEmoji, type Pill, type FonteRelatorio,
 } from '@/lib/agent/report/doc-pdf';
+
+const PedidoPdf = z.object({
+  messages: z.array(z.object({ content: z.string().max(500_000).nullish() }).passthrough()).max(2000).nullish(),
+  titulo:   v.textoOpcional('o título', 300),
+  tools:    z.array(z.string().max(60)).max(100).nullish(),
+}).passthrough();
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -77,8 +85,10 @@ export async function POST(request: NextRequest) {
     const acesso = await exigirAcesso();
     if (acesso instanceof NextResponse) return acesso;
 
-    const body = await request.json();
-    const messages: Msg[] = Array.isArray(body?.messages) ? body.messages : [];
+    const body = await lerCorpo(request, PedidoPdf);
+    if (body instanceof NextResponse) return body;
+
+    const messages = (body.messages ?? []) as unknown as Msg[];
     const titulo = body?.titulo ?? 'Relatório — Gabi IA';
     // A conversa pode cruzar assuntos; eleitoral tem precedência, como no
     // relatório de dados. Sem ferramenta nenhuma, fica a base do gabinete.

@@ -18,6 +18,16 @@ import { normalizarTextoTse } from '@/lib/tse-static';
 import { montarPdfComparacao, type EntradaPdfComparacao } from '@/lib/agent/report/comparacao-pdf';
 import { semPermissao, exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
+
+const PedidoRelatorio = z.object({
+  tipo:      v.textoOpcional('o tipo', 40),
+  ano:       v.numeroOuTexto('o ano'),
+  uf:        v.textoOpcional('a UF', 2),
+  cargo:     v.textoOpcional('o cargo', 100),
+  deputados: z.array(z.string().max(300)).max(200).nullish(),
+}).passthrough();
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
@@ -215,11 +225,14 @@ export async function POST(request: NextRequest) {
     const acesso = await exigirAcesso();
     if (acesso instanceof NextResponse) return acesso;
 
-    const body: ReportInput & {
+    // O conteúdo do relatório (texto, tabelas, gráficos) chega inteiro e é
+    // tratado pelos montadores; aqui só a forma geral e os campos de escolha.
+    const lido = await lerCorpo(request, PedidoRelatorio);
+    if (lido instanceof NextResponse) return lido;
+    const body = lido as unknown as ReportInput & {
       tipo?: string; ano?: number; uf?: string; cargo?: string; deputados?: string[];
       tambemEm?: Array<{ ano?: number; cargo?: string }>;
-    } =
-      await request.json();
+    };
 
     // ── Relatório Territorial do DF (por Região Administrativa) ────────────
     // Vive nesta mesma rota para não criar outra serverless function

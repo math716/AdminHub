@@ -15,7 +15,11 @@ import { prisma } from '@/lib/db';
 import { googleConfigurado, urlDeConsentimento, tokenValido, listarAgendas } from '@/lib/google-agenda';
 import { assinarEstado } from '@/lib/google-agenda-estado';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { PERMISSIONS } from '@/lib/permissions';
+
+const Escolha = z.object({ calendarId: v.textoOpcional('a agenda', 500) }).passthrough();
 
 /** Só quem administra o gabinete conecta a agenda oficial. */
 const PAPEIS_PERMITIDOS = new Set(['ADMIN', 'SUPER_ADMIN', 'CHEFE', 'AGENTE_POLITICO']);
@@ -114,7 +118,9 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Sem permissão para trocar a agenda.' }, { status: 403 });
     }
 
-    const { calendarId } = await request.json();
+    const body = await lerCorpo(request, Escolha);
+    if (body instanceof NextResponse) return body;
+    const { calendarId } = body;
     if (typeof calendarId !== 'string' || !calendarId.trim()) {
       return NextResponse.json({ error: 'Agenda não informada.' }, { status: 400 });
     }

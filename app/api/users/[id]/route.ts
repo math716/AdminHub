@@ -3,8 +3,17 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { ALL_PERMISSIONS, mesclarPermissoes } from '@/lib/permissions';
 import type { UserRole } from '@prisma/client';
+
+// Cargo e permissões válidos seguem conferidos abaixo (VALID_ROLES e
+// ALL_PERMISSIONS), com as frases de sempre; aqui só o formato.
+const Edicao = z.object({
+  role:        v.textoOpcional('o cargo', 30),
+  permissions: v.lista('as permissões', z.string().max(60), 100).nullish(),
+}).passthrough();
 
 const VALID_ROLES = ['ADMIN', 'AGENTE_POLITICO', 'CHEFE', 'ASSESSOR'];
 
@@ -43,8 +52,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Você só pode alterar usuários do seu gabinete' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { role, permissions } = body ?? {};
+    const body = await lerCorpo(request, Edicao);
+    if (body instanceof NextResponse) return body;
+    const { role, permissions } = body;
 
     const data: { role?: UserRole; permissions?: string[] } = {};
 
@@ -53,7 +63,7 @@ export async function PATCH(
       if (sessionRole !== 'ADMIN' && sessionRole !== 'SUPER_ADMIN') {
         return NextResponse.json({ error: 'Apenas administradores podem alterar o cargo' }, { status: 403 });
       }
-      if (!VALID_ROLES.includes(role)) {
+      if (!role || !VALID_ROLES.includes(role)) {
         return NextResponse.json({ error: 'Cargo inválido' }, { status: 400 });
       }
       data.role = role as UserRole;

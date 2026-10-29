@@ -3,6 +3,13 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
+
+const Decisao = z.object({
+  acao:         v.textoOpcional('a ação', 20),
+  motivoRecusa: v.textoOpcional('o motivo da recusa', 2000),
+}).passthrough();
 
 // POST — aprovar ou recusar uma solicitação
 // body: { acao: 'APROVAR' | 'RECUSAR', motivoRecusa?: string }
@@ -10,7 +17,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const acesso = await exigirAcesso({ papeis: ['ADMIN', 'SUPER_ADMIN'] });
   if (acesso instanceof NextResponse) return acesso;
 
-  const body = await req.json().catch(() => ({}));
+  const body = await lerCorpo(req, Decisao);
+  if (body instanceof NextResponse) return body;
   const { acao, motivoRecusa } = body;
 
   if (acao !== 'APROVAR' && acao !== 'RECUSAR') {

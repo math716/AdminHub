@@ -3,8 +3,17 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import { enxugar, validarMensagens } from '@/lib/agent/conversa-store';
 import { donoDaConversa } from '@/lib/agent/dono-conversa';
+
+// As mensagens vão inteiras (com gráficos e dados dos relatórios): o teto de
+// tamanho é o de enxugar(), na gravação. Aqui só a forma.
+const Salvamento = z.object({
+  titulo:    v.textoOpcional('o título', 300),
+  mensagens: z.array(z.unknown(), { invalid_type_error: 'Mensagens: valor inválido.' }).max(5000).nullish(),
+}).passthrough();
 
 // O histórico é do gabinete — ou, para quem não tem gabinete (as contas de
 // administração sem gabinete escolhido), da própria pessoa. Ver dono-conversa.
@@ -39,8 +48,9 @@ export async function POST(request: NextRequest) {
     const dono = await donoDaConversa(acesso.session);
     if (!dono) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const body = await request.json();
-    const { titulo, mensagens } = body ?? {};
+    const body = await lerCorpo(request, Salvamento);
+    if (body instanceof NextResponse) return body;
+    const { titulo, mensagens } = body;
 
     if (!validarMensagens(mensagens)) {
       return NextResponse.json({ error: 'Mensagens inválidas' }, { status: 400 });

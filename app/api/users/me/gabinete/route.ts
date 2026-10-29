@@ -3,6 +3,11 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
+
+// null = sair do gabinete; texto = trocar (o tipo segue conferido abaixo).
+const Troca = z.object({ gabineteId: z.unknown() }).passthrough();
 
 /** Permite que ADMIN/SUPER_ADMIN atualizem o próprio gabineteId no banco.
  *  Body: { gabineteId: string | null }
@@ -13,8 +18,9 @@ export async function PATCH(request: NextRequest) {
     if (acesso instanceof NextResponse) return acesso;
     const { userId } = acesso;
 
-    const body = await request.json();
-    const { gabineteId } = body ?? {};
+    const body = await lerCorpo(request, Troca);
+    if (body instanceof NextResponse) return body;
+    const { gabineteId } = body;
 
     // gabineteId pode ser string (trocar de gabinete) ou null (remover associação)
     if (gabineteId !== null && typeof gabineteId !== 'string') {

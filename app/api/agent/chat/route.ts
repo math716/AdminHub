@@ -36,7 +36,15 @@ import { fraseDaBusca, FRASES } from '@/lib/agent/progresso';
 
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import type { Session } from 'next-auth';
+
+const Mensagem = z.object({
+  role:    z.enum(['user', 'assistant'], { errorMap: () => ({ message: 'Mensagem com remetente inválido.' }) }),
+  content: z.string({ invalid_type_error: 'Mensagem: valor inválido.' }).max(500_000, 'Mensagem longa demais.'),
+}).passthrough();
+const Conversa = z.object({ messages: v.lista('as mensagens', Mensagem, 2000).nullish() }).passthrough();
 
 /**
  * Resumo factual do que as ferramentas trouxeram, para quando o modelo termina
@@ -294,8 +302,9 @@ export async function POST(request: NextRequest) {
     // emitindo o progresso) e as ferramentas recebem a sessão inteira.
     const sessaoAtiva = acesso.session;
 
-    const body = await request.json();
-    const msgs: ChatMsg[] = Array.isArray(body?.messages) ? body.messages : [];
+    const body = await lerCorpo(request, Conversa);
+    if (body instanceof NextResponse) return body;
+    const msgs: ChatMsg[] = body.messages ?? [];
 
     if (msgs.length === 0 || msgs[msgs.length - 1].role !== 'user') {
       return NextResponse.json({ error: 'Última mensagem deve ser do usuário' }, { status: 400 });

@@ -3,6 +3,10 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
+
+const Acao = z.object({ acao: v.textoOpcional('a ação', 20) }).passthrough();
 
 export async function POST(
   request: NextRequest,
@@ -12,7 +16,9 @@ export async function POST(
     const acesso = await exigirAcesso({ papeis: ['ADMIN', 'SUPER_ADMIN'] });
     if (acesso instanceof NextResponse) return acesso;
 
-    const { acao } = await request.json();
+    const body = await lerCorpo(request, Acao);
+    if (body instanceof NextResponse) return body;
+    const { acao } = body;
     if (acao !== 'RESTAURAR' && acao !== 'EXCLUIR') {
       return NextResponse.json({ error: 'Ação inválida' }, { status: 400 });
     }

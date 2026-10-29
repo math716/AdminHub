@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
+
+const NovoGabinete = z.object({
+  nome:      v.texto('o nome do gabinete', 120),
+  descricao: v.textoOpcional('a descrição', 1000),
+}).passthrough();
 
 // GET - Listar gabinetes (público para o formulário de cadastro)
 export async function GET() {
@@ -27,7 +34,8 @@ export async function GET() {
 // Permitido apenas em bootstrap (zero usuários) OU por usuário ADMIN autenticado
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await lerCorpo(request, NovoGabinete);
+    if (body instanceof NextResponse) return body;
     const { nome, descricao } = body;
 
     if (!nome?.trim()) {

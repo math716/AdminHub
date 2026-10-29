@@ -3,7 +3,14 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { z } from 'zod';
+import { lerCorpo, v } from '@/lib/validacao-api';
 import jwt from 'jsonwebtoken';
+
+const Convite = z.object({
+  gabineteId: v.idOpcional('o gabinete'),
+  role:       v.textoOpcional('o cargo', 30),
+}).passthrough();
 
 const INVITE_TTL_DAYS = 7;
 
@@ -12,7 +19,9 @@ export async function POST(request: NextRequest) {
   if (acesso instanceof NextResponse) return acesso;
   const { role: userRole, gabineteId: sessionGabineteId } = acesso;
 
-  const body = await request.json().catch(() => ({}));
+  const body = await lerCorpo(request, Convite);
+  if (body instanceof NextResponse) return body;
+
 
   let targetGabineteId = sessionGabineteId;
   let inviteRole: string = 'ASSESSOR';
