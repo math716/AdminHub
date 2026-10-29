@@ -1,21 +1,18 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-    const userRole    = (session.user as any)?.role;
-    const adminId     = (session.user as any)?.id as string | undefined;
-    const adminName   = session.user?.name ?? 'Admin';
+    const acesso = await exigirAcesso();
+    if (acesso instanceof NextResponse) return acesso;
+    const { role: userRole, userId: adminId } = acesso;
+    const adminName = acesso.session.user?.name ?? 'Admin';
 
     if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Apenas Administrador pode excluir gabinetes' }, { status: 403 });

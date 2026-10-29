@@ -1,19 +1,13 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 // GET — lista todas as solicitações (PENDENTE, APROVADA, RECUSADA)
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-  const role = (session.user as any)?.role;
-  if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
-    return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
-  }
+  const acesso = await exigirAcesso({ papeis: ['ADMIN', 'SUPER_ADMIN'] });
+  if (acesso instanceof NextResponse) return acesso;
 
   const solicitacoes = await prisma.solicitacaoGabinete.findMany({
     orderBy: { createdAt: 'desc' },

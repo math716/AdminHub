@@ -1,22 +1,16 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-    const userRole = (session.user as any)?.role;
-    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
-    }
+    const acesso = await exigirAcesso({ papeis: ['ADMIN', 'SUPER_ADMIN'] });
+    if (acesso instanceof NextResponse) return acesso;
 
     const { acao } = await request.json();
     if (acao !== 'RESTAURAR' && acao !== 'EXCLUIR') {

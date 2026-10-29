@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { sendPasswordResetEmail } from '@/lib/email';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -32,11 +31,9 @@ function generateTempPassword(): string {
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-    const userRole     = (session.user as any)?.role;
-    const sessionUserId = (session.user as any)?.id;
+    const acesso = await exigirAcesso();
+    if (acesso instanceof NextResponse) return acesso;
+    const { role: userRole, userId: sessionUserId } = acesso;
 
     if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Apenas Administrador pode resetar senhas' }, { status: 403 });
@@ -54,7 +51,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     const tempPassword = generateTempPassword();
     const hashed = await bcrypt.hash(tempPassword, 10);
 
-    const resetBy = (session.user as any);
+    const resetBy = { id: acesso.userId, name: acesso.session.user?.name, email: acesso.session.user?.email };
     const treseMesesAtras = new Date();
     treseMesesAtras.setMonth(treseMesesAtras.getMonth() - 3);
 

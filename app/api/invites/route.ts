@@ -1,23 +1,16 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 import jwt from 'jsonwebtoken';
 
 const INVITE_TTL_DAYS = 7;
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-  const userRole = (session.user as any)?.role;
-  const sessionGabineteId = (session.user as any)?.gabineteId;
-
-  if (userRole !== 'ADMIN' && userRole !== 'CHEFE' && userRole !== 'SUPER_ADMIN' && userRole !== 'AGENTE_POLITICO') {
-    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
-  }
+  const acesso = await exigirAcesso({ papeis: ['CHEFE', 'ADMIN', 'SUPER_ADMIN', 'AGENTE_POLITICO'] });
+  if (acesso instanceof NextResponse) return acesso;
+  const { role: userRole, gabineteId: sessionGabineteId } = acesso;
 
   const body = await request.json().catch(() => ({}));
 

@@ -1,22 +1,19 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
+    const acesso = await exigirAcesso({ papeis: ['CHEFE', 'ADMIN', 'SUPER_ADMIN', 'AGENTE_POLITICO'] });
+    if (acesso instanceof NextResponse) return acesso;
+    const { role: userRole, gabineteId } = acesso;
 
-    const userRole = (session.user as any)?.role;
-    const gabineteId = (session.user as any)?.gabineteId;
-    
-    if (userRole !== 'CHEFE' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'AGENTE_POLITICO') {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
+    // Chefe/agente sem gabinete: o filtro ia com gabineteId vazio, que o Prisma
+    // ignora — e a lista saía com os usuários de TODOS os gabinetes.
+    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && !gabineteId) {
+      return NextResponse.json({ error: 'Usuário sem gabinete associado' }, { status: 400 });
     }
 
     // SUPER_ADMIN e ADMIN veem todos; demais veem apenas o próprio gabinete

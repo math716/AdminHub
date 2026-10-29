@@ -1,18 +1,15 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-    const userId = (session.user as any)?.id;
-    if (!userId) return NextResponse.json({ error: 'Sessão inválida' }, { status: 401 });
+    const acesso = await exigirAcesso();
+    if (acesso instanceof NextResponse) return acesso;
+    const { userId } = acesso;
 
     const { newPassword, currentPassword } = await req.json();
     if (!newPassword || newPassword.length < 8) {

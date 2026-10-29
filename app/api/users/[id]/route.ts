@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { ALL_PERMISSIONS, mesclarPermissoes } from '@/lib/permissions';
 import type { UserRole } from '@prisma/client';
 
@@ -14,16 +13,9 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-    const sessionRole       = (session.user as any)?.role;
-    const sessionUserId     = (session.user as any)?.id;
-    const sessionGabineteId = (session.user as any)?.gabineteId;
-
-    if (sessionRole !== 'ADMIN' && sessionRole !== 'CHEFE' && sessionRole !== 'SUPER_ADMIN' && sessionRole !== 'AGENTE_POLITICO') {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
-    }
+    const acesso = await exigirAcesso({ papeis: ['CHEFE', 'ADMIN', 'SUPER_ADMIN', 'AGENTE_POLITICO'] });
+    if (acesso instanceof NextResponse) return acesso;
+    const { role: sessionRole, userId: sessionUserId, gabineteId: sessionGabineteId } = acesso;
 
     if (params.id === sessionUserId) {
       return NextResponse.json({ error: 'Você não pode alterar o próprio perfil' }, { status: 400 });
@@ -102,15 +94,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-    const sessionRole   = (session.user as any)?.role;
-    const sessionUserId = (session.user as any)?.id;
-
-    if (sessionRole !== 'ADMIN' && sessionRole !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
-    }
+    const acesso = await exigirAcesso({ papeis: ['ADMIN', 'SUPER_ADMIN'] });
+    if (acesso instanceof NextResponse) return acesso;
+    const { userId: sessionUserId } = acesso;
     if (params.id === sessionUserId) {
       return NextResponse.json({ error: 'Você não pode excluir a própria conta' }, { status: 400 });
     }

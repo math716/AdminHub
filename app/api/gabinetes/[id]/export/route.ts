@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 import * as XLSX from 'xlsx';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -39,13 +38,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-    const userRole = (session.user as any)?.role;
-    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
-    }
+    const acesso = await exigirAcesso({ papeis: ['ADMIN', 'SUPER_ADMIN'] });
+    if (acesso instanceof NextResponse) return acesso;
 
     const gabinete = await prisma.gabinete.findUnique({ where: { id: params.id } });
     if (!gabinete) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 404 });

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 // GET - Listar gabinetes (público para o formulário de cadastro)
 export async function GET() {
@@ -41,12 +40,9 @@ export async function POST(request: NextRequest) {
 
     if (!isBootstrap) {
       // Fora do bootstrap, exige autenticação com papel ADMIN
-      const session = await getServerSession(authOptions);
-      if (!session) {
-        return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-      }
-      const role = (session.user as any)?.role;
-      if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+      const acesso = await exigirAcesso();
+      if (acesso instanceof NextResponse) return acesso;
+      if (acesso.role !== 'ADMIN' && acesso.role !== 'SUPER_ADMIN') {
         return NextResponse.json({ error: 'Apenas administradores podem criar gabinetes' }, { status: 403 });
       }
     }

@@ -1,31 +1,18 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-
-    const userRole     = (session.user as any)?.role;
-    const gabineteId   = (session.user as any)?.gabineteId;
-    const sessionName  = (session.user as any)?.name ?? 'Administrador';
-    const sessionId    = (session.user as any)?.id;
-
-    if (
-      userRole !== 'CHEFE' && userRole !== 'ADMIN' &&
-      userRole !== 'SUPER_ADMIN' && userRole !== 'AGENTE_POLITICO'
-    ) {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
-    }
+    const acesso = await exigirAcesso({ papeis: ['CHEFE', 'ADMIN', 'SUPER_ADMIN', 'AGENTE_POLITICO'] });
+    if (acesso instanceof NextResponse) return acesso;
+    const { role: userRole, gabineteId, userId: sessionId } = acesso;
+    const sessionName = acesso.session.user?.name ?? 'Administrador';
 
     const userToReject = await prisma.user.findUnique({
       where: { id: params?.id ?? '' }

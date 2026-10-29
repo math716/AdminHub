@@ -1,20 +1,17 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 const VALID_THEMES = ['light', 'dark'] as const;
 type Theme = (typeof VALID_THEMES)[number];
 
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-    const userId = (session.user as any)?.id;
-    if (!userId) return NextResponse.json({ error: 'Sessão inválida' }, { status: 401 });
+    const acesso = await exigirAcesso();
+    if (acesso instanceof NextResponse) return acesso;
+    const { userId } = acesso;
 
     const body = await req.json().catch(() => ({}));
     const theme = body?.theme as Theme | undefined;
@@ -40,11 +37,9 @@ export async function PATCH(req: NextRequest) {
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-    const userId = (session.user as any)?.id;
-    if (!userId) return NextResponse.json({ error: 'Sessão inválida' }, { status: 401 });
+    const acesso = await exigirAcesso();
+    if (acesso instanceof NextResponse) return acesso;
+    const { userId } = acesso;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },

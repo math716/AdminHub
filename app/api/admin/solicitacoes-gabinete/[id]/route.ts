@@ -1,20 +1,14 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 // POST — aprovar ou recusar uma solicitação
 // body: { acao: 'APROVAR' | 'RECUSAR', motivoRecusa?: string }
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-  const role = (session.user as any)?.role;
-  if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
-    return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
-  }
+  const acesso = await exigirAcesso({ papeis: ['ADMIN', 'SUPER_ADMIN'] });
+  if (acesso instanceof NextResponse) return acesso;
 
   const body = await req.json().catch(() => ({}));
   const { acao, motivoRecusa } = body;
@@ -35,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       data: {
         status:       'RECUSADA',
         motivoRecusa: motivoRecusa?.trim() || null,
-        reviewedById: (session.user as any).id,
+        reviewedById: acesso.userId,
         reviewedAt:   new Date(),
       },
     });
@@ -73,7 +67,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       where: { id: params.id },
       data: {
         status:       'APROVADA',
-        reviewedById: (session.user as any).id,
+        reviewedById: acesso.userId,
         reviewedAt:   new Date(),
       },
     });

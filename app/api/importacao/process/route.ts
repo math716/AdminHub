@@ -2,9 +2,8 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { classificarArea } from '@/lib/portal-transparencia';
 import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
 
@@ -74,10 +73,8 @@ function toFloat(v: unknown): number {
 // Handler
 // ──────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if ((session?.user as any)?.role !== 'SUPER_ADMIN') {
-    return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
-  }
+  const acesso = await exigirAcesso({ papeis: ['SUPER_ADMIN'] });
+  if (acesso instanceof NextResponse) return acesso;
 
   const body = await req.json() as {
     rows: MappedRow[];
