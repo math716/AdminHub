@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { trocarCodigoPorToken, emailDaConta } from '@/lib/google-agenda';
 import { conferirEstado } from '@/lib/google-agenda-estado';
+import { cifrarToken } from '@/lib/cripto-tokens';
 import { sincronizarGabinete } from '@/lib/google-agenda-sync';
 
 function voltarParaAgenda(request: NextRequest, params: Record<string, string>) {
@@ -57,8 +58,8 @@ export async function GET(request: NextRequest) {
       create: {
         gabineteId: estado.gabineteId,
         email: email || 'conta Google',
-        refreshToken: token.refresh_token,
-        accessToken: token.access_token,
+        refreshToken: cifrarToken(token.refresh_token),
+        accessToken: cifrarToken(token.access_token),
         expiraEm: new Date(Date.now() + (token.expires_in ?? 3600) * 1000),
         escopo: token.scope ?? null,
         conectadoPorId: estado.userId,
@@ -66,8 +67,8 @@ export async function GET(request: NextRequest) {
       },
       update: {
         email: email || 'conta Google',
-        refreshToken: token.refresh_token,
-        accessToken: token.access_token,
+        refreshToken: cifrarToken(token.refresh_token),
+        accessToken: cifrarToken(token.access_token),
         expiraEm: new Date(Date.now() + (token.expires_in ?? 3600) * 1000),
         escopo: token.scope ?? null,
         // Reconectou: começa do zero, senão herdaria um syncToken de outra conta.

@@ -9,6 +9,7 @@
 // sozinha — sem ninguém precisar estar logado.
 
 import { prisma } from '@/lib/db';
+import { cifrarToken, decifrarToken, estaCifrado, temChaveDeTokens } from '@/lib/cripto-tokens';
 
 const OAUTH_AUTH  = 'https://accounts.google.com/o/oauth2/v2/auth';
 const OAUTH_TOKEN = 'https://oauth2.googleapis.com/token';
@@ -89,19 +90,32 @@ export async function emailDaConta(accessToken: string): Promise<string> {
 /**
  * Access token válido da conexão, renovando pelo refresh_token quando expirou.
  * Renova com 1 min de folga para não usar um token que vence no meio da chamada.
+ *
+ * Os tokens ficam cifrados no banco (lib/cripto-tokens.ts). Conexão gravada
+ * antes da criptografia é cifrada aqui, no primeiro uso depois que a chave
+ * existir — a sincronização diária passa por todas.
  */
 export async function tokenValido(conexao: {
   id: string; accessToken: string | null; expiraEm: Date | null; refreshToken: string;
 }): Promise<string> {
-  const folga = 60_000;
-  if (conexao.accessToken && conexao.expiraEm && conexao.expiraEm.getTime() - folga > Date.now()) {
-    return conexao.accessToken;
+  const refreshToken = decifrarToken(conexao.refreshToken);
+  const accessToken = decifrarToken(conexao.accessToken);
+  if (temChaveDeTokens() && !estaCifrado(conexao.refreshToken)) {
+    await prisma.googleAgendaConexao.update({
+      where: { id: conexao.id },
+      data: { refreshToken: cifrarToken(refreshToken), accessToken: cifrarToken(accessToken) },
+    });
   }
-  const novo = await postToken({ refresh_token: conexao.refreshToken, grant_type: 'refresh_token' });
+
+  const folga = 60_000;
+  if (accessToken && conexao.expiraEm && conexao.expiraEm.getTime() - folga > Date.now()) {
+    return accessToken;
+  }
+  const novo = await postToken({ refresh_token: refreshToken, grant_type: 'refresh_token' });
   const expiraEm = new Date(Date.now() + (novo.expires_in ?? 3600) * 1000);
   await prisma.googleAgendaConexao.update({
     where: { id: conexao.id },
-    data: { accessToken: novo.access_token, expiraEm },
+    data: { accessToken: cifrarToken(novo.access_token), expiraEm },
   });
   return novo.access_token;
 }
