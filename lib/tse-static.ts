@@ -1,4 +1,5 @@
 import zlib from 'zlib';
+import { baseDados } from '@/lib/dados-url';
 // Importar e seguro em qualquer contexto; so CHAMAR headers() fora de um
 // pedido e que lanca — dai o try/catch em hostDoPedido.
 import { headers } from 'next/headers';
@@ -96,7 +97,8 @@ export function ultimaFalhaTse(): string | null {
 }
 
 export async function baixarTseJson<T>(caminho: string): Promise<T | null> {
-  const base = baseEstaticos();
+  // Storage (NEXT_PUBLIC_DADOS_URL), ou o próprio site — ver lib/dados-url.ts.
+  const base = baseDados(baseEstaticos());
   const motivos: string[] = [];
   for (const [url, comprimido] of [
     [`${base}/data/tse/${caminho}.json.gz`, true],

@@ -2,6 +2,13 @@
 
 const isProd = process.env.NODE_ENV === 'production';
 
+// Origem do Storage com a base do TSE e os mapas (lib/dados-url.ts). Sem a
+// variável, os arquivos vêm do próprio site e nada precisa ser liberado.
+const origemDados = (() => {
+  try { return process.env.NEXT_PUBLIC_DADOS_URL ? new URL(process.env.NEXT_PUBLIC_DADOS_URL).origin : ''; }
+  catch { return ''; }
+})();
+
 // 'unsafe-eval' é necessário para o webpack em dev; em produção o bundle compilado não precisa
 const scriptSrc = isProd
   ? "script-src 'self' 'unsafe-inline' https://unpkg.com"
@@ -25,7 +32,7 @@ const securityHeaders = [
       "font-src 'self' data:",
       // blob: é necessário para o three.js carregar as texturas embutidas do
       // GLB da Gabi (ImageBitmapLoader usa fetch em blob: URLs)
-      "connect-src 'self' blob: ws: wss: https://nominatim.openstreetmap.org https://*.nominatim.openstreetmap.org https://servicodados.ibge.gov.br https://*.servicodados.ibge.gov.br https://*.basemaps.cartocdn.com https://overpass-api.de https://models.readyplayer.me https://*.readyplayer.me",
+      `connect-src 'self' blob: ws: wss:${origemDados ? ' ' + origemDados : ''} https://nominatim.openstreetmap.org https://*.nominatim.openstreetmap.org https://servicodados.ibge.gov.br https://*.servicodados.ibge.gov.br https://*.basemaps.cartocdn.com https://overpass-api.de https://models.readyplayer.me https://*.readyplayer.me`,
       "worker-src blob:",
       "frame-ancestors 'none'",
     ].join('; '),

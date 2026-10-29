@@ -3,6 +3,7 @@
 
 import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
 import { semAcento } from '@/components/mapa/comparacao-comum';
+import { urlDados } from '@/lib/dados-url';
 
 export interface PoligonosCidade {
   geojson: any;
@@ -31,7 +32,7 @@ export async function carregarPoligonosCidade(uf: string, municipio: string): Pr
   try {
     const proprio = POLIGONOS_PROPRIOS.find(p => p.uf === uf && p.municipio === semAcento(municipio));
     if (proprio) {
-      const r = await fetch(proprio.url);
+      const r = await fetch(urlDados(proprio.url));
       const g = r.ok ? await r.json() : null;
       return g ? { geojson: g, nomeDe: proprio.nomeDe, rotulo: proprio.rotulo } : null;
     }

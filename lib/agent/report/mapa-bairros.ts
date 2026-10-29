@@ -15,6 +15,7 @@
 
 import { loadLocaisTse, loadStaticTseData, normalizarTextoTse, type LocalVotacao } from '@/lib/tse-static';
 import { CacheLimitado } from '@/lib/cache-limitado';
+import { baseDados } from '@/lib/dados-url';
 
 // ── Point-in-polygon (ray casting) ──────────────────────────────────────────
 function pip(pt: [number, number], ring: [number, number][]): boolean {
@@ -76,6 +77,7 @@ export async function carregarBairros(
   const munNorm = normalizarTextoTse(municipio);
   const chave = `${ufUp}:${munNorm}`;
   if (cacheBairros.has(chave)) return cacheBairros.get(chave) ?? null;
+  baseUrl = baseDados(baseUrl); // Storage, se configurado (lib/dados-url.ts)
 
   let features: any[] | null = null;
   try {

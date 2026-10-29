@@ -22,6 +22,7 @@ import { Esqueleto } from '@/components/ui/esqueleto';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { ContatoMapItem } from '@/components/maps/contatos-municipio-map';
 import { hasBairrosPoligonos } from '@/lib/geojson-manifest';
+import { urlDados } from '@/lib/dados-url';
 
 // ---------------------------------------------------------------------------
 // Dynamic map imports
@@ -357,7 +358,7 @@ export default function ContatosPage() {
       try {
         const [geoState, spRes] = await Promise.all([
           fetchStateGeojson(selectedUf),
-          fetch('/geojson/sp-distritos.geojson'),
+          fetch(urlDados('/geojson/sp-distritos.geojson')),
         ]);
         if (!spRes.ok) return;
         const spGeo = await spRes.json();
@@ -398,7 +399,7 @@ export default function ContatosPage() {
       const nmFile = fileNorm(nome);
       const [geoState, geoBairrosRes] = await Promise.all([
         fetchStateGeojson(selectedUf),
-        fetch(`/geojson/municipios/${selectedUf}/${nmFile}.json`),
+        fetch(urlDados(`/geojson/municipios/${selectedUf}/${nmFile}.json`)),
       ]);
       if (!geoBairrosRes.ok) return;
       const geoBairros = await geoBairrosRes.json();

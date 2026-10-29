@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
 import { camadaBase } from '@/lib/maps/basemap';
 import { cartaoBalao, prenderBalaoNoMapa } from '@/lib/maps/balao';
+import { urlDados } from '@/lib/dados-url';
 
 export interface AparenciaArea {
   cor: string;
@@ -81,7 +82,7 @@ export function MapaComparacao({ tipo, uf, aparencia, versao, onClickArea, altur
       fetch(url).then(r => (r.ok ? r.json() : null)),
       tipo === 'estado' && uf
         // Lista guardada no sistema; o IBGE só se o arquivo faltar.
-        ? fetch(`/geojson/ibge/municipios/${uf}.json`)
+        ? fetch(urlDados(`/geojson/ibge/municipios/${uf}.json`))
             .then(r => (r.ok ? r : fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${UF_CODIGO[uf]}/municipios`)))
             .then(r => (r.ok ? r.json() : [])).catch(() => [])
         : Promise.resolve([]),

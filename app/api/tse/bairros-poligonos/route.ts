@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 import { exigirAcesso } from '@/lib/acesso-api';
+import { baseDados } from '@/lib/dados-url';
 import { PERMISSIONS } from '@/lib/permissions';
 
 // ---------------------------------------------------------------------------
@@ -178,7 +179,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Ano inválido' }, { status: 400 });
     }
 
-    const baseUrl = getBaseUrl(request);
+    const baseUrl = baseDados(getBaseUrl(request));
 
     // ── Carregar GeoJSON do estado ──────────────────────────────────────────
     const geo = await loadGeo(uf, baseUrl);

@@ -10,6 +10,7 @@ import { htmlDaBolha, tamanhoDaBolha } from '@/lib/maps/bolha-votos';
 
 import { ESTILO_CASCA_BALAO, balaoArea, posicaoEntre, posicionarBalaoLivre } from '@/lib/maps/balao';
 import { dicaDoBalao, type TextosBalao } from '@/lib/maps/balao';
+import { urlDados } from '@/lib/dados-url';
 interface CeBairrosMapProps {
   /** Pedido da busca de bairro: aproxima no polígono com esse nome. */
   focoBairro?: PedidoFocoBairro | null;
@@ -64,7 +65,7 @@ function CeBairrosMapComponent({ votesData, selectedBairro, onBairroClick, heigh
   useEffect(() => { votesDataRef.current = votesData; }, [votesData]);
 
   useEffect(() => {
-    fetch('/geojson/ce-bairros-fortaleza.geojson')
+    fetch(urlDados('/geojson/ce-bairros-fortaleza.geojson'))
       .then(r => r.json())
       .then(data => { setGeoData(data); setLoading(false); })
       .catch(() => setLoading(false));

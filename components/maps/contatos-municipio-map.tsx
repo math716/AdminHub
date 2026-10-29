@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { camadaBase } from '@/lib/maps/basemap';
+import { urlDados } from '@/lib/dados-url';
 
 export interface ContatoMapItem {
   id: string;
@@ -217,7 +218,7 @@ export default function ContatosMunicipioMap({
     (async () => {
       try {
         if (!spDistritosGeoCache) {
-          const r = await fetch('/geojson/sp-distritos.geojson');
+          const r = await fetch(urlDados('/geojson/sp-distritos.geojson'));
           if (!r.ok || cancelled) return;
           spDistritosGeoCache = await r.json();
         }

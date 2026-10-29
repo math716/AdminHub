@@ -10,6 +10,7 @@ import { htmlDaBolha, tamanhoDaBolha } from '@/lib/maps/bolha-votos';
 
 import { ESTILO_CASCA_BALAO, balaoArea, posicaoEntre, posicionarBalaoLivre } from '@/lib/maps/balao';
 import { dicaDoBalao, type TextosBalao } from '@/lib/maps/balao';
+import { urlDados } from '@/lib/dados-url';
 export interface DfRegiaoData {
   nome: string;
   osm_id: number;
@@ -72,7 +73,7 @@ function DfRegioesMapComponent({ votesData, selectedRegiao, onRegiaoClick, heigh
   useEffect(() => { votesDataRef.current = votesData; }, [votesData]);
 
   useEffect(() => {
-    fetch('/geojson/df-regioes-administrativas.geojson')
+    fetch(urlDados('/geojson/df-regioes-administrativas.geojson'))
       .then(r => r.json())
       .then(data => { setGeoData(data); setLoading(false); })
       .catch(() => setLoading(false));

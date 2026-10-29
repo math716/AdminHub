@@ -5,6 +5,7 @@ import { CATEGORY_COLORS } from '@/lib/types';
 import { useMapCleanup } from '@/hooks/use-map-cleanup';
 import { camadaBase } from '@/lib/maps/basemap';
 import { corDoTrecho } from '@/lib/maps/cores-rota';
+import { urlDados } from '@/lib/dados-url';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -292,7 +293,7 @@ export default function DemandaMapLeaflet({
         (async () => {
           try {
             if (!spDistritosGeoCache) {
-              const r = await fetch('/geojson/sp-distritos.geojson');
+              const r = await fetch(urlDados('/geojson/sp-distritos.geojson'));
               if (!r.ok || isMapStale()) return;
               spDistritosGeoCache = await r.json();
             }

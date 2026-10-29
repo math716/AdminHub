@@ -17,6 +17,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PERMISSIONS, hasPermission } from '@/lib/permissions';
 import GradientCard from '@/components/charts/gradient-card';
 import { camadaBase } from '@/lib/maps/basemap';
+import { urlDados } from '@/lib/dados-url';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -398,7 +399,7 @@ function ColaboradoresMapInner({
   useEffect(() => { onClickRef.current = onRegiaoClick; }, [onRegiaoClick]);
 
   useEffect(() => {
-    fetch('/geojson/df-regioes-administrativas.geojson')
+    fetch(urlDados('/geojson/df-regioes-administrativas.geojson'))
       .then(r => r.json())
       .then(d => { setGeoData(d); setLoading(false); })
       .catch(() => setLoading(false));
@@ -784,7 +785,7 @@ export default function ColaboradoresPage() {
       fetchColaboradores();
       fetchPadrinhos();
       // Load GeoJSON region names
-      fetch('/geojson/df-regioes-administrativas.geojson')
+      fetch(urlDados('/geojson/df-regioes-administrativas.geojson'))
         .then(r => r.json())
         .then((geo: any) => {
           const nomes: string[] = (geo.features ?? [])

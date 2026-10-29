@@ -8,6 +8,7 @@ import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
 import { htmlDaBolha, tamanhoDaBolha } from '@/lib/maps/bolha-votos';
 
 import { ESTILO_CASCA_BALAO, balaoArea, posicaoEntre, posicionarBalaoLivre, dicaDoBalao, type TextosBalao } from '@/lib/maps/balao';
+import { urlDados } from '@/lib/dados-url';
 interface MgBairrosMapProps {
   municipio: string;
   votesData?: Record<string, number>;
@@ -59,7 +60,7 @@ function MgBairrosMapComponent({ municipio, votesData, selectedBairro, onBairroC
 
   useEffect(() => {
     const munNorm = normalizeNome(municipio);
-    fetch('/geojson/MG_bairros_CD2022.json')
+    fetch(urlDados('/geojson/MG_bairros_CD2022.json'))
       .then(r => r.json())
       .then((data: any) => {
         const filtered = {

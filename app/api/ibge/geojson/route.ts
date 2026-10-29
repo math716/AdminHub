@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { exigirAcesso } from '@/lib/acesso-api';
 import { CODIGO_IBGE_UF, caminhoMalhaBrasil, caminhoMalhaEstado } from '@/lib/ibge-local';
+import { DADOS_URL } from '@/lib/dados-url';
 
 // Contornos do Brasil (estados) e de um estado (cidades).
 //
@@ -26,5 +27,5 @@ export async function GET(request: NextRequest) {
   else if (type === 'estado') return NextResponse.json({ error: 'UF inválido' }, { status: 400 });
   else return NextResponse.json({ error: 'Parâmetros inválidos' }, { status: 400 });
 
-  return NextResponse.redirect(new URL(caminho, request.url), 307);
+  return NextResponse.redirect(DADOS_URL ? `${DADOS_URL}${caminho}` : new URL(caminho, request.url), 307);
 }

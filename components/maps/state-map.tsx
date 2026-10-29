@@ -7,6 +7,7 @@ import { camadaBase } from '@/lib/maps/basemap';
 import { balaoArea, posicaoEntre, prenderBalaoNoMapa } from '@/lib/maps/balao';
 import { dicaDoBalao, type TextosBalao } from '@/lib/maps/balao';
 import { pontoParaRotuloMultiplo } from '@/lib/maps/rotulo-poligono';
+import { urlDados } from '@/lib/dados-url';
 
 interface StateMapProps {
   uf: string;
@@ -191,7 +192,7 @@ function StateMapComponent({ uf, stateName, votesData, votesDataByName, onMunici
           fetch(`/api/ibge/geojson?type=estado&uf=${uf}`),
           // Lista de cidades guardada no sistema (scripts/ibge/baixar-ibge.mjs);
           // o IBGE só se faltar. Sem esta lista o mapa nem é criado.
-          fetch(`/geojson/ibge/municipios/${uf}.json`)
+          fetch(urlDados(`/geojson/ibge/municipios/${uf}.json`))
             .then(r => (r.ok ? r : fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${ufCode}/municipios`))),
           darkMode ? fetch('/api/ibge/geojson?type=brasil') : Promise.resolve(null),
         ]);

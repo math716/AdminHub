@@ -7,6 +7,8 @@
 // e produção. Agora tudo lê primeiro o arquivo do sistema; o IBGE fica só de
 // reserva, para o caso de um arquivo faltar.
 
+import { baseDados } from '@/lib/dados-url';
+
 /**
  * De onde ler os arquivos de public/. No navegador, do próprio site. No
  * servidor, do domínio do site — a mesma ordem medida em lib/tse-static.ts,
@@ -48,7 +50,7 @@ const cache = new Map<string, unknown>();
 
 async function lerJson<T>(caminhoLocal: string, urlIbge: string): Promise<T | null> {
   if (cache.has(caminhoLocal)) return cache.get(caminhoLocal) as T;
-  for (const url of [`${baseEstaticos()}${caminhoLocal}`, urlIbge]) {
+  for (const url of [`${baseDados(baseEstaticos())}${caminhoLocal}`, urlIbge]) {
     // Com limite de tempo: o IBGE, quando não responde, pode travar em vez de
     // recusar — e a função ficaria presa até estourar.
     const ctrl = new AbortController();
