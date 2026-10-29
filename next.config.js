@@ -4,8 +4,8 @@ const isProd = process.env.NODE_ENV === 'production';
 
 // 'unsafe-eval' é necessário para o webpack em dev; em produção o bundle compilado não precisa
 const scriptSrc = isProd
-  ? "script-src 'self' 'unsafe-inline' https://unpkg.com https://apps.abacus.ai"
-  : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://unpkg.com https://apps.abacus.ai";
+  ? "script-src 'self' 'unsafe-inline' https://unpkg.com"
+  : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://unpkg.com";
 
 const securityHeaders = [
   { key: 'X-DNS-Prefetch-Control',   value: 'on' },
