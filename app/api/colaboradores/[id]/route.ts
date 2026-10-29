@@ -1,10 +1,9 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { podeUsarColaboradores } from '@/lib/acesso-colaboradores';
+import { exigirAcesso } from '@/lib/acesso-api';
+import { PERMISSIONS } from '@/lib/permissions';
 import { derivarZonasDeRas, derivarRasDeZonas } from '@/lib/colaboradores-zonas';
 
 const SELECT = {
@@ -16,24 +15,14 @@ const SELECT = {
   createdAt: true,
 } as const;
 
-async function getGabineteId(session: any): Promise<string | null> {
-  const userId = (session.user as any)?.id;
-  if (!userId) return null;
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { gabineteId: true } });
-  return user?.gabineteId ?? null;
-}
-
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    if (!(await podeUsarColaboradores(session))) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
-
-    const gabineteId = await getGabineteId(session);
-    if (!gabineteId) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 400 });
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.COLABORADORES_CAMPANHA], gabinete: 'banco' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { gabineteId } = acesso;
 
     const existing = await prisma.colaborador.findFirst({
       where: { id: params.id, gabineteId },
@@ -114,12 +103,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    if (!(await podeUsarColaboradores(session))) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
-
-    const gabineteId = await getGabineteId(session);
-    if (!gabineteId) return NextResponse.json({ error: 'Gabinete não encontrado' }, { status: 400 });
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.COLABORADORES_CAMPANHA], gabinete: 'banco' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { gabineteId } = acesso;
 
     const existing = await prisma.colaborador.findFirst({
       where: { id: params.id, gabineteId },

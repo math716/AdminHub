@@ -8,21 +8,15 @@ export const maxDuration = 300;
 // A automática fica em /api/cron/google-agenda.
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { sincronizarGabinete } from '@/lib/google-agenda-sync';
-import { semPermissao } from '@/lib/acesso-api';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export async function POST() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    const negado = semPermissao(session, PERMISSIONS.AGENDA);
-    if (negado) return negado;
-
-    const gabineteId = (session.user as any)?.gabineteId;
-    if (!gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.AGENDA], gabinete: 'sessao' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { gabineteId } = acesso;
 
     const r = await sincronizarGabinete(gabineteId);
     // 409 e não 500: a falha costuma ser de autorização (token revogado no

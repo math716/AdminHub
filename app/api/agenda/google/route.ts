@@ -11,12 +11,10 @@ export const dynamic = 'force-dynamic';
 // A troca do código pelo token acontece em ./callback.
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { googleConfigurado, urlDeConsentimento, tokenValido, listarAgendas } from '@/lib/google-agenda';
 import { assinarEstado } from '@/lib/google-agenda-estado';
-import { semPermissao } from '@/lib/acesso-api';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
 /** Só quem administra o gabinete conecta a agenda oficial. */
@@ -30,12 +28,9 @@ function redirectUri(request: NextRequest): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    const negado = semPermissao(session, PERMISSIONS.AGENDA);
-    if (negado) return negado;
-    const gabineteId = (session.user as any)?.gabineteId;
-    if (!gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.AGENDA], gabinete: 'sessao' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { gabineteId } = acesso;
 
     // ?agendas=1 — as agendas que a conta enxerga, para a pessoa escolher qual
     // sincronizar. Fica atrás de um parâmetro porque custa uma chamada ao
@@ -79,14 +74,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    const negado = semPermissao(session, PERMISSIONS.AGENDA);
-    if (negado) return negado;
-
-    const user = session.user as any;
-    if (!user?.gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });
-    if (!PAPEIS_PERMITIDOS.has(user?.role)) {
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.AGENDA], gabinete: 'sessao' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { gabineteId } = acesso;
+    if (!PAPEIS_PERMITIDOS.has(acesso.role)) {
       return NextResponse.json(
         { error: 'Apenas o chefe de gabinete ou administrador pode conectar a agenda.' },
         { status: 403 },
@@ -99,7 +90,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const url = urlDeConsentimento(redirectUri(request), assinarEstado(user.gabineteId, user.id));
+    const url = urlDeConsentimento(redirectUri(request), assinarEstado(gabineteId, acesso.userId));
     return NextResponse.json({ url });
   } catch (error) {
     console.error('POST /api/agenda/google error:', error);
@@ -116,14 +107,10 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    const negado = semPermissao(session, PERMISSIONS.AGENDA);
-    if (negado) return negado;
-
-    const user = session.user as any;
-    if (!user?.gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });
-    if (!PAPEIS_PERMITIDOS.has(user?.role)) {
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.AGENDA], gabinete: 'sessao' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { gabineteId } = acesso;
+    if (!PAPEIS_PERMITIDOS.has(acesso.role)) {
       return NextResponse.json({ error: 'Sem permissão para trocar a agenda.' }, { status: 403 });
     }
 
@@ -133,7 +120,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const conexao = await prisma.googleAgendaConexao.findUnique({
-      where: { gabineteId: user.gabineteId },
+      where: { gabineteId },
     });
     if (!conexao) return NextResponse.json({ error: 'Nenhuma conta conectada.' }, { status: 400 });
 
@@ -162,18 +149,14 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    const negado = semPermissao(session, PERMISSIONS.AGENDA);
-    if (negado) return negado;
-
-    const user = session.user as any;
-    if (!user?.gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });
-    if (!PAPEIS_PERMITIDOS.has(user?.role)) {
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.AGENDA], gabinete: 'sessao' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { gabineteId } = acesso;
+    if (!PAPEIS_PERMITIDOS.has(acesso.role)) {
       return NextResponse.json({ error: 'Sem permissão para desconectar.' }, { status: 403 });
     }
 
-    await prisma.googleAgendaConexao.deleteMany({ where: { gabineteId: user.gabineteId } });
+    await prisma.googleAgendaConexao.deleteMany({ where: { gabineteId } });
     // Os eventos já importados PERMANECEM: apagá-los sumiria com compromissos
     // que a equipe já está usando. Eles deixam de ser atualizados, só isso.
     return NextResponse.json({ ok: true });

@@ -1,10 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { semPermissao } from '@/lib/acesso-api';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
 const VALID_STATUS   = ['PENDENTE', 'EM_ANDAMENTO', 'RESOLVIDA', 'CANCELADA'];
@@ -13,19 +11,9 @@ const VALID_PRIORITY = ['BAIXA', 'MEDIA', 'ALTA', 'URGENTE'];
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-    const negado = semPermissao(session, PERMISSIONS.DEMANDAS, PERMISSIONS.MAPA_GABINETE);
-    if (negado) return negado;
-
-    const user = session.user as any;
-    const gabineteId = user?.gabineteId as string | undefined;
-
-    if (!gabineteId) {
-      return NextResponse.json({ error: 'Usuário sem gabinete associado' }, { status: 403 });
-    }
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.DEMANDAS, PERMISSIONS.MAPA_GABINETE], gabinete: 'sessao' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { gabineteId } = acesso;
 
     const { searchParams } = new URL(request.url);
     const status   = searchParams.get('status');
@@ -94,20 +82,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-    const negado = semPermissao(session, PERMISSIONS.DEMANDAS, PERMISSIONS.MAPA_GABINETE);
-    if (negado) return negado;
-
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.DEMANDAS, PERMISSIONS.MAPA_GABINETE], gabinete: 'sessao' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { userId, gabineteId } = acesso;
     const body = await request.json();
-    const userId    = (session.user as any)?.id;
-    const gabineteId = (session.user as any)?.gabineteId;
-
-    if (!gabineteId) {
-      return NextResponse.json({ error: 'Usuário sem gabinete associado' }, { status: 400 });
-    }
 
     const title      = String(body?.title      ?? '').trim();
     const solicitante = String(body?.solicitante ?? '').trim();

@@ -1,19 +1,14 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-
-    const userRole = (session.user as any)?.role as string | undefined;
-    const userId   = (session.user as any)?.id   as string | undefined;
+    const acesso = await exigirAcesso();
+    if (acesso instanceof NextResponse) return acesso;
+    const { role: userRole, userId } = acesso;
 
     // ADMIN e SUPER_ADMIN são roles de plataforma — nunca veem dados de gabinetes
     if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {

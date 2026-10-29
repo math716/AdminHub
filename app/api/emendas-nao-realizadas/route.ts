@@ -1,26 +1,14 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { semPermissao } from '@/lib/acesso-api';
+import { exigirAcesso, gabineteDoUsuario } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
-async function getGabineteId(session: any): Promise<string | null> {
-  const userId = session?.user?.id as string | undefined;
-  if (!userId) return null;
-  const u = await prisma.user.findUnique({ where: { id: userId }, select: { gabineteId: true } });
-  return u?.gabineteId ?? null;
-}
-
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  const negado = semPermissao(session, PERMISSIONS.EMENDAS_MAPA);
-  if (negado) return negado;
-
-  const gabineteId = await getGabineteId(session);
+  const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA] });
+  if (acesso instanceof NextResponse) return acesso;
+  const gabineteId = await gabineteDoUsuario(acesso.userId);
   if (!gabineteId) return NextResponse.json([]);
 
   const ano = Number(req.nextUrl.searchParams.get('ano') ?? new Date().getFullYear());
@@ -71,13 +59,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  const negado = semPermissao(session, PERMISSIONS.EMENDAS_MAPA);
-  if (negado) return negado;
-
-  const gabineteId = await getGabineteId(session);
-  if (!gabineteId) return NextResponse.json({ error: 'Sem gabinete' }, { status: 403 });
+  const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA], gabinete: 'banco' });
+  if (acesso instanceof NextResponse) return acesso;
+  const { gabineteId } = acesso;
 
   const body = await req.json();
   const { ano, parlamentarId, numero, tipo, area, favorecido, municipio, uf, valor, observacao, documentoBase64, documentoNome } = body;

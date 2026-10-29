@@ -9,11 +9,9 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { geocodificarLote, ancoraDoGabinete } from '@/lib/geocode';
-import { semPermissao } from '@/lib/acesso-api';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
 const MAX_CONTATOS = 500;
@@ -27,19 +25,9 @@ function soDigitos(numero: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-    const negado = semPermissao(session, PERMISSIONS.CONTATOS);
-    if (negado) return negado;
-
-    const userId = (session.user as any)?.id;
-    const gabineteId = (session.user as any)?.gabineteId;
-
-    if (!gabineteId) {
-      return NextResponse.json({ error: 'Usuário sem gabinete associado' }, { status: 400 });
-    }
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.CONTATOS], gabinete: 'sessao' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { userId, gabineteId } = acesso;
 
     const body = await request.json();
     const contatos: Array<{ nome: string; numero: string; email?: string; endereco?: string }> =

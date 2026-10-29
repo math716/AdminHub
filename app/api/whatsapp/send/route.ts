@@ -1,11 +1,9 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { isConfigured, sendText, getConnectionState, makeInstanceName, motivoDaFalha } from '@/lib/evolution';
-import { semPermissao } from '@/lib/acesso-api';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
 function normalizeWA(n: string): string {
@@ -16,20 +14,11 @@ function normalizeWA(n: string): string {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  const negado = semPermissao(session, PERMISSIONS.CONTATOS, PERMISSIONS.COLABORADORES_CAMPANHA);
-  if (negado) return negado;
-
-  const gabineteId = (session.user as any)?.gabineteId;
-
-  // Usuário sem gabinete é possível (User.gabineteId é opcional, e o middleware
-  // só barra quem não foi aprovado). Sem esta guarda a busca do gabinete ia com
-  // id indefinido e a pessoa recebia um erro de banco na tela, em vez de uma
-  // frase. Todas as rotas irmãs já tratam isso assim.
-  if (!gabineteId) {
-    return NextResponse.json({ error: 'Usuário sem gabinete associado' }, { status: 400 });
-  }
+  // Usuário sem gabinete é possível (User.gabineteId é opcional): exigirAcesso
+  // responde com uma frase em vez de deixar a busca cair num erro de banco.
+  const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.CONTATOS, PERMISSIONS.COLABORADORES_CAMPANHA], gabinete: 'sessao' });
+  if (acesso instanceof NextResponse) return acesso;
+  const { gabineteId } = acesso;
 
   if (!isConfigured()) {
     return NextResponse.json({ error: 'WhatsApp não configurado. Conecte um número em Configurações.' }, { status: 503 });

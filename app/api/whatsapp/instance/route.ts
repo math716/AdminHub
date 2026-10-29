@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 import {
   isConfigured, createInstance, getQrCode,
   getConnectionState, logoutInstance, deleteInstance, makeInstanceName,
@@ -11,15 +10,9 @@ import {
 
 // GET — retorna status e QR code da instância do gabinete
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-  const userRole    = (session.user as any)?.role;
-  const gabineteId  = (session.user as any)?.gabineteId;
-
-  if (userRole !== 'CHEFE' && userRole !== 'AGENTE_POLITICO') {
-    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
-  }
+  const acesso = await exigirAcesso({ papeis: ['CHEFE', 'AGENTE_POLITICO'], gabinete: 'sessao' });
+  if (acesso instanceof NextResponse) return acesso;
+  const { gabineteId } = acesso;
 
   if (!isConfigured()) {
     return NextResponse.json({ configured: false });
@@ -55,15 +48,9 @@ export async function GET() {
 
 // POST — cria nova instância para o gabinete
 export async function POST() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-  const userRole   = (session.user as any)?.role;
-  const gabineteId = (session.user as any)?.gabineteId;
-
-  if (userRole !== 'CHEFE' && userRole !== 'AGENTE_POLITICO') {
-    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
-  }
+  const acesso = await exigirAcesso({ papeis: ['CHEFE', 'AGENTE_POLITICO'], gabinete: 'sessao' });
+  if (acesso instanceof NextResponse) return acesso;
+  const { gabineteId } = acesso;
 
   if (!isConfigured()) {
     return NextResponse.json({ error: 'Evolution API não configurada no servidor' }, { status: 503 });
@@ -89,15 +76,9 @@ export async function POST() {
 
 // DELETE — desconecta e remove a instância
 export async function DELETE(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-  const userRole   = (session.user as any)?.role;
-  const gabineteId = (session.user as any)?.gabineteId;
-
-  if (userRole !== 'CHEFE' && userRole !== 'AGENTE_POLITICO') {
-    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
-  }
+  const acesso = await exigirAcesso({ papeis: ['CHEFE', 'AGENTE_POLITICO'], gabinete: 'sessao' });
+  if (acesso instanceof NextResponse) return acesso;
+  const { gabineteId } = acesso;
 
   const gabinete = await prisma.gabinete.findUnique({ where: { id: gabineteId } });
   const instanceName = gabinete?.whatsappInstanceId ?? makeInstanceName(gabineteId);

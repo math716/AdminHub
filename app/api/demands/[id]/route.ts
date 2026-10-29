@@ -1,27 +1,16 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { semPermissao } from '@/lib/acesso-api';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
 const VALID_STATUS   = ['PENDENTE', 'EM_ANDAMENTO', 'RESOLVIDA', 'CANCELADA'];
 const VALID_CATEGORY = ['SAUDE', 'EDUCACAO', 'INFRAESTRUTURA', 'SEGURANCA', 'ASSISTENCIA_SOCIAL', 'MEIO_AMBIENTE', 'CULTURA', 'ESPORTE', 'HABITACAO', 'TRANSPORTE', 'OUTROS'];
 const VALID_PRIORITY = ['BAIXA', 'MEDIA', 'ALTA', 'URGENTE'];
 
-async function getSessionAndGabinete(extraRoles?: string[]) {
-  const session = await getServerSession(authOptions);
-  if (!session) return { error: 'Não autorizado', status: 401 } as const;
-  if (semPermissao(session, PERMISSIONS.DEMANDAS, PERMISSIONS.MAPA_GABINETE)) return { error: 'Acesso negado', status: 403 } as const;
-  const user = session.user as any;
-  const gabineteId = user?.gabineteId as string | undefined;
-  if (!gabineteId) return { error: 'Usuário sem gabinete associado', status: 403 } as const;
-  if (extraRoles && !extraRoles.includes(user?.role)) {
-    return { error: 'Sem permissão', status: 403 } as const;
-  }
-  return { user, gabineteId };
+function getSessionAndGabinete(papeis?: string[]) {
+  return exigirAcesso({ permissoes: [PERMISSIONS.DEMANDAS, PERMISSIONS.MAPA_GABINETE], papeis, gabinete: 'sessao' });
 }
 
 export async function GET(
@@ -30,7 +19,7 @@ export async function GET(
 ) {
   try {
     const ctx = await getSessionAndGabinete();
-    if ('error' in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+    if (ctx instanceof NextResponse) return ctx;
 
     const demand = await prisma.demand.findUnique({
       where: { id: params?.id ?? '' },
@@ -59,7 +48,7 @@ export async function PUT(
 ) {
   try {
     const ctx = await getSessionAndGabinete();
-    if ('error' in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+    if (ctx instanceof NextResponse) return ctx;
 
     // Verifica posse antes de atualizar
     const existing = await prisma.demand.findUnique({ where: { id: params?.id ?? '' } });
@@ -68,7 +57,7 @@ export async function PUT(
     }
 
     // ASSESSOR só pode editar demandas que ele mesmo criou
-    if (ctx.user?.role === 'ASSESSOR' && existing.createdById !== ctx.user?.id) {
+    if (ctx.role === 'ASSESSOR' && existing.createdById !== ctx.userId) {
       return NextResponse.json({ error: 'Sem permissão para editar esta demanda' }, { status: 403 });
     }
 
@@ -141,7 +130,7 @@ export async function DELETE(
 ) {
   try {
     const ctx = await getSessionAndGabinete(['CHEFE', 'ADMIN', 'AGENTE_POLITICO', 'SUPER_ADMIN']);
-    if ('error' in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+    if (ctx instanceof NextResponse) return ctx;
 
     // Verifica posse antes de deletar
     const existing = await prisma.demand.findUnique({ where: { id: params?.id ?? '' } });

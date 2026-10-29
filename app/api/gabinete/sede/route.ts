@@ -7,19 +7,16 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 /** Mesma régua da conexão com o Google: quem responde pelo gabinete. */
 const PAPEIS_PERMITIDOS = new Set(['ADMIN', 'SUPER_ADMIN', 'CHEFE', 'AGENTE_POLITICO']);
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-
-  const gabineteId = (session.user as any)?.gabineteId as string | undefined;
-  if (!gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });
+  const acesso = await exigirAcesso({ gabinete: 'sessao' });
+  if (acesso instanceof NextResponse) return acesso;
+  const { gabineteId } = acesso;
 
   // Leitura é liberada a toda a equipe: a rota do dia parte daqui, e um
   // assessor precisa vê-la para montar o trajeto.
@@ -28,19 +25,17 @@ export async function GET() {
     select: { endereco: true, lat: true, lng: true },
   });
 
-  const papel = String((session.user as any)?.role ?? '');
+  const papel = acesso.role;
   return NextResponse.json({ ...(g ?? {}), podeEditar: PAPEIS_PERMITIDOS.has(papel) });
 }
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const acesso = await exigirAcesso({ gabinete: 'sessao' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { gabineteId } = acesso;
 
-    const gabineteId = (session.user as any)?.gabineteId as string | undefined;
-    if (!gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete' }, { status: 400 });
-
-    if (!PAPEIS_PERMITIDOS.has(String((session.user as any)?.role ?? ''))) {
+    if (!PAPEIS_PERMITIDOS.has(acesso.role)) {
       return NextResponse.json(
         { error: 'Apenas chefe de gabinete, agente político ou administrador podem alterar a sede.' },
         { status: 403 },

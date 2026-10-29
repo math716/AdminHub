@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { renderToBuffer } from '@react-pdf/renderer';
 import React from 'react';
 import DashboardReport from '@/components/pdf/dashboard-report';
@@ -13,13 +12,9 @@ import path from 'path';
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-
-    const userRole = (session.user as any)?.role as string | undefined;
-    const userId   = (session.user as any)?.id   as string | undefined;
+    const acesso = await exigirAcesso();
+    if (acesso instanceof NextResponse) return acesso;
+    const { role: userRole, userId } = acesso;
 
     if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {
       return NextResponse.json({ error: 'Sem dados de gabinete' }, { status: 403 });

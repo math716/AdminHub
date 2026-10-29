@@ -1,10 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { semPermissao } from '@/lib/acesso-api';
+import { exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
 // Endpoint combinado que serve o load inicial da pagina Mapa do Gabinete.
@@ -13,13 +11,9 @@ import { PERMISSIONS } from '@/lib/permissions';
 // Postgres simultaneas.
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    const negado = semPermissao(session, PERMISSIONS.MAPA_GABINETE);
-    if (negado) return negado;
-
-    const gabineteId = (session.user as any)?.gabineteId as string | undefined;
-    if (!gabineteId) return NextResponse.json({ error: 'Usuário sem gabinete associado' }, { status: 403 });
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.MAPA_GABINETE], gabinete: 'sessao' });
+    if (acesso instanceof NextResponse) return acesso;
+    const { gabineteId } = acesso;
 
     // Auto-delete past agenda events (fire-and-forget, igual /api/agenda).
     const startOfToday = new Date();

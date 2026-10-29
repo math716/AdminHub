@@ -1,20 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
-import { hasPermission, PERMISSIONS } from '@/lib/permissions';
+import { PERMISSIONS } from '@/lib/permissions';
+import { exigirAcesso } from '@/lib/acesso-api';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-
-    const user = session.user as any;
-    if (!hasPermission(user, PERMISSIONS.PROJETO_CAMPANHA)) {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
-    }
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.PROJETO_CAMPANHA] });
+    if (acesso instanceof NextResponse) return acesso;
+    const user = { id: acesso.userId, gabineteId: acesso.gabineteId, role: acesso.role };
 
     const gabineteId = user.gabineteId as string | undefined;
     const projecoes = await prisma.projecaoCampanha.findMany({
@@ -51,10 +44,9 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    const user = session.user as any;
-    if (!hasPermission(user, PERMISSIONS.PROJETO_CAMPANHA)) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.PROJETO_CAMPANHA] });
+    if (acesso instanceof NextResponse) return acesso;
+    const user = { id: acesso.userId, gabineteId: acesso.gabineteId, role: acesso.role };
 
     const id = new URL(request.url).searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
@@ -79,15 +71,9 @@ export async function DELETE(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-
-    const user = session.user as any;
-    if (!hasPermission(user, PERMISSIONS.PROJETO_CAMPANHA)) {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
-    }
+    const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.PROJETO_CAMPANHA] });
+    if (acesso instanceof NextResponse) return acesso;
+    const user = { id: acesso.userId, gabineteId: acesso.gabineteId, role: acesso.role };
 
     const body = await request.json();
     const { candidatoNome, anoBase, anoProjecao, uf, cargo, municipios } = body;
