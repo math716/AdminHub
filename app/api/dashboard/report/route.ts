@@ -60,7 +60,7 @@ export async function GET(request: Request) {
     );
 
     const dateStr = new Date().toISOString().slice(0, 10);
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="relatorio-dashboard-${dateStr}.pdf"`,

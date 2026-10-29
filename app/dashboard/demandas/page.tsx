@@ -43,7 +43,7 @@ import {
   STATUS_COLORS,
   PRIORITY_COLORS
 } from '@/lib/types';
-import { DemandCategory, DemandStatus, DemandPriority } from '@prisma/client';
+import { DemandCategory, DemandStatus, DemandPriority } from '@/lib/prisma-gerado/enums';
 
 interface Demand {
   id: string;

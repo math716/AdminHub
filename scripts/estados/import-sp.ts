@@ -19,7 +19,7 @@
  */
 import * as XLSX from 'xlsx';
 import { buildPrisma, importarEmendas, parseValorBR, type EmendaEstadualRow } from './base-import-estadual';
-import type { EmendaArea } from '@prisma/client';
+import type { EmendaArea } from '../../lib/prisma-gerado/enums';
 
 function arg(name: string, def?: string): string | undefined {
   const idx = process.argv.findIndex((a) => a === `--${name}`);

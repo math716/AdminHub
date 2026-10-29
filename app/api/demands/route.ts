@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import type { DemandCategory, DemandPriority, DemandStatus } from '@prisma/client';
+import type { DemandCategory, DemandPriority, DemandStatus } from '@/lib/prisma-gerado/enums';
 import { exigirAcesso } from '@/lib/acesso-api';
 import { z } from 'zod';
 import { lerCorpo, v } from '@/lib/validacao-api';

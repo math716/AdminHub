@@ -18,7 +18,7 @@ import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { STATUS_COLORS, PRIORITY_COLORS, PRIORITY_LABELS, STATUS_LABELS } from '@/lib/types';
 import { PERMISSIONS, hasPermission, type Permission } from '@/lib/permissions';
-import { DemandPriority, DemandStatus } from '@prisma/client';
+import { DemandPriority, DemandStatus } from '@/lib/prisma-gerado/enums';
 import { Painel, Rosca, BarraSimples, comAlfa, pctBR } from '@/components/mapa/comparacao-visual';
 import { Indicador } from '@/components/mapa-campanha/projecao-visual';
 import { Esqueleto, EstadoVazioPadrao } from '@/components/ui/esqueleto';

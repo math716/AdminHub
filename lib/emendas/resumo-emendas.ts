@@ -16,7 +16,7 @@
  * (cliente próprio) — por isso não importa '@/lib/db'.
  */
 
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '@/lib/prisma-gerado/client';
 import { filtroEsferaAtiva, sqlEsferaAtiva } from './estados-ativos';
 
 // Prefixo IBGE de 2 dígitos por UF — usado para garantir que só municípios

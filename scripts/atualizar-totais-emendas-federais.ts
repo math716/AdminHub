@@ -24,13 +24,12 @@
  * para nunca gravar um ano pela metade.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../lib/prisma-gerado/client';
+import { criarPrismaClient } from '../lib/prisma-conexao';
 import { portalFetch } from '../lib/emendas/portal-fetcher';
 
 const raw = process.env.DATABASE_URL ?? '';
-const prisma = new PrismaClient({
-  datasources: { db: { url: `${raw}${raw.includes('?') ? '&' : '?'}pgbouncer=true&connection_limit=2` } },
-});
+const prisma = criarPrismaClient(`${raw}${raw.includes('?') ? '&' : '?'}pgbouncer=true&connection_limit=2`);
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);

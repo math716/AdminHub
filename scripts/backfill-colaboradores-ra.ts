@@ -5,10 +5,11 @@
  * Uso: npx tsx --require dotenv/config scripts/backfill-colaboradores-ra.ts
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../lib/prisma-gerado/client';
+import { criarPrismaClient } from '../lib/prisma-conexao';
 import { derivarRasDeZonas } from '../lib/colaboradores-zonas';
 
-const prisma = new PrismaClient();
+const prisma = criarPrismaClient();
 
 function normRA(s: string) {
   return s.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();

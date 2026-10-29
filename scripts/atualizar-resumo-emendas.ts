@@ -22,7 +22,8 @@
  * são centenas de somas pesadas que dariam o mesmo resultado.
  */
 
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '../lib/prisma-gerado/client';
+import { criarPrismaClient } from '../lib/prisma-conexao';
 import {
   ESFERAS, SQL_CRIAR_RESUMO, VERSAO_CONTA, calcularResumoUf, calcularTotaisBrasil, chaveResumoBrasil, chaveResumoUf,
   impressaoDoBanco, lerResumoPronto,
@@ -35,9 +36,7 @@ const raw = process.env.DATABASE_URL ?? '';
 // documentos (consulta mais pesada nos estados grandes), esperar a vez por
 // mais de 10 s (o padrão) virou rotina — e o padrão derrubava o script
 // inteiro (P2024). Esperar a conexão é o certo: são as mesmas 4 conexões.
-const db = new PrismaClient({
-  datasources: { db: { url: `${raw}${raw.includes('?') ? '&' : '?'}pgbouncer=true&connection_limit=4&pool_timeout=300` } },
-});
+const db = criarPrismaClient(`${raw}${raw.includes('?') ? '&' : '?'}pgbouncer=true&connection_limit=4&pool_timeout=300`);
 
 /** Uma conta que falhou por conexão (banco ocupado) tenta de novo, até 3 vezes. */
 async function comNovaTentativa<T>(fn: () => Promise<T>): Promise<T> {

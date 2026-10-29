@@ -10,7 +10,7 @@
  */
 
 import { prisma } from '@/lib/db';
-import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
+import type { EmendaArea, ParlamentarCargo } from '@/lib/prisma-gerado/enums';
 import {
   parseValorBR,
   parseDataBR,

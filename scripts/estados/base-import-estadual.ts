@@ -5,8 +5,9 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { PrismaClient } from '@prisma/client';
-import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
+import { PrismaClient } from '../../lib/prisma-gerado/client';
+import { criarPrismaClient } from '../../lib/prisma-conexao';
+import type { EmendaArea, ParlamentarCargo } from '../../lib/prisma-gerado/enums';
 import { classificarArea } from '../../lib/portal-transparencia';
 
 /** Municípios de uma UF, da lista do IBGE embutida no projeto
@@ -43,7 +44,7 @@ export function buildPrismaUrl(): string {
 }
 
 export function buildPrisma(): PrismaClient {
-  return new PrismaClient({ datasources: { db: { url: buildPrismaUrl() } } });
+  return criarPrismaClient(buildPrismaUrl());
 }
 
 const isConnError = (e: any) =>
@@ -70,7 +71,7 @@ export async function withRetry<T>(
         process.stdout.write(`\n   [reconexão #${attempt + 1}] aguardando ${waitMs / 1000}s...\n`);
         await new Promise((r) => setTimeout(r, waitMs));
         await getPrisma().$disconnect().catch(() => {});
-        setPrisma(new PrismaClient({ datasources: { db: { url: buildPrismaUrl() } } }));
+        setPrisma(criarPrismaClient(buildPrismaUrl()));
         continue;
       }
       throw e;

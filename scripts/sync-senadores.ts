@@ -21,15 +21,14 @@
  * Reexecutar quando uma nova legislatura começar (a cada 4 anos).
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../lib/prisma-gerado/client';
+import { criarPrismaClient } from '../lib/prisma-conexao';
 
 const dbUrl = (() => {
   const raw = process.env.DATABASE_URL ?? '';
   return raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true';
 })();
-const prisma = new PrismaClient({
-  datasources: { db: { url: dbUrl } },
-});
+const prisma = criarPrismaClient(dbUrl);
 
 // Legislaturas a baixar (cobre emendas de 2015 a 2027).
 // Cada legislatura dura 4 anos. Adicionar 58ª em 2027.

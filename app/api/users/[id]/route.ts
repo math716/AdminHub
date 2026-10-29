@@ -6,7 +6,7 @@ import { exigirAcesso } from '@/lib/acesso-api';
 import { z } from 'zod';
 import { lerCorpo, v } from '@/lib/validacao-api';
 import { ALL_PERMISSIONS, mesclarPermissoes } from '@/lib/permissions';
-import type { UserRole } from '@prisma/client';
+import type { UserRole } from '@/lib/prisma-gerado/enums';
 
 // Cargo e permissões válidos seguem conferidos abaixo (VALID_ROLES e
 // ALL_PERMISSIONS), com as frases de sempre; aqui só o formato.

@@ -1,4 +1,4 @@
-import { UserRole, DemandStatus, DemandPriority, DemandCategory } from '@prisma/client';
+import { UserRole, DemandStatus, DemandPriority, DemandCategory } from '@/lib/prisma-gerado/enums';
 
 export interface SessionUser {
   id: string;

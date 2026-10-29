@@ -1,15 +1,20 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+// Prisma 7: o cliente é gerado DENTRO do projeto (lib/prisma-gerado, fora do
+// git — `prisma generate` roda no build) e conversa com o banco pelo driver
+// `pg` (lib/db.ts). Sem motor próprio do Prisma: a função da Vercel fica menor.
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+  provider            = "prisma-client"
+  output              = "../lib/prisma-gerado"
+  moduleFormat        = "cjs"
+  importFileExtension = "ts"
 }
 
+// O endereço do banco para os comandos do Prisma (migrate, db execute) fica em
+// prisma.config.ts; o do sistema, em lib/db.ts.
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 // ============== ENUMS ==============

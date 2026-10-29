@@ -18,7 +18,7 @@
  * diferentes) — por isso não importa '@/lib/db'.
  */
 
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '@/lib/prisma-gerado/client';
 
 /** Mesma criação da migration 20261019000000 (para o script não depender dela). */
 export const SQL_CRIAR_EMENDAS_MUNICIPIOS = [

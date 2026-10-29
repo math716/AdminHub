@@ -18,7 +18,8 @@
  *   npx tsx --require dotenv/config scripts/dedup-parlamentares.ts
  *   npx tsx --require dotenv/config scripts/dedup-parlamentares.ts --dry-run
  */
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../lib/prisma-gerado/client';
+import { criarPrismaClient } from '../lib/prisma-conexao';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
@@ -26,7 +27,7 @@ const dbUrl = (() => {
   const raw = process.env.DATABASE_URL ?? '';
   return raw + (raw.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=5';
 })();
-const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+const prisma = criarPrismaClient(dbUrl);
 
 function normalizar(s: string): string {
   return s

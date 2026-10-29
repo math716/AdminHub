@@ -6,7 +6,8 @@
  *   npx tsx --require dotenv/config scripts/reclassificar-areas.ts
  *   npx tsx --require dotenv/config scripts/reclassificar-areas.ts --dry-run
  */
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../lib/prisma-gerado/client';
+import { criarPrismaClient } from '../lib/prisma-conexao';
 import { classificarArea, EmendaArea } from '../lib/portal-transparencia';
 
 // PgBouncer (Supabase) rejects prepared statements — append the flag so Prisma
@@ -17,7 +18,7 @@ function buildPrisma() {
   const safeUrl = url.includes('pgbouncer=true')
     ? url
     : `${url}${sep}pgbouncer=true&connection_limit=50&pool_timeout=60`;
-  return new PrismaClient({ datasources: { db: { url: safeUrl } } });
+  return criarPrismaClient(safeUrl);
 }
 
 const prisma = buildPrisma();

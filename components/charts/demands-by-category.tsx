@@ -2,7 +2,7 @@
 
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, LabelList } from 'recharts';
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/types';
-import { DemandCategory } from '@prisma/client';
+import { DemandCategory } from '@/lib/prisma-gerado/enums';
 import { useEffect, useState } from 'react';
 
 interface Props {

@@ -33,8 +33,11 @@ import { createReadStream, readFileSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import * as unzipper from 'unzipper';
 import { parse } from 'csv-parse';
-import { PrismaClient } from '@prisma/client';
-import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
+// Arquivo .mts importando .ts do projeto: só a exportação padrão chega (o mesmo
+// caso de emendasMunicipios, abaixo) — os nomes saem dela.
+import conexao from '../lib/prisma-conexao';
+const { criarPrismaClient } = conexao as typeof import('../lib/prisma-conexao');
+import type { EmendaArea, ParlamentarCargo } from '../lib/prisma-gerado/enums';
 // O lib é CommonJS (é o que o resto do projeto usa); daqui (.mts, ESM) só o
 // "default" chega com tudo — import nomeado falha ("does not provide an export").
 import emendasMunicipios from '../lib/emendas/emendas-municipios';
@@ -52,7 +55,7 @@ const dbUrl = (() => {
   // pool_timeout=60: aguarda até 60s por uma conexão livre (evita P2024)
   return `${raw}${sep}pgbouncer=true&connection_limit=50&pool_timeout=60`;
 })();
-let prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+let prisma = criarPrismaClient(dbUrl);
 
 // ─────────────────────────────────────────────────────────────────────────
 // Retry com reconexão automática
@@ -78,7 +81,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 4): Promise<T> {
         );
         await new Promise((r) => setTimeout(r, waitMs));
         await prisma.$disconnect().catch(() => {});
-        prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+        prisma = criarPrismaClient(dbUrl);
         continue;
       }
       throw e;

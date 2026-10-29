@@ -7,7 +7,7 @@ import { exigirAcesso } from '@/lib/acesso-api';
 import { z } from 'zod';
 import { lerCorpo, v } from '@/lib/validacao-api';
 import { classificarArea } from '@/lib/portal-transparencia';
-import type { EmendaArea, ParlamentarCargo } from '@prisma/client';
+import type { EmendaArea, ParlamentarCargo } from '@/lib/prisma-gerado/enums';
 
 const Importacao = z.object({
   rows:   v.lista('as linhas', z.record(z.unknown()), 100_000),

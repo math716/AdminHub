@@ -6,7 +6,8 @@
  *   npx tsx --require dotenv/config scripts/backfill-municipios-ibge.ts
  *   npx tsx --require dotenv/config scripts/backfill-municipios-ibge.ts --uf SP
  */
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../lib/prisma-gerado/client';
+import { criarPrismaClient } from '../lib/prisma-conexao';
 import { buildPrismaUrl, normalizeNome } from './estados/base-import-estadual';
 
 function arg(name: string): string | undefined {
@@ -61,7 +62,7 @@ const ALIASES: Record<string, string> = {
 };
 
 async function main() {
-  const prisma = new PrismaClient({ datasources: { db: { url: buildPrismaUrl() } } });
+  const prisma = criarPrismaClient(buildPrismaUrl());
 
   try {
     // Busca todos os registros sem codigoIbge mas com municipioNome

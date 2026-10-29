@@ -38,7 +38,7 @@ import fs from 'fs';
 import path from 'path';
 import { buildPrisma, importarEmendas, limparForaDaFonte, type EmendaEstadualRow } from './base-import-estadual';
 import { classificarArea } from '../../lib/portal-transparencia';
-import type { ParlamentarCargo } from '@prisma/client';
+import type { ParlamentarCargo } from '../../lib/prisma-gerado/enums';
 
 function arg(nome: string): string | undefined {
   const i = process.argv.indexOf(`--${nome}`);

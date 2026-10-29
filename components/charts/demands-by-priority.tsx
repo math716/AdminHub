@@ -2,7 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { PRIORITY_LABELS, PRIORITY_COLORS } from '@/lib/types';
-import { DemandPriority } from '@prisma/client';
+import { DemandPriority } from '@/lib/prisma-gerado/enums';
 
 interface Props {
   data: Record<string, number> | undefined;
