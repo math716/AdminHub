@@ -83,7 +83,12 @@ async function enviar(f) {
 
 async function conferir(f) {
   const k = chaveDe(f);
-  const r = await comRepeticao(() => fetch(`${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${codificar(k)}`, { method: 'HEAD' }), k);
+  const r = await comRepeticao(() => fetch(`${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${codificar(k)}`, {
+    method: 'HEAD',
+    // Sem isto, a CDN entrega JSON comprimido (br) e não informa o tamanho:
+    // os 981 mapas apareciam com "0 bytes" embora estivessem certos.
+    headers: { 'accept-encoding': 'identity' },
+  }), k);
   const tam = Number(r.headers.get('content-length'));
   return r.ok && tam === fs.statSync(f).size ? null : `${k}: ${r.status}, ${tam} bytes no Storage × ${fs.statSync(f).size} no disco`;
 }
