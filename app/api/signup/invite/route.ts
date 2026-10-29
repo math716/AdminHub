@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendAdminApprovalEmail } from '@/lib/email';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { limiteDeTentativas } from '@/lib/rate-limit';
 import { z } from 'zod';
 import { lerCorpo, v } from '@/lib/validacao-api';
 
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim()
       || request.headers.get('x-real-ip')
       || 'unknown';
-    if (!checkRateLimit(`invite:${ip}`, 5, 5 * 60_000)) {
+    if (!(await limiteDeTentativas(`invite:${ip}`, 5, 5 * 60_000))) {
       return NextResponse.json(
         { error: 'Muitas tentativas. Aguarde alguns minutos.' },
         { status: 429 },

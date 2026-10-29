@@ -1007,3 +1007,15 @@ model GabiConversa {
   @@index([usuarioId, criadaEm(sort: Desc)])
   @@map("gabi_conversas")
 }
+
+/// Contagem de tentativas (login, cadastro, convite) por chave, compartilhada
+/// entre as instâncias da Vercel. Escrita só por SQL atômico em
+/// lib/rate-limit.ts; linhas vencidas são apagadas de tempos em tempos.
+model LimiteTentativa {
+  chave    String   @id
+  contagem Int      @default(0)
+  expiraEm DateTime
+
+  @@index([expiraEm])
+  @@map("limites_tentativas")
+}

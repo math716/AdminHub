@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { sendAdminApprovalEmail } from '@/lib/email';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { limiteDeTentativas } from '@/lib/rate-limit';
 import { z } from 'zod';
 import { lerCorpo, v } from '@/lib/validacao-api';
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim()
             ?? request.headers.get('x-real-ip')
             ?? 'unknown';
-    if (!checkRateLimit(`signup:${ip}`, 5, 60_000)) {
+    if (!(await limiteDeTentativas(`signup:${ip}`, 5, 60_000))) {
       return NextResponse.json(
         { error: 'Muitas tentativas. Aguarde um momento antes de tentar novamente.' },
         { status: 429 }

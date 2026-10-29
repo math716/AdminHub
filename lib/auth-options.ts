@@ -3,7 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { limiteDeTentativas } from '@/lib/rate-limit';
 import { CacheLimitado } from '@/lib/cache-limitado';
 
 /**
@@ -64,8 +64,11 @@ export const authOptions: NextAuthOptions = {
           || 'desconhecido';
         const email = credentials.email.toLowerCase();
 
-        if (!checkRateLimit(`login:email:${email}`, 8, 60_000)
-            || !checkRateLimit(`login:ip:${ip}`, 20, 60_000)) {
+        const [porEmail, porIp] = await Promise.all([
+          limiteDeTentativas(`login:email:${email}`, 8, 60_000),
+          limiteDeTentativas(`login:ip:${ip}`, 20, 60_000),
+        ]);
+        if (!porEmail || !porIp) {
           throw new Error('Muitas tentativas. Aguarde um momento antes de tentar novamente.');
         }
 
