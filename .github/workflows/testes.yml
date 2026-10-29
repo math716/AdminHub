@@ -1,0 +1,29 @@
+# Testes automáticos (npm test) e tipagem a cada envio ao main.
+# Só no math716 — no admorbitatech os arquivos chegam, mas o job não roda.
+# Não usa segredo nem banco: os testes trabalham com dados simulados.
+name: Testes
+on:
+  push:
+    branches: [main]
+jobs:
+  testes:
+    if: github.repository == 'math716/AdminHub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Sem a base do TSE e os mapas (~840 MB): os testes não usam.
+          sparse-checkout: |
+            /*
+            !/public/data/
+            !/public/geojson/
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm test
+      - run: npx tsc --noEmit
