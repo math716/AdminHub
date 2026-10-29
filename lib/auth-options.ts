@@ -1,6 +1,5 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { limiteDeTentativas } from '@/lib/rate-limit';
@@ -39,7 +38,9 @@ function motivoDaRevogacao(u: {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  // Sem adapter: a sessão é JWT e o único login é por credenciais — o
+  // adapter do Prisma não era chamado, e as tabelas dele (accounts, sessions,
+  // verification_tokens) nunca receberam uma linha.
   providers: [
     CredentialsProvider({
       name: 'credentials',

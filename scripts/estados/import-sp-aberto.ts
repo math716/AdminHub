@@ -372,7 +372,7 @@ async function main() {
         console.log(`\n  [dry-run] cadastros de "deputado estadual" que deixariam de existir: até ${n}`);
       } else {
         const r = await prisma.parlamentar.deleteMany({
-          where: { idPortal: { in: falsos }, emendas: { none: {} }, transferenciasPix: { none: {} } },
+          where: { idPortal: { in: falsos }, emendas: { none: {} } },
         });
         console.log(`\n  cadastros de "deputado estadual" que não eram de deputado estadual — removidos: ${r.count}`);
       }

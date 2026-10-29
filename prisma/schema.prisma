@@ -165,8 +165,6 @@ model User {
   favorites         Favorite[]
   anotacoesEmenda   EmendaAnotacao[]
   projecoes         ProjecaoCampanha[]
-  accounts          Account[]
-  sessions          Session[]
   passwordResetLogs PasswordResetLog[]
   agentUsages       AgentUsage[]
   gabiConversas     GabiConversa[]
@@ -174,51 +172,6 @@ model User {
   @@index([email])
   @@index([gabineteId])
   @@map("users")
-}
-
-/// NextAuth - Conta Conectada
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@index([userId])
-  @@map("accounts")
-}
-
-/// NextAuth - Sessão
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("sessions")
-}
-
-/// NextAuth - Verification Token
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
 }
 
 /// Demanda/Solicitação
@@ -244,8 +197,9 @@ model Demand {
   gabineteId String
   gabinete   Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
 
-  createdById String
-  createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  // Vazio quando a conta de quem criou foi excluída: o registro fica no gabinete.
+  createdById String?
+  createdBy   User?  @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -300,8 +254,9 @@ model AgendaEvent {
   gabineteId String
   gabinete   Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
 
-  createdById String
-  createdBy   User   @relation("AgendaCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  // Vazio quando a conta de quem criou foi excluída: o registro fica no gabinete.
+  createdById String?
+  createdBy   User?  @relation("AgendaCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -386,61 +341,11 @@ model Candidato {
   updatedAt DateTime @updatedAt
 
   // Relations
-  votos     VotoMunicipio[]
-  votosZona VotoZona[]
 
   @@index([ano])
   @@index([uf])
   @@index([cargo])
   @@map("candidatos")
-}
-
-/// Votos por Município (TSE)
-model VotoMunicipio {
-  id          String @id @default(cuid())
-  candidatoId String
-  municipio   String
-  votos       Int
-
-  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
-
-  @@unique([candidatoId, municipio])
-  @@index([candidatoId])
-  @@index([municipio])
-  @@map("votos_municipio")
-}
-
-/// Votos por Zona Eleitoral (TSE)
-model VotoZona {
-  id          String @id @default(cuid())
-  candidatoId String
-  municipio   String
-  zona        Int
-  votos       Int
-
-  candidato Candidato @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
-
-  @@index([candidatoId])
-  @@index([municipio])
-  @@map("votos_zona")
-}
-
-/// Locais de Votação (TSE)
-model LocalVotacao {
-  id            String  @id @default(cuid())
-  uf            String?
-  nomeMunicipio String
-  zona          Int
-  codLocal      String?
-  nomeLocal     String
-  endereco      String?
-  bairro        String?
-  latitude      Float?
-  longitude     Float?
-
-  @@index([nomeMunicipio])
-  @@index([zona])
-  @@map("locais_votacao")
 }
 
 /// Projeção de Campanha
@@ -509,8 +414,9 @@ model Contato {
   gabineteId String
   gabinete   Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
 
-  createdById String
-  createdBy   User   @relation("ContatoCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  // Vazio quando a conta de quem criou foi excluída: o registro fica no gabinete.
+  createdById String?
+  createdBy   User?  @relation("ContatoCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -542,8 +448,9 @@ model Colaborador {
   gabineteId String
   gabinete   Gabinete @relation(fields: [gabineteId], references: [id], onDelete: Cascade)
 
-  createdById String
-  createdBy   User   @relation("ColaboradorCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  // Vazio quando a conta de quem criou foi excluída: o registro fica no gabinete.
+  createdById String?
+  createdBy   User?  @relation("ColaboradorCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   regioes ColaboradorRegiao[]
 
@@ -657,7 +564,6 @@ model Parlamentar {
   updatedAt DateTime @updatedAt
 
   emendas           EmendaParlamentar[]
-  transferenciasPix TransferenciaPix[]
 
   @@index([cargo])
   @@index([uf])
@@ -704,7 +610,6 @@ model EmendaParlamentar {
   // Transferências Pix (Transferências Especiais EC 105/2019) — destinos
   // reais quando a emenda foi cadastrada a nível UF e o município só é
   // decidido depois.
-  transferenciasPix TransferenciaPix[]
 
   // Documentos de despesa (empenho/liquidação/pagamento) — populados pelo
   // cron de enrich a partir de /despesas/documentos/{cod}.
@@ -722,7 +627,6 @@ model EmendaParlamentar {
   @@unique([parlamentarId, ano, numero])
   @@index([ano])
   @@index([codigoIbge])
-  @@index([codigoIbge, ano])
   @@index([codigoIbge, ano, esfera])
   @@index([parlamentarId])
   @@index([parlamentarId, ano])
@@ -805,10 +709,7 @@ model EmendaDocumento {
 
   @@index([emendaId])
   @@index([emendaId, fase])
-  @@index([cnpjFavorecido])
-  @@index([codigoIbgeFavorecido])
   @@index([codigoIbgeDestino])
-  @@index([fase])
   @@index([updatedAt])
   @@map("emendas_documentos")
 }
@@ -830,60 +731,6 @@ model EmendaMunicipio {
   @@id([emendaId, codigoIbge])
   @@index([codigoIbge])
   @@map("emendas_municipios")
-}
-
-/// Transferência Especial (Pix) do Portal da Transparência.
-///
-/// Por que existe:
-///   Emendas individuais de Transferência Especial (modalidade Pix da
-///   EC 105/2019) frequentemente são cadastradas na tabela `emendas` com
-///   localidade "UF (UF)" — o município destino só é decidido depois,
-///   quando o parlamentar/gabinete instrui a transferência. O Portal
-///   rastreia esses repasses subsequentes num endpoint separado.
-///
-/// Linkagem:
-///   - `emendaIdPortal` aponta pra `EmendaParlamentar.idPortal` (codigoEmenda)
-///     quando disponível. Pode ser null se o Portal não associou.
-///   - `parlamentarId` desnormaliza o autor pra queries diretas
-///     (ex.: "todos Pix do Eduardo Bolsonaro em 2024").
-model TransferenciaPix {
-  id       String @id @default(cuid())
-  idPortal String @unique // identificador no Portal (id da transferência)
-
-  ano            Int
-  mes            Int?
-  dataReferencia DateTime?
-
-  valor Float @default(0)
-
-  // Destino real do Pix
-  uf            String?
-  codigoIbge    String?
-  municipioNome String?
-
-  // Beneficiário (ente recebedor — pode ser prefeitura, estado, ONG…)
-  beneficiarioNome String?
-  cnpjBeneficiario String?
-
-  // Linkagem com a emenda original (quando disponível)
-  emendaIdPortal String?
-  emenda         EmendaParlamentar? @relation(fields: [emendaIdPortal], references: [idPortal], onDelete: SetNull)
-
-  // Desnormalização do parlamentar pra queries diretas
-  parlamentarId String?
-  parlamentar   Parlamentar? @relation(fields: [parlamentarId], references: [id], onDelete: SetNull)
-
-  fetchedAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([ano])
-  @@index([codigoIbge])
-  @@index([codigoIbge, ano])
-  @@index([parlamentarId])
-  @@index([parlamentarId, ano])
-  @@index([emendaIdPortal])
-  @@index([uf, ano])
-  @@map("transferencias_pix")
 }
 
 /// Link de convite para criação de novo gabinete (multi-uso, expira em 1h)

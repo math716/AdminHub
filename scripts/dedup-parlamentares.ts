@@ -125,21 +125,17 @@ async function main() {
         }
 
         // Deleta conflitos e migra restantes em batch (sem loop por emenda)
-        const [deleted, updated, pix] = await Promise.all([
+        const [deleted, updated] = await Promise.all([
           conflitos.length > 0
             ? prisma.emendaParlamentar.deleteMany({ where: { id: { in: conflitos } } })
             : Promise.resolve({ count: 0 }),
           migracao.length > 0
             ? prisma.emendaParlamentar.updateMany({ where: { id: { in: migracao } }, data: { parlamentarId: canonico.id } })
             : Promise.resolve({ count: 0 }),
-          prisma.transferenciaPix.updateMany({
-            where: { parlamentarId: dup.id },
-            data: { parlamentarId: canonico.id },
-          }),
         ]);
         const emMigradas = updated.count;
         const emConflito = deleted.count;
-        console.log(`       → ${emMigradas} emendas migradas, ${emConflito} duplicatas removidas, ${pix.count} pix migrados`);
+        console.log(`       → ${emMigradas} emendas migradas, ${emConflito} duplicatas removidas`);
 
         // Deleta duplicata
         await prisma.parlamentar.delete({ where: { id: dup.id } });

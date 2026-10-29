@@ -58,25 +58,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         orderBy: [{ ano: 'desc' }, { valorEmpenhado: 'desc' }],
       });
 
-      // Transferências Pix: destinos reais de emendas individuais de
-      // Transferência Especial. Vão pro card "Municípios via Pix" no dashboard
-      // mesmo quando todas as emendas estão a nível UF.
-      const transferenciasPix = await prisma.transferenciaPix.findMany({
-        where: {
-          parlamentarId: parlamentar.id,
-          ...(ano ? { ano } : {}),
-          ...(uf  ? { uf  } : {}),
-          // TransferenciaPix não tem campo esfera — filtra só se FEDERAL (PI são federais)
-          ...(esfera === 'ESTADUAL' ? { id: 'none' } : {}),
-        },
-        select: {
-          idPortal: true, ano: true, mes: true, dataReferencia: true, valor: true,
-          uf: true, codigoIbge: true, municipioNome: true,
-          beneficiarioNome: true, cnpjBeneficiario: true,
-          emendaIdPortal: true,
-        },
-        orderBy: [{ ano: 'desc' }, { valor: 'desc' }],
-      });
+      // Transferências Pix: a tabela transferencias_pix nunca recebeu dados (não
+      // há importação para ela) e foi removida. O campo segue na resposta,
+      // vazio, para a tela de Emendas — que mostra o card só quando há itens.
+      const transferenciasPix: unknown[] = [];
 
       if (rows.length > 0 || transferenciasPix.length > 0) {
         // Corrige scalars desatualizados usando valores dos documentos quando disponíveis

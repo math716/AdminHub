@@ -362,7 +362,7 @@ export async function limparForaDaFonte(
   const orfaos = await prisma.parlamentar.deleteMany({
     where: {
       uf, cargo: { in: ['DEPUTADO_ESTADUAL', 'BANCADA'] },
-      emendas: { none: {} }, transferenciasPix: { none: {} },
+      emendas: { none: {} },
     },
   });
   console.log(`   ${sobrando.length} emendas antigas apagadas; ${orfaos.count} cadastros sem emenda removidos.`);
