@@ -1,4 +1,8 @@
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
+import { anosDoSenadoEmExercicio } from './senado';
+
+// Bancada do Senado em exercício pela data (troca sozinha em 1º/02/2027).
+const [SEN_ANTERIOR, SEN_RECENTE] = anosDoSenadoEmExercicio();
 
 export const AGENT_TOOLS: Tool[] = [
   {
@@ -327,7 +331,7 @@ export const AGENT_TOOLS: Tool[] = [
     description:
       'Prepara um RELATÓRIO TERRITORIAL eleitoral por Região Administrativa (RA) do DF, para um ou mais parlamentares: ' +
       'deputados DISTRITAIS, deputados FEDERAIS ou SENADORES do DF (a ferramenta detecta o cargo automaticamente). ' +
-      'Para SENADORES ela varre as DUAS eleições da renovação alternada (2018 e 2022) e acha a bancada inteira — ' +
+      `Para SENADORES ela varre as DUAS eleições da renovação alternada (${SEN_ANTERIOR} e ${SEN_RECENTE}) e acha a bancada inteira — ` +
       'basta passar cargo="Senador" e os nomes. É a ferramenta certa sempre que pedirem "top 5 RAs", ' +
       '"regiões com mais votos" ou "mapa de calor dos votos" no DF: buscar_votacao devolve ZONA ELEITORAL, não RA. ' +
       'Use SEMPRE que o usuário pedir: "relatório territorial", análise por região administrativa, redutos/força por RA, ' +
@@ -345,7 +349,7 @@ export const AGENT_TOOLS: Tool[] = [
         },
         ano: {
           type: 'integer',
-          description: 'Ano da eleição. Se omitido: deputados → a eleição mais recente (2026), e quem não disputou 2026 é buscado em 2022; senadores → a bancada EM EXERCÍCIO (hoje 2018 + 2022). Informe o ano quando o usuário citar um.',
+          description: 'Ano da eleição. Se omitido: deputados → a eleição mais recente (2026), e quem não disputou 2026 é buscado em 2022; senadores → a bancada EM EXERCÍCIO (hoje ' + `${SEN_ANTERIOR} + ${SEN_RECENTE}). Informe o ano quando o usuário citar um.`,
         },
         uf: {
           type: 'string',
@@ -439,7 +443,7 @@ export const AGENT_TOOLS: Tool[] = [
       '(centenas de MB) e derruba o sistema. Esta lê só nome, partido, votos e situação, ' +
       'e cobre os 27 estados em milissegundos. Em troca, NÃO traz voto por município nem por ' +
       'zona — para esse detalhe, use buscar_votacao num estado de cada vez. ' +
-      'Para o SENADO informe os DOIS anos (2018 e 2022): a bancada nunca sai de uma eleição só. ' +
+      `Para o SENADO informe os DOIS anos (${SEN_ANTERIOR} e ${SEN_RECENTE}): a bancada nunca sai de uma eleição só. ` +
       'Cobre o PRIMEIRO TURNO: para governador e presidente, quem venceu no segundo turno não ' +
       'consta — o retorno avisa quando isso acontece.',
     input_schema: {
