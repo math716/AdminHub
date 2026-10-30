@@ -7,7 +7,8 @@ import { listEmendasPorParlamentar, PORTAL_MOCK_MODE } from '@/lib/portal-transp
 import { exigirAcesso } from '@/lib/acesso-api';
 import { PERMISSIONS } from '@/lib/permissions';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA] });
     if (acesso instanceof NextResponse) return acesso;

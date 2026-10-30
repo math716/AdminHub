@@ -13,7 +13,8 @@ const Decisao = z.object({
 
 // POST — aprovar ou recusar uma solicitação
 // body: { acao: 'APROVAR' | 'RECUSAR', motivoRecusa?: string }
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const acesso = await exigirAcesso({ papeis: ['ADMIN', 'SUPER_ADMIN'] });
   if (acesso instanceof NextResponse) return acesso;
 

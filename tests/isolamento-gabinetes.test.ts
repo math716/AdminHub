@@ -43,7 +43,7 @@ function nadaGravado() {
   expect(gravou.map(c => c.alvo)).toEqual([]);
 }
 
-const params = { params: { id: 'registro-do-b' } };
+const params = { params: Promise.resolve({ id: 'registro-do-b' }) };
 
 beforeEach(() => {
   banco.limpar();
@@ -110,12 +110,12 @@ describe('registro de outro gabinete: não encontrado, nada gravado', () => {
 
 describe('o próprio gabinete continua funcionando', () => {
   it('editar contato do A grava no registro do A', async () => {
-    const r = await contato.PATCH(pedido('/api/contacts/x', 'PATCH', { nome: 'novo nome' }), { params: { id: 'registro-do-a' } });
+    const r = await contato.PATCH(pedido('/api/contacts/x', 'PATCH', { nome: 'novo nome' }), { params: Promise.resolve({ id: 'registro-do-a' }) });
     expect(r.status).toBe(200);
     expect(banco.pediu('contato.update')[0].args.where).toEqual({ id: 'registro-do-a' });
   });
   it('apagar compromisso do A', async () => {
-    const r = await evento.DELETE(pedido('/api/agenda/x', 'DELETE'), { params: { id: 'registro-do-a' } });
+    const r = await evento.DELETE(pedido('/api/agenda/x', 'DELETE'), { params: Promise.resolve({ id: 'registro-do-a' }) });
     expect(r.status).toBe(200);
     expect(banco.pediu('agendaEvent.delete')[0].args.where).toEqual({ id: 'registro-do-a' });
   });

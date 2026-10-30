@@ -9,7 +9,8 @@ import { PERMISSIONS } from '@/lib/permissions';
 // teto MAC (Média/Alta Complexidade), teto PAP (Atenção Primária).
 // MAC/PAP são importados manualmente em MunicipioStats; habitantes/eleitores
 // caem em fallback no IBGE ao vivo se ainda não tiver snapshot.
-export async function GET(request: NextRequest, { params }: { params: { codigo: string } }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ codigo: string }> }) {
+  const params = await props.params;
   try {
     const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA] });
     if (acesso instanceof NextResponse) return acesso;

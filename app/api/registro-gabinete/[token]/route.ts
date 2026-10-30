@@ -4,7 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
 // GET — valida o token do convite
-export async function GET(_req: NextRequest, { params }: { params: { token: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const link = await prisma.gabineteConviteLink.findUnique({ where: { token: params.token } });
 
   if (!link) return NextResponse.json({ error: 'Link inválido' }, { status: 400 });

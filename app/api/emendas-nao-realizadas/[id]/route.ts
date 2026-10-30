@@ -20,7 +20,8 @@ const EdicaoEmenda = z.object({
   documentoNome:   v.textoOpcional('o nome do documento', 300),
 }).passthrough();
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA], gabinete: 'banco' });
   if (acesso instanceof NextResponse) return acesso;
   const { gabineteId } = acesso;
@@ -62,7 +63,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json(updated);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA], gabinete: 'banco' });
   if (acesso instanceof NextResponse) return acesso;
   const { gabineteId } = acesso;

@@ -60,18 +60,17 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: { unoptimized: true },
-  experimental: {
-    serverComponentsExternalPackages: ['@react-pdf/renderer'],
-    // NUNCA declare './public/data/tse/**/*' aqui. São 211 MB: copiá-los para
-    // dentro de uma função estoura o teto de 250 MB da Vercel — foi o que
-    // manteve api/agent/relatorio em 250,9 MB. Esses arquivos agora são
-    // BUSCADOS POR HTTP do próprio deploy (ver lib/tse-static.ts), como o
-    // public/geojson sempre foi.
-    // O índice nacional (1 MB) fica em public/data/tse-index/, fora da base do
-    // TSE, e é pequeno o bastante para viajar junto da rota que o usa.
-    outputFileTracingIncludes: {
-      '/api/agent/chat': ['./public/data/tse-index/**/*'],
-    },
+  // Next 15: as duas opções abaixo saíram de `experimental`.
+  serverExternalPackages: ['@react-pdf/renderer'],
+  // NUNCA declare './public/data/tse/**/*' aqui. São 211 MB: copiá-los para
+  // dentro de uma função estoura o teto de 250 MB da Vercel — foi o que
+  // manteve api/agent/relatorio em 250,9 MB. Esses arquivos agora são
+  // BUSCADOS POR HTTP do próprio deploy (ver lib/tse-static.ts), como o
+  // public/geojson sempre foi.
+  // O índice nacional (1 MB) fica em public/data/tse-index/, fora da base do
+  // TSE, e é pequeno o bastante para viajar junto da rota que o usa.
+  outputFileTracingIncludes: {
+    '/api/agent/chat': ['./public/data/tse-index/**/*'],
   },
   async headers() {
     return [

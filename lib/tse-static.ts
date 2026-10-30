@@ -33,7 +33,7 @@ import { CacheLimitado } from './cache-limitado';
  * A protecao de deploy da Vercel barra a PROPRIA funcao quando ela chama a URL
  * do deployment. O dominio de producao passa direto e ainda e o mais rapido.
  */
-export function baseEstaticos(): string {
+export async function baseEstaticos(): Promise<string> {
   const limpa = (u: string) => u.replace(/[/]+$/, '');
   if (process.env.NEXT_PUBLIC_SITE_URL) return limpa(process.env.NEXT_PUBLIC_SITE_URL);
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
@@ -49,7 +49,7 @@ export function baseEstaticos(): string {
   //
   // Medido em producao: 200 em 169 ms, contra 10 ms pelo dominio de producao —
   // mais lento, e por isso fica depois, mas responde.
-  const doPedido = hostDoPedido();
+  const doPedido = await hostDoPedido();
   if (doPedido) return doPedido;
 
   if (process.env.NEXTAUTH_URL) return limpa(process.env.NEXTAUTH_URL);
@@ -63,9 +63,9 @@ export function baseEstaticos(): string {
  * contexto estatico, ele lanca. Por isso o try/catch: nesses casos seguimos
  * para a proxima alternativa em vez de derrubar a leitura.
  */
-function hostDoPedido(): string | null {
+async function hostDoPedido(): Promise<string | null> {
   try {
-    const h = headers();
+    const h = await headers();
     const host = h.get('x-forwarded-host') ?? h.get('host');
     if (!host) return null;
     const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
@@ -98,7 +98,7 @@ export function ultimaFalhaTse(): string | null {
 
 export async function baixarTseJson<T>(caminho: string): Promise<T | null> {
   // Storage (NEXT_PUBLIC_DADOS_URL), ou o próprio site — ver lib/dados-url.ts.
-  const base = baseDados(baseEstaticos());
+  const base = baseDados(await baseEstaticos());
   const motivos: string[] = [];
   for (const [url, comprimido] of [
     [`${base}/data/tse/${caminho}.json.gz`, true],

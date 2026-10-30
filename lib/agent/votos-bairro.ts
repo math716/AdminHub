@@ -101,7 +101,7 @@ export async function votosNoBairro(params: {
   let areas: Area[] = [];
   let nomesDosContornos: string[] = [];
   let metodo: 'contorno' | 'endereco' = 'contorno';
-  const features = await carregarBairros(uf, municipio, baseEstaticos()).catch(() => null);
+  const features = await carregarBairros(uf, municipio, await baseEstaticos()).catch(() => null);
   if (features && features.length > 0) {
     // Um local, um bairro: o primeiro contorno que o contém.
     const bairroDoLocal = secao.locais.map(l => {

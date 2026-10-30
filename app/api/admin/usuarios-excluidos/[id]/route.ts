@@ -10,8 +10,9 @@ const Acao = z.object({ acao: v.textoOpcional('a ação', 20) }).passthrough();
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const acesso = await exigirAcesso({ papeis: ['ADMIN', 'SUPER_ADMIN'] });
     if (acesso instanceof NextResponse) return acesso;

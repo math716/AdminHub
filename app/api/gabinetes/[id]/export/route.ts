@@ -35,8 +35,9 @@ function fmtDate(d: Date | string | null | undefined, withTime = false): string 
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const acesso = await exigirAcesso({ papeis: ['ADMIN', 'SUPER_ADMIN'] });
     if (acesso instanceof NextResponse) return acesso;

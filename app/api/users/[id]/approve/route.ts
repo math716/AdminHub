@@ -8,8 +8,9 @@ import { ALL_PERMISSIONS, ehPermissaoRestrita, hasFullAccess, mesclarPermissoes 
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const acesso = await exigirAcesso({ papeis: ['CHEFE', 'ADMIN', 'SUPER_ADMIN', 'AGENTE_POLITICO'] });
     if (acesso instanceof NextResponse) return acesso;

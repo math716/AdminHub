@@ -23,8 +23,9 @@ const EdicaoEvento = z.object({
 // PUT /api/agenda/[id]
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.AGENDA], gabinete: 'sessao' });
     if (acesso instanceof NextResponse) return acesso;
@@ -75,8 +76,9 @@ export async function PUT(
 // DELETE /api/agenda/[id]
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.AGENDA], gabinete: 'sessao' });
     if (acesso instanceof NextResponse) return acesso;

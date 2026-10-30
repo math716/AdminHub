@@ -10,7 +10,8 @@ import { PERMISSIONS } from '@/lib/permissions';
 // Texto vazio apaga a anotação (abaixo) — por isso não é obrigatório.
 const Anotacao = z.object({ texto: z.string({ required_error: 'Informe o texto.', invalid_type_error: 'Texto: valor inválido.' }).max(20000, 'Texto: no máximo 20000 caracteres.') }).passthrough();
 
-export async function GET(_req: NextRequest, { params }: { params: { codigo: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ codigo: string }> }) {
+  const params = await props.params;
   const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA] });
   if (acesso instanceof NextResponse) return acesso;
 
@@ -28,7 +29,8 @@ export async function GET(_req: NextRequest, { params }: { params: { codigo: str
   return NextResponse.json({ texto: anotacao?.texto ?? '', updatedAt: anotacao?.updatedAt ?? null });
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { codigo: string } }) {
+export async function PUT(req: NextRequest, props: { params: Promise<{ codigo: string }> }) {
+  const params = await props.params;
   const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.EMENDAS_MAPA] });
   if (acesso instanceof NextResponse) return acesso;
 

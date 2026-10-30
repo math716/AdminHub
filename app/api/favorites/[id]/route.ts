@@ -7,8 +7,9 @@ import { PERMISSIONS } from '@/lib/permissions';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const acesso = await exigirAcesso({ permissoes: [PERMISSIONS.MAPA_ELEITORAL, PERMISSIONS.EMENDAS_MAPA] });
     if (acesso instanceof NextResponse) return acesso;

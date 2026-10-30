@@ -6,8 +6,9 @@ import { exigirAcesso } from '@/lib/acesso-api';
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const acesso = await exigirAcesso();
     if (acesso instanceof NextResponse) return acesso;

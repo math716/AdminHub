@@ -35,8 +35,9 @@ function getSessionAndGabinete(papeis?: string[]) {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const ctx = await getSessionAndGabinete();
     if (ctx instanceof NextResponse) return ctx;
@@ -64,8 +65,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const ctx = await getSessionAndGabinete();
     if (ctx instanceof NextResponse) return ctx;
@@ -147,8 +149,9 @@ export async function PUT(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const ctx = await getSessionAndGabinete(['CHEFE', 'ADMIN', 'AGENTE_POLITICO', 'SUPER_ADMIN']);
     if (ctx instanceof NextResponse) return ctx;

@@ -164,8 +164,11 @@ export async function GET(request: NextRequest) {
     // API: https://servicodados.ibge.gov.br/api/v3/malhas/municipios/{codigo}?formato=application/vnd.geo+json&intrarregiao=setor
     const setoresUrl = `https://servicodados.ibge.gov.br/api/v3/malhas/municipios/${codMunicipio}?formato=application/vnd.geo+json&intrarregiao=setor`;
     
+    // A malha do IBGE não muda: guarda como o Next 14 fazia sem pedir
+    // (no Next 15 o padrão passou a ser buscar de novo a cada pedido).
     const response = await fetch(setoresUrl, {
-      headers: { 'Accept': 'application/geo+json' }
+      headers: { 'Accept': 'application/geo+json' },
+      cache: 'force-cache',
     });
 
     if (!response.ok) {

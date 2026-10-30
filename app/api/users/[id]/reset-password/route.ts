@@ -29,7 +29,8 @@ function generateTempPassword(): string {
   return arr.join('');
 }
 
-export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const acesso = await exigirAcesso();
     if (acesso instanceof NextResponse) return acesso;
