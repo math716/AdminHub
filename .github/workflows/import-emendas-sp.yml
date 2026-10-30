@@ -95,10 +95,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'
@@ -117,7 +117,7 @@ jobs:
       # Cache perdido custa no maximo uma importacao a mais — o import e
       # idempotente.
       - name: Recuperar o que ja foi visto no portal
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: data/estados/.sp-estado.json
           key: sp-estado-${{ github.run_id }}
